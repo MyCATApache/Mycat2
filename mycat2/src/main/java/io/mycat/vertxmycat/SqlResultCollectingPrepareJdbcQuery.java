@@ -43,8 +43,8 @@ public class SqlResultCollectingPrepareJdbcQuery<R> implements AbstractMySqlPrep
 
     @Override
     public Future<SqlResult<R>> execute(Tuple tuple) {
-        Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
-        return vertx.executeBlocking(new Handler<Promise<SqlResult<R>>>() {
+        IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
+        return ioExecutor.executeBlocking(new Handler<Promise<SqlResult<R>>>() {
             @Override
             public void handle(Promise<SqlResult<R>> promise) {
                 try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {

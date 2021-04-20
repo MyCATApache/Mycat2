@@ -72,10 +72,16 @@ public class DrdsRunnerHelper {
             for (SQLSelectItem selectItem : firstQueryBlock.getSelectList()) {
                 if (selectItem.getAlias()==null){
                     if (selectItem.getExpr() instanceof SQLAllColumnExpr){
-
+                        columnNodes.clear();
+                        //break
+                        break;
                     }else if (selectItem.getExpr() instanceof SQLPropertyExpr){
                         if(!"*".equals(((SQLPropertyExpr) selectItem.getExpr()).getName())){
                             columnNodes.add(SQLUtils.normalize(((SQLPropertyExpr) selectItem.getExpr()).getName()));
+                        }else {
+                            columnNodes.clear();
+                            //break
+                            break;
                         }
                     }else if (selectItem.getExpr() instanceof SQLIdentifierExpr){
                         columnNodes.add(SQLUtils.normalize(((SQLIdentifierExpr) selectItem.getExpr()).getName()));

@@ -41,6 +41,9 @@ public class CalciteRowMetaData implements MycatRowMetaData {
 
     @Override
     public int getColumnCount() {
+        if (this.aliasList != null && !this.aliasList.isEmpty()) {
+            return this.aliasList.size();
+        }
         return fieldList.size();
     }
 

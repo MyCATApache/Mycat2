@@ -48,15 +48,21 @@ import com.google.common.collect.ImmutableList;
 
 import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
+
+import static org.apache.calcite.sql.type.SqlTypeName.*;
 
 /**
  * Constant value in a row-expression.
@@ -203,17 +209,17 @@ public class RexLiteral extends RexNode {
   private final SqlTypeName typeName;
 
   private static final ImmutableList<TimeUnit> TIME_UNITS =
-      ImmutableList.copyOf(TimeUnit.values());
+          ImmutableList.copyOf(TimeUnit.values());
 
   //~ Constructors -----------------------------------------------------------
 
   /**
    * Creates a <code>RexLiteral</code>.
    */
- public RexLiteral(
-      Comparable value,
-      RelDataType type,
-      SqlTypeName typeName) {
+  public RexLiteral(
+          Comparable value,
+          RelDataType type,
+          SqlTypeName typeName) {
     this.value = value;
     this.type = Objects.requireNonNull(type);
     this.typeName = Objects.requireNonNull(typeName);
@@ -289,120 +295,153 @@ public class RexLiteral extends RexNode {
   /** Returns whether a value is appropriate for its type. (We have rules about
    * these things!) */
   public static boolean valueMatchesType(
-      Comparable value,
-      SqlTypeName typeName,
-      boolean strict) {
+          Comparable value,
+          SqlTypeName typeName,
+          boolean strict) {
     if (value == null) {
       return true;
     }
     switch (typeName) {
-    case BOOLEAN:
-      // Unlike SqlLiteral, we do not allow boolean null.
-      return value instanceof Boolean;
-    case NULL:
-      return false; // value should have been null
-    case INTEGER: // not allowed -- use Decimal
-    case TINYINT:
-    case SMALLINT:
-      if (strict) {
-        throw Util.unexpected(typeName);
-      }
-      // fall through
-    case DECIMAL:
-    case DOUBLE:
-    case FLOAT:
-    case REAL:
-    case BIGINT:
-      return value instanceof BigDecimal;
-    case DATE:
-      return value instanceof DateString;
-    case TIME:
-      return value instanceof TimeString;
-    case TIME_WITH_LOCAL_TIME_ZONE:
-      return value instanceof TimeString;
-    case TIMESTAMP:
-      return value instanceof TimestampString;
-    case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-      return value instanceof TimestampString;
-    case INTERVAL_YEAR:
-    case INTERVAL_YEAR_MONTH:
-    case INTERVAL_MONTH:
-    case INTERVAL_DAY:
-    case INTERVAL_DAY_HOUR:
-    case INTERVAL_DAY_MINUTE:
-    case INTERVAL_DAY_SECOND:
-    case INTERVAL_HOUR:
-    case INTERVAL_HOUR_MINUTE:
-    case INTERVAL_HOUR_SECOND:
-    case INTERVAL_MINUTE:
-    case INTERVAL_MINUTE_SECOND:
-    case INTERVAL_SECOND:
-      // The value of a DAY-TIME interval (whatever the start and end units,
-      // even say HOUR TO MINUTE) is in milliseconds (perhaps fractional
-      // milliseconds). The value of a YEAR-MONTH interval is in months.
-      return value instanceof BigDecimal;
-    case VARBINARY: // not allowed -- use Binary
-      if (strict) {
-        throw Util.unexpected(typeName);
-      }
-      // fall through
-    case BINARY:
-      return value instanceof ByteString;
-    case VARCHAR: // not allowed -- use Char
-      if (strict) {
-        throw Util.unexpected(typeName);
-      }
-      // fall through
-    case CHAR:
-      // A SqlLiteral's charset and collation are optional; not so a
-      // RexLiteral.
-      return (value instanceof NlsString)
-          && (((NlsString) value).getCharset() != null)
-          && (((NlsString) value).getCollation() != null);
-    case SARG:
-      return value instanceof Sarg;
-    case SYMBOL:
-      return value instanceof Enum;
-    case ROW:
-    case MULTISET:
-      return value instanceof List;
-    case GEOMETRY:
-      return value instanceof Geometries.Geom;
-    case ANY:
-      // Literal of type ANY is not legal. "CAST(2 AS ANY)" remains
-      // an integer literal surrounded by a cast function.
-      return false;
-    default:
-      throw Util.unexpected(typeName);
+      case BOOLEAN:
+        // Unlike SqlLiteral, we do not allow boolean null.
+        return value instanceof Boolean;
+      case NULL:
+        return false; // value should have been null
+      case INTEGER: // not allowed -- use Decimal
+      case TINYINT:
+      case SMALLINT:
+        if (strict) {
+          throw Util.unexpected(typeName);
+        }
+        // fall through
+      case DECIMAL:
+      case DOUBLE:
+      case FLOAT:
+      case REAL:
+      case BIGINT:
+        return value instanceof BigDecimal;
+      case DATE:
+        return value instanceof DateString;
+      case TIME:
+        return value instanceof TimeString;
+      case TIME_WITH_LOCAL_TIME_ZONE:
+        return value instanceof TimeString;
+      case TIMESTAMP:
+        return value instanceof TimestampString;
+      case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+        return value instanceof TimestampString;
+      case INTERVAL_YEAR:
+      case INTERVAL_YEAR_MONTH:
+      case INTERVAL_MONTH:
+        return value instanceof Number;
+      case INTERVAL_DAY:
+      case INTERVAL_DAY_HOUR:
+      case INTERVAL_DAY_MINUTE:
+      case INTERVAL_DAY_SECOND:
+      case INTERVAL_HOUR:
+      case INTERVAL_HOUR_MINUTE:
+      case INTERVAL_HOUR_SECOND:
+      case INTERVAL_MINUTE:
+      case INTERVAL_MINUTE_SECOND:
+      case INTERVAL_SECOND:
+      case INTERVAL_MICROSECOND:
+
+      case INTERVAL_WEEK:
+
+      case INTERVAL_QUARTER:
+
+      case INTERVAL_SECOND_MICROSECOND:
+
+      case INTERVAL_MINUTE_MICROSECOND:
+
+      case INTERVAL_HOUR_MICROSECOND:
+
+      case INTERVAL_DAY_MICROSECOND:
+
+        // The value of a DAY-TIME interval (whatever the start and end units,
+        // even say HOUR TO MINUTE) is in milliseconds (perhaps fractional
+        // milliseconds). The value of a YEAR-MONTH interval is in months.
+        return value instanceof Duration;
+      case VARBINARY: // not allowed -- use Binary
+        if (strict) {
+          throw Util.unexpected(typeName);
+        }
+        // fall through
+      case BINARY:
+        return value instanceof ByteString;
+      case VARCHAR: // not allowed -- use Char
+        if (strict) {
+          throw Util.unexpected(typeName);
+        }
+        // fall through
+
+      case CHAR:
+        // A SqlLiteral's charset and collation are optional; not so a
+        // RexLiteral.
+        return (value instanceof NlsString)
+                && (((NlsString) value).getCharset() != null)
+                && (((NlsString) value).getCollation() != null);
+      case SARG:
+        return value instanceof Sarg;
+      case SYMBOL:
+        return value instanceof Enum;
+      case ARRAY:
+        break;
+      case MAP:
+        break;
+      case DISTINCT:
+        break;
+      case STRUCTURED:
+        break;
+      case ROW:
+      case MULTISET:
+        return value instanceof List;
+      case OTHER:
+        break;
+      case CURSOR:
+        break;
+      case COLUMN_LIST:
+        break;
+      case DYNAMIC_STAR:
+        break;
+      case GEOMETRY:
+        return value instanceof Geometries.Geom;
+      case ANY:
+        // Literal of type ANY is not legal. "CAST(2 AS ANY)" remains
+        // an integer literal surrounded by a cast function.
+        return false;
+      default:
+
     }
+    throw Util.unexpected(typeName);
   }
 
   /** Returns the strict literal type for a given type. */
   public static SqlTypeName strictTypeName(RelDataType type) {
     final SqlTypeName typeName = type.getSqlTypeName();
     switch (typeName) {
-    case INTEGER:
-    case TINYINT:
-    case SMALLINT:
-      return SqlTypeName.DECIMAL;
-    case VARBINARY:
-      return SqlTypeName.BINARY;
-    case VARCHAR:
-      return SqlTypeName.CHAR;
-    default:
-      return typeName;
+      case INTEGER:
+      case TINYINT:
+      case SMALLINT:
+        return SqlTypeName.DECIMAL;
+      case VARBINARY:
+        return SqlTypeName.BINARY;
+      case VARCHAR:
+        return SqlTypeName.CHAR;
+      default:
+        return typeName;
     }
   }
 
   private static String toJavaString(
-      Comparable value,
-      SqlTypeName typeName, RelDataType type,
-      RexDigestIncludeType includeType) {
+          Comparable value,
+          SqlTypeName typeName, RelDataType type,
+          RexDigestIncludeType includeType) {
     assert includeType != RexDigestIncludeType.OPTIONAL
-        : "toJavaString must not be called with includeType=OPTIONAL";
+            : "toJavaString must not be called with includeType=OPTIONAL";
     if (value == null) {
       return includeType == RexDigestIncludeType.NO_TYPE ? "null"
-          : "null:" + type.getFullTypeString();
+              : "null:" + type.getFullTypeString();
     }
     StringBuilder sb = new StringBuilder();
     appendAsJava(value, sb, typeName, type, false, includeType);
@@ -443,8 +482,8 @@ public class RexLiteral extends RexNode {
     // final ensures we set the value in all the branches, and it ensures the value is set just once
     final RexDigestIncludeType includeType;
     if (type.getSqlTypeName() == SqlTypeName.BOOLEAN
-        || type.getSqlTypeName() == SqlTypeName.INTEGER
-        || type.getSqlTypeName() == SqlTypeName.SYMBOL) {
+            || type.getSqlTypeName() == SqlTypeName.INTEGER
+            || type.getSqlTypeName() == SqlTypeName.SYMBOL) {
       // We don't want false:BOOLEAN NOT NULL, so we don't print type information for
       // non-nullable BOOLEAN and INTEGER
       includeType = RexDigestIncludeType.NO_TYPE;
@@ -454,19 +493,19 @@ public class RexLiteral extends RexNode {
 
       // Ignore type information for 'Bar':CHAR(3)
       if ((
-          (nlsString.getCharset() != null && type.getCharset().equals(nlsString.getCharset()))
-          || (nlsString.getCharset() == null
-          && SqlCollation.IMPLICIT.getCharset().equals(type.getCharset())))
-          && nlsString.getCollation().equals(type.getCollation())
-          && ((NlsString) value).getValue().length() == type.getPrecision()) {
+              (nlsString.getCharset() != null && type.getCharset().equals(nlsString.getCharset()))
+                      || (nlsString.getCharset() == null
+                      && SqlCollation.IMPLICIT.getCharset().equals(type.getCharset())))
+              && nlsString.getCollation().equals(type.getCollation())
+              && ((NlsString) value).getValue().length() == type.getPrecision()) {
         includeType = RexDigestIncludeType.NO_TYPE;
       } else {
         includeType = RexDigestIncludeType.ALWAYS;
       }
     } else if (type.getPrecision() == 0 && (
-               type.getSqlTypeName() == SqlTypeName.TIME
-            || type.getSqlTypeName() == SqlTypeName.TIMESTAMP
-            || type.getSqlTypeName() == SqlTypeName.DATE)) {
+            type.getSqlTypeName() == SqlTypeName.TIME
+                    || type.getSqlTypeName() == SqlTypeName.TIMESTAMP
+                    || type.getSqlTypeName() == SqlTypeName.DATE)) {
       // Ignore type information for '12:23:20':TIME(0)
       // Note that '12:23:20':TIME WITH LOCAL TIME ZONE
       includeType = RexDigestIncludeType.NO_TYPE;
@@ -480,10 +519,10 @@ public class RexLiteral extends RexNode {
    * criteria as {@link #valueMatchesType}. */
   public static boolean validConstant(Object o, Litmus litmus) {
     if (o == null
-        || o instanceof BigDecimal
-        || o instanceof NlsString
-        || o instanceof ByteString
-        || o instanceof Boolean) {
+            || o instanceof BigDecimal
+            || o instanceof NlsString
+            || o instanceof ByteString
+            || o instanceof Boolean) {
       return litmus.succeed();
     } else if (o instanceof List) {
       List list = (List) o;
@@ -516,7 +555,7 @@ public class RexLiteral extends RexNode {
     final TimeUnit start = typeName.getStartUnit();
     final TimeUnit end = typeName.getEndUnit();
     final ImmutableList<TimeUnit> list =
-        TIME_UNITS.subList(start.ordinal(), end.ordinal() + 1);
+            TIME_UNITS.subList(start.ordinal(), end.ordinal() + 1);
     if (end == TimeUnit.SECOND) {
       return CompositeList.of(list, ImmutableList.of(TimeUnit.MILLISECOND));
     }
@@ -558,14 +597,14 @@ public class RexLiteral extends RexNode {
 
   private static int width(TimeUnit timeUnit) {
     switch (timeUnit) {
-    case MILLISECOND:
-      return 3;
-    case HOUR:
-    case MINUTE:
-    case SECOND:
-      return 2;
-    default:
-      return -1;
+      case MILLISECOND:
+        return 3;
+      case HOUR:
+      case MINUTE:
+      case SECOND:
+        return 2;
+      default:
+        return -1;
     }
   }
 
@@ -574,8 +613,8 @@ public class RexLiteral extends RexNode {
    */
   public void printAsJava(PrintWriter pw) {
     Util.asStringBuilder(pw, sb ->
-        appendAsJava(value, sb, typeName, type, true,
-            RexDigestIncludeType.NO_TYPE));
+            appendAsJava(value, sb, typeName, type, true,
+                    RexDigestIncludeType.NO_TYPE));
   }
 
   /**
@@ -599,115 +638,154 @@ public class RexLiteral extends RexNode {
    * @param includeType Whether to include the data type in the Java representation
    */
   private static void appendAsJava(Comparable value, StringBuilder sb,
-      SqlTypeName typeName, RelDataType type, boolean java,
-      RexDigestIncludeType includeType) {
+                                   SqlTypeName typeName, RelDataType type, boolean java,
+                                   RexDigestIncludeType includeType) {
     switch (typeName) {
-    case CHAR:
-      NlsString nlsString = (NlsString) value;
-      if (java) {
-        Util.printJavaString(
-            sb,
-            nlsString.getValue(),
-            true);
-      } else {
-        boolean includeCharset =
-            (nlsString.getCharsetName() != null)
-                && !nlsString.getCharsetName().equals(
-                CalciteSystemProperty.DEFAULT_CHARSET.value());
-        sb.append(nlsString.asSql(includeCharset, false));
-      }
-      break;
-    case BOOLEAN:
-      assert value instanceof Boolean;
-      sb.append(value.toString());
-      break;
-    case DECIMAL:
-      assert value instanceof BigDecimal;
-      sb.append(value.toString());
-      break;
-    case DOUBLE:
-      assert value instanceof BigDecimal;
-      sb.append(Util.toScientificNotation((BigDecimal) value));
-      break;
-    case BIGINT:
-      assert value instanceof BigDecimal;
-      long narrowLong = ((BigDecimal) value).longValue();
-      sb.append(String.valueOf(narrowLong));
-      sb.append('L');
-      break;
-    case BINARY:
-      assert value instanceof ByteString;
-      sb.append("X'");
-      sb.append(((ByteString) value).toString(16));
-      sb.append("'");
-      break;
-    case NULL:
-      assert value == null;
-      sb.append("null");
-      break;
-    case SARG:
-      assert value instanceof Sarg;
-      //noinspection unchecked,rawtypes
-      Util.asStringBuilder(sb, sb2 ->
-          printSarg(sb2, (Sarg) value, type));
-      break;
-    case SYMBOL:
-      assert value instanceof Enum;
-      sb.append("FLAG(");
-      sb.append(value.toString());
-      sb.append(")");
-      break;
-    case DATE:
-      assert value instanceof DateString;
-      sb.append(value.toString());
-      break;
-    case TIME:
-    case TIME_WITH_LOCAL_TIME_ZONE:
-      assert value instanceof TimeString;
-      sb.append(value.toString());
-      break;
-    case TIMESTAMP:
-    case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-      assert value instanceof TimestampString;
-      sb.append(value.toString());
-      break;
-    case INTERVAL_YEAR:
-    case INTERVAL_YEAR_MONTH:
-    case INTERVAL_MONTH:
-    case INTERVAL_DAY:
-    case INTERVAL_DAY_HOUR:
-    case INTERVAL_DAY_MINUTE:
-    case INTERVAL_DAY_SECOND:
-    case INTERVAL_HOUR:
-    case INTERVAL_HOUR_MINUTE:
-    case INTERVAL_HOUR_SECOND:
-    case INTERVAL_MINUTE:
-    case INTERVAL_MINUTE_SECOND:
-    case INTERVAL_SECOND:
-      assert value instanceof BigDecimal;
-      sb.append(value.toString());
-      break;
-    case MULTISET:
-    case ROW:
-      final List<RexLiteral> list = (List) value;
-      Util.asStringBuilder(sb, sb2 ->
-          Util.printList(sb, list.size(), (sb3, i) ->
-              sb3.append(list.get(i).computeDigest(includeType))));
-      break;
-    case GEOMETRY:
-      final String wkt = GeoFunctions.ST_AsWKT((Geometries.Geom) value);
-      sb.append(wkt);
-      break;
-    default:
-      assert valueMatchesType(value, typeName, true);
-      throw Util.needToImplement(typeName);
+      case CHAR:
+        NlsString nlsString = (NlsString) value;
+        if (java) {
+          Util.printJavaString(
+                  sb,
+                  nlsString.getValue(),
+                  true);
+        } else {
+          boolean includeCharset =
+                  (nlsString.getCharsetName() != null)
+                          && !nlsString.getCharsetName().equals(
+                          CalciteSystemProperty.DEFAULT_CHARSET.value());
+          sb.append(nlsString.asSql(includeCharset, false));
+        }
+        break;
+      case BOOLEAN:
+        assert value instanceof Boolean;
+        sb.append(value.toString());
+        break;
+      case DECIMAL:
+        assert value instanceof BigDecimal;
+        sb.append(value.toString());
+        break;
+      case DOUBLE:
+        assert value instanceof BigDecimal;
+        sb.append(Util.toScientificNotation((BigDecimal) value));
+        break;
+      case TINYINT:
+        break;
+      case SMALLINT:
+        break;
+      case INTEGER:
+        break;
+      case BIGINT:
+        assert value instanceof BigDecimal;
+        long narrowLong = ((BigDecimal) value).longValue();
+        sb.append(String.valueOf(narrowLong));
+        sb.append('L');
+        break;
+      case BINARY:
+        assert value instanceof ByteString;
+        sb.append("X'");
+        sb.append(((ByteString) value).toString(16));
+        sb.append("'");
+        break;
+      case NULL:
+        assert value == null;
+        sb.append("null");
+        break;
+      case SARG:
+        assert value instanceof Sarg;
+        //noinspection unchecked,rawtypes
+        Util.asStringBuilder(sb, sb2 ->
+                printSarg(sb2, (Sarg) value, type));
+        break;
+      case SYMBOL:
+        assert value instanceof Enum;
+        sb.append("FLAG(");
+        sb.append(value.toString());
+        sb.append(")");
+        break;
+      case DATE:
+        assert value instanceof DateString;
+        sb.append(value.toString());
+        break;
+      case TIME:
+      case TIME_WITH_LOCAL_TIME_ZONE:
+        assert value instanceof TimeString;
+        sb.append(value.toString());
+        break;
+      case TIMESTAMP:
+      case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+        assert value instanceof TimestampString;
+        sb.append(value.toString());
+        break;
+      case INTERVAL_MICROSECOND:
+      case INTERVAL_WEEK:
+      case INTERVAL_QUARTER:
+      case INTERVAL_SECOND_MICROSECOND:
+      case INTERVAL_MINUTE_MICROSECOND:
+      case INTERVAL_HOUR_MICROSECOND:
+      case INTERVAL_DAY_MICROSECOND:
+      case INTERVAL_YEAR:
+      case INTERVAL_YEAR_MONTH:
+      case INTERVAL_MONTH:
+      case INTERVAL_DAY:
+      case INTERVAL_DAY_HOUR:
+      case INTERVAL_DAY_MINUTE:
+      case INTERVAL_DAY_SECOND:
+      case INTERVAL_HOUR:
+      case INTERVAL_HOUR_MINUTE:
+      case INTERVAL_HOUR_SECOND:
+      case INTERVAL_MINUTE:
+      case INTERVAL_MINUTE_SECOND:
+      case INTERVAL_SECOND:
+        assert value instanceof BigDecimal;
+        sb.append(value.toString());
+        break;
+      case MULTISET:
+      case ROW:
+        final List<RexLiteral> list = (List) value;
+        Util.asStringBuilder(sb, sb2 ->
+                Util.printList(sb, list.size(), (sb3, i) ->
+                        sb3.append(list.get(i).computeDigest(includeType))));
+        break;
+      case GEOMETRY:
+        final String wkt = GeoFunctions.ST_AsWKT((Geometries.Geom) value);
+        sb.append(wkt);
+        break;
+      case FLOAT:
+        break;
+      case REAL:
+        break;
+      case VARCHAR:
+        break;
+      case VARBINARY:
+        break;
+      case ANY:
+        break;
+      case ARRAY:
+        break;
+      case MAP:
+        break;
+      case DISTINCT:
+        break;
+      case STRUCTURED:
+        break;
+      case OTHER:
+        break;
+      case CURSOR:
+        break;
+      case COLUMN_LIST:
+        break;
+      case DYNAMIC_STAR:
+        break;
+      default:
+        assert valueMatchesType(value, typeName, true);
+        throw Util.needToImplement(typeName);
     }
   }
 
   private static <C extends Comparable<C>> void printSarg(StringBuilder sb,
-      Sarg<C> sarg, RelDataType type) {
+                                                          Sarg<C> sarg, RelDataType type) {
     sarg.printTo(sb, (sb2, value) ->
-        sb2.append(toLiteral(type, value)));
+            sb2.append(toLiteral(type, value)));
   }
 
   /** Converts a value to a temporary literal, for the purposes of generating a
@@ -716,25 +794,25 @@ public class RexLiteral extends RexNode {
   private static RexLiteral toLiteral(RelDataType type, Comparable<?> value) {
     final SqlTypeName typeName = strictTypeName(type);
     switch (typeName) {
-    case ROW:
-      final List<Comparable<?>> fieldValues = (List) value;
-      final List<RelDataTypeField> fields = type.getFieldList();
-      final List<RexLiteral> fieldLiterals =
-          FlatLists.of(
-              Functions.generate(fieldValues.size(), i ->
-                  toLiteral(fields.get(i).getType(), fieldValues.get(i))));
-      return new RexLiteral((Comparable) fieldLiterals, type, typeName);
+      case ROW:
+        final List<Comparable<?>> fieldValues = (List) value;
+        final List<RelDataTypeField> fields = type.getFieldList();
+        final List<RexLiteral> fieldLiterals =
+                FlatLists.of(
+                        Functions.generate(fieldValues.size(), i ->
+                                toLiteral(fields.get(i).getType(), fieldValues.get(i))));
+        return new RexLiteral((Comparable) fieldLiterals, type, typeName);
 
-    case MULTISET:
-      final List<Comparable<?>> elementValues = (List) value;
-      final List<RexLiteral> elementLiterals =
-          FlatLists.of(
-              Functions.generate(elementValues.size(), i ->
-                  toLiteral(type.getComponentType(), elementValues.get(i))));
-      return new RexLiteral((Comparable) elementLiterals, type, typeName);
+      case MULTISET:
+        final List<Comparable<?>> elementValues = (List) value;
+        final List<RexLiteral> elementLiterals =
+                FlatLists.of(
+                        Functions.generate(elementValues.size(), i ->
+                                toLiteral(type.getComponentType(), elementValues.get(i))));
+        return new RexLiteral((Comparable) elementLiterals, type, typeName);
 
-    default:
-      return new RexLiteral(value, type, typeName);
+      default:
+        return new RexLiteral(value, type, typeName);
     }
   }
 
@@ -753,117 +831,117 @@ public class RexLiteral extends RexNode {
    * @return a typed RexLiteral, or null
    */
   public static RexLiteral fromJdbcString(
-      RelDataType type,
-      SqlTypeName typeName,
-      String literal) {
+          RelDataType type,
+          SqlTypeName typeName,
+          String literal) {
     if (literal == null) {
       return null;
     }
 
     switch (typeName) {
-    case CHAR:
-      Charset charset = type.getCharset();
-      SqlCollation collation = type.getCollation();
-      NlsString str =
-          new NlsString(
-              literal,
-              charset.name(),
-              collation);
-      return new RexLiteral(str, type, typeName);
-    case BOOLEAN:
-      boolean b = ConversionUtil.toBoolean(literal);
-      return new RexLiteral(b, type, typeName);
-    case DECIMAL:
-    case DOUBLE:
-      BigDecimal d = new BigDecimal(literal);
-      return new RexLiteral(d, type, typeName);
-    case BINARY:
-      byte[] bytes = ConversionUtil.toByteArrayFromString(literal, 16);
-      return new RexLiteral(new ByteString(bytes), type, typeName);
-    case NULL:
-      return new RexLiteral(null, type, typeName);
-    case INTERVAL_DAY:
-    case INTERVAL_DAY_HOUR:
-    case INTERVAL_DAY_MINUTE:
-    case INTERVAL_DAY_SECOND:
-    case INTERVAL_HOUR:
-    case INTERVAL_HOUR_MINUTE:
-    case INTERVAL_HOUR_SECOND:
-    case INTERVAL_MINUTE:
-    case INTERVAL_MINUTE_SECOND:
-    case INTERVAL_SECOND:
-      long millis =
-          SqlParserUtil.intervalToMillis(
-              literal,
-              type.getIntervalQualifier());
-      return new RexLiteral(BigDecimal.valueOf(millis), type, typeName);
-    case INTERVAL_YEAR:
-    case INTERVAL_YEAR_MONTH:
-    case INTERVAL_MONTH:
-      long months =
-          SqlParserUtil.intervalToMonths(
-              literal,
-              type.getIntervalQualifier());
-      return new RexLiteral(BigDecimal.valueOf(months), type, typeName);
-    case DATE:
-    case TIME:
-    case TIMESTAMP:
-      String format = getCalendarFormat(typeName);
-      TimeZone tz = DateTimeUtils.UTC_ZONE;
-      final Comparable v;
-      switch (typeName) {
+      case CHAR:
+        Charset charset = type.getCharset();
+        SqlCollation collation = type.getCollation();
+        NlsString str =
+                new NlsString(
+                        literal,
+                        charset.name(),
+                        collation);
+        return new RexLiteral(str, type, typeName);
+      case BOOLEAN:
+        boolean b = ConversionUtil.toBoolean(literal);
+        return new RexLiteral(b, type, typeName);
+      case DECIMAL:
+      case DOUBLE:
+        BigDecimal d = new BigDecimal(literal);
+        return new RexLiteral(d, type, typeName);
+      case BINARY:
+        byte[] bytes = ConversionUtil.toByteArrayFromString(literal, 16);
+        return new RexLiteral(new ByteString(bytes), type, typeName);
+      case NULL:
+        return new RexLiteral(null, type, typeName);
+      case INTERVAL_DAY:
+      case INTERVAL_DAY_HOUR:
+      case INTERVAL_DAY_MINUTE:
+      case INTERVAL_DAY_SECOND:
+      case INTERVAL_HOUR:
+      case INTERVAL_HOUR_MINUTE:
+      case INTERVAL_HOUR_SECOND:
+      case INTERVAL_MINUTE:
+      case INTERVAL_MINUTE_SECOND:
+      case INTERVAL_SECOND:
+        long millis =
+                SqlParserUtil.intervalToMillis(
+                        literal,
+                        type.getIntervalQualifier());
+        return new RexLiteral(BigDecimal.valueOf(millis), type, typeName);
+      case INTERVAL_YEAR:
+      case INTERVAL_YEAR_MONTH:
+      case INTERVAL_MONTH:
+        long months =
+                SqlParserUtil.intervalToMonths(
+                        literal,
+                        type.getIntervalQualifier());
+        return new RexLiteral(BigDecimal.valueOf(months), type, typeName);
       case DATE:
-        final Calendar cal = DateTimeUtils.parseDateFormat(literal,
-            new SimpleDateFormat(format, Locale.ROOT),
-            tz);
-        if (cal == null) {
-          throw new AssertionError("fromJdbcString: invalid date/time value '"
-              + literal + "'");
-        }
-        v = DateString.fromCalendarFields(cal);
-        break;
-      default:
-        // Allow fractional seconds for times and timestamps
-        assert format != null;
-        final DateTimeUtils.PrecisionTime ts =
-            DateTimeUtils.parsePrecisionDateTimeLiteral(literal,
-                new SimpleDateFormat(format, Locale.ROOT), tz, -1);
-        if (ts == null) {
-          throw new AssertionError("fromJdbcString: invalid date/time value '"
-              + literal + "'");
-        }
+      case TIME:
+      case TIMESTAMP:
+        String format = getCalendarFormat(typeName);
+        TimeZone tz = DateTimeUtils.UTC_ZONE;
+        final Comparable v;
         switch (typeName) {
-        case TIMESTAMP:
-          v = TimestampString.fromCalendarFields(ts.getCalendar())
-              .withFraction(ts.getFraction());
-          break;
-        case TIME:
-          v = TimeString.fromCalendarFields(ts.getCalendar())
-              .withFraction(ts.getFraction());
-          break;
-        default:
-          throw new AssertionError();
+          case DATE:
+            final Calendar cal = DateTimeUtils.parseDateFormat(literal,
+                    new SimpleDateFormat(format, Locale.ROOT),
+                    tz);
+            if (cal == null) {
+              throw new AssertionError("fromJdbcString: invalid date/time value '"
+                      + literal + "'");
+            }
+            v = DateString.fromCalendarFields(cal);
+            break;
+          default:
+            // Allow fractional seconds for times and timestamps
+            assert format != null;
+            final DateTimeUtils.PrecisionTime ts =
+                    DateTimeUtils.parsePrecisionDateTimeLiteral(literal,
+                            new SimpleDateFormat(format, Locale.ROOT), tz, -1);
+            if (ts == null) {
+              throw new AssertionError("fromJdbcString: invalid date/time value '"
+                      + literal + "'");
+            }
+            switch (typeName) {
+              case TIMESTAMP:
+                v = TimestampString.fromCalendarFields(ts.getCalendar())
+                        .withFraction(ts.getFraction());
+                break;
+              case TIME:
+                v = TimeString.fromCalendarFields(ts.getCalendar())
+                        .withFraction(ts.getFraction());
+                break;
+              default:
+                throw new AssertionError();
+            }
         }
-      }
-      return new RexLiteral(v, type, typeName);
+        return new RexLiteral(v, type, typeName);
 
-    case SYMBOL:
-      // Symbols are for internal use
-    default:
-      throw new AssertionError("fromJdbcString: unsupported type");
+      case SYMBOL:
+        // Symbols are for internal use
+      default:
+        throw new AssertionError("fromJdbcString: unsupported type");
     }
   }
 
   private static String getCalendarFormat(SqlTypeName typeName) {
     switch (typeName) {
-    case DATE:
-      return DateTimeUtils.DATE_FORMAT_STRING;
-    case TIME:
-      return DateTimeUtils.TIME_FORMAT_STRING;
-    case TIMESTAMP:
-      return DateTimeUtils.TIMESTAMP_FORMAT_STRING;
-    default:
-      throw new AssertionError("getCalendarFormat: unknown type");
+      case DATE:
+        return DateTimeUtils.DATE_FORMAT_STRING;
+      case TIME:
+        return DateTimeUtils.TIME_FORMAT_STRING;
+      case TIMESTAMP:
+        return DateTimeUtils.TIMESTAMP_FORMAT_STRING;
+      default:
+        throw new AssertionError("getCalendarFormat: unknown type");
     }
   }
 
@@ -898,12 +976,12 @@ public class RexLiteral extends RexNode {
       return null;
     }
     switch (typeName) {
-    case TIME:
-    case DATE:
-    case TIMESTAMP:
-      return getValueAs(Calendar.class);
-    default:
-      return value;
+      case TIME:
+      case DATE:
+      case TIMESTAMP:
+        return getValueAs(Calendar.class);
+      default:
+        return value;
     }
   }
 
@@ -916,18 +994,18 @@ public class RexLiteral extends RexNode {
       return null;
     }
     switch (typeName) {
-    case CHAR:
-      return getValueAs(String.class);
-    case DECIMAL:
-    case TIMESTAMP:
-    case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-      return getValueAs(Long.class);
-    case DATE:
-    case TIME:
-    case TIME_WITH_LOCAL_TIME_ZONE:
-      return getValueAs(Integer.class);
-    default:
-      return value;
+      case CHAR:
+        return getValueAs(String.class);
+      case DECIMAL:
+      case TIMESTAMP:
+      case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+        return getValueAs(Long.class);
+      case DATE:
+      case TIME:
+      case TIME_WITH_LOCAL_TIME_ZONE:
+        return getValueAs(Integer.class);
+      default:
+        return value;
     }
   }
 
@@ -940,11 +1018,11 @@ public class RexLiteral extends RexNode {
       return null;
     }
     switch (typeName) {
-    case DECIMAL:
-      assert value instanceof BigDecimal;
-      return value;
-    default:
-      return getValue2();
+      case DECIMAL:
+        assert value instanceof BigDecimal;
+        return value;
+      default:
+        return getValue2();
     }
   }
 
@@ -957,15 +1035,15 @@ public class RexLiteral extends RexNode {
       return null;
     }
     switch (typeName) {
-    case TIMESTAMP:
-    case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-      return getValueAs(Long.class);
-    case DATE:
-    case TIME:
-    case TIME_WITH_LOCAL_TIME_ZONE:
-      return getValueAs(Integer.class);
-    default:
-      return value;
+      case TIMESTAMP:
+      case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+        return getValueAs(Long.class);
+      case DATE:
+      case TIME:
+      case TIME_WITH_LOCAL_TIME_ZONE:
+        return getValueAs(Integer.class);
+      default:
+        return value;
     }
   }
 
@@ -999,115 +1077,173 @@ public class RexLiteral extends RexNode {
       return clazz.cast(value);
     }
     switch (typeName) {
-    case BINARY:
-      if (clazz == byte[].class) {
-        return clazz.cast(((ByteString) value).getBytes());
-      }
-      break;
-    case CHAR:
-      if (clazz == String.class) {
-        return clazz.cast(((NlsString) value).getValue());
-      } else if (clazz == Character.class) {
-        return clazz.cast(((NlsString) value).getValue().charAt(0));
-      }
-      break;
-    case VARCHAR:
-      if (clazz == String.class) {
-        return clazz.cast(((NlsString) value).getValue());
-      }
-      break;
-    case DECIMAL:
-      if (clazz == Long.class) {
-        return clazz.cast(((BigDecimal) value).unscaledValue().longValue());
-      }
-      // fall through
-    case BIGINT:
-    case INTEGER:
-    case SMALLINT:
-    case TINYINT:
-    case DOUBLE:
-    case REAL:
-    case FLOAT:
-      if (clazz == Long.class) {
-        return clazz.cast(((BigDecimal) value).longValue());
-      } else if (clazz == Integer.class) {
-        return clazz.cast(((BigDecimal) value).intValue());
-      } else if (clazz == Short.class) {
-        return clazz.cast(((BigDecimal) value).shortValue());
-      } else if (clazz == Byte.class) {
-        return clazz.cast(((BigDecimal) value).byteValue());
-      } else if (clazz == Double.class) {
-        return clazz.cast(((BigDecimal) value).doubleValue());
-      } else if (clazz == Float.class) {
-        return clazz.cast(((BigDecimal) value).floatValue());
-      }
-      break;
-    case DATE:
-      if (clazz == Integer.class) {
-        return clazz.cast(((DateString) value).getDaysSinceEpoch());
-      } else if (clazz == Calendar.class) {
-        return clazz.cast(((DateString) value).toCalendar());
-      }
-      break;
-    case TIME:
-      if (clazz == Integer.class) {
-        return clazz.cast(((TimeString) value).getMillisOfDay());
-      } else if (clazz == Calendar.class) {
-        // Note: Nanos are ignored
-        return clazz.cast(((TimeString) value).toCalendar());
-      }
-      break;
-    case TIME_WITH_LOCAL_TIME_ZONE:
-      if (clazz == Integer.class) {
-        // Milliseconds since 1970-01-01 00:00:00
-        return clazz.cast(((TimeString) value).getMillisOfDay());
-      }
-      break;
-    case TIMESTAMP:
-      if (clazz == Long.class) {
-        // Milliseconds since 1970-01-01 00:00:00
-        return clazz.cast(((TimestampString) value).getMillisSinceEpoch());
-      } else if (clazz == Calendar.class) {
-        // Note: Nanos are ignored
-        return clazz.cast(((TimestampString) value).toCalendar());
-      }
-      break;
-    case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-      if (clazz == Long.class) {
-        // Milliseconds since 1970-01-01 00:00:00
-        return clazz.cast(((TimestampString) value).getMillisSinceEpoch());
-      } else if (clazz == Calendar.class) {
-        // Note: Nanos are ignored
-        return clazz.cast(((TimestampString) value).toCalendar());
-      }
-      break;
-    case INTERVAL_YEAR:
-    case INTERVAL_YEAR_MONTH:
-    case INTERVAL_MONTH:
-    case INTERVAL_DAY:
-    case INTERVAL_DAY_HOUR:
-    case INTERVAL_DAY_MINUTE:
-    case INTERVAL_DAY_SECOND:
-    case INTERVAL_HOUR:
-    case INTERVAL_HOUR_MINUTE:
-    case INTERVAL_HOUR_SECOND:
-    case INTERVAL_MINUTE:
-    case INTERVAL_MINUTE_SECOND:
-    case INTERVAL_SECOND:
-      if (clazz == Integer.class) {
-        return clazz.cast(((BigDecimal) value).intValue());
-      } else if (clazz == Long.class) {
-        return clazz.cast(((BigDecimal) value).longValue());
-      } else if (clazz == String.class) {
-        return clazz.cast(intervalString(getValueAs(BigDecimal.class).abs()));
-      } else if (clazz == Boolean.class) {
-        // return whether negative
-        return clazz.cast(getValueAs(BigDecimal.class).signum() < 0);
-      }
-      break;
+      case BINARY:
+        if (clazz == byte[].class) {
+          return clazz.cast(((ByteString) value).getBytes());
+        }
+        break;
+      case CHAR:
+        if (clazz == String.class) {
+          return clazz.cast(((NlsString) value).getValue());
+        } else if (clazz == Character.class) {
+          return clazz.cast(((NlsString) value).getValue().charAt(0));
+        }
+        break;
+      case VARCHAR:
+        if (clazz == String.class) {
+          return clazz.cast(((NlsString) value).getValue());
+        }
+        break;
+      case DECIMAL:
+        if (clazz == Long.class) {
+          return clazz.cast(((BigDecimal) value).unscaledValue().longValue());
+        }
+        // fall through
+      case BIGINT:
+      case INTEGER:
+      case SMALLINT:
+      case TINYINT:
+      case DOUBLE:
+      case REAL:
+      case FLOAT:
+        if (clazz == Long.class) {
+          return clazz.cast(((BigDecimal) value).longValue());
+        } else if (clazz == Integer.class) {
+          return clazz.cast(((BigDecimal) value).intValue());
+        } else if (clazz == Short.class) {
+          return clazz.cast(((BigDecimal) value).shortValue());
+        } else if (clazz == Byte.class) {
+          return clazz.cast(((BigDecimal) value).byteValue());
+        } else if (clazz == Double.class) {
+          return clazz.cast(((BigDecimal) value).doubleValue());
+        } else if (clazz == Float.class) {
+          return clazz.cast(((BigDecimal) value).floatValue());
+        }
+        break;
+      case DATE:
+        if (clazz == Integer.class) {
+          return clazz.cast(((DateString) value).getDaysSinceEpoch());
+        } else if (clazz == Calendar.class) {
+          return clazz.cast(((DateString) value).toCalendar());
+        } else if (clazz == LocalDate.class) {
+          int daysSinceEpoch = ((DateString) value).getDaysSinceEpoch();
+          return clazz.cast(LocalDate.ofEpochDay(daysSinceEpoch));
+        }
+        break;
+      case TIME:
+        if (clazz == Integer.class) {
+          return clazz.cast(((TimeString) value).getMillisOfDay());
+        } else if (clazz == Calendar.class) {
+          // Note: Nanos are ignored
+          return clazz.cast(((TimeString) value).toCalendar());
+        }
+        break;
+      case TIME_WITH_LOCAL_TIME_ZONE:
+        if (clazz == Integer.class) {
+          // Milliseconds since 1970-01-01 00:00:00
+          return clazz.cast(((TimeString) value).getMillisOfDay());
+        }
+        break;
+      case TIMESTAMP:
+        if (clazz == Long.class) {
+          // Milliseconds since 1970-01-01 00:00:00
+          return clazz.cast(((TimestampString) value).getMillisSinceEpoch());
+        } else if (clazz == Calendar.class) {
+          // Note: Nanos are ignored
+          return clazz.cast(((TimestampString) value).toCalendar());
+        }
+        break;
+      case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+        if (clazz == Long.class) {
+          // Milliseconds since 1970-01-01 00:00:00
+          return clazz.cast(((TimestampString) value).getMillisSinceEpoch());
+        } else if (clazz == Calendar.class) {
+          // Note: Nanos are ignored
+          return clazz.cast(((TimestampString) value).toCalendar());
+        }
+        break;
+      case INTERVAL_YEAR:
+        if (clazz == Period.class) {
+          return clazz.cast(Period.ofYears(((Number)value).intValue()));
+        } else if (clazz == Boolean.class) {
+          return clazz.cast(Boolean.valueOf(((Number)value).intValue()>0));
+        }  else if (clazz == String.class) {
+          return clazz.cast(Objects.toString(value));
+        }else {
+          throw new UnsupportedOperationException("unsupport "+INTERVAL_YEAR);
+        }
+      case INTERVAL_YEAR_MONTH:
+        if (clazz == Period.class) {
+          throw new UnsupportedOperationException("unsupport "+INTERVAL_YEAR_MONTH);
+        }else {
+          throw new UnsupportedOperationException("unsupport "+INTERVAL_YEAR_MONTH);
+        }
+      case INTERVAL_MONTH:
+        if (clazz == Period.class) {
+          return clazz.cast(Period.ofMonths(((Number)value).intValue()));
+        }else {
+          throw new UnsupportedOperationException("unsupport "+INTERVAL_MONTH);
+        }
+      case INTERVAL_DAY:
+      case INTERVAL_DAY_HOUR:
+      case INTERVAL_DAY_MINUTE:
+      case INTERVAL_DAY_SECOND:
+      case INTERVAL_HOUR:
+      case INTERVAL_HOUR_MINUTE:
+      case INTERVAL_HOUR_SECOND:
+      case INTERVAL_MINUTE:
+      case INTERVAL_MINUTE_SECOND:
+      case INTERVAL_SECOND:
+        Duration duration = (Duration) value;
+        Long i =0L ;
+        switch (typeName) {
+          case INTERVAL_DAY:
+            i =duration.toDays();
+            break;
+          case INTERVAL_DAY_HOUR:
+            i =duration.toHours();
+            break;
+          case INTERVAL_DAY_MINUTE:
+            i =duration.toMinutes();
+            break;
+          case INTERVAL_DAY_SECOND:
+            i =duration.getSeconds();
+            break;
+          case INTERVAL_HOUR:
+            i =duration.toHours();
+            break;
+          case INTERVAL_HOUR_MINUTE:
+            i =duration.toMinutes();
+            break;
+          case INTERVAL_HOUR_SECOND:
+            i =duration.getSeconds();
+            break;
+          case INTERVAL_MINUTE:
+            i =duration.toMinutes();
+            break;
+          case INTERVAL_MINUTE_SECOND:
+            i =duration.getSeconds();
+            break;
+          case INTERVAL_SECOND:
+            i =duration.getSeconds();
+            break;
+        }
+        if (clazz == Integer.class) {
+          return clazz.cast(new BigInteger(i.toString()).intValue());
+        } else if (clazz == Long.class) {
+          return clazz.cast(new BigInteger(i.toString()).longValue());
+        } else if (clazz == String.class) {
+          return clazz.cast(intervalString(getValueAs(BigDecimal.class).abs()));
+        } else if (clazz == BigDecimal.class) {
+          return clazz.cast(new BigDecimal(i.toString()));
+        }else if (clazz == Boolean.class) {
+          // return whether negative
+          return clazz.cast(getValueAs(BigDecimal.class).signum() < 0);
+        }
+        break;
     }
     throw new AssertionError("cannot convert " + typeName
-        + " literal to " + clazz);
+            + " literal to " + clazz);
   }
 
   public static boolean booleanValue(RexNode node) {
@@ -1133,8 +1269,8 @@ public class RexLiteral extends RexNode {
       return true;
     }
     return (obj instanceof RexLiteral)
-        && equals(((RexLiteral) obj).value, value)
-        && equals(((RexLiteral) obj).type, type);
+            && equals(((RexLiteral) obj).value, value)
+            && equals(((RexLiteral) obj).type, type);
   }
 
   public int hashCode() {
@@ -1167,7 +1303,7 @@ public class RexLiteral extends RexNode {
       }
       if (operator == SqlStdOperatorTable.UNARY_MINUS) {
         final BigDecimal value =
-            (BigDecimal) findValue(call.getOperands().get(0));
+                (BigDecimal) findValue(call.getOperands().get(0));
         return value.negate();
       }
     }
@@ -1176,7 +1312,7 @@ public class RexLiteral extends RexNode {
 
   public static boolean isNullLiteral(RexNode node) {
     return (node instanceof RexLiteral)
-        && (((RexLiteral) node).value == null);
+            && (((RexLiteral) node).value == null);
   }
 
   private static boolean equals(Object o1, Object o2) {
