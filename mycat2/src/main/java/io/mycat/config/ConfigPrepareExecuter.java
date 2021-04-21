@@ -324,7 +324,9 @@ public class ConfigPrepareExecuter {
             context.put(SqlResultSetService.class, sqlResultSetService);
         }
         if(!MetaClusterCurrent.exist(MemPlanCache.class)){
-            MemPlanCache memPlanCache = new MemPlanCache((new DbPlanManagerPersistorImpl()));
+            DbPlanManagerPersistorImpl dbPlanManagerPersistor = new DbPlanManagerPersistorImpl();
+            dbPlanManagerPersistor.checkStore();
+            MemPlanCache memPlanCache = new MemPlanCache((dbPlanManagerPersistor));
             context.put(MemPlanCache.class, memPlanCache);
             context.put(QueryPlanner.class,new QueryPlanner(memPlanCache));
         }else {
