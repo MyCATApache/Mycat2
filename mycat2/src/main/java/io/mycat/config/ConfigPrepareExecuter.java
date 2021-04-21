@@ -323,10 +323,10 @@ public class ConfigPrepareExecuter {
         if (sqlResultSetService != null) {
             context.put(SqlResultSetService.class, sqlResultSetService);
         }
+        DbPlanManagerPersistorImpl newDbPlanManagerPersistor = null;
         if(!MetaClusterCurrent.exist(MemPlanCache.class)){
-            DbPlanManagerPersistorImpl dbPlanManagerPersistor = new DbPlanManagerPersistorImpl();
-            dbPlanManagerPersistor.checkStore();
-            MemPlanCache memPlanCache = new MemPlanCache((dbPlanManagerPersistor));
+            newDbPlanManagerPersistor = new DbPlanManagerPersistorImpl();
+            MemPlanCache memPlanCache = new MemPlanCache((newDbPlanManagerPersistor));
             context.put(MemPlanCache.class, memPlanCache);
             context.put(QueryPlanner.class,new QueryPlanner(memPlanCache));
         }else {
@@ -367,6 +367,9 @@ public class ConfigPrepareExecuter {
                 }
             }
         });
+        if (newDbPlanManagerPersistor != null) {
+            newDbPlanManagerPersistor.checkStore();
+        }
         boolean allMatchMySQL = curConfig.getDatasources().stream().allMatch(s -> "mysql".equalsIgnoreCase(s.getDbType()));
         if (allMatchMySQL){
             XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);

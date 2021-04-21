@@ -46,7 +46,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
                     "  UNIQUE KEY `constraint_index` (`constraint`(22)),\n" +
                     "  KEY `id` (`id`)\n" +
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ");
-            JdbcUtils.execute(connection.getRawConnection(), "CREATE TABLE IF  NOT EXISTS `spm_plan` (\n" +
+            JdbcUtils.execute(connection.getRawConnection(), "CREATE TABLE IF  NOT EXISTS mycat.`spm_plan` (\n" +
                     "  `id` bigint(22) NOT NULL AUTO_INCREMENT,\n" +
                     "  `sql` longtext,\n" +
                     "  `rel` longtext,\n" +
