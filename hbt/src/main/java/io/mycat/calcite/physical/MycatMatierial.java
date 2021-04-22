@@ -16,6 +16,7 @@ package io.mycat.calcite.physical;
 
 
 import io.mycat.calcite.ExplainWriter;
+import io.mycat.calcite.MycatConvention;
 import io.mycat.calcite.MycatRel;
 import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -28,12 +29,14 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.util.RxBuiltInMethod;
 
+import java.util.Objects;
+
 public class MycatMatierial extends SingleRel implements MycatRel {
 
     private final MycatRel input;
 
-    protected MycatMatierial(RelOptCluster cluster, RelTraitSet traits, MycatRel input) {
-        super(cluster, traits, input);
+    protected MycatMatierial(RelOptCluster cluster, RelTraitSet traitSet, MycatRel input) {
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), input);
         this.input = input;
         this.rowType = input.getRowType();
     }

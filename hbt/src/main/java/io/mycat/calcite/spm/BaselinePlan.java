@@ -5,7 +5,6 @@ import lombok.*;
 import java.util.Objects;
 
 
-@EqualsAndHashCode
 @Data
 @ToString
 public class BaselinePlan<T> {
@@ -30,7 +29,7 @@ public class BaselinePlan<T> {
         this.attach = attach;
     }
 
-    public T getAttach() {
+    public T attach() {
       return (T)  MemPlanCache.getCodeExecuterContext(this);
     }
 

@@ -51,7 +51,6 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
                     "  `sql` longtext,\n" +
                     "  `rel` longtext,\n" +
                     "  `baseline_id` bigint(22) DEFAULT NULL,\n" +
-                    "  UNIQUE KEY `rel_index` (`rel`(22)),\n" +
                     "  KEY `id` (`id`)\n" +
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         }
@@ -90,7 +89,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
         }
         Long id = (Long) map.get("id");
         String constraintText = (String) map.get("constraint");
-        String extraConstraintText = (String) map.get("extraConstraint");
+        String extraConstraintText = (String) map.get("extra_constraint");
         List<BaselinePlan> list = listPlan(id);
         Constraint constraint = JsonUtil.from(constraintText, Constraint.class);
         ExtraConstraint extraConstraint = JsonUtil.from(extraConstraintText, ExtraConstraint.class);
@@ -171,8 +170,9 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
         try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
             Connection rawConnection = connection.getRawConnection();
             rawConnection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            rawConnection.setAutoCommit(false);
             try (PreparedStatement preparedStatement = rawConnection
-                    .prepareStatement("INSERT INTO  mycat.spm_baseline (id,`constraint`,`extra_constraint`) values(?,?,?)  on duplicate key update `constraint` = VALUES(`constraint`)");) {
+                    .prepareStatement("INSERT INTO  mycat.spm_baseline (id,`constraint`,`extra_constraint`,`fix_plan_id`) values(?,?,?,?)  on duplicate key update `constraint` = VALUES(`constraint`)");) {
                 for (Baseline baseline : baselines) {
                     long baselineId = baseline.getBaselineId();
                     String constraintText = JsonUtil.toJson(baseline.getConstraint());
@@ -184,20 +184,20 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
                     preparedStatement.setObject(4, Optional.ofNullable(baseline.fixPlan).map(i -> i.getId()).orElse(null));
                     preparedStatement.addBatch();
                 }
-                preparedStatement.executeLargeBatch();
+                preparedStatement.executeBatch();
             }
             try (PreparedStatement preparedStatement = rawConnection
-                    .prepareStatement("INSERT INTO  mycat.spm_plan (id,`sql`,`baseline_id`,`rel`) values(?,?,?)  on duplicate key update `rel` = VALUES(`rel`)");) {
+                    .prepareStatement("INSERT INTO  mycat.spm_plan (id,`sql`,`baseline_id`,`rel`) values(?,?,?,?) ");) {
                 for (Baseline baseline : baselines) {
                     for (BaselinePlan baselinePlan : baseline.getPlanList()) {
-                        preparedStatement.setObject(1, baselinePlan.getBaselineId());
+                        preparedStatement.setObject(1, baselinePlan.getId());
                         preparedStatement.setObject(2, baselinePlan.getSql());
-                        preparedStatement.setObject(3, baselinePlan.getRel());
+                        preparedStatement.setObject(3, baselinePlan.getBaselineId());
                         preparedStatement.setObject(4, baselinePlan.getRel());
                         preparedStatement.addBatch();
                     }
                 }
-                preparedStatement.executeLargeBatch();
+                preparedStatement.executeBatch();
             }
             rawConnection.commit();
         }
@@ -223,7 +223,13 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
             return Optional.ofNullable(toBaselinePlan(map));
         }
     }
-
+    @SneakyThrows
+    public synchronized List<BaselinePlan> loadPlanByBaselineId(long baselineId) {
+        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(connection.getRawConnection(), "SELECT * FROM mycat.spm_plan where baseline_id = ?", Arrays.asList(baselineId));
+            return maps.stream().map(i->toBaselinePlan(i)).collect(Collectors.toList());
+        }
+    }
     @NotNull
     private BaselinePlan toBaselinePlan(Map<String, Object> map) {
         String sql = (String) map.get("sql");
@@ -240,7 +246,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
             Connection rawConnection = connection.getRawConnection();
             rawConnection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             rawConnection.setAutoCommit(false);
-            List<Map<String, Object>> maps = JdbcUtils.executeQuery(rawConnection, "select * mycat.spm_plan where `baseline_id` = ? and `rel` =  ?",
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(rawConnection, "select * from mycat.spm_plan where `baseline_id` = ? and `rel` =  ?",
                     Arrays.asList(plan.getBaselineId(), plan.getRel()));
             if (maps.isEmpty()) {
                 JdbcUtils.execute(rawConnection, "replace mycat.spm_plan (id,`sql`,`baseline_id`,`rel`) values(?,?,?,?)",

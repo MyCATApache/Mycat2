@@ -41,6 +41,7 @@ import org.apache.calcite.util.Util;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public class MycatHashJoin extends Join implements MycatRel {
@@ -51,7 +52,7 @@ public class MycatHashJoin extends Join implements MycatRel {
                             RexNode condition,
                             Set<CorrelationId> variablesSet,
                             JoinRelType joinType) {
-        super(cluster, traitSet, ImmutableList.of(), left, right, condition, variablesSet, joinType);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), ImmutableList.of(), left, right, condition, variablesSet, joinType);
     }
     public MycatHashJoin(RelInput input) {
         this(input.getCluster(), input.getTraitSet(),

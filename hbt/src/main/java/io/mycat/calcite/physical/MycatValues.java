@@ -37,6 +37,7 @@ import org.apache.calcite.util.RxBuiltInMethod;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Values operator implemented in Mycat convention.
@@ -44,7 +45,7 @@ import java.util.List;
 public class MycatValues extends Values implements MycatRel {
     protected MycatValues(RelOptCluster cluster, RelDataType rowType,
                           ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traitSet) {
-        super(cluster, rowType, tuples, traitSet);
+        super(cluster, rowType, tuples, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE));
     }
     public static MycatValues create( RelOptCluster cluster, RelDataType rowType,
                                       ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traitSet) {

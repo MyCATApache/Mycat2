@@ -38,6 +38,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 
 /**
@@ -51,7 +52,7 @@ public class MycatHashAggregate extends EnumerableAggregateBase implements Mycat
             ImmutableBitSet groupSet,
             List<ImmutableBitSet> groupSets,
             List<AggregateCall> aggCalls) {
-        super(cluster, traitSet, ImmutableList.of(), input, groupSet, groupSets, aggCalls);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), ImmutableList.of(), input, groupSet, groupSets, aggCalls);
         assert getConvention() instanceof MycatConvention;
     }
     public MycatHashAggregate(

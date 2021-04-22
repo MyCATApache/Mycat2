@@ -41,6 +41,8 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.RxBuiltInMethod;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 /**
  * Sort operator implemented in Mycat convention.
  */
@@ -54,7 +56,7 @@ public class MycatMemSort
             RelCollation collation,
             RexNode offset,
             RexNode fetch) {
-        super(cluster, traitSet, input, collation, offset, fetch);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), input, collation, offset, fetch);
         assert getConvention() instanceof MycatConvention;
         assert getConvention() == input.getConvention();
     }

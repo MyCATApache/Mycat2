@@ -48,6 +48,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.*;
 
@@ -63,7 +64,7 @@ public class MycatCalc extends Calc implements MycatRel {
                         RelTraitSet traitSet,
                         RelNode input,
                         RexProgram program) {
-        super(cluster, traitSet, input, program);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), input, program);
         assert getConvention() instanceof MycatConvention;
         this.program = program;
         this.rowType = program.getOutputRowType();

@@ -33,11 +33,13 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.schema.ModifiableTable;
 import org.apache.calcite.util.BuiltInMethod;
 
+import java.util.Objects;
+
 public class MycatTableSpool extends TableSpool implements MycatRel {
 
     private MycatTableSpool(RelOptCluster cluster, RelTraitSet traitSet,
                                  RelNode input, Type readType, Type writeType, RelOptTable table) {
-        super(cluster, traitSet, input, readType, writeType, table);
+        super(cluster,Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), input, readType, writeType, table);
     }
 
     /** Creates an EnumerableTableSpool. */

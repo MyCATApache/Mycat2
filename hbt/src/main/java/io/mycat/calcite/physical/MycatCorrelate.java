@@ -33,6 +33,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.Objects;
 
 public class MycatCorrelate extends Correlate implements MycatRel {
     protected MycatCorrelate(
@@ -43,7 +44,7 @@ public class MycatCorrelate extends Correlate implements MycatRel {
             CorrelationId correlationId,
             ImmutableBitSet requiredColumns,
             JoinRelType joinType) {
-        super(cluster, traitSet, left, right, correlationId, requiredColumns, joinType);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), left, right, correlationId, requiredColumns, joinType);
     }
     public MycatCorrelate(RelInput input) {
         this(input.getCluster(), input.getTraitSet(), input.getInputs().get(0),

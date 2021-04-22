@@ -38,6 +38,7 @@ import org.apache.calcite.util.RxBuiltInMethod;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Union operator implemented in Mycat convention.
@@ -48,7 +49,7 @@ public class MycatUnion extends Union implements MycatRel {
             RelTraitSet traitSet,
             List<RelNode> inputs,
             boolean all) {
-        super(cluster, traitSet, inputs, all);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), inputs, all);
     }
 
     public static MycatUnion create(

@@ -41,6 +41,7 @@ import org.apache.calcite.util.Pair;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public class MycatSortMergeJoin extends Join implements MycatRel {
@@ -50,7 +51,7 @@ public class MycatSortMergeJoin extends Join implements MycatRel {
                                  RelNode right,
                                  RexNode condition,
                                  Set<CorrelationId> variablesSet, JoinRelType joinType) {
-        super(cluster, traitSet, ImmutableList.of(), left, right, condition, variablesSet, joinType);
+        super(cluster,  Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), ImmutableList.of(), left, right, condition, variablesSet, joinType);
     }
 
     public static MycatSortMergeJoin create(

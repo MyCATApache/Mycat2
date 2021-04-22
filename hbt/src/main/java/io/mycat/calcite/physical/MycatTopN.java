@@ -35,11 +35,13 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
 
+import java.util.Objects;
+
 
 public class MycatTopN extends Sort implements MycatRel {
 
-    protected MycatTopN(RelOptCluster cluster, RelTraitSet traits, RelNode child, RelCollation collation, RexNode offset, RexNode fetch) {
-        super(cluster, traits, child, collation, offset, fetch);
+    protected MycatTopN(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation, RexNode offset, RexNode fetch) {
+        super(cluster,Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), child, collation, offset, fetch);
     }
 
     public static MycatTopN create(RelTraitSet traits, RelNode child, RelCollation collation, RexNode offset, RexNode fetch) {

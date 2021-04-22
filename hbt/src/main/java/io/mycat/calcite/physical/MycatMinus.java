@@ -32,6 +32,7 @@ import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.util.BuiltInMethod;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Minus operator implemented in Mycat convention.
@@ -39,7 +40,7 @@ import java.util.List;
 public class MycatMinus extends Minus implements MycatRel {
     protected MycatMinus(RelOptCluster cluster, RelTraitSet traitSet,
                       List<RelNode> inputs, boolean all) {
-        super(cluster, traitSet, inputs, all);
+        super(cluster,Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), inputs, all);
     }
     public static MycatMinus create(RelTraitSet traitSet,
                       List<RelNode> inputs, boolean all) {

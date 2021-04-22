@@ -50,7 +50,6 @@ import io.vertx.core.impl.future.PromiseInternal;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.csv.QuoteMode;
-import org.fusesource.jansi.AnsiRenderer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -477,7 +476,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 String BASELINE_ID = String.valueOf(baselinePlan.getBaselineId());
                                 String PARAMETERIZED_SQL = String.valueOf(baselinePlan.getSql());
                                 String PLAN_ID = String.valueOf(baselinePlan.getId());
-                                CodeExecuterContext attach =(CodeExecuterContext)baselinePlan.getAttach();
+                                CodeExecuterContext attach =(CodeExecuterContext)baselinePlan.attach();
                                 String EXTERNALIZED_PLAN = new PlanImpl (attach.getMycatRel(),attach,Collections.emptyList()).dumpPlan();
                                 String FIXED =     Optional.ofNullable(baseline.getFixPlan()).filter(i->i.getId()==baselinePlan.getId())
                                         .map(u->"true").orElse("false");
@@ -508,7 +507,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                         String BASELINE_ID = String.valueOf(baselinePlan.getBaselineId());
                                         String PARAMETERIZED_SQL = String.valueOf(baselinePlan.getSql());
                                         String PLAN_ID = String.valueOf(baselinePlan.getId());
-                                        CodeExecuterContext attach =(CodeExecuterContext)baselinePlan.getAttach();
+                                        CodeExecuterContext attach =(CodeExecuterContext)baselinePlan.attach();
                                         String EXTERNALIZED_PLAN = new PlanImpl (attach.getMycatRel(),attach,Collections.emptyList()).dumpPlan();
                                         String FIXED =     Optional.ofNullable(baseline.getFixPlan()).filter(i->i.getId()==baselinePlan.getId())
                                                 .map(u->"true").orElse("false");

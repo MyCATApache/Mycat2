@@ -26,6 +26,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.BuiltInMethod;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -42,7 +43,7 @@ public class MycatNestedLoopJoin extends Join implements MycatRel {
                                   RelNode right,
                                   RexNode condition,
                                   Set<CorrelationId> variablesSet, JoinRelType joinType) {
-        super(cluster, traitSet, hints, left, right, condition, variablesSet, joinType);
+        super(cluster,  Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), hints, left, right, condition, variablesSet, joinType);
     }
 
     public static MycatNestedLoopJoin create(RelTraitSet traitSet,

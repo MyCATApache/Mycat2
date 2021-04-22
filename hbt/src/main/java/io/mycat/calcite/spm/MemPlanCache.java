@@ -43,19 +43,17 @@ public class MemPlanCache implements QueryPlanCache {
 
     public Baseline getBaseline(DrdsSql baseLineSql) {
         Constraint constraint = baseLineSql.constraint();
-        return map.computeIfAbsent(constraint, s -> persistor.loadBaselineByBaseLineSql(baseLineSql.getParameterizedSql(), constraint)
+        return map.computeIfAbsent(constraint, s -> Optional.<Baseline>empty()
                 .orElseGet(() -> {
                     SQLStatement parameterizedStatement = baseLineSql.getParameterizedStatement();
                     List<String> uniqueNames = new LinkedList<>();
-                    MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
                     parameterizedStatement.accept(new MySqlASTVisitorAdapter() {
                         @Override
                         public boolean visit(SQLExprTableSource x) {
                             String tableName = x.getTableName();
                             if (tableName != null) {
                                 String schema = x.getSchema();
-                                TableHandler table = metadataManager.getTable(SQLUtils.normalize(schema), SQLUtils.normalize(tableName));
-                                uniqueNames.add(table.getUniqueName());
+                                uniqueNames.add(SQLUtils.normalize(schema).toLowerCase()+"."+SQLUtils.normalize(tableName).toLowerCase());
                             }
                             return super.visit(x);
                         }
@@ -67,7 +65,7 @@ public class MemPlanCache implements QueryPlanCache {
     }
 
     public PlanResultSet saveBaselinePlan(boolean fix, boolean persist, Baseline baseline, BaselinePlan newBaselinePlan) {
-        Objects.requireNonNull(newBaselinePlan.getAttach());
+        Objects.requireNonNull(newBaselinePlan.attach());
         Set<BaselinePlan> planList = baseline.getPlanList();
         for (BaselinePlan plan : planList) {
             if (plan.getSql().equals(newBaselinePlan.getSql())) {
@@ -82,6 +80,9 @@ public class MemPlanCache implements QueryPlanCache {
             persistor.savePlan(newBaselinePlan1, fix);
         }
         baseline.getPlanList().add(newBaselinePlan);
+        if (fix){
+            baseline.setFixPlan(newBaselinePlan);
+        }
         map.put(baseline.getConstraint(), baseline);
         return new PlanResultSet(newBaselinePlan.getBaselineId(), true, codeExecuterContext);
     }
@@ -146,10 +147,14 @@ public class MemPlanCache implements QueryPlanCache {
         Collection<Baseline> mem = map.values();
 
         Collection<Baseline> disk = persistor.loadAllBaseline().values();
-        HashSet<Baseline> objects = new HashSet<>();
-        objects.addAll(mem);
-        objects.addAll(disk);
-        return objects.stream().sorted(Comparator.comparing(new Function<Baseline, Long>() {
+        HashMap<Long,Baseline> map = new HashMap<>();
+        for (Baseline baseline : mem) {
+            map.put(baseline.getBaselineId(),baseline);
+        }
+        for (Baseline baseline : disk) {
+            map.putIfAbsent(baseline.getBaselineId(),baseline);
+        }
+        return map.values().stream().sorted(Comparator.comparing(new Function<Baseline, Long>() {
             @Override
             public Long apply(Baseline x) {
                 return x.getBaselineId();
@@ -227,5 +232,17 @@ public class MemPlanCache implements QueryPlanCache {
 
     public void saveBaselines() {
         persistor.saveBaselines(map.values());
+    }
+
+    public void persistBaseline(long baselineId) {
+        map.values().stream().filter(b->b.baselineId == baselineId).findFirst().ifPresent(baseline -> persistor.saveBaselines(Arrays.asList(baseline)));
+    }
+
+    public void unFix(long baselineId){
+        map.values().stream().filter(b->b.baselineId == baselineId).findFirst().ifPresent(baseline -> baseline.setFixPlan(null));
+    }
+
+    public Baseline getBaseline(long baselineId) {
+        return map.values().stream().filter(b->b.baselineId == baselineId).findFirst().orElse(null);
     }
 }

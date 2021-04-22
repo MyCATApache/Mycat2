@@ -21,6 +21,7 @@ import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.*;
+import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelTraitSet;
@@ -62,7 +63,7 @@ public class MycatProject
             RelNode input,
             List<? extends RexNode> projects,
             RelDataType rowType) {
-        super(cluster, traitSet, ImmutableList.of(), input, projects, rowType);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), ImmutableList.of(), input, projects, rowType);
         assert getConvention() instanceof MycatConvention;
     }
 

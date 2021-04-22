@@ -31,6 +31,8 @@ import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.rex.RexProgramBuilder;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 /**
  * Implementation of {@link Filter} in
  * {@link MycatConvention Mycat calling convention}.
@@ -41,7 +43,7 @@ public class MycatFilter extends Filter implements MycatRel {
             RelTraitSet traitSet,
             RelNode input,
             RexNode condition) {
-        super(cluster, traitSet, input, condition);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), input, condition);
         assert getConvention() instanceof MycatConvention;
     }
     public static MycatFilter  create(

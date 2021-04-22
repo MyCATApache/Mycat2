@@ -30,6 +30,7 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 
+import java.util.Objects;
 import java.util.Set;
 
 public class MycatSortMergeSemiJoin extends MycatSortMergeJoin implements MycatRel {
@@ -39,7 +40,7 @@ public class MycatSortMergeSemiJoin extends MycatSortMergeJoin implements MycatR
     protected MycatSortMergeSemiJoin(RelOptCluster cluster, RelTraitSet traitSet,
                                      RelNode left, RelNode right, RexNode condition,
                                      Set<CorrelationId> variablesSet, JoinRelType joinType) {
-        super(cluster, traitSet, left, right, condition, variablesSet, joinType);
+        super(cluster,Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), left, right, condition, variablesSet, joinType);
     }
 
     public static MycatSortMergeSemiJoin create(RelTraitSet traitSet,

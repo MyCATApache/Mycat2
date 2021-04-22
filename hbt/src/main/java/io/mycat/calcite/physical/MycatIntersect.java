@@ -32,6 +32,7 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.BuiltInMethod;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Intersect operator implemented in Mycat convention.
@@ -44,7 +45,7 @@ public class MycatIntersect
             RelTraitSet traitSet,
             List<RelNode> inputs,
             boolean all) {
-        super(cluster, traitSet, inputs, all);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), inputs, all);
     }
     public static MycatIntersect create(
             RelTraitSet traitSet,

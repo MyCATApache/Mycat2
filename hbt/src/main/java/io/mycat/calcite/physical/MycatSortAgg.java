@@ -42,6 +42,7 @@ import org.apache.calcite.util.Util;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class MycatSortAgg extends EnumerableAggregateBase implements MycatRel {
 
@@ -49,7 +50,7 @@ public class MycatSortAgg extends EnumerableAggregateBase implements MycatRel {
                            ImmutableBitSet groupSet,
                            List<ImmutableBitSet> groupSets,
                            List<AggregateCall> aggCalls) {
-        super(cluster, traitSet, ImmutableList.of(), input, groupSet, groupSets, aggCalls);
+        super(cluster,  Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), ImmutableList.of(), input, groupSet, groupSets, aggCalls);
     }
 
     public static MycatSortAgg create(

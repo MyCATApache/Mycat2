@@ -60,13 +60,13 @@ import java.util.function.Function;
  */
 public class MycatWindow extends Window implements MycatRel {
 
-    public MycatWindow(RelOptCluster cluster, RelTraitSet traits, RelNode child,
+    public MycatWindow(RelOptCluster cluster, RelTraitSet traitSet, RelNode child,
                        List<RexLiteral> constants, RelDataType rowType, List<Window.Group> groups) {
-        super(cluster, traits, child, constants, rowType, groups);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), child, constants, rowType, groups);
     }
 
     public   MycatWindow(RelInput relInput) {
-        super(relInput.getCluster(), relInput.getTraitSet(), relInput.getInput(),(List)relInput.getExpressionList("constants"), relInput.getRowType("rowType"),
+        this(relInput.getCluster(), relInput.getTraitSet(), relInput.getInput(),(List)relInput.getExpressionList("constants"), relInput.getRowType("rowType"),
                 (List) relInput.getWindowGroupList());
     }
 

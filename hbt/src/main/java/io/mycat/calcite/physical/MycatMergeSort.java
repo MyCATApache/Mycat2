@@ -48,10 +48,7 @@ import org.apache.calcite.util.RxBuiltInMethodImpl;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class MycatMergeSort extends Sort implements MycatRel {
 
@@ -63,12 +60,12 @@ public class MycatMergeSort extends Sort implements MycatRel {
 //            Function1.class, Comparator.class, int.class, int.class);
 
     public MycatMergeSort(RelOptCluster cluster,
-                             RelTraitSet traits,
+                             RelTraitSet traitSet,
                              RelNode child,
                              RelCollation collation,
                              RexNode offset,
                              RexNode fetch) {
-        super(cluster, traits, child, collation, offset, fetch);
+        super(cluster,  Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), child, collation, offset, fetch);
     }
 
     public MycatMergeSort(RelInput relInput) {

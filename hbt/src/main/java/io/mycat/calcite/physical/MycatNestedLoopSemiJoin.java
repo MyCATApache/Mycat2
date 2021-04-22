@@ -29,6 +29,7 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 
 import java.util.List;
+import java.util.Objects;
 
 public class MycatNestedLoopSemiJoin extends Join implements MycatRel {
 
@@ -39,7 +40,7 @@ public class MycatNestedLoopSemiJoin extends Join implements MycatRel {
                                       RelNode right,
                                       RexNode condition,
                                       JoinRelType joinType) {
-        super(cluster, traitSet, hints, left, right, condition, ImmutableSet.of(), joinType);
+        super(cluster,  Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), hints, left, right, condition, ImmutableSet.of(), joinType);
     }
 
     @Override
