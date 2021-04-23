@@ -72,8 +72,8 @@ public class SpmHintTest implements MycatTest {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
              Connection prototypeDs = getMySQLConnection(DB1);) {
             deleteData(prototypeDs, "mycat", "spm_baseline");
+            deleteData(prototypeDs, "mycat", "spm_plan");
             List<Map<String, Object>> maps = executeQuery(mycatConnection, BaselineListHint.create());
-            Assert.assertTrue(!maps.isEmpty());
             Map<String, Object> map = maps.get(0);
             long baseline_id = Long.parseLong(Objects.toString(map.get("BASELINE_ID")));
             long plan_id = Long.parseLong(Objects.toString(map.get("PLAN_ID")));

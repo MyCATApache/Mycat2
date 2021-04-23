@@ -28,6 +28,7 @@ import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
+import java.sql.Statement;
 import java.util.*;
 
 @NotThreadSafe
@@ -92,6 +93,12 @@ public class SpmTest implements MycatTest {
 
     @AfterClass
     public static void close() throws Exception {
+        try (DefaultConnection defaultConnection = jdbcManager.getConnection("prototypeDs");) {
+            Connection rawConnection = defaultConnection.getRawConnection();
+            Statement statement = rawConnection.createStatement();
+            statement.execute("delete from mycat.spm_baseline");
+            statement.execute("delete from mycat.spm_plan");
+        }
         MetaClusterCurrent.wrapper(JdbcConnectionManager.class).close();
     }
 
