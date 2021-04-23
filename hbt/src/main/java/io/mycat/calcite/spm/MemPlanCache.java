@@ -206,7 +206,10 @@ public class MemPlanCache implements QueryPlanCache {
 
     @Override
     public void clearBaseline(long baselineId) {
-        map.values().stream().filter(i -> i.getBaselineId() == baselineId).findFirst().ifPresent(baseline -> map.remove(baseline.getConstraint()));
+        map.values().stream().filter(i -> i.getBaselineId() == baselineId).findFirst().ifPresent(baseline -> {
+            Baseline remove = map.remove(baseline.getConstraint());
+
+        });
     }
 
     @Override

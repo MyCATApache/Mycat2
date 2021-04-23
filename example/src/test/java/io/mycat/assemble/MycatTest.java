@@ -66,7 +66,10 @@ public interface MycatTest {
     public default boolean hasData(Connection connection, String db, String table) throws Exception {
         return !executeQuery(connection, String.format("select * from %s.%s limit 1", db, table)).isEmpty();
     }
-
+    public default long count(Connection connection, String db, String table) throws Exception {
+        Number count = (Number)executeQuery(connection, String.format("select count(1) as `count` from %s.%s", db, table)).get(0).get("count");
+        return count.longValue();
+    }
     public default void deleteData(Connection connection, String db, String table) throws Exception {
         execute(connection, String.format("delete  from %s.%s", db, table));
     }

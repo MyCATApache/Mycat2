@@ -246,12 +246,12 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
             Connection rawConnection = connection.getRawConnection();
             rawConnection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             rawConnection.setAutoCommit(false);
-            List<Map<String, Object>> maps = JdbcUtils.executeQuery(rawConnection, "select * from mycat.spm_plan where `baseline_id` = ? and `rel` =  ?",
-                    Arrays.asList(plan.getBaselineId(), plan.getRel()));
-            if (maps.isEmpty()) {
+//            List<Map<String, Object>> maps = JdbcUtils.executeQuery(rawConnection, "select * from mycat.spm_plan where `baseline_id` = ? and `rel` =  ?",
+//                    Arrays.asList(plan.getBaselineId(), plan.getRel()));
+//            if (maps.isEmpty()) {
                 JdbcUtils.execute(rawConnection, "replace mycat.spm_plan (id,`sql`,`baseline_id`,`rel`) values(?,?,?,?)",
                         Arrays.asList(plan.getId(), plan.getSql(), plan.getBaselineId(), plan.rel));
-            }
+//            }
             if (fix) {
                 JdbcUtils.execute(rawConnection, "update mycat.spm_baseline set fix_plan_id  = ? where id = ?",
                         Arrays.asList(plan.getBaselineId(), plan.getId()));

@@ -27,6 +27,10 @@ import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
+import io.mycat.beans.mycat.ResultSetBuilder;
+import io.mycat.calcite.CodeExecuterContext;
+import io.mycat.calcite.DrdsRunnerHelper;
+import io.mycat.calcite.spm.*;
 import io.mycat.sqlhandler.SQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.sqlhandler.ShardingSQLHandler;
@@ -43,6 +47,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.JDBCType;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -140,6 +145,11 @@ public enum MycatdbCommand {
             if (logger.isDebugEnabled()) {
                 logger.debug(text);
             }
+            if (text.charAt(0) == 'B') {
+                //baseline
+                Response response = responseFactory.apply(1);
+                return handleBasline(text, dataContext, response);
+            }
             LinkedList<SQLStatement> statements = parse(text);
             if (statements.isEmpty()) {
                 throw new MycatException("Illegal syntax:" + text);
@@ -166,6 +176,97 @@ public enum MycatdbCommand {
             }
             return Future.failedFuture(e);
         }
+    }
+
+    private Future<Void> handleBasline(String text, MycatDataContext dataContext, Response response) {
+        QueryPlanCache queryPlanCache = MetaClusterCurrent.wrapper(MemPlanCache.class);
+        if (text.startsWith("BASELINE ")) {
+            text = text.substring("BASELINE".length()).trim();
+            boolean fix = false;
+            if (text.startsWith("ADD") || (fix = text.startsWith("FIX"))) {
+                text = text.substring("ADD".length()).trim();
+
+                SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(text);
+                DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlStatement, dataContext.getDefaultSchema());
+                PlanResultSet planResultSet = queryPlanCache.add(fix, drdsSqlWithParams);
+                //BASELINE_ID | STATUS
+                ResultSetBuilder builder = ResultSetBuilder.create();
+                builder.addColumnInfo("BASELINE_ID", JDBCType.VARCHAR);
+                builder.addColumnInfo("STATUS", JDBCType.VARCHAR);
+                builder.addObjectRowPayload(Arrays.asList(String.valueOf(planResultSet.getBaselineId()), String.valueOf(planResultSet.isOk()?"OK":"ERROR")));
+                return response.sendResultSet(builder.build());
+            }
+            if (text.startsWith("LIST")||text.equalsIgnoreCase("showAllPlans")||text.startsWith("ALL")) {
+                ResultSetBuilder builder = ResultSetBuilder.create();
+                builder.addColumnInfo("BASELINE_ID", JDBCType.VARCHAR)
+                        .addColumnInfo("PARAMETERIZED_SQL", JDBCType.VARCHAR)
+                        .addColumnInfo("PLAN_ID", JDBCType.VARCHAR)
+                        .addColumnInfo("EXTERNALIZED_PLAN", JDBCType.VARCHAR)
+                        .addColumnInfo("FIXED", JDBCType.VARCHAR)
+                        .addColumnInfo("ACCEPTED",JDBCType.VARCHAR);
+                for (Baseline baseline : queryPlanCache.list()) {
+                    for (BaselinePlan baselinePlan : baseline.getPlanList()) {
+                        String BASELINE_ID = String.valueOf(baselinePlan.getBaselineId());
+                        String PARAMETERIZED_SQL = String.valueOf(baselinePlan.getSql());
+                        String PLAN_ID = String.valueOf(baselinePlan.getId());
+                        CodeExecuterContext attach =(CodeExecuterContext)baselinePlan.attach();
+                        String EXTERNALIZED_PLAN = new PlanImpl(attach.getMycatRel(),attach,Collections.emptyList()).dumpPlan();
+                        String FIXED =     Optional.ofNullable(baseline.getFixPlan()).filter(i->i.getId()==baselinePlan.getId())
+                                .map(u->"true").orElse("false");
+                        String ACCEPTED = "true";
+
+                        builder.addObjectRowPayload(Arrays.asList(BASELINE_ID, PARAMETERIZED_SQL, PLAN_ID, EXTERNALIZED_PLAN,FIXED,ACCEPTED));
+                    }
+                }
+                return response.sendResultSet(() -> builder.build());
+            }
+            if (text.startsWith("LOAD_PLAN")) {
+                text = text.substring("LOAD_PLAN".length()).trim();
+                queryPlanCache.loadPlan(Long.parseLong(text));
+                return response.sendOk();
+            }
+            if (text.startsWith("LOAD")) {
+                text = text.substring("LOAD".length()).trim();
+                queryPlanCache.loadBaseline(Long.parseLong(text));
+                return response.sendOk();
+            }
+            if (text.startsWith("PERSIST_PLAN")) {
+                text = text.substring("PERSIST_PLAN".length()).trim();
+                queryPlanCache.persistPlan(Long.parseLong(text));
+                return response.sendOk();
+            }
+            if (text.startsWith("PERSIST")) {
+                text = text.substring("PERSIST".length()).trim();
+                queryPlanCache.persistBaseline(Long.parseLong(text));
+                return response.sendOk();
+            }
+            if (text.startsWith("CLEAR_PLAN")) {
+                text = text.substring("CLEAR_PLAN".length()).trim();
+                queryPlanCache.clearPlan(Long.parseLong(text));
+                return response.sendOk();
+            }
+            if (text.startsWith("CLEAR")) {
+                text = text.substring("CLEAR".length()).trim();
+                queryPlanCache.clearBaseline(Long.parseLong(text));
+                return response.sendOk();
+            }
+            if (text.startsWith("DELETE_PLAN")) {
+                text = text.substring("DELETE_PLAN".length()).trim();
+                queryPlanCache.deletePlan(Long.parseLong(text));
+                return response.sendOk();
+            }
+            if (text.startsWith("DELETE")) {
+                text = text.substring("DELETE".length()).trim();
+                queryPlanCache.deleteBaseline(Long.parseLong(text));
+                return response.sendOk();
+            }
+            if (text.startsWith("UNFIX")) {
+                text = text.substring("UNFIX".length()).trim();
+                queryPlanCache.unFix(Long.parseLong(text));
+                return response.sendOk();
+            }
+        }
+        return Future.failedFuture("unknown baseline cmd " + text);
     }
 
     private static boolean isNavicatClientStatusQuery(String text) {

@@ -24,15 +24,16 @@ public interface QueryPlanCache {
     public void init();
 
     public void delete(List<String> uniqueTables);
+
     public Baseline getBaseline(DrdsSql baseLineSql);
 
-    public PlanResultSet saveBaselinePlan(boolean fix, boolean complex,Baseline baseline, BaselinePlan newBaselinePlan);
+    public PlanResultSet saveBaselinePlan(boolean fix, boolean complex, Baseline baseline, BaselinePlan newBaselinePlan);
 
     public List<CodeExecuterContext> getAcceptedMycatRelList(DrdsSql baselineSql);
 
-    public  PlanResultSet add(boolean fix, DrdsSql drdsSql);
+    public PlanResultSet add(boolean fix, DrdsSql drdsSql);
 
-    public  List<Baseline> list();
+    public List<Baseline> list();
 
     public void clearCache();
 
@@ -51,4 +52,10 @@ public interface QueryPlanCache {
     void deletePlan(long value);
 
     public void saveBaselines();
+
+    public void unFix(long baselineId);
+
+    public Baseline getBaseline(long baselineId);
+
+    public void persistBaseline(long baselineId);
 }
