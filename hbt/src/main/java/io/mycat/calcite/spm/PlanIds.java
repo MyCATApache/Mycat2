@@ -14,7 +14,7 @@ public class PlanIds {
         ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
         int mycatId = serverConfig.getMycatId();
         this.PLAN_IDS = new AtomicLong(mycatId + System.currentTimeMillis() >> 4);
-        this.BASELINE_IDS = new AtomicLong(mycatId + System.currentTimeMillis() >> 4);
+        this.BASELINE_IDS = new AtomicLong(mycatId + System.currentTimeMillis() >> 3);
     }
 
     @SneakyThrows

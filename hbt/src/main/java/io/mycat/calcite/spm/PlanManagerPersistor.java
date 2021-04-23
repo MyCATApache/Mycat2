@@ -15,11 +15,11 @@ interface PlanManagerPersistor {
 
     void deleteBaseline(long baseline);
 
-    void saveBaselines(Baseline baseline);
+    void saveBaseline(Baseline baseline);
 
     Map<Constraint,Baseline> loadAllBaseline();
 
-    public void saveBaselines(Collection<Baseline> baselines);
+    public void saveBaseline(Collection<Baseline> baselines);
 
     List<BaselinePlan> listPlan(long baseline);
 

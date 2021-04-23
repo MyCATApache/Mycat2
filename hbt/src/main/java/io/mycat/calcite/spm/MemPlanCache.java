@@ -139,7 +139,7 @@ public class MemPlanCache implements QueryPlanCache {
             MycatRel mycatRel = drdsSqlCompiler.dispatch(optimizationContext, drdsSql);
             RelJsonWriter relJsonWriter = new RelJsonWriter();
             mycatRel.explain(relJsonWriter);
-            BaselinePlan newBaselinePlan = new BaselinePlan(drdsSql.getParameterizedSql(), relJsonWriter.asString(), planIds.nextBaselineId(), baselineId = baseline.getBaselineId(), null);
+            BaselinePlan newBaselinePlan = new BaselinePlan(drdsSql.getParameterizedSql(), relJsonWriter.asString(), planIds.nextPlanId(), baselineId = baseline.getBaselineId(), null);
             getCodeExecuterContext(newBaselinePlan,mycatRel);
             return saveBaselinePlan(fix, false, baseline, newBaselinePlan);
         } catch (Throwable throwable) {
@@ -203,6 +203,9 @@ public class MemPlanCache implements QueryPlanCache {
         for (Baseline baseline : map.values()) {
             for (BaselinePlan baselinePlan : baseline.getPlanList()) {
                 if (baselinePlan.getId() == value) {
+                    if (baseline.getBaselineId() != baselinePlan.getBaselineId()){
+                        throw new IllegalArgumentException();
+                    }
                     boolean FIXED = (baseline.getFixPlan() != null) && baseline.getFixPlan().getId() == value;
                     persistor.savePlan(baselinePlan, FIXED);
                 }
@@ -240,11 +243,11 @@ public class MemPlanCache implements QueryPlanCache {
     }
 
     public void saveBaselines() {
-        persistor.saveBaselines(map.values());
+        persistor.saveBaseline(map.values());
     }
 
     public void persistBaseline(long baselineId) {
-        map.values().stream().filter(b -> b.baselineId == baselineId).findFirst().ifPresent(baseline -> persistor.saveBaselines(Arrays.asList(baseline)));
+        map.values().stream().filter(b -> b.baselineId == baselineId).findFirst().ifPresent(baseline -> persistor.saveBaseline(Arrays.asList(baseline)));
     }
 
     @Override

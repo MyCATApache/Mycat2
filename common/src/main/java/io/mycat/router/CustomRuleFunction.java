@@ -41,6 +41,8 @@ public abstract class CustomRuleFunction {
             throw new IllegalArgumentException("路由计算返回结果个数为0");
         }
         if (dataNodes.size() != 1) {
+            List<DataNode> dataNodes2 = calculate(values);
+             dataNodes2 = calculate(values);
             throw new IllegalArgumentException("路由计算返回结果个数为" + dataNodes.size());
         }
         DataNode dataNode = dataNodes.get(0);

@@ -121,19 +121,20 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
 
     @Override
     @SneakyThrows
-    public synchronized void saveBaselines(Baseline baseline) {
-        String constraintText = JsonUtil.toJson(baseline.getConstraint());
-        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
-            Connection rawConnection = connection.getRawConnection();
-            rawConnection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-            rawConnection.setAutoCommit(false);
-            List<Map<String, Object>> maps = JdbcUtils.executeQuery(rawConnection, "select * from mycat.spm_baseline where `constraint` = ?",
-                    Arrays.asList(constraintText));
-            if (maps.isEmpty()) {
-                insertBaseline(baseline, rawConnection);
-            }
-            rawConnection.commit();
-        }
+    public synchronized void saveBaseline(Baseline baseline) {
+//        String constraintText = JsonUtil.toJson(baseline.getConstraint());
+//        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+//            Connection rawConnection = connection.getRawConnection();
+//            rawConnection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+//            rawConnection.setAutoCommit(false);
+//            List<Map<String, Object>> maps = JdbcUtils.executeQuery(rawConnection, "select * from mycat.spm_baseline where `constraint` = ?",
+//                    Arrays.asList(constraintText));
+//            if (maps.isEmpty()) {
+//                insertBaseline(baseline, rawConnection);
+//            }
+//            rawConnection.commit();
+//        }
+       saveBaseline(Collections.singleton(baseline));
     }
 
     private void insertBaseline(Baseline baseline, Connection rawConnection) throws SQLException {
@@ -166,13 +167,17 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
 
     @Override
     @SneakyThrows
-    public void saveBaselines(Collection<Baseline> baselines) {
+    public void saveBaseline(Collection<Baseline> baselines) {
         try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
             Connection rawConnection = connection.getRawConnection();
             rawConnection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             rawConnection.setAutoCommit(false);
+
+
             try (PreparedStatement preparedStatement = rawConnection
-                    .prepareStatement("INSERT INTO  mycat.spm_baseline (id,`constraint`,`extra_constraint`,`fix_plan_id`) values(?,?,?,?)  on duplicate key update `constraint` = VALUES(`constraint`)");) {
+                    .prepareStatement(
+                            "INSERT INTO  mycat.spm_baseline (id,`constraint`,`extra_constraint`,`fix_plan_id`) values(?,?,?,?) " +
+                                    "on duplicate key update id = values(id),`constraint` = values(`constraint`),`extra_constraint`=values(`extra_constraint`),`fix_plan_id`=values(`fix_plan_id`)");) {
                 for (Baseline baseline : baselines) {
                     long baselineId = baseline.getBaselineId();
                     String constraintText = JsonUtil.toJson(baseline.getConstraint());
@@ -187,14 +192,17 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
                 preparedStatement.executeBatch();
             }
             try (PreparedStatement preparedStatement = rawConnection
-                    .prepareStatement("INSERT INTO  mycat.spm_plan (id,`sql`,`baseline_id`,`rel`) values(?,?,?,?) ");) {
+                    .prepareStatement("INSERT INTO  mycat.spm_plan (id,`sql`,`baseline_id`,`rel`) values(?,?,?,?) " +
+                            "on duplicate key update `id` = values(`id`),`sql` = values(`sql`),`baseline_id` = values(`baseline_id`),`rel` = values(`rel`)");) {
                 for (Baseline baseline : baselines) {
                     for (BaselinePlan baselinePlan : baseline.getPlanList()) {
-                        preparedStatement.setObject(1, baselinePlan.getId());
-                        preparedStatement.setObject(2, baselinePlan.getSql());
-                        preparedStatement.setObject(3, baselinePlan.getBaselineId());
-                        preparedStatement.setObject(4, baselinePlan.getRel());
-                        preparedStatement.addBatch();
+
+                            preparedStatement.setObject(1, baselinePlan.getId());
+                            preparedStatement.setObject(2, baselinePlan.getSql());
+                            preparedStatement.setObject(3, baseline.getBaselineId());
+                            preparedStatement.setObject(4, baselinePlan.getRel());
+                            preparedStatement.addBatch();
+
                     }
                 }
                 preparedStatement.executeBatch();
