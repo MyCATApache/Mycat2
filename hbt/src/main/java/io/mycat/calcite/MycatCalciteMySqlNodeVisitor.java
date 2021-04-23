@@ -1656,6 +1656,10 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 this.sqlNode = MycatDatabaseFunction.INSTANCE.createCall(SqlParserPos.ZERO);
                 return false;
             }
+            case "SLEEP":{
+                this.sqlNode = MycatSleepFunction.INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
+                return false;
+            }
             case "LAST_INSERT_ID": {
                 this.sqlNode = MycatLastInsertIdFunction.INSTANCE.createCall(SqlParserPos.ZERO);
                 return false;
