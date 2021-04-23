@@ -1,4 +1,4 @@
-package io.mycat.vertxmycat;
+package io.mycat;
 
 import io.mycat.util.VertxUtil;
 import io.vertx.core.Future;

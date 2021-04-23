@@ -23,7 +23,6 @@ import io.mycat.gsi.mapdb.MapDBGSIService;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.vertx.VertxMycatServer;
-import io.mycat.vertxmycat.IOExecutor;
 import io.vertx.core.*;
 import lombok.SneakyThrows;
 import org.apache.calcite.util.RxBuiltInMethod;

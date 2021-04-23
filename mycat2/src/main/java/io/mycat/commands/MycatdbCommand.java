@@ -225,9 +225,17 @@ public enum MycatdbCommand {
                 queryPlanCache.loadPlan(Long.parseLong(text));
                 return response.sendOk();
             }
+            if (text.startsWith("LOAD_ALL_BASELINES")) {
+                queryPlanCache.loadBaselines();
+                return response.sendOk();
+            }
             if (text.startsWith("LOAD")) {
                 text = text.substring("LOAD".length()).trim();
                 queryPlanCache.loadBaseline(Long.parseLong(text));
+                return response.sendOk();
+            }
+            if (text.startsWith("PERSIST_ALL_BASELINES")) {
+                queryPlanCache.saveBaselines();
                 return response.sendOk();
             }
             if (text.startsWith("PERSIST_PLAN")) {
@@ -265,6 +273,7 @@ public enum MycatdbCommand {
                 queryPlanCache.unFix(Long.parseLong(text));
                 return response.sendOk();
             }
+
         }
         return Future.failedFuture("unknown baseline cmd " + text);
     }

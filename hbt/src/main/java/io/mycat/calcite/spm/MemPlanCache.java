@@ -8,6 +8,8 @@ import io.mycat.*;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.rewriter.OptimizationContext;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import lombok.SneakyThrows;
 import org.apache.calcite.rel.externalize.RelJsonReader;
 import org.apache.calcite.rel.externalize.RelJsonWriter;
@@ -31,10 +33,7 @@ public class MemPlanCache implements QueryPlanCache {
     }
 
     public void init() {
-        this.map.putAll(persistor.loadAllBaseline());
-        this.map.values().stream().flatMap(c -> {
-            return c.getPlanList().stream();
-        }).forEach(p -> getCodeExecuterContext(p));
+        loadBaselines();
     }
 
     public void delete(List<String> uniqueTables) {
@@ -53,7 +52,7 @@ public class MemPlanCache implements QueryPlanCache {
                             String tableName = x.getTableName();
                             if (tableName != null) {
                                 String schema = x.getSchema();
-                                uniqueNames.add(SQLUtils.normalize(schema).toLowerCase()+"."+SQLUtils.normalize(tableName).toLowerCase());
+                                uniqueNames.add(SQLUtils.normalize(schema).toLowerCase() + "." + SQLUtils.normalize(tableName).toLowerCase());
                             }
                             return super.visit(x);
                         }
@@ -80,13 +79,20 @@ public class MemPlanCache implements QueryPlanCache {
             persistor.savePlan(newBaselinePlan1, fix);
         }
         baseline.getPlanList().add(newBaselinePlan);
-        if (fix){
+        if (fix) {
             baseline.setFixPlan(newBaselinePlan);
         }
         map.put(baseline.getConstraint(), baseline);
         return new PlanResultSet(newBaselinePlan.getBaselineId(), true, codeExecuterContext);
     }
-
+    public static CodeExecuterContext getCodeExecuterContext(BaselinePlan plan,MycatRel defaultMycatRel){
+        if (defaultMycatRel!=null){
+            boolean forUpdate = DrdsSql.isForUpdate(plan.getSql());
+            CodeExecuterContext codeExecuterContext = DrdsExecutorCompiler.getCodeExecuterContext(defaultMycatRel, forUpdate);
+            plan.setAttach(codeExecuterContext);
+        }
+        return getCodeExecuterContext(plan);
+    }
     @SneakyThrows
     public static CodeExecuterContext getCodeExecuterContext(BaselinePlan plan) {
         boolean forUpdate = DrdsSql.isForUpdate(plan.getSql());
@@ -134,7 +140,7 @@ public class MemPlanCache implements QueryPlanCache {
             RelJsonWriter relJsonWriter = new RelJsonWriter();
             mycatRel.explain(relJsonWriter);
             BaselinePlan newBaselinePlan = new BaselinePlan(drdsSql.getParameterizedSql(), relJsonWriter.asString(), planIds.nextBaselineId(), baselineId = baseline.getBaselineId(), null);
-            getCodeExecuterContext(newBaselinePlan);
+            getCodeExecuterContext(newBaselinePlan,mycatRel);
             return saveBaselinePlan(fix, false, baseline, newBaselinePlan);
         } catch (Throwable throwable) {
             log.error("", throwable);
@@ -147,12 +153,12 @@ public class MemPlanCache implements QueryPlanCache {
         Collection<Baseline> mem = map.values();
 
         Collection<Baseline> disk = persistor.loadAllBaseline().values();
-        HashMap<Long,Baseline> map = new HashMap<>();
+        HashMap<Long, Baseline> map = new HashMap<>();
         for (Baseline baseline : mem) {
-            map.put(baseline.getBaselineId(),baseline);
+            map.put(baseline.getBaselineId(), baseline);
         }
         for (Baseline baseline : disk) {
-            map.putIfAbsent(baseline.getBaselineId(),baseline);
+            map.putIfAbsent(baseline.getBaselineId(), baseline);
         }
         return map.values().stream().sorted(Comparator.comparing(new Function<Baseline, Long>() {
             @Override
@@ -238,14 +244,30 @@ public class MemPlanCache implements QueryPlanCache {
     }
 
     public void persistBaseline(long baselineId) {
-        map.values().stream().filter(b->b.baselineId == baselineId).findFirst().ifPresent(baseline -> persistor.saveBaselines(Arrays.asList(baseline)));
+        map.values().stream().filter(b -> b.baselineId == baselineId).findFirst().ifPresent(baseline -> persistor.saveBaselines(Arrays.asList(baseline)));
     }
 
-    public void unFix(long baselineId){
-        map.values().stream().filter(b->b.baselineId == baselineId).findFirst().ifPresent(baseline -> baseline.setFixPlan(null));
+    @Override
+    public void loadBaselines() {
+        this.map.putAll(persistor.loadAllBaseline());
+        IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
+        this.map.values().stream().flatMap(c -> {
+            return c.getPlanList().stream();
+        }).forEach(p -> ioExecutor.executeBlocking((Handler<Promise<Void>>) promise -> {
+            try{
+                getCodeExecuterContext(p);
+            }finally {
+                promise.tryComplete();
+            }
+
+        }));
+    }
+
+    public void unFix(long baselineId) {
+        map.values().stream().filter(b -> b.baselineId == baselineId).findFirst().ifPresent(baseline -> baseline.setFixPlan(null));
     }
 
     public Baseline getBaseline(long baselineId) {
-        return map.values().stream().filter(b->b.baselineId == baselineId).findFirst().orElse(null);
+        return map.values().stream().filter(b -> b.baselineId == baselineId).findFirst().orElse(null);
     }
 }

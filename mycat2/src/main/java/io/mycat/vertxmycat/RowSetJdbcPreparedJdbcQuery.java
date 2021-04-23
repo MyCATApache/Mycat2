@@ -14,6 +14,7 @@
  */
 package io.mycat.vertxmycat;
 
+import io.mycat.IOExecutor;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
@@ -22,7 +23,6 @@ import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
 import io.vertx.jdbcclient.impl.JDBCRow;
 import io.vertx.mysqlclient.impl.MySQLRowDesc;
 import io.vertx.mysqlclient.impl.codec.StreamMysqlCollector;

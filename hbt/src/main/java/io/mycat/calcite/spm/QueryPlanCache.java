@@ -58,4 +58,6 @@ public interface QueryPlanCache {
     public Baseline getBaseline(long baselineId);
 
     public void persistBaseline(long baselineId);
+
+    public void loadBaselines();
 }

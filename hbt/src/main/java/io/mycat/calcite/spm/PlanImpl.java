@@ -15,8 +15,6 @@
 package io.mycat.calcite.spm;
 
 import com.google.common.collect.ImmutableMultimap;
-import io.mycat.DataNode;
-import io.mycat.DrdsSql;
 import io.mycat.DrdsSqlWithParams;
 import io.mycat.MycatDataContext;
 import io.mycat.beans.mycat.MycatRowMetaData;
@@ -27,15 +25,10 @@ import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.executor.MycatInsertExecutor;
 import io.mycat.calcite.executor.MycatUpdateExecutor;
 import io.mycat.calcite.logical.MycatView;
-import io.mycat.calcite.logical.MycatViewDataNodeMapping;
 import io.mycat.calcite.physical.MycatInsertRel;
-import io.mycat.calcite.physical.MycatRouteInsertCore;
-import io.mycat.calcite.physical.MycatRouteUpdateCore;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -44,10 +37,7 @@ import org.apache.calcite.util.Util;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class PlanImpl implements Plan {
     private final MycatRel relNode;
@@ -123,7 +113,7 @@ public class PlanImpl implements Plan {
                 list.addAll(Arrays.asList(s.split("\n")));
                 List<SpecificSql> map = specificSql(drdsSql);
                 for (SpecificSql specificSql : map) {
-                    list.add(specificSql.toString());
+                    list.addAll(Arrays.asList(specificSql.toString().split("\n")));
                 }
                 if (code) {
                     list.add("code:");
@@ -164,6 +154,7 @@ public class PlanImpl implements Plan {
             @Override
             protected RelNode visitChildren(RelNode relNode) {
                 List< Each> sqls  = new ArrayList<>();
+                String parameterizedSql = "";
                 if (relNode instanceof MycatView||relNode instanceof MycatTransientSQLTableScan) {
                     String digest = relNode.getDigest();
                     ImmutableMultimap<String, SqlString> stringImmutableMultimap = executerContext.expand(digest, drdsSql.getParams());
@@ -174,7 +165,15 @@ public class PlanImpl implements Plan {
                                 entry.getValue().getDynamicParameters());
                         sqls.add(new Each(entry.getKey(), sqlString.getSql()));
                     }
+                    if (relNode instanceof MycatView){
+                        parameterizedSql = ((MycatView) relNode).getSql();
+                    }
+                    if (relNode instanceof MycatTransientSQLTableScan){
+                        parameterizedSql = ((MycatTransientSQLTableScan) relNode).getSql();
+                    }
+                    res.add(new SpecificSql(relNode.getDigest(),parameterizedSql,sqls));
                 }
+
                 return super.visitChildren(relNode);
             }
         });

@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,6 +39,8 @@ public class SpmHintTest implements MycatTest {
             Map<String, Object> map = maps.get(0);
             Assert.assertNotNull((map.get("BASELINE_ID")));
             Assert.assertEquals("OK", (map.get("STATUS")));
+
+            execute(mycatConnection, "BASELINE UNFIX " + (map.get("BASELINE_ID")));
         }
     }
 
@@ -52,6 +55,15 @@ public class SpmHintTest implements MycatTest {
             Assert.assertNotNull(map.get("PARAMETERIZED_SQL"));
             Assert.assertNotNull(map.get("FIXED"));
             Assert.assertNotNull(map.get("ACCEPTED"));
+        }
+    }
+
+    @Test
+    public void testPersistBaselines() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+        ) {
+            JdbcUtils.executeUpdate(mycatConnection, "BASELINE LOAD_ALL_BASELINES", Collections.emptyList());
+            JdbcUtils.executeUpdate(mycatConnection, "BASELINE PERSIST_ALL_BASELINES", Collections.emptyList());
         }
     }
 

@@ -14,6 +14,7 @@
  */
 package io.mycat.vertxmycat;
 
+import io.mycat.IOExecutor;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.beans.mysql.MySQLIsolation;
@@ -36,8 +37,6 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collector;
 

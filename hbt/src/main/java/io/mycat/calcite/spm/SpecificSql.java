@@ -21,10 +21,10 @@ import lombok.ToString;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @EqualsAndHashCode
-@ToString
 @Builder
 public class SpecificSql implements Comparable<SpecificSql> {
     String relNode;
@@ -43,5 +43,10 @@ public class SpecificSql implements Comparable<SpecificSql> {
     @Override
     public int compareTo(SpecificSql o) {
         return this.parameterizedSql.compareTo(o.parameterizedSql);
+    }
+
+    @Override
+    public String toString() {
+        return sqls.stream().map(i->i.toString()).collect(Collectors.joining("\n"));
     }
 }
