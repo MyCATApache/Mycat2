@@ -73,6 +73,8 @@ public class SpmHintTest implements MycatTest {
              Connection prototypeDs = getMySQLConnection(DB1);) {
             deleteData(prototypeDs, "mycat", "spm_baseline");
             deleteData(prototypeDs, "mycat", "spm_plan");
+            JdbcUtils.executeQuery(mycatConnection,"select user()",Collections.emptyList());
+            JdbcUtils.executeQuery(mycatConnection,"select DATABASE()",Collections.emptyList());
             List<Map<String, Object>> maps = executeQuery(mycatConnection, BaselineListHint.create());
             Map<String, Object> map = maps.get(0);
             long baseline_id = Long.parseLong(Objects.toString(map.get("BASELINE_ID")));
