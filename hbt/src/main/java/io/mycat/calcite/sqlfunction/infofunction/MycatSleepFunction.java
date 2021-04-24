@@ -23,6 +23,8 @@ import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 
+import java.util.concurrent.TimeUnit;
+
 public class MycatSleepFunction extends MycatSqlDefinedFunction {
     public final static MycatSleepFunction INSTANCE = new MycatSleepFunction();
 
@@ -41,7 +43,7 @@ public class MycatSleepFunction extends MycatSqlDefinedFunction {
 
     public static int sleep(Number value){
         try{
-           Thread.sleep( value.longValue());
+           Thread.sleep(TimeUnit.SECONDS.toMillis(value.longValue()));
         }catch (InterruptedException exception){
             return 1;
         }
