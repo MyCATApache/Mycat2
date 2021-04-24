@@ -4,6 +4,7 @@ import lombok.*;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 @Data
@@ -14,4 +15,5 @@ import java.util.List;
 public class Constraint {
     String sql;
     List<SqlTypeName> paramTypes = new ArrayList<>();
+    List<String> hints = new LinkedList<>();
 }

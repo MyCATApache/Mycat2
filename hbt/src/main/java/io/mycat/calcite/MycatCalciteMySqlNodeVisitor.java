@@ -2094,8 +2094,8 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         List<SqlNode> nodes = new ArrayList<SqlNode>(hints.size());
 
         for (SQLCommentHint hint : hints) {
-            if (hint instanceof TDDLHint) {
-                nodes.add(convertTDDLHint((TDDLHint) hint));
+            if (hint instanceof MycatHint) {
+                nodes.add(convertTDDLHint((MycatHint) hint));
             }
         }
 
@@ -2103,19 +2103,19 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
 
     }
 
-    private SqlNodeList convertTDDLHint(TDDLHint hint) {
+    private SqlNodeList convertTDDLHint(MycatHint hint) {
 
-        List<TDDLHint.Function> functions = hint.getFunctions();
+        List<MycatHint.Function> functions = hint.getFunctions();
         List<SqlNode> funNodes = new ArrayList<SqlNode>(functions.size());
 
-        for (TDDLHint.Function function : functions) {
+        for (MycatHint.Function function : functions) {
             String functionName = function.getName();
 
-            List<TDDLHint.Argument> arguments = function.getArguments();
+            List<MycatHint.Argument> arguments = function.getArguments();
 
             SqlNode[] argNodes = new SqlNode[arguments.size()];
             for (int i = 0; i < arguments.size(); i++) {
-                TDDLHint.Argument argument = arguments.get(i);
+                MycatHint.Argument argument = arguments.get(i);
                 SqlNode argName = convertToSqlNode(argument.getName());
                 SqlNode argValue = convertToSqlNode(argument.getValue());
 

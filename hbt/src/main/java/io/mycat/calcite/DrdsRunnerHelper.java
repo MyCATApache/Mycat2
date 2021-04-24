@@ -2,6 +2,7 @@ package io.mycat.calcite;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
 import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLCommentHint;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLAllColumnExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
@@ -57,45 +58,45 @@ import java.util.*;
 public class DrdsRunnerHelper {
 
 
-    public static DrdsSqlWithParams preParse(String sqlStatement,String defaultSchemaName) {
-        return preParse(SQLUtils.parseSingleMysqlStatement(sqlStatement),defaultSchemaName);
+    public static DrdsSqlWithParams preParse(String sqlStatement, String defaultSchemaName) {
+        return preParse(SQLUtils.parseSingleMysqlStatement(sqlStatement), defaultSchemaName);
     }
 
-    public static DrdsSqlWithParams preParse(SQLStatement sqlStatement,String defaultSchemaName) {
+    public static DrdsSqlWithParams preParse(SQLStatement sqlStatement, String defaultSchemaName) {
         List<Object> params = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
         List<String> alias;
-        if (sqlStatement instanceof SQLSelectStatement){
+        if (sqlStatement instanceof SQLSelectStatement) {
             SQLSelectQueryBlock firstQueryBlock = ((SQLSelectStatement) sqlStatement).getSelect().getFirstQueryBlock();
 
             List<String> columnNodes = new ArrayList<String>(firstQueryBlock.getSelectList().size());
             for (SQLSelectItem selectItem : firstQueryBlock.getSelectList()) {
-                if (selectItem.getAlias()==null){
-                    if (selectItem.getExpr() instanceof SQLAllColumnExpr){
+                if (selectItem.getAlias() == null) {
+                    if (selectItem.getExpr() instanceof SQLAllColumnExpr) {
                         columnNodes.clear();
                         //break
                         break;
-                    }else if (selectItem.getExpr() instanceof SQLPropertyExpr){
-                        if(!"*".equals(((SQLPropertyExpr) selectItem.getExpr()).getName())){
+                    } else if (selectItem.getExpr() instanceof SQLPropertyExpr) {
+                        if (!"*".equals(((SQLPropertyExpr) selectItem.getExpr()).getName())) {
                             columnNodes.add(SQLUtils.normalize(((SQLPropertyExpr) selectItem.getExpr()).getName()));
-                        }else {
+                        } else {
                             columnNodes.clear();
                             //break
                             break;
                         }
-                    }else if (selectItem.getExpr() instanceof SQLIdentifierExpr){
+                    } else if (selectItem.getExpr() instanceof SQLIdentifierExpr) {
                         columnNodes.add(SQLUtils.normalize(((SQLIdentifierExpr) selectItem.getExpr()).getName()));
-                    }else{
+                    } else {
                         StringBuilder sbText = new StringBuilder();
                         selectItem.output(sbText);
                         columnNodes.add(sbText.toString().replaceAll(" ", ""));
                     }
-                }else {
+                } else {
                     columnNodes.add(selectItem.getAlias());
                 }
             }
-            alias =columnNodes;
-        }else {
+            alias = columnNodes;
+        } else {
             alias = Collections.emptyList();
         }
         MutableBoolean complex = new MutableBoolean();
@@ -106,7 +107,24 @@ public class DrdsRunnerHelper {
                 params,
                 complex);
         String string = sb.toString();
-        return new DrdsSqlWithParams(string,params,complex.getValue(),getTypes(params) ,alias);
+        return new DrdsSqlWithParams(string,
+                params,
+                complex.getValue(), getTypes(params), alias, getMycatHints( sqlStatement.getHeadHintsDirect()));
+    }
+
+    @NotNull
+    private static List<MycatHint> getMycatHints(List<SQLCommentHint> headHintsDirect) {
+        List<MycatHint> hints = new LinkedList<>();
+        if (headHintsDirect != null) {
+            if (!headHintsDirect.isEmpty()) {
+                for (SQLCommentHint sqlCommentHint : headHintsDirect) {
+                    hints.add(new MycatHint(sqlCommentHint.getText()));
+                }
+            }else {
+                return Collections.emptyList();
+            }
+        }
+        return hints;
     }
 
     public static List<SqlTypeName> getTypes(List<Object> params) {
@@ -285,14 +303,14 @@ public class DrdsRunnerHelper {
     public static Future<Void> runOnDrds(MycatDataContext dataContext,
                                          SQLSelectStatement sqlSelectStatement, Response response) {
 
-        DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlSelectStatement,dataContext.getDefaultSchema());
-        PlanImpl plan = getPlan( drdsSqlWithParams);
+        DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlSelectStatement, dataContext.getDefaultSchema());
+        PlanImpl plan = getPlan(drdsSqlWithParams);
         PlanImplementor planImplementor = getPlanImplementor(dataContext, response, drdsSqlWithParams);
         return impl(plan, planImplementor);
     }
 
     @NotNull
-    public static PlanImpl getPlan( DrdsSqlWithParams drdsSqlWithParams) {
+    public static PlanImpl getPlan(DrdsSqlWithParams drdsSqlWithParams) {
         QueryPlanner planner = MetaClusterCurrent.wrapper(QueryPlanner.class);
         PlanImpl plan;
         try {

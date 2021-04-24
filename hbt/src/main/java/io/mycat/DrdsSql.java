@@ -19,15 +19,15 @@ package io.mycat;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import io.mycat.calcite.MycatHint;
 import io.mycat.calcite.spm.Constraint;
 import io.mycat.calcite.spm.Plan;
 import lombok.Data;
 import lombok.ToString;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.groovy.util.Maps;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 
 @Data
@@ -37,15 +37,22 @@ public class DrdsSql {
     private Plan plan;
     private final List<SqlTypeName> typeNames;
     private final boolean complex;
+    private List<MycatHint> hints;
 
-    public DrdsSql(String parameterizedSqlStatement,boolean complex,List<SqlTypeName> typeNames) {
+    public DrdsSql(String parameterizedSqlStatement, boolean complex, List<SqlTypeName> typeNames, List<MycatHint> hints) {
         this.parameterizedSql = parameterizedSqlStatement;
         this.typeNames = typeNames;
         this.complex = complex;
+        this.hints = hints;
     }
 
     public Constraint constraint(){
-        return new Constraint(parameterizedSql,typeNames);
+        ArrayList<String> list = new ArrayList<>(hints.size());
+        for (MycatHint hint : hints) {
+            String text = hint.getText();
+            list.add(text);
+        }
+        return new Constraint(parameterizedSql,typeNames,list);
     }
 
     public static boolean isForUpdate(String sqlStatement) {
