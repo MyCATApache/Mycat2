@@ -22,7 +22,7 @@ public class SpmHintTest implements MycatTest {
     public void testAdd() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
         ) {
-            List<Map<String, Object>> maps = executeQuery(mycatConnection, BaselineAddHint.create("/*+ mycat:xxx*/ select 1"));
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, BaselineAddHint.create("select 1"));
             Assert.assertEquals(1, maps.size());
             Map<String, Object> map = maps.get(0);
             Assert.assertNotNull(map.get("BASELINE_ID"));
@@ -34,7 +34,7 @@ public class SpmHintTest implements MycatTest {
     public void testFix() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
         ) {
-            List<Map<String, Object>> maps = executeQuery(mycatConnection, BaselineAddHint.create(true, "/*+ mycat:xxx*/ select 1"));
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, BaselineAddHint.create(true, "select 1"));
             Assert.assertEquals(1, maps.size());
             Map<String, Object> map = maps.get(0);
             Assert.assertNotNull((map.get("BASELINE_ID")));
