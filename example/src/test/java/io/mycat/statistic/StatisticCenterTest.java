@@ -115,14 +115,17 @@ public class StatisticCenterTest extends DrdsTest {
         String tableName = "normal";
         MetadataManager metadataManager = getMetadataManager();
         TableHandler tableHandler = metadataManager.getTable(schemaName, tableName);
+        if (tableHandler == null) {
+            return;
+        }
         tableHandler.createPhysicalTables();
         NormalTable table = (NormalTable) tableHandler;
         try (DefaultConnection connection = jdbcManager.getConnection("prototype")) {
-            deleteData(connection.getRawConnection(), "mycat","analyze_table");
+            deleteData(connection.getRawConnection(), "mycat", "analyze_table");
         }
         try (DefaultConnection connection = jdbcManager.getConnection(table.getDataNode().getTargetName())) {
             deleteData(connection.getRawConnection(), schemaName, tableName);
-            JdbcUtils.execute(connection.getRawConnection(),"insert db1.normal(id,addressname) values(?,?)",Arrays.asList(1,"a"));
+            JdbcUtils.execute(connection.getRawConnection(), "insert db1.normal(id,addressname) values(?,?)", Arrays.asList(1, "a"));
         }
         Double count = statisticCenter.computeTableRowCount(tableHandler);
         Assert.assertTrue(count.equals(count));
@@ -134,6 +137,7 @@ public class StatisticCenterTest extends DrdsTest {
             Assert.assertTrue(maps.toString().contains(tableName));
         }
     }
+
     @Test
     @SneakyThrows
     public void testGlobal() {
@@ -142,11 +146,14 @@ public class StatisticCenterTest extends DrdsTest {
         String tableName = "global";
         MetadataManager metadataManager = getMetadataManager();
         TableHandler tableHandler = metadataManager.getTable(schemaName, tableName);
+        if (tableHandler == null) {
+            return;
+        }
         tableHandler.createPhysicalTables();
         GlobalTable table = (GlobalTable) tableHandler;
         try (DefaultConnection connection = jdbcManager.getConnection("prototype")) {
             deleteData(connection.getRawConnection(), schemaName, tableName);
-            JdbcUtils.execute(connection.getRawConnection(),"insert db1.global(id) values(?)",Arrays.asList(1));
+            JdbcUtils.execute(connection.getRawConnection(), "insert db1.global(id) values(?)", Arrays.asList(1));
         }
         Double count = statisticCenter.computeTableRowCount(tableHandler);
         Assert.assertTrue(count.equals(count));
@@ -158,6 +165,7 @@ public class StatisticCenterTest extends DrdsTest {
             Assert.assertTrue(maps.toString().contains(tableName));
         }
     }
+
     @Test
     @SneakyThrows
     public void testSharding() {
@@ -166,6 +174,9 @@ public class StatisticCenterTest extends DrdsTest {
         String tableName = "sharding";
         MetadataManager metadataManager = getMetadataManager();
         TableHandler tableHandler = metadataManager.getTable(schemaName, tableName);
+        if (tableHandler == null) {
+            return;
+        }
         tableHandler.createPhysicalTables();
         ShardingTable table = (ShardingTable) tableHandler;
         List<DataNode> backends = table.getBackends();
@@ -173,7 +184,7 @@ public class StatisticCenterTest extends DrdsTest {
         DataNode c1 = backends.get(1);
         try (DefaultConnection connection = jdbcManager.getConnection("prototype")) {
             deleteData(connection.getRawConnection(), schemaName, tableName);
-            JdbcUtils.execute(connection.getRawConnection(),"insert db1.sharding(id) values(?)",Arrays.asList(1));
+            JdbcUtils.execute(connection.getRawConnection(), "insert db1.sharding(id) values(?)", Arrays.asList(1));
         }
         Double count = statisticCenter.computeTableRowCount(tableHandler);
         Assert.assertTrue(count.equals(count));

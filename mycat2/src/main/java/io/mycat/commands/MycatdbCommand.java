@@ -121,6 +121,7 @@ public enum MycatdbCommand {
             sqlHandlers.add(new AnalyzeHanlder());
             sqlHandlers.add(new DropIndexSQLHandler());
             sqlHandlers.add(new MySQLCheckHandler());
+            sqlHandlers.add(new ShowStatisticHandler());
 
             for (SQLHandler sqlHandler : sqlHandlers) {
                 Class statementClass = sqlHandler.getStatementClass();
