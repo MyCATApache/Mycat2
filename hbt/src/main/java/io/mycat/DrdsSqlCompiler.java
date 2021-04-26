@@ -58,6 +58,7 @@ import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableModify;
@@ -545,7 +546,10 @@ public class DrdsSqlCompiler {
         for (RelTraitDef i : TRAITS) {
             planner.addRelTraitDef(i);
         }
-        return RelOptCluster.create(planner, MycatCalciteSupport.RexBuilder);
+        RelOptCluster relOptCluster = RelOptCluster.create(planner, MycatCalciteSupport.RexBuilder);
+        HintStrategyTable hintStrategies = HintTools.createHintStrategies();
+        relOptCluster.setHintStrategies(hintStrategies);
+        return relOptCluster;
     }
 
     private static final RelOptTable.ViewExpander NOOP_EXPANDER = (rowType, queryString, schemaPath, viewPath) -> null;
