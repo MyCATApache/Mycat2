@@ -23,7 +23,10 @@ import io.mycat.gsi.mapdb.MapDBGSIService;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.vertx.VertxMycatServer;
-import io.vertx.core.*;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 import lombok.SneakyThrows;
 import org.apache.calcite.util.RxBuiltInMethod;
 import org.apache.curator.framework.CuratorFramework;
@@ -168,8 +171,7 @@ public class MycatCore {
         ConnectStringParser connectStringParser = new ConnectStringParser(zkAddress);
         CompositeFuture.any(connectStringParser.getServerAddresses().stream().parallel().map(is -> Future.future(promise -> {
             try {
-                Socket socket = new Socket();
-                socket.connect(is,0);
+                Socket socket = new Socket(is.getHostName(),is.getPort());
                 socket.close();
                 promise.tryComplete();
             } catch (IOException e) {
