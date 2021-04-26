@@ -18,6 +18,7 @@ package io.mycat.calcite.table;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.statistic.StatisticCenter;
 import org.apache.calcite.rel.RelCollation;
@@ -39,7 +40,8 @@ public class Statistics {
         return new Statistic() {
             @Override
             public Double getRowCount() {
-                return StatisticCenter.INSTANCE.getPhysicsTableRow(dataNode.getSchema(),
+                StatisticCenter statisticCenter = MetaClusterCurrent.wrapper(StatisticCenter.class);
+                return statisticCenter.getPhysicsTableRow(dataNode.getSchema(),
                         dataNode.getTable(),
                         dataNode.getTargetName());
             }
@@ -97,7 +99,8 @@ public class Statistics {
         List<ImmutableBitSet> immutableBitSets = getIndexes(columns);
         return new Statistic() {
             public Double getRowCount() {
-                return StatisticCenter.INSTANCE.getLogicTableRow(logicSchemaName, logicTableName);
+                StatisticCenter statisticCenter = MetaClusterCurrent.wrapper(StatisticCenter.class);
+                return statisticCenter.getLogicTableRow(logicSchemaName, logicTableName);
             }
 
             public boolean isKey(ImmutableBitSet columns) {

@@ -56,7 +56,7 @@ public class AnalyzeHanlder extends AbstractSQLHandler<MySqlAnalyzeStatement> {
                 String schemaName = SQLUtils.normalize(tableSource.getSchema());
                 String tableName = SQLUtils.normalize(tableSource.getTableName());
                 resultSetBuilder.addObjectRowPayload(Arrays.asList(
-                        schemaName+"."+tableName,
+                        schemaName + "." + tableName,
                         "analyze",
                         "status",
                         "OK"
@@ -66,7 +66,8 @@ public class AnalyzeHanlder extends AbstractSQLHandler<MySqlAnalyzeStatement> {
                 if (tableHandler == null) {
                     return response.sendError(new MycatException(tableSource + "不存在"));
                 }
-                StatisticCenter.INSTANCE.computeTableRowCount(tableHandler);
+                StatisticCenter statisticCenter = MetaClusterCurrent.wrapper(StatisticCenter.class);
+                statisticCenter.fetchTableRowCount(tableHandler);
             }
             return response.sendResultSet(resultSetBuilder.build());
         }

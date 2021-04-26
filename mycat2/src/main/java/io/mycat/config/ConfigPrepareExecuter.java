@@ -28,6 +28,7 @@ import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.proxy.session.AuthenticatorImpl;
 import io.mycat.replica.*;
+import io.mycat.statistic.StatisticCenter;
 import io.mycat.util.NameMap;
 import io.vertx.core.*;
 import org.jetbrains.annotations.NotNull;
@@ -333,7 +334,9 @@ public class ConfigPrepareExecuter {
             MemPlanCache memPlanCache = MetaClusterCurrent.wrapper(MemPlanCache.class);
             memPlanCache.clearCache();
         }
-
+        if(!MetaClusterCurrent.exist(StatisticCenter.class)){
+            context.put(StatisticCenter.class,new StatisticCenter());
+        }
 //        PlanCache2 planCache = MetaClusterCurrent.wrapper(PlanCache2.class);
 //        planCache.clear();
 
@@ -370,6 +373,8 @@ public class ConfigPrepareExecuter {
         if (newDbPlanManagerPersistor != null) {
             newDbPlanManagerPersistor.checkStore();
         }
+        StatisticCenter statisticCenter = MetaClusterCurrent.wrapper(StatisticCenter.class);
+        statisticCenter.init();
         boolean allMatchMySQL = curConfig.getDatasources().stream().allMatch(s -> "mysql".equalsIgnoreCase(s.getDbType()));
         if (allMatchMySQL){
             XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);

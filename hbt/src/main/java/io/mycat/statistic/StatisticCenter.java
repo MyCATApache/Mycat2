@@ -19,9 +19,11 @@ package io.mycat.statistic;
 import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.builder.SQLBuilderFactory;
 import com.alibaba.druid.sql.builder.SQLSelectBuilder;
+import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.DataNode;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.calcite.table.NormalTable;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.calcite.table.GlobalTable;
@@ -29,22 +31,48 @@ import io.mycat.MetadataManager;
 import io.mycat.calcite.table.ShardingTable;
 import io.mycat.TableHandler;
 import io.mycat.replica.ReplicaSelectorManager;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Optional;
+import java.sql.Connection;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public enum StatisticCenter {
-    INSTANCE;
+public class StatisticCenter {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatisticCenter.class);
-    MetadataManager metadataManager;
-    final ConcurrentHashMap<Key, StatisticObject> statisticMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Key, StatisticObject> statisticMap = new ConcurrentHashMap<>();
+    private final String targetName = "prototype";
+    private boolean init = false;
 
+    public StatisticCenter() {
+    }
+
+    @SneakyThrows
+    public void init() {
+        if (init) {
+            return;
+        }
+        init = true;
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        try (DefaultConnection prototype = jdbcConnectionManager.getConnection(targetName)) {
+            Connection rawConnection = prototype.getRawConnection();
+            JdbcUtils.execute(rawConnection, "CREATE TABLE IF NOT EXISTS mycat.`analyze_table` (\n" +
+                    "  `table_rows` bigint(20) NOT NULL,\n" +
+                    "  `name` varchar(64) NOT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(rawConnection, "select table_rows as `table_rows`,name from mycat.`analyze_table`", Collections.emptyList());
+            for (Map<String, Object> map : maps) {
+                Number table_rows = (Number) map.get("table_rows");
+                String name = (String) map.get("name");
+                String[] strings = name.split("_");
+                StatisticObject statisticObject = new StatisticObject();
+                statisticObject.setRowCount(table_rows.doubleValue());
+                statisticMap.put(Key.of(strings[0], strings[1]), statisticObject);
+            }
+
+        }
+    }
 
     public Double getLogicTableRow(String schemaName, String tableName) {
         StatisticObject statisticObject = statisticMap.get(Key.of(schemaName, tableName));
@@ -62,79 +90,61 @@ public enum StatisticCenter {
         return null;
     }
 
-
-    public void computeTableRowCount() {
-        Optional.ofNullable(metadataManager)
-                .map(i -> i.getSchemaMap())
-                .ifPresent(schemarMap -> schemarMap.entrySet().stream()
-                        .flatMap(i -> i.getValue().logicTables().entrySet().stream())
-                        .map(i -> i.getValue())
-                        .forEach(tableHandler -> {
-                            computeTableRowCount(tableHandler);
-                        }));
+    public void fetchTableRowCount(TableHandler tableHandler) {
+        Double aDouble = computeTableRowCount(tableHandler);
+        if (aDouble != null) {
+            updateRowCount(Key.of(tableHandler.getSchemaName(), tableHandler.getTableName()), aDouble);
+        }
     }
 
-    public void computeTableRowCount(TableHandler tableHandler) {
+    public Double computeTableRowCount(TableHandler tableHandler) {
         try {
             if (tableHandler instanceof GlobalTable) {
                 GlobalTable globalTable = (GlobalTable) tableHandler;
-                computeGlobalRowCount(globalTable);
+                return computeGlobalRowCount(globalTable);
             } else if (tableHandler instanceof ShardingTable) {
                 ShardingTable shardingTable = (ShardingTable) tableHandler;
-                computeShardingTableRowCount(shardingTable);
+                return computeShardingTableRowCount(shardingTable);
+            } else if (tableHandler instanceof NormalTable) {
+                NormalTable normalTable = (NormalTable) tableHandler;
+                return computeNormalTableRowCount(normalTable);
             }
         } catch (Throwable e) {
             LOGGER.error("统计逻辑表行,物理表行失败", e);
         }
+        return null;
     }
 
-    public void computeShardingTableRowCount(ShardingTable shardingTable) {
+    private Double computeNormalTableRowCount(NormalTable normalTable) {
+        DataNode dataNode = normalTable.getDataNode();
+        String targetName = dataNode.getTargetName();
+        String sql = makeCountSql(dataNode);
+        return fetchRowCount(targetName, sql);
+    }
+
+    private Double computeShardingTableRowCount(ShardingTable shardingTable) {
         Double sum = 0d;
         for (DataNode backendTableInfo : shardingTable.getBackends()) {
-
             String targetName = backendTableInfo.getTargetName();
             String sql = makeCountSql(backendTableInfo);
             Double onePhyRowCount = fetchRowCount(targetName, sql);
             if (onePhyRowCount == null) {
-                return;//退出
+
             } else {
                 sum += onePhyRowCount;
-                //物理表
-                Key key = Key.of(backendTableInfo.getTargetName(),
-                        backendTableInfo.getTable(),
-                        backendTableInfo.getTargetName());
-                updateRowCount(key, sum);
             }
-            //逻辑表
-            Key key = Key.of(shardingTable.getSchemaName(), shardingTable.getTableName());
-            updateRowCount(key, sum);
         }
+        return sum;
     }
 
-    private void computeGlobalRowCount(GlobalTable globalTable) {
+    private Double computeGlobalRowCount(GlobalTable globalTable) {
         DataNode backendTableInfo = globalTable.getGlobalDataNode().iterator().next();
-
-
         String targetName = backendTableInfo.getTargetName();
         String sql = makeCountSql(backendTableInfo);
-
-
-        Double value = fetchRowCount(targetName, sql);
-
-        if (value != null) {
-            //逻辑表
-            Key logicKey = Key.of(globalTable.getSchemaName(), globalTable.getTableName());
-            updateRowCount(logicKey, value);
-
-            //物理表
-            globalTable.getGlobalDataNode().stream().map(tableInfo -> {
-                return Key.of(tableInfo.getSchema(), tableInfo.getTable(), tableInfo.getTargetName());
-            }).forEach(key -> {
-                updateRowCount(key, value);
-            });
-        }
+        return fetchRowCount(targetName, sql);
     }
 
+    @SneakyThrows
     private void updateRowCount(Key key1, Double value) {
         if (value == null) return;
 
@@ -147,12 +157,19 @@ public enum StatisticCenter {
             return statisticObject;
         });
 
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
+            Connection rawConnection = connection.getRawConnection();
+            JdbcUtils.execute(rawConnection, "insert into mycat.analyze_table (table_rows,name) values(?,?)",
+                    Arrays.asList(value, key1.getSchemaName() + key1.getTableName()));
+        }
+
         LOGGER.info("行统计更新  tableName:" + key1 + " " + res);
     }
 
     private String makeCountSql(DataNode schemaInfo) {
         SQLSelectBuilder selectSQLBuilder = SQLBuilderFactory.createSelectSQLBuilder(DbType.mysql);
-        return selectSQLBuilder.from(schemaInfo.getTargetSchemaTable()).select("count(*)").toString();
+        return selectSQLBuilder.from(schemaInfo.getTargetSchemaTable()).select("count(1)").toString();
     }
 
 
