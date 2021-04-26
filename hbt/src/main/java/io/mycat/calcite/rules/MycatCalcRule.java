@@ -21,6 +21,7 @@ import io.mycat.calcite.MycatRules;
 import io.mycat.calcite.physical.MycatCalc;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Calc;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rex.RexMultisetUtil;
 import org.apache.calcite.tools.RelBuilderFactory;
 
@@ -31,6 +32,9 @@ import java.util.function.Predicate;
  * {@link MycatCalcRule}.
  */
 public class MycatCalcRule extends MycatConverterRule {
+
+    public static final MycatCalcRule INSTANCE = new MycatCalcRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
+
     /**
      * Creates a MycatCalcRule.
      */

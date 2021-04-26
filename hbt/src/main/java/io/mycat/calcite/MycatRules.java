@@ -164,34 +164,25 @@ public class MycatRules {
                             SNAPSHOT_FACTORY));
 
     public static List<RelOptRule> rules() {
-        return rules(MycatConvention.INSTANCE);
-    }
-
-    public static List<RelOptRule> rules(MycatConvention out) {
-        return rules(out, RelFactories.LOGICAL_BUILDER);
-    }
-
-    public static List<RelOptRule> rules(MycatConvention out,
-                                         RelBuilderFactory relBuilderFactory) {
         return ImmutableList.of(
-                new MycatJoinRule(out, relBuilderFactory),
-                new MycatCalcRule(out, relBuilderFactory),
-                new MycatProjectRule(out, relBuilderFactory),
-                new MycatFilterRule(out, relBuilderFactory),
-                new MycatAggregateRule(out, relBuilderFactory),
-                new MycatMemSortRule(out, relBuilderFactory),
-                new MycatUnionRule(out, relBuilderFactory),
-                new MycatIntersectRule(out, relBuilderFactory),
-                new MycatMinusRule(out, relBuilderFactory),
-                new MycatTableModificationRule(out, relBuilderFactory),
-                new MycatValuesRule(out, relBuilderFactory),
-                new MycatMergeJoinRule(out, relBuilderFactory),
-                new MycatSortAggRule(out, relBuilderFactory),
-                new MycatCorrelateRule(out, relBuilderFactory),
-                new MycatTopNRule(out, relBuilderFactory),
-                new MycatRepeatUnionRule(out, relBuilderFactory),
-                new MycatTableSpoolRule(out, relBuilderFactory),
-                new MycatWinodwRule(out, relBuilderFactory),
+                MycatJoinRule.INSTANCE,
+                MycatCalcRule.INSTANCE,
+                MycatProjectRule.INSTANCE,
+                MycatFilterRule.INSTANCE,
+                MycatAggregateRule.INSTANCE,
+                MycatMemSortRule.INSTANCE,
+                MycatUnionRule.INSTANCE,
+                MycatIntersectRule.INSTANCE,
+                MycatMinusRule.INSTANCE,
+                MycatTableModificationRule.INSTANCE,
+                MycatValuesRule.INSTANCE,
+                MycatMergeJoinRule.INSTANCE,
+                MycatSortAggRule.INSTANCE,
+                MycatCorrelateRule.INSTANCE,
+                MycatTopNRule.INSTANCE,
+                MycatRepeatUnionRule.INSTANCE,
+                MycatTableSpoolRule.INSTANCE,
+                MycatWinodwRule.INSTANCE,
 //                , MycatBatchNestedLoopJoinRule.INSTANCE
 
                 CoreRules.FILTER_TO_CALC,

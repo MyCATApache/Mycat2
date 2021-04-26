@@ -21,6 +21,7 @@ import io.mycat.calcite.MycatRules;
 import io.mycat.calcite.physical.MycatFilter;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 /**
@@ -28,6 +29,8 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * an {@link MycatFilterRule}.
  */
 public class MycatFilterRule extends MycatConverterRule {
+
+    public static final MycatFilterRule INSTANCE = new MycatFilterRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
 
     /**
      * Creates a MycatFilterRule.
@@ -47,9 +50,9 @@ public class MycatFilterRule extends MycatConverterRule {
 
     public RelNode convert(RelNode rel) {
         final Filter filter = (Filter) rel;
-        return  MycatFilter.create(
+        return MycatFilter.create(
                 rel.getTraitSet().replace(out),
-                convert(filter.getInput(),out),
+                convert(filter.getInput(), out),
                 filter.getCondition());
     }
 }

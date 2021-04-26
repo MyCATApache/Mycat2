@@ -20,10 +20,14 @@ import io.mycat.calcite.MycatConverterRule;
 import io.mycat.calcite.MycatRules;
 import io.mycat.calcite.physical.MycatTopN;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 public class MycatTopNRule extends MycatConverterRule {
+
+    public static final MycatTopNRule INSTANCE = new MycatTopNRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
+
     public MycatTopNRule(final MycatConvention out,
                          RelBuilderFactory relBuilderFactory) {
         super(Sort.class, sort ->

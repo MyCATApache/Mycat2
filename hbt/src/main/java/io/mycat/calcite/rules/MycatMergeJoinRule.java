@@ -31,6 +31,7 @@ import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
@@ -45,6 +46,9 @@ import java.util.List;
  * copy 2020-7-18
  */
 public class MycatMergeJoinRule extends MycatConverterRule {
+
+    public static final MycatMergeJoinRule INSTANCE = new MycatMergeJoinRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
+
     public MycatMergeJoinRule(MycatConvention out, RelBuilderFactory relBuilderFactory) {
         super(Join.class, (j) -> true, MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatMergeJoinRule");
     }

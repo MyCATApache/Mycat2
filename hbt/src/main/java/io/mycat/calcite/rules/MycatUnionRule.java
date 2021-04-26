@@ -21,6 +21,7 @@ import io.mycat.calcite.MycatRules;
 import io.mycat.calcite.physical.MycatUnion;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.tools.RelBuilderFactory;
 
@@ -31,6 +32,9 @@ import java.util.function.Predicate;
  * {@link MycatUnionRule}.
  */
 public class MycatUnionRule extends MycatConverterRule {
+
+    public static final MycatUnionRule INSTANCE = new MycatUnionRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
+
 
     /**
      * Creates a MycatUnionRule.

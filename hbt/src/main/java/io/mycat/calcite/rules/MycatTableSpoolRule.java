@@ -23,12 +23,14 @@ import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableTableSpool;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalRepeatUnion;
 import org.apache.calcite.rel.logical.LogicalTableSpool;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 public class MycatTableSpoolRule extends MycatConverterRule {
 
+    public static final MycatTableSpoolRule INSTANCE = new MycatTableSpoolRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
 
     public MycatTableSpoolRule(final MycatConvention out,
                                RelBuilderFactory relBuilderFactory) {

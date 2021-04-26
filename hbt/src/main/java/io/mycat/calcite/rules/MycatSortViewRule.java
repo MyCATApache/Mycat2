@@ -23,6 +23,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalSort;
 
 public class MycatSortViewRule extends RelOptRule {
+
     public final static MycatSortViewRule INSTANCE = new MycatSortViewRule();
 
     public MycatSortViewRule() {

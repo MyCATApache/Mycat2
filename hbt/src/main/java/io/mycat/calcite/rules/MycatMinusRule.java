@@ -21,11 +21,16 @@ import io.mycat.calcite.physical.MycatMinus;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Minus;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 import java.util.function.Predicate;
 
 public class MycatMinusRule extends MycatConverterRule {
+
+
+    public static final MycatMinusRule INSTANCE = new MycatMinusRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
+
     /**
      * Creates a MycatMinusRule.
      */

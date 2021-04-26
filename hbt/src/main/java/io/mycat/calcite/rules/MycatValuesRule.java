@@ -20,6 +20,7 @@ import io.mycat.calcite.MycatConverterRule;
 import io.mycat.calcite.MycatRules;
 import io.mycat.calcite.physical.MycatValues;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.tools.RelBuilderFactory;
 
@@ -29,6 +30,9 @@ import java.util.function.Predicate;
  * Rule that converts a values operator to Mycat.
  */
 public class MycatValuesRule extends MycatConverterRule {
+
+    public static final MycatValuesRule INSTANCE = new MycatValuesRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
+
     /**
      * Creates a MycatValuesRule.
      */

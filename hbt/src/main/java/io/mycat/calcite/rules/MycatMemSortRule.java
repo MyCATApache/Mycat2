@@ -21,6 +21,7 @@ import io.mycat.calcite.MycatRules;
 import io.mycat.calcite.physical.MycatMemSort;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.tools.RelBuilderFactory;
 
@@ -32,6 +33,7 @@ import java.util.function.Predicate;
  */
 public class MycatMemSortRule extends MycatConverterRule {
 
+    public static final MycatMemSortRule INSTANCE = new MycatMemSortRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
     /**
      * Creates a MycatSortRule.
      */

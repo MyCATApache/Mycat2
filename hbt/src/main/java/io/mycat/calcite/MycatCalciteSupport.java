@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import io.mycat.DataNode;
+import io.mycat.HintTools;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
@@ -147,7 +148,9 @@ public enum MycatCalciteSupport implements Context {
             .withTrimUnusedFields(true)
             .withInSubQueryThreshold(Integer.MAX_VALUE)
             .withRelBuilderConfigTransform(config -> config.withSimplify(false))
-            .withRelBuilderFactory(relBuilderFactory).build();
+            .withRelBuilderFactory(relBuilderFactory)
+            .withHintStrategyTable(HintTools.createHintStrategies())
+            .build();
 
     public final SqlValidator.Config getValidatorConfig() {
         SqlTypeMappingRule instance = SqlTypeMappingRules.instance(true);
