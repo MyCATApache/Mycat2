@@ -127,7 +127,7 @@ public class MycatCore {
         }
         MetaClusterCurrent.register(context);
 
-        String mode = Optional.ofNullable(System.getProperty("mode", PROPERTY_MODE_LOCAL))
+        String mode = Optional.ofNullable(System.getProperty("mode"))
                 .orElse(serverConfig.getMode());
         switch (mode) {
             case PROPERTY_MODE_LOCAL: {
