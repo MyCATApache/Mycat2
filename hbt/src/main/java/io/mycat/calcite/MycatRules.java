@@ -189,7 +189,8 @@ public class MycatRules {
                 CoreRules.PROJECT_TO_CALC,
                 CoreRules.CALC_REMOVE,
                 CoreRules.CALC_MERGE,
-                CoreRules.CALC_TO_WINDOW
+                CoreRules.CALC_TO_WINDOW,
+                MycatExtraSortRule.INSTANCE
         );
     }
 

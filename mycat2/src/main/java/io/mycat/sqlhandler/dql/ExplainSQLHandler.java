@@ -14,6 +14,7 @@
  */
 package io.mycat.sqlhandler.dql;
 
+import com.alibaba.druid.sql.ast.SQLCommentHint;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
@@ -61,6 +62,10 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
                     builder.addObjectRowPayload(Arrays.asList("targetName: "+
                             plan.getKey()+"   sql: "+plan.getValue()));
                 }else {
+                    List<SQLCommentHint> hints = explainAst.getHints();
+                    if (hints!=null){
+                        statement.setHeadHints(hints);
+                    }
                     DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(statement, dataContext.getDefaultSchema());
                     PlanImpl plan = DrdsRunnerHelper.getPlan(drdsSqlWithParams);
                     List<String> explain = plan.explain(dataContext,drdsSqlWithParams,true);

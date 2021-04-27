@@ -181,6 +181,6 @@ public class MycatSortMergeJoin extends Join implements MycatRel {
     }
     @Override
     public boolean isSupportStream() {
-        return true;
+        return false;
     }
 }

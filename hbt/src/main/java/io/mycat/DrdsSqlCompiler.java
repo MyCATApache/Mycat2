@@ -60,6 +60,7 @@ import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.apache.calcite.rel.logical.LogicalTableScan;
@@ -71,6 +72,8 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.util.SqlShuttle;
+import org.apache.calcite.sql.validate.SqlScopedShuttle;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.RelFieldTrimmer;
@@ -359,50 +362,16 @@ public class DrdsSqlCompiler {
         MycatCalciteMySqlNodeVisitor mycatCalciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
         sqlStatement.accept(mycatCalciteMySqlNodeVisitor);
         SqlNode sqlNode = mycatCalciteMySqlNodeVisitor.getSqlNode();
-        if (sqlNode instanceof SqlSelect) {
-            List<MycatHint> hints = drdsSql.getHints();
-            if (hints != null) {
-                ImmutableList.Builder<SqlHint> listBuilder = ImmutableList.builder();
-                for (MycatHint hint : hints) {
-                    for (MycatHint.Function function : hint.getFunctions()) {
-                        String functionName = function.getName();
-                        boolean kv = !function.getArguments().isEmpty() && (function.getArguments().get(0) instanceof MycatHint.Argument)
-                                && function.getArguments().get(0).getName() != null;
-                        ImmutableList.Builder<Object> builder = ImmutableList.builder();
-                        for (MycatHint.Argument argument : function.getArguments()) {
-                            String argumentName = Optional.ofNullable(argument.getName()).map(i -> (argument.getName().toString())).orElse(null);
-                            String value = SQLUtils.normalize(argument.getValue().toString());
-                            if (!kv) {
-                                builder.add(new SqlIdentifier(value, SqlParserPos.ZERO));
-                            } else {
-                                builder.add(
-                                        new SqlNodeList(Arrays.asList(new SqlIdentifier(argumentName, SqlParserPos.ZERO),
-                                                new SqlIdentifier(value, SqlParserPos.ZERO)), SqlParserPos.ZERO)
-                                );
-                            }
-                        }
-                        SqlNodeList sqlNodes = new SqlNodeList((List) builder.build(), SqlParserPos.ZERO);
-                        SqlHint sqlHint =
-                                new SqlHint(SqlParserPos.ZERO,
-                                        new SqlIdentifier(functionName, SqlParserPos.ZERO), sqlNodes, kv ? SqlHint.HintOptionFormat.KV_LIST : SqlHint.HintOptionFormat.ID_LIST);
-                        listBuilder.add(sqlHint);
-                    }
-                }
-                ((SqlSelect) sqlNode).setHints(new SqlNodeList(listBuilder.build(), SqlParserPos.ZERO));
-            }
-        }
-
-
         SqlNode validated = validator.validate(sqlNode);
         RelDataType parameterRowType = validator.getParameterRowType(sqlNode);
         RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(sqlToRelConverter.getCluster(), catalogReader);
 
         RelRoot root = sqlToRelConverter.convertQuery(validated, false, true);
+//        root = root.withRel(propagateRelHints(root.rel,validator,sqlToRelConverter));
         RelNode newRelNode = RelDecorrelator.decorrelateQuery(root.rel, relBuilder);
 
         return new RelNodeContext(root.withRel(newRelNode), sqlToRelConverter, validator, relBuilder, catalogReader, parameterRowType);
     }
-
 
     private MycatRel planUpdate(LogicalTableModify tableModify,
                                 DrdsSql drdsSql, OptimizationContext optimizationContext) {

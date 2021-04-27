@@ -95,6 +95,9 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     public MycatView changeTo(RelNode input, Distribution dataNodeInfo) {
         return new MycatView(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo, this.condition);
     }
+    public MycatView changeTo(RelNode input) {
+        return new MycatView(input.getTraitSet().replace(MycatConvention.INSTANCE), input, distribution, this.condition);
+    }
 
     public static MycatView ofBottom(RelNode input, Distribution dataNodeInfo) {
         return new MycatView(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo);

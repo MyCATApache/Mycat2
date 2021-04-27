@@ -79,6 +79,8 @@ public class MycatJoinRule extends MycatConverterRule {
         Join resJoin = null;
         if (lastJoinHint != null) {
             switch (lastJoinHint.hintName.toLowerCase()) {
+                case "no_hash_join":
+                    return tryNLJoin(join, left, right);
                 case "use_hash_join":
                     resJoin = tryHashJoin(join, info, rexBuilder, left, right);
                     break;
