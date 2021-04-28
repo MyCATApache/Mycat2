@@ -169,7 +169,8 @@ public class MycatVertxMySQLHandler {
                     }
                     int[] params = null;
                     BindValue[] values = null;
-                    boolean newParameterBoundFlag = readView.readByte() == 1;
+
+                    boolean newParameterBoundFlag =!readView.readFinished()&& readView.readByte() == 1;
                     if (newParameterBoundFlag) {
                         params = new int[numParams];
                         for (int i = 0; i < numParams; i++) {
