@@ -1,6 +1,8 @@
 package io.mycat.assemble;
 
 import com.alibaba.druid.util.JdbcUtils;
+import io.mycat.DrdsSqlCompiler;
+import io.mycat.drdsrunner.DrdsTest;
 import io.mycat.hint.BaselineAddHint;
 import io.mycat.hint.BaselineListHint;
 import io.mycat.hint.BaselineUpdateHint;
@@ -9,6 +11,7 @@ import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +19,7 @@ import java.util.Objects;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
-public class SpmHintTest implements MycatTest {
+public class SpmHintTest extends DrdsTest {
 
     @Test
     public void testAdd() throws Exception {
@@ -73,8 +76,8 @@ public class SpmHintTest implements MycatTest {
              Connection prototypeDs = getMySQLConnection(DB1);) {
             deleteData(prototypeDs, "mycat", "spm_baseline");
             deleteData(prototypeDs, "mycat", "spm_plan");
-            JdbcUtils.executeQuery(mycatConnection,"select user()",Collections.emptyList());
-            JdbcUtils.executeQuery(mycatConnection,"select DATABASE()",Collections.emptyList());
+            JdbcUtils.executeQuery(mycatConnection, "select user()", Collections.emptyList());
+            JdbcUtils.executeQuery(mycatConnection, "select DATABASE()", Collections.emptyList());
             List<Map<String, Object>> maps = executeQuery(mycatConnection, BaselineListHint.create());
             Map<String, Object> map = maps.get(0);
             long baseline_id = Long.parseLong(Objects.toString(map.get("BASELINE_ID")));
@@ -140,4 +143,6 @@ public class SpmHintTest implements MycatTest {
 
         }
     }
+
+
 }

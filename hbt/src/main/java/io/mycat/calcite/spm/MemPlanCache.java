@@ -1,9 +1,11 @@
 package io.mycat.calcite.spm;
 
 import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLCommentHint;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.google.common.collect.ImmutableList;
 import io.mycat.*;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.MycatRel;
@@ -48,6 +50,10 @@ public class MemPlanCache implements QueryPlanCache {
                     List<String> uniqueNames = new LinkedList<>();
                     parameterizedStatement.accept(new MySqlASTVisitorAdapter() {
                         @Override
+                        public boolean visit(SQLCommentHint x) {
+                            return true;
+                        }
+                        @Override
                         public boolean visit(SQLExprTableSource x) {
                             String tableName = x.getTableName();
                             if (tableName != null) {
@@ -57,7 +63,7 @@ public class MemPlanCache implements QueryPlanCache {
                             return super.visit(x);
                         }
                     });
-                    Baseline baseline = new Baseline(planIds.nextBaselineId(), baseLineSql.getParameterizedSql(), constraint, null,
+                    Baseline baseline = new Baseline(planIds.nextBaselineId(), parameterizedStatement.toString(), constraint, null,
                             new ExtraConstraint(uniqueNames));
                     return baseline;
                 }));
@@ -121,6 +127,9 @@ public class MemPlanCache implements QueryPlanCache {
     public List<CodeExecuterContext> getAcceptedMycatRelList(DrdsSql baselineSql) {
         Baseline baseline = getBaseline(baselineSql);
         List<CodeExecuterContext> list = new ArrayList<>(1);
+        if (baseline.getFixPlan()!=null){
+            return ImmutableList.of((CodeExecuterContext)baseline.getFixPlan().getAttach());
+        }
         for (BaselinePlan p : baseline.getPlanList()) {
             if (p.isAccept()) {
                 CodeExecuterContext codeExecuterContext = getCodeExecuterContext(p);

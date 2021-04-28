@@ -15,5 +15,4 @@ import java.util.List;
 public class Constraint {
     String sql;
     List<SqlTypeName> paramTypes = new ArrayList<>();
-    List<String> hints = new LinkedList<>();
 }

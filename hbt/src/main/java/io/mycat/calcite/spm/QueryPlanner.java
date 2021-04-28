@@ -20,7 +20,7 @@ public class QueryPlanner {
     //    RelMetadataQuery relMetadataQuery = MetaClusterCurrent.wrapper(RelMetadataQuery.class);
 
     public RelMetadataQuery getRelMetadataQuery() {
-        return null;
+        return RelMetadataQuery.instance();
     }
 
     public  CodeExecuterContext innerComputeMinCostCodeExecuterContext(DrdsSql sqlSelectStatement) {

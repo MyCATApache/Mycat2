@@ -46,4 +46,12 @@ public class Baseline {
         planList.removeIf(i->i.getId() == baselinePlan.getId());
         planList.add(baselinePlan);
     }
+
+    public BaselinePlan getFixPlan() {
+        return fixPlan;
+    }
+
+    public void setFixPlan(BaselinePlan fixPlan) {
+        this.fixPlan = fixPlan;
+    }
 }

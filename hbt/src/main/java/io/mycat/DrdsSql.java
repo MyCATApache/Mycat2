@@ -16,9 +16,15 @@
  */
 package io.mycat;
 
+import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLCommentHint;
+import com.alibaba.druid.sql.ast.SQLDataType;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLAllColumnExpr;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import io.mycat.calcite.MycatHint;
 import io.mycat.calcite.spm.Constraint;
 import io.mycat.calcite.spm.Plan;
@@ -47,12 +53,20 @@ public class DrdsSql {
     }
 
     public Constraint constraint(){
-        ArrayList<String> list = new ArrayList<>(hints.size());
-        for (MycatHint hint : hints) {
-            String text = hint.getText();
-            list.add(text);
-        }
-        return new Constraint(parameterizedSql,typeNames,list);
+//        ArrayList<String> list = new ArrayList<>(hints.size());
+//        for (MycatHint hint : hints) {
+//            String text = hint.getText();
+//            list.add(text);
+//        }
+        StringBuilder stringBuilder = new StringBuilder();
+        MySqlOutputVisitor mySqlOutputVisitor = new MySqlOutputVisitor(stringBuilder){
+            @Override
+            public boolean visit(SQLCommentHint x) {
+                return true;
+            }
+        };
+        SQLUtils.parseSingleStatement(this.parameterizedSql, DbType.mysql,false).accept( mySqlOutputVisitor);
+        return new Constraint(stringBuilder.toString().trim(),typeNames);
     }
 
     public static boolean isForUpdate(String sqlStatement) {

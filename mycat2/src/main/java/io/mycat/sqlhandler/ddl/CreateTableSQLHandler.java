@@ -58,6 +58,9 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
                 MySqlCreateTableStatement ast = request.getAst();
                 String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
                 String tableName = ast.getTableName() == null ? null : SQLUtils.normalize(ast.getTableName());
+               if (ast.getSchema()==null){
+                   ast.setSchema(schemaName);
+               }
                 if (tableName == null) {
                     return response.sendError(new MycatException("CreateTableSQL need tableName"));
                 }
