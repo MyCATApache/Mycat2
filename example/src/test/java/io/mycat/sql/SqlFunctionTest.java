@@ -256,6 +256,15 @@ public class SqlFunctionTest implements MycatTest {
     }
 
     @Test
+    public void testGUIFunction() throws Exception {
+        try(Connection mySQLConnection = getMySQLConnection(DB_MYCAT)){
+            JdbcUtils.executeQuery(mySQLConnection,"SHOW STATUS",Collections.emptyList());
+            JdbcUtils.execute(mySQLConnection,"FLUSH TABLES");
+            JdbcUtils.execute(mySQLConnection,"FLUSH PRIVILEGES");
+        }
+    }
+
+    @Test
     public void testAggFunction() throws Exception {
         initShardingTable();
 

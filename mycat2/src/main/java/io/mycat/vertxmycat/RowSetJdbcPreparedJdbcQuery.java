@@ -41,6 +41,7 @@ import java.sql.PreparedStatement;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -62,7 +63,7 @@ public class RowSetJdbcPreparedJdbcQuery implements AbstractMySqlPreparedQuery<R
     }
 
     private RowSet<Row> innerExecute(Tuple tuple) throws SQLException {
-        if (LOGGER.isDebugEnabled()){
+        if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(sql);
         }
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -82,6 +83,9 @@ public class RowSetJdbcPreparedJdbcQuery implements AbstractMySqlPreparedQuery<R
                 return (vertxRowSet);
             }
             ResultSet resultSet = preparedStatement.getResultSet();
+            if (resultSet==null){
+                return new VertxRowSetImpl();
+            }
             JdbcRowMetaData metaData = new JdbcRowMetaData(
                     resultSet.getMetaData());
             int columnCount = metaData.getColumnCount();
@@ -192,7 +196,15 @@ public class RowSetJdbcPreparedJdbcQuery implements AbstractMySqlPreparedQuery<R
 
 
     public static <R> void extracted(Promise<SqlResult<R>> promise, Statement statement, ResultSet resultSet, Collector<Row, ?, R> collector) throws SQLException {
-        try{
+
+        try {
+            if (resultSet == null) {
+                Object o = collector.supplier().get();
+                Function<Object, Object> finisher = (Function) collector.finisher();
+                promise.complete(new MySqlResult<>(
+                        0, 0, 0, (R) finisher.apply(o), Collections.emptyList()));
+                return;
+            }
             JdbcRowMetaData metaData = new JdbcRowMetaData(
                     resultSet.getMetaData());
             int columnCount = metaData.getColumnCount();
@@ -275,7 +287,7 @@ public class RowSetJdbcPreparedJdbcQuery implements AbstractMySqlPreparedQuery<R
                 promise.complete(new MySqlResult<>(
                         count, 0, 0, (R) supplier, columnDescriptors));
             }
-        }catch (Throwable throwable){
+        } catch (Throwable throwable) {
             promise.tryFail(throwable);
         }
     }

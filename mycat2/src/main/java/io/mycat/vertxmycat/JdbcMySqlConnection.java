@@ -90,15 +90,15 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
 
     @Override
     public PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
-        return new RowSetJdbcPreparedJdbcQuery(targetName,sql,connection.unwrap(Connection.class));
+        return new RowSetJdbcPreparedJdbcQuery(targetName, sql, connection.unwrap(Connection.class));
     }
 
     @Override
     public Future<Void> close() {
         try {
             connection.close();
-        }catch (Throwable throwable){
-            LOGGER.error("",throwable);
+        } catch (Throwable throwable) {
+            LOGGER.error("", throwable);
         }
         return Future.succeededFuture();
     }
@@ -135,7 +135,7 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
             IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
             return ioExecutor.executeBlocking(event -> {
                 try {
-                    event.complete( innerExecute());
+                    event.complete(innerExecute());
                 } catch (SQLException sqlException) {
                     LOGGER.error("", sqlException);
                     event.fail(sqlException);
@@ -155,7 +155,7 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("MycatMySQLManager targetName:{} sql:{} rawConnection:{}", targetName, sql, rawConnection);
             }
-            if (LOGGER.isDebugEnabled()){
+            if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(sql);
             }
             if (!statement.execute(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -173,6 +173,9 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
                 return (vertxRowSet);
             }
             ResultSet resultSet = statement.getResultSet();
+            if (resultSet == null) {
+                return new VertxRowSetImpl();
+            }
             JdbcRowMetaData metaData = new JdbcRowMetaData(
                     resultSet.getMetaData());
             int columnCount = metaData.getColumnCount();
@@ -234,7 +237,7 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
                                 statement.execute(sql);
                                 ResultSet resultSet = statement.getResultSet();
                                 RowSetJdbcPreparedJdbcQuery.extracted(promise, statement, resultSet, collector);
-                            }catch (Throwable throwable){
+                            } catch (Throwable throwable) {
                                 promise.tryFail(throwable);
                             }
                         }
