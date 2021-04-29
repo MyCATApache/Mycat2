@@ -2121,11 +2121,11 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             String format;
             if (alias == null) {
                 format = "+MYCAT:" +
-                        "QB_NAME(SEL" + qbIds + ")" +
+                        "QB_NAME(SEL$" + qbIds + ")" +
                         "";
             } else {
                 format = "+MYCAT:" +
-                        "QB_NAME(SEL" + qbIds + "," + alias +
+                        "QB_NAME(" +alias+
                         ")" +
                         "";
             }

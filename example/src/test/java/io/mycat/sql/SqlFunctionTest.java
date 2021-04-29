@@ -256,10 +256,10 @@ public class SqlFunctionTest implements MycatTest {
 
     @Test
     public void testGUIFunction() throws Exception {
-        try(Connection mySQLConnection = getMySQLConnection(DB_MYCAT)){
-            JdbcUtils.executeQuery(mySQLConnection,"SHOW STATUS",Collections.emptyList());
-            JdbcUtils.execute(mySQLConnection,"FLUSH TABLES");
-            JdbcUtils.execute(mySQLConnection,"FLUSH PRIVILEGES");
+        try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT)) {
+            JdbcUtils.executeQuery(mySQLConnection, "SHOW STATUS", Collections.emptyList());
+            JdbcUtils.execute(mySQLConnection, "FLUSH TABLES");
+            JdbcUtils.execute(mySQLConnection, "FLUSH PRIVILEGES");
         }
     }
 
@@ -492,38 +492,32 @@ public class SqlFunctionTest implements MycatTest {
     @Test
     public void testOptimizationProcedure() throws Exception {
         initShardingTable();
-        try(Connection mySQLConnection = getMySQLConnection(DB_MYCAT);){
-            List<Map<String, Object>> step0 = JdbcUtils.executeQuery(mySQLConnection,
-                    BaselineAddHint.create("select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"),
-                    Collections.emptyList());
+        try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT);) {
+            List<Map<String, Object>> step0 = executeQuery(mySQLConnection,
+                    BaselineAddHint.create("select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"));
 
             System.out.println(step0);
 
-            List<Map<String, Object>> explainStep0 = JdbcUtils.executeQuery(mySQLConnection,
-                ("explain select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"),
-                    Collections.emptyList());
+            List<Map<String, Object>> explainStep0 = executeQuery(mySQLConnection,
+                    ("explain select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"));
 
             System.out.println(explainStep0);
 
-            List<Map<String, Object>> step1 = JdbcUtils.executeQuery(mySQLConnection,
+            List<Map<String, Object>> step1 = executeQuery(mySQLConnection,
                     BaselineAddHint.create(true,
-                            "/*+MYCAT:use_nl_join(n,s) */select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"),
-                    Collections.emptyList());
+                            "/*+MYCAT:use_nl_join(n,s) */select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"));
 
             System.out.println(step1);
 
-            List<Map<String, Object>> explainStep1 = JdbcUtils.executeQuery(mySQLConnection,
-               ("explain select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"),
-                    Collections.emptyList());
+            List<Map<String, Object>> explainStep1 = executeQuery(mySQLConnection,
+                    ("explain select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"));
 
             System.out.println(explainStep1);
 
 
-
-            List<Map<String, Object>> step2 = JdbcUtils.executeQuery(mySQLConnection,
+            List<Map<String, Object>> step2 = executeQuery(mySQLConnection,
                     BaselineAddHint.create(true,
-                            "/*+MYCAT:use_hash_join(n,s) */select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"),
-                    Collections.emptyList());
+                            "/*+MYCAT:use_hash_join(n,s) */select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"));
 
             System.out.println(step2);
 
@@ -533,16 +527,14 @@ public class SqlFunctionTest implements MycatTest {
 
             System.out.println(explainStep2);
 
-            List<Map<String, Object>> step3 = JdbcUtils.executeQuery(mySQLConnection,
+            List<Map<String, Object>> step3 = executeQuery(mySQLConnection,
                     BaselineAddHint.create(true,
-                            "/*+MYCAT:use_merge_join(n,s) */select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"),
-                    Collections.emptyList());
+                            "/*+MYCAT:use_merge_join(n,s) */select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"));
 
             System.out.println(step3);
 
-            List<Map<String, Object>> explainStep3 = JdbcUtils.executeQuery(mySQLConnection,
-                    ("explain select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"),
-                    Collections.emptyList());
+            List<Map<String, Object>> explainStep3 = executeQuery(mySQLConnection,
+                    ("explain select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"));
 
             System.out.println(explainStep3);
 
@@ -553,26 +545,23 @@ public class SqlFunctionTest implements MycatTest {
 
             //PERSIST
             long baseline_id = Long.parseLong(step0.get(0).get("BASELINE_ID").toString());
-            JdbcUtils.execute(mySQLConnection, BaselineUpdateHint.create("PERSIST",baseline_id));
-            JdbcUtils.execute(mySQLConnection, BaselineUpdateHint.create("CLEAR",baseline_id));
-            JdbcUtils.execute(mySQLConnection, BaselineUpdateHint.create("LOAD",baseline_id));
+            JdbcUtils.execute(mySQLConnection, BaselineUpdateHint.create("PERSIST", baseline_id));
+            JdbcUtils.execute(mySQLConnection, BaselineUpdateHint.create("CLEAR", baseline_id));
+            JdbcUtils.execute(mySQLConnection, BaselineUpdateHint.create("LOAD", baseline_id));
 
 
-            List<Map<String, Object>> explainStep4 = JdbcUtils.executeQuery(mySQLConnection,
-                    ("explain select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"),
-                    Collections.emptyList());
+            List<Map<String, Object>> explainStep4 = executeQuery(mySQLConnection,
+                    ("explain select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"));
 
             System.out.println(explainStep4);
 
             Assert.assertTrue(explainStep3.toString().contains("MycatSortMergeJoin"));
 
 
+            execute(mySQLConnection, BaselineUpdateHint.create("UNFIX", baseline_id));
 
-            JdbcUtils.execute(mySQLConnection, BaselineUpdateHint.create("UNFIX",baseline_id));
-
-            List<Map<String, Object>> explainStep5 = JdbcUtils.executeQuery(mySQLConnection,
-                    ("explain select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"),
-                    Collections.emptyList());
+            List<Map<String, Object>> explainStep5 = executeQuery(mySQLConnection,
+                    ("explain select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"));
             Assert.assertTrue(explainStep5.toString().contains("NestedLoopJoin"));
         }
     }

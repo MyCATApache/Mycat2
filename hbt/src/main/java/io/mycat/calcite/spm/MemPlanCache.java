@@ -132,6 +132,15 @@ public class MemPlanCache implements QueryPlanCache {
     public List<CodeExecuterContext> getAcceptedMycatRelList(DrdsSql baselineSql) {
         Baseline baseline = getBaseline(baselineSql);
         List<CodeExecuterContext> list = new ArrayList<>(1);
+        if (!baselineSql.getHints().isEmpty()){
+            for (BaselinePlan p : baseline.getPlanList()) {
+                if (p.isAccept()&&p.getSql().equals(baselineSql.getParameterizedSql())) {
+                    CodeExecuterContext codeExecuterContext = getCodeExecuterContext(p);
+                    list.add(codeExecuterContext);
+                    return list;
+                }
+            }
+        }
         if (baseline.getFixPlan() != null) {
             return ImmutableList.of(getCodeExecuterContext(baseline.getFixPlan()));
         }
