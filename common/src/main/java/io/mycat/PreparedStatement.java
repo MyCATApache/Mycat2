@@ -172,15 +172,7 @@ public class PreparedStatement {
         if (this.bindValues != values) {
             throw new AssertionError();
         }
-        SQLStatement sqlStatement;
-        if (statement instanceof SQLSelectStatement ||
-                statement instanceof SQLInsertStatement ||
-                statement instanceof SQLUpdateStatement ||
-                statement instanceof SQLDeleteStatement) {
-            sqlStatement = statement.clone();
-        } else {
-            sqlStatement = SQLUtils.parseSingleMysqlStatement(this.statement.toString());
-        }
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(this.statement.toString());
 
         sqlStatement.accept(new MySqlASTVisitorAdapter() {
             int index;

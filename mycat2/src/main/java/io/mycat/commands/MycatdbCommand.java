@@ -21,6 +21,7 @@ import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLStartTransactionStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowStatement;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
@@ -196,7 +197,12 @@ public enum MycatdbCommand {
             if (instance != null) {
                 return instance.execute(request, dataContext, receiver);
             } else {
-                return receiver.proxySelectToPrototype(sqlStatement.toString());
+                if (sqlStatement instanceof MySqlShowStatement) {
+                    return receiver.proxySelectToPrototype(sqlStatement.toString());
+                }else {
+                    logger.warn("ignore SQL statement:{}",sqlStatement);
+                    return receiver.sendOk();
+                }
             }
         });
     }
