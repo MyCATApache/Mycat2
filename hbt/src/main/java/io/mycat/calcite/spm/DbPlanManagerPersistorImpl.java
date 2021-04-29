@@ -14,6 +14,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -76,18 +77,19 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
 
     @NotNull
     private Baseline toBaseline(Map<String, Object> map) {
-        return toBaseline(map, id -> loadPlan(id));
+        return toBaseline(map, (id,baselineId) -> loadFixPlan(id,baselineId));
     }
 
-    private Baseline toBaseline(Map<String, Object> map, Function<Long, Optional<BaselinePlan>> fetchBaselinePlanFunction) {
+    private Baseline toBaseline(Map<String, Object> map, BiFunction<Long,Long, Optional<BaselinePlan>> fetchBaselinePlanFunction) {
         Long fix_plan_id = (Long) map.get("fix_plan_id");
+        Long id = (Long) map.get("id");
         Optional<BaselinePlan> baselinePlanOptional;
         if (fix_plan_id != null) {
-            baselinePlanOptional = fetchBaselinePlanFunction.apply(fix_plan_id);
+            baselinePlanOptional = fetchBaselinePlanFunction.apply(fix_plan_id,id);
         } else {
             baselinePlanOptional = Optional.empty();
         }
-        Long id = (Long) map.get("id");
+
         String constraintText = (String) map.get("constraint");
         String extraConstraintText = (String) map.get("extra_constraint");
         List<BaselinePlan> list = listPlan(id);
@@ -222,7 +224,19 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
     @SneakyThrows
     public synchronized Optional<BaselinePlan> loadPlan(long planId) {
         try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
-            List<Map<String, Object>> maps = JdbcUtils.executeQuery(connection.getRawConnection(), "SELECT * FROM mycat.spm_plan where id = ?", Arrays.asList(planId));
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(connection.getRawConnection(), "SELECT * FROM mycat.spm_plan where id = ? and baseline_id = ?", Arrays.asList(planId));
+            if (maps.size() != 1) {
+                log.error("baseline is duplicate");
+                return Optional.empty();
+            }
+            Map<String, Object> map = maps.get(0);
+            return Optional.ofNullable(toBaselinePlan(map));
+        }
+    }
+    @SneakyThrows
+    public synchronized Optional<BaselinePlan> loadFixPlan(long planId,long baselineId) {
+        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(connection.getRawConnection(), "SELECT * FROM mycat.spm_plan where id = ? and baseline_id = ?", Arrays.asList(planId,baselineId));
             if (maps.size() != 1) {
                 log.error("baseline is duplicate");
                 return Optional.empty();
@@ -274,6 +288,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
         try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
             Connection rawConnection = connection.getRawConnection();
             JdbcUtils.execute(rawConnection, "delete from mycat.spm_plan where id = ?", Arrays.asList(planId));
+            JdbcUtils.execute(rawConnection, "update  mycat.spm_baseline set  fix_plan_id = null where fix_plan_id = ?", Arrays.asList(planId));
         }
     }
 

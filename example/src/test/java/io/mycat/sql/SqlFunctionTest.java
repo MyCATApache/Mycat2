@@ -3,9 +3,7 @@ package io.mycat.sql;
 import com.alibaba.druid.util.JdbcUtils;
 import com.mysql.cj.jdbc.MysqlDataSource;
 import io.mycat.assemble.MycatTest;
-import io.mycat.hint.BaselineAddHint;
-import io.mycat.hint.CreateClusterHint;
-import io.mycat.hint.CreateDataSourceHint;
+import io.mycat.hint.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
@@ -553,8 +551,29 @@ public class SqlFunctionTest implements MycatTest {
             Assert.assertTrue(explainStep2.toString().contains("MycatHashJoin"));
             Assert.assertTrue(explainStep3.toString().contains("MycatSortMergeJoin"));
 
+            //PERSIST
+            long baseline_id = Long.parseLong(step0.get(0).get("BASELINE_ID").toString());
+            JdbcUtils.execute(mySQLConnection, BaselineUpdateHint.create("PERSIST",baseline_id));
+            JdbcUtils.execute(mySQLConnection, BaselineUpdateHint.create("CLEAR",baseline_id));
+            JdbcUtils.execute(mySQLConnection, BaselineUpdateHint.create("LOAD",baseline_id));
 
-            System.out.println();
+
+            List<Map<String, Object>> explainStep4 = JdbcUtils.executeQuery(mySQLConnection,
+                    ("explain select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"),
+                    Collections.emptyList());
+
+            System.out.println(explainStep4);
+
+            Assert.assertTrue(explainStep3.toString().contains("MycatSortMergeJoin"));
+
+
+
+            JdbcUtils.execute(mySQLConnection, BaselineUpdateHint.create("UNFIX",baseline_id));
+
+            List<Map<String, Object>> explainStep5 = JdbcUtils.executeQuery(mySQLConnection,
+                    ("explain select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"),
+                    Collections.emptyList());
+            Assert.assertTrue(explainStep5.toString().contains("NestedLoopJoin"));
         }
     }
 }

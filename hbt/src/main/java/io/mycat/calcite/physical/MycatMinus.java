@@ -27,6 +27,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.util.BuiltInMethod;
@@ -41,6 +42,9 @@ public class MycatMinus extends Minus implements MycatRel {
     protected MycatMinus(RelOptCluster cluster, RelTraitSet traitSet,
                       List<RelNode> inputs, boolean all) {
         super(cluster,Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), inputs, all);
+    }
+    protected MycatMinus(RelInput input) {
+        super(input);
     }
     public static MycatMinus create(RelTraitSet traitSet,
                       List<RelNode> inputs, boolean all) {

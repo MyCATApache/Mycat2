@@ -54,6 +54,13 @@ public class MycatSortMergeJoin extends Join implements MycatRel {
         super(cluster,  Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), ImmutableList.of(), left, right, condition, variablesSet, joinType);
     }
 
+    public MycatSortMergeJoin(RelInput input) {
+        this(input.getCluster(), input.getTraitSet(),
+                input.getInputs().get(0), input.getInputs().get(1),
+                input.getExpression("condition"), ImmutableSet.of(),
+                input.getEnum("joinType", JoinRelType.class));
+    }
+
     public static MycatSortMergeJoin create(
             RelTraitSet traitSet,
             RelNode left,

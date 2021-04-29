@@ -15,11 +15,13 @@
 package io.mycat.calcite.physical;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -42,7 +44,13 @@ public class MycatNestedLoopSemiJoin extends Join implements MycatRel {
                                       JoinRelType joinType) {
         super(cluster,  Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), hints, left, right, condition, ImmutableSet.of(), joinType);
     }
-
+    public MycatNestedLoopSemiJoin(RelInput input) {
+        this(input.getCluster(), input.getTraitSet(),
+                ImmutableList.of(),
+                input.getInputs().get(0), input.getInputs().get(1),
+                input.getExpression("condition"),
+                input.getEnum("joinType", JoinRelType.class));
+    }
     @Override
     public MycatNestedLoopSemiJoin copy(RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
         return new MycatNestedLoopSemiJoin(getCluster(), traitSet, getHints(), left, right, conditionExpr, joinType);

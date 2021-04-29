@@ -35,6 +35,11 @@ public class Baseline {
 
     public void removePlanById(long planId) {
         planList.removeIf(baselinePlan -> baselinePlan.id == planId);
+        if (fixPlan!=null){
+            if(fixPlan.getId() == planId){
+                fixPlan = null;
+            }
+        }
     }
 
     public void replace(BaselinePlan baselinePlan) {

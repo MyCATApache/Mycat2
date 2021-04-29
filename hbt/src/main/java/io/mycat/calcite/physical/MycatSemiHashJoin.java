@@ -25,6 +25,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
@@ -54,6 +55,13 @@ public class MycatSemiHashJoin extends Join implements MycatRel {
                                 JoinRelType joinType) {
         super(cluster,  Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), ImmutableList.of(), left, right, condition, variablesSet, joinType);
     }
+    public MycatSemiHashJoin(RelInput input) {
+        this(input.getCluster(), input.getTraitSet(),
+                input.getInputs().get(0), input.getInputs().get(1),
+                input.getExpression("condition"), ImmutableSet.of(),
+                input.getEnum("joinType", JoinRelType.class));
+    }
+
 
     @Override
     public Join copy(RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {

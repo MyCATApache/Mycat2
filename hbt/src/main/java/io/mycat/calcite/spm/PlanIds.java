@@ -1,5 +1,6 @@
 package io.mycat.calcite.spm;
 
+import com.imadcn.framework.idworker.algorithm.Snowflake;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.config.ServerConfig;
 import lombok.SneakyThrows;
@@ -7,23 +8,24 @@ import lombok.SneakyThrows;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class PlanIds {
-   private final AtomicLong PLAN_IDS;
-    private final AtomicLong BASELINE_IDS;
+    private final Snowflake PLAN_IDS;
+    private final Snowflake BASELINE_IDS;
 
     public PlanIds() {
         ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
-        int mycatId = serverConfig.getMycatId();
-        this.PLAN_IDS = new AtomicLong(mycatId + System.currentTimeMillis() >> 4);
-        this.BASELINE_IDS = new AtomicLong(mycatId + System.currentTimeMillis() >> 3);
+        long mycatId = serverConfig.getMycatId();
+
+        this.PLAN_IDS = Snowflake.create(mycatId);
+        this.BASELINE_IDS = Snowflake.create(mycatId);
     }
 
     @SneakyThrows
     long nextBaselineId() {
-        return this.BASELINE_IDS.getAndIncrement();
+        return this.BASELINE_IDS.nextId();
     }
 
     @SneakyThrows
     long nextPlanId() {
-        return BASELINE_IDS.getAndIncrement();
+        return this.PLAN_IDS.nextId();
     }
 }

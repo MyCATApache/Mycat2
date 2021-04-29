@@ -17,6 +17,7 @@ package io.mycat.sqlhandler.ddl;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.*;
+import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.config.MycatRouterConfigOps;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
@@ -24,6 +25,7 @@ import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.JsonUtil;
 import io.vertx.core.Future;
 import io.vertx.core.shareddata.Lock;
+import org.apache.calcite.avatica.Meta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,6 +133,11 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
 
             }
             ops.commit();
+            MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+            TableHandler table = metadataManager.getTable(schemaName, tableName);
+            if (table==null){
+                throw new MycatException("create table fail:"+schemaName+"."+tableName);
+            }
         }
     }
 //

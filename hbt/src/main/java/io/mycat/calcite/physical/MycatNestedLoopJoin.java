@@ -15,6 +15,7 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
@@ -45,7 +46,13 @@ public class MycatNestedLoopJoin extends Join implements MycatRel {
                                   Set<CorrelationId> variablesSet, JoinRelType joinType) {
         super(cluster,  Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), hints, left, right, condition, variablesSet, joinType);
     }
-
+    public MycatNestedLoopJoin(RelInput input) {
+        this(input.getCluster(), input.getTraitSet(),
+                ImmutableList.of(),
+                input.getInputs().get(0), input.getInputs().get(1),
+                input.getExpression("condition"),ImmutableSet.of(),
+                input.getEnum("joinType", JoinRelType.class));
+    }
     public static MycatNestedLoopJoin create(RelTraitSet traitSet,
                                              RelNode left,
                                              RelNode right,

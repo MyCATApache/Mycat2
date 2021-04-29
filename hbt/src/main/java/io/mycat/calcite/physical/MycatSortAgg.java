@@ -15,6 +15,7 @@
 package io.mycat.calcite.physical;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.adapter.enumerable.impl.AggResultContextImpl;
@@ -31,9 +32,11 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -51,6 +54,13 @@ public class MycatSortAgg extends EnumerableAggregateBase implements MycatRel {
                            List<ImmutableBitSet> groupSets,
                            List<AggregateCall> aggCalls) {
         super(cluster,  Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), ImmutableList.of(), input, groupSet, groupSets, aggCalls);
+    }
+
+    public MycatSortAgg(
+            RelInput relInput) {
+        this(relInput.getCluster(), relInput.getTraitSet(),
+                relInput.getInput(), relInput.getBitSet("group"),
+                relInput.getBitSetList("groups"), relInput.getAggregateCalls("aggs"));
     }
 
     public static MycatSortAgg create(

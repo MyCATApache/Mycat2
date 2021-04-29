@@ -1,5 +1,6 @@
 package io.mycat.calcite.spm;
 
+import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLCommentHint;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -53,6 +54,7 @@ public class MemPlanCache implements QueryPlanCache {
                         public boolean visit(SQLCommentHint x) {
                             return true;
                         }
+
                         @Override
                         public boolean visit(SQLExprTableSource x) {
                             String tableName = x.getTableName();
@@ -91,18 +93,21 @@ public class MemPlanCache implements QueryPlanCache {
         map.put(baseline.getConstraint(), baseline);
         return new PlanResultSet(newBaselinePlan.getBaselineId(), true, codeExecuterContext);
     }
-    public static CodeExecuterContext getCodeExecuterContext(BaselinePlan plan,MycatRel defaultMycatRel){
-        if (defaultMycatRel!=null){
+
+    public static CodeExecuterContext getCodeExecuterContext(BaselinePlan plan, MycatRel defaultMycatRel) {
+        if (defaultMycatRel != null) {
             boolean forUpdate = DrdsSql.isForUpdate(plan.getSql());
             CodeExecuterContext codeExecuterContext = DrdsExecutorCompiler.getCodeExecuterContext(defaultMycatRel, forUpdate);
             plan.setAttach(codeExecuterContext);
         }
         return getCodeExecuterContext(plan);
     }
+
     @SneakyThrows
     public static CodeExecuterContext getCodeExecuterContext(BaselinePlan plan) {
         boolean forUpdate = DrdsSql.isForUpdate(plan.getSql());
         Object attach = plan.attach;
+
         if (attach != null) {
             return (CodeExecuterContext) attach;
         }
@@ -127,8 +132,8 @@ public class MemPlanCache implements QueryPlanCache {
     public List<CodeExecuterContext> getAcceptedMycatRelList(DrdsSql baselineSql) {
         Baseline baseline = getBaseline(baselineSql);
         List<CodeExecuterContext> list = new ArrayList<>(1);
-        if (baseline.getFixPlan()!=null){
-            return ImmutableList.of((CodeExecuterContext)baseline.getFixPlan().getAttach());
+        if (baseline.getFixPlan() != null) {
+            return ImmutableList.of(getCodeExecuterContext(baseline.getFixPlan()));
         }
         for (BaselinePlan p : baseline.getPlanList()) {
             if (p.isAccept()) {
@@ -148,8 +153,9 @@ public class MemPlanCache implements QueryPlanCache {
             MycatRel mycatRel = drdsSqlCompiler.dispatch(optimizationContext, drdsSql);
             RelJsonWriter relJsonWriter = new RelJsonWriter();
             mycatRel.explain(relJsonWriter);
-            BaselinePlan newBaselinePlan = new BaselinePlan(drdsSql.getParameterizedSql(), relJsonWriter.asString(), planIds.nextPlanId(), baselineId = baseline.getBaselineId(), null);
-            getCodeExecuterContext(newBaselinePlan,mycatRel);
+            long hash = planIds.nextPlanId();
+            BaselinePlan newBaselinePlan = new BaselinePlan(drdsSql.getParameterizedSql(), relJsonWriter.asString(), hash, baselineId = baseline.getBaselineId(), null);
+            getCodeExecuterContext(newBaselinePlan, mycatRel);
             return saveBaselinePlan(fix, false, baseline, newBaselinePlan);
         } catch (Throwable throwable) {
             log.error("", throwable);
@@ -212,7 +218,7 @@ public class MemPlanCache implements QueryPlanCache {
         for (Baseline baseline : map.values()) {
             for (BaselinePlan baselinePlan : baseline.getPlanList()) {
                 if (baselinePlan.getId() == value) {
-                    if (baseline.getBaselineId() != baselinePlan.getBaselineId()){
+                    if (baseline.getBaselineId() != baselinePlan.getBaselineId()) {
                         throw new IllegalArgumentException();
                     }
                     boolean FIXED = (baseline.getFixPlan() != null) && baseline.getFixPlan().getId() == value;
@@ -263,16 +269,18 @@ public class MemPlanCache implements QueryPlanCache {
     public void loadBaselines() {
         this.map.putAll(persistor.loadAllBaseline());
         IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
-        this.map.values().stream().flatMap(c -> {
-            return c.getPlanList().stream();
-        }).forEach(p -> ioExecutor.executeBlocking((Handler<Promise<Void>>) promise -> {
-            try{
-                getCodeExecuterContext(p);
-            }finally {
-                promise.tryComplete();
-            }
+        for (Baseline baseline : new ArrayList<>(this.map.values())) {
+            for (BaselinePlan baselinePlan : baseline.getPlanList()) {
+                try {
+                    getCodeExecuterContext(baselinePlan);
+                } catch (Throwable throwable) {
+                    map.remove(baseline.getConstraint());
+                    deleteBaseline(baseline.getBaselineId());
+                } finally {
 
-        }));
+                }
+            }
+        }
     }
 
     public void unFix(long baselineId) {

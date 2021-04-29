@@ -27,6 +27,8 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rex.RexDynamicParam;
@@ -54,6 +56,12 @@ public class MycatTopN extends Sort implements MycatRel {
                 offset,
                 fetch
         );
+    }
+    public MycatTopN(RelInput input) {
+        this(input.getCluster(), input.getTraitSet().plus(input.getCollation()),
+                input.getInput(),
+                RelCollationTraitDef.INSTANCE.canonize(input.getCollation()),
+                input.getExpression("offset"), input.getExpression("fetch"));
     }
 
     @Override

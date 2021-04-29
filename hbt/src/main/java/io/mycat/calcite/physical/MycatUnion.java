@@ -29,6 +29,8 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -50,6 +52,9 @@ public class MycatUnion extends Union implements MycatRel {
             List<RelNode> inputs,
             boolean all) {
         super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), inputs, all);
+    }
+    protected MycatUnion(RelInput input) {
+        super(input);
     }
 
     public static MycatUnion create(
