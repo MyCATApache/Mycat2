@@ -27,6 +27,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
@@ -36,6 +37,7 @@ import java.util.function.Supplier;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
+@Disabled
 public class StatisticCenterTest extends DrdsTest {
 
 
@@ -87,6 +89,7 @@ public class StatisticCenterTest extends DrdsTest {
                     };
                 }
         );
+        context.put(ReplicaSelectorManager.class,manager);
         context.put(JdbcConnectionManager.class, jdbcManager = new JdbcConnectionManager(DruidDatasourceProvider.class.getName(),
                 datasources,
                 clusterConfigs,

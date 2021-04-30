@@ -197,29 +197,34 @@ public enum MycatdbCommand {
                 ResultSetBuilder builder = ResultSetBuilder.create();
                 builder.addColumnInfo("BASELINE_ID", JDBCType.VARCHAR);
                 builder.addColumnInfo("STATUS", JDBCType.VARCHAR);
-                builder.addObjectRowPayload(Arrays.asList(String.valueOf(planResultSet.getBaselineId()), String.valueOf(planResultSet.isOk()?"OK":"ERROR")));
+                builder.addObjectRowPayload(Arrays.asList(String.valueOf(planResultSet.getBaselineId()), String.valueOf(planResultSet.isOk() ? "OK" : "ERROR")));
                 return response.sendResultSet(builder.build());
             }
-            if (text.startsWith("LIST")||text.equalsIgnoreCase("showAllPlans")||text.startsWith("ALL")) {
+            if (text.startsWith("LIST") || text.equalsIgnoreCase("showAllPlans") || text.startsWith("ALL")) {
                 ResultSetBuilder builder = ResultSetBuilder.create();
                 builder.addColumnInfo("BASELINE_ID", JDBCType.VARCHAR)
                         .addColumnInfo("PARAMETERIZED_SQL", JDBCType.VARCHAR)
                         .addColumnInfo("PLAN_ID", JDBCType.VARCHAR)
                         .addColumnInfo("EXTERNALIZED_PLAN", JDBCType.VARCHAR)
                         .addColumnInfo("FIXED", JDBCType.VARCHAR)
-                        .addColumnInfo("ACCEPTED",JDBCType.VARCHAR);
+                        .addColumnInfo("ACCEPTED", JDBCType.VARCHAR);
                 for (Baseline baseline : queryPlanCache.list()) {
                     for (BaselinePlan baselinePlan : baseline.getPlanList()) {
                         String BASELINE_ID = String.valueOf(baselinePlan.getBaselineId());
                         String PARAMETERIZED_SQL = String.valueOf(baselinePlan.getSql());
                         String PLAN_ID = String.valueOf(baselinePlan.getId());
-                        CodeExecuterContext attach =(CodeExecuterContext)baselinePlan.attach();
-                        String EXTERNALIZED_PLAN = new PlanImpl(attach.getMycatRel(),attach,Collections.emptyList()).dumpPlan();
-                        String FIXED =     Optional.ofNullable(baseline.getFixPlan()).filter(i->i.getId()==baselinePlan.getId())
-                                .map(u->"true").orElse("false");
+                        String EXTERNALIZED_PLAN = "";
+                        try {
+                            CodeExecuterContext attach = (CodeExecuterContext) baselinePlan.attach();
+                            EXTERNALIZED_PLAN = new PlanImpl(attach.getMycatRel(), attach, Collections.emptyList()).dumpPlan();
+                        } catch (Throwable throwable) {
+                            logger.error("", throwable);
+                        }
+                        String FIXED = Optional.ofNullable(baseline.getFixPlan()).filter(i -> i.getId() == baselinePlan.getId())
+                                .map(u -> "true").orElse("false");
                         String ACCEPTED = "true";
 
-                        builder.addObjectRowPayload(Arrays.asList(BASELINE_ID, PARAMETERIZED_SQL, PLAN_ID, EXTERNALIZED_PLAN,FIXED,ACCEPTED));
+                        builder.addObjectRowPayload(Arrays.asList(BASELINE_ID, PARAMETERIZED_SQL, PLAN_ID, EXTERNALIZED_PLAN, FIXED, ACCEPTED));
                     }
                 }
                 return response.sendResultSet(() -> builder.build());
@@ -313,8 +318,8 @@ public enum MycatdbCommand {
             } else {
                 if (sqlStatement instanceof MySqlShowStatement) {
                     return receiver.proxySelectToPrototype(sqlStatement.toString());
-                }else {
-                    logger.warn("ignore SQL statement:{}",sqlStatement);
+                } else {
+                    logger.warn("ignore SQL statement:{}", sqlStatement);
                     return receiver.sendOk();
                 }
             }
