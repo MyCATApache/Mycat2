@@ -23,10 +23,7 @@ import io.mycat.util.NameMap;
 import io.vertx.core.Vertx;
 import lombok.SneakyThrows;
 import org.apache.groovy.util.Maps;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.jupiter.api.Disabled;
 
 import javax.annotation.concurrent.NotThreadSafe;
@@ -38,6 +35,7 @@ import java.util.function.Supplier;
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
 @Disabled
+@Ignore
 public class StatisticCenterTest extends DrdsTest {
 
 
@@ -111,6 +109,8 @@ public class StatisticCenterTest extends DrdsTest {
 
 
     @Test
+    @Disabled
+    @Ignore
     public void testNormal() throws Exception{
         DrdsSqlCompiler drds = getDrds();
         String schemaName = "db1";
@@ -141,6 +141,8 @@ public class StatisticCenterTest extends DrdsTest {
     }
 
     @Test
+    @Disabled
+    @Ignore
     public void testGlobal() throws Exception{
         DrdsSqlCompiler drds = getDrds();
         String schemaName = "db1";
@@ -168,6 +170,8 @@ public class StatisticCenterTest extends DrdsTest {
     }
 
     @Test
+    @Disabled
+    @Ignore
     public void testSharding() throws Exception{
         DrdsSqlCompiler drds = getDrds();
         String schemaName = "db1";
