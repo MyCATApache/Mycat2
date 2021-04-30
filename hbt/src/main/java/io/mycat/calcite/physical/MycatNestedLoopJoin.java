@@ -17,11 +17,13 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelNodes;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMdCollation;
+import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.BuiltInMethod;
@@ -82,21 +84,42 @@ public class MycatNestedLoopJoin extends Join implements MycatRel {
                 condition, variablesSet, joinType);
     }
 
-    @Override
-    public RelOptCost computeSelfCost(RelOptPlanner planner,
-                                      RelMetadataQuery mq) {
-        // We always "build" the
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner,
+                                                RelMetadataQuery mq) {
         double rowCount = mq.getRowCount(this);
 
-        return planner.getCostFactory().makeCost(rowCount, 0, 0);
+        // Joins can be flipped, and for many algorithms, both versions are viable
+        // and have the same cost. To make the results stable between versions of
+        // the planner, make one of the versions slightly more expensive.
+        switch (joinType) {
+            case SEMI:
+            case ANTI:
+                // SEMI and ANTI join cannot be flipped
+                break;
+            case RIGHT:
+                rowCount = RelMdUtil.addEpsilon(rowCount);
+                break;
+            default:
+                if (RelNodes.COMPARATOR.compare(left, right) > 0) {
+                    rowCount = RelMdUtil.addEpsilon(rowCount);
+                }
+        }
+
+        final double rightRowCount = right.estimateRowCount(mq);
+        final double leftRowCount = left.estimateRowCount(mq);
+        if (Double.isInfinite(leftRowCount)) {
+            rowCount = leftRowCount;
+        }
+        if (Double.isInfinite(rightRowCount)) {
+            rowCount = rightRowCount;
+        }
+
+        RelOptCost cost = planner.getCostFactory().makeCost(rowCount, 0, 0);
+        // Give it some penalty
+        cost = cost.multiplyBy(10);
+        return cost;
     }
 
-    @Override
-    public double estimateRowCount(RelMetadataQuery mq) {
-        final double leftRowCount = left.estimateRowCount(mq);
-        final double rightRowCount = right.estimateRowCount(mq);
-        return Math.max(leftRowCount, rightRowCount);
-    }
 
     @Override
     public ExplainWriter explain(ExplainWriter writer) {
