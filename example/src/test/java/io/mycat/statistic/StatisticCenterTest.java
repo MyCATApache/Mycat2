@@ -108,8 +108,7 @@ public class StatisticCenterTest extends DrdsTest {
 
 
     @Test
-    @SneakyThrows
-    public void testNormal() {
+    public void testNormal() throws Exception{
         DrdsSqlCompiler drds = getDrds();
         String schemaName = "db1";
         String tableName = "normal";
@@ -139,8 +138,7 @@ public class StatisticCenterTest extends DrdsTest {
     }
 
     @Test
-    @SneakyThrows
-    public void testGlobal() {
+    public void testGlobal() throws Exception{
         DrdsSqlCompiler drds = getDrds();
         String schemaName = "db1";
         String tableName = "global";
@@ -167,8 +165,7 @@ public class StatisticCenterTest extends DrdsTest {
     }
 
     @Test
-    @SneakyThrows
-    public void testSharding() {
+    public void testSharding() throws Exception{
         DrdsSqlCompiler drds = getDrds();
         String schemaName = "db1";
         String tableName = "sharding";

@@ -224,7 +224,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
     @SneakyThrows
     public synchronized Optional<BaselinePlan> loadPlan(long planId) {
         try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
-            List<Map<String, Object>> maps = JdbcUtils.executeQuery(connection.getRawConnection(), "SELECT * FROM mycat.spm_plan where id = ? and baseline_id = ?", Arrays.asList(planId));
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(connection.getRawConnection(), "SELECT * FROM mycat.spm_plan where id = ?", Arrays.asList(planId));
             if (maps.size() != 1) {
                 log.error("baseline is duplicate");
                 return Optional.empty();
