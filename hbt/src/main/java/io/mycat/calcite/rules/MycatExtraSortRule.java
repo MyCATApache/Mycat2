@@ -24,9 +24,14 @@ import org.apache.calcite.adapter.enumerable.EnumerableMergeJoin;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.*;
+import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
+import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.logical.LogicalTableScan;
+import org.apache.calcite.rel.rules.AggregateExtractProjectRule;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.tools.RelBuilder;
 
@@ -37,12 +42,11 @@ import java.util.List;
 /**
  *
  */
-public class MycatExtraSortRule extends RelOptRule {
+public class MycatExtraSortRule extends RelRule<MycatExtraSortRule.Config> {
 
-    public static final MycatExtraSortRule INSTANCE = new MycatExtraSortRule();
 
-    public MycatExtraSortRule() {
-        super(operand(Join.class, operand(MycatView.class, none()), operand(MycatView.class, none())), "MycatExtraSortRule");
+    public MycatExtraSortRule(MycatExtraSortRule.Config config) {
+        super((Config) config);
     }
 
     @Override
@@ -90,6 +94,28 @@ public class MycatExtraSortRule extends RelOptRule {
                     null);
         } else {
             return relBuilder.push(relNode).sort(relCollation).build();
+        }
+    }
+
+    public interface Config extends RelRule.Config {
+        MycatExtraSortRule.Config BOTTOM_VIEW = EMPTY
+                .as(MycatExtraSortRule.Config.class)
+                .withOperandFor(Join.class, MycatView.class);
+        MycatExtraSortRule.Config BOTTOM_RELNODE = EMPTY
+                .as(MycatExtraSortRule.Config.class)
+                .withOperandFor(Join.class, RelNode.class);
+
+        @Override default MycatExtraSortRule toRule() {
+            return new MycatExtraSortRule(this);
+        }
+
+        /** Defines an operand tree for the given classes. */
+        default MycatExtraSortRule.Config withOperandFor(Class<? extends Join> aggregateClass,
+                                                                  Class<? extends RelNode> inputClass) {
+            return withOperandSupplier(b0 ->
+                    b0.operand(aggregateClass).oneInput(b1 ->
+                            b1.operand(inputClass).anyInputs()))
+                    .as(MycatExtraSortRule.Config.class);
         }
     }
 }
