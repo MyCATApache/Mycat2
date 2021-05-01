@@ -23,6 +23,7 @@ import io.mycat.gsi.mapdb.MapDBGSIService;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.vertx.VertxMycatServer;
+import io.mycat.vertxmycat.MycatVertxMetricsFactory;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -104,7 +105,8 @@ public class MycatCore {
         vertxOptions.setWorkerPoolSize(workerPool.getMaxPoolSize());
         vertxOptions.setMaxWorkerExecuteTime(workerPool.getTaskTimeout());
         vertxOptions.setMaxWorkerExecuteTimeUnit(TimeUnit.valueOf(workerPool.getTimeUnit()));
-
+        vertxOptions.getMetricsOptions().setEnabled(true);
+        vertxOptions.getMetricsOptions().setFactory(new MycatVertxMetricsFactory());
 
         this.mycatServer = newMycatServer(serverConfig);
 

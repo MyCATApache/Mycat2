@@ -10,6 +10,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.*;
+import io.mycat.Process;
 import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
@@ -108,7 +109,10 @@ public class MycatVertxMySQLHandler {
         ReadView readView = new ReadView(event);
         Future<?> promise;
         try {
-            switch (readView.readByte()) {
+            byte command = readView.readByte();
+            Process.getCurrentProcess().setCommand(command);
+            Process.getCurrentProcess().setContext(mycatDataContext);
+            switch (command) {
                 case MySQLCommandType.COM_SLEEP: {
                     promise = handleSleep(this.session);
                     break;
@@ -119,6 +123,8 @@ public class MycatVertxMySQLHandler {
                 }
                 case MySQLCommandType.COM_QUERY: {
                     String sql = new String(readView.readEOFStringBytes(), StandardCharsets.UTF_8);
+                    Process.getCurrentProcess().setQuery(sql);
+                    Process.getCurrentProcess().setState(Process.State.INIT);
                     promise = handleQuery(sql, this.session);
                     break;
                 }
@@ -328,6 +334,7 @@ public class MycatVertxMySQLHandler {
                 }
             }
             promise.onComplete(o->{
+                Process.getCurrentProcess().exit();
                 if(o.failed()){
                     mycatDataContext.setLastMessage(o.cause());
                     this.session.writeErrorEndPacketBySyncInProcessError(0);
@@ -335,6 +342,7 @@ public class MycatVertxMySQLHandler {
                 checkPendingMessages();
             });
         } catch (Throwable throwable) {
+            Process.getCurrentProcess().exit();
             mycatDataContext.setLastMessage(throwable);
             this.session.writeErrorEndPacketBySyncInProcessError(0);
         }
