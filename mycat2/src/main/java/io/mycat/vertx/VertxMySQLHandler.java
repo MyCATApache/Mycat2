@@ -97,11 +97,12 @@ public class VertxMySQLHandler extends DefaultCommandHandler {
     public void handle0(int packetId, Buffer event, NetSocket socket) {
         session.setPacketId(packetId);
         ReadView readView = new ReadView(event);
+        Process process = Process.getCurrentProcess();
         Future<?> promise;
         try {
             byte command = readView.readByte();
-            Process.getCurrentProcess().setCommand(command);
-            Process.getCurrentProcess().setContext(mycatDataContext);
+            process.setCommand(command);
+            process.setContext(mycatDataContext);
             switch (command) {
                 case MySQLCommandType.COM_SLEEP: {
                     promise = handleSleep(this.session);
@@ -113,8 +114,8 @@ public class VertxMySQLHandler extends DefaultCommandHandler {
                 }
                 case MySQLCommandType.COM_QUERY: {
                     byte[] queryBytes = readView.readEOFStringBytes();
-                    Process.getCurrentProcess().setQuery(new String(queryBytes, StandardCharsets.UTF_8));
-                    Process.getCurrentProcess().setState(Process.State.INIT);
+                    process.setQuery(new String(queryBytes, StandardCharsets.UTF_8));
+                    process.setState(Process.State.INIT);
                     promise = handleQuery(queryBytes, this.session);
                     break;
                 }
@@ -323,7 +324,7 @@ public class VertxMySQLHandler extends DefaultCommandHandler {
                 }
             }
             promise.onComplete(o -> {
-                Process.getCurrentProcess().exit();
+                process.exit();
                 if (o.failed()) {
                     mycatDataContext.setLastMessage(o.cause());
                     this.session.writeErrorEndPacketBySyncInProcessError(0);
@@ -331,7 +332,7 @@ public class VertxMySQLHandler extends DefaultCommandHandler {
                 checkPendingMessages();
             });
         } catch (Throwable throwable) {
-            Process.getCurrentProcess().exit();
+            process.exit();
             mycatDataContext.setLastMessage(throwable);
             this.session.writeErrorEndPacketBySyncInProcessError(0);
         }

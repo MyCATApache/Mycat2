@@ -18,10 +18,13 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowProcessListSta
 import io.mycat.MycatDataContext;
 import io.mycat.Process;
 import io.mycat.Response;
+import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
 
+import java.sql.JDBCType;
+import java.util.Arrays;
 import java.util.Set;
 
 
@@ -30,11 +33,31 @@ public class ShowProcessListSQLHandler extends AbstractSQLHandler<MySqlShowProce
     @Override
     protected Future<Void> onExecute(SQLRequest<MySqlShowProcessListStatement> request, MycatDataContext dataContext, Response response) {
         Set<Process> processList = Process.getProcessList();
+
+        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+        resultSetBuilder.addColumnInfo("Id", JDBCType.INTEGER);
+        resultSetBuilder.addColumnInfo("User", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("Host", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("db", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("Command", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("Time", JDBCType.BIGINT);
+        resultSetBuilder.addColumnInfo("State", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("Info", JDBCType.VARCHAR);
+
+        long timestamp = System.currentTimeMillis();
         for (Process process : processList) {
-            byte[] bytes = process.toBytes();
-//            response.sendResultSet()
+            resultSetBuilder.addObjectRowPayload(Arrays.asList(
+                    process.getId(),
+                    process.getUser(),
+                    process.getHost(),
+                    process.getDb(),
+                    process.getCommand(),
+                    timestamp - process.getCreateTimestamp().getTime(),
+                    process.getState(),
+                    process.getInfo()
+            ));
         }
-//        response.sendResultSet()
-        return response.proxySelectToPrototype(request.getAst().toString());
+        return response.sendResultSet(resultSetBuilder.build());
+//        return response.proxySelectToPrototype(request.getAst().toString());
     }
 }

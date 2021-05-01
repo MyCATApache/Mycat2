@@ -85,9 +85,11 @@ public class MycatVertxMySQLHandler {
     public void handle(int packetId, Buffer event, NetSocket socket) {
         if (handleIng.compareAndSet(false, true)) {
             try {
-                handle0(packetId, event, socket);
+                Process process = Process.getCurrentProcess();
+                handle0(packetId, event, socket,process);
                 checkPendingMessages();
             } finally {
+                Process.setCurrentProcess(null);
                 handleIng.set(false);
                 // check if handle set handleIng gap
                 checkPendingMessages();
@@ -100,18 +102,23 @@ public class MycatVertxMySQLHandler {
     private void checkPendingMessages(){
         PendingMessage pendingMessage;
         while ((pendingMessage = pendingMessages.poll()) != null) {
-            handle0(pendingMessage.packetId, pendingMessage.event, pendingMessage.socket);
+            Process process = Process.getCurrentProcess();
+            try {
+                handle0(pendingMessage.packetId, pendingMessage.event, pendingMessage.socket, process);
+            }finally {
+                Process.setCurrentProcess(null);
+            }
         }
     }
 
-    public void handle0(int packetId, Buffer event, NetSocket socket) {
+    public void handle0(int packetId, Buffer event, NetSocket socket,Process process) {
         session.setPacketId(packetId);
         ReadView readView = new ReadView(event);
         Future<?> promise;
         try {
             byte command = readView.readByte();
-            Process.getCurrentProcess().setCommand(command);
-            Process.getCurrentProcess().setContext(mycatDataContext);
+            process.setCommand(command);
+            process.setContext(mycatDataContext);
             switch (command) {
                 case MySQLCommandType.COM_SLEEP: {
                     promise = handleSleep(this.session);
@@ -123,8 +130,8 @@ public class MycatVertxMySQLHandler {
                 }
                 case MySQLCommandType.COM_QUERY: {
                     String sql = new String(readView.readEOFStringBytes(), StandardCharsets.UTF_8);
-                    Process.getCurrentProcess().setQuery(sql);
-                    Process.getCurrentProcess().setState(Process.State.INIT);
+                    process.setQuery(sql);
+                    process.setState(Process.State.INIT);
                     promise = handleQuery(sql, this.session);
                     break;
                 }
@@ -334,7 +341,7 @@ public class MycatVertxMySQLHandler {
                 }
             }
             promise.onComplete(o->{
-                Process.getCurrentProcess().exit();
+                process.exit();
                 if(o.failed()){
                     mycatDataContext.setLastMessage(o.cause());
                     this.session.writeErrorEndPacketBySyncInProcessError(0);
@@ -342,7 +349,7 @@ public class MycatVertxMySQLHandler {
                 checkPendingMessages();
             });
         } catch (Throwable throwable) {
-            Process.getCurrentProcess().exit();
+            process.exit();
             mycatDataContext.setLastMessage(throwable);
             this.session.writeErrorEndPacketBySyncInProcessError(0);
         }
@@ -367,11 +374,7 @@ public class MycatVertxMySQLHandler {
             @Override
             public void run() throws Throwable {
                 // check if handle set handleIng gap
-                for (PendingMessage pendingMessage : pendingMessages) {
-                    while ((pendingMessage = pendingMessages.poll()) != null) {
-                        handle0(pendingMessage.packetId, pendingMessage.event, pendingMessage.socket);
-                    }
-                }
+                checkPendingMessages();
             }
         });
         return disposable;

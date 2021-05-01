@@ -6,7 +6,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.net.InetSocketAddress;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,13 +29,9 @@ public class Process {
     private final Map<Thread, Integer> connectionCounterMap = new HashMap<>();
     private final Timestamp createTimestamp = new Timestamp(System.currentTimeMillis());
     private final List<Thread> threadTraceList = new ArrayList<>();
-    private long id;
     private String query;
-    private MycatUser user;
     private Command command;
     private State state;
-    private String db;
-    private InetSocketAddress address;
     private MycatDataContext context;
 
     public static Process getCurrentProcess() {
@@ -74,6 +69,26 @@ public class Process {
         return process;
     }
 
+    public void init(MycatDataContext context) {
+
+    }
+
+    public long getId() {
+        return context == null ? -1 : context.getSessionId();
+    }
+
+    public String getUser() {
+        return context.getUser().getUserName();
+    }
+
+    public String getHost() {
+        return context.getUser().getHost();
+    }
+
+    public String getInfo() {
+        return "";
+    }
+
     @Override
     public boolean equals(Object obj) {
         return this == obj;
@@ -85,10 +100,8 @@ public class Process {
     }
 
     public void setContext(MycatDataContext context) {
+        init(context);
         this.context = context;
-        this.id = context.getSessionId();
-        this.user = context.getUser();
-        this.address = context.getUser().getRemoteAddress();
     }
 
     public void setCommand(int command) {
@@ -98,6 +111,10 @@ public class Process {
     public void kill() {
         exit();
         context.close();
+    }
+
+    public String getDb() {
+        return context.getDefaultSchema();
     }
 
     public void exit() {
@@ -128,20 +145,12 @@ public class Process {
                 }
             }
         }
+        setCurrentProcess(null);
     }
 
     @Override
     public String toString() {
-        return "这里是show processlist的显示内容";
-    }
-
-    /**
-     * 这里是发给show processlist的数据包
-     *
-     * @return
-     */
-    public byte[] toBytes() {
-        return new byte[0];
+        return "[" + getId() + "]" + query;
     }
 
     /**
