@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -41,6 +41,7 @@ import org.apache.calcite.util.Pair;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public class MycatSortMergeJoin extends Join implements MycatRel {
@@ -50,7 +51,14 @@ public class MycatSortMergeJoin extends Join implements MycatRel {
                                  RelNode right,
                                  RexNode condition,
                                  Set<CorrelationId> variablesSet, JoinRelType joinType) {
-        super(cluster, traitSet, ImmutableList.of(), left, right, condition, variablesSet, joinType);
+        super(cluster,  Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), ImmutableList.of(), left, right, condition, variablesSet, joinType);
+    }
+
+    public MycatSortMergeJoin(RelInput input) {
+        this(input.getCluster(), input.getTraitSet(),
+                input.getInputs().get(0), input.getInputs().get(1),
+                input.getExpression("condition"), ImmutableSet.of(),
+                input.getEnum("joinType", JoinRelType.class));
     }
 
     public static MycatSortMergeJoin create(
@@ -180,6 +188,6 @@ public class MycatSortMergeJoin extends Join implements MycatRel {
     }
     @Override
     public boolean isSupportStream() {
-        return true;
+        return false;
     }
 }

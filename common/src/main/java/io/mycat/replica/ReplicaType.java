@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -18,29 +18,17 @@ import io.mycat.GlobalConst;
 
 public enum ReplicaType {
     // 单一节点
-    SINGLE_NODE(GlobalConst.SINGLE_NODE_HEARTBEAT_SQL, new String[]{}),
+    SINGLE_NODE(),
     // 普通主从
-    MASTER_SLAVE(GlobalConst.MASTER_SLAVE_HEARTBEAT_SQL, GlobalConst.MYSQL_SLAVE_STAUTS_COLMS),
+    MASTER_SLAVE(),
     // 普通基于garela cluster集群
-    GARELA_CLUSTER(GlobalConst.GARELA_CLUSTER_HEARTBEAT_SQL,
-            GlobalConst.MYSQL_CLUSTER_STAUTS_COLMS),
-    NONE("SELECT 1;", null),
+    GARELA_CLUSTER(),
+    NONE(),
+    MHA(),
+    MGR(),
     ;
 
-    private byte[] hearbeatSQL;
-    private String[] fetchColms;
-
-    ReplicaType(String hearbeatSQL, String[] fetchColms) {
-        this.hearbeatSQL = hearbeatSQL.getBytes();
-        this.fetchColms = fetchColms;
-    }
-
-    public byte[] getHearbeatSQL() {
-        return hearbeatSQL;
-    }
-
-    public String[] getFetchColms() {
-        return fetchColms;
+    ReplicaType() {
     }
 }
   

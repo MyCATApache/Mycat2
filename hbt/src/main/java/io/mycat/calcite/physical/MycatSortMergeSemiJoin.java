@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
@@ -30,6 +31,7 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 
+import java.util.Objects;
 import java.util.Set;
 
 public class MycatSortMergeSemiJoin extends MycatSortMergeJoin implements MycatRel {
@@ -39,7 +41,14 @@ public class MycatSortMergeSemiJoin extends MycatSortMergeJoin implements MycatR
     protected MycatSortMergeSemiJoin(RelOptCluster cluster, RelTraitSet traitSet,
                                      RelNode left, RelNode right, RexNode condition,
                                      Set<CorrelationId> variablesSet, JoinRelType joinType) {
-        super(cluster, traitSet, left, right, condition, variablesSet, joinType);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), left, right, condition, variablesSet, joinType);
+    }
+
+    public MycatSortMergeSemiJoin(RelInput input) {
+        this(input.getCluster(), input.getTraitSet(),
+                input.getInputs().get(0), input.getInputs().get(1),
+                input.getExpression("condition"), ImmutableSet.of(),
+                input.getEnum("joinType", JoinRelType.class));
     }
 
     public static MycatSortMergeSemiJoin create(RelTraitSet traitSet,
@@ -47,10 +56,10 @@ public class MycatSortMergeSemiJoin extends MycatSortMergeJoin implements MycatR
                                                 JoinRelType joinType) {
         RelOptCluster cluster = left.getCluster();
         RelMetadataQuery mq = cluster.getMetadataQuery();
-        traitSet= traitSet.replace(MycatConvention.INSTANCE);
-        traitSet=traitSet .replaceIfs(
+        traitSet = traitSet.replace(MycatConvention.INSTANCE);
+        traitSet = traitSet.replaceIfs(
                 RelCollationTraitDef.INSTANCE,
-                () ->mq.collations(left));//MycatSortMergeSemiJoin结果也是已经排序的
+                () -> mq.collations(left));//MycatSortMergeSemiJoin结果也是已经排序的
         return new MycatSortMergeSemiJoin(
                 cluster,
                 traitSet,

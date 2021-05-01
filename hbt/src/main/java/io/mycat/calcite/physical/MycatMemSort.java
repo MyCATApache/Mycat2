@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -28,6 +28,8 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -38,6 +40,8 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.RxBuiltInMethod;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Objects;
 
 /**
  * Sort operator implemented in Mycat convention.
@@ -52,9 +56,15 @@ public class MycatMemSort
             RelCollation collation,
             RexNode offset,
             RexNode fetch) {
-        super(cluster, traitSet, input, collation, offset, fetch);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), input, collation, offset, fetch);
         assert getConvention() instanceof MycatConvention;
         assert getConvention() == input.getConvention();
+    }
+    public MycatMemSort(RelInput input) {
+        this(input.getCluster(), input.getTraitSet().plus(input.getCollation()),
+                input.getInput(),
+                RelCollationTraitDef.INSTANCE.canonize(input.getCollation()),
+                input.getExpression("offset"), input.getExpression("fetch"));
     }
 
     public static MycatMemSort create(

@@ -44,7 +44,7 @@ import java.util.List;
  * 1.注意点 转换时候注意目标的表达式是否能接受源表达式,比如有不支持的自定义函数,排序项,分组项
  */
 public class MycatRules {
-    public final static Convention convention = Convention.NONE;
+    public final static Convention IN_CONVENTION = Convention.NONE;
 
     private MycatRules() {
 
@@ -164,43 +164,35 @@ public class MycatRules {
                             SNAPSHOT_FACTORY));
 
     public static List<RelOptRule> rules() {
-        return rules(MycatConvention.INSTANCE);
-    }
-
-    public static List<RelOptRule> rules(MycatConvention out) {
-        return rules(out, RelFactories.LOGICAL_BUILDER);
-    }
-
-    public static List<RelOptRule> rules(MycatConvention out,
-                                         RelBuilderFactory relBuilderFactory) {
         return ImmutableList.of(
-                new MycatJoinRule(out, relBuilderFactory),
-                new MycatCalcRule(out, relBuilderFactory),
-                new MycatProjectRule(out, relBuilderFactory),
-                new MycatFilterRule(out, relBuilderFactory),
-                new MycatAggregateRule(out, relBuilderFactory),
-                new MycatMemSortRule(out, relBuilderFactory),
-                new MycatUnionRule(out, relBuilderFactory),
-                new MycatIntersectRule(out, relBuilderFactory),
-                new MycatMinusRule(out, relBuilderFactory),
-                new MycatTableModificationRule(out, relBuilderFactory),
-                new MycatValuesRule(out, relBuilderFactory),
-                new MycatMergeJoinRule(out, relBuilderFactory),
-                new MycatSortAggRule(out, relBuilderFactory),
-                new MycatCorrelateRule(out, relBuilderFactory),
-                new MycatTopNRule(out, relBuilderFactory),
-
+                MycatJoinRule.INSTANCE,
+                MycatCalcRule.INSTANCE,
+                MycatProjectRule.INSTANCE,
+                MycatFilterRule.INSTANCE,
+                MycatAggregateRule.INSTANCE,
+                MycatMemSortRule.INSTANCE,
+                MycatUnionRule.INSTANCE,
+                MycatIntersectRule.INSTANCE,
+                MycatMinusRule.INSTANCE,
+                MycatTableModificationRule.INSTANCE,
+                MycatValuesRule.INSTANCE,
+                MycatMergeJoinRule.INSTANCE,
+                MycatSortAggRule.INSTANCE,
+                MycatCorrelateRule.INSTANCE,
+                MycatTopNRule.INSTANCE,
+                MycatRepeatUnionRule.INSTANCE,
+                MycatTableSpoolRule.INSTANCE,
+                MycatWinodwRule.INSTANCE,
 //                , MycatBatchNestedLoopJoinRule.INSTANCE
 
-                CoreRules.PROJECT_CALC_MERGE,
-                CoreRules.FILTER_CALC_MERGE,
                 CoreRules.FILTER_TO_CALC,
                 CoreRules.PROJECT_TO_CALC,
                 CoreRules.CALC_REMOVE,
-                CoreRules.CALC_MERGE
+                CoreRules.CALC_MERGE,
+                CoreRules.CALC_TO_WINDOW,
+                MycatExtraSortRule.INSTANCE
         );
     }
-
 
     /**
      * Returns whether this Mycat data source can implement a given aggregate

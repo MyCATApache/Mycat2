@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -34,6 +34,8 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rex.RexDynamicParam;
@@ -46,10 +48,7 @@ import org.apache.calcite.util.RxBuiltInMethodImpl;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class MycatMergeSort extends Sort implements MycatRel {
 
@@ -60,13 +59,20 @@ public class MycatMergeSort extends Sort implements MycatRel {
 //            "streamOrderBy", List.class,
 //            Function1.class, Comparator.class, int.class, int.class);
 
-    protected MycatMergeSort(RelOptCluster cluster,
-                             RelTraitSet traits,
+    public MycatMergeSort(RelOptCluster cluster,
+                             RelTraitSet traitSet,
                              RelNode child,
                              RelCollation collation,
                              RexNode offset,
                              RexNode fetch) {
-        super(cluster, traits, child, collation, offset, fetch);
+        super(cluster,  Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), child, collation, offset, fetch);
+    }
+
+    public MycatMergeSort(RelInput relInput) {
+        this(relInput.getCluster(), relInput.getTraitSet().plus(relInput.getCollation()),
+                relInput.getInput(),
+                RelCollationTraitDef.INSTANCE.canonize(relInput.getCollation()),
+                relInput.getExpression("offset"), relInput.getExpression("fetch"));
     }
 
     public static MycatMergeSort create(RelTraitSet traits, RelNode child, RelCollation collation, RexNode offset, RexNode fetch) {

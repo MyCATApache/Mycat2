@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2019>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -45,7 +45,7 @@ import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.querycondition.*;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.mycat1xfunction.PartitionRuleFunctionManager;
 import io.mycat.util.*;
@@ -53,6 +53,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.ToString;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +75,7 @@ public class MetadataManager implements MysqlVariableService {
     final NameMap<SchemaHandler> schemaMap = new NameMap<>();
     final LoadBalanceManager loadBalanceManager;
     final SequenceGenerator sequenceGenerator;
-    final ReplicaSelectorRuntime replicaSelectorRuntime;
+    final ReplicaSelectorManager replicaSelectorRuntime;
     final JdbcConnectionManager jdbcConnectionManager;
 
     @Getter
@@ -118,7 +119,7 @@ public class MetadataManager implements MysqlVariableService {
     public static MetadataManager createMetadataManager(List<LogicSchemaConfig> schemaConfigs,
                                                         LoadBalanceManager loadBalanceManager,
                                                         SequenceGenerator sequenceGenerator,
-                                                        ReplicaSelectorRuntime replicaSelectorRuntime,
+                                                        ReplicaSelectorManager replicaSelectorRuntime,
                                                         JdbcConnectionManager jdbcConnectionManager,
                                                         String prototype) {
         try {
@@ -137,7 +138,7 @@ public class MetadataManager implements MysqlVariableService {
     public MetadataManager(List<LogicSchemaConfig> schemaConfigs,
                            LoadBalanceManager loadBalanceManager,
                            SequenceGenerator sequenceGenerator,
-                           ReplicaSelectorRuntime replicaSelectorRuntime,
+                           ReplicaSelectorManager replicaSelectorRuntime,
                            JdbcConnectionManager jdbcConnectionManager,
                            String prototype
     ) {
@@ -457,22 +458,38 @@ public class MetadataManager implements MysqlVariableService {
                                   ShardingTableConfig tableConfigEntry,
                                   String prototypeServer,
                                   List<DataNode> backends) {
+        ShardingTable shardingTable = createShardingTable(schemaName, orignalTableName, tableConfigEntry, prototypeServer, backends);
+        addLogicTable(shardingTable);
+    }
+
+    @NotNull
+    public  ShardingTable createShardingTable(String schemaName, String orignalTableName, ShardingTableConfig tableConfigEntry, String prototypeServer, List<DataNode> backends) throws Exception {
+        ShardingFuntion function = tableConfigEntry.getFunction();
+        if (function != null) {
+            if (function.getClazz() == null) {
+                Map<String, Object> properties = function.getProperties();
+                String mappingFormat = (String) properties.get("mappingFormat");
+                if (mappingFormat == null) {
+                    mappingFormat = (String) properties.getOrDefault("mappingFormat",
+                            String.join("/", "c${targetIndex}",
+                                    schemaName + "_${dbIndex}",
+                                    orignalTableName + "_${tableIndex}"));
+                    properties.put("mappingFormat", mappingFormat);
+                }
+            }
+        }
         //////////////////////////////////////////////
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL()).orElseGet(() -> getCreateTableSQLByJDBC(schemaName, orignalTableName, backends));
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, orignalTableName, createTableSQL, backends);
         Map<String, IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName, columns);
-
         //////////////////////////////////////////////
-        String s = schemaName + "_" + orignalTableName;
-        Supplier<Number> sequence = sequenceGenerator.getSequence(s);
         ShardingTable shardingTable = LogicTable.createShardingTable(schemaName, orignalTableName,
                 backends, columns, null, indexInfos, createTableSQL);
         shardingTable.setShardingFuntion(PartitionRuleFunctionManager.getRuleAlgorithm(shardingTable, tableConfigEntry.getFunction()));
-        addLogicTable(shardingTable);
-
         for (SimpleColumnInfo column : columns) {
             column.setShardingKey(shardingTable.function().isShardingKey(column.getColumnName()));
         }
+        return shardingTable;
     }
 
     private synchronized void addLogicTable(TableHandler logicTable) {
@@ -581,6 +598,9 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     private String getCreateTableSQLByJDBC(String schemaName, String tableName, List<DataNode> backends) {
+        backends = new ArrayList<>(backends);
+        backends.add(new BackendTableInfo(prototype,schemaName,tableName));
+
         if (backends == null || backends.isEmpty()) {
             return null;
         }
@@ -938,7 +958,11 @@ public class MetadataManager implements MysqlVariableService {
                                 dataNode = tableHandler1.getDataNode();
                             } else if (tableHandler.getType() == LogicTableType.GLOBAL) {
                                 GlobalTable tableHandler1 = (GlobalTable) tableHandler;
-                                int i = ThreadLocalRandom.current().nextInt(0, tableHandler1.getGlobalDataNode().size());
+                                int size = tableHandler1.getGlobalDataNode().size();
+                                if (size == 0) {
+                                    throw new IllegalArgumentException("datanodes of global table is empty");
+                                }
+                                int i = ThreadLocalRandom.current().nextInt(0, size);
                                 dataNode = tableHandler1.getGlobalDataNode().get(i);
                             } else {
                                 throw new IllegalArgumentException("unsupported table type:" + tableHandler.getType());

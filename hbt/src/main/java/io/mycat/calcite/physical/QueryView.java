@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -15,6 +15,7 @@
 package io.mycat.calcite.physical;
 
 import io.mycat.calcite.ExplainWriter;
+import io.mycat.calcite.MycatConvention;
 import io.mycat.calcite.MycatRel;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
@@ -22,10 +23,11 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Union;
 
 import java.util.List;
+import java.util.Objects;
 
 public class QueryView extends Union implements MycatRel {
-    protected QueryView(RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs) {
-        super(cluster, traits, inputs, true);
+    protected QueryView(RelOptCluster cluster, RelTraitSet traitSet, List<RelNode> inputs) {
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), inputs, true);
     }
 
     @Override

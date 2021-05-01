@@ -2,6 +2,9 @@ package io.mycat.assemble;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.util.JdbcUtils;
+import io.mycat.beans.mycat.CopyMycatRowMetaData;
+import io.mycat.beans.mycat.JdbcRowMetaData;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
 import io.mycat.util.JsonUtil;
@@ -9,7 +12,7 @@ import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
+import java.sql.*;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -21,10 +24,10 @@ import java.util.function.Function;
 
 public interface MycatTest {
 
-    String DB_MYCAT = System.getProperty("db_mycat","jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true");
-    String DB1 = System.getProperty("db1","jdbc:mysql://localhost:3306/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true");
-    String DB2 = System.getProperty("db2","jdbc:mysql://localhost:3307/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true");
-    String DB_MYCAT_PSTMT = System.getProperty("db_mycat","jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useServerPrepStmts=true");
+    String DB_MYCAT = System.getProperty("db_mycat","jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true");
+    String DB1 = System.getProperty("db1","jdbc:mysql://localhost:3306/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true");
+    String DB2 = System.getProperty("db2","jdbc:mysql://localhost:3307/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true");
+    String DB_MYCAT_PSTMT = System.getProperty("db_mycat","jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useServerPrepStmts=true");
 
     String RESET_CONFIG ="/*+ mycat:resetConfig{} */";
 
@@ -45,8 +48,9 @@ public interface MycatTest {
                 dataSource.setUrl(url);
                 dataSource.setUsername(username);
                 dataSource.setPassword(password);
-                dataSource.setLoginTimeout(5);
+                dataSource.setLoginTimeout(30);
                 dataSource.setCheckExecuteTime(true);
+                dataSource.setQueryTimeout(30);
                 dataSource.setMaxWait(TimeUnit.SECONDS.toMillis(10));
                 return dataSource;
             }
@@ -62,7 +66,10 @@ public interface MycatTest {
     public default boolean hasData(Connection connection, String db, String table) throws Exception {
         return !executeQuery(connection, String.format("select * from %s.%s limit 1", db, table)).isEmpty();
     }
-
+    public default long count(Connection connection, String db, String table) throws Exception {
+        Number count = (Number)executeQuery(connection, String.format("select count(1) as `count` from %s.%s", db, table)).get(0).get("count");
+        return count.longValue();
+    }
     public default void deleteData(Connection connection, String db, String table) throws Exception {
         execute(connection, String.format("delete  from %s.%s", db, table));
     }
@@ -81,5 +88,14 @@ public interface MycatTest {
                 .create("newDs",
                         DB1));
         execute(connection, CreateClusterHint.create("c0", Arrays.asList("newDs"), Collections.emptyList()));
+    }
+
+
+    public default MycatRowMetaData getColumns(Connection connection, String db, String table) throws SQLException {
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery("select * from " + db + "." + table)) {
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            return new CopyMycatRowMetaData(new JdbcRowMetaData(metaData));
+        }
     }
 }

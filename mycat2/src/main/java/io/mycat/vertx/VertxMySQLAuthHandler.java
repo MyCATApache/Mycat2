@@ -1,3 +1,17 @@
+/**
+ * Copyright (C) <2021>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.vertx;
 
 import io.mycat.*;
@@ -7,8 +21,8 @@ import io.mycat.beans.mysql.packet.AuthPacket;
 import io.mycat.beans.mysql.packet.AuthSwitchRequestPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.config.UserConfig;
-import io.mycat.mycatmysql.MycatMySQLHandler;
-import io.mycat.mycatmysql.MycatMysqlSession;
+import io.mycat.mycatmysql.MycatVertxMySQLHandler;
+import io.mycat.mycatmysql.MycatVertxMysqlSession;
 import io.mycat.proxy.handler.front.MySQLClientAuthHandler;
 import io.mycat.proxy.handler.front.SocketAddressUtil;
 import io.mycat.runtime.MycatDataContextImpl;
@@ -119,8 +133,8 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
         mycatDataContext.setAutoCommit(true);
         mycatDataContext.setIsolation(MySQLIsolation.REPEATED_READ);
         mycatDataContext.setCharsetIndex(authPacket.getCharacterSet());
-        MycatMysqlSession vertxSession = new MycatMysqlSession(mycatDataContext, socket);
-        socket.handler(new VertxMySQLPacketResolver(socket, new MycatMySQLHandler(vertxSession)));
+        MycatVertxMysqlSession vertxSession = new MycatVertxMysqlSession(mycatDataContext, socket);
+        socket.handler(new VertxMySQLPacketResolver(socket, new MycatVertxMySQLHandler(vertxSession)));
         vertxSession.setPacketId(packetId);
 
         mysqlProxyServerVerticle.addSession(vertxSession);

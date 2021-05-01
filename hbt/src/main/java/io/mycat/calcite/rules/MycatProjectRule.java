@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -21,6 +21,7 @@ import io.mycat.calcite.MycatRules;
 import io.mycat.calcite.physical.MycatProject;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.tools.RelBuilderFactory;
 
@@ -30,31 +31,22 @@ import org.apache.calcite.tools.RelBuilderFactory;
  */
 public class MycatProjectRule extends MycatConverterRule {
 
+    public static final MycatProjectRule INSTANCE = new MycatProjectRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
+
     /**
      * Creates a MycatProjectRule.
      */
     public MycatProjectRule(final MycatConvention out,
                             RelBuilderFactory relBuilderFactory) {
         super(Project.class, project ->
-                        true,
-                MycatRules.convention, out, relBuilderFactory, "MycatProjectRule");
-    }
-
-    private static boolean userDefinedFunctionInProject(Project project) {
-        CheckingUserDefinedFunctionVisitor visitor = new CheckingUserDefinedFunctionVisitor();
-        for (RexNode node : project.getProjects()) {
-            node.accept(visitor);
-            if (visitor.containsUserDefinedFunction()) {
-                return true;
-            }
-        }
-        return false;
+                        !project.containsOver(),
+                MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatProjectRule");
     }
 
     public RelNode convert(RelNode rel) {
         final Project project = (Project) rel;
         return MycatProject.create(
-                convert(project.getInput(),out),
+                convert(project.getInput(), out),
                 project.getProjects(),
                 project.getRowType());
     }

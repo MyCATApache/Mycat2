@@ -104,13 +104,13 @@ public class EnumUtils {
         body);
   }
 
-  static Type javaClass(
+ public static Type javaClass(
       JavaTypeFactory typeFactory, RelDataType type) {
     final Type clazz = typeFactory.getJavaClass(type);
     return clazz instanceof Class ? clazz : Object[].class;
   }
 
-  static List<Type> fieldTypes(
+ public static List<Type> fieldTypes(
       final JavaTypeFactory typeFactory,
       final List<? extends RelDataType> inputTypes) {
     return new AbstractList<Type>() {
@@ -123,7 +123,7 @@ public class EnumUtils {
     };
   }
 
-  static List<RelDataType> fieldRowTypes(
+ public static List<RelDataType> fieldRowTypes(
       final RelDataType inputRowType,
       final List<? extends RexNode> extraInputs,
       final List<Integer> argList) {

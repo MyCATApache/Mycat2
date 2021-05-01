@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @AllArgsConstructor
@@ -14,5 +15,5 @@ import java.util.List;
 public class GlobalTableConfig {
     String createTableSQL;
     String balance;
-    List<GlobalBackEndTableInfoConfig> dataNodes;
+    List<GlobalBackEndTableInfoConfig> dataNodes = new ArrayList<>();
 }

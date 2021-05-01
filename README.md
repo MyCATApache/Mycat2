@@ -1,25 +1,27 @@
 # Mycat2
 
+Distributed database based on MySQL.
+
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Main/badge.svg)
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Dev/badge.svg)
 
-[v1.14-release](https://github.com/MyCATApache/Mycat2/tree/v1.14-release)
+[v1.17-release](https://github.com/MyCATApache/Mycat2/releases/tag/v1.17-2021-4-13)
 
-[v1.15-dev](https://github.com/MyCATApache/Mycat2/tree/dev)
-开发目标:提高性能
+[v1.18-dev]
+Development objectives:Improve performance
 
-[入门Mycat2](https://www.yuque.com/books/share/6606b3b6-3365-4187-94c4-e51116894695/fb2285b811138a442eb850f0127d7ea3)
-[文档](https://www.yuque.com/books/share/6606b3b6-3365-4187-94c4-e51116894695)
-[版本](http://dl.mycat.org.cn/2.0/1.13-release/)
+[introduction Mycat2](https://www.yuque.com/books/share/6606b3b6-3365-4187-94c4-e51116894695/fb2285b811138a442eb850f0127d7ea3)
+[doc](https://www.yuque.com/books/share/6606b3b6-3365-4187-94c4-e51116894695)
 
 
-## 架构
 
-![](https://raw.githubusercontent.com/wiki/MyCATApache/Mycat2/img/stack.png)
+## Framework
 
-目前仅支持在java8上运行Mycat2,其他版本后续会支持.
+![](https://cdn.nlark.com/yuque/0/2021/png/658548/1615792485342-b0f62690-e0cf-4f4a-89b6-18e5e1487227.png)
 
-## 核心团队
+Currently, only mycat2 is supported on java8, and will be supported in other versions later.
+
+## Core team
 
 [junwen12221](https://github.com/junwen12221)
 

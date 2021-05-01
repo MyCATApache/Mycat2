@@ -1,3 +1,17 @@
+/**
+ * Copyright (C) <2021>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.sqlhandler.dql;
 
 import com.alibaba.druid.sql.SQLUtils;
@@ -42,7 +56,7 @@ public class AnalyzeHanlder extends AbstractSQLHandler<MySqlAnalyzeStatement> {
                 String schemaName = SQLUtils.normalize(tableSource.getSchema());
                 String tableName = SQLUtils.normalize(tableSource.getTableName());
                 resultSetBuilder.addObjectRowPayload(Arrays.asList(
-                        schemaName+"."+tableName,
+                        schemaName + "." + tableName,
                         "analyze",
                         "status",
                         "OK"
@@ -52,7 +66,8 @@ public class AnalyzeHanlder extends AbstractSQLHandler<MySqlAnalyzeStatement> {
                 if (tableHandler == null) {
                     return response.sendError(new MycatException(tableSource + "不存在"));
                 }
-                StatisticCenter.INSTANCE.computeTableRowCount(tableHandler);
+                StatisticCenter statisticCenter = MetaClusterCurrent.wrapper(StatisticCenter.class);
+                statisticCenter.fetchTableRowCount(tableHandler);
             }
             return response.sendResultSet(resultSetBuilder.build());
         }

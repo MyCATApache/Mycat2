@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -21,6 +21,7 @@ import io.mycat.calcite.MycatRules;
 import io.mycat.calcite.physical.MycatCalc;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Calc;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rex.RexMultisetUtil;
 import org.apache.calcite.tools.RelBuilderFactory;
 
@@ -31,12 +32,15 @@ import java.util.function.Predicate;
  * {@link MycatCalcRule}.
  */
 public class MycatCalcRule extends MycatConverterRule {
+
+    public static final MycatCalcRule INSTANCE = new MycatCalcRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
+
     /**
      * Creates a MycatCalcRule.
      */
     public MycatCalcRule(MycatConvention out,
                          RelBuilderFactory relBuilderFactory) {
-        super(Calc.class, (Predicate<RelNode>) r -> true, MycatRules.convention,
+        super(Calc.class, (Predicate<Calc>) r -> !r.containsOver(), MycatRules.IN_CONVENTION,
                 out, relBuilderFactory, "MycatCalcRule");
     }
 

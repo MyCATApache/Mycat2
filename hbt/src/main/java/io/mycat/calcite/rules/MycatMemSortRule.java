@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -21,6 +21,7 @@ import io.mycat.calcite.MycatRules;
 import io.mycat.calcite.physical.MycatMemSort;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.tools.RelBuilderFactory;
 
@@ -32,12 +33,13 @@ import java.util.function.Predicate;
  */
 public class MycatMemSortRule extends MycatConverterRule {
 
+    public static final MycatMemSortRule INSTANCE = new MycatMemSortRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
     /**
      * Creates a MycatSortRule.
      */
     public MycatMemSortRule(MycatConvention out,
                             RelBuilderFactory relBuilderFactory) {
-        super(Sort.class, (Predicate<RelNode>) r -> true, MycatRules.convention, out,
+        super(Sort.class, (Predicate<RelNode>) r -> true, MycatRules.IN_CONVENTION, out,
                 relBuilderFactory, "MycatSortRule");
     }
 

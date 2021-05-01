@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -41,6 +41,8 @@ public abstract class CustomRuleFunction {
             throw new IllegalArgumentException("路由计算返回结果个数为0");
         }
         if (dataNodes.size() != 1) {
+            List<DataNode> dataNodes2 = calculate(values);
+             dataNodes2 = calculate(values);
             throw new IllegalArgumentException("路由计算返回结果个数为" + dataNodes.size());
         }
         DataNode dataNode = dataNodes.get(0);

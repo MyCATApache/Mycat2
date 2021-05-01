@@ -1,20 +1,33 @@
+/**
+ * Copyright (C) <2021>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.sqlhandler.dql;
 
+import com.alibaba.druid.sql.ast.SQLCommentHint;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.MycatDataContext;
+import io.mycat.*;
 import io.mycat.api.collector.RowIterable;
 import io.mycat.beans.mycat.ResultSetBuilder;
-import io.mycat.calcite.*;
-import io.mycat.DrdsRunner;
-import io.mycat.DrdsSql;
+import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.spm.Plan;
+import io.mycat.calcite.spm.PlanImpl;
+import io.mycat.calcite.spm.QueryPlanner;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.HackRouter;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.Response;
 import io.mycat.util.Pair;
 import io.vertx.core.Future;
 import lombok.SneakyThrows;
@@ -23,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.JDBCType;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -48,10 +62,13 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
                     builder.addObjectRowPayload(Arrays.asList("targetName: "+
                             plan.getKey()+"   sql: "+plan.getValue()));
                 }else {
-                    DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
-                    DrdsSql drdsSql = drdsRunner.preParse(statement);
-                    Plan plan = drdsRunner.getPlan(dataContext, drdsSql);
-                    List<String> explain = plan.explain(dataContext,drdsSql);
+                    List<SQLCommentHint> hints = explainAst.getHints();
+                    if (hints!=null){
+                        statement.setHeadHints(hints);
+                    }
+                    DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(statement, dataContext.getDefaultSchema());
+                    PlanImpl plan = DrdsRunnerHelper.getPlan(drdsSqlWithParams);
+                    List<String> explain = plan.explain(dataContext,drdsSqlWithParams,true);
                     for (String s1 : explain) {
                         builder.addObjectRowPayload(Arrays.asList(s1));
                     }

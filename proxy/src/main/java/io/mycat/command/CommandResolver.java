@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chenjunwen>
+ * Copyright (C) <2021>  <chenjunwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -152,7 +152,7 @@ public class CommandResolver {
                         }
                         int[] params = null;
                         BindValue[] values = null;
-                        boolean newParameterBoundFlag = curPacket.readByte() == 1;
+                        boolean newParameterBoundFlag =!curPacket.readFinished()&&curPacket.readByte() == 1;
                         if (newParameterBoundFlag) {
                             params = new int[numParams];
                             for (int i = 0; i < numParams; i++) {

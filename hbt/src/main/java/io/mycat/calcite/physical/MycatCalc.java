@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -25,6 +25,7 @@ import org.apache.calcite.linq4j.function.Function;
 import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Calc;
@@ -47,6 +48,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.*;
 
@@ -62,10 +64,16 @@ public class MycatCalc extends Calc implements MycatRel {
                         RelTraitSet traitSet,
                         RelNode input,
                         RexProgram program) {
-        super(cluster, traitSet, input, program);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), input, program);
         assert getConvention() instanceof MycatConvention;
         this.program = program;
         this.rowType = program.getOutputRowType();
+    }
+    public MycatCalc(RelInput input) {
+        this(input.getCluster(),
+                input.getTraitSet(),
+                input.getInput(),
+                RexProgram.create(input));
     }
 
     public static MycatCalc create(
@@ -84,25 +92,6 @@ public class MycatCalc extends Calc implements MycatRel {
                 program
         );
     }
-
-    public RelWriter explainTerms(RelWriter pw) {
-        return program.explainCalc(super.explainTerms(pw));
-    }
-
-    @Override
-    public double estimateRowCount(RelMetadataQuery mq) {
-        return RelMdUtil.estimateFilteredRows(getInput(), program, mq);
-    }
-
-    public RelOptCost computeSelfCost(RelOptPlanner planner,
-                                      RelMetadataQuery mq) {
-        double dRows = mq.getRowCount(this);
-        double dCpu = mq.getRowCount(getInput())
-                * program.getExprCount();
-        double dIo = 0;
-        return planner.getCostFactory().makeCost(dRows, dCpu, dIo);
-    }
-
 
     @Override
     public Calc copy(RelTraitSet traitSet, RelNode child, RexProgram program) {

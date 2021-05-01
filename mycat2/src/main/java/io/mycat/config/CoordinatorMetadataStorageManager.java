@@ -1,8 +1,23 @@
+/**
+ * Copyright (C) <2021>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.config;
 
 import io.mycat.*;
 import io.vertx.core.Future;
 import lombok.SneakyThrows;
+import org.apache.curator.framework.CuratorFramework;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -17,9 +32,9 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
     final ConfigReaderWriter readerWriter = ConfigReaderWriter.getReaderWriterBySuffix("json");
 
     public CoordinatorMetadataStorageManager(FileMetadataStorageManager storageManager,
-                                             String address) throws Exception {
+                                             CuratorFramework curatorFramework) throws Exception {
         this.storageManager = storageManager;
-        this.store = new ZKStore(address, this);
+        this.store = new ZKStore(curatorFramework, this);
 
     }
 
@@ -34,7 +49,7 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
     }
 
     @Override
-    public void reportReplica(Map<String, Set<String>> dsNames) {
+    public void reportReplica(Map<String, List<String>> dsNames) {
         storageManager.reportReplica(dsNames);
         FileMetadataStorageManager.State state = new FileMetadataStorageManager.State();
         store.set("state", readerWriter.transformation(state));

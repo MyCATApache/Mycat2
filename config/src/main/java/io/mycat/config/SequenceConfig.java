@@ -37,7 +37,15 @@ public class SequenceConfig {
 
     private String targetName;
     private String schemaName;
+    private String fileName;
 
+    public String getName() {
+        return name.toLowerCase();
+    }
+
+    public void setName(String name) {
+        this.name = name.toLowerCase();
+    }
 
     public SequenceConfig() {
     }

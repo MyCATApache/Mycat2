@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -26,6 +26,7 @@ import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -37,6 +38,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 
 /**
@@ -50,8 +52,14 @@ public class MycatHashAggregate extends EnumerableAggregateBase implements Mycat
             ImmutableBitSet groupSet,
             List<ImmutableBitSet> groupSets,
             List<AggregateCall> aggCalls) {
-        super(cluster, traitSet, ImmutableList.of(), input, groupSet, groupSets, aggCalls);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), ImmutableList.of(), input, groupSet, groupSets, aggCalls);
         assert getConvention() instanceof MycatConvention;
+    }
+    public MycatHashAggregate(
+            RelInput relInput) {
+        this(relInput.getCluster(), relInput.getTraitSet(),
+                relInput.getInput(), relInput.getBitSet("group"),
+                relInput.getBitSetList("groups"), relInput.getAggregateCalls("aggs"));
     }
     public static MycatHashAggregate create(
             RelTraitSet traitSet,

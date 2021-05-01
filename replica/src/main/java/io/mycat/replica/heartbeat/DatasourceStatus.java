@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2019>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  *
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -35,6 +35,7 @@ public class DatasourceStatus {
   private DatasourceEnum status = OK_STATUS; //心跳状态
   private boolean isSlaveBehindMaster = false; //同步延时
   private DbSynEnum dbSynStatus = DB_SYN_NORMAL; //同步状态
+  private boolean master = false;
 
   public DatasourceStatus() {
   }
@@ -52,4 +53,7 @@ public class DatasourceStatus {
     return dbSynStatus == DB_SYN_NORMAL;
   }
 
+  public boolean isMaster() {
+    return master;
+  }
 }

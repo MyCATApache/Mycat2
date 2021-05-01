@@ -17,6 +17,8 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.*;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.config.ServerConfig;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -588,7 +590,7 @@ public abstract class SqlImplementor {
         private final boolean ignoreCast;
 
         protected Context(SqlDialect dialect, int fieldCount) {
-            this(dialect, fieldCount, false);
+            this(dialect, fieldCount, MetaClusterCurrent.exist(ServerConfig.class) && MetaClusterCurrent.wrapper(ServerConfig.class).isIgnoreCast());
         }
 
         protected Context(SqlDialect dialect, int fieldCount, boolean ignoreCast) {
@@ -827,11 +829,22 @@ public abstract class SqlImplementor {
                                 assert nodeList.size() == 1;
                                 return nodeList.get(0);
                             } else {
-                                if (call.getOperands().size() ==1 && call.getOperands().get(0) instanceof RexDynamicParam){
-                                    return nodeList.get(0);
-                                }else {
-                                    nodeList.add(dialect.getCastSpec(call.getType()));
+                                if (call.getOperands().size() == 1) {
+                                    RexNode rexNode = call.getOperands().get(0);
+                                    if(rexNode.getType().getSqlTypeName().getFamily() == call.getType().getSqlTypeName().getFamily()){
+                                        return nodeList.get(0);
+                                    }
+                                    if (rexNode instanceof RexDynamicParam) {
+                                        return nodeList.get(0);
+                                    }
+                                    if (rexNode instanceof RexInputRef) {
+                                        return nodeList.get(0);
+                                    }
+                                    if (rexNode instanceof RexLocalRef) {
+                                        return nodeList.get(0);
+                                    }
                                 }
+                                nodeList.add(dialect.getCastSpec(call.getType()));
                             }
                     }
                     if (op instanceof SqlBinaryOperator && nodeList.size() > 2) {
@@ -1073,6 +1086,7 @@ public abstract class SqlImplementor {
         }
 
         void addOrderItem(List<SqlNode> orderByList, RelFieldCollation field) {
+            boolean added = false;
             if (field.nullDirection != RelFieldCollation.NullDirection.UNSPECIFIED) {
                 final boolean first =
                         field.nullDirection == RelFieldCollation.NullDirection.FIRST;
@@ -1084,9 +1098,13 @@ public abstract class SqlImplementor {
                     field = new RelFieldCollation(field.getFieldIndex(),
                             field.getDirection(),
                             RelFieldCollation.NullDirection.UNSPECIFIED);
+                    added = true;
                 }
             }
-            orderByList.add(toSql(field));
+            //Each(targetName=c0, sql=SELECT * FROM db1_0.travelrecord_0 WHERE (`id` = ?) ORDER BY (`id` IS NULL), `id`)
+//            if (!added) {
+                orderByList.add(toSql(field));
+//            }
         }
 
         /**

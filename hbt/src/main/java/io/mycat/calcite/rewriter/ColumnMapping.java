@@ -1,10 +1,26 @@
+/**
+ * Copyright (C) <2021>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.calcite.rewriter;
 
 import com.google.common.collect.ImmutableMap;
+import lombok.Getter;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.*;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.mapping.IntPair;
 import org.apache.calcite.util.mapping.Mappings;
 
@@ -14,17 +30,29 @@ public class ColumnMapping extends RelShuttleImpl {
 
     TableScan tableScan;
     Map<Integer, Integer> map;
+    private final RelNode root;
 
     public ColumnMapping() {
-
+        this(null);
     }
+
+    public ColumnMapping(RelNode relNode) {
+        this.root = relNode;
+    }
+
+    public ColumnInfo getBottomColumnInfo(int index) {
+        RelDataType rowType = this.root.getRowType();
+        this.root.accept(this);
+        return null;
+    }
+
 
     public boolean hasRes() {
         return tableScan != null && map != null;
     }
 
     public int mapping(int index) {
-            return map.get(index);
+        return map.get(index);
     }
 
     private void updateMapping(Mappings.TargetMapping permutation) {

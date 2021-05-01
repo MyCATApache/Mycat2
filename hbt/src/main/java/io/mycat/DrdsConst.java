@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -19,4 +19,6 @@ import io.mycat.util.NameMap;
 
 public interface DrdsConst {
     public NameMap< SchemaHandler> schemas();
+
+    public boolean joinClustering();
 }

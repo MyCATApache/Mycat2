@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -15,6 +15,8 @@
 
 package io.mycat.beans.mycat;
 
+import java.io.Serializable;
+import java.sql.JDBCType;
 import java.sql.ResultSetMetaData;
 import java.util.*;
 
@@ -23,7 +25,7 @@ import java.util.*;
  * date 2020-01-09 23:18
  * column information,like a jdbc
  **/
-public interface MycatRowMetaData {
+public interface MycatRowMetaData extends Serializable {
 
     int getColumnCount();
 
@@ -73,8 +75,8 @@ public interface MycatRowMetaData {
 //            info.put("schemaName", schemaName);
 //            info.put("tableName", tableName);
             info.put("columnName", columnName);
-            info.put("columnType", columnType);
-            info.put("nullable", columnType);
+            info.put("columnType", JDBCType.valueOf(columnType));
+            info.put("nullable", nullable);
             list.add(info);
 
             String columnLabel = getColumnLabel(i);
@@ -102,4 +104,8 @@ public interface MycatRowMetaData {
         }
         return fields;
     }
+
+   public default String toJson(){
+        return null;
+   }
 }

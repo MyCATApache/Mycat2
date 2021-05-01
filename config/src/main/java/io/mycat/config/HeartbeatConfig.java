@@ -11,7 +11,7 @@ public class HeartbeatConfig {
     private int maxRetry;
     private long minSwitchTimeInterval;
     private long heartbeatTimeout;
-    private long slaveThreshold;
+    private double slaveThreshold;
 
     public HeartbeatConfig() {
     }

@@ -61,6 +61,16 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
     }
 
     private SqlNode sqlNode;
+    private boolean hint = false;
+    private  int qbIds;
+
+    public MycatCalciteMySqlNodeVisitor(int qbIds) {
+        this.qbIds = qbIds;
+    }
+
+    public MycatCalciteMySqlNodeVisitor() {
+        this(0);
+    }
 
     public SqlNode getSqlNode() {
         return sqlNode;
@@ -280,16 +290,16 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         // select list
         List<SqlNode> columnNodes = new ArrayList<SqlNode>(x.getSelectList().size());
         for (SQLSelectItem selectItem : x.getSelectList()) {
-            if (selectItem.getAlias()==null){
-                if (selectItem.getExpr() instanceof SQLAllColumnExpr){
+            if (selectItem.getAlias() == null) {
+                if (selectItem.getExpr() instanceof SQLAllColumnExpr) {
 
-                }else if (selectItem.getExpr() instanceof SQLPropertyExpr){
-                    if(!"*".equals(((SQLPropertyExpr) selectItem.getExpr()).getName())){
+                } else if (selectItem.getExpr() instanceof SQLPropertyExpr) {
+                    if (!"*".equals(((SQLPropertyExpr) selectItem.getExpr()).getName())) {
                         selectItem.setAlias(SQLUtils.normalize(((SQLPropertyExpr) selectItem.getExpr()).getName()));
                     }
-                }else if (selectItem.getExpr() instanceof SQLIdentifierExpr){
+                } else if (selectItem.getExpr() instanceof SQLIdentifierExpr) {
                     selectItem.setAlias(SQLUtils.normalize(((SQLIdentifierExpr) selectItem.getExpr()).getName()));
-                }else{
+                } else {
                     StringBuilder sb = new StringBuilder();
                     selectItem.output(sb);
                     selectItem.setAlias(sb.toString().replaceAll(" ", ""));
@@ -387,7 +397,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         SqlNodeList hints = convertHints(x.getHints());
 
         if (orderBy != null && x.getParent() instanceof SQLUnionQuery) {
-            this.sqlNode = new TDDLSqlSelect(SqlParserPos.ZERO
+            this.sqlNode = new SqlSelect(SqlParserPos.ZERO
                     , keywordList
                     , selectList
                     , from
@@ -399,7 +409,6 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                     , offset
                     , fetch
                     , hints
-                    , null
             );
             sqlNode = new SqlOrderBy(SqlParserPos.ZERO
                     , sqlNode
@@ -420,7 +429,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                         , null
                         , null
                         , null
-                        , null, null
+                        , null, hints
                 );
 
                 if (orderBySqlNode != null && (!SqlNodeList.isEmptyList(orderBySqlNode))
@@ -434,7 +443,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                             , fetch);
                 }
             } else {
-                this.sqlNode = new TDDLSqlSelect(SqlParserPos.ZERO
+                this.sqlNode = new SqlSelect(SqlParserPos.ZERO
                         , keywordList
                         , selectList
                         , from
@@ -446,7 +455,6 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                         , offset
                         , fetch
                         , hints
-                        , null
                 );
             }
         }
@@ -474,13 +482,15 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
     public boolean visit(SQLExprTableSource x) {
         SqlNode table;
         SQLExpr expr = x.getExpr();
+        SqlNodeList sqlNodes = convertHints((List) x.getHints(), x.computeAlias());
         if (expr instanceof SQLIdentifierExpr) {
-            table = buildIdentifier((SQLIdentifierExpr) expr);
+            table = new SqlTableRef(SqlParserPos.ZERO, (SqlIdentifier) buildIdentifier((SQLIdentifierExpr) expr), sqlNodes);
         } else if (expr instanceof SQLPropertyExpr) {
-            table = buildIdentifier((SQLPropertyExpr) expr);
+            table = new SqlTableRef(SqlParserPos.ZERO, (SqlIdentifier) buildIdentifier((SQLPropertyExpr) expr), sqlNodes);
         } else {
             throw new MycatException("not support : " + expr);
         }
+
 
         if (x.getAlias() != null) {
             SqlIdentifier alias = new SqlIdentifier(SQLUtils.normalize(x.computeAlias()), SqlParserPos.ZERO);
@@ -687,6 +697,13 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         if (typeName.equalsIgnoreCase("SIGNED")) {
             sqlDataTypeSpec = new SqlDataTypeSpec(new SqlBasicTypeNameSpec(SqlTypeName.BIGINT, precision, scale, null, SqlParserPos.ZERO), SqlParserPos.ZERO);
         } else {
+            if ("datetime".equalsIgnoreCase(typeName)) {
+                typeName = "TIMESTAMP";
+            } else if ("BINARY".equalsIgnoreCase(typeName)) {
+                typeName = "VARCHAR";
+            } else if ("UNSIGNED".equalsIgnoreCase(typeName)) {
+                typeName = "DECIMAL";
+            }
             SqlTypeName sqlTypeName = SqlTypeName.valueOf(typeName);
             SqlBasicTypeNameSpec sqlBasicTypeNameSpec = new SqlBasicTypeNameSpec(sqlTypeName, precision, scale, null, SqlParserPos.ZERO);
 
@@ -836,15 +853,16 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
 
         SqlNode sqlNode = convertToSqlNode(x.getSelect());
 
-        if (sqlNode instanceof TDDLSqlSelect) {
-            TDDLSqlSelect select = (TDDLSqlSelect) sqlNode;
+        if (sqlNode instanceof SqlSelect) {
+            SqlSelect select = (SqlSelect) sqlNode;
 
             SqlNodeList headHints = convertHints(x.getHeadHintsDirect());
-            select.setHeadHints(headHints);
+            select.setHints(headHints);
             this.sqlNode = select;
         } else {
             this.sqlNode = sqlNode;
         }
+
 
         return false;
     }
@@ -1649,6 +1667,10 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 this.sqlNode = MycatDatabaseFunction.INSTANCE.createCall(SqlParserPos.ZERO);
                 return false;
             }
+            case "SLEEP": {
+                this.sqlNode = MycatSleepFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
             case "LAST_INSERT_ID": {
                 this.sqlNode = MycatLastInsertIdFunction.INSTANCE.createCall(SqlParserPos.ZERO);
                 return false;
@@ -1801,9 +1823,9 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             case "LOCALTIME":
             case "CURRENT_TIMESTAMP":
             case "NOW": {
-                if(argNodes == null||argNodes.isEmpty()){
+                if (argNodes == null || argNodes.isEmpty()) {
                     this.sqlNode = NowFunction.INSTANCE.createCall(SqlParserPos.ZERO);
-                }else {
+                } else {
                     this.sqlNode = NowNoArgFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 }
                 return false;
@@ -2037,7 +2059,13 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         if (ast == null) {
             return null;
         }
-        MycatCalciteMySqlNodeVisitor visitor = new MycatCalciteMySqlNodeVisitor();
+        MycatCalciteMySqlNodeVisitor visitor;
+        if (ast instanceof SQLSelect||ast instanceof SQLExprTableSource){
+            visitor  = new MycatCalciteMySqlNodeVisitor(++qbIds);
+        }else {
+            visitor  = new MycatCalciteMySqlNodeVisitor(qbIds);
+        }
+
         ast.accept(visitor);
         return visitor.getSqlNode();
     }
@@ -2045,7 +2073,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
     private SqlNodeList convertOrderby(SQLOrderBy orderBy) {
         if (orderBy == null) {
             //org/apache/calcite/calcite-core/1.23.0/calcite-core-1.23.0-sources.jar!/org/apache/calcite/sql/validate/SqlValidatorImpl.java:1353
-            return null;//
+            return new SqlNodeList(Collections.emptyList(), SqlParserPos.ZERO);
         }
 
         List<SQLSelectOrderByItem> items = orderBy.getItems();
@@ -2076,65 +2104,62 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
     }
 
     private SqlNodeList convertHints(List<SQLCommentHint> hints) {
-        if (hints == null) {
-            return null;
-        }
-
-        List<SqlNode> nodes = new ArrayList<SqlNode>(hints.size());
-
-        for (SQLCommentHint hint : hints) {
-            if (hint instanceof TDDLHint) {
-                nodes.add(convertTDDLHint((TDDLHint) hint));
-            }
-        }
-
-        return new SqlNodeList(nodes, SqlParserPos.ZERO);
-
+        return convertHints(hints, null);
     }
 
-    private SqlNodeList convertTDDLHint(TDDLHint hint) {
-
-        List<TDDLHint.Function> functions = hint.getFunctions();
-        List<SqlNode> funNodes = new ArrayList<SqlNode>(functions.size());
-
-        for (TDDLHint.Function function : functions) {
-            String functionName = function.getName();
-
-            List<TDDLHint.Argument> arguments = function.getArguments();
-
-            SqlNode[] argNodes = new SqlNode[arguments.size()];
-            for (int i = 0; i < arguments.size(); i++) {
-                TDDLHint.Argument argument = arguments.get(i);
-                SqlNode argName = convertToSqlNode(argument.getName());
-                SqlNode argValue = convertToSqlNode(argument.getValue());
-
-                List<SqlNode> arg = new ArrayList<SqlNode>();
-                if (argName != null) {
-                    arg.add(argName);
-                }
-                if (argValue != null) {
-                    arg.add(argValue);
-                }
-
-                SqlNode argNode = null;
-                if (arg.size() == 2) {
-                    argNode = SqlStdOperatorTable.EQUALS.createCall(SqlParserPos.ZERO, arg);
-                } else if (arg.size() == 1) {
-                    argNode = argName;
-                }
-
-                argNodes[i] = argNode;
+    private SqlNodeList convertHints(List<SQLCommentHint> hints, String alias) {
+        if (hints == null) {
+            return new SqlNodeList(SqlParserPos.ZERO);
+        }
+        List<MycatHint> list = new ArrayList<>(hints.size() + 1);
+        boolean QB_NAME = false;
+        for (SQLCommentHint hint : hints) {
+            list.add(new MycatHint(hint.getText()));
+            QB_NAME = hint.getText().contains("QB_NAME");
+        }
+        if (!QB_NAME) {
+            String format;
+            if (alias == null) {
+                format = "+MYCAT:" +
+                        "QB_NAME(SEL$" + qbIds + ")" +
+                        "";
+            } else {
+                format = "+MYCAT:" +
+                        "QB_NAME(" +alias+
+                        ")" +
+                        "";
             }
 
-            SqlNode funNode = new SqlBasicCall(
-                    new SqlUnresolvedFunction(new SqlIdentifier(functionName, SqlParserPos.ZERO), null, null,
-                            null, null, SqlFunctionCategory.USER_DEFINED_FUNCTION), argNodes,
-                    SqlParserPos.ZERO);
-
-            funNodes.add(funNode);
+            list.add(new MycatHint(format));
         }
-
-        return new SqlNodeList(funNodes, SqlParserPos.ZERO);
+        ImmutableList.Builder<SqlHint> listBuilder = ImmutableList.builder();
+        for (MycatHint hint : list) {
+            for (MycatHint.Function function : hint.getFunctions()) {
+                String functionName = function.getName();
+                boolean kv = !function.getArguments().isEmpty() && (function.getArguments().get(0) instanceof MycatHint.Argument)
+                        && function.getArguments().get(0).getName() != null;
+                ImmutableList.Builder<Object> builder = ImmutableList.builder();
+                for (MycatHint.Argument argument : function.getArguments()) {
+                    String argumentName = Optional.ofNullable(argument.getName()).map(i -> (argument.getName().toString())).orElse(null);
+                    String value = SQLUtils.normalize(argument.getValue().toString());
+                    if (!kv) {
+                        builder.add(new SqlIdentifier(value, SqlParserPos.ZERO));
+                    } else {
+                        builder.add(
+                                new SqlNodeList(Arrays.asList(new SqlIdentifier(argumentName, SqlParserPos.ZERO),
+                                        new SqlIdentifier(value, SqlParserPos.ZERO)), SqlParserPos.ZERO)
+                        );
+                    }
+                }
+                SqlNodeList sqlNodes = new SqlNodeList((List) builder.build(), SqlParserPos.ZERO);
+                SqlHint sqlHint =
+                        new SqlHint(SqlParserPos.ZERO,
+                                new SqlIdentifier(functionName, SqlParserPos.ZERO), sqlNodes, kv ? SqlHint.HintOptionFormat.KV_LIST : SqlHint.HintOptionFormat.ID_LIST);
+                listBuilder.add(sqlHint);
+            }
+        }
+        hint = true;
+        return (new SqlNodeList(listBuilder.build(), SqlParserPos.ZERO));
     }
 
     /**
@@ -2388,11 +2413,12 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         );
         return false;
     }
+
     @Override
     public boolean visit(SQLDataType x) {
         ;
         SqlTypeName sqlTypeName = SqlTypeName.valueOf(x.getName().toUpperCase());
-        SqlBasicTypeNameSpec sqlBasicTypeNameSpec = new SqlBasicTypeNameSpec(sqlTypeName, -1,-1, null, SqlParserPos.ZERO);
+        SqlBasicTypeNameSpec sqlBasicTypeNameSpec = new SqlBasicTypeNameSpec(sqlTypeName, -1, -1, null, SqlParserPos.ZERO);
         sqlNode = new SqlDataTypeSpec(sqlBasicTypeNameSpec, SqlParserPos.ZERO);
         return false;
     }
@@ -2401,4 +2427,8 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
     static long JSON_OBJECT = FnvHash.fnv1a_64_lower("JSON OBJECT");
     static long JSON_ARRAY = FnvHash.fnv1a_64_lower("JSON ARRAY");
     static long JSON_SCALAR = FnvHash.fnv1a_64_lower("JSON SCALAR");
+
+    public boolean isHint() {
+        return hint;
+    }
 }

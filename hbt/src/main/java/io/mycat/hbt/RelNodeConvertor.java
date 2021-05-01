@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -18,6 +18,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.DataNode;
 import io.mycat.TableHandler;
+import io.mycat.calcite.logical.MycatViewDataNodeMapping;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
@@ -36,6 +37,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlString;
@@ -52,6 +54,7 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
@@ -69,77 +72,81 @@ public class RelNodeConvertor {
     }
 
     public static Schema convertRelNode(RelNode relNode) {
-
-        List<RelNode> inputs = relNode.getInputs();
-        String relTypeName = relNode.getRelTypeName();
-        String correlVariable = relNode.getCorrelVariable();
-        RelOptTable table = relNode.getTable();
-        Set<CorrelationId> variablesSet = relNode.getVariablesSet();
-        switch (relTypeName) {
-            case "LogicalValues": {
-                return logicValues(relNode);
-            }
-            case "LogicalProject": {
-                return logicProject(relNode);
-            }
-            case "LogicalAggregate": {
-                return logicalAggregate(relNode);
-            }
-            case "LogicalTableScan": {
-                return logicalTableScan(relNode);
-            }
-            case "LogicalIntersect":
-            case "LogicalMinus":
-            case "LogicalUnion": {
-                return logicalSetOp(relNode);
-            }
-            case "LogicalSort": {
-                return logicalSort(relNode);
-            }
-            case "LogicalFilter": {
-                return logicalFilter(relNode);
-            }
-            case "LogicalJoin": {
-                return logicalJoin(relNode);
-            }
-            case "LogicalCorrelate": {
-                return logicalCorrelate(relNode);
-            }
-        }
-        if (relNode instanceof MycatTransientSQLTableScan) {
-            List<FieldType> fields = getFields(relNode);
-            MycatTransientSQLTableScan tableScan = (MycatTransientSQLTableScan) relNode;
-            return new FromSqlSchema(fields, tableScan.getTargetName(), tableScan.getSql());
-        }
-        if (relNode instanceof MycatView) {
-            List<FieldType> fields = getFields(relNode);
-            MycatView tableScan = (MycatView) relNode;
-            ImmutableMultimap<String, SqlString> stringStringImmutableMultimap = tableScan.expandToSql(false,Collections.emptyList());
-            List<Schema> fromSqlSchemas = stringStringImmutableMultimap.entries().stream().map(i -> new FromSqlSchema(fields, i.getKey(), i.getValue().getSql())).collect(Collectors.toList());
-            if (fromSqlSchemas.size() > 1) {
-                return new SetOpSchema(HBTOp.UNION_ALL, fromSqlSchemas);
-            } else {
-                return fromSqlSchemas.get(0);
-            }
-        }
-        if (relNode instanceof LogicalTableScan) {
-            List<FieldType> fields = getFields(relNode);
-            LogicalTableScan tableScan = (LogicalTableScan) relNode;
-            MycatPhysicalTable physicalTable = tableScan.getTable().unwrap(MycatPhysicalTable.class);
-            if (physicalTable != null) {
-                DataNode dataNode = physicalTable.getDataNode();
-                String targetName = dataNode.getTargetName();
-                String sql = "select * from " + dataNode.getTargetSchemaTable();
-                return new FromSqlSchema(fields, targetName, sql);
-            }
-            MycatLogicTable mycatLogicTable = tableScan.getTable().unwrap(MycatLogicTable.class);
-            if (mycatLogicTable != null) {
-                TableHandler tableHandler = mycatLogicTable.logicTable();
-                String schemaName = tableHandler.getSchemaName();
-                String tableName = tableHandler.getTableName();
-                return new FromTableSchema(ImmutableList.of(schemaName, tableName));
-            }
-        }
+//
+//        List<RelNode> inputs = relNode.getInputs();
+//        String relTypeName = relNode.getRelTypeName();
+//        String correlVariable = relNode.getCorrelVariable();
+//        RelOptTable table = relNode.getTable();
+//        Set<CorrelationId> variablesSet = relNode.getVariablesSet();
+//        switch (relTypeName) {
+//            case "LogicalValues": {
+//                return logicValues(relNode);
+//            }
+//            case "LogicalProject": {
+//                return logicProject(relNode);
+//            }
+//            case "LogicalAggregate": {
+//                return logicalAggregate(relNode);
+//            }
+//            case "LogicalTableScan": {
+//                return logicalTableScan(relNode);
+//            }
+//            case "LogicalIntersect":
+//            case "LogicalMinus":
+//            case "LogicalUnion": {
+//                return logicalSetOp(relNode);
+//            }
+//            case "LogicalSort": {
+//                return logicalSort(relNode);
+//            }
+//            case "LogicalFilter": {
+//                return logicalFilter(relNode);
+//            }
+//            case "LogicalJoin": {
+//                return logicalJoin(relNode);
+//            }
+//            case "LogicalCorrelate": {
+//                return logicalCorrelate(relNode);
+//            }
+//        }
+//        if (relNode instanceof MycatTransientSQLTableScan) {
+//            List<FieldType> fields = getFields(relNode);
+//            MycatTransientSQLTableScan tableScan = (MycatTransientSQLTableScan) relNode;
+//            return new FromSqlSchema(fields, tableScan.getTargetName(), tableScan.getSql());
+//        }
+//        if (relNode instanceof MycatView) {
+//            List<FieldType> fields = getFields(relNode);
+//            MycatView tableScan = (MycatView) relNode;
+//            //todo
+//            SqlNode sqlTemplate = tableScan.getSQLTemplate(false);
+//            MycatViewDataNodeMapping mycatViewDataNodeMapping = tableScan.getMycatViewDataNodeMapping();
+//            Stream<Map<String, DataNode>> apply = mycatViewDataNodeMapping.apply(Collections.emptyList());
+//            ImmutableMultimap<String, SqlString> stringStringImmutableMultimap = tableScan.getMycatViewDataNodeMapping().distribution().getDataNodes();
+//            List<Schema> fromSqlSchemas = stringStringImmutableMultimap.entries().stream().map(i -> new FromSqlSchema(fields, i.getKey(), i.getValue().getSql())).collect(Collectors.toList());
+//            if (fromSqlSchemas.size() > 1) {
+//                return new SetOpSchema(HBTOp.UNION_ALL, fromSqlSchemas);
+//            } else {
+//                return fromSqlSchemas.get(0);
+//            }
+//        }
+//        if (relNode instanceof LogicalTableScan) {
+//            List<FieldType> fields = getFields(relNode);
+//            LogicalTableScan tableScan = (LogicalTableScan) relNode;
+//            MycatPhysicalTable physicalTable = tableScan.getTable().unwrap(MycatPhysicalTable.class);
+//            if (physicalTable != null) {
+//                DataNode dataNode = physicalTable.getDataNode();
+//                String targetName = dataNode.getTargetName();
+//                String sql = "select * from " + dataNode.getTargetSchemaTable();
+//                return new FromSqlSchema(fields, targetName, sql);
+//            }
+//            MycatLogicTable mycatLogicTable = tableScan.getTable().unwrap(MycatLogicTable.class);
+//            if (mycatLogicTable != null) {
+//                TableHandler tableHandler = mycatLogicTable.logicTable();
+//                String schemaName = tableHandler.getSchemaName();
+//                String tableName = tableHandler.getTableName();
+//                return new FromTableSchema(ImmutableList.of(schemaName, tableName));
+//            }
+//        }
         throw new UnsupportedOperationException();
     }
 

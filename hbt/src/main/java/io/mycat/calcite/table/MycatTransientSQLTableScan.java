@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.mycat.calcite.table;
 
 import io.mycat.calcite.*;
@@ -67,8 +83,8 @@ public class MycatTransientSQLTableScan extends AbstractRelNode implements Mycat
                         getRowType(),
                         JavaRowFormat.ARRAY);
         ParameterExpression root = implementor.getRootExpression();
-        Expression mycatViewStash = implementor.stash(this, RelNode.class);
-        Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getEnumerable", RelNode.class);
+        Expression mycatViewStash = Expressions.constant(this.getDigest());
+        Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getEnumerable", String.class);
         final Expression expression2 = toEnumerable(
                 Expressions.call(root, getEnumerable, mycatViewStash));
         assert Types.isAssignableFrom(Enumerable.class, expression2.getType());

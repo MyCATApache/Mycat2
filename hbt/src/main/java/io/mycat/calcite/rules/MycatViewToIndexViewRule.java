@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -31,12 +31,12 @@ import java.util.List;
  */
 public class MycatViewToIndexViewRule extends RelOptRule {
     private final OptimizationContext optimizationContext;
-    private final List<Object> params;
+    private boolean joinClustering;
 
-    public MycatViewToIndexViewRule(OptimizationContext optimizationContext, List<Object> params) {
+    public MycatViewToIndexViewRule(OptimizationContext optimizationContext,boolean joinClustering) {
         super(operand(MycatView.class, none()), "MycatFilterViewRule");
         this.optimizationContext = optimizationContext;
-        this.params = params;
+        this.joinClustering = joinClustering;
     }
 
     @Override
@@ -48,7 +48,7 @@ public class MycatViewToIndexViewRule extends RelOptRule {
             return;
         }
         RelNode relNode = view.getRelNode();
-        IndexRBORewriter<Object> indexRboRewriter = new IndexRBORewriter<>(optimizationContext, params);
+        IndexRBORewriter<Object> indexRboRewriter = new IndexRBORewriter<>();
         RelNode res = relNode.accept(indexRboRewriter);
         if (indexRboRewriter.isApply()) {
             call.transformTo(res);

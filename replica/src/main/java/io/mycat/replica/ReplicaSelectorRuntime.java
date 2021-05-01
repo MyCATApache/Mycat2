@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2019>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -14,8 +14,6 @@
  */
 package io.mycat.replica;
 
-import io.mycat.MetadataStorageManager;
-import io.mycat.MycatConfig;
 import io.mycat.config.*;
 import io.mycat.plug.loadBalance.LoadBalanceElement;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
@@ -24,15 +22,11 @@ import io.mycat.plug.loadBalance.SessionCounter;
 import io.mycat.replica.heartbeat.DefaultHeartbeatFlow;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
-import io.mycat.replica.heartbeat.strategy.MySQLGaleraHeartBeatStrategy;
-import io.mycat.replica.heartbeat.strategy.MySQLMasterSlaveBeatStrategy;
-import io.mycat.replica.heartbeat.strategy.MySQLSingleHeartBeatStrategy;
+import io.mycat.replica.heartbeat.strategy.*;
 import io.mycat.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.BiFunction;
@@ -40,37 +34,51 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static io.mycat.replica.InstanceType.READ;
+
 /**
  * @author : chenjunwen date Date : 2019年05月15日 21:34
  */
-public class ReplicaSelectorRuntime implements Closeable {
-    private final ConcurrentMap<String, ReplicaDataSourceSelector> replicaMap = new ConcurrentHashMap<>();
+public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
+    private final ConcurrentMap<String, ReplicaSelector> replicaMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, PhysicsInstance> physicsInstanceMap = new ConcurrentHashMap<>();
     ////////////////////////////////////////heartbeat///////////////////////////////////////////////////////////////////
     private final ConcurrentMap<String, HeartbeatFlow> heartbeatDetectorMap = new ConcurrentHashMap<>();
     private final Map<String, DatasourceConfig> datasources;
     private final LoadBalanceManager loadBalanceManager;
     private final List<ClusterConfig> replicaConfigList;
-    private MetadataStorageManager metadataStorageManager;
+    private final SessionCounterProvider sessionCounterProvider;
+    private final ScheduleProvider scheduleProvider;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReplicaSelectorRuntime.class);
 
 
+    public static ReplicaSelectorRuntime create(List<ClusterConfig> clusters,
+                                                Map<String, DatasourceConfig> datasources,
+                                                LoadBalanceManager loadBalanceManager,
+                                                SessionCounterProvider sessionCounterProvider,
+                                                ScheduleProvider scheduleProvider) {
+        return new ReplicaSelectorRuntime(clusters, datasources, loadBalanceManager, sessionCounterProvider, scheduleProvider);
+    }
+
     public ReplicaSelectorRuntime(List<ClusterConfig> clusters,
                                   Map<String, DatasourceConfig> datasources,
-                                  LoadBalanceManager loadBalanceManager, MetadataStorageManager storageManager) {
+                                  LoadBalanceManager loadBalanceManager,
+                                  SessionCounterProvider sessionCounterProvider,
+                                  ScheduleProvider scheduleProvider) {
         this.datasources = datasources;
         this.loadBalanceManager = loadBalanceManager;
-        this.metadataStorageManager = storageManager;
 
         this.replicaConfigList = clusters;
+        this.sessionCounterProvider = sessionCounterProvider;
+        this.scheduleProvider = scheduleProvider;
 
         ////////////////////////////////////check/////////////////////////////////////////////////
         Objects.requireNonNull(replicaConfigList, "replica config can not be empty");
         ////////////////////////////////////check/////////////////////////////////////////////////
 
         for (ClusterConfig replicaConfig : replicaConfigList) {
-            addCluster(this.datasources, replicaConfig);
+            addCluster(this.datasources, replicaConfig, sessionCounterProvider);
         }
 
 
@@ -84,15 +92,15 @@ public class ReplicaSelectorRuntime implements Closeable {
         Set<String> datasourceNames = datasources.keySet();
         new HashSet<>(physicsInstanceMap.keySet()).stream().filter(name -> !datasourceNames.contains(name)).forEach(name -> physicsInstanceMap.remove(name));
 
-        List<PhysicsInstanceImpl> collect = replicaMap.values().stream().flatMap(i -> i.datasourceMap.values().stream()).collect(Collectors.toList());
+        List<PhysicsInstance> collect = replicaMap.values().stream().flatMap(i -> i.getRawDataSourceMap().values().stream()).collect(Collectors.toList());
         collect.forEach(c -> {
             c.notifyChangeSelectRead(true);
             c.notifyChangeAlive(true);
         });
 
-        Map<String, PhysicsInstanceImpl> newphysicsInstanceMap = new HashMap<>();
-        for (ReplicaDataSourceSelector i : replicaMap.values()) {
-            for (PhysicsInstanceImpl k : i.datasourceMap.values()) {
+        Map<String, PhysicsInstance> newphysicsInstanceMap = new HashMap<>();
+        for (ReplicaSelector i : replicaMap.values()) {
+            for (PhysicsInstance k : i.getRawDataSourceMap().values()) {
                 newphysicsInstanceMap.put(k.getName(), k);
             }
         }
@@ -102,38 +110,25 @@ public class ReplicaSelectorRuntime implements Closeable {
 
     /////////////////////////////////////////public manager/////////////////////////////////////////////////////////////
 
-    public void addCluster(MycatConfig config, ClusterConfig replicaConfig) {
-        addCluster(config.getDatasource().getDatasources().stream().collect(Collectors.toMap(k -> k.getName(), v -> v)), replicaConfig);
-    }
 
     public void removeCluster(String name) {
         replicaMap.remove(name);
     }
 
-    public void addDatasource(ClusterConfig replicaConfig, String clusterName, DatasourceConfig datasource) {
-        boolean master = replicaConfig.getMasters().contains(datasource.getName());
-        ReplicaDataSourceSelector replicaDataSourceSelector = replicaMap.get(clusterName);
-        registerDatasource(master, replicaDataSourceSelector, datasource, null);
-    }
 
     public void removeDatasource(String clusterName, String datasourceName) {
-        ReplicaDataSourceSelector selector = replicaMap.get(clusterName);
+        ReplicaSelector selector = replicaMap.get(clusterName);
         if (selector != null) {
             selector.unregister(datasourceName);
         }
     }
 
-    public synchronized boolean notifySwitchReplicaDataSource(String replicaName) {
-        ReplicaDataSourceSelector selector = replicaMap.get(replicaName);
-        Objects.requireNonNull(selector, replicaName + " 集群不存在");
-        return selector.switchDataSourceIfNeed();
-    }
 
     public void updateInstanceStatus(String replicaName, String dataSource, boolean alive,
                                      boolean selectAsRead) {
-        ReplicaDataSourceSelector selector = replicaMap.get(replicaName);
+        ReplicaSelector selector = replicaMap.get(replicaName);
         if (selector != null) {
-            PhysicsInstanceImpl physicsInstance = selector.datasourceMap.get(dataSource);
+            PhysicsInstance physicsInstance = selector.getRawDataSourceMap().get(dataSource);
             if (physicsInstance != null) {
                 physicsInstance.notifyChangeAlive(alive);
                 physicsInstance.notifyChangeSelectRead(selectAsRead);
@@ -141,57 +136,46 @@ public class ReplicaSelectorRuntime implements Closeable {
         }
     }
 
-    public void updateInstanceStatus(String dataSource, boolean alive,
-                                     boolean selectAsRead) {
-        replicaMap.values().stream().flatMap(i -> i.datasourceMap.values().stream()).filter(i -> i.getName().equals(dataSource)).findFirst().ifPresent(physicsInstance -> {
-            physicsInstance.notifyChangeAlive(alive);
-            physicsInstance.notifyChangeSelectRead(selectAsRead);
-        });
-    }
-
-
-    /**
-     * @param dataSourceName
-     * @param sessionCounter
-     * @return 是否注册成功
-     */
-    public boolean registerDatasource(String dataSourceName, SessionCounter sessionCounter) {
-        PhysicsInstance instance = this.physicsInstanceMap.get(dataSourceName);
-        if (instance == null) {
-            return false;
-        }
-        PhysicsInstanceImpl physicsInstance = (PhysicsInstanceImpl) instance;
-        physicsInstance.addSessionCounter(sessionCounter);
-        return true;
-    }
+//    public void updateInstanceStatus(String dataSource, boolean alive,
+//                                     boolean selectAsRead) {
+//        replicaMap.values().stream().flatMap(i -> i.datasourceMap.values().stream()).filter(i -> i.getName().equals(dataSource)).findFirst().ifPresent(physicsInstance -> {
+//            physicsInstance.notifyChangeAlive(alive);
+//            physicsInstance.notifyChangeSelectRead(selectAsRead);
+//        });
+//    }
 
 
 ///////////////////////////////////////private manager//////////////////////////////////////////////////////////////////////////
 
-    private PhysicsInstance registerDatasource(boolean master, ReplicaDataSourceSelector selector,
+    private PhysicsInstance registerDatasource(boolean master, ReplicaSelector selector,
                                                DatasourceConfig datasourceConfig,
                                                SessionCounter sessionCounter) {
         Objects.requireNonNull(selector);
         Objects.requireNonNull(datasourceConfig);
-        InstanceType instanceType = InstanceType.READ;
-        switch (selector.type) {
-            case SINGLE_NODE:
-            case MASTER_SLAVE:
-                instanceType = master ? InstanceType.READ_WRITE : InstanceType.READ;
-                break;
-            case GARELA_CLUSTER:
-                instanceType = master ? InstanceType.READ_WRITE : InstanceType.READ;
-            case NONE:
-                break;
-        }
+        InstanceType instanceType;
         if (datasourceConfig.getInstanceType() != null) {
             instanceType = InstanceType.valueOf(datasourceConfig.getInstanceType());
+            if (!master) {
+                switch (instanceType) {
+                    case READ:
+                        break;
+                    case WRITE:
+                        throw new IllegalStateException("Unexpected value: " + datasourceConfig + " is READ ONLY");
+                    case READ_WRITE:
+                        instanceType = READ;
+                        break;
+                    default:
+
+                }
+            }
+        } else {
+            instanceType =  master ? InstanceType.READ_WRITE : READ;
         }
-        return registerDatasource(selector.name, datasourceConfig.getName(), instanceType,
+        return registerDatasource(selector.getName(), datasourceConfig.getName(), instanceType,
                 datasourceConfig.getWeight(), sessionCounter);
     }
 
-    private void addCluster(Map<String, DatasourceConfig> datasourceConfigMap, ClusterConfig replicaConfig) {
+    private void addCluster(Map<String, DatasourceConfig> datasourceConfigMap, ClusterConfig replicaConfig, SessionCounterProvider sessionCounterProvider) {
         String name = replicaConfig.getName();
         ReplicaType replicaType = ReplicaType.valueOf(replicaConfig.getClusterType());
         BalanceType balanceType = BalanceType.valueOf(replicaConfig.getReadBalanceType());
@@ -205,7 +189,7 @@ public class ReplicaSelectorRuntime implements Closeable {
         DatasourceConfig datasourceConfig = datasourceConfigMap.values().stream().iterator().next();
         String dbType = datasourceConfig.getDbType();
 
-        ReplicaDataSourceSelector selector = registerCluster(
+        ReplicaSelector selector = registerCluster(
                 name,
                 dbType,
                 balanceType,
@@ -217,44 +201,44 @@ public class ReplicaSelectorRuntime implements Closeable {
                 replicaConfig.getTimer());
 
         if (replicaConfig.getMasters() != null) {
-            registerDatasource(datasourceConfigMap, selector, replicaConfig.getMasters(), true);
+            registerDatasource(datasourceConfigMap, selector, replicaConfig.getMasters(), true, sessionCounterProvider);
         }
         if (replicaConfig.getReplicas() != null) {
-            registerDatasource(datasourceConfigMap, selector, replicaConfig.getReplicas(), false);
+            registerDatasource(datasourceConfigMap, selector, replicaConfig.getReplicas(), false, sessionCounterProvider);
         }
     }
 
-    private void registerDatasource(Map<String, DatasourceConfig> datasourceConfigMap, ReplicaDataSourceSelector selector, List<String> datasourceNameList, boolean master) {
+    private void registerDatasource(Map<String, DatasourceConfig> datasourceConfigMap,
+                                    ReplicaSelector selector,
+                                    List<String> datasourceNameList,
+                                    boolean master,
+                                    SessionCounterProvider sessionCounterProvider) {
         if (datasourceNameList == null) {
             datasourceNameList = Collections.emptyList();
         }
         for (String datasourceName : datasourceNameList) {
             DatasourceConfig datasource = datasourceConfigMap.get(datasourceName);
-            registerDatasource(master, selector, datasource, null);
+            registerDatasource(master, selector, datasource, () -> sessionCounterProvider.getSessionCounter(datasourceName));
         }
     }
 
     private PhysicsInstance registerDatasource(String replicaName, String dataSourceName,
                                                InstanceType type,
                                                int weight, SessionCounter sessionCounter) {
-        ReplicaDataSourceSelector sourceSelector = replicaMap.get(replicaName);
+        ReplicaSelector sourceSelector = replicaMap.get(replicaName);
         Objects.requireNonNull(sourceSelector);
-        PhysicsInstanceImpl instance = sourceSelector.register(dataSourceName, type, weight);
-        if (sessionCounter != null) {
-            instance.sessionCounters.add(sessionCounter);
-        }
-        return instance;
+        return sourceSelector.register(dataSourceName, type, weight, sessionCounter);
     }
 
 
-    private ReplicaDataSourceSelector registerCluster(String replicaName,
-                                                      String dbType,
-                                                      BalanceType balanceType,
-                                                      ReplicaType type,
-                                                      int maxRequestCount,
-                                                      ReplicaSwitchType switchType, LoadBalanceStrategy readLB,
-                                                      LoadBalanceStrategy writeLB,
-                                                      TimerConfig timer) {
+    private ReplicaSelector registerCluster(String replicaName,
+                                            String dbType,
+                                            BalanceType balanceType,
+                                            ReplicaType type,
+                                            int maxRequestCount,
+                                            ReplicaSwitchType switchType, LoadBalanceStrategy readLB,
+                                            LoadBalanceStrategy writeLB,
+                                            TimerConfig timer) {
         return replicaMap.computeIfAbsent(replicaName,
                 s -> new ReplicaDataSourceSelector(replicaName, dbType, balanceType, type, maxRequestCount, switchType, readLB,
                         writeLB, timer, this));
@@ -262,17 +246,17 @@ public class ReplicaSelectorRuntime implements Closeable {
 
     //////////////////////////////////////////public read///////////////////////////////////////////////////////////////////
     public String getDatasourceNameByRandom() {
-        ArrayList<ReplicaDataSourceSelector> values = new ArrayList<>(replicaMap.values());
+        ArrayList<ReplicaSelector> values = new ArrayList<>(replicaMap.values());
         int i = ThreadLocalRandom.current().nextInt(0, values.size());
-        ReplicaDataSourceSelector replicaDataSourceSelector = values.get(i);
+        ReplicaSelector replicaDataSourceSelector = values.get(i);
         String name = replicaDataSourceSelector.getName();
         return getDatasourceNameByReplicaName(name, false, null);
     }
 
     public String getDatasourceNameByReplicaName(String replicaName, boolean master, String loadBalanceStrategy) {
-        BiFunction<LoadBalanceStrategy, ReplicaDataSourceSelector, PhysicsInstanceImpl> function =
+        BiFunction<LoadBalanceStrategy, ReplicaSelector, PhysicsInstance> function =
                 master ? this::getWriteDatasource : this::getDatasource;
-        ReplicaDataSourceSelector replicaDataSourceSelector = replicaMap.get(Objects.requireNonNull(replicaName));
+        ReplicaSelector replicaDataSourceSelector = replicaMap.get(Objects.requireNonNull(replicaName));
         if (replicaDataSourceSelector == null) {
             return replicaName;
         }
@@ -280,16 +264,16 @@ public class ReplicaSelectorRuntime implements Closeable {
         if (loadBalanceStrategy != null) {
             loadBalanceByBalance = loadBalanceManager.getLoadBalanceByBalanceName(loadBalanceStrategy);
         }//传null集群配置的负载均衡生效
-        if (replicaDataSourceSelector.writeDataSourceList.isEmpty()
+        if (replicaDataSourceSelector.getWriteDataSourceByReplicaType().isEmpty()
                 &&
-                replicaDataSourceSelector.readDataSource.isEmpty()) {
+                replicaDataSourceSelector.getReadDataSourceByReplica().isEmpty()) {
             LOGGER.error("No data sources are available {}", replicaName);
-            if (replicaDataSourceSelector.datasourceMap.size() == 1) {
-                return replicaDataSourceSelector.datasourceMap.keySet().stream().iterator().next();
+            if (replicaDataSourceSelector.getRawDataSourceMap().size() == 1) {
+                return replicaDataSourceSelector.getRawDataSourceMap().keySet().stream().iterator().next();
             }
         }
         try {
-            PhysicsInstanceImpl physicsInstance = function.apply(loadBalanceByBalance, replicaDataSourceSelector);
+            PhysicsInstance physicsInstance = function.apply(loadBalanceByBalance, replicaDataSourceSelector);
             if (physicsInstance == null) {
                 return replicaName;
             }
@@ -299,36 +283,40 @@ public class ReplicaSelectorRuntime implements Closeable {
         }
         if (!master) {
             LOGGER.error("need abnormal cluster check {}", replicaName);
-            return replicaDataSourceSelector.datasourceMap.values().iterator().next().getName();
+            return replicaDataSourceSelector.getRawDataSourceMap().values().iterator().next().getName();
         }
         return replicaName;
     }
 
-    public PhysicsInstanceImpl getWriteDatasourceByReplicaName(String replicaName,
-                                                               LoadBalanceStrategy balanceStrategy) {
-        ReplicaDataSourceSelector selector = replicaMap.get(replicaName);
+    public PhysicsInstance getWriteDatasourceByReplicaName(String replicaName,
+                                                           LoadBalanceStrategy balanceStrategy) {
+        ReplicaSelector selector = replicaMap.get(replicaName);
         if (selector == null) {
             return null;
         }
         return getDatasource(balanceStrategy, selector,
-                selector.defaultWriteLoadBalanceStrategy, selector.getWriteDataSource());
+                selector.getDefaultWriteLoadBalanceStrategy(), selector.getWriteDataSourceByReplicaType());
     }
 
-    public PhysicsInstanceImpl getWriteDatasource(LoadBalanceStrategy balanceStrategy,
-                                                  ReplicaDataSourceSelector selector) {
-        return getDatasource(balanceStrategy, selector, selector.defaultWriteLoadBalanceStrategy,
-                selector.getWriteDataSource());
+    public PhysicsInstance getWriteDatasource(LoadBalanceStrategy balanceStrategy,
+                                              ReplicaSelector selector) {
+        LoadBalanceStrategy defaultWriteLoadBalanceStrategy = selector.getDefaultWriteLoadBalanceStrategy();
+        List<PhysicsInstance> writeDataSource = selector.getWriteDataSourceByReplicaType();
+        return getDatasource(balanceStrategy, selector, defaultWriteLoadBalanceStrategy,
+                writeDataSource);
     }
 
-    public PhysicsInstanceImpl getDatasource(LoadBalanceStrategy balanceStrategy,
-                                             ReplicaDataSourceSelector selector) {
-        return getDatasource(balanceStrategy, selector, selector.defaultReadLoadBalanceStrategy,
-                selector.getDataSourceByLoadBalacneType());
+    public PhysicsInstance getDatasource(LoadBalanceStrategy balanceStrategy,
+                                         ReplicaSelector selector) {
+        LoadBalanceStrategy defaultReadLoadBalanceStrategy = selector.getDefaultReadLoadBalanceStrategy();
+        List<PhysicsInstance> dataSourceByLoadBalacneType = selector.getDataSourceByLoadBalacneType();
+        return getDatasource(balanceStrategy, selector, defaultReadLoadBalanceStrategy,
+                dataSourceByLoadBalacneType);
     }
 
-    public PhysicsInstanceImpl getDatasource(LoadBalanceStrategy balanceStrategy,
-                                             ReplicaDataSourceSelector selector, LoadBalanceStrategy defaultWriteLoadBalanceStrategy,
-                                             List element) {
+    public PhysicsInstance getDatasource(LoadBalanceStrategy balanceStrategy,
+                                         ReplicaSelector selector, LoadBalanceStrategy defaultWriteLoadBalanceStrategy,
+                                         List element) {
         Objects.requireNonNull(element);
         Objects.requireNonNull(selector);
         if (balanceStrategy == null) {
@@ -336,11 +324,11 @@ public class ReplicaSelectorRuntime implements Closeable {
         }
         LoadBalanceElement select = balanceStrategy.select(selector, element);
         Objects.requireNonNull(select, "No data source available");
-        return (PhysicsInstanceImpl) select;
+        return (PhysicsInstance) select;
     }
 
-    public PhysicsInstanceImpl getDatasourceByReplicaName(String replicaName, boolean master, LoadBalanceStrategy balanceStrategy) {
-        ReplicaDataSourceSelector selector = replicaMap.get(replicaName);
+    public PhysicsInstance getDatasourceByReplicaName(String replicaName, boolean master, LoadBalanceStrategy balanceStrategy) {
+        ReplicaSelector selector = replicaMap.get(replicaName);
         if (selector == null) {
             return null;
         }
@@ -348,33 +336,31 @@ public class ReplicaSelectorRuntime implements Closeable {
             return getWriteDatasourceByReplicaName(replicaName, balanceStrategy);
         } else {
             return getDatasource(balanceStrategy, selector,
-                    selector.defaultReadLoadBalanceStrategy, selector.getDataSourceByLoadBalacneType());
+                    selector.getDefaultReadLoadBalanceStrategy(), selector.getDataSourceByLoadBalacneType());
         }
-    }
-
-    public ReplicaDataSourceSelector getDataSourceSelector(String replicaName) {
-        return replicaMap.get(replicaName);
     }
 
 
     public synchronized void putHeartFlow(String replicaName, String datasourceName, Consumer<HeartBeatStrategy> executer) {
         String name = replicaName + "." + datasourceName;
-        if (!heartbeatDetectorMap.containsKey(name)) {
-            this.replicaConfigList.stream().filter(i -> replicaName.equals(i.getName())).findFirst().ifPresent(c -> {
-                HeartbeatConfig heartbeat = c.getHeartbeat();
-                if (heartbeat != null) {
-                    ReplicaDataSourceSelector selector = replicaMap.get(replicaName);
-                    PhysicsInstanceImpl physicsInstance = selector.datasourceMap.get(datasourceName);
-                    DefaultHeartbeatFlow heartbeatFlow = new DefaultHeartbeatFlow(this, physicsInstance, replicaName, datasourceName,
+        this.replicaConfigList.stream().filter(i -> replicaName.equals(i.getName())).findFirst().ifPresent(c -> {
+            HeartbeatConfig heartbeat = c.getHeartbeat();
+            if (heartbeat != null) {
+                ReplicaSelector selector = replicaMap.get(replicaName);
+                if (selector != null) {
+                    PhysicsInstance physicsInstance = selector.getRawDataSourceMap().get(datasourceName);
+                    DefaultHeartbeatFlow heartbeatFlow = new DefaultHeartbeatFlow(selector, physicsInstance, datasourceName,
                             heartbeat.getMaxRetry(), heartbeat.getMinSwitchTimeInterval(), heartbeat.getHeartbeatTimeout(),
                             ReplicaSwitchType.valueOf(c.getSwitchType()),
                             heartbeat.getSlaveThreshold(), getStrategyByReplicaType(c.getClusterType()),
                             executer);
 
                     heartbeatDetectorMap.put(name, heartbeatFlow);
+                    //马上进行心跳,获取集群状态
+                    heartbeatFlow.heartbeat();
                 }
-            });
-        }
+            }
+        });
     }
 
     public void removeHeartFlow(String replicaName, String datasourceName) {
@@ -390,11 +376,18 @@ public class ReplicaSelectorRuntime implements Closeable {
             case GARELA_CLUSTER:
                 strategyProvider = MySQLGaleraHeartBeatStrategy::new;
                 break;
+            case MGR:
+                strategyProvider = MGRHeartBeatStrategy::new;
+                break;
+            case MHA:
+                strategyProvider = MHAHeartBeatStrategy::new;
+                break;
             case NONE:
             case SINGLE_NODE:
-            default:
                 strategyProvider = MySQLSingleHeartBeatStrategy::new;
                 break;
+            default:
+               throw new UnsupportedOperationException("unsupported:"+replicaType);
         }
         return strategyProvider;
     }
@@ -413,8 +406,13 @@ public class ReplicaSelectorRuntime implements Closeable {
     }
 
 
-    public Map<String, ReplicaDataSourceSelector> getReplicaMap() {
+    public Map<String, ReplicaSelector> getReplicaMap() {
         return Collections.unmodifiableMap(replicaMap);
+    }
+
+    @Override
+    public Collection<PhysicsInstance> getPhysicsInstances() {
+        return this.physicsInstanceMap.values();
     }
 
 
@@ -428,7 +426,7 @@ public class ReplicaSelectorRuntime implements Closeable {
 
     public List<String> getRepliaNameListByInstanceName(String name) {
         List<String> replicaDataSourceSelectorList = new ArrayList<>();
-        for (ReplicaDataSourceSelector replicaDataSourceSelector : this.getReplicaMap().values()) {
+        for (ReplicaSelector replicaDataSourceSelector : this.getReplicaMap().values()) {
             for (PhysicsInstance physicsInstance : replicaDataSourceSelector.getRawDataSourceMap().values()) {
                 if (name.equals(physicsInstance.getName())) {
                     replicaDataSourceSelectorList.add(replicaDataSourceSelector.getName());
@@ -440,17 +438,13 @@ public class ReplicaSelectorRuntime implements Closeable {
 
     @Override
     public void close() {
-        for (ReplicaDataSourceSelector i : replicaMap.values()) {
-            try {
-                i.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        for (ReplicaSelector i : replicaMap.values()) {
+            i.close();
         }
     }
 
     public String getDbTypeByTargetName(String name) {
-        ReplicaDataSourceSelector replicaDataSourceSelector = this.getReplicaMap().get(name);
+        ReplicaSelector replicaDataSourceSelector = this.getReplicaMap().get(name);
         if (replicaDataSourceSelector != null) {
             return replicaDataSourceSelector.getDbType();
         }
@@ -459,13 +453,21 @@ public class ReplicaSelectorRuntime implements Closeable {
         return datasourceConfig.getDbType();
     }
 
-    public Map<String, Set<String>> getState() {
-        Map<String, Set<String>> map = new HashMap<>();
-        for (ReplicaDataSourceSelector value : replicaMap.values()) {
-            ArrayList<PhysicsInstance> objects = new ArrayList<>(value.getWriteDataSource());
-            map.put(value.getName(), objects.stream().map(i -> i.getName()).collect(Collectors.toSet()));
+    public Map<String, List<String>> getState() {
+        Map<String, List<String>> map = new HashMap<>();
+        for (ReplicaSelector value : replicaMap.values()) {
+            ArrayList<PhysicsInstance> objects = new ArrayList<>(value.getWriteDataSourceByReplicaType());
+            map.put(value.getName(), objects.stream().map(i -> i.getName()).collect(Collectors.toList()));
         }
         return map;
 
+    }
+
+    public SessionCounterProvider getSessionCounterProvider() {
+        return sessionCounterProvider;
+    }
+
+    public ScheduleProvider getScheduleProvider() {
+        return scheduleProvider;
     }
 }

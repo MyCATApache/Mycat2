@@ -1,3 +1,17 @@
+/**
+ * Copyright (C) <2021>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.config;
 
 import com.google.common.collect.Lists;
@@ -6,7 +20,7 @@ import io.mycat.ConfigReaderWriter;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataStorageManager;
 import io.mycat.beans.mycat.MycatErrorCode;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.replica.ReplicaType;
 import io.vertx.core.Future;
@@ -187,8 +201,12 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     @Override
     @SneakyThrows
     public void start() {
+        start(loadFromLocalFile());
+    }
+
+    public void start(MycatRouterConfig mycatRouterConfig) {
         try (ConfigOps configOps = startOps()) {
-            configOps.commit(new MycatRouterConfigOps((io.mycat.config.MycatRouterConfig) loadFromLocalFile(), configOps));
+            configOps.commit(new MycatRouterConfigOps((io.mycat.config.MycatRouterConfig) mycatRouterConfig, configOps));
         } catch (Exception e) {
             throw MycatErrorCode.createMycatException(MycatErrorCode.ERR_INIT_CONFIG, "start FileMetadataStorageManager fail", e);
         }
@@ -196,7 +214,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
 
     @Override
     @SneakyThrows
-    public void reportReplica(Map<String, Set<String>> setMap) {
+    public void reportReplica(Map<String, List<String>> setMap) {
         Path statePath = baseDirectory.resolve("state.json");
         final State state = new State();
         state.replica.putAll(setMap);
@@ -209,7 +227,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     @EqualsAndHashCode
     @Data
     public static class State {
-        final Map<String, Set<String>> replica = new HashMap<>();
+        final Map<String, List<String>> replica = new HashMap<>();
     }
 
     @Override
@@ -229,7 +247,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
 
             @Override
             public void commit(Object ops) throws Exception {
-                 commitAndSyncDisk((MycatRouterConfigOps) ops).mapEmpty().toCompletionStage().toCompletableFuture().get();
+                commitAndSyncDisk((MycatRouterConfigOps) ops).mapEmpty().toCompletionStage().toCompletableFuture().get();
             }
 
             @Override
@@ -323,7 +341,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             writeFile(t, filePath);
         }
         State state = new State();
-        ReplicaSelectorRuntime replicaSelector = Optional.ofNullable(prepare.getReplicaSelector()).orElseGet(() -> MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class));
+        ReplicaSelectorManager replicaSelector = Optional.ofNullable(prepare.getReplicaSelector()).orElseGet(() -> MetaClusterCurrent.wrapper(ReplicaSelectorManager.class));
         state.replica.putAll(replicaSelector.getState());
         Future<Void> commitFuture = prepare.commit();
         return commitFuture.flatMap(unused -> {
@@ -336,7 +354,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                                 .transformation(state), statePath);
                 return Future.succeededFuture(state);
             } catch (Exception e) {
-                return  Future.failedFuture(e);
+                return Future.failedFuture(e);
             }
         });
 

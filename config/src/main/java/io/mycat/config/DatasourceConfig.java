@@ -28,6 +28,7 @@ public class DatasourceConfig {
     private long idleTimeout = TimeUnit.SECONDS.toMillis(60);
     private String jdbcDriverClass;//保留属性
     private String type = DatasourceType.JDBC.name();
+    private int queryTimeout = 30;
 
     public static String getDbTypeRaw(String rawUrl) {
         if (rawUrl == null) {
@@ -162,7 +163,9 @@ public class DatasourceConfig {
                 properties.put("characterEncoding", "UTF-8");
             }
             if (!properties.containsKey("serverTimezone")) {
-                properties.put("serverTimezone", "UTC");
+                TimeZone timeZone = TimeZone.getDefault();
+                timeZone.getID();
+                properties.put("serverTimezone","Asia/Shanghai");
             }
 //            if (!properties.containsKey("useSSL")) {
 //                properties.put("useSSL", "false");

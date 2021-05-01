@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -15,6 +15,7 @@
 package io.mycat.calcite.physical;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.adapter.enumerable.impl.AggResultContextImpl;
@@ -31,9 +32,11 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -42,6 +45,7 @@ import org.apache.calcite.util.Util;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class MycatSortAgg extends EnumerableAggregateBase implements MycatRel {
 
@@ -49,7 +53,14 @@ public class MycatSortAgg extends EnumerableAggregateBase implements MycatRel {
                            ImmutableBitSet groupSet,
                            List<ImmutableBitSet> groupSets,
                            List<AggregateCall> aggCalls) {
-        super(cluster, traitSet, ImmutableList.of(), input, groupSet, groupSets, aggCalls);
+        super(cluster,  Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), ImmutableList.of(), input, groupSet, groupSets, aggCalls);
+    }
+
+    public MycatSortAgg(
+            RelInput relInput) {
+        this(relInput.getCluster(), relInput.getTraitSet(),
+                relInput.getInput(), relInput.getBitSet("group"),
+                relInput.getBitSetList("groups"), relInput.getAggregateCalls("aggs"));
     }
 
     public static MycatSortAgg create(

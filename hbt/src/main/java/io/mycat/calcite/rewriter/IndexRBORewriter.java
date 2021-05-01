@@ -1,3 +1,17 @@
+/**
+ * Copyright (C) <2021>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.calcite.rewriter;
 
 import io.mycat.calcite.logical.IndexTableView;
@@ -23,8 +37,8 @@ import static io.mycat.util.CalciteUtls.unCastWrapper;
 
 public class IndexRBORewriter<T> extends SQLRBORewriter {
     boolean apply = false;
-    public IndexRBORewriter(OptimizationContext optimizationContext, List<Object> params) {
-        super(optimizationContext,params);
+    public IndexRBORewriter() {
+        super(false);
     }
 
     @Override
@@ -116,7 +130,7 @@ public class IndexRBORewriter<T> extends SQLRBORewriter {
                     if (right instanceof RexLiteral){
                         value = ((RexLiteral) right).getValue2();
                     }else if (right instanceof RexDynamicParam){
-                        value = super.params.get (((RexDynamicParam)right).getIndex());
+//                        value = super.params.get (((RexDynamicParam)right).getIndex());
                     }else {
                         return Optional.empty();
                     }

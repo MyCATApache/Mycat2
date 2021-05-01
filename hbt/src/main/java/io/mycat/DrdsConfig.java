@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -15,6 +15,7 @@
 package io.mycat;
 
 import io.mycat.calcite.table.SchemaHandler;
+import io.mycat.config.ServerConfig;
 import io.mycat.util.NameMap;
 import lombok.Data;
 
@@ -25,8 +26,18 @@ public class DrdsConfig implements DrdsConst {
     @Override
     public NameMap<SchemaHandler> schemas() {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        NameMap< SchemaHandler> schemaMap = metadataManager.getSchemaMap();
+        NameMap<SchemaHandler> schemaMap = metadataManager.getSchemaMap();
         return schemaMap;
+    }
+
+    @Override
+    public boolean joinClustering() {
+        boolean exist = MetaClusterCurrent.exist(ServerConfig.class);
+        if (exist) {
+            ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
+            return serverConfig.isJoinClustering();
+        }
+        return true;
     }
 
 //    @Override

@@ -1,34 +1,50 @@
+/**
+ * Copyright (C) <2021>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.config;
 
 import cn.mycat.vertx.xa.MySQLManager;
-import cn.mycat.vertx.xa.SimpleConfig;
 import cn.mycat.vertx.xa.XaLog;
 import cn.mycat.vertx.xa.impl.LocalXaMemoryRepositoryImpl;
 import cn.mycat.vertx.xa.impl.XaLogImpl;
-import com.mysql.cj.conf.ConnectionUrlParser;
-import com.mysql.cj.conf.HostInfo;
 import io.mycat.*;
-import io.mycat.calcite.spm.PlanCache;
+import io.mycat.calcite.spm.*;
+import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.commands.MycatMySQLManagerImpl;
 import io.mycat.commands.SqlResultSetService;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.proxy.session.AuthenticatorImpl;
-import io.mycat.replica.ReplicaSelectorRuntime;
-import io.vertx.core.Future;
+import io.mycat.replica.*;
+import io.mycat.statistic.StatisticCenter;
+import io.mycat.util.NameMap;
+import io.vertx.core.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Collectors;
 
 public class ConfigPrepareExecuter {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigPrepareExecuter.class);
     private final MycatRouterConfigOps ops;
     ////////////////////////////////////////////////////////////////////////////////////
-    private ReplicaSelectorRuntime replicaSelector;
+    private ReplicaSelectorManager replicaSelector;
     private JdbcConnectionManager jdbcConnectionManager;
     private MetadataManager metadataManager;
     private DatasourceConfigProvider datasourceConfigProvider;
@@ -76,15 +92,10 @@ public class ConfigPrepareExecuter {
 
         switch (ops.getUpdateType()) {
             case USER: {
-                LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
-                MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
-
                 this.authenticator = new AuthenticatorImpl(ops.getUsers().stream().distinct().collect(Collectors.toMap(k -> k.getUsername(), v -> v)));
                 break;
             }
             case SEQUENCE: {
-                LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
-                MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
                 ServerConfig serverConfig = MetaClusterCurrent.wrapper(MycatServerConfig.class).getServer();
                 this.sequenceGenerator = new SequenceGenerator(serverConfig.getMycatId(), ops.getSequences());
                 break;
@@ -155,7 +166,7 @@ public class ConfigPrepareExecuter {
         return MetadataManager.createMetadataManager(ops.getSchemas(),
                 MetaClusterCurrent.wrapper(LoadBalanceManager.class),
                 MetaClusterCurrent.wrapper(SequenceGenerator.class),
-                MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class),
+                MetaClusterCurrent.wrapper(ReplicaSelectorManager.class),
                 MetaClusterCurrent.wrapper(JdbcConnectionManager.class),
                 "prototype");
     }
@@ -163,15 +174,28 @@ public class ConfigPrepareExecuter {
     public void fullInitBy(MycatRouterConfig mycatRouterConfig) {
 
         LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
-        MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
         Map<String, DatasourceConfig> datasourceConfigMap = mycatRouterConfig.getDatasources().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
         Map<String, ClusterConfig> clusters = mycatRouterConfig.getClusters().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
-        replicaSelector = new ReplicaSelectorRuntime(mycatRouterConfig.getClusters(), datasourceConfigMap, loadBalanceManager, metadataStorageManager);
+        replicaSelector = new ReplicaSelectorRuntime(mycatRouterConfig.getClusters(), datasourceConfigMap, loadBalanceManager,
+                name -> {
+                    MySQLManager manager = MetaClusterCurrent.wrapper(MySQLManager.class);
+                    return manager.getSessionCount(name);
+                }, (command, initialDelay, period, unit) -> {
+                    ScheduledFuture<?> scheduled = ScheduleUtil.getTimer().scheduleAtFixedRate(command, initialDelay, period, unit);
+                    return () -> {
+                        try {
+                            if (scheduled != null && (!scheduled.isDone() || !scheduled.isCancelled())) {
+                                scheduled.cancel(true);
+                            }
+                        }catch (Throwable throwable){
+                            LOGGER.error("",throwable);
+                        }
+                    };
+                });
         jdbcConnectionManager = new JdbcConnectionManager(
                 datasourceProvider,
                 datasourceConfigMap,
                 clusters,
-                mycatWorkerProcessor,
                 replicaSelector);
         datasourceConfigProvider = new DatasourceConfigProvider() {
             @Override
@@ -195,26 +219,6 @@ public class ConfigPrepareExecuter {
 
 
         ////////////////////////////////////////////////////////
-
-        List<SimpleConfig> configList = new ArrayList<>();
-        for (DatasourceConfig datasource : mycatRouterConfig.getDatasources()) {
-            if (!"mysql".equalsIgnoreCase(datasource.getDbType())) {
-                throw new IllegalArgumentException(datasource.toString() + "  \n is not mysql type");
-            }
-            ConnectionUrlParser connectionUrlParser = ConnectionUrlParser.parseConnectionString(datasource.getUrl());
-            HostInfo hostInfo = connectionUrlParser.getHosts().get(0);
-            String name = datasource.getName();
-            String host = hostInfo.getHost();
-            int port = hostInfo.getPort();
-            String user = Optional.ofNullable(datasource.getUser()).orElse(hostInfo.getUser());
-            String password = Optional.ofNullable(datasource.getPassword()).orElse(hostInfo.getPassword());
-            String database = hostInfo.getDatabase();
-            int maxSize = datasource.getMaxCon();
-            SimpleConfig simpleConfig = new SimpleConfig(name, host, port, user, password, database, maxSize);
-            configList.add(simpleConfig);
-        }
-
-
     }
 
     private void clearSqlCache() {
@@ -240,7 +244,7 @@ public class ConfigPrepareExecuter {
     }
 
 
-    public ReplicaSelectorRuntime getReplicaSelector() {
+    public ReplicaSelectorManager getReplicaSelector() {
         return replicaSelector;
     }
 
@@ -260,9 +264,9 @@ public class ConfigPrepareExecuter {
         return authenticator;
     }
 
-    public Future<Void> commit() {
+    public Future<Void> commit() throws IOException {
 
-        ReplicaSelectorRuntime replicaSelector = this.replicaSelector;
+        ReplicaSelectorManager replicaSelector = this.replicaSelector;
         JdbcConnectionManager jdbcConnectionManager = this.jdbcConnectionManager;
         MetadataManager metadataManager = this.metadataManager;
         DatasourceConfigProvider datasourceConfigProvider = this.datasourceConfigProvider;
@@ -281,11 +285,11 @@ public class ConfigPrepareExecuter {
         }
 
         if (replicaSelector != null) {
-            if (MetaClusterCurrent.exist(ReplicaSelectorRuntime.class)) {
-                ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+            if (MetaClusterCurrent.exist(ReplicaSelectorManager.class)) {
+                ReplicaSelectorManager replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
                 replicaSelectorRuntime.close();
             }
-            context.put(ReplicaSelectorRuntime.class, replicaSelector);
+            context.put(ReplicaSelectorManager.class, replicaSelector);
         }
         if (jdbcConnectionManager != null) {
             if (MetaClusterCurrent.exist(JdbcConnectionManager.class)) {
@@ -309,6 +313,7 @@ public class ConfigPrepareExecuter {
         if (metadataStorageManager != null) {
             context.put(metadataStorageManager.getClass(), metadataStorageManager);
             context.put(MetadataStorageManager.class, metadataStorageManager);
+            context.put(ReplicaReporter.class, metadataStorageManager);
         }
         if (sequenceGenerator != null) {
             context.put(sequenceGenerator.getClass(), sequenceGenerator);
@@ -319,19 +324,69 @@ public class ConfigPrepareExecuter {
         if (sqlResultSetService != null) {
             context.put(SqlResultSetService.class, sqlResultSetService);
         }
-        PlanCache.INSTANCE.clear();
+        DbPlanManagerPersistorImpl newDbPlanManagerPersistor = null;
+        if(!MetaClusterCurrent.exist(MemPlanCache.class)){
+            newDbPlanManagerPersistor = new DbPlanManagerPersistorImpl();
+            MemPlanCache memPlanCache = new MemPlanCache((newDbPlanManagerPersistor));
+            context.put(MemPlanCache.class, memPlanCache);
+            context.put(QueryPlanner.class,new QueryPlanner(memPlanCache));
+        }else {
+            MemPlanCache memPlanCache = MetaClusterCurrent.wrapper(MemPlanCache.class);
+            memPlanCache.clearCache();
+        }
+        if(!MetaClusterCurrent.exist(StatisticCenter.class)){
+            context.put(StatisticCenter.class,new StatisticCenter());
+        }
+//        PlanCache2 planCache = MetaClusterCurrent.wrapper(PlanCache2.class);
+//        planCache.clear();
 
         MySQLManager mySQLManager;
         context.put(MySQLManager.class, mySQLManager = new MycatMySQLManagerImpl((MycatRouterConfig) context.get(MycatRouterConfig.class)));
 
-        context.put(DrdsRunner.class, new DrdsRunner(() -> ((MetadataManager) context.get(MetadataManager.class)).getSchemaMap(), PlanCache.INSTANCE));
+        context.put(DrdsSqlCompiler.class, new DrdsSqlCompiler(new DrdsConfig(){
+            @Override
+            public NameMap<SchemaHandler> schemas() {
+                return ((MetadataManager)(context.get(MetadataManager.class))).getSchemaMap();
+            }
+        }));
         ServerConfig serverConfig = (ServerConfig) context.get(ServerConfig.class);
         LocalXaMemoryRepositoryImpl localXaMemoryRepository = LocalXaMemoryRepositoryImpl.createLocalXaMemoryRepository(() -> mySQLManager);
         context.put(XaLog.class, new XaLogImpl(localXaMemoryRepository, serverConfig.getMycatId(), Objects.requireNonNull(mySQLManager)));
+        context.put(UpdatePlanCache.class,new UpdatePlanCache());
         MetaClusterCurrent.register(context);
 
+        MycatRouterConfig curConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
 
-        XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
-        return xaLog.readXARecoveryLog();
+        Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+        vertx.executeBlocking(new Handler<Promise<Void>>() {
+            @Override
+            public void handle(Promise<Void> promise) {
+                try {
+                    MemPlanCache memPlanCache = MetaClusterCurrent.wrapper(MemPlanCache.class);
+                    memPlanCache.init();
+                }catch (Throwable throwable){
+                    LOGGER.error("",throwable);
+                   promise.fail(throwable);
+                }
+            }
+        });
+        if (newDbPlanManagerPersistor != null) {
+            newDbPlanManagerPersistor.checkStore();
+        }
+        StatisticCenter statisticCenter = MetaClusterCurrent.wrapper(StatisticCenter.class);
+        statisticCenter.init();
+        boolean allMatchMySQL = curConfig.getDatasources().stream().allMatch(s -> "mysql".equalsIgnoreCase(s.getDbType()));
+        if (allMatchMySQL){
+            XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
+            LOGGER.info("readXARecoveryLog start");
+            return xaLog.readXARecoveryLog().onComplete(new Handler<AsyncResult<Void>>() {
+                @Override
+                public void handle(AsyncResult<Void> event) {
+                    LOGGER.info("readXARecoveryLog end");
+                }
+            });
+        }else {
+            return Future.succeededFuture();
+        }
     }
 }

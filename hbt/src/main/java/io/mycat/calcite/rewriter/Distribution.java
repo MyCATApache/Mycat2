@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -16,9 +16,7 @@ package io.mycat.calcite.rewriter;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import io.mycat.DataNode;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.MetadataManager;
+import io.mycat.*;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
@@ -61,6 +59,47 @@ public class Distribution {
         this.shardingTables = shardingTables;
         this.globalTables = globalTables;
         this.normalTables = normalTables;
+    }
+
+    public static Distribution of(List<String> unquineName) {
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        List<ShardingTable> shardingTables = new ArrayList<>();
+        List<GlobalTable> globalTables = new ArrayList<>();
+        List<NormalTable> normalTables = new ArrayList<>();
+        Distribution distribution = new Distribution(shardingTables, globalTables, normalTables);
+
+        unquineName.stream().map(i->{
+            String[] split = i.split("\\.");
+            return SchemaInfo.of(split[0],split[1]);})
+                .map(n -> metadataManager.getTable(n.getTargetSchema(), n.getTargetTable())).forEach(t -> {
+            switch (t.getType()) {
+                case SHARDING:
+                    shardingTables.add((ShardingTable) t);
+                    break;
+                case GLOBAL:
+                    globalTables.add((GlobalTable) t);
+                    break;
+                case NORMAL:
+                    normalTables.add((NormalTable) t);
+                    break;
+                case CUSTOM:
+                    throw new UnsupportedOperationException();
+            }
+        });
+
+        return distribution;
+    }
+
+    public static Distribution fromJson(List<String> list) {
+        return Distribution.of( list);
+    }
+
+    public List<String> toNameList(){
+        ArrayList<TableHandler> tableHandlers = new ArrayList<>();
+        tableHandlers.addAll(shardingTables);
+        tableHandlers.addAll(globalTables);
+        tableHandlers.addAll(normalTables);
+        return tableHandlers.stream().map(i->(i.getSchemaName()+"."+i.getTableName())).sorted().collect(Collectors.toList());
     }
 
 
@@ -148,7 +187,7 @@ public class Distribution {
         return getDataNodes(table -> table.dataNodes());
     }
 
-    public Iterable<DataNode> getDataNodesAsSingleTableUpdate(List<RexNode> conditions, List<Object> readOnlyParameters) {
+    public Iterable<DataNode> getDataNodesAsSingleTableUpdate(IndexCondition conditions, List<Object> readOnlyParameters) {
         if (normalTables.size() == 1) {
             return Collections.singletonList(normalTables.get(0).getDataNode());
         }
@@ -156,7 +195,7 @@ public class Distribution {
             return ImmutableList.copyOf(globalTables.get(0).getGlobalDataNode());
         }
         if (shardingTables.size() == 1) {
-            return PredicateAnalyzer.analyze(shardingTables.get(0), conditions, readOnlyParameters);
+            return IndexCondition.getObject(shardingTables.get(0).getShardingFuntion(), conditions, readOnlyParameters);
         }
         throw new UnsupportedOperationException();
     }
@@ -165,14 +204,14 @@ public class Distribution {
         switch (this.type()) {
             case BroadCast:
             case PHY: {
-                ImmutableMap.Builder<String, DataNode> builder = ImmutableMap.builder();
+                Map<String, DataNode> builder = new HashMap<>();
                 for (NormalTable normalTable : this.normalTables) {
                     builder.put(normalTable.getUniqueName(), normalTable.getDataNode());
                 }
                 for (GlobalTable globalTable : this.globalTables) {
                     builder.put(globalTable.getUniqueName(), globalTable.getDataNode());
                 }
-                return Stream.of(builder.build());
+                return Stream.of(builder);
             }
             case Sharding: {
                 ImmutableMap.Builder<String, DataNode> globalbuilder = ImmutableMap.builder();
@@ -186,10 +225,10 @@ public class Distribution {
 //                Map<String, List<DataNode>> collect = this.shardingTables.stream()
 //                        .collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getShardingFuntion().calculate(Collections.emptyMap())));
                 MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-                List<ShardingTable> shardingTables = metadataManager.getErTableGroup().getOrDefault(shardingTable.getShardingFuntion().getErUniqueID(),Collections.emptyList());
+                List<ShardingTable> shardingTables = metadataManager.getErTableGroup().getOrDefault(shardingTable.getShardingFuntion().getErUniqueID(), Collections.emptyList());
                 Map<String, List<DataNode>> collect = shardingTables.stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.dataNodes()));
                 List<Integer> mappingIndex = new ArrayList<>();
-                List<String> allDataNodeUniqueNames = collect.get(primaryTableUniqueName).stream().sequential().map(i->i.getUniqueName()).collect(Collectors.toList());
+                List<String> allDataNodeUniqueNames = collect.get(primaryTableUniqueName).stream().sequential().map(i -> i.getUniqueName()).collect(Collectors.toList());
                 {
 
                     for (DataNode filterDataNode : primaryTableFilterDataNodes) {
@@ -229,17 +268,56 @@ public class Distribution {
 
 
     public static enum Type {
-        PHY,
         BroadCast,
-        Sharding
+        Sharding,
+        PHY
+
     }
 
     @Override
     public String toString() {
-        return "Distribution{" +
-                "shardingTables=" + shardingTables +
-                ", globalTables=" + globalTables +
-                ", normalTables=" + normalTables +
-                '}';
+        String builder = "Distribution{" +
+                innerToString() +
+                "}";
+        return builder;
+    }
+
+    public String innerToString() {
+
+        List<String> each = new ArrayList<>();
+
+        if (!normalTables.isEmpty()) {
+            StringBuilder builder = new StringBuilder();
+            builder.append("normalTables=")
+                    .append(normalTables
+                            .stream()
+                            .map(i ->
+                                    i.getSchemaName() + "." + i.getTableName()).collect(Collectors.joining(","))
+
+                    );
+            each.add(builder.toString());
+        }
+
+        if (!shardingTables.isEmpty()) {
+            StringBuilder builder = new StringBuilder();
+            builder.append("shardingTables=")
+                    .append(shardingTables
+                            .stream()
+                            .map(i -> i.getSchemaName() + "." + i.getTableName()).collect(Collectors.joining(","))
+                    );
+            each.add(builder.toString());
+        }
+        if (!globalTables.isEmpty()) {
+            StringBuilder builder = new StringBuilder();
+            builder.append("globalTables=")
+                    .append(globalTables
+                            .stream()
+                            .map(i ->
+                                    i.getSchemaName() + "." + i.getTableName()).collect(Collectors.joining(","))
+                    );
+            each.add(builder.toString());
+        }
+
+        return String.join(",", each);
     }
 }

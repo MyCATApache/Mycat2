@@ -1,5 +1,6 @@
 package io.mycat.assemble;
 
+import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
 import lombok.SneakyThrows;
@@ -7,10 +8,13 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
-import java.sql.Connection;
+import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 @NotThreadSafe
@@ -407,5 +411,104 @@ public class AssembleTest implements MycatTest {
         );
         Assert.assertEquals(2, executeQuery(mycatConnection, "select id from db1.travelrecord").size());
     }
+
+    @Test
+    public void testNormalTableTimezone() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+             Connection db1 = getMySQLConnection(DB1);
+        ) {
+            execute(db1, "set global time_zone='+8:00';");
+            execute(db1, "drop database if exists db1");
+            execute(mycatConnection, RESET_CONFIG);
+            execute(mycatConnection, "create database db1");
+            execute(mycatConnection, "use db1");
+            execute(mycatConnection, "CREATE TABLE `test_timezone` (\n" +
+                    "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                    "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                    "  `traveldate` date DEFAULT NULL,\n" +
+                    "  `travel_timestamp` timestamp DEFAULT NULL,\n" +
+                    "  PRIMARY KEY (`id`),\n" +
+                    "  KEY `id` (`id`)\n" +
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
+            deleteData(mycatConnection, "db1", "test_timezone");
+            Assert.assertTrue(!hasData(mycatConnection, "db1", "test_timezone"));
+            LocalDate localDate = LocalDate.now();
+            LocalDateTime localDateTime = LocalDateTime.now();
+            try (PreparedStatement preparedStatement = mycatConnection
+                    .prepareStatement("insert test_timezone (traveldate,travel_timestamp) VALUES (?,?)")) {
+                preparedStatement.setDate(1, java.sql.Date.valueOf(localDate));
+                preparedStatement.setTimestamp(2, java.sql.Timestamp.valueOf(localDateTime));
+                preparedStatement.executeUpdate();
+            }
+
+            List<Map<String, Object>> mycat_result = executeQuery(mycatConnection, "select * from db1.test_timezone");
+            List<Map<String, Object>> mysql_result = executeQuery(db1, "select * from db1.test_timezone");
+            Assert.assertEquals(mysql_result, mycat_result);
+        }
+    }
+
+    @Test
+    public void testShardingTableTimezone() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+             Connection db1 = getMySQLConnection(DB1);
+        ) {
+            execute(db1, "set global time_zone='+8:00'; ");
+            execute(db1, "drop database if exists db1");
+            execute(db1, "drop database if exists db1");
+            execute(db1, "drop database if exists db1_0");
+            execute(db1, "drop database if exists db1_1");
+
+            execute(db1, "drop database if exists db1");
+            execute(db1, "drop database if exists db1_0");
+            execute(db1, "drop database if exists db1_1");
+
+
+            execute(mycatConnection, RESET_CONFIG);
+            addC0(mycatConnection);
+            execute(mycatConnection, "create database db1");
+            execute(mycatConnection, "use db1");
+            execute(mycatConnection, "CREATE TABLE `test_timezone` (\n" +
+                    "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                    "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                    "  `traveldate` date DEFAULT NULL,\n" +
+                    "  `travel_timestamp` timestamp DEFAULT NULL,\n" +
+                    "  PRIMARY KEY (`id`),\n" +
+                    "  KEY `id` (`id`)\n" +
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
+                    + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
+            deleteData(mycatConnection, "db1", "test_timezone");
+            Assert.assertTrue(!hasData(mycatConnection, "db1", "test_timezone"));
+            LocalDate localDate = LocalDate.now();
+            LocalDateTime localDateTime = LocalDateTime.now();
+            try (PreparedStatement preparedStatement = mycatConnection
+                    .prepareStatement("insert test_timezone (id,traveldate,travel_timestamp) VALUES (3,?,?)")) {
+                preparedStatement.setDate(1, java.sql.Date.valueOf(localDate));
+                preparedStatement.setTimestamp(2, java.sql.Timestamp.valueOf(localDateTime));
+                preparedStatement.executeUpdate();
+            }
+            List<Map<String, Object>> mycat_result = executeQuery(mycatConnection, "select * from db1.test_timezone");
+            List<Map<String, Object>> mysql_result = executeQuery(db1, "SELECT * FROM `db1_1`.`test_timezone_1` LIMIT 0, 1000; ");
+            Assert.assertEquals(mysql_result, mycat_result);
+        }
+    }
+
+    @Test
+    public void testBit() throws Exception {
+        try(Connection mycat = getMySQLConnection(DB_MYCAT);
+        Connection db1Connection = getMySQLConnection(DB1);){
+            execute(mycat,"CREATE DATABASE IF NOT EXISTS db1 DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_general_ci;\n" +
+                    "CREATE TABLE  if not exists db1.reader ( locked BIT) ENGINE=INNODB;");
+
+            deleteData(mycat,"db1","reader");
+
+            JdbcUtils.execute(mycat,"insert db1.reader (locked) VALUES (?)",Arrays.asList(true));
+
+            List<Map<String, Object>> mycatMaps = executeQuery(mycat, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");
+            List<Map<String, Object>> mysqlMaps = executeQuery(db1Connection, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");
+//
+            Assert.assertEquals( mysqlMaps,mycatMaps);
+        }
+    }
+
 
 }

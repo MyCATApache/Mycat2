@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -26,12 +26,14 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Intersect;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.BuiltInMethod;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Intersect operator implemented in Mycat convention.
@@ -44,7 +46,10 @@ public class MycatIntersect
             RelTraitSet traitSet,
             List<RelNode> inputs,
             boolean all) {
-        super(cluster, traitSet, inputs, all);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), inputs, all);
+    }
+    protected MycatIntersect(RelInput input) {
+        super(input);
     }
     public static MycatIntersect create(
             RelTraitSet traitSet,

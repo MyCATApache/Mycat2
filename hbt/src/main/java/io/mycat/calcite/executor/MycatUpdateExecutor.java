@@ -9,15 +9,16 @@ import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.rewriter.Distribution;
+import io.mycat.calcite.table.GlobalTable;
+import io.mycat.calcite.table.NormalTable;
+import io.mycat.calcite.table.ShardingTable;
 import io.mycat.gsi.GSIService;
-import io.mycat.mpp.Row;
-import io.mycat.sqlrecorder.SqlRecord;
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.FastSqlUtils;
 import io.mycat.util.Pair;
 import io.mycat.util.SQL;
 import io.mycat.util.UpdateSQL;
 import lombok.Getter;
-import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +34,7 @@ public class MycatUpdateExecutor {
 
     private final MycatDataContext context;
     private final MycatUpdateRel mycatUpdateRel;
-    private final Distribution distribution;
+//    private final Distribution distribution;
     /**
      * 逻辑语法树（用户在前端写的SQL语句）
      */
@@ -51,34 +52,26 @@ public class MycatUpdateExecutor {
     private long affectedRow = 0;
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatUpdateExecutor.class);
 
-    public MycatUpdateExecutor(MycatDataContext context, MycatUpdateRel mycatUpdateRel, Distribution distribution,
+    public MycatUpdateExecutor(MycatDataContext context, MycatUpdateRel mycatUpdateRel,
                                SQLStatement logicStatement,
                                List<Object> parameters) {
         this.context = context;
         this.mycatUpdateRel = mycatUpdateRel;
-
-        this.distribution = distribution;
         this.logicStatement = logicStatement;
         this.logicParameters = parameters;
 
-        this.reallySqlSet = Collections.unmodifiableSet(buildReallySqlList(mycatUpdateRel,distribution,logicStatement,parameters));
-    }
-
-    public static MycatUpdateExecutor create(MycatDataContext context, MycatUpdateRel mycatUpdateRel,Distribution values,
-                                             SQLStatement sqlStatement,
-                                             List<Object> parameters) {
-        return new MycatUpdateExecutor(context,mycatUpdateRel, values, sqlStatement, parameters);
+        this.reallySqlSet = Collections.unmodifiableSet(buildReallySqlList(mycatUpdateRel,logicStatement,parameters));
     }
 
     public static MycatUpdateExecutor create(MycatUpdateRel mycatUpdateRel,MycatDataContext dataContext,List<Object> params) {
         MycatUpdateExecutor updateExecutor;
         if (mycatUpdateRel.isGlobal()) {
-            updateExecutor = new MycatGlobalUpdateExecutor(dataContext,mycatUpdateRel, mycatUpdateRel.getValues(),
+            updateExecutor = new MycatGlobalUpdateExecutor(dataContext,mycatUpdateRel,
                     mycatUpdateRel.getSqlStatement(),
                     params);
         } else {
-            updateExecutor = MycatUpdateExecutor.create(dataContext,mycatUpdateRel, mycatUpdateRel.getValues(),
-                    mycatUpdateRel.getSqlStatement(),
+            updateExecutor = MycatUpdateExecutor.create(mycatUpdateRel,
+             dataContext,
                     params
             );
         }
@@ -199,9 +192,11 @@ public class MycatUpdateExecutor {
     }
 
 
-    public static Set<SQL> buildReallySqlList(MycatUpdateRel mycatUpdateRel, Distribution distribution, SQLStatement orginalStatement, List<Object> parameters) {
+    public static Set<SQL> buildReallySqlList(MycatUpdateRel mycatUpdateRel, SQLStatement orginalStatement, List<Object> parameters) {
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        TableHandler table = metadataManager.getTable(mycatUpdateRel.getSchemaName(), mycatUpdateRel.getTableName());
+        Distribution distribution = getDistribution(table);
         List<Object> readOnlyParameters = Collections.unmodifiableList(parameters);
-
         Iterable<DataNode> dataNodes = distribution.getDataNodesAsSingleTableUpdate(mycatUpdateRel.getConditions(),readOnlyParameters);
         Map<SQL,SQL> sqlMap = new LinkedHashMap<>();
 
@@ -217,6 +212,20 @@ public class MycatUpdateExecutor {
             }
         }
         return new LinkedHashSet<>(sqlMap.keySet());
+    }
+
+    private static Distribution getDistribution(TableHandler table) {
+        switch (table.getType()) {
+            case SHARDING:
+                return Distribution.of((ShardingTable) table);
+            case GLOBAL:
+                return Distribution.of((GlobalTable) table);
+            case NORMAL:
+                return Distribution.of((NormalTable) table);
+            case CUSTOM:
+               throw new IllegalArgumentException("CUSTOM TABLE UNSUPPORT Distribution");
+        }
+        return null;
     }
 
     public ExplainWriter explain(ExplainWriter writer) {

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2019>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -42,7 +42,7 @@ public class BackendTableInfo implements DataNode {
     }
 
     public String getUniqueName() {
-        return targetName + "." + schemaInfo.getTargetSchemaTable();
+        return targetName + "." + schemaInfo.targetSchemaTable();
     }
 
     @Override
@@ -57,7 +57,7 @@ public class BackendTableInfo implements DataNode {
 
     @Override
     public String getTargetSchemaTable() {
-        return schemaInfo.getTargetSchemaTable();
+        return schemaInfo.targetSchemaTable();
     }
 
     @Override

@@ -1,3 +1,17 @@
+/**
+ * Copyright (C) <2021>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.vertxmycat;
 
 import com.alibaba.druid.sql.SQLUtils;
@@ -6,7 +20,6 @@ import com.alibaba.druid.sql.ast.SQLReplaceable;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import io.mycat.MycatTimeUtil;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.handler.backend.ResultSetHandler;
@@ -25,20 +38,18 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
 public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
-    static final Logger LOGGER = LoggerFactory.getLogger(AbstractMySqlConnectionImpl.class);
+   public static final Logger LOGGER = LoggerFactory.getLogger(AbstractMySqlConnectionImpl.class);
     volatile Handler<Throwable> exceptionHandler;
     volatile Handler<Void> closeHandler;
     volatile MySQLClientSession mySQLClientSession;
@@ -180,11 +191,14 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
 
     @Override
     public PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
-        return new RowSetMySqlPreparedQuery(sql, this);
+        return new RowSetMySqlPreparedTextQuery(sql, this);
     }
 
     @NotNull
     public static List<Object> toObjects(Tuple tuple) {
+        if (tuple.size() == 0){
+            return Collections.emptyList();
+        }
         int size = tuple.size();
         ArrayList<Object> objects = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {

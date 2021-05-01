@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -21,10 +21,12 @@ import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.*;
+import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.logical.LogicalCalc;
@@ -39,10 +41,12 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serializable;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.*;
 
@@ -52,15 +56,23 @@ import static org.apache.calcite.adapter.enumerable.EnumUtils.*;
  */
 public class MycatProject
         extends Project
-        implements MycatRel {
+        implements MycatRel, Serializable {
     public MycatProject(
             RelOptCluster cluster,
             RelTraitSet traitSet,
             RelNode input,
             List<? extends RexNode> projects,
             RelDataType rowType) {
-        super(cluster, traitSet, ImmutableList.of(), input, projects, rowType);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), ImmutableList.of(), input, projects, rowType);
         assert getConvention() instanceof MycatConvention;
+    }
+
+    public MycatProject(RelInput relInput) {
+        this(relInput.getCluster(),
+                relInput.getTraitSet(),
+                relInput.getInput(),
+                Objects.requireNonNull(relInput.getExpressionList("exprs")),
+                Objects.requireNonNull(relInput.getRowType("exprs", "fields")));
     }
 
     /**
@@ -96,12 +108,12 @@ public class MycatProject
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
         MycatCalc mycatCalc = toMycatCacl();
-        return mycatCalc.implement(implementor,pref);
+        return mycatCalc.implement(implementor, pref);
     }
 
     @Override
     public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
-        return toMycatCacl().implementStream(implementor,pref);
+        return toMycatCacl().implementStream(implementor, pref);
     }
 
     @NotNull

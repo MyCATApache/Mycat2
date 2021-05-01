@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2019>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -14,35 +14,30 @@
  */
 package io.mycat.replica;
 
-import com.rits.cloning.Cloner;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.MetadataStorageManager;
-import io.mycat.MycatConfig;
-import io.mycat.ScheduleUtil;
-import io.mycat.config.ClusterConfig;
+import io.mycat.*;
 import io.mycat.config.TimerConfig;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
+import io.mycat.plug.loadBalance.SessionCounter;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
-import io.mycat.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
  * @author : chenjunwen date Date : 2019年05月15日 21:34
  */
 
-public class ReplicaDataSourceSelector implements LoadBalanceInfo , Closeable {
+public class ReplicaDataSourceSelector implements LoadBalanceInfo, Closeable, ReplicaSelector {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReplicaDataSourceSelector.class);
     protected final String name;
-    protected final ConcurrentHashMap<String, PhysicsInstanceImpl> datasourceMap = new ConcurrentHashMap<>();
+    protected final ConcurrentHashMap<String, PhysicsInstance> datasourceMap = new ConcurrentHashMap<>();
     protected final BalanceType balanceType;
     private final int maxRequestCount;
     protected final ReplicaSwitchType switchType;
@@ -50,12 +45,12 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo , Closeable {
     protected final LoadBalanceStrategy defaultReadLoadBalanceStrategy;
     protected final LoadBalanceStrategy defaultWriteLoadBalanceStrategy;
     private ReplicaSelectorRuntime replicaSelectorRuntime;
-    protected final List<PhysicsInstanceImpl> writeDataSourceList = new CopyOnWriteArrayList<>();//只能被getWriteDataSource读取
-    protected final List<PhysicsInstanceImpl> readDataSource = new CopyOnWriteArrayList<>();
+    protected volatile List<PhysicsInstance> writeDataSourceList = new CopyOnWriteArrayList<>();//只能被getWriteDataSource读取
+    protected volatile List<PhysicsInstance> readDataSource = new CopyOnWriteArrayList<>();
 
     private final static boolean DEFAULT_SELECT_AS_READ = true;
     private final static boolean DEFAULT_ALIVE = false;
-    private final ScheduledFuture<?> scheduled;
+    private final io.mycat.replica.ScheduledHanlde scheduled;
     private String dbType;
 
 
@@ -74,8 +69,8 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo , Closeable {
         this.replicaSelectorRuntime = replicaSelectorRuntime;
         Objects.requireNonNull(balanceType, "balanceType is null");
 
-        if (timer!=null) {
-            this.scheduled = ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
+        if (timer != null) {
+            this.scheduled = replicaSelectorRuntime.getScheduleProvider().scheduleAtFixedRate(() -> {
                 String replicaName = name;
                 Enumeration<String> keys = datasourceMap.keys();
                 while (keys.hasMoreElements()) {
@@ -90,7 +85,7 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo , Closeable {
                     }
                 }
             }, timer.getInitialDelay(), timer.getPeriod(), TimeUnit.valueOf(timer.getTimeUnit()));
-        }else {
+        } else {
             this.scheduled = null;
         }
     }
@@ -98,25 +93,31 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo , Closeable {
     @Override
     public void finalize() throws Throwable {
         super.finalize();
-       close();
+        close();
     }
 
     /**
      * @param datasourceList
      * @return
      */
-    private List<PhysicsInstanceImpl> getDataSource(Collection<PhysicsInstanceImpl> datasourceList) {
+    private List<PhysicsInstance> getDataSource(Collection<PhysicsInstance> datasourceList) {
         if (datasourceList.isEmpty()) return Collections.emptyList();
-        List<PhysicsInstanceImpl> result = datasourceList.stream().filter(mySQLDatasource -> mySQLDatasource.isAlive() && mySQLDatasource
+        List<PhysicsInstance> result = datasourceList.stream().filter(mySQLDatasource -> mySQLDatasource.isAlive() && mySQLDatasource
                 .asSelectRead()).collect(Collectors.toList());
         return result.isEmpty() ? Collections.emptyList() : result;
     }
 
-    public synchronized PhysicsInstanceImpl register(String dataSourceName, InstanceType type,
-                                                     int weight) {
-        PhysicsInstanceImpl physicsInstance = datasourceMap.computeIfAbsent(dataSourceName,
+    public synchronized PhysicsInstance register(String dataSourceName, InstanceType type,
+                                                 int weight, SessionCounter sessionCounter) {
+        datasourceMap.compute(dataSourceName, new BiFunction<String, PhysicsInstance, PhysicsInstance>() {
+            @Override
+            public PhysicsInstance apply(String s, PhysicsInstance physicsInstance) {
+                return null;
+            }
+        });
+        PhysicsInstance physicsInstance = datasourceMap.computeIfAbsent(dataSourceName,
                 dataSourceName1 -> new PhysicsInstanceImpl(dataSourceName, type, DEFAULT_ALIVE,
-                        DEFAULT_SELECT_AS_READ, weight,
+                        DEFAULT_SELECT_AS_READ, weight, sessionCounter,
                         ReplicaDataSourceSelector.this));
         if (type.isReadType()) {
             if (!this.readDataSource.contains(physicsInstance)) {
@@ -148,22 +149,22 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo , Closeable {
             case BALANCE_ALL:
                 return getDataSource(this.datasourceMap.values());
             case BALANCE_NONE:
-                return getWriteDataSource();
+                return getWriteDataSourceByReplicaType();
             case BALANCE_ALL_READ:
                 return getDataSource(this.readDataSource);
             case BALANCE_READ_WRITE:
-                List<PhysicsInstanceImpl> dataSource = getDataSource(this.readDataSource);
-                return (dataSource.isEmpty()) ? getDataSource(getWriteDataSource()) : dataSource;
+                List<PhysicsInstance> dataSource = getDataSource(this.readDataSource);
+                return (dataSource.isEmpty()) ? getDataSource(getWriteDataSourceByReplicaType()) : dataSource;
             default:
                 return Collections.emptyList();
         }
     }
 
-    public List getWriteDataSource() {
+    public List getWriteDataSourceByReplicaType() {
         switch (type) {
             case SINGLE_NODE:
             case MASTER_SLAVE:
-                if (this.writeDataSourceList.isEmpty()){
+                if (this.writeDataSourceList.isEmpty()) {
                     return Collections.emptyList();
                 }
                 return Collections.singletonList(this.writeDataSourceList.get(0));
@@ -174,85 +175,33 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo , Closeable {
         }
     }
 
-    public synchronized boolean switchDataSourceIfNeed() {
-        boolean readDataSource = switchReadDataSource();
-        switch (this.switchType) {
-            case SWITCH:
-                boolean writeDataSource = switchWriteDataSource();
-                return readDataSource || writeDataSource;
-            case NOT_SWITCH:
-            default:
-                return readDataSource;
-        }
-    }
-
-    private synchronized boolean switchWriteDataSource() {
+    private synchronized void switchWriteDataSource() {
         switch (type) {
             case SINGLE_NODE:
             case MASTER_SLAVE:
-                Map<Boolean, List<PhysicsInstanceImpl>> map = this.writeDataSourceList.stream()
+                Map<Boolean, List<PhysicsInstance>> map = this.writeDataSourceList.stream()
                         .filter(c -> c.getType().isWriteType()).collect(Collectors.groupingBy(k -> k.isAlive()));
-                List<PhysicsInstanceImpl> first = map.getOrDefault(Boolean.TRUE, Collections.emptyList());
-                List<PhysicsInstanceImpl> tail = map.getOrDefault(Boolean.FALSE, Collections.emptyList());
-                ArrayList<PhysicsInstanceImpl> objects = new ArrayList<>();
-                objects.addAll(first);
-                objects.addAll(tail);
-                return switchMaster(objects);
+                List<PhysicsInstance> first = map.getOrDefault(Boolean.TRUE, Collections.emptyList());
+                List<PhysicsInstance> tail = map.getOrDefault(Boolean.FALSE, Collections.emptyList());
+                if (!tail.isEmpty()) {
+                    ArrayList<PhysicsInstance> newWriteDataSource = new ArrayList<>();
+                    newWriteDataSource.addAll(first);
+                    newWriteDataSource.addAll(tail);
+                    LOGGER.info("{} switch master to {}", this.writeDataSourceList, this.writeDataSourceList = new CopyOnWriteArrayList<>(newWriteDataSource));
+                    updateFile(newWriteDataSource);
+                }
             case GARELA_CLUSTER:
-                return switchMultiMaster();
             case NONE:
             default:
-                return false;
+
         }
     }
 
-    private synchronized boolean switchMultiMaster() {
-        return switchMaster(this.writeDataSourceList.stream()
-                .filter(datasource -> datasource.isAlive() && datasource.getType().isWriteType())
-                .collect(Collectors.toList()));
-    }
 
-
-    private synchronized boolean switchReadDataSource() {
-        return switchReadDatasource(this.datasourceMap.values().stream()
-                .filter(c -> c.getType().isReadType() && c.isAlive()).collect(Collectors.toList()));
-    }
-
-
-//    public PhysicsInstance getDataSource(boolean runOnMaster,
-//                                         LoadBalanceStrategy strategy) {
-//        return runOnMaster ? ReplicaSelectorRuntime.INSTANCE.getWriteDatasource(strategy, this)
-//                : ReplicaSelectorRuntime.INSTANCE.getDatasource(strategy, this);
-//    }
-
-    private synchronized boolean switchReadDatasource(List<PhysicsInstanceImpl> newReadDataSource) {
-        return switchNode((List) this.readDataSource, newReadDataSource,"{} switch replica to {}");
-    }
-
-    private synchronized boolean switchMaster(List<PhysicsInstanceImpl> newWriteDataSource) {
-        boolean b = switchNode((List) this.writeDataSourceList,newWriteDataSource,  "{} switch master to {}");
-        if (b) {
-            updateFile(newWriteDataSource);
-        }
-        return b;
-    }
-
-    private synchronized boolean switchNode( List<PhysicsInstanceImpl> oldWriteDataSource,List<PhysicsInstanceImpl> newWriteDataSource, String message) {
-        if (new ArrayList<>(oldWriteDataSource).equals(new ArrayList<>(newWriteDataSource))) {
-            return false;
-        }
-        List<PhysicsInstanceImpl> backup = new ArrayList<>(oldWriteDataSource);
-        CollectionUtil.safeUpdateByUpdateOrder(oldWriteDataSource, newWriteDataSource);
-        LOGGER.info(message, backup, newWriteDataSource);
-        return true;
-    }
-
-    private void updateFile(List<PhysicsInstanceImpl> newWriteDataSource) {
-        MetadataStorageManager metadataStorageManager = MetaClusterCurrent.wrapper(MetadataStorageManager.class);
-        Set<String> dsNames = newWriteDataSource.stream().map(i -> i.getName()).collect(Collectors.toSet());
-        Map<String, Set<String>> state = replicaSelectorRuntime.getState();
-        state.putAll(Collections.singletonMap(getName(),dsNames));
-        metadataStorageManager.reportReplica(state);
+    private void updateFile(List<PhysicsInstance> newWriteDataSource) {
+        ReplicaReporter replicaReporter = MetaClusterCurrent.wrapper(ReplicaReporter.class);
+        Map<String, List<String>> state = replicaSelectorRuntime.getState();
+        replicaReporter.reportReplica(state);
     }
 
     @Override
@@ -276,8 +225,9 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo , Closeable {
     }
 
     public Map<String, PhysicsInstance> getRawDataSourceMap() {
-        return Collections.unmodifiableMap(this.datasourceMap);
+        return (this.datasourceMap);
     }
+
 
     public BalanceType getBalanceType() {
         return balanceType;
@@ -291,26 +241,74 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo , Closeable {
         return defaultWriteLoadBalanceStrategy;
     }
 
-    public List<PhysicsInstanceImpl> getReadDataSource() {
+    public List<PhysicsInstance> getReadDataSourceByReplica() {
         return Collections.unmodifiableList(readDataSource);
     }
 
     @Override
-    public void close() throws IOException {
-        try {
-            if (scheduled != null && (!scheduled.isDone() || !scheduled.isCancelled())) {
-                scheduled.cancel(true);
-            }
-        }catch (Throwable t){
-
+    public synchronized void close() {
+        if (scheduled != null) {
+            scheduled.close();
         }
     }
 
     public Collection<String> getAllDataSources() {
-      return   this.datasourceMap.keySet();
+        return this.datasourceMap.keySet();
     }
 
     public String getDbType() {
         return dbType;
     }
+
+    public synchronized void updateInstanceStatus(String dataSource,
+                                                  boolean alive,
+                                                  boolean selectAsRead,
+                                                  boolean master) {
+        PhysicsInstance physicsInstance = datasourceMap.get(dataSource);
+        if (physicsInstance != null) {
+            physicsInstance.notifyChangeAlive(alive);
+            physicsInstance.notifyChangeSelectRead(selectAsRead);
+        }
+    }
+
+    public ReplicaType getType() {
+        return type;
+    }
+
+    @Override
+    public void notifySwitchReplicaDataSource() {
+        switch (this.switchType) {
+            case SWITCH:
+                switchWriteDataSource();
+            case NOT_SWITCH:
+            default:
+        }
+    }
+
+    public synchronized void removeWriteDataSource(String dataSource){
+        PhysicsInstance physicsInstance = Objects.requireNonNull(datasourceMap.get(dataSource));
+        writeDataSourceList.remove(physicsInstance);
+    }
+
+
+    public synchronized void addWriteDataSource(String dataSource){
+        PhysicsInstance physicsInstance = datasourceMap.get(dataSource);
+        if(!writeDataSourceList.contains(physicsInstance)){
+            writeDataSourceList.add(physicsInstance);
+        }
+
+    }
+
+    public synchronized void addReadDataSource(String dataSource){
+        PhysicsInstance physicsInstance = datasourceMap.get(dataSource);
+        if (!readDataSource.contains(physicsInstance)){
+            readDataSource.add(physicsInstance);
+        }
+
+    }
+
+    public synchronized void removeReadDataSource(String dataSource){
+        readDataSource.remove(Objects.requireNonNull(datasourceMap.get(dataSource)));
+    }
+
 }

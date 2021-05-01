@@ -1,3 +1,17 @@
+/**
+ * Copyright (C) <2021>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.commands;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
@@ -9,6 +23,7 @@ import com.google.common.cache.CacheBuilder;
 import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.calcite.CodeExecuterContext;
+import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.config.SqlCacheConfig;
@@ -17,6 +32,10 @@ import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.util.Dumper;
 import io.mycat.util.TimeUnitUtil;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.functions.Action;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -74,9 +93,8 @@ public class  SqlResultSetService implements Closeable, Dumpable {
         SQLSelectStatement sqlSelectStatement = (SQLSelectStatement) sqlStatement;
         ScheduledFuture<?> scheduledFuture = timer.scheduleAtFixedRate(() -> {
             try {
-                MycatWorkerProcessor processor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
-                NameableExecutor mycatWorker = processor.getMycatWorker();
-                mycatWorker.execute(() -> {
+                Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+                vertx.executeBlocking(promise -> {
                     try {
                         cache.invalidate(sqlSelectStatement);
                         loadResultSet(sqlSelectStatement);
@@ -140,25 +158,30 @@ public class  SqlResultSetService implements Closeable, Dumpable {
     @SneakyThrows
     private Optional<Observable<MysqlPayloadObject>> loadResultSet(SQLSelectStatement sqlSelectStatement) {
         return cache.get(sqlSelectStatement, () -> {
-            if (!MetaClusterCurrent.exist(DrdsRunner.class)) {
+            if (!MetaClusterCurrent.exist(DrdsSqlCompiler.class)) {
                 return Optional.empty();
             }
             MycatDataContext context = new MycatDataContextImpl();
             try {
-                DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
-                Scheduler scheduler = MetaClusterCurrent.wrapper(Scheduler.class);
-                DrdsSql drdsSql = drdsRunner.preParse(sqlSelectStatement);
-                Plan plan = drdsRunner.getPlan(context, drdsSql);
-                CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
+                DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(sqlSelectStatement, context.getDefaultSchema());
+                Plan plan = DrdsRunnerHelper.getPlan( drdsSql);
                 XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
                 ObservablePlanImplementorImpl planImplementor = new ObservablePlanImplementorImpl(
                         transactionSession,
                         context, drdsSql.getParams(), null);
                 Observable<MysqlPayloadObject> observable = planImplementor.getMysqlPayloadObjectObservable(context, drdsSql.getParams(), plan);
+                observable = observable.doOnTerminate(new Action() {
+                    @Override
+                    public void run() throws Throwable {
+                        transactionSession.closeStatementState().onComplete(event -> context.close());
+                    }
+                });
                 observable= observable.cache();
                 return Optional.ofNullable(observable);
-            } finally {
+            }catch (Throwable t){
                 context.close();
+                log.error("",t);
+                return Optional.empty();
             }
         });
     }

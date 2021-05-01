@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -20,6 +20,7 @@ import io.mycat.calcite.MycatRules;
 import io.mycat.calcite.physical.MycatTableModify;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.tools.RelBuilderFactory;
 
@@ -29,13 +30,15 @@ import java.util.function.Predicate;
  * Rule that converts a table-modification to Mycat.
  */
 public  class MycatTableModificationRule extends MycatConverterRule {
+
+    public static final MycatTableModificationRule INSTANCE = new MycatTableModificationRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
     /**
      * Creates a MycatTableModificationRule.
      */
     public MycatTableModificationRule(MycatConvention out,
                                       RelBuilderFactory relBuilderFactory) {
         super(TableModify.class, (Predicate<RelNode>) r -> true,
-                MycatRules.convention, out, relBuilderFactory, "MycatTableModificationRule");
+                MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatTableModificationRule");
     }
 
     @Override

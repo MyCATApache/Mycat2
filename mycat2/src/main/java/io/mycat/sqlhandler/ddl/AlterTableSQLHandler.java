@@ -1,3 +1,17 @@
+/**
+ * Copyright (C) <2021>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.sqlhandler.ddl;
 
 import com.alibaba.druid.sql.SQLUtils;
@@ -9,43 +23,51 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
+import io.vertx.core.shareddata.Lock;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 
 public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatement> {
 
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLAlterTableStatement> request, MycatDataContext dataContext, Response response){
-        try {
-            SQLAlterTableStatement sqlAlterTableStatement = request.getAst();
-            SQLExprTableSource tableSource = sqlAlterTableStatement.getTableSource();
-            resolveSQLExprTableSource(tableSource,dataContext);
-            String schema = SQLUtils.normalize(sqlAlterTableStatement.getSchema());
-            String tableName = SQLUtils.normalize(sqlAlterTableStatement.getTableName());
-            MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-            TableHandler tableHandler = metadataManager.getTable(schema, tableName);
-            MySqlCreateTableStatement createTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(tableHandler.getCreateTableSQL());
-            boolean changed = createTableStatement.apply(sqlAlterTableStatement);
-            if (changed) {
-                JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-                List<DataNode> dataNodes;
-                dataNodes = getDataNodes(tableHandler);
-                executeOnPrototype(sqlAlterTableStatement,connectionManager);
-                executeOnDataNodes(sqlAlterTableStatement, connectionManager, dataNodes);
-                CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(),schema,tableName,createTableStatement);
+        LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
+        Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
+        return lockFuture.flatMap(lock -> {
+            try {
+                SQLAlterTableStatement sqlAlterTableStatement = request.getAst();
+                SQLExprTableSource tableSource = sqlAlterTableStatement.getTableSource();
+                resolveSQLExprTableSource(tableSource, dataContext);
+                String schema = SQLUtils.normalize(sqlAlterTableStatement.getSchema());
+                String tableName = SQLUtils.normalize(sqlAlterTableStatement.getTableName());
+                MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+                TableHandler tableHandler = metadataManager.getTable(schema, tableName);
+                MySqlCreateTableStatement createTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(tableHandler.getCreateTableSQL());
+                boolean changed = createTableStatement.apply(sqlAlterTableStatement);
+                if (changed) {
+                    JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+                    Set<DataNode> dataNodes = getDataNodes(tableHandler);
+                    dataNodes.add(new BackendTableInfo(metadataManager.getPrototype(), schema, tableName));//add Prototype
+                    executeOnDataNodes(sqlAlterTableStatement, connectionManager, dataNodes);
+                    CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(), schema, tableName, createTableStatement);
+                }
+                return response.sendOk();
+            }catch (Throwable throwable){
+                return Future.failedFuture(throwable);
+            }finally {
+                lock.release();
             }
-            return response.sendOk();
-        }catch (Throwable throwable){
-            return response.sendError(throwable);
-        }
+        });
     }
 
 
     public void executeOnDataNodes(SQLAlterTableStatement alterTableStatement,
                                    JdbcConnectionManager connectionManager,
-                                   List<DataNode> dataNodes) {
+                                   Collection<DataNode> dataNodes) {
         SQLExprTableSource tableSource = alterTableStatement.getTableSource();
         executeOnDataNodes(alterTableStatement, connectionManager, dataNodes, tableSource);
     }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -16,6 +16,7 @@ package io.mycat;
 
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 
@@ -25,20 +26,29 @@ import java.util.Objects;
 @Builder
 @ToString
 @AllArgsConstructor
-public class SchemaInfo {
-    final String targetSchema;//todo 没有配置库名怎么处理
-    final String targetTable;
-    final String targetSchemaTable;
+public class SchemaInfo implements Serializable {
+     String targetSchema;//todo 没有配置库名怎么处理
+     String targetTable;
+     String targetSchemaTable;
 
     public SchemaInfo(String targetSchema, String targetTable) {
         this.targetSchema = targetSchema;
         this.targetTable = Objects.requireNonNull(targetTable);
-
+    }
+    public static SchemaInfo of(String targetSchema, String targetTable) {
+        return new SchemaInfo(targetSchema,targetTable);
+    }
+    public String targetSchemaTable() {
         if (this.targetSchema != null) {
             this.targetSchemaTable = this.targetSchema + "." + this.targetTable;
         } else {
             this.targetSchemaTable = this.targetTable;
         }
+        return targetSchemaTable;
     }
 
+    @Override
+    public String toString() {
+        return targetSchema+"."+targetTable;
+    }
 }

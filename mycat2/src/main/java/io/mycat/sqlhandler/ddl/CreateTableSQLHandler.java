@@ -1,16 +1,31 @@
+/**
+ * Copyright (C) <2021>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.sqlhandler.ddl;
 
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
-import io.mycat.MycatDataContext;
-import io.mycat.MycatException;
-import io.mycat.Response;
+import io.mycat.*;
+import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.config.MycatRouterConfigOps;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.JsonUtil;
 import io.vertx.core.Future;
+import io.vertx.core.shareddata.Lock;
+import org.apache.calcite.avatica.Meta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,29 +45,39 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
 
     @Override
     protected Future<Void> onExecute(SQLRequest<MySqlCreateTableStatement> request, MycatDataContext dataContext, Response response) {
-        try{
-            Map hint = Optional.ofNullable(request.getAst().getHeadHintsDirect())
-                    .map(i -> i.get(0))
-                    .map(i -> i.getText())
-                    .filter(i -> {
-                        i = i.replaceAll(" ", "");
-                        return i.contains("+mycat:createTable{");
-                    }).map(i -> i.substring(i.indexOf("{"))).map(i -> JsonUtil.from(i, Map.class)).orElse(null);
+        LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
+        Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
+        return lockFuture.flatMap(lock -> {
+            try{
+                Map hint = Optional.ofNullable(request.getAst().getHeadHintsDirect())
+                        .map(i -> i.get(0))
+                        .map(i -> i.getText())
+                        .filter(i -> {
+                            i = i.replaceAll(" ", "");
+                            return i.contains("+mycat:createTable{");
+                        }).map(i -> i.substring(i.indexOf("{"))).map(i -> JsonUtil.from(i, Map.class)).orElse(null);
 
-            MySqlCreateTableStatement ast = request.getAst();
-            String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
-            String tableName = ast.getTableName() == null ? null : SQLUtils.normalize(ast.getTableName());
-            if (tableName == null) {
-                return response.sendError(new MycatException("CreateTableSQL need tableName"));
+                MySqlCreateTableStatement ast = request.getAst();
+                String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
+                String tableName = ast.getTableName() == null ? null : SQLUtils.normalize(ast.getTableName());
+               if (ast.getSchema()==null){
+                   ast.setSchema(schemaName);
+               }
+                if (tableName == null) {
+                    return response.sendError(new MycatException("CreateTableSQL need tableName"));
+                }
+                if (schemaName == null) {
+                    return response.sendError("No database selected", 1046);
+                }
+                createTable(hint, schemaName, tableName, ast);
+                return response.sendOk();
+            }catch (Throwable throwable){
+                return Future.failedFuture(throwable);
+            }finally {
+                lock.release();
             }
-            if (schemaName == null) {
-                return response.sendError("No database selected", 1046);
-            }
-            createTable(hint, schemaName, tableName, ast);
-            return response.sendOk();
-        }catch (Throwable throwable){
-            return Future.failedFuture(throwable);
-        }
+        });
+
     }
 
     public void createTable(Map hint,
@@ -108,6 +133,11 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
 
             }
             ops.commit();
+            MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+            TableHandler table = metadataManager.getTable(schemaName, tableName);
+            if (table==null){
+                throw new MycatException("create table fail:"+schemaName+"."+tableName);
+            }
         }
     }
 //

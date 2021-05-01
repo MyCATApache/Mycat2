@@ -13,7 +13,7 @@ public class MultiStatementTest implements MycatTest {
     @Test
     public void testSelect() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(
-                "jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+                "jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
                 +"&allowMultiQueries=true"
         )) {
             Statement statement = mycatConnection.createStatement();
@@ -23,7 +23,7 @@ public class MultiStatementTest implements MycatTest {
     @Test
     public void testSelectOk() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(
-                "jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+                "jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
                         +"&allowMultiQueries=true"
         )) {
             Statement statement = mycatConnection.createStatement();
@@ -33,7 +33,7 @@ public class MultiStatementTest implements MycatTest {
     @Test
     public void testOkSelect() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(
-                "jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+                "jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
                         +"&allowMultiQueries=true"
         )) {
             Statement statement = mycatConnection.createStatement();
@@ -43,7 +43,7 @@ public class MultiStatementTest implements MycatTest {
     @Test(expected= Exception.class)
     public void testSelectError() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(
-                "jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+                "jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
                         +"&allowMultiQueries=true"
         )) {
             Statement statement = mycatConnection.createStatement();
@@ -54,7 +54,7 @@ public class MultiStatementTest implements MycatTest {
     @Test(expected= Exception.class)
     public void testOkError() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(
-                "jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+                "jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
                         +"&allowMultiQueries=true"
         )) {
             Statement statement = mycatConnection.createStatement();

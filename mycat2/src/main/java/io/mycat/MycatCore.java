@@ -1,6 +1,20 @@
+/**
+ * Copyright (C) <2021>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat;
 
-import io.mycat.commands.MycatdbCommand;
+import io.mycat.beans.mysql.MySQLVersion;
 import io.mycat.config.*;
 import io.mycat.connectionschedule.Scheduler;
 import io.mycat.exporter.PrometheusExporter;
@@ -9,15 +23,22 @@ import io.mycat.gsi.mapdb.MapDBGSIService;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.vertx.VertxMycatServer;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import lombok.SneakyThrows;
 import org.apache.calcite.util.RxBuiltInMethod;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.groovy.util.Maps;
+import org.apache.zookeeper.client.ConnectStringParser;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.Socket;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,19 +47,19 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author cjw
  **/
 public class MycatCore {
-    final static Logger logger = LoggerFactory.getLogger(MycatdbCommand.class);
+    final static Logger logger = LoggerFactory.getLogger(MycatCore.class);
     public static final String PROPERTY_MODE_LOCAL = "local";
     public static final String PROPERTY_MODE_CLUSTER = "cluster";
     public static final String PROPERTY_METADATADIR = "metadata";
     private final MycatServer mycatServer;
     private final MetadataStorageManager metadataStorageManager;
     private final Path baseDirectory;
-    private final MycatWorkerProcessor mycatWorkerProcessor;
 
     static {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -73,9 +94,10 @@ public class MycatCore {
         System.out.println("path:" + this.baseDirectory);
         ServerConfiguration serverConfiguration = new ServerConfigurationImpl(MycatCore.class, path);
         MycatServerConfig serverConfig = serverConfiguration.serverConfig();
+        MetaClusterCurrent.register(Maps.of(MycatServerConfig.class,serverConfig,serverConfig.getServer().getClass(),serverConfig.getServer()));
+        MySQLVersion.setServerVersion(serverConfig.getServer().getServerVersion());
         String datasourceProvider = Optional.ofNullable(serverConfig.getDatasourceProvider()).orElse(io.mycat.datasource.jdbc.DruidDatasourceProvider.class.getCanonicalName());
         ThreadPoolExecutorConfig workerPool = serverConfig.getServer().getWorkerPool();
-        this.mycatWorkerProcessor = new MycatWorkerProcessor(workerPool, serverConfig.getServer().getTimeWorkerPool());
 
 
         VertxOptions vertxOptions = new VertxOptions();
@@ -90,16 +112,17 @@ public class MycatCore {
         Scheduler scheduler = new Scheduler(TimeUnit.valueOf(workerPool.getTimeUnit()).toMillis(workerPool.getTaskTimeout()));
         Thread thread = new Thread(scheduler, "mycat connection scheduler");
         thread.start();
-        context.put(Scheduler.class,scheduler);
+        context.put(IOExecutor.class,new IOExecutor());
+        context.put(Scheduler.class, scheduler);
         context.put(serverConfig.getServer().getClass(), serverConfig.getServer());
         context.put(serverConfiguration.getClass(), serverConfiguration);
         context.put(serverConfig.getClass(), serverConfig);
         context.put(LoadBalanceManager.class, new LoadBalanceManager(serverConfig.getLoadBalance()));
         context.put(Vertx.class, Vertx.vertx(vertxOptions));
-        context.put(mycatWorkerProcessor.getClass(), mycatWorkerProcessor);
         context.put(this.mycatServer.getClass(), mycatServer);
         context.put(MycatServer.class, mycatServer);
         context.put(SqlRecorderRuntime.class, SqlRecorderRuntime.INSTANCE);
+
         ////////////////////////////////////////////tmp///////////////////////////////////
         if (enableGSI) {
             File gsiMapDBFile = baseDirectory.resolve("gsi.db").toFile();
@@ -107,30 +130,62 @@ public class MycatCore {
         }
         MetaClusterCurrent.register(context);
 
-        String mode = serverConfig.getMode();
+        String mode = Optional.ofNullable(System.getProperty("mode"))
+                .orElse(serverConfig.getMode());
         switch (mode) {
             case PROPERTY_MODE_LOCAL: {
+                context.put(LockService.class, new LocalLockServiceImpl());
                 metadataStorageManager = new FileMetadataStorageManager(serverConfig, datasourceProvider, this.baseDirectory);
                 break;
             }
             case PROPERTY_MODE_CLUSTER:
                 String zkAddress = System.getProperty("zk_address", (String) serverConfig.getProperties().get("zk_address"));
                 if (zkAddress != null) {
-                    metadataStorageManager =
-                            new CoordinatorMetadataStorageManager(
-                                    new FileMetadataStorageManager(serverConfig,
-                                            datasourceProvider,
-                                            this.baseDirectory),
-                                    zkAddress);
-                    break;
+                    testZkAddressOrStartDefaultZk(zkAddress);
+                }else {
+                    zkAddress = "localhost:2181";
+                    EmbeddedZKServer.startDefaultZK();
                 }
+                ZKBuilder zkBuilder = new ZKBuilder(zkAddress);
+                context.put(LockService.class, new ZKLockServiceImpl());
+                CuratorFramework curatorFramework = zkBuilder.build();
+                context.put(CuratorFramework.class, curatorFramework);
+                metadataStorageManager =
+                        new CoordinatorMetadataStorageManager(
+                                new FileMetadataStorageManager(serverConfig,
+                                        datasourceProvider,
+                                        this.baseDirectory),
+                                curatorFramework);
+                break;
             default: {
                 throw new UnsupportedOperationException();
             }
         }
 
         context.put(metadataStorageManager.getClass(), metadataStorageManager);
+        context.put(MetadataStorageManager.class, metadataStorageManager);
         MetaClusterCurrent.register(context);
+    }
+
+    private void testZkAddressOrStartDefaultZk(String zkAddress) throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
+        ConnectStringParser connectStringParser = new ConnectStringParser(zkAddress);
+        CompositeFuture.any(connectStringParser.getServerAddresses().stream().parallel().map(is -> Future.future(promise -> {
+            try {
+                Socket socket = new Socket(is.getHostName(),is.getPort());
+                socket.close();
+                promise.tryComplete();
+            } catch (IOException e) {
+                promise.tryFail(e);
+            }
+        })).collect(Collectors.toList())).toCompletionStage().toCompletableFuture().get(1, TimeUnit.SECONDS).recover(throwable -> {
+            logger.error("",throwable);
+            try{
+                EmbeddedZKServer.startDefaultZK();
+                return Future.succeededFuture();
+            }catch (Throwable throwable1){
+                return Future.failedFuture(throwable1);
+            }
+        }).toCompletionStage().toCompletableFuture().get(1, TimeUnit.SECONDS);
     }
 
     @NotNull
@@ -175,8 +230,10 @@ public class MycatCore {
 
     public static void main(String[] args) throws Exception {
         if (args != null) {
-            Arrays.stream(args).filter(i -> i.startsWith("-D")||i.startsWith("-d"))
-                    .map(i -> i.substring(2).split("=")).forEach(n -> System.setProperty(n[0], n[1]));
+            Arrays.stream(args).filter(i -> i.startsWith("-D") || i.startsWith("-d"))
+                    .map(i -> i.substring(2).split("=")).forEach(n -> {
+                System.setProperty(n[0], n[1]);
+            });
         }
         new MycatCore().start();
     }

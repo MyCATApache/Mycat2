@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -462,7 +462,7 @@ public class HBTQueryConvertor {
                     RelOptTableImpl.create(relBuilder.getRelOptSchema(),
                             unwrap.getRowType(),
                             mycatPhysicalTable,
-                            ImmutableList.of(dataNode.getTargetName(),dataNode.getSchema(), dataNode.getTable())),
+                            ImmutableList.of(dataNode.getSchema(), dataNode.getTable())),
                     ImmutableList.of()
             );
             count++;
@@ -695,8 +695,7 @@ public class HBTQueryConvertor {
     public RelNode makeTransientSQLScan(String targetName, RelNode input, boolean forUpdate) {
         RelDataType rowType = input.getRowType();
         SqlDialect sqlDialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
-        return makeBySql(rowType, targetName, MycatCalciteSupport.INSTANCE.convertToSql(input, sqlDialect, forUpdate).getSql()
-        );
+        return makeBySql(rowType, targetName, MycatCalciteSupport.INSTANCE.convertToSqlTemplate(input, sqlDialect, forUpdate).toSqlString(sqlDialect).getSql());
     }
 
     /**

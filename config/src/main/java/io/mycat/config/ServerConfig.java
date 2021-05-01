@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2019>  <gaozhiwen>
+ * Copyright (C) <2021>  <gaozhiwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -18,6 +18,7 @@ package io.mycat.config;
 import io.mycat.util.JsonUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -56,13 +57,19 @@ public class ServerConfig {
     private BufferPoolConfig bufferPool = new BufferPoolConfig();
     private TimerConfig idleTimer = new TimerConfig(3, 15, TimeUnit.SECONDS.name());
     private String tempDirectory;
+    private String pathCacheDirectory;
     private int mergeUnionSize = 5;
+    private boolean joinClustering = true;
+    private String serverVersion = "5.7.33-mycat-2.0";
+    private boolean ignoreCast = false;
 
     public static void main(String[] args) {
         System.out.println(JsonUtil.toJson(new ServerConfig()));
     }
 
+    @SneakyThrows
     public String getTempDirectory() {
+        pathCacheDirectory = Files.createTempDirectory("").toAbsolutePath().toString();
         String mycat_temp_directory = "mycat_temp_directory";
         if (tempDirectory == null) {
             try {

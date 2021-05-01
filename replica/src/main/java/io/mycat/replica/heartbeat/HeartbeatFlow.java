@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2019>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  *
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -30,7 +30,7 @@ public abstract class HeartbeatFlow {
   private static final Logger LOGGER = LoggerFactory.getLogger(HeartbeatFlow.class);
   protected final HeartBeatStatus hbStatus;
   protected final long heartbeatTimeout;
-  protected final long slaveThreshold;
+  protected final double slaveThreshold;
   protected final PhysicsInstance instance;
   protected volatile DatasourceStatus dsStatus;
   protected volatile long lastSendQryTime;
@@ -39,12 +39,11 @@ public abstract class HeartbeatFlow {
 
   public HeartbeatFlow(PhysicsInstance instance, int maxRetry,
       long minSwitchTimeInterval, long heartbeatTimeout,
-      long slaveThreshold) {
+                       double slaveThreshold) {
     this.instance = instance;
     this.slaveThreshold = slaveThreshold;
     this.dsStatus = new DatasourceStatus();
-    this.hbStatus = new HeartBeatStatus(maxRetry, minSwitchTimeInterval, false,
-        System.currentTimeMillis());
+    this.hbStatus = new HeartBeatStatus(maxRetry, minSwitchTimeInterval, false, 0);
     this.heartbeatTimeout = heartbeatTimeout;
   }
 
@@ -61,10 +60,10 @@ public abstract class HeartbeatFlow {
     this.lastSendQryTime = System.currentTimeMillis();
   }
 
-  public void setStatus(DatasourceEnum status) {
-    DatasourceStatus datasourceStatus = new DatasourceStatus();
-    setStatus(datasourceStatus, status);
-  }
+//  public void setStatus(DatasourceEnum status) {
+//    DatasourceStatus datasourceStatus = new DatasourceStatus();
+//    setStatus(datasourceStatus, status);
+//  }
 
   public void setStatus(DatasourceStatus datasourceStatus, DatasourceEnum status) {
     //对应的status 状态进行设置
@@ -133,7 +132,7 @@ public abstract class HeartbeatFlow {
 
   public abstract void setTaskquitDetector();
 
-  public long getSlaveThreshold() {
+  public double getSlaveThreshold() {
     return slaveThreshold;
   }
 

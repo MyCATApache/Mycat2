@@ -49,9 +49,15 @@ public class DateFormatFunction extends MycatDateFunction {
 
 
     public DateFormatFunction() {
-        super("dateFormat", scalarFunction);
+        super("DATE_FORMAT", scalarFunction);
     }
-
+    public static String dateFormat(String dateText,
+                                    String format) {
+        if (dateText == null || format == null) {
+            return null;
+        }
+        return dateFormat(dateText, format, Locale.US);
+    }
     //SqlParserUtil
     //DateTimeUtils
     //SqlLiteral

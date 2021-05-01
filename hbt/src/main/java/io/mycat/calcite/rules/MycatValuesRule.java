@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -20,6 +20,7 @@ import io.mycat.calcite.MycatConverterRule;
 import io.mycat.calcite.MycatRules;
 import io.mycat.calcite.physical.MycatValues;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.tools.RelBuilderFactory;
 
@@ -29,12 +30,15 @@ import java.util.function.Predicate;
  * Rule that converts a values operator to Mycat.
  */
 public class MycatValuesRule extends MycatConverterRule {
+
+    public static final MycatValuesRule INSTANCE = new MycatValuesRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
+
     /**
      * Creates a MycatValuesRule.
      */
     public MycatValuesRule(MycatConvention out,
                            RelBuilderFactory relBuilderFactory) {
-        super(Values.class, (Predicate<RelNode>) r -> true, MycatRules.convention,
+        super(Values.class, (Predicate<RelNode>) r -> true, MycatRules.IN_CONVENTION,
                 out, relBuilderFactory, "MycatValuesRule");
     }
 

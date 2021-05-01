@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2019>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -14,6 +14,7 @@
  */
 package io.mycat.calcite.table;
 
+import io.mycat.LogicTableType;
 import io.mycat.TableHandler;
 import io.mycat.calcite.rewriter.Distribution;
 import lombok.Getter;
@@ -58,5 +59,25 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
                 return Distribution.of(normalTable);
         }
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isSharding() {
+        return table.getType()== LogicTableType.SHARDING;
+    }
+
+    @Override
+    public boolean isNormal() {
+        return  table.getType()== LogicTableType.NORMAL;
+    }
+
+    @Override
+    public boolean isCustom() {
+        return table.getType() ==LogicTableType.CUSTOM;
+    }
+
+    @Override
+    public boolean isBroadCast() {
+        return table.getType() ==LogicTableType.GLOBAL;
     }
 }

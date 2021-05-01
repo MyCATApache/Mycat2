@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -15,16 +15,18 @@
 package io.mycat.calcite.rewriter;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.LogicTableType;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatConvention;
+import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatMergeSort;
 import io.mycat.calcite.sqlfunction.infofunction.MycatSessionValueFunction;
 import io.mycat.calcite.table.*;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.util.NameMap;
-import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.*;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelCollation;
@@ -33,7 +35,6 @@ import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.rel.rules.CoreRules;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlOperator;
@@ -43,12 +44,11 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.IntPair;
-import org.apache.zookeeper.Op;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.text.NumberFormat;
+import java.util.*;
+
 
 public class SQLRBORewriter extends RelShuttleImpl {
     final static NextConvertor nextConvertor = new NextConvertor();
@@ -67,13 +67,11 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 Project.class, Union.class, Filter.class, Sort.class);
     }
 
-    protected OptimizationContext optimizationContext;
-    protected List<Object> params;
+    private boolean joinClustering;
 
 
-    public SQLRBORewriter(OptimizationContext optimizationContext, List<Object> params) {
-        this.optimizationContext = optimizationContext;
-        this.params = params;
+    public SQLRBORewriter(boolean joinClustering) {
+        this.joinClustering = joinClustering;
     }
 
     @Override
@@ -107,7 +105,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         RelNode input = filter.getInput().accept(this);
         if (!userDefinedFunctionInFilter(filter)) {
             if (RelMdSqlViews.filter(input)) {
-                return filter(input, filter, optimizationContext);
+                return filter(input, filter);
             }
         }
         return filter.copy(filter.getTraitSet(), ImmutableList.of(input));
@@ -118,6 +116,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         final Pair<ImmutableList<RexNode>, ImmutableList<RexNode>> projectFilter =
                 calc.getProgram().split();
         RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(calc.getCluster(), null);
+        relBuilder.push(calc.getInput());
         relBuilder.filter(projectFilter.right);
         relBuilder.project(projectFilter.left, calc.getRowType().getFieldNames());
         RelNode relNode = relBuilder.build();
@@ -215,6 +214,18 @@ public class SQLRBORewriter extends RelShuttleImpl {
         Information_Functions.put("SYSTEM_USER", null);
         Information_Functions.put("USER", null);
         Information_Functions.put("VERSION", null);
+
+        //window function
+        Information_Functions.put("ROW_NUMBER", null);
+        Information_Functions.put("RANK", null);
+        Information_Functions.put("DENSE_RANK", null);
+        Information_Functions.put("PERCENT_RANK", null);
+        Information_Functions.put("CUME_DIST", null);
+        Information_Functions.put("FIRST_VALUE", null);
+        Information_Functions.put("LAST_VALUE", null);
+        Information_Functions.put("LAG", null);
+        Information_Functions.put("LEAD", null);
+        Information_Functions.put("NTH_VALUE", null);
     }
 
     @Override
@@ -309,7 +320,35 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     @Override
     public RelNode visit(RelNode other) {
+        if (other instanceof LogicalCalc) {
+            return visit((LogicalCalc) other);
+        }
+        if (other instanceof LogicalRepeatUnion) {
+            return visit((LogicalRepeatUnion) other);
+        }
+        if (other instanceof LogicalTableSpool) {
+            return visit((LogicalTableSpool) other);
+        }
+        if (other instanceof LogicalWindow) {
+            return visit((LogicalWindow) other);
+        }
         return other;
+    }
+
+    public RelNode visit(LogicalRepeatUnion logicalRepeatUnion) {
+        ImmutableList.Builder<RelNode> builder = ImmutableList.builder();
+        for (RelNode input : logicalRepeatUnion.getInputs()) {
+            builder.add(input.accept(this));
+        }
+        return logicalRepeatUnion.copy(logicalRepeatUnion.getTraitSet(), builder.build());
+    }
+
+    public RelNode visit(LogicalTableSpool logicalTableSpool) {
+        return logicalTableSpool.copy(logicalTableSpool.getTraitSet(), ImmutableList.of(logicalTableSpool.getInput().accept(this)));
+    }
+
+    public RelNode visit(LogicalWindow logicalWindow) {
+        return logicalWindow.copy(logicalWindow.getTraitSet(), ImmutableList.of(logicalWindow.getInput().accept(this)));
     }
 
     public static RelNode sort(RelNode original, LogicalSort sort) {
@@ -318,7 +357,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         Distribution dataNodeInfo = null;
         if (input instanceof MycatView) {
             dataNodeInfo = ((MycatView) input).getDistribution();
-            view =(MycatView) original;
+            view = (MycatView) original;
             input = ((MycatView) input).getRelNode();
         }
         if (dataNodeInfo == null) {
@@ -412,26 +451,30 @@ public class SQLRBORewriter extends RelShuttleImpl {
             input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
             return view.changeTo(input, dataNodeInfo);
         } else {
-            ColumnMapping columnMapping = new ColumnMapping();
+            ColumnRefResolver columnMapping = new ColumnRefResolver();
             input.accept(columnMapping);
-            if (columnMapping.hasRes()) {
-                MycatLogicTable shardingTable = columnMapping.tableScan.getTable().unwrap(MycatLogicTable.class);
-                List<SimpleColumnInfo> columns = shardingTable.getTable().getColumns();
-                ImmutableBitSet groupSet = aggregate.getGroupSet();
-                boolean canPushDown = false;
-                for (Integer integer : groupSet) {
-                    int mapping = columnMapping.mapping(integer);
-                    SimpleColumnInfo simpleColumnInfo = columns.get(mapping);
-                    if (simpleColumnInfo.isShardingKey()) {
-                        canPushDown = true;
-                        break;
-                    }
+            ImmutableBitSet groupSet = aggregate.getGroupSet();
+            boolean canPushDown = false;
+            for (Integer integer : groupSet) {
+                ColumnInfo bottomColumnInfo = columnMapping.getBottomColumnInfoList(integer).stream()
+                        .filter(i -> i.getTableScan().getTable().unwrap(MycatLogicTable.class).isSharding())
+                        .findFirst().orElse(null);
+                if (bottomColumnInfo == null) {
+                    continue;
                 }
-                if (canPushDown) {
-                    input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
-                    return view.changeTo(input, dataNodeInfo);
+                MycatLogicTable shardingTable = bottomColumnInfo.getTableScan().getTable().unwrap(MycatLogicTable.class);
+                List<SimpleColumnInfo> columns = shardingTable.getTable().getColumns();
+                SimpleColumnInfo simpleColumnInfo = columns.get(bottomColumnInfo.getIndex());
+                if (simpleColumnInfo.isShardingKey()) {
+                    canPushDown = true;
+                    break;
                 }
             }
+            if (canPushDown) {
+                input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
+                return view.changeTo(input, dataNodeInfo);
+            }
+
 
             RelNode backup = input;
             if (!(input instanceof Union)) {
@@ -439,7 +482,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
             }
             HepProgramBuilder hepProgram = new HepProgramBuilder();
-            hepProgram.addMatchLimit(1);
+            hepProgram.addMatchLimit(512);
             hepProgram.addRuleInstance(CoreRules.AGGREGATE_UNION_TRANSPOSE);
             HepPlanner planner = new HepPlanner(hepProgram.build());
             planner.setRoot(input);
@@ -483,66 +526,194 @@ public class SQLRBORewriter extends RelShuttleImpl {
     }
 
 
-    public static RelNode join(RelNode left,
+    public RelNode join(RelNode left,
                                RelNode right,
                                LogicalJoin join) {
+        Optional<RelNode> relNodeOptional = bottomJoin(left, right, join);
+        if (relNodeOptional.isPresent()) return relNodeOptional.get();
+        Join newJoin = join.copy(join.getTraitSet(), ImmutableList.of(left, right));
+        if (this.joinClustering){
+            int orgJoinCount = RelOptUtil.countJoins(newJoin);
+            if (!(newJoin instanceof MycatRel) && newJoin.getJoinType() == JoinRelType.INNER && orgJoinCount > 1 && orgJoinCount < 12) {
+                RelOptCluster cluster = newJoin.getCluster();
+                RelOptPlanner planner = cluster.getPlanner();
+                planner.clear();
+                MycatConvention.INSTANCE.register(planner);
+                planner.addRule(CoreRules.JOIN_COMMUTE);
+                planner.addRule(CoreRules.JOIN_COMMUTE_OUTER);
+                planner.addRule(CoreRules.JOIN_ASSOCIATE);
+                planner.addRule(CoreRules.FILTER_INTO_JOIN);
+                planner.addRule(CoreRules.JOIN_PUSH_EXPRESSIONS);
+                planner.addRule(CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES);
+                planner.addRule(MycatJoinClusteringRule.Config.DEFAULT.toRule());
+                planner.addRule(MycatProjectJoinClusteringRule.Config.DEFAULT.toRule());
+                planner.addRule(MycatJoinPushThroughJoinRule.LEFT);
+                planner.addRule(MycatJoinPushThroughJoinRule.RIGHT);
+                planner.addRule(MycatFilterJoinRule.JoinConditionPushRule.Config.DEFAULT.withPredicate((join1, joinType, exp) -> false).toRule());
+                planner.setRoot(planner.changeTraits(newJoin, cluster.traitSetOf(MycatConvention.INSTANCE)));
+
+                RelNode bestExp = planner.findBestExp();
+                if (RelOptUtil.countJoins(bestExp) < orgJoinCount) {
+                    return bestExp;
+                }
+            }
+        }
+        return newJoin;
+    }
+
+
+    public static Optional<RelNode> bottomJoin(RelNode left, RelNode right, LogicalJoin join) {
         if (left instanceof MycatView && right instanceof MycatView) {
             Optional<RelNode> relNodeOptional = pushDownJoinByNormalTableOrGlobalTable(join,
                     (MycatView) left,
                     (MycatView) right);
             if (relNodeOptional.isPresent()) {
-                return relNodeOptional.get();
+                return relNodeOptional;
             }
             relNodeOptional = pushDownERTable(join, (MycatView) left, (MycatView) right);
             if (relNodeOptional.isPresent()) {
-                return relNodeOptional.get();
+                return relNodeOptional;
             }
         }
-        return join.copy(join.getTraitSet(), ImmutableList.of(left, right));
+        return Optional.empty();
     }
+
+    private static class RuleAttemptsListener implements RelOptListener {
+        private long beforeTimestamp;
+        private Map<String, Pair<Long, Long>> ruleAttempts;
+
+        RuleAttemptsListener() {
+            ruleAttempts = new HashMap<>();
+        }
+
+        @Override
+        public void relEquivalenceFound(RelEquivalenceEvent event) {
+        }
+
+        @Override
+        public void ruleAttempted(RuleAttemptedEvent event) {
+            if (event.isBefore()) {
+                this.beforeTimestamp = System.nanoTime();
+            } else {
+                long elapsed = (System.nanoTime() - this.beforeTimestamp) / 1000;
+                String rule = event.getRuleCall().getRule().toString();
+                if (ruleAttempts.containsKey(rule)) {
+                    Pair<Long, Long> p = ruleAttempts.get(rule);
+                    ruleAttempts.put(rule, Pair.of(p.left + 1, p.right + elapsed));
+                } else {
+                    ruleAttempts.put(rule, Pair.of(1L, elapsed));
+                }
+            }
+        }
+
+        @Override
+        public void ruleProductionSucceeded(RuleProductionEvent event) {
+        }
+
+        @Override
+        public void relDiscarded(RelDiscardedEvent event) {
+        }
+
+        @Override
+        public void relChosen(RelChosenEvent event) {
+        }
+
+        public String dump() {
+            // Sort rules by number of attempts descending, then by rule elapsed time descending,
+            // then by rule name ascending.
+            List<Map.Entry<String, Pair<Long, Long>>> list =
+                    new ArrayList<>(this.ruleAttempts.entrySet());
+            Collections.sort(list,
+                    (left, right) -> {
+                        int res = right.getValue().left.compareTo(left.getValue().left);
+                        if (res == 0) {
+                            res = right.getValue().right.compareTo(left.getValue().right);
+                        }
+                        if (res == 0) {
+                            res = left.getKey().compareTo(right.getKey());
+                        }
+                        return res;
+                    });
+
+            // Print out rule attempts and time
+            StringBuilder sb = new StringBuilder();
+            sb.append(String
+                    .format(Locale.ROOT, "%n%-60s%20s%20s%n", "Rules", "Attempts", "Time (us)"));
+            NumberFormat usFormat = NumberFormat.getNumberInstance(Locale.US);
+            long totalAttempts = 0;
+            long totalTime = 0;
+            for (Map.Entry<String, Pair<Long, Long>> entry : list) {
+                sb.append(
+                        String.format(Locale.ROOT, "%-60s%20s%20s%n",
+                                entry.getKey(),
+                                usFormat.format(entry.getValue().left),
+                                usFormat.format(entry.getValue().right)));
+                totalAttempts += entry.getValue().left;
+                totalTime += entry.getValue().right;
+            }
+            sb.append(
+                    String.format(Locale.ROOT, "%-60s%20s%20s%n",
+                            "* Total",
+                            usFormat.format(totalAttempts),
+                            usFormat.format(totalTime)));
+
+            return sb.toString();
+        }
+    }
+
 
     private static Optional<RelNode> pushDownERTable(LogicalJoin join,
                                                      MycatView left,
                                                      MycatView right) {
-        Optional<RexNode> conditions = left.getConditions();
-        if (!conditions.isPresent()){
-            return Optional.empty();
-        }
         JoinInfo joinInfo = join.analyzeCondition();
         if (joinInfo.isEqui()) {
-            ColumnMapping leftColumnMapping = new ColumnMapping();
-            ColumnMapping rightColumnMapping = new ColumnMapping();
+            List<IntPair> pairs = joinInfo.pairs();
+            if (pairs.isEmpty()) return Optional.empty();
+
+            RexNode conditions = left.getCondition().orElse(right.getCondition().orElse(null));
+
+            ColumnRefResolver leftColumnMapping = new ColumnRefResolver();
+            ColumnRefResolver rightColumnMapping = new ColumnRefResolver();
             left.getRelNode().accept(leftColumnMapping);
             right.getRelNode().accept(rightColumnMapping);
-            if (leftColumnMapping.hasRes() && rightColumnMapping.hasRes()) {
-                MycatLogicTable leftRelNode = leftColumnMapping.tableScan.getTable().unwrap(MycatLogicTable.class);
-                MycatLogicTable rightRelNode = rightColumnMapping.tableScan.getTable().unwrap(MycatLogicTable.class);
-                if (leftRelNode.isSharding() && rightRelNode.isSharding()) {
-                    ShardingTable leftTableHandler = (ShardingTable) leftRelNode.logicTable();
-                    ShardingTable rightTableHandler = (ShardingTable) rightRelNode.logicTable();
-                    if (leftTableHandler.getShardingFuntion().isSameDistribution(rightTableHandler.getShardingFuntion())) {
-                        List<RelDataTypeField> leftFieldList = left.getRowType().getFieldList();
-                        List<RelDataTypeField> rightFieldList = right.getRowType().getFieldList();
-                        List<IntPair> pairs = joinInfo.pairs();
-                        for (IntPair pair : pairs) {
-                            int lindex = leftFieldList.get(leftColumnMapping.mapping(pair.source)).getIndex();
-                            SimpleColumnInfo lColumn = leftTableHandler.getColumns().get(lindex);
-                            int rindex = rightFieldList.get(rightColumnMapping.mapping(pair.target)).getIndex();
-                            SimpleColumnInfo rColumn = rightTableHandler.getColumns().get(rindex);
-                            CustomRuleFunction lFuntion = leftTableHandler.getShardingFuntion();
-                            CustomRuleFunction rFuntion = rightTableHandler.getShardingFuntion();
-                            if (lFuntion.isShardingDbKey(lColumn.getColumnName())
-                                    ==
-                                    rFuntion.isShardingDbKey(rColumn.getColumnName())
-                                    &&
-                                    lFuntion.isShardingTableKey(lColumn.getColumnName())
-                                            ==
-                                            rFuntion.isShardingTableKey(rColumn.getColumnName())) {
-                                return left.getDistribution().join(right.getDistribution())
-                                        .map(distribution -> MycatView.ofCondition(join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())), distribution,conditions.get()));
-                            }
+
+            for (IntPair pair : pairs) {
+
+                Optional<ColumnInfo> leftBottomColumnInfoOptional = leftColumnMapping.getBottomColumnInfoList(pair.source).stream()
+                        .filter(i -> i.getTableScan().getTable().unwrap(MycatLogicTable.class).isSharding()).findFirst();
+                Optional<ColumnInfo> rightBottomColumnInfoOptional = rightColumnMapping.getBottomColumnInfoList(pair.target).stream()
+                        .filter(i -> i.getTableScan().getTable().unwrap(MycatLogicTable.class).isSharding()).findFirst();
+
+                if (leftBottomColumnInfoOptional.isPresent() && rightBottomColumnInfoOptional.isPresent()) {
+                    ColumnInfo leftBottomColumnInfo = leftBottomColumnInfoOptional.get();
+                    ColumnInfo rightBottomColumnInfo = rightBottomColumnInfoOptional.get();
+                    MycatLogicTable leftRelNode = leftBottomColumnInfo.getTableScan().getTable().unwrap(MycatLogicTable.class);
+                    MycatLogicTable rightRelNode = rightBottomColumnInfo.getTableScan().getTable().unwrap(MycatLogicTable.class);
+                    LogicTableType leftTableType = leftRelNode.getTable().getType();
+                    LogicTableType rightTableType = rightRelNode.getTable().getType();
+
+                    if (leftTableType == LogicTableType.SHARDING && leftTableType == rightTableType) {
+                        ShardingTable leftTableHandler = (ShardingTable) leftRelNode.logicTable();
+                        ShardingTable rightTableHandler = (ShardingTable) rightRelNode.logicTable();
+
+                        SimpleColumnInfo lColumn = leftTableHandler.getColumns().get(leftBottomColumnInfo.getIndex());
+                        SimpleColumnInfo rColumn = rightTableHandler.getColumns().get(rightBottomColumnInfo.getIndex());
+
+                        CustomRuleFunction lFunction = leftTableHandler.getShardingFuntion();
+                        CustomRuleFunction rFunction = rightTableHandler.getShardingFuntion();
+                        if (lFunction.isShardingDbKey(lColumn.getColumnName())
+                                ==
+                                rFunction.isShardingDbKey(rColumn.getColumnName())
+                                &&
+                                lFunction.isShardingTableKey(lColumn.getColumnName())
+                                        ==
+                                        rFunction.isShardingTableKey(rColumn.getColumnName())) {
+                            return left.getDistribution().join(right.getDistribution())
+                                    .map(distribution -> MycatView.ofCondition(join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())), distribution,
+                                            conditions));
                         }
                     }
+
                 }
             }
         }
@@ -567,11 +738,15 @@ public class SQLRBORewriter extends RelShuttleImpl {
                     join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
                     distribution));
         }
+        if (lType == Distribution.Type.PHY && lType == rType) {
+            return ldistribution.join(rdistribution).map(distribution -> MycatView.ofBottom(
+                    join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
+                    distribution));
+        }
         return Optional.empty();
     }
 
-    public static RelNode filter(RelNode original, LogicalFilter filter, OptimizationContext
-            optimizationContext) {
+    public static RelNode filter(RelNode original, LogicalFilter filter) {
         RelNode input = original;
         Distribution dataNodeInfo = null;
         MycatView view = null;
@@ -586,7 +761,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             RelOptTable table = input.getTable();
             AbstractMycatTable nodes = table.unwrap(AbstractMycatTable.class);
             Distribution distribution = nodes.createDistribution();
-            return MycatView.ofCondition(filter.copy(filter.getTraitSet(), input, condition), distribution,(condition));
+            return MycatView.ofCondition(filter.copy(filter.getTraitSet(), input, condition), distribution, (condition));
         }
         if (input instanceof QueryBuilder) {
             QueryBuilder queryBuilder = (QueryBuilder) input;
@@ -609,11 +784,18 @@ public class SQLRBORewriter extends RelShuttleImpl {
     public static RelNode project(RelNode original, LogicalProject project) {
         Distribution dataNodeInfo = null;
         RelNode input = original;
-        MycatView mycatView  =null;
+        MycatView mycatView = null;
         if (input instanceof MycatView) {
             dataNodeInfo = ((MycatView) input).getDistribution();
-            mycatView = (MycatView)original;
+            mycatView = (MycatView) original;
             input = ((MycatView) input).getRelNode();
+
+            if (project.containsOver()) {
+                if (dataNodeInfo.type() == Distribution.Type.PHY || (dataNodeInfo.type() == Distribution.Type.BroadCast)) {
+                    input = project.copy(project.getTraitSet(), ImmutableList.of(input));
+                    return mycatView.changeTo(input, dataNodeInfo);
+                }
+            }
         }
         if (input instanceof QueryBuilder) {
             QueryBuilder queryBuilder = (QueryBuilder) input;
@@ -627,6 +809,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             }
             return project.copy(project.getTraitSet(), ImmutableList.of(queryBuilder));
         }
+
         input = project.copy(project.getTraitSet(), ImmutableList.of(input));
         if (mycatView != null) {
             return mycatView.changeTo(input, dataNodeInfo);

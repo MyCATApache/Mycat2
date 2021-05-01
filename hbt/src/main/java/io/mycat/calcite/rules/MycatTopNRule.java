@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2020>  <chen junwen>
+ * Copyright (C) <2021>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -20,15 +20,19 @@ import io.mycat.calcite.MycatConverterRule;
 import io.mycat.calcite.MycatRules;
 import io.mycat.calcite.physical.MycatTopN;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 public class MycatTopNRule extends MycatConverterRule {
+
+    public static final MycatTopNRule INSTANCE = new MycatTopNRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
+
     public MycatTopNRule(final MycatConvention out,
                          RelBuilderFactory relBuilderFactory) {
         super(Sort.class, sort ->
                         sort.fetch!=null&&sort.collation!=null,
-                MycatRules.convention, out, relBuilderFactory, "MycatTopNRule");
+                MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatTopNRule");
     }
 
     public RelNode convert(RelNode rel) {
