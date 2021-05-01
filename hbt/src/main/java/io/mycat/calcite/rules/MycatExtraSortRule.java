@@ -110,10 +110,10 @@ public class MycatExtraSortRule extends RelRule<MycatExtraSortRule.Config> {
         }
 
         /** Defines an operand tree for the given classes. */
-        default MycatExtraSortRule.Config withOperandFor(Class<? extends Join> aggregateClass,
+        default MycatExtraSortRule.Config withOperandFor(Class<? extends Join> operand,
                                                                   Class<? extends RelNode> inputClass) {
             return withOperandSupplier(b0 ->
-                    b0.operand(aggregateClass).oneInput(b1 ->
+                    b0.operand(operand).unorderedInputs(b1 ->
                             b1.operand(inputClass).anyInputs()))
                     .as(MycatExtraSortRule.Config.class);
         }
