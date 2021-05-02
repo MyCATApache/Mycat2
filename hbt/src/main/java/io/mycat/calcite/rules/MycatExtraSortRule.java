@@ -115,6 +115,7 @@ public class MycatExtraSortRule extends RelRule<MycatExtraSortRule.Config> {
             return withOperandSupplier(b0 ->
                     b0.operand(operand).unorderedInputs(b1 ->
                             b1.operand(inputClass).anyInputs()))
+                    .withDescription("MycatExtraSortRule_"+inputClass.getName())
                     .as(MycatExtraSortRule.Config.class);
         }
     }
