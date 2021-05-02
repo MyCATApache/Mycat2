@@ -131,7 +131,11 @@ public class Process {
 
     public void kill() {
         closeConnection();
+        Thread currentThread = Thread.currentThread();
         for (Thread holdThread : holdThreads) {
+            if (holdThread == currentThread) {
+                continue;
+            }
             holdThread.interrupt();
         }
         exit();
