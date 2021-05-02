@@ -27,7 +27,7 @@ public class Process {
      * 哪个后端在用哪个连接 (kill命令会 关闭进行中的链接)
      */
     private final Deque<SqlConnection> connections = new ConcurrentLinkedDeque<>();
-    private final Map<Thread, Integer> connectionCounterMap = new HashMap<>();
+    private final Map<Thread, Integer> connectionReferenceCountMap = new HashMap<>();
     private final Timestamp createTimestamp = new Timestamp(System.currentTimeMillis());
     private final Set<Thread> holdThreads = Collections.newSetFromMap(new ConcurrentHashMap<>());
     /**
@@ -155,14 +155,14 @@ public class Process {
         for (SqlConnection sqlConnection : snapshot) {
             sqlConnection.close();
         }
-        connectionCounterMap.clear();
+        connectionReferenceCountMap.clear();
     }
 
     public <T extends SqlConnection> T trace(T connection) {
         Thread thread = Thread.currentThread();
-        synchronized (connectionCounterMap) {
-            Integer count = connectionCounterMap.get(thread);
-            connectionCounterMap.put(thread, count == null ? 1 : count + 1);
+        synchronized (connectionReferenceCountMap) {
+            Integer count = connectionReferenceCountMap.get(thread);
+            connectionReferenceCountMap.put(thread, count == null ? 1 : count + 1);
             connections.addFirst(connection);
         }
         return connection;
