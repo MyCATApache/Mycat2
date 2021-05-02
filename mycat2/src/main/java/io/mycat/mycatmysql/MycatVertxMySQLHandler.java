@@ -85,12 +85,10 @@ public class MycatVertxMySQLHandler {
     public void handle(int packetId, Buffer event, NetSocket socket) {
         if (handleIng.compareAndSet(false, true)) {
             try {
-//                Process.setCurrentProcess(null);
                 Process process = Process.getCurrentProcess();
                 handle0(packetId, event, socket,process);
                 checkPendingMessages();
             } finally {
-//                Process.setCurrentProcess(null);
                 handleIng.set(false);
                 // check if handle set handleIng gap
                 checkPendingMessages();
@@ -104,10 +102,7 @@ public class MycatVertxMySQLHandler {
         PendingMessage pendingMessage;
         while ((pendingMessage = pendingMessages.poll()) != null) {
             Process process = Process.getCurrentProcess();
-            try {
-                handle0(pendingMessage.packetId, pendingMessage.event, pendingMessage.socket, process);
-            }finally {
-            }
+            handle0(pendingMessage.packetId, pendingMessage.event, pendingMessage.socket, process);
         }
     }
 

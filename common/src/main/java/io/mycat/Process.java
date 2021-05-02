@@ -131,6 +131,9 @@ public class Process {
 
     public void kill() {
         closeConnection();
+        for (Thread holdThread : holdThreads) {
+            holdThread.interrupt();
+        }
         exit();
         context.close();
     }
