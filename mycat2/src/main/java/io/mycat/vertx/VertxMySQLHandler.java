@@ -324,7 +324,6 @@ public class VertxMySQLHandler extends DefaultCommandHandler {
                 }
             }
             promise.onComplete(o -> {
-                process.exit();
                 if (o.failed()) {
                     mycatDataContext.setLastMessage(o.cause());
                     this.session.writeErrorEndPacketBySyncInProcessError(0);
@@ -332,7 +331,6 @@ public class VertxMySQLHandler extends DefaultCommandHandler {
                 checkPendingMessages();
             });
         } catch (Throwable throwable) {
-            process.exit();
             mycatDataContext.setLastMessage(throwable);
             this.session.writeErrorEndPacketBySyncInProcessError(0);
         }

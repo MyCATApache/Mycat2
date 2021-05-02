@@ -85,11 +85,12 @@ public class MycatVertxMySQLHandler {
     public void handle(int packetId, Buffer event, NetSocket socket) {
         if (handleIng.compareAndSet(false, true)) {
             try {
+//                Process.setCurrentProcess(null);
                 Process process = Process.getCurrentProcess();
                 handle0(packetId, event, socket,process);
                 checkPendingMessages();
             } finally {
-                Process.setCurrentProcess(null);
+//                Process.setCurrentProcess(null);
                 handleIng.set(false);
                 // check if handle set handleIng gap
                 checkPendingMessages();
@@ -106,7 +107,6 @@ public class MycatVertxMySQLHandler {
             try {
                 handle0(pendingMessage.packetId, pendingMessage.event, pendingMessage.socket, process);
             }finally {
-                Process.setCurrentProcess(null);
             }
         }
     }
@@ -341,7 +341,6 @@ public class MycatVertxMySQLHandler {
                 }
             }
             promise.onComplete(o->{
-                process.exit();
                 if(o.failed()){
                     mycatDataContext.setLastMessage(o.cause());
                     this.session.writeErrorEndPacketBySyncInProcessError(0);
@@ -349,7 +348,6 @@ public class MycatVertxMySQLHandler {
                 checkPendingMessages();
             });
         } catch (Throwable throwable) {
-            process.exit();
             mycatDataContext.setLastMessage(throwable);
             this.session.writeErrorEndPacketBySyncInProcessError(0);
         }

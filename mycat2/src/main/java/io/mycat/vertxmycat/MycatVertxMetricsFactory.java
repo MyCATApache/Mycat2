@@ -46,15 +46,10 @@ public class MycatVertxMetricsFactory implements VertxMetricsFactory {
         public Process submitted() {
             Process process = Process.getCurrentProcess();
             if (process == null) {
+                // 父子线程传递
                 process = Process.createProcess();
-                Process.setCurrentProcess(process);
             }
-            process.getThreadTraceList().add(Thread.currentThread());
             return process;
-        }
-
-        public Process createProcess() {
-            return new Process();
         }
 
         /**
@@ -65,6 +60,7 @@ public class MycatVertxMetricsFactory implements VertxMetricsFactory {
          */
         @Override
         public Process begin(Process process) {
+            process.retain();
             Process.setCurrentProcess(process);
             return process;
         }
@@ -77,7 +73,6 @@ public class MycatVertxMetricsFactory implements VertxMetricsFactory {
         @Override
         public void rejected(Process process) {
             //todo 拒绝策略 2021年5月2日00:22:24
-            Process.setCurrentProcess(null);
         }
 
         /**
@@ -88,8 +83,7 @@ public class MycatVertxMetricsFactory implements VertxMetricsFactory {
          */
         @Override
         public void end(Process process, boolean succeeded) {
-            process.exit(Thread.currentThread());
-            Process.setCurrentProcess(null);
+            process.release();
         }
 
         /**

@@ -16,6 +16,7 @@ package io.mycat.sqlhandler.dql;
 
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowProcessListStatement;
 import io.mycat.MycatDataContext;
+import io.mycat.MycatUser;
 import io.mycat.Process;
 import io.mycat.Response;
 import io.mycat.beans.mycat.ResultSetBuilder;
@@ -25,14 +26,20 @@ import io.vertx.core.Future;
 
 import java.sql.JDBCType;
 import java.util.Arrays;
-import java.util.Set;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
 
 
 public class ShowProcessListSQLHandler extends AbstractSQLHandler<MySqlShowProcessListStatement> {
 
     @Override
     protected Future<Void> onExecute(SQLRequest<MySqlShowProcessListStatement> request, MycatDataContext dataContext, Response response) {
-        Set<Process> processList = Process.getProcessList();
+        Map<Thread, Process> processMap = new LinkedHashMap<>(Process.getProcessMap());
+        MySqlShowProcessListStatement ast = request.getAst();
+        boolean full = ast.isFull();
+        int maxCount = full ? Integer.MAX_VALUE : 100;
+        MycatUser currentUser = full ? null : dataContext.getUser();
 
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
         resultSetBuilder.addColumnInfo("Id", JDBCType.INTEGER);
@@ -45,7 +52,13 @@ public class ShowProcessListSQLHandler extends AbstractSQLHandler<MySqlShowProce
         resultSetBuilder.addColumnInfo("Info", JDBCType.VARCHAR);
 
         long timestamp = System.currentTimeMillis();
-        for (Process process : processList) {
+        int currentCount = 0;
+        for (Map.Entry<Thread, Process> entry : processMap.entrySet()) {
+            Thread holdThread = entry.getKey();
+            Process process = entry.getValue();
+            if (currentUser != null && !Objects.equals(process.getUser(), currentUser.getUserName())) {
+                continue;
+            }
             resultSetBuilder.addObjectRowPayload(Arrays.asList(
                     process.getId(),
                     process.getUser(),
@@ -56,6 +69,10 @@ public class ShowProcessListSQLHandler extends AbstractSQLHandler<MySqlShowProce
                     process.getState(),
                     process.getInfo()
             ));
+            currentCount++;
+            if (currentCount >= maxCount) {
+                break;
+            }
         }
         return response.sendResultSet(resultSetBuilder.build());
 //        return response.proxySelectToPrototype(request.getAst().toString());

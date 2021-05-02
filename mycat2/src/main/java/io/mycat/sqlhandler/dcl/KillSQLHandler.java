@@ -33,6 +33,7 @@ public class KillSQLHandler extends AbstractSQLHandler<MySqlKillStatement> {
     protected Future<Void> onExecute(SQLRequest<MySqlKillStatement> request, MycatDataContext dataContext, Response response) {
         MySqlKillStatement ast = request.getAst();
         List<SQLExpr> threadIds = ast.getThreadIds();
+        int count = 0;
         for (SQLExpr threadIdExpr : threadIds) {
             int threadId = ((SQLIntegerExpr) threadIdExpr).getNumber().intValue();
             Process process = Process.getProcess(threadId);
@@ -40,7 +41,8 @@ public class KillSQLHandler extends AbstractSQLHandler<MySqlKillStatement> {
                 continue;
             }
             process.kill();
+            count++;
         }
-        return response.sendOk();
+        return response.sendOk(count);
     }
 }
