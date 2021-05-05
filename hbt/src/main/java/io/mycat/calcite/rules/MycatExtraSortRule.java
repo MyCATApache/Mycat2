@@ -18,8 +18,12 @@ package io.mycat.calcite.rules;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.logical.MycatView;
+import io.mycat.calcite.physical.MycatHashJoin;
 import io.mycat.calcite.physical.MycatMergeSort;
+import io.mycat.calcite.physical.MycatSortAgg;
+import io.mycat.calcite.physical.MycatSortMergeJoin;
 import org.apache.calcite.adapter.enumerable.EnumerableMergeJoin;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptRule;
@@ -35,8 +39,10 @@ import org.apache.calcite.rel.rules.AggregateExtractProjectRule;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.tools.RelBuilder;
 
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -52,8 +58,8 @@ public class MycatExtraSortRule extends RelRule<MycatExtraSortRule.Config> {
     @Override
     public void onMatch(RelOptRuleCall call) {
         Join join = call.rel(0);
-        MycatView leftMycatView = call.rel(1);
-        MycatView rightMycatView = call.rel(2);
+        RelNode leftMycatView = call.rel(1);
+        RelNode rightMycatView = call.rel(2);
 
         final JoinInfo info = join.analyzeCondition();
         if (!EnumerableMergeJoin.isMergeJoinSupported(join.getJoinType())) {
@@ -65,7 +71,7 @@ public class MycatExtraSortRule extends RelRule<MycatExtraSortRule.Config> {
             return;
         }
         final List<RelCollation> collations = new ArrayList<>();
-        for (Ord<MycatView> ord : Ord.zip(ImmutableList.of(leftMycatView, rightMycatView))) {
+        for (Ord<RelNode> ord : Ord.zip(ImmutableList.of(leftMycatView, rightMycatView))) {
             final List<RelFieldCollation> fieldCollations = new ArrayList<>();
             for (int key : info.keys().get(ord.i)) {
                 fieldCollations.add(
@@ -81,7 +87,7 @@ public class MycatExtraSortRule extends RelRule<MycatExtraSortRule.Config> {
 
     private RelNode pushSort(RelNode relNode, RelCollation relCollation) {
         RelCollation trait = relNode.getTraitSet().getTrait(RelCollationTraitDef.INSTANCE);
-        if (trait.equals(relCollation)){
+        if (trait.equals(relCollation)) {
             return relNode;
         }
         RelBuilder relBuilder = relBuilderFactory.create(relNode.getCluster(), null);
@@ -96,26 +102,73 @@ public class MycatExtraSortRule extends RelRule<MycatExtraSortRule.Config> {
             return relBuilder.push(relNode).sort(relCollation).build();
         }
     }
+   public static final ImmutableList<RelOptRule> RULES;
+    static {
+        List<? extends Class<? extends AbstractRelNode>> ups = Arrays.asList(Join.class, Aggregate.class);
+        List<Class<? extends RelNode>> bs = Arrays.asList(MycatView.class, RelNode.class);
+        ImmutableList.Builder<RelOptRule> builder = ImmutableList.builder();
+        for (Class<? extends AbstractRelNode> up : ups) {
+            for (Class<? extends RelNode> l: bs) {
+                Class ln = l;
+                for (Class<? extends RelNode> r: bs) {
+                    Class rn = r;
+                    builder.add( Config.EMPTY
+                            .as(MycatExtraSortRule.Config.class)
+                            .withOperandFor(b0 -> b0.operand(up).inputs(b1 -> {
+                                if (ln == MycatView.class){
+                                    return b1.operand(ln).noInputs();
+                                }else {
+                                    return b1.operand(ln).anyInputs();
+                                }
+                            }, b1 -> {
+                                if (rn == MycatView.class){
+                                    return b1.operand(rn).noInputs();
+                                }else {
+                                    return b1.operand(rn).anyInputs();
+                                }
+                            }))
+                            .as(MycatExtraSortRule.Config.class)
+                            .withDescription(MycatExtraSortRule.class.getName()+up.toString()+ln.toString()+rn.toString())
+                            .toRule());
+                }
+            }
+
+        }
+        RULES = builder.build();
+
+    }
+//
+//    public static final List<MycatExtraSortRule> VIEWS = ImmutableList.of(
+//            Config.EMPTY
+//            .as(MycatExtraSortRule.Config.class)
+//            .withOperandFor(b0 -> b0.operand(Join.class).inputs(b1 -> b1.operand(MycatView.class).anyInputs(), b2 -> b2.operand(MycatView.class).noInputs()))
+//            .as(MycatExtraSortRule.Config.class)
+//            .toRule(),
+//            Config.EMPTY
+//                    .as(MycatExtraSortRule.Config.class)
+//                    .withOperandFor(b0 -> b0.operand(Join.class).inputs(b1 -> b1.operand(RelNode.class).anyInputs(), b2 -> b2.operand(MycatView.class).noInputs()))
+//                    .as(MycatExtraSortRule.Config.class)
+//                    .toRule(),
+//            );
 
     public interface Config extends RelRule.Config {
-        MycatExtraSortRule.Config BOTTOM_VIEW = EMPTY
-                .as(MycatExtraSortRule.Config.class)
-                .withOperandFor(Join.class, MycatView.class);
-        MycatExtraSortRule.Config BOTTOM_RELNODE = EMPTY
-                .as(MycatExtraSortRule.Config.class)
-                .withOperandFor(Join.class, RelNode.class);
+//        MycatExtraSortRule.Config BOTTOM_VIEW = EMPTY
+//                .as(MycatExtraSortRule.Config.class)
+//                .withOperandFor(b0 -> b0.operand(Join.class).inputs(b1 -> b1.operand(MycatView.class).anyInputs(), b2 -> b2.operand(MycatView.class).anyInputs()));
+//        MycatExtraSortRule.Config BOTTOM_RELNODE = EMPTY
+//                .as(MycatExtraSortRule.Config.class)
+//                .withOperandFor(Join.class, RelNode.class);
 
-        @Override default MycatExtraSortRule toRule() {
+        @Override
+        default MycatExtraSortRule toRule() {
             return new MycatExtraSortRule(this);
         }
 
-        /** Defines an operand tree for the given classes. */
-        default MycatExtraSortRule.Config withOperandFor(Class<? extends Join> operand,
-                                                                  Class<? extends RelNode> inputClass) {
-            return withOperandSupplier(b0 ->
-                    b0.operand(operand).unorderedInputs(b1 ->
-                            b1.operand(inputClass).anyInputs()))
-                    .withDescription("MycatExtraSortRule_"+inputClass.getName())
+        /**
+         * Defines an operand tree for the given classes.
+         */
+        default MycatExtraSortRule.Config withOperandFor(OperandTransform transform) {
+            return withOperandSupplier(transform)
                     .as(MycatExtraSortRule.Config.class);
         }
     }

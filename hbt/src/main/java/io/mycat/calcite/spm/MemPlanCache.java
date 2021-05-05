@@ -36,7 +36,7 @@ public class MemPlanCache implements QueryPlanCache {
     }
 
     public void init() {
-        loadBaselines();
+
     }
 
     public void delete(List<String> uniqueTables) {
@@ -155,7 +155,6 @@ public class MemPlanCache implements QueryPlanCache {
 
     public synchronized PlanResultSet add(boolean fix, DrdsSql drdsSql) {
         Long baselineId = null;
-        try {
             Baseline baseline = this.getBaseline(drdsSql);
             DrdsSqlCompiler drdsSqlCompiler = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
             OptimizationContext optimizationContext = new OptimizationContext();
@@ -166,10 +165,6 @@ public class MemPlanCache implements QueryPlanCache {
             BaselinePlan newBaselinePlan = new BaselinePlan(drdsSql.getParameterizedSql(), relJsonWriter.asString(), hash, baselineId = baseline.getBaselineId(), null);
             getCodeExecuterContext(newBaselinePlan, mycatRel);
             return saveBaselinePlan(fix, false, baseline, newBaselinePlan);
-        } catch (Throwable throwable) {
-            log.error("", throwable);
-            return new PlanResultSet(baselineId, false, null);
-        }
     }
 
     @Override

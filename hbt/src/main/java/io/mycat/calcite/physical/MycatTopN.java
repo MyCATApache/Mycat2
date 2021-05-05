@@ -15,6 +15,7 @@
 package io.mycat.calcite.physical;
 
 
+import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.*;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
@@ -43,7 +44,7 @@ import java.util.Objects;
 public class MycatTopN extends Sort implements MycatRel {
 
     protected MycatTopN(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation, RexNode offset, RexNode fetch) {
-        super(cluster,Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), child, collation, offset, fetch);
+        super(cluster,Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE).replace(RelCollationTraitDef.INSTANCE, ImmutableList.of(collation)), child, collation, offset, fetch);
     }
 
     public static MycatTopN create(RelTraitSet traits, RelNode child, RelCollation collation, RexNode offset, RexNode fetch) {

@@ -15,6 +15,7 @@
 package io.mycat.calcite.physical;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import io.mycat.calcite.*;
 import io.mycat.calcite.logical.MycatView;
@@ -32,12 +33,12 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelInput;
-import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
@@ -45,27 +46,37 @@ import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.RxBuiltInMethodImpl;
+import org.apache.calcite.util.Util;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
 import java.util.*;
 
-public class MycatMergeSort extends Sort implements MycatRel {
+public class MycatMergeSort extends AbstractRelNode implements MycatRel {
 
-//    private static final Method ORDER_BY_METHOD = Types.lookupMethod(MycatMergeSort.class,
+    //    private static final Method ORDER_BY_METHOD = Types.lookupMethod(MycatMergeSort.class,
 //            "orderBy", List.class,
 //            Function1.class, Comparator.class, int.class, int.class);
 //    private static final Method STREAM_ORDER_BY = Types.lookupMethod(MycatMergeSort.class,
 //            "streamOrderBy", List.class,
 //            Function1.class, Comparator.class, int.class, int.class);
+   public RelCollation collation;
+    public  RexNode offset;
+    public RexNode fetch;
+    public RelNode child;
 
     public MycatMergeSort(RelOptCluster cluster,
-                             RelTraitSet traitSet,
-                             RelNode child,
-                             RelCollation collation,
-                             RexNode offset,
-                             RexNode fetch) {
-        super(cluster,  Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), child, collation, offset, fetch);
+                          RelTraitSet traitSet,
+                          RelNode child,
+                          RelCollation collation,
+                          RexNode offset,
+                          RexNode fetch) {
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE).replace(RelCollationTraitDef.INSTANCE, ImmutableList.of(collation)));
+        this.child = child;
+        this.collation = collation;
+        this.offset = offset;
+        this.fetch = fetch;
+        this.rowType = child.getRowType();
     }
 
     public MycatMergeSort(RelInput relInput) {
@@ -96,11 +107,20 @@ public class MycatMergeSort extends Sort implements MycatRel {
         return writer.ret();
     }
 
-
     @Override
-    public Sort copy(RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch) {
-        return new MycatMergeSort(getCluster(), traitSet, newInput, newCollation, offset, fetch);
+    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+        RelCollation trait = traitSet.getTrait(RelCollationTraitDef.INSTANCE);
+        if (trait.equals(collation)){
+            return MycatMergeSort.create(traitSet,inputs.get(0),collation,offset,fetch);
+        }else {
+            throw new UnsupportedOperationException();
+        }
     }
+//
+//    @Override
+//    public Sort copy(RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch) {
+//        return new MycatMergeSort(getCluster(), traitSet, newInput, newCollation, offset, fetch);
+//    }
 //
 //    final static Method GET_ENUMERABLES =
 //            Types.lookupMethod(NewMycatDataContext.class,
@@ -111,7 +131,7 @@ public class MycatMergeSort extends Sort implements MycatRel {
 
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
-        MycatView input = (MycatView) this.getInput();
+        MycatView input = (MycatView) child;
         return input.implementMergeSort(implementor, pref, this);
     }
 
@@ -169,8 +189,19 @@ public class MycatMergeSort extends Sort implements MycatRel {
 
     @Override
     public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
-        MycatView input = (MycatView) this.getInput();
+        MycatView input = (MycatView) child;
         return input.implementMergeSortStream(implementor, pref, this);
+    }
+
+    @Override
+    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        // Higher cost if rows are wider discourages pushing a project through an
+        // exchange.
+        double rowCount = mq.getRowCount(this);
+        double bytesPerRow = getRowType().getFieldCount() * 4;
+        return planner.getCostFactory().makeCost(
+                Util.nLogN(rowCount) * bytesPerRow, rowCount, 0);
+//        return planner.getCostFactory().makeTinyCost();
     }
 
     @Override

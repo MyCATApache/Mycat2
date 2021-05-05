@@ -295,7 +295,7 @@ public class DrdsExecutorCompiler {
                     Rel rel = relContext.nodes.computeIfAbsent(other.getDigest(), s -> new Rel());
                     rel.count += 1;
                     MycatMergeSort mycatMergeSort = (MycatMergeSort) other;
-                    visitMycatView(rel, (MycatView) mycatMergeSort.getInput());
+                    visitMycatView(rel, (MycatView) mycatMergeSort.child);
                 } else if (other instanceof MycatTransientSQLTableScan) {
                     Rel rel = relContext.nodes.computeIfAbsent(other.getDigest(), s -> new Rel());
                     rel.count += 1;

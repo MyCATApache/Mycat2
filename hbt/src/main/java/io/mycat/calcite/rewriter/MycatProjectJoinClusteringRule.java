@@ -43,7 +43,7 @@ public  class MycatProjectJoinClusteringRule extends RelRule<MycatProjectJoinClu
                 RelNode relNode = joinOptional.get();
                 Project newProject = (Project)origProject.copy(origProject.getTraitSet(), ImmutableList.of(relNode));
                 if (relNode instanceof MycatView){
-                    call.transformTo(newProject.accept(new SQLRBORewriter(true)));
+                    call.transformTo(newProject.accept(new SQLRBORewriter()));
                    return;
                 }
                 call.transformTo(newProject);

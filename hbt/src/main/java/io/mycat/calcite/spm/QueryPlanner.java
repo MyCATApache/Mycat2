@@ -58,11 +58,8 @@ public class QueryPlanner {
 
     private List<CodeExecuterContext> getAcceptedMycatRelList(DrdsSql drdsSql) {
         List<CodeExecuterContext> acceptedMycatRelList = planCache2.getAcceptedMycatRelList(drdsSql);
-        if (acceptedMycatRelList.isEmpty()) {
+        if (true) {
             PlanResultSet add = planCache2.add(false, drdsSql);
-            if (!add.isOk()) {
-                throw new UnsupportedOperationException("unsupport sql:" + drdsSql);
-            }
             return Collections.singletonList(add.getContext());
         } else {
             return acceptedMycatRelList;

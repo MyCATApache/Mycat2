@@ -2409,9 +2409,10 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         new RexToLixTranslator(program, typeFactory, root, inputGetter, list,
             new RexBuilder(typeFactory), conformance, null);
     translator = translator.setCorrelates(correlates);
-    return translator.translate(
-        program.getCondition(),
-        RexImpTable.NullAs.FALSE);
+    Expression translate = translator.translate(
+            program.getCondition(),
+            RexImpTable.NullAs.FALSE);
+    return translate;
   }
 
   /** Returns whether an expression is nullable.
@@ -2524,7 +2525,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
   }
 
   @Override public Result visitLocalRef(RexLocalRef localRef) {
-    return deref(localRef).accept(this);
+    RexNode deref = deref(localRef);
+    return deref.accept(this);
   }
 
   /**

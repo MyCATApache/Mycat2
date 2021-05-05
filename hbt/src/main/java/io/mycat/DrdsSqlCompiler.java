@@ -32,7 +32,9 @@ import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.rewriter.*;
-import io.mycat.calcite.rules.MycatViewToIndexViewRule;
+import io.mycat.calcite.rewriter.rules.MycatBiRelViewRule;
+import io.mycat.calcite.rewriter.rules.MycatBottomTableScanViewRule;
+import io.mycat.calcite.rewriter.rules.MycatSingleViewRule;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.spm.PlanImpl;
 import io.mycat.calcite.table.*;
@@ -144,6 +146,12 @@ public class DrdsSqlCompiler {
                     }
                 }
                 return super.visit(scan);
+            }
+        });
+        bestExp = bestExp.accept(new RelShuttleImpl(){
+            @Override
+            public RelNode visit(TableScan scan) {
+               return SQLRBORewriter.view(scan).orElse(scan);
             }
         });
         MycatRel mycatRel = optimizeWithCBO(bestExp, Collections.emptyList());
@@ -327,20 +335,13 @@ public class DrdsSqlCompiler {
             }
         }
         RelNode rboLogPlan = optimizeWithRBO(logPlan);
-        if (relNodeContext != null && !(rboLogPlan instanceof MycatView)) {
-            RelFieldTrimmer relFieldTrimmer = new MycatRelFieldTrimmer(relNodeContext.getValidator(), relNodeContext.getRelBuilder());
-            rboLogPlan = relFieldTrimmer.trim(rboLogPlan);
-        }
-        Collection<RelOptRule> rboInCbo;
-        if (MetaClusterCurrent.exist(GSIService.class)) {
-            rboInCbo = Collections.singletonList(
-                    new MycatViewToIndexViewRule(optimizationContext, config.joinClustering())
-            );
-        } else {
-            rboInCbo = Collections.emptyList();
-        }
-        MycatRel mycatRel = optimizeWithCBO(rboLogPlan, rboInCbo);
-        mycatRel = (MycatRel) mycatRel.accept(new MatierialRewriter());
+//        rboLogPlan = rboLogPlan.accept(new RelShuttleImpl(){
+//            @Override
+//            public RelNode visit(TableScan scan) {
+//                return SQLRBORewriter.view(scan).orElse(scan);
+//            }
+//        });
+        MycatRel mycatRel = optimizeWithCBO(rboLogPlan,Collections.emptyList());
         return mycatRel;
     }
 
@@ -420,6 +421,21 @@ public class DrdsSqlCompiler {
             planner.addRule(CoreRules.FILTER_TO_CALC);
             planner.addRule(CoreRules.CALC_MERGE);
 
+            MycatConvention.INSTANCE.register(planner);
+            planner.addRule(CoreRules.JOIN_COMMUTE);
+            planner.addRule(CoreRules.JOIN_COMMUTE_OUTER);
+            planner.addRule(CoreRules.JOIN_ASSOCIATE);
+            planner.addRule(CoreRules.FILTER_INTO_JOIN);
+            planner.addRule(CoreRules.JOIN_PUSH_EXPRESSIONS);
+            planner.addRule(CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES);
+            planner.addRule(MycatJoinClusteringRule.Config.DEFAULT.toRule());
+            planner.addRule(MycatProjectJoinClusteringRule.Config.DEFAULT.toRule());
+            planner.addRule(MycatJoinPushThroughJoinRule.LEFT);
+            planner.addRule(MycatJoinPushThroughJoinRule.RIGHT);
+            planner.addRule(MycatFilterJoinRule.JoinConditionPushRule.Config.DEFAULT.withPredicate((join1, joinType, exp) -> false).toRule());
+            MycatBiRelViewRule.RULES.forEach(c->planner.addRule(c));
+            planner.addRule(MycatBottomTableScanViewRule.Config.DEFAULT.toRule());
+            MycatSingleViewRule.RULES.forEach(c->planner.addRule(c));
             //joinReorder
             if (needJoinReorder) {
                 planner.addRule(CoreRules.MULTI_JOIN_OPTIMIZE);
@@ -499,9 +515,7 @@ public class DrdsSqlCompiler {
         builder.addRuleCollection(FILTER);
         HepPlanner planner = new HepPlanner(builder.build());
         planner.setRoot(logPlan);
-        RelNode bestExp = planner.findBestExp();
-        SQLRBORewriter sqlrboRewriter = new SQLRBORewriter(config.joinClustering());
-        return bestExp.accept(sqlrboRewriter);
+        return planner.findBestExp();
     }
 
     @NotNull

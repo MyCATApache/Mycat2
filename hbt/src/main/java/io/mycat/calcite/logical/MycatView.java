@@ -255,7 +255,8 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        return relNode.computeSelfCost(planner, mq);
+        RelOptCost relOptCost = relNode.computeSelfCost(planner, mq);
+        return planner.getCostFactory().makeCost(relOptCost.getRows(),0,0);
     }
 
 
