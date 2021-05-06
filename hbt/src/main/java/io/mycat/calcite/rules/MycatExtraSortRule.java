@@ -95,9 +95,7 @@ public class MycatExtraSortRule extends RelRule<MycatExtraSortRule.Config> {
             MycatView mycatView = (MycatView) relNode;
             RelNode innerRelNode = mycatView.getRelNode();
             relNode = mycatView.changeTo(relBuilder.push(innerRelNode).sort(relCollation).build());
-            return MycatMergeSort.create(relNode.getTraitSet().replace(relCollation), relNode, relCollation,
-                    null,
-                    null);
+            return relNode;
         } else {
             return relBuilder.push(relNode).sort(relCollation).build();
         }

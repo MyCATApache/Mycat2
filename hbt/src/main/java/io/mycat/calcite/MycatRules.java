@@ -26,10 +26,7 @@ import io.mycat.calcite.rules.*;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
-import org.apache.calcite.rel.rules.CoreRules;
-import org.apache.calcite.rel.rules.FilterJoinRule;
-import org.apache.calcite.rel.rules.JoinExtractFilterRule;
-import org.apache.calcite.rel.rules.SortJoinTransposeRule;
+import org.apache.calcite.rel.rules.*;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlAggFunction;
@@ -173,6 +170,8 @@ public class MycatRules {
     public static List<RelOptRule> rules() {
         ImmutableList.Builder<RelOptRule> builder = ImmutableList.builder();
         return builder.add(
+//                AggregateReduceFunctionsRule.Config.DEFAULT.toRule(),
+                CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
                 FilterJoinRule.FilterIntoJoinRule.Config.DEFAULT.toRule(),
                 JoinExtractFilterRule.Config.DEFAULT.toRule(),
                 SortJoinTransposeRule.Config.DEFAULT.toRule(),

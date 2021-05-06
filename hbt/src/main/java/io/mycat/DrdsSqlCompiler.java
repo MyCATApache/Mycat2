@@ -148,10 +148,10 @@ public class DrdsSqlCompiler {
                 return super.visit(scan);
             }
         });
-        bestExp = bestExp.accept(new RelShuttleImpl(){
+        bestExp = bestExp.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(TableScan scan) {
-               return SQLRBORewriter.view(scan).orElse(scan);
+                return SQLRBORewriter.view(scan).orElse(scan);
             }
         });
         MycatRel mycatRel = optimizeWithCBO(bestExp, Collections.emptyList());
@@ -341,7 +341,7 @@ public class DrdsSqlCompiler {
 //                return SQLRBORewriter.view(scan).orElse(scan);
 //            }
 //        });
-        MycatRel mycatRel = optimizeWithCBO(rboLogPlan,Collections.emptyList());
+        MycatRel mycatRel = optimizeWithCBO(rboLogPlan, Collections.emptyList());
         return mycatRel;
     }
 
@@ -433,9 +433,9 @@ public class DrdsSqlCompiler {
             planner.addRule(MycatJoinPushThroughJoinRule.LEFT);
             planner.addRule(MycatJoinPushThroughJoinRule.RIGHT);
             planner.addRule(MycatFilterJoinRule.JoinConditionPushRule.Config.DEFAULT.withPredicate((join1, joinType, exp) -> false).toRule());
-            MycatBiRelViewRule.RULES.forEach(c->planner.addRule(c));
+            MycatBiRelViewRule.RULES.forEach(c -> planner.addRule(c));
             planner.addRule(MycatBottomTableScanViewRule.Config.DEFAULT.toRule());
-            MycatSingleViewRule.RULES.forEach(c->planner.addRule(c));
+            MycatSingleViewRule.RULES.forEach(c -> planner.addRule(c));
             //joinReorder
             if (needJoinReorder) {
                 planner.addRule(CoreRules.MULTI_JOIN_OPTIMIZE);
@@ -455,8 +455,8 @@ public class DrdsSqlCompiler {
             logPlan = planner.changeTraits(logPlan, cluster.traitSetOf(MycatConvention.INSTANCE));
             planner.setRoot(logPlan);
             RelNode bestExp = planner.findBestExp();
-
-            return (MycatRel) bestExp;
+            RelNode accept = bestExp.accept(new MatierialRewriter());
+            return (MycatRel) accept;
         }
     }
 
@@ -513,6 +513,7 @@ public class DrdsSqlCompiler {
         HepProgramBuilder builder = new HepProgramBuilder();
         builder.addMatchLimit(512);
         builder.addRuleCollection(FILTER);
+        builder.addRuleInstance(CoreRules.AGGREGATE_REDUCE_FUNCTIONS);
         HepPlanner planner = new HepPlanner(builder.build());
         planner.setRoot(logPlan);
         return planner.findBestExp();

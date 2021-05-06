@@ -73,6 +73,12 @@ public class SQLRBORewriter extends RelShuttleImpl {
     }
 
     public static Optional<RelNode> on(RelNode bottom, RelNode up) {
+        if (bottom instanceof MycatView){
+            MycatView view = (MycatView)bottom;
+            if (view.isMergeAgg()||view.isMergeSort()){
+                return Optional.empty();
+            }
+        }
         if (up instanceof Calc){
             return view(bottom,(Calc)up);
         }
@@ -86,9 +92,6 @@ public class SQLRBORewriter extends RelShuttleImpl {
             return view(bottom,(Aggregate)up);
         }
         if (up instanceof Sort){
-            if (up instanceof MycatMergeSort){
-                return Optional.of(up);
-            }
             return view(bottom,(Sort)up);
         }
         return Optional.empty();
@@ -159,10 +162,20 @@ public class SQLRBORewriter extends RelShuttleImpl {
         final Pair<ImmutableList<RexNode>, ImmutableList<RexNode>> projectFilter =
                 calc.getProgram().split();
         RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(calc.getCluster(), null);
-        return view(input, (Filter) relBuilder.push(input).filter(projectFilter.right).build())
-                .flatMap(u -> {
-                    return view(u, (Project) relBuilder.push(u).project(projectFilter.left).build());
-                });
+        RelNode relNode = relBuilder.push(input).filter(projectFilter.right).build();
+        if (relNode instanceof Filter) {
+            return view(input, (Filter)relNode)
+                    .flatMap(u -> {
+                        RelNode node = relBuilder.push(u).project(projectFilter.left).build();
+                        if (node instanceof Project) {
+                            return view(u, (Project)node);
+                        }else {
+                            return Optional.empty();
+                        }
+                    });
+        }else {
+            return Optional.empty();
+        }
     }
 
     @Override
@@ -456,10 +469,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                         , null
                         , null);
                 input = view.changeTo(input, dataNodeInfo);
-                return MycatMergeSort.create(
-                        input.getTraitSet().replace(MycatConvention.INSTANCE),
-                        input,
-                        sort.collation, null, null);
+                return input;
             }
             RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
             RexNode rexNode;
@@ -480,10 +490,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                     , rexBuilder.makeExactLiteral(BigDecimal.ZERO)
                     , rexNode);
             input = view.changeTo(input, dataNodeInfo);
-            return MycatMergeSort.create(
-                    input.getTraitSet().replace(MycatConvention.INSTANCE),
-                    input,
-                    sort.collation, sort.offset, sort.fetch);
+            return input;
         }
     }
 

@@ -41,8 +41,10 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rel.logical.LogicalTableScan;
+import org.apache.calcite.rel.logical.ToLogicalConverter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.NewMycatDataContext;
@@ -81,7 +83,11 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         this.distribution = Objects.requireNonNull(dataNode);
         this.condition = conditions;
         this.rowType = input.getRowType();
-        this.relNode = input;
+        if (input instanceof MycatRel) {
+            this.relNode = input.accept(new ToLogicalConverter(MycatCalciteSupport.relBuilderFactory.create(input.getCluster(), null)));
+        }else {
+            this.relNode =input;
+        }
         this.traitSet = relTrait;
     }
 
@@ -95,6 +101,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     public MycatView changeTo(RelNode input, Distribution dataNodeInfo) {
         return new MycatView(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo, this.condition);
     }
+
     public MycatView changeTo(RelNode input) {
         return new MycatView(input.getTraitSet().replace(MycatConvention.INSTANCE), input, distribution, this.condition);
     }
@@ -174,15 +181,15 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             String targetName = dataNode.getTargetName();
             Map<String, DataNode> nodeMap = dataNodes.findFirst().get();
             SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
-            SqlNode sqlSelectStatement = MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate,params, nodeMap);
-            return new MycatViewSqlString(ImmutableMultimap.of(targetName,sqlSelectStatement.toSqlString(dialect) ));
+            SqlNode sqlSelectStatement = MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params, nodeMap);
+            return new MycatViewSqlString(ImmutableMultimap.of(targetName, sqlSelectStatement.toSqlString(dialect)));
         }
         if (mergeUnionSize == 0 || mycatViewDataNodeMapping.containsOrder()) {
             ImmutableMultimap.Builder<String, SqlString> builder = ImmutableMultimap.builder();
             dataNodes.forEach(m -> {
                 String targetName = m.values().iterator().next().getTargetName();
                 SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
-                SqlString sqlString = MycatCalciteSupport.toSqlString(MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate,params, m),(dialect));
+                SqlString sqlString = MycatCalciteSupport.toSqlString(MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params, m), (dialect));
                 builder.put(targetName, sqlString);
             });
             return new MycatViewSqlString(builder.build());
@@ -199,9 +206,9 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                 SqlString string = null;
                 List<Integer> list = new ArrayList<>();
                 for (Map<String, DataNode> each : eachList) {
-                    string = MycatCalciteSupport.toSqlString(MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params, each),dialect);
-                    if( string.getDynamicParameters()!=null){
-                        list.addAll( string.getDynamicParameters());
+                    string = MycatCalciteSupport.toSqlString(MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params, each), dialect);
+                    if (string.getDynamicParameters() != null) {
+                        list.addAll(string.getDynamicParameters());
                     }
                     builderList.add(string);
                 }
@@ -209,7 +216,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                 resMapBuilder.put(targetName,
                         new SqlString(dialect,
                                 relNodes.stream().map(i -> i.getSql()).collect(Collectors.joining(" union all ")),
-                                ImmutableList.copyOf(list) ));
+                                ImmutableList.copyOf(list)));
             }
         }
         return new MycatViewSqlString(resMapBuilder.build());
@@ -233,7 +240,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         RelWriter writer = super.explainTerms(pw);
         writer.item("relNode", relNode);
         writer.item("distribution", distribution.toNameList());
-        if (condition!=null) {
+        if (condition != null) {
             writer.item("conditions", condition);
         }
         return writer;
@@ -256,7 +263,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         RelOptCost relOptCost = relNode.computeSelfCost(planner, mq);
-        return planner.getCostFactory().makeCost(relOptCost.getRows(),0,0);
+        return planner.getCostFactory().makeCost(relOptCost.getRows(), 0, 0);
     }
 
 
@@ -407,7 +414,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                         getRowType(),
                         JavaRowFormat.ARRAY);
         ParameterExpression root = implementor.getRootExpression();
-        Expression mycatViewStash = Expressions.constant(this.getDigest());
+        Expression mycatViewStash = Expressions.constant(mycatMergeSort.getDigest());
 
         final PhysType inputPhysType = physType;
         final Pair<Expression, Expression> pair =
@@ -430,5 +437,22 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
 
         return implementor.result(physType, builder.toBlock());
+    }
+
+    public boolean isMergeSort() {
+        MycatView view = this;
+        if (view.getDistribution().type() == Distribution.Type.Sharding) {
+            return (view.getRelNode() instanceof LogicalSort);
+        } else {
+            return false;
+        }
+    }
+    public boolean isMergeAgg() {
+        MycatView view = this;
+        if (view.getDistribution().type() == Distribution.Type.Sharding) {
+            return (view.getRelNode() instanceof LogicalAggregate);
+        } else {
+            return false;
+        }
     }
 }

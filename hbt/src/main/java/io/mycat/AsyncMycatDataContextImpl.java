@@ -11,10 +11,7 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.RxBuiltInMethodImpl;
 
-import java.util.Comparator;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
@@ -48,7 +45,7 @@ public class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
 
     @Override
     public Observable<Object[]> getObservable(String relNode, Function1 function1, Comparator comparator, int offset, int fetch) {
-            return MycatMergeSort.streamOrderBy(viewMap.get(relNode), function1, comparator, offset, fetch);
+            return MycatMergeSort.streamOrderBy(Objects.requireNonNull(viewMap.get(relNode)), function1, comparator, offset, fetch);
     }
 
 }
