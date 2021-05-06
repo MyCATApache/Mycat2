@@ -60,8 +60,8 @@ public class MycatMergeSort extends AbstractRelNode implements MycatRel {
 //    private static final Method STREAM_ORDER_BY = Types.lookupMethod(MycatMergeSort.class,
 //            "streamOrderBy", List.class,
 //            Function1.class, Comparator.class, int.class, int.class);
-   public RelCollation collation;
-    public  RexNode offset;
+    public RelCollation collation;
+    public RexNode offset;
     public RexNode fetch;
     public RelNode child;
 
@@ -110,9 +110,9 @@ public class MycatMergeSort extends AbstractRelNode implements MycatRel {
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         RelCollation trait = traitSet.getTrait(RelCollationTraitDef.INSTANCE);
-        if (trait.equals(collation)){
-            return MycatMergeSort.create(traitSet,inputs.get(0),collation,offset,fetch);
-        }else {
+        if (trait.equals(collation)) {
+            return MycatMergeSort.create(traitSet, inputs.get(0), collation, offset, fetch);
+        } else {
             throw new UnsupportedOperationException();
         }
     }
@@ -129,69 +129,6 @@ public class MycatMergeSort extends AbstractRelNode implements MycatRel {
 //            Types.lookupMethod(NewMycatDataContext.class,
 //                    "getObservables", org.apache.calcite.rel.RelNode.class);
 
-    @Override
-    public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
-        MycatView input = (MycatView) child;
-        return input.implementMergeSort(implementor, pref, this);
-    }
-
-    public static Expression getExpression(RexNode rexNode) {
-        if (rexNode instanceof RexDynamicParam) {
-            final RexDynamicParam param = (RexDynamicParam) rexNode;
-            return Expressions.convert_(
-                    Expressions.call(DataContext.ROOT,
-                            BuiltInMethod.DATA_CONTEXT_GET.method,
-                            Expressions.constant("?" + param.getIndex())),
-                    Integer.class);
-        } else {
-            return Expressions.constant(RexLiteral.intValue(rexNode));
-        }
-    }
-
-    public static <TSource, TKey> Observable<TSource> streamOrderBy(
-            List<Observable<TSource>> sources,
-            Function1<TSource, TKey> keySelector,
-            Comparator<TKey> comparator,
-            int offset, int fetch) {
-
-        return RxBuiltInMethodImpl.mergeSort(sources, (o1, o2) -> {
-            TKey left = keySelector.apply(o1);
-            TKey right = keySelector.apply(o2);
-            return comparator.compare(left, right);
-        }, offset, fetch);
-    }
-
-    public static <TSource, TKey> Enumerable<TSource> orderBy(
-            List<Enumerable<TSource>> sources,
-            Function1<TSource, TKey> keySelector,
-            Comparator<TKey> comparator,
-            int offset, int fetch) {
-        Enumerable<TSource> tSources = Linq4j.asEnumerable(new Iterable<TSource>() {
-            @NotNull
-            @Override
-            public Iterator<TSource> iterator() {
-                List<Iterator<TSource>> list = new ArrayList<>();
-                for (Enumerable<TSource> source : sources) {
-                    list.add(source.iterator());
-                }
-
-                return Iterators.<TSource>mergeSorted(list, (o1, o2) -> {
-                    TKey left = keySelector.apply(o1);
-                    TKey right = keySelector.apply(o2);
-                    return comparator.compare(left, right);
-                });
-            }
-        });
-        tSources = EnumerableDefaults.skip(tSources, offset);
-        tSources = EnumerableDefaults.take(tSources, fetch);
-        return tSources;
-    }
-
-    @Override
-    public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
-        MycatView input = (MycatView) child;
-        return input.implementMergeSortStream(implementor, pref, this);
-    }
 
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {

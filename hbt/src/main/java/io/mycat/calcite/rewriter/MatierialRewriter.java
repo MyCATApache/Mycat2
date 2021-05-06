@@ -37,21 +37,21 @@ public class MatierialRewriter extends RelShuttleImpl {
     @Override
     public RelNode visit(RelNode other) {
         RelNode relNode = super.visit(other);
-        if (relNode instanceof MycatView) {
-            MycatView view = (MycatView) relNode;
-            if (view.getDistribution().type() == Distribution.Type.Sharding) {
-                if (view.getRelNode() instanceof LogicalSort) {
-                    LogicalSort viewRelNode = (LogicalSort) view.getRelNode();
-                    RexNode rexNode = (RexNode) viewRelNode.fetch;
-                    if (rexNode != null && rexNode.getKind() == SqlKind.PLUS) {
-                        RexCall plus = (RexCall) rexNode;
-                        return MycatMergeSort.create(viewRelNode.getTraitSet(), relNode, viewRelNode.getCollation(), plus.getOperands().get(0), plus.getOperands().get(1));
-                    } else {
-                        return MycatMergeSort.create(viewRelNode.getTraitSet(), relNode, viewRelNode.getCollation(), viewRelNode.offset, viewRelNode.fetch);
-                    }
-                }
-            }
-        }
+//        if (relNode instanceof MycatView) {
+//            MycatView view = (MycatView) relNode;
+//            if (view.getDistribution().type() == Distribution.Type.Sharding) {
+//                if (view.getRelNode() instanceof LogicalSort) {
+//                    LogicalSort viewRelNode = (LogicalSort) view.getRelNode();
+//                    RexNode rexNode = (RexNode) viewRelNode.fetch;
+//                    if (rexNode != null && rexNode.getKind() == SqlKind.PLUS) {
+//                        RexCall plus = (RexCall) rexNode;
+//                        return MycatMergeSort.create(viewRelNode.getTraitSet(), relNode, viewRelNode.getCollation(), plus.getOperands().get(0), plus.getOperands().get(1));
+//                    } else {
+//                        return MycatMergeSort.create(viewRelNode.getTraitSet(), relNode, viewRelNode.getCollation(), viewRelNode.offset, viewRelNode.fetch);
+//                    }
+//                }
+//            }
+//        }
         return matierial(relNode);
     }
 

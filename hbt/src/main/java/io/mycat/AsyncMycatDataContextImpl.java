@@ -45,7 +45,7 @@ public class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
 
     @Override
     public Observable<Object[]> getObservable(String relNode, Function1 function1, Comparator comparator, int offset, int fetch) {
-            return MycatMergeSort.streamOrderBy(Objects.requireNonNull(viewMap.get(relNode)), function1, comparator, offset, fetch);
+            return MycatView.streamOrderBy(Objects.requireNonNull(viewMap.get(relNode)), function1, comparator, offset, fetch);
     }
 
 }
