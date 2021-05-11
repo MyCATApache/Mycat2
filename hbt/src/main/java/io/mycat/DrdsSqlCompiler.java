@@ -27,10 +27,10 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
-import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.rewriter.*;
+import io.mycat.calcite.rules.MycatExtraSortRule;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.spm.PlanImpl;
 import io.mycat.calcite.table.*;
@@ -61,7 +61,6 @@ import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.rules.CoreRules;
-import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 import org.apache.calcite.rel.rules.MycatHepJoinClustering;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
@@ -78,10 +77,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Function;
 
 import static io.mycat.DrdsExecutorCompiler.getCodeExecuterContext;
-import static org.apache.calcite.rel.rules.CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES;
 
 public class DrdsSqlCompiler {
     private final static Logger log = LoggerFactory.getLogger(DrdsSqlCompiler.class);
@@ -430,10 +427,11 @@ public class DrdsSqlCompiler {
 //            listBuilder.add(MycatJoinPushThroughJoinRule.LEFT);
 //            listBuilder.add(MycatJoinPushThroughJoinRule.RIGHT);
 //            listBuilder.add(MycatFilterJoinRule.JoinConditionPushRule.Config.DEFAULT.withPredicate((join1, joinType, exp) -> false).toRule());
-
+            listBuilder.addAll(  MycatExtraSortRule.RULES);
             listBuilder.build().forEach(c -> planner.addRule(c));
 
             MycatConvention.INSTANCE.register(planner);
+
             //joinReorder
             if (needJoinReorder) {
                 planner.addRule(CoreRules.MULTI_JOIN_OPTIMIZE);
@@ -485,7 +483,7 @@ public class DrdsSqlCompiler {
             CoreRules.FILTER_SET_OP_TRANSPOSE,
             CoreRules.FILTER_PROJECT_TRANSPOSE,
             CoreRules.FILTER_REDUCE_EXPRESSIONS,
-            CoreRules.JOIN_REDUCE_EXPRESSIONS,
+//            CoreRules.JOIN_REDUCE_EXPRESSIONS,
             CoreRules.PROJECT_REDUCE_EXPRESSIONS,
             CoreRules.FILTER_MERGE,
             CoreRules.JOIN_PUSH_EXPRESSIONS,
@@ -496,7 +494,7 @@ public class DrdsSqlCompiler {
     private RelNode optimizeWithRBO(RelNode logPlan) {
         Program subQueryProgram = getSubQueryProgram();
         RelNode unSubQuery = subQueryProgram.run(null, logPlan, null, Collections.emptyList(), Collections.emptyList());
-        RelNode unAvg = resolveAggAvg(unSubQuery);
+        RelNode unAvg = resolveAggExpr(unSubQuery);
         unAvg = unAvg.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(TableScan scan) {
@@ -511,12 +509,7 @@ public class DrdsSqlCompiler {
             builder.addGroupEnd();
 
             builder.addGroupBegin();
-            builder.addRuleInstance(CoreRules.PROJECT_MULTI_JOIN_MERGE);
-            builder.addRuleInstance(CoreRules.FILTER_MULTI_JOIN_MERGE);
-            builder.addGroupEnd();
-
-            builder.addGroupBegin();
-            builder.addRuleInstance(CoreRules.MULTI_JOIN_OPTIMIZE_BUSHY);
+            builder.addRuleInstance(CoreRules.MULTI_JOIN_OPTIMIZE);
             builder.addGroupEnd();
 
             HepPlanner planner = new HepPlanner(builder.build());
@@ -547,9 +540,10 @@ public class DrdsSqlCompiler {
         }
     }
 
-    private RelNode resolveAggAvg(RelNode logPlan) {
+    private RelNode resolveAggExpr(RelNode logPlan) {
         final HepProgram hepProgram = new HepProgramBuilder()
                 .addRuleInstance(CoreRules.AGGREGATE_REDUCE_FUNCTIONS)
+                .addRuleInstance(CoreRules.PROJECT_TO_LOGICAL_PROJECT_AND_WINDOW)
                 .build();
         final HepPlanner planner = new HepPlanner(hepProgram);
         planner.setRoot(logPlan);

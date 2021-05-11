@@ -195,17 +195,18 @@ public class MycatRules {
                 MycatWinodwRule.INSTANCE,
 //                , MycatBatchNestedLoopJoinRule.INSTANCE
 
-                CoreRules.FILTER_TO_CALC,
-                CoreRules.PROJECT_TO_CALC,
+//                CoreRules.FILTER_TO_CALC,
+//                CoreRules.PROJECT_TO_CALC,
                 CoreRules.CALC_REMOVE,
-                CoreRules.CALC_MERGE,
+//                CoreRules.CALC_MERGE,
                 CoreRules.CALC_TO_WINDOW,
-                MycatMergeJoinRule.INSTANCE,
-                MycatBottomTableScanViewRule.Config.DEFAULT.toRule()
+                MycatMergeJoinRule.INSTANCE
+//                MycatBottomTableScanViewRule.Config.DEFAULT.toRule()
         )
-                .addAll(MycatExtraSortRule.RULES)
-                .addAll(MycatSingleViewRule.RULES)
-                .addAll(MycatBiRelViewRule.RULES).build();
+//                .addAll(MycatExtraSortRule.RULES)
+//                .addAll(MycatSingleViewRule.RULES)
+//                .addAll(MycatBiRelViewRule.RULES)
+                .build();
     }
 
     /**
