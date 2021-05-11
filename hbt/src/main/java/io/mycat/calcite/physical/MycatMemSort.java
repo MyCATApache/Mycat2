@@ -14,6 +14,7 @@
  */
 package io.mycat.calcite.physical;
 
+import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.*;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
@@ -56,7 +57,7 @@ public class MycatMemSort
             RelCollation collation,
             RexNode offset,
             RexNode fetch) {
-        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), input, collation, offset, fetch);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE).replace(RelCollationTraitDef.INSTANCE, ImmutableList.of(collation)), input, collation, offset, fetch);
         assert getConvention() instanceof MycatConvention;
         assert getConvention() == input.getConvention();
     }
@@ -86,7 +87,8 @@ public class MycatMemSort
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner,
                                       RelMetadataQuery mq) {
-        return super.computeSelfCost(planner, mq).multiplyBy(0.9);
+        RelOptCost relOptCost = super.computeSelfCost(planner, mq);
+        return relOptCost;
     }
 
 

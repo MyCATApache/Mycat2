@@ -19,11 +19,14 @@ package io.mycat.calcite;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.physical.*;
+import io.mycat.calcite.rewriter.rules.MycatBiRelViewRule;
+import io.mycat.calcite.rewriter.rules.MycatBottomTableScanViewRule;
+import io.mycat.calcite.rewriter.rules.MycatSingleViewRule;
 import io.mycat.calcite.rules.*;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
-import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.rules.*;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlAggFunction;
@@ -32,6 +35,7 @@ import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.trace.CalciteTrace;
+import org.eclipse.collections.api.bag.primitive.ImmutableLongBag;
 import org.slf4j.Logger;
 
 import java.util.List;
@@ -164,7 +168,13 @@ public class MycatRules {
                             SNAPSHOT_FACTORY));
 
     public static List<RelOptRule> rules() {
-        return ImmutableList.of(
+        ImmutableList.Builder<RelOptRule> builder = ImmutableList.builder();
+        return builder.add(
+//                AggregateReduceFunctionsRule.Config.DEFAULT.toRule(),
+                CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
+                FilterJoinRule.FilterIntoJoinRule.Config.DEFAULT.toRule(),
+                JoinExtractFilterRule.Config.DEFAULT.toRule(),
+                SortJoinTransposeRule.Config.DEFAULT.toRule(),
                 MycatJoinRule.INSTANCE,
                 MycatCalcRule.INSTANCE,
                 MycatProjectRule.INSTANCE,
@@ -190,9 +200,12 @@ public class MycatRules {
                 CoreRules.CALC_REMOVE,
                 CoreRules.CALC_MERGE,
                 CoreRules.CALC_TO_WINDOW,
-                MycatExtraSortRule.Config.BOTTOM_RELNODE.toRule(),
-                MycatExtraSortRule.Config.BOTTOM_VIEW.toRule()
-        );
+                MycatMergeJoinRule.INSTANCE,
+                MycatBottomTableScanViewRule.Config.DEFAULT.toRule()
+        )
+                .addAll(MycatExtraSortRule.RULES)
+                .addAll(MycatSingleViewRule.RULES)
+                .addAll(MycatBiRelViewRule.RULES).build();
     }
 
     /**

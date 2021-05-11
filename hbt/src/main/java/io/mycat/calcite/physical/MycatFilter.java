@@ -88,7 +88,7 @@ public class MycatFilter extends Filter implements MycatRel {
                 new RexProgramBuilder(inputRowType, rexBuilder);
         programBuilder.addIdentity();
         programBuilder.addCondition(filter.getCondition());
-        final RexProgram program = programBuilder.getProgram();
+        final RexProgram program = programBuilder.getProgram(false);
 
         final MycatCalc calc =  MycatCalc.create(getTraitSet(), input, program);
         return calc;

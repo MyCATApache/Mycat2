@@ -292,7 +292,7 @@ public class Distribution {
                     .append(normalTables
                             .stream()
                             .map(i ->
-                                    i.getSchemaName() + "." + i.getTableName()).collect(Collectors.joining(","))
+                                    i.getSchemaName() + "." + i.getTableName()).sorted().collect(Collectors.joining(","))
 
                     );
             each.add(builder.toString());
@@ -303,7 +303,7 @@ public class Distribution {
             builder.append("shardingTables=")
                     .append(shardingTables
                             .stream()
-                            .map(i -> i.getSchemaName() + "." + i.getTableName()).collect(Collectors.joining(","))
+                            .map(i -> i.getSchemaName() + "." + i.getTableName()).sorted().collect(Collectors.joining(","))
                     );
             each.add(builder.toString());
         }
@@ -313,7 +313,7 @@ public class Distribution {
                     .append(globalTables
                             .stream()
                             .map(i ->
-                                    i.getSchemaName() + "." + i.getTableName()).collect(Collectors.joining(","))
+                                    i.getSchemaName() + "." + i.getTableName()).sorted().collect(Collectors.joining(","))
                     );
             each.add(builder.toString());
         }

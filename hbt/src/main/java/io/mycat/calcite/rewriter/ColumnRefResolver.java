@@ -273,4 +273,9 @@ public class ColumnRefResolver extends RelShuttleImpl {
     public int hashCode() {
         return Objects.hash(tableScan, map, pairs);
     }
+
+    @Override
+    public RelNode visit(RelNode other) {
+        return super.visit(other);
+    }
 }

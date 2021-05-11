@@ -79,7 +79,7 @@ public class StatisticCenter {
         if (statisticObject != null) {
             return statisticObject.getRowCount();
         }
-        return null;
+        return Double.valueOf(5000000);
     }
 
     public Double getPhysicsTableRow(String targetName, String schemaName, String tableName) {

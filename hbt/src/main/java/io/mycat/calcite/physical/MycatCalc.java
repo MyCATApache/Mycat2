@@ -282,7 +282,7 @@ public class MycatCalc extends Calc implements MycatRel {
 
     @Override
     public boolean isSupportStream() {
-        return this.getCorrelVariable() == null;
+        return this.getCorrelVariable()==null;
     }
 
     @Override
@@ -312,18 +312,18 @@ public class MycatCalc extends Calc implements MycatRel {
             final RelOptPredicateList predicates = mq.getPulledUpPredicates(child);
             final RexSimplify simplify =
                     new RexSimplify(rexBuilder, predicates, RexUtil.EXECUTOR);
-            final RexProgram program = this.program.normalize(rexBuilder, simplify);
+            final RexProgram program = this.program;
             Expression condition = null;
+            final BlockBuilder conditionBuilder = new BlockBuilder();
             Expression project = null;
-            ParameterExpression rowParameter = Expressions.parameter(inputJavaType, "row");
+            final BlockBuilder projectBuilder = new BlockBuilder();
 
             ParameterExpression input = Expressions.parameter(inputJavaType, "row");
-            final BlockBuilder builder2 = new BlockBuilder();
             if (program.getCondition() != null) {
                 condition = RexToLixTranslator.translateCondition(
                         program,
                         typeFactory,
-                        builder2,
+                        conditionBuilder,
                         new RexToLixTranslator.InputGetterImpl(
                                 Collections.singletonList(
                                         Pair.of(input, result.physType))),
@@ -338,7 +338,7 @@ public class MycatCalc extends Calc implements MycatRel {
                                 program,
                                 typeFactory,
                                 conformance,
-                                builder,
+                                projectBuilder,
                                 physType,
                                 DataContext.ROOT,
                                 new RexToLixTranslator.InputGetterImpl(
@@ -349,18 +349,19 @@ public class MycatCalc extends Calc implements MycatRel {
             }
 
             if (condition != null) {
-                FunctionExpression<Function<?>> lambda = Expressions.lambda(condition, input);
+                conditionBuilder.add(condition);
+                FunctionExpression<Function<?>> lambda = Expressions.lambda(conditionBuilder.toBlock(), input);
                 inputObservalbe = Expressions.call(RxBuiltInMethod.OBSERVABLE_FILTER.method,
                         inputObservalbe,
                         lambda
                 );
             }
-            FunctionExpression<Function<?>> lambda = Expressions.lambda(project, input);
+            projectBuilder.add(project);
+            FunctionExpression<Function<?>> lambda = Expressions.lambda(projectBuilder.toBlock(), input);
             builder.add(Expressions.call(RxBuiltInMethod.OBSERVABLE_SELECT.method,
                     inputObservalbe,
                     lambda
             ));
-            Expressions.lambda(EnumUtils.convert(rowParameter, inputJavaType), rowParameter);
 
             return implementor.result(physType, builder.toBlock());
         }

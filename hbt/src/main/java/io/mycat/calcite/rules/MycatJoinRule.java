@@ -52,7 +52,9 @@ public class MycatJoinRule extends MycatConverterRule {
      */
     public MycatJoinRule(MycatConvention out,
                          RelBuilderFactory relBuilderFactory) {
-        super(Join.class, (Predicate<RelNode>) r -> true, MycatRules.IN_CONVENTION,
+        super(Join.class, (Predicate<RelNode>) r -> {
+                    return true;
+                }, MycatRules.IN_CONVENTION,
                 out, relBuilderFactory, "MycatJoinRule");
     }
 
