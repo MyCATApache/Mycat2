@@ -1,6 +1,7 @@
 package io.mycat.vertxmycat;
 
 import io.mycat.Process;
+import io.mycat.ProcessImpl;
 import io.vertx.core.Future;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.spi.VertxMetricsFactory;
@@ -47,7 +48,7 @@ public class MycatVertxMetricsFactory implements VertxMetricsFactory {
             Process process = Process.getCurrentProcess();
             if (process == null) {
                 // 父子线程传递
-                process = Process.createProcess();
+                process = new ProcessImpl();
             }
             return process;
         }

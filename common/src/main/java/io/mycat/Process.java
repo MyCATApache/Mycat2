@@ -3,45 +3,43 @@ package io.mycat;
 import io.vertx.sqlclient.SqlConnection;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 资源集合, 用于实现 show processlist, 和 kill 命令
  *
  * @author wangzihaogithub 2021年5月1日23:00:08
  */
-@Slf4j
-@Setter
-@Getter
-public class Process {
-    private static final Map<Thread, Process> PROCESS_MAP = new ConcurrentHashMap<>();
-    private static final AtomicInteger ID_INCR = new AtomicInteger();
-    /**
-     * 哪个后端在用哪个连接 (kill命令会 关闭进行中的链接)
-     */
-    private final Deque<SqlConnection> connections = new ConcurrentLinkedDeque<>();
-    private final Map<Thread, Integer> connectionReferenceCountMap = new HashMap<>();
-    private final Timestamp createTimestamp = new Timestamp(System.currentTimeMillis());
-    private final Set<Thread> holdThreads = Collections.newSetFromMap(new ConcurrentHashMap<>());
-    /**
-     * 引用计数法 (引用数量为0时候, 会触发{@link #exit()})
-     */
-    private final AtomicInteger referenceCount = new AtomicInteger();
-    private String query;
-    private Command command;
-    private State state;
-    private MycatDataContext context;
+public interface Process {
+    Map<Thread, Process> PROCESS_MAP = new ConcurrentHashMap<>();
+    Process EMPTY = new Process() {
+        @Override
+        public void setContext(MycatDataContext context) {
+
+        }
+
+        @Override
+        public void setCommand(int command) {
+
+        }
+
+        @Override
+        public void setQuery(String query) {
+
+        }
+
+        @Override
+        public void setState(State state) {
+
+        }
+    };
 
     public static Process getCurrentProcess() {
         Process process = PROCESS_MAP.get(Thread.currentThread());
-        return process;
+        return process == null ? EMPTY : process;
     }
 
     public static void setCurrentProcess(Process process) {
@@ -69,112 +67,57 @@ public class Process {
         return null;
     }
 
-    public static Process createProcess() {
-        Process process = new Process();
-        process.getHoldThreads().add(Thread.currentThread());
-        return process;
+    default void retain() {
     }
 
-    public void retain() {
-        referenceCount.incrementAndGet();
-        holdThreads.add(Thread.currentThread());
-        setCurrentProcess(this);
+    default void release() {
     }
 
-    public void release() {
-        int ref = referenceCount.decrementAndGet();
-        holdThreads.remove(Thread.currentThread());
-        setCurrentProcess(null);
-        if (ref == 0) {
-            exit();
-        }
+    default long getId() {
+        return -1;
     }
 
-    public void init(MycatDataContext context) {
-
+    default String getUser() {
+        return null;
     }
 
-    public long getId() {
-        return context == null ? -1 : context.getSessionId();
+    default State getState() {
+        return null;
     }
 
-    public String getUser() {
-        return context.getUser().getUserName();
+    void setState(State state);
+
+    default String getHost() {
+        return null;
     }
 
-    public String getHost() {
-        return context.getUser().getHost();
+    default String getInfo() {
+        return null;
     }
 
-    public String getInfo() {
-        return query;
+    default Timestamp getCreateTimestamp() {
+        return null;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        return this == obj;
+    default Command getCommand() {
+        return null;
     }
 
-    @Override
-    public int hashCode() {
-        return super.hashCode();
+    void setCommand(int command);
+
+    void setContext(MycatDataContext context);
+
+    void setQuery(String query);
+
+    default void kill() {
     }
 
-    public void setContext(MycatDataContext context) {
-        init(context);
-        this.context = context;
+    default String getDb() {
+        return null;
     }
 
-    public void setCommand(int command) {
-        this.command = Command.codeOf(command);
-    }
-
-    public void kill() {
-        closeConnection();
-        Thread currentThread = Thread.currentThread();
-        for (Thread holdThread : holdThreads) {
-            if (holdThread == currentThread) {
-                continue;
-            }
-            holdThread.interrupt();
-        }
-        exit();
-        context.close();
-    }
-
-    public String getDb() {
-        return context.getDefaultSchema();
-    }
-
-    private void exit() {
-        for (Thread holdThread : holdThreads) {
-            PROCESS_MAP.remove(holdThread);
-        }
-        holdThreads.clear();
-        setCurrentProcess(null);
-    }
-
-    private void closeConnection() {
-        Set<SqlConnection> snapshot = new LinkedHashSet<>(connections);
-        for (SqlConnection sqlConnection : snapshot) {
-            sqlConnection.close();
-        }
-        connectionReferenceCountMap.clear();
-    }
-
-    public <T extends SqlConnection> T trace(T connection) {
-        Thread thread = Thread.currentThread();
-        synchronized (connectionReferenceCountMap) {
-            Integer count = connectionReferenceCountMap.get(thread);
-            connectionReferenceCountMap.put(thread, count == null ? 1 : count + 1);
-            connections.addFirst(connection);
-        }
+    default <T extends SqlConnection> T trace(T connection) {
         return connection;
-    }
-
-    @Override
-    public String toString() {
-        return "[" + getId() + "] " + query;
     }
 
     /**
@@ -182,7 +125,7 @@ public class Process {
      */
     @Getter
     @AllArgsConstructor
-    public enum Command {
+    enum Command {
         /**
          * mysql_sleep
          */
@@ -340,7 +283,7 @@ public class Process {
 
         private final int code;
 
-        public static Command codeOf(int code) {
+        static Command codeOf(int code) {
             for (Command value : values()) {
                 if (value.code == code) {
                     return value;
@@ -353,7 +296,7 @@ public class Process {
     /**
      * show processlist 的State字段
      */
-    public enum State {
+    enum State {
         /**/
         INIT
     }
