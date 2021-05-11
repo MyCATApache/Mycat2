@@ -89,6 +89,8 @@ public interface Response {
 
     Future<Void> sendOk();
 
+    Future<Void> sendOk(long affectedRow);
+
     Future<Void> sendOk(long affectedRow, long lastInsertId);
 
     <T> T unWrapper(Class<T> clazz);

@@ -14,47 +14,23 @@
  */
 package io.mycat.vertx;
 
-import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.ast.SQLDataType;
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
-import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
-import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.*;
 import io.mycat.beans.mycat.MycatErrorCode;
-import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLCommandType;
-import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.commands.DefaultCommandHandler;
-import io.mycat.commands.MycatdbCommand;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.util.VertxUtil;
-import io.mycat.util.packet.AbstractWritePacket;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.functions.Action;
-import io.reactivex.rxjava3.functions.Consumer;
-import io.vertx.core.AsyncResult;
+import io.mycat.Process;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.buffer.impl.BufferImpl;
-import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.core.net.NetSocket;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.sql.JDBCType;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -121,9 +97,13 @@ public class VertxMySQLHandler extends DefaultCommandHandler {
     public void handle0(int packetId, Buffer event, NetSocket socket) {
         session.setPacketId(packetId);
         ReadView readView = new ReadView(event);
+        Process process = Process.getCurrentProcess();
         Future<?> promise;
         try {
-            switch (readView.readByte()) {
+            byte command = readView.readByte();
+            process.setCommand(command);
+            process.setContext(mycatDataContext);
+            switch (command) {
                 case MySQLCommandType.COM_SLEEP: {
                     promise = handleSleep(this.session);
                     break;
@@ -133,7 +113,10 @@ public class VertxMySQLHandler extends DefaultCommandHandler {
                     break;
                 }
                 case MySQLCommandType.COM_QUERY: {
-                    promise = handleQuery(readView.readEOFStringBytes(), this.session);
+                    byte[] queryBytes = readView.readEOFStringBytes();
+                    process.setQuery(new String(queryBytes, StandardCharsets.UTF_8));
+                    process.setState(Process.State.INIT);
+                    promise = handleQuery(queryBytes, this.session);
                     break;
                 }
                 case MySQLCommandType.COM_INIT_DB: {

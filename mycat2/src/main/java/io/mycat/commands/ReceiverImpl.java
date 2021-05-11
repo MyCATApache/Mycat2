@@ -184,6 +184,12 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
+    public Future<Void> sendOk(long affectedRow) {
+        dataContext.setAffectedRows(affectedRow);
+        return sendOk();
+    }
+
+    @Override
     public Future<Void> sendOk(long affectedRow, long lastInsertId) {
         dataContext.setLastInsertId(lastInsertId);
         dataContext.setAffectedRows(affectedRow);
