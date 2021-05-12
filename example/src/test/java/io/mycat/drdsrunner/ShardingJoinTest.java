@@ -75,7 +75,7 @@ public class ShardingJoinTest extends DrdsTest {
         Assert.assertEquals(
                 "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=addressname}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}]",
                 explain.getColumnInfo());
-        Assert.assertEquals("MycatProject(id=[$0], addressname=[$1], id0=[$2], user_id=[$3], traveldate=[$4], fee=[$5], days=[$6], blob=[$7])   MycatHashJoin(condition=[=($0, $2)], joinType=[inner])     MycatView(distribution=[[db1.normal]])     MycatView(distribution=[[db1.sharding]]) ", explain.dumpPlan());
+        Assert.assertTrue(explain.dumpPlan().contains("MycatView(distribution=[[db1.sharding]])"));
 //        Assert.assertEquals(
 //                "[SpecificSql(relNode=MycatView(distribution=[normalTables=db1.normal]) , parameterizedSql=SELECT *  FROM db1.normal, sqls=[Each(targetName=prototype, sql=SELECT * FROM db1.normal)]), SpecificSql(relNode=MycatView(distribution=[shardingTables=db1.sharding]) , parameterizedSql=SELECT *  FROM db1.sharding, sqls=[Each(targetName=c0, sql=(SELECT *     FROM db1_0.sharding_0     UNION ALL     SELECT *     FROM db1_0.sharding_1)), Each(targetName=c1, sql=(SELECT *     FROM db1_1.sharding_0     UNION ALL     SELECT *     FROM db1_1.sharding_1))])]",
 //                explain.specificSql().toString());
