@@ -2,6 +2,7 @@ package io.mycat.util;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.future.FutureInternal;
 import io.vertx.core.impl.future.PromiseImpl;
 import io.vertx.core.impl.future.PromiseInternal;
@@ -26,8 +27,12 @@ public class VertxUtil {
      * @return 未完成的延迟结果
      */
     public static <T>PromiseInternal<T> newPromise(){
-        PromiseImpl<T> promise = new PromiseImpl<>();
+        PromiseImpl<T> promise = new PromiseImpl<>(context());
         return promise;
+    }
+
+    public static ContextInternal context(){
+        return ContextInternal.current();
     }
 
     /**
@@ -36,7 +41,7 @@ public class VertxUtil {
      * @return 已完成的结果
      */
     public static PromiseInternal<Void> newFailPromise(Throwable throwable){
-        PromiseImpl<Void> promise = new PromiseImpl<>();
+        PromiseImpl<Void> promise = new PromiseImpl<>(context());
         promise.tryFail(throwable);
         return promise;
     }
@@ -46,7 +51,7 @@ public class VertxUtil {
      * @return 已完成的结果
      */
     public static PromiseInternal<Void> newSuccessPromise(){
-        PromiseImpl<Void> promise = new PromiseImpl<>();
+        PromiseImpl<Void> promise = new PromiseImpl<>(context());
         promise.tryComplete();
         return promise;
     }
@@ -63,12 +68,12 @@ public class VertxUtil {
             return (PromiseInternal<T>) future;
         }else if(future instanceof FutureInternal){
             // 第二种情况
-            PromiseImpl<T> promise = new PromiseImpl<>();
+            PromiseImpl<T> promise = new PromiseImpl<>(context());
             ((FutureInternal<T>) future).addListener(promise);
             return promise;
         }else {
             // 第三种情况
-            PromiseImpl<T> promise = new PromiseImpl<>();
+            PromiseImpl<T> promise = new PromiseImpl<>(context());
             future.onFailure(promise::onFailure);
             future.onSuccess(promise::onSuccess);
             return promise;

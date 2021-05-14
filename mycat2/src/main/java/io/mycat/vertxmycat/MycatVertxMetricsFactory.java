@@ -46,7 +46,7 @@ public class MycatVertxMetricsFactory implements VertxMetricsFactory {
         @Override
         public Process submitted() {
             Process process = Process.getCurrentProcess();
-            if (process == null) {
+            if (process == Process.EMPTY) {
                 // 父子线程传递
                 process = new ProcessImpl();
             }
