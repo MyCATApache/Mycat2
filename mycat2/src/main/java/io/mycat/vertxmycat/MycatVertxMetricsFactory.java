@@ -26,7 +26,7 @@ public class MycatVertxMetricsFactory implements VertxMetricsFactory {
 
         @Override
         public PoolMetrics<Process> createPoolMetrics(String poolType, String poolName, int maxPoolSize) {
-            return new MycatPoolMetrics(options);
+            return new MycatPoolMetrics(options, poolType, poolName, maxPoolSize);
         }
     }
 
@@ -37,6 +37,9 @@ public class MycatVertxMetricsFactory implements VertxMetricsFactory {
     @AllArgsConstructor
     public static class MycatPoolMetrics implements PoolMetrics<Process> {
         private final VertxOptions options;
+        private final String poolType;
+        private final String poolName;
+        private final int maxPoolSize;
 
         /**
          * 在创建任务的线程里回调
