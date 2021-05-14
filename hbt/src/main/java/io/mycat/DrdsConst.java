@@ -19,4 +19,6 @@ import io.mycat.util.NameMap;
 
 public interface DrdsConst {
     public NameMap< SchemaHandler> schemas();
+
+    public boolean joinClustering();
 }

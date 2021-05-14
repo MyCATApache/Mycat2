@@ -20,12 +20,13 @@ import io.mycat.calcite.MycatRules;
 import io.mycat.calcite.physical.MycatRepeatUnion;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalRepeatUnion;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 public class MycatRepeatUnionRule extends MycatConverterRule {
 
-
+    public static final MycatRepeatUnionRule INSTANCE = new MycatRepeatUnionRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
     /** Called from the Config. */
     public MycatRepeatUnionRule(final MycatConvention out,
                                 RelBuilderFactory relBuilderFactory) {

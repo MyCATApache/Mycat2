@@ -66,7 +66,7 @@ public class DDLHintTest implements MycatTest {
 
     @Test
     public void testCreateTable() throws Exception {
-        try (Connection mycat = getMySQLConnection(DB_MYCAT);) {
+            try (Connection mycat = getMySQLConnection(DB_MYCAT);) {
             execute(mycat, RESET_CONFIG);
             String db = "testSchema";
             execute(mycat, "drop database " + db);

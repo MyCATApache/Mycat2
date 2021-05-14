@@ -31,7 +31,7 @@ public class MycatConvention extends Convention.Impl {
   }
 
   @Override public void register(RelOptPlanner planner) {
-    for (RelOptRule rule : MycatRules.rules(this)) {
+    for (RelOptRule rule : MycatRules.rules()) {
       planner.addRule(rule);
     }
   }

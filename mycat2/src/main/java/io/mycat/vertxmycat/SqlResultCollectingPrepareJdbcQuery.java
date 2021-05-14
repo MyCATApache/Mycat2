@@ -14,7 +14,11 @@
  */
 package io.mycat.vertxmycat;
 
+import io.mycat.IOExecutor;
+import io.mycat.MetaClusterCurrent;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.sqlclient.*;
 
 import java.sql.Connection;
@@ -28,21 +32,21 @@ public class SqlResultCollectingPrepareJdbcQuery<R> implements AbstractMySqlPrep
     private final String sql;
     private final Connection connection;
     private final Collector<Row, ?, R> collector;
-    private ReadWriteThreadPool threadPool;
 
     public SqlResultCollectingPrepareJdbcQuery(String sql,
                                                Connection connection,
-                                               Collector<Row, ?, R> collector, ReadWriteThreadPool threadPool) {
+                                               Collector<Row, ?, R> collector) {
         this.sql = sql;
         this.connection = connection;
         this.collector = collector;
-        this.threadPool = threadPool;
     }
 
     @Override
     public Future<SqlResult<R>> execute(Tuple tuple) {
-        return Future.future(promise -> {
-            threadPool.execute(true, () -> {
+        IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
+        return ioExecutor.executeBlocking(new Handler<Promise<SqlResult<R>>>() {
+            @Override
+            public void handle(Promise<SqlResult<R>> promise) {
                 try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
                     if (tuple.size()>0) {
                         RowSetJdbcPreparedJdbcQuery.setParams(tuple, preparedStatement);
@@ -52,7 +56,7 @@ public class SqlResultCollectingPrepareJdbcQuery<R> implements AbstractMySqlPrep
                 } catch (Throwable throwable) {
                     promise.tryFail(throwable);
                 }
-            });
+            }
         });
     }
 

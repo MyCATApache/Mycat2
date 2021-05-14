@@ -16,25 +16,32 @@ package io.mycat.calcite.physical;
 
 
 import io.mycat.calcite.ExplainWriter;
+import io.mycat.calcite.MycatConvention;
 import io.mycat.calcite.MycatRel;
 import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.*;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.RxBuiltInMethod;
+
+import java.util.Objects;
 
 public class MycatMatierial extends SingleRel implements MycatRel {
 
     private final MycatRel input;
 
-    protected MycatMatierial(RelOptCluster cluster, RelTraitSet traits, MycatRel input) {
-        super(cluster, traits, input);
+    protected MycatMatierial(RelOptCluster cluster, RelTraitSet traitSet, MycatRel input) {
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), input);
         this.input = input;
         this.rowType = input.getRowType();
+    }
+    public MycatMatierial(RelInput relInput) {
+        this(relInput.getCluster(), relInput.getTraitSet(),(MycatRel) relInput.getInput());
     }
     public static final MycatMatierial create( MycatRel input){
         return create(input.getCluster(),input.getTraitSet(),input);
@@ -67,5 +74,11 @@ public class MycatMatierial extends SingleRel implements MycatRel {
         final Expression childExp = toEnumerate(input);
         builder.add(Expressions.call(RxBuiltInMethod.ENUMERABLE_MATIERIAL.method, childExp));
         return implementor.result(result.physType, builder.toBlock());
+    }
+
+    @Override
+    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        RelOptCost relOptCost = super.computeSelfCost(planner, mq);
+        return relOptCost.multiplyBy(2);
     }
 }

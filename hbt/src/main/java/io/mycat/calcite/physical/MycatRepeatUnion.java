@@ -37,6 +37,7 @@ import org.apache.calcite.util.Util;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Implementation of {@link RepeatUnion} in
@@ -50,7 +51,7 @@ public class MycatRepeatUnion extends RepeatUnion implements MycatRel {
      */
     public MycatRepeatUnion(RelOptCluster cluster, RelTraitSet traitSet,
                             RelNode seed, RelNode iterative, boolean all, int iterationLimit) {
-        super(cluster, traitSet, seed, iterative, all, iterationLimit);
+        super(cluster,  Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), seed, iterative, all, iterationLimit);
     }
 
     @Override public MycatRepeatUnion copy(RelTraitSet traitSet, List<RelNode> inputs) {

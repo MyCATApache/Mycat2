@@ -15,15 +15,12 @@
 package io.mycat.config;
 
 import cn.mycat.vertx.xa.MySQLManager;
-import cn.mycat.vertx.xa.SimpleConfig;
 import cn.mycat.vertx.xa.XaLog;
 import cn.mycat.vertx.xa.impl.LocalXaMemoryRepositoryImpl;
 import cn.mycat.vertx.xa.impl.XaLogImpl;
-import com.mysql.cj.conf.ConnectionUrlParser;
-import com.mysql.cj.conf.HostInfo;
 import io.mycat.*;
-import io.mycat.calcite.spm.Plan;
-import io.mycat.calcite.spm.PlanCache;
+import io.mycat.calcite.spm.*;
+import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.commands.MycatMySQLManagerImpl;
 import io.mycat.commands.SqlResultSetService;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
@@ -31,7 +28,9 @@ import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.proxy.session.AuthenticatorImpl;
 import io.mycat.replica.*;
-import io.vertx.core.Future;
+import io.mycat.statistic.StatisticCenter;
+import io.mycat.util.NameMap;
+import io.vertx.core.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +38,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class ConfigPrepareExecuter {
@@ -326,23 +324,67 @@ public class ConfigPrepareExecuter {
         if (sqlResultSetService != null) {
             context.put(SqlResultSetService.class, sqlResultSetService);
         }
-        PlanCache planCache = MetaClusterCurrent.wrapper(PlanCache.class);
-        planCache.clear();
+        DbPlanManagerPersistorImpl newDbPlanManagerPersistor = null;
+        if(!MetaClusterCurrent.exist(MemPlanCache.class)){
+            newDbPlanManagerPersistor = new DbPlanManagerPersistorImpl();
+            MemPlanCache memPlanCache = new MemPlanCache((newDbPlanManagerPersistor));
+            context.put(MemPlanCache.class, memPlanCache);
+            context.put(QueryPlanner.class,new QueryPlanner(memPlanCache));
+        }else {
+            MemPlanCache memPlanCache = MetaClusterCurrent.wrapper(MemPlanCache.class);
+            memPlanCache.clearCache();
+        }
+        if(!MetaClusterCurrent.exist(StatisticCenter.class)){
+            context.put(StatisticCenter.class,new StatisticCenter());
+        }
+//        PlanCache2 planCache = MetaClusterCurrent.wrapper(PlanCache2.class);
+//        planCache.clear();
 
         MySQLManager mySQLManager;
         context.put(MySQLManager.class, mySQLManager = new MycatMySQLManagerImpl((MycatRouterConfig) context.get(MycatRouterConfig.class)));
 
-        context.put(DrdsRunner.class, new DrdsRunner(() -> ((MetadataManager) context.get(MetadataManager.class)).getSchemaMap(),planCache));
+        context.put(DrdsSqlCompiler.class, new DrdsSqlCompiler(new DrdsConfig(){
+            @Override
+            public NameMap<SchemaHandler> schemas() {
+                return ((MetadataManager)(context.get(MetadataManager.class))).getSchemaMap();
+            }
+        }));
         ServerConfig serverConfig = (ServerConfig) context.get(ServerConfig.class);
         LocalXaMemoryRepositoryImpl localXaMemoryRepository = LocalXaMemoryRepositoryImpl.createLocalXaMemoryRepository(() -> mySQLManager);
         context.put(XaLog.class, new XaLogImpl(localXaMemoryRepository, serverConfig.getMycatId(), Objects.requireNonNull(mySQLManager)));
+        context.put(UpdatePlanCache.class,new UpdatePlanCache());
         MetaClusterCurrent.register(context);
 
         MycatRouterConfig curConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
+
+        Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+        vertx.executeBlocking(new Handler<Promise<Void>>() {
+            @Override
+            public void handle(Promise<Void> promise) {
+                try {
+                    MemPlanCache memPlanCache = MetaClusterCurrent.wrapper(MemPlanCache.class);
+                    memPlanCache.init();
+                }catch (Throwable throwable){
+                    LOGGER.error("",throwable);
+                   promise.fail(throwable);
+                }
+            }
+        });
+        if (newDbPlanManagerPersistor != null) {
+            newDbPlanManagerPersistor.checkStore();
+        }
+        StatisticCenter statisticCenter = MetaClusterCurrent.wrapper(StatisticCenter.class);
+        statisticCenter.init();
         boolean allMatchMySQL = curConfig.getDatasources().stream().allMatch(s -> "mysql".equalsIgnoreCase(s.getDbType()));
         if (allMatchMySQL){
             XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
-            return xaLog.readXARecoveryLog();
+            LOGGER.info("readXARecoveryLog start");
+            return xaLog.readXARecoveryLog().onComplete(new Handler<AsyncResult<Void>>() {
+                @Override
+                public void handle(AsyncResult<Void> event) {
+                    LOGGER.info("readXARecoveryLog end");
+                }
+            });
         }else {
             return Future.succeededFuture();
         }

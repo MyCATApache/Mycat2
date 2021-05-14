@@ -19,6 +19,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+
 /**
  * @author jamie12221 date 2020-01-08 13:21
  **/
@@ -30,17 +33,20 @@ public class MycatUser {
     byte[] password;
     byte[] seed;
     String host;
+    InetSocketAddress remoteAddress;
     UserConfig userConfig;
 
     public MycatUser(String userName,
                      byte[] password,
                      byte[] seed,
                      String host,
+                     SocketAddress remoteAddress,
                      UserConfig userConfig) {
         this.userName = userName;
         this.password = password;
         this.seed = seed;
         this.host = host;
+        this.remoteAddress = (InetSocketAddress) remoteAddress;
         this.userConfig = userConfig;
     }
 }

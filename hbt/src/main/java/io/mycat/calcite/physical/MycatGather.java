@@ -21,11 +21,12 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 
 import java.util.List;
+import java.util.Objects;
 
 public class MycatGather extends SingleRel implements MycatRel {
 
-    protected MycatGather(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
-        super(cluster, traits, input);
+    protected MycatGather(RelOptCluster cluster, RelTraitSet traitSet, RelNode input) {
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), input);
     }
 
 

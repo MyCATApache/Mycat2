@@ -19,6 +19,13 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.*;
+import io.mycat.calcite.DrdsRunnerHelper;
+import io.mycat.calcite.MycatRel;
+import io.mycat.calcite.plan.PlanImplementor;
+import io.mycat.calcite.rewriter.OptimizationContext;
+import io.mycat.calcite.spm.Plan;
+import io.mycat.calcite.spm.QueryPlanner;
+import io.mycat.calcite.spm.UpdatePlanCache;
 import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.HackRouter;
@@ -26,11 +33,12 @@ import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.NameMap;
 import io.mycat.util.Pair;
 import io.vertx.core.Future;
-import io.vertx.core.impl.future.PromiseInternal;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
 public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
 
@@ -87,7 +95,26 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
             default:
                 break;
         }
-        DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
-        return drdsRunner.runOnDrds(dataContext,sqlStatement,receiver);
+        return executeUpdate(sqlStatement, dataContext, receiver, schemaName);
+    }
+
+    public static Future<Void> executeUpdate(SQLStatement sqlStatement, MycatDataContext dataContext, Response receiver, String schemaName) {
+        DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlStatement, schemaName);
+        Plan plan = getPlan(drdsSqlWithParams);
+        PlanImplementor planImplementor = DrdsRunnerHelper.getPlanImplementor(dataContext, receiver, drdsSqlWithParams);
+        return DrdsRunnerHelper.impl(plan,planImplementor);
+    }
+
+    @Nullable
+    public static Plan getPlan(DrdsSqlWithParams drdsSqlWithParams) {
+        UpdatePlanCache updatePlanCache = MetaClusterCurrent.wrapper(UpdatePlanCache.class);
+        Plan plan = updatePlanCache.computeIfAbsent(drdsSqlWithParams.getParameterizedSql(), s -> {
+            DrdsSqlCompiler drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
+            OptimizationContext optimizationContext = new OptimizationContext();
+            MycatRel dispatch = drdsRunner.dispatch(optimizationContext, drdsSqlWithParams);
+            return DrdsExecutorCompiler.convertToExecuter(
+                    dispatch);
+        });
+        return plan;
     }
 }

@@ -14,16 +14,15 @@
  */
 package io.mycat.calcite.physical;
 
-import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
-import io.mycat.DrdsRunner;
-import io.mycat.calcite.*;
-import io.mycat.router.ShardingTableHandler;
-import io.mycat.util.FastSqlUtils;
+import io.mycat.DrdsSqlCompiler;
+import io.mycat.calcite.ExplainWriter;
+import io.mycat.calcite.MycatConvention;
+import io.mycat.calcite.MycatRel;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.AbstractRelNode;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlKind;
 
 import java.util.List;
@@ -31,40 +30,29 @@ import java.util.List;
 @Getter
 public class MycatInsertRel extends AbstractRelNode implements MycatRel {
 
-    private final static RelOptCluster cluster = DrdsRunner.newCluster();
-    private final int finalAutoIncrementIndex;
-    private final List<Integer> shardingKeys;
-    private final MySqlInsertStatement mySqlInsertStatement;
-    private final ShardingTableHandler logicTable;
-    private final String[] columnNames;
+    private final static RelOptCluster cluster = DrdsSqlCompiler.newCluster();
+    private final static RelDataType rowType = RelOptUtil.createDmlRowType(
+            SqlKind.INSERT, cluster.getTypeFactory());
+    private final MycatRouteInsertCore mycatRouteInsertCore;
+
 
     public static MycatInsertRel create(
-                                        int finalAutoIncrementIndex,
-                                        List<Integer> shardingKeys,
-                                        MySqlInsertStatement mySqlInsertStatement,
-                                        ShardingTableHandler logicTable) {
-        return new MycatInsertRel(finalAutoIncrementIndex,shardingKeys,mySqlInsertStatement,logicTable);
+            int finalAutoIncrementIndex, List<Integer> shardingKeys,String sql, String schemaName, String tableName) {
+        return new MycatInsertRel(new MycatRouteInsertCore(finalAutoIncrementIndex,shardingKeys, sql,schemaName,tableName));
     }
-    protected MycatInsertRel(
-                             int finalAutoIncrementIndex,
-                             List<Integer> shardingKeys,
-                             MySqlInsertStatement mySqlInsertStatement,
-                             ShardingTableHandler logicTable) {
+
+    public static MycatInsertRel create(
+            MycatRouteInsertCore mycatRouteInsertCore) {
+        return new MycatInsertRel(mycatRouteInsertCore);
+    }
+
+    public MycatInsertRel(
+            MycatRouteInsertCore mycatRouteInsertCore) {
         super(cluster, cluster.traitSetOf(MycatConvention.INSTANCE));
-        this.finalAutoIncrementIndex = finalAutoIncrementIndex;
-        this.shardingKeys = shardingKeys;
-        this.mySqlInsertStatement = mySqlInsertStatement;
-        this.logicTable = logicTable;
-        List<SQLIdentifierExpr> columns = (List)mySqlInsertStatement.getColumns();
-        this.columnNames = columns.stream().map(i -> i.normalizedName()).toArray(size -> new String[size]);
-
-        this.rowType= RelOptUtil.createDmlRowType(
-                SqlKind.INSERT, getCluster().getTypeFactory());
+        this.mycatRouteInsertCore = mycatRouteInsertCore;
     }
 
-    public MySqlInsertStatement getMySqlInsertStatement() {
-        return FastSqlUtils.clone(mySqlInsertStatement);
-    }
+
 
     @Override
     public ExplainWriter explain(ExplainWriter writer) {

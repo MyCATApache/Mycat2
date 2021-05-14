@@ -21,6 +21,7 @@ import io.mycat.calcite.MycatRules;
 import io.mycat.calcite.physical.MycatProject;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.tools.RelBuilderFactory;
 
@@ -29,6 +30,8 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * an {@link MycatProjectRule}.
  */
 public class MycatProjectRule extends MycatConverterRule {
+
+    public static final MycatProjectRule INSTANCE = new MycatProjectRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
 
     /**
      * Creates a MycatProjectRule.
@@ -43,7 +46,7 @@ public class MycatProjectRule extends MycatConverterRule {
     public RelNode convert(RelNode rel) {
         final Project project = (Project) rel;
         return MycatProject.create(
-                convert(project.getInput(),out),
+                convert(project.getInput(), out),
                 project.getProjects(),
                 project.getRowType());
     }

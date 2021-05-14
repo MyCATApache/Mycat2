@@ -62,8 +62,9 @@ public class SequenceGenerator {
             @Override
             @SneakyThrows
             public SequenceHandler apply(String s) {
+                String name = s.toLowerCase();
                 SequenceConfig sequenceConfig1 = sequencesConfig.stream()
-                        .filter(i -> i.getName().equals(s)).findFirst().orElseGet(() -> {
+                        .filter(i -> i.getName().equalsIgnoreCase(name)).findFirst().orElseGet(() -> {
                             SequenceConfig sequenceConfig = new SequenceConfig();
                             sequenceConfig.setTime(true);
                             sequenceConfig.setName(uniqueName);

@@ -15,6 +15,8 @@
 package io.mycat.calcite.rules;
 
 
+import com.google.common.collect.ImmutableList;
+import io.mycat.HintTools;
 import io.mycat.calcite.MycatConvention;
 import io.mycat.calcite.MycatConverterRule;
 import io.mycat.calcite.MycatRules;
@@ -26,11 +28,16 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
+import org.apache.calcite.rel.core.RelFactories;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.tools.RelBuilderFactory;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
@@ -38,12 +45,16 @@ import java.util.function.Predicate;
  */
 public class MycatJoinRule extends MycatConverterRule {
 
+    public static final MycatJoinRule INSTANCE = new MycatJoinRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
+
     /**
      * Creates a MycatJoinRule.
      */
     public MycatJoinRule(MycatConvention out,
                          RelBuilderFactory relBuilderFactory) {
-        super(Join.class, (Predicate<RelNode>) r -> true, MycatRules.IN_CONVENTION,
+        super(Join.class, (Predicate<RelNode>) r -> {
+                    return true;
+                }, MycatRules.IN_CONVENTION,
                 out, relBuilderFactory, "MycatJoinRule");
     }
 
@@ -56,15 +67,68 @@ public class MycatJoinRule extends MycatConverterRule {
     /**
      * Converts a {@code Join} into a {@code MycatJoin}.
      *
-     * @param join               Join operator to convert
+     * @param join Join operator to convert
      * @return A new MycatJoin
      */
     public RelNode convert(Join join) {
+        RelHint lastJoinHint = HintTools.getLastJoinHint(join.getHints());
         JoinInfo info = join.analyzeCondition();
         RelOptCluster cluster = join.getCluster();
         RexBuilder rexBuilder = cluster.getRexBuilder();
         RelNode left = join.getLeft();
         RelNode right = join.getRight();
+
+        Join resJoin = null;
+        if (lastJoinHint != null) {
+            switch (lastJoinHint.hintName.toLowerCase()) {
+                case "no_hash_join":
+                    return tryNLJoin(join, left, right);
+                case "use_hash_join":
+                    resJoin = tryHashJoin(join, info, rexBuilder, left, right);
+                    break;
+                case "use_bka_join":
+                    break;
+                case "use_nl_join":
+                    resJoin = tryNLJoin(join, left, right);
+                    break;
+                case "use_merge_join":
+                    return null;
+                default:
+            }
+        }
+        if (resJoin != null) {
+            return resJoin;
+        }
+        resJoin = tryHashJoin(join, info, rexBuilder, left, right);
+        if (resJoin != null) {
+            return resJoin;
+        }
+        return tryNLJoin(join, left, right);
+    }
+
+    @NotNull
+    private Join tryNLJoin(Join join, RelNode left, RelNode right) {
+        if (join.isSemiJoin()) {
+            return MycatNestedLoopSemiJoin.create(
+                    join.getHints(),
+                    join.getTraitSet().replace(out),
+                    convert(left, out),
+                    convert(right, out),
+                    join.getCondition(),
+                    join.getJoinType()
+            );
+        } else {
+            return MycatNestedLoopJoin.create(
+                    join.getTraitSet().replace(out),
+                    convert(left, out),
+                    convert(right, out),
+                    join.getCondition(),
+                    join.getJoinType());
+        }
+    }
+
+    @Nullable
+    private Join tryHashJoin(Join join, JoinInfo info, RexBuilder rexBuilder, RelNode left, RelNode right) {
         final boolean hasEquiKeys = !info.leftKeys.isEmpty()
                 && !info.rightKeys.isEmpty();
         if (hasEquiKeys) {
@@ -90,25 +154,8 @@ public class MycatJoinRule extends MycatConverterRule {
                         condition,
                         join.getJoinType());
             }
-
         }
-        if (join.isSemiJoin()) {
-            return MycatNestedLoopSemiJoin.create(
-                    join.getHints(),
-                    join.getTraitSet().replace(out),
-                    convert(left, out),
-                    convert(right, out),
-                    join.getCondition(),
-                    join.getJoinType()
-            );
-        } else {
-            return MycatNestedLoopJoin.create(
-                    join.getTraitSet().replace(out),
-                    convert(left, out),
-                    convert(right, out),
-                    join.getCondition(),
-                    join.getJoinType());
-        }
+        return null;
     }
 
     /**

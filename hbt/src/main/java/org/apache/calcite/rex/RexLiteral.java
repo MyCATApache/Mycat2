@@ -216,7 +216,7 @@ public class RexLiteral extends RexNode {
   /**
    * Creates a <code>RexLiteral</code>.
    */
-  RexLiteral(
+  public RexLiteral(
           Comparable value,
           RelDataType type,
           SqlTypeName typeName) {
@@ -333,7 +333,7 @@ public class RexLiteral extends RexNode {
       case INTERVAL_YEAR:
       case INTERVAL_YEAR_MONTH:
       case INTERVAL_MONTH:
-        return value instanceof Long;
+        return value instanceof Number;
       case INTERVAL_DAY:
       case INTERVAL_DAY_HOUR:
       case INTERVAL_DAY_MINUTE:

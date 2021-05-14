@@ -12,17 +12,26 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.calcite.spm;
+package io.mycat.hint;
 
-import org.apache.calcite.sql.type.SqlTypeName;
+import lombok.Data;
 
-import java.util.List;
+@Data
+public class BaselineListHint extends HintBuilder {
 
-public interface PlanCache {
+    public static String create() {
+        BaselineListHint listHint = new BaselineListHint();
+        return listHint.build();
+    }
 
-    Plan getMinCostPlan(String sql, List<SqlTypeName> types);
 
-    void put(String parameterizedString, List<SqlTypeName> types, Plan plan);
+    @Override
+    public String getCmd() {
+        return "BASELINE LIST ";
+    }
 
-    void clear();
+    @Override
+    public String build() {
+        return getCmd();
+    }
 }

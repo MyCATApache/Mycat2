@@ -1,52 +1,37 @@
 package io.mycat.drdsrunner;
 
-import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.*;
 import io.mycat.assemble.MycatTest;
-import io.mycat.calcite.resultset.CalciteRowMetaData;
+import io.mycat.calcite.CodeExecuterContext;
+import io.mycat.calcite.DrdsRunnerHelper;
+import io.mycat.calcite.MycatRel;
+import io.mycat.calcite.rewriter.OptimizationContext;
 import io.mycat.calcite.spm.Plan;
-import io.mycat.calcite.spm.PlanCache;
-import io.mycat.calcite.table.SchemaHandler;
+import io.mycat.calcite.spm.PlanImpl;
 import io.mycat.config.*;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
-import io.mycat.hint.CreateSchemaHint;
-import io.mycat.plug.loadBalance.LoadBalanceManager;
-import io.mycat.plug.sequence.SequenceGenerator;
-import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.runtime.MycatDataContextImpl;
-import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.util.JsonUtil;
-import io.mycat.util.NameMap;
-import jdk.nashorn.internal.objects.annotations.Getter;
-import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlExplainFormat;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.util.Util;
-import org.junit.Before;
 
-import javax.annotation.concurrent.NotThreadSafe;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 
 public abstract class DrdsTest implements MycatTest {
 
-    static DrdsRunner drdsRunner = null;
+    static DrdsSqlCompiler drdsRunner = null;
+    static MetadataManager metadataManager;
 
     @SneakyThrows
-    public static DrdsRunner getDrds() {
+    public static DrdsSqlCompiler getDrds() {
         if (drdsRunner != null) {
             return drdsRunner;
         }
@@ -190,7 +175,8 @@ public abstract class DrdsTest implements MycatTest {
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("ds1", DB2));
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("prototype", DB1));
                 fileMetadataStorageManager.start(mycatRouterConfig);
-                drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
+                drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
+                metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
             }
         }
         return drdsRunner;
@@ -198,13 +184,17 @@ public abstract class DrdsTest implements MycatTest {
 
 
     public static Explain parse(String sql) {
-        DrdsRunner drds = getDrds();
-        DrdsSql drdsSql = drds.preParse(sql);
-        MycatDataContextImpl mycatDataContext = new MycatDataContextImpl();
-        Plan plan = drds.getPlan(mycatDataContext, drdsSql);
-        return new Explain(plan,drdsSql);
+        DrdsSqlCompiler drds = getDrds();
+        DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sql, null);
+        OptimizationContext optimizationContext = new OptimizationContext();
+        MycatRel dispatch = drds.dispatch(optimizationContext, drdsSqlWithParams);
+        Plan plan = new PlanImpl(dispatch, DrdsExecutorCompiler.getCodeExecuterContext(dispatch,false), drdsSqlWithParams.getAliasList());
+        return new Explain(plan,drdsSqlWithParams);
     }
 
+    public static MetadataManager getMetadataManager() {
+        return metadataManager;
+    }
 
     public static String dumpPlan(RelNode relNode) {
         String dumpPlan = Util.toLinux(RelOptUtil.dumpPlan("", relNode, SqlExplainFormat.TEXT,

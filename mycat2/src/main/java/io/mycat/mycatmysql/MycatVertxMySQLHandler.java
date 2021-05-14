@@ -10,6 +10,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.*;
+import io.mycat.Process;
 import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
@@ -84,7 +85,8 @@ public class MycatVertxMySQLHandler {
     public void handle(int packetId, Buffer event, NetSocket socket) {
         if (handleIng.compareAndSet(false, true)) {
             try {
-                handle0(packetId, event, socket);
+                Process process = Process.getCurrentProcess();
+                handle0(packetId, event, socket,process);
                 checkPendingMessages();
             } finally {
                 handleIng.set(false);
@@ -99,16 +101,20 @@ public class MycatVertxMySQLHandler {
     private void checkPendingMessages(){
         PendingMessage pendingMessage;
         while ((pendingMessage = pendingMessages.poll()) != null) {
-            handle0(pendingMessage.packetId, pendingMessage.event, pendingMessage.socket);
+            Process process = Process.getCurrentProcess();
+            handle0(pendingMessage.packetId, pendingMessage.event, pendingMessage.socket, process);
         }
     }
 
-    public void handle0(int packetId, Buffer event, NetSocket socket) {
+    public void handle0(int packetId, Buffer event, NetSocket socket,Process process) {
         session.setPacketId(packetId);
         ReadView readView = new ReadView(event);
         Future<?> promise;
         try {
-            switch (readView.readByte()) {
+            byte command = readView.readByte();
+            process.setCommand(command);
+            process.setContext(mycatDataContext);
+            switch (command) {
                 case MySQLCommandType.COM_SLEEP: {
                     promise = handleSleep(this.session);
                     break;
@@ -119,6 +125,8 @@ public class MycatVertxMySQLHandler {
                 }
                 case MySQLCommandType.COM_QUERY: {
                     String sql = new String(readView.readEOFStringBytes(), StandardCharsets.UTF_8);
+                    process.setQuery(sql);
+                    process.setState(Process.State.INIT);
                     promise = handleQuery(sql, this.session);
                     break;
                 }
@@ -169,7 +177,8 @@ public class MycatVertxMySQLHandler {
                     }
                     int[] params = null;
                     BindValue[] values = null;
-                    boolean newParameterBoundFlag = readView.readByte() == 1;
+
+                    boolean newParameterBoundFlag =!readView.readFinished()&& readView.readByte() == 1;
                     if (newParameterBoundFlag) {
                         params = new int[numParams];
                         for (int i = 0; i < numParams; i++) {
@@ -358,11 +367,7 @@ public class MycatVertxMySQLHandler {
             @Override
             public void run() throws Throwable {
                 // check if handle set handleIng gap
-                for (PendingMessage pendingMessage : pendingMessages) {
-                    while ((pendingMessage = pendingMessages.poll()) != null) {
-                        handle0(pendingMessage.packetId, pendingMessage.event, pendingMessage.socket);
-                    }
-                }
+                checkPendingMessages();
             }
         });
         return disposable;

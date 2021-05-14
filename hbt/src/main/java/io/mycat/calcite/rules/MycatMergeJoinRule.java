@@ -16,6 +16,7 @@
  */
 package io.mycat.calcite.rules;
 
+import io.mycat.HintTools;
 import io.mycat.calcite.MycatConvention;
 import io.mycat.calcite.MycatConverterRule;
 import io.mycat.calcite.MycatRules;
@@ -31,11 +32,14 @@ import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
+import org.apache.calcite.rel.core.RelFactories;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.tools.RelBuilderFactory;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,13 +49,36 @@ import java.util.List;
  * copy 2020-7-18
  */
 public class MycatMergeJoinRule extends MycatConverterRule {
+
+    public static final MycatMergeJoinRule INSTANCE = new MycatMergeJoinRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
+
     public MycatMergeJoinRule(MycatConvention out, RelBuilderFactory relBuilderFactory) {
         super(Join.class, (j) -> true, MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatMergeJoinRule");
     }
 
     @Override
     public RelNode convert(RelNode rel) {
-        LogicalJoin join = (LogicalJoin) rel;
+        final Join join = (Join) rel;
+        return convert(join);
+    }
+    public RelNode convert(Join join) {
+        RelHint lastJoinHint = HintTools.getLastJoinHint(join.getHints());
+        if (lastJoinHint != null) {
+            switch (lastJoinHint.hintName.toLowerCase()) {
+                case "use_hash_join":
+                case "use_bka_join":
+                case "use_nl_join":
+                  return null;
+                case "use_merge_join":
+                default:
+            }
+        }
+        return tryMycatSortMergeJoin((LogicalJoin) join);
+    }
+
+    @Nullable
+    private MycatSortMergeJoin tryMycatSortMergeJoin(LogicalJoin rel) {
+        LogicalJoin join = rel;
         final JoinInfo info = join.analyzeCondition();
         if (!EnumerableMergeJoin.isMergeJoinSupported(join.getJoinType())) {
             // EnumerableMergeJoin only supports certain join types.

@@ -23,6 +23,7 @@ import com.google.common.cache.CacheBuilder;
 import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.calcite.CodeExecuterContext;
+import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.config.SqlCacheConfig;
@@ -31,6 +32,9 @@ import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.util.Dumper;
 import io.mycat.util.TimeUnitUtil;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.functions.Action;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -154,25 +158,30 @@ public class  SqlResultSetService implements Closeable, Dumpable {
     @SneakyThrows
     private Optional<Observable<MysqlPayloadObject>> loadResultSet(SQLSelectStatement sqlSelectStatement) {
         return cache.get(sqlSelectStatement, () -> {
-            if (!MetaClusterCurrent.exist(DrdsRunner.class)) {
+            if (!MetaClusterCurrent.exist(DrdsSqlCompiler.class)) {
                 return Optional.empty();
             }
             MycatDataContext context = new MycatDataContextImpl();
             try {
-                DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
-                Scheduler scheduler = MetaClusterCurrent.wrapper(Scheduler.class);
-                DrdsSql drdsSql = drdsRunner.preParse(sqlSelectStatement);
-                Plan plan = drdsRunner.getPlan(context, drdsSql);
-                CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
+                DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(sqlSelectStatement, context.getDefaultSchema());
+                Plan plan = DrdsRunnerHelper.getPlan( drdsSql);
                 XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
                 ObservablePlanImplementorImpl planImplementor = new ObservablePlanImplementorImpl(
                         transactionSession,
                         context, drdsSql.getParams(), null);
                 Observable<MysqlPayloadObject> observable = planImplementor.getMysqlPayloadObjectObservable(context, drdsSql.getParams(), plan);
+                observable = observable.doOnTerminate(new Action() {
+                    @Override
+                    public void run() throws Throwable {
+                        transactionSession.closeStatementState().onComplete(event -> context.close());
+                    }
+                });
                 observable= observable.cache();
                 return Optional.ofNullable(observable);
-            } finally {
+            }catch (Throwable t){
                 context.close();
+                log.error("",t);
+                return Optional.empty();
             }
         });
     }

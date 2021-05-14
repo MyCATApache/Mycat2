@@ -42,7 +42,7 @@ public class BackendTableInfo implements DataNode {
     }
 
     public String getUniqueName() {
-        return targetName + "." + schemaInfo.getTargetSchemaTable();
+        return targetName + "." + schemaInfo.targetSchemaTable();
     }
 
     @Override
@@ -57,7 +57,7 @@ public class BackendTableInfo implements DataNode {
 
     @Override
     public String getTargetSchemaTable() {
-        return schemaInfo.getTargetSchemaTable();
+        return schemaInfo.targetSchemaTable();
     }
 
     @Override

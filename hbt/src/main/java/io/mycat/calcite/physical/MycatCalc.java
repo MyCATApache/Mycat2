@@ -25,6 +25,7 @@ import org.apache.calcite.linq4j.function.Function;
 import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Calc;
@@ -47,6 +48,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.*;
 
@@ -62,10 +64,16 @@ public class MycatCalc extends Calc implements MycatRel {
                         RelTraitSet traitSet,
                         RelNode input,
                         RexProgram program) {
-        super(cluster, traitSet, input, program);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), input, program);
         assert getConvention() instanceof MycatConvention;
         this.program = program;
         this.rowType = program.getOutputRowType();
+    }
+    public MycatCalc(RelInput input) {
+        this(input.getCluster(),
+                input.getTraitSet(),
+                input.getInput(),
+                RexProgram.create(input));
     }
 
     public static MycatCalc create(
@@ -84,25 +92,6 @@ public class MycatCalc extends Calc implements MycatRel {
                 program
         );
     }
-
-    public RelWriter explainTerms(RelWriter pw) {
-        return program.explainCalc(super.explainTerms(pw));
-    }
-
-    @Override
-    public double estimateRowCount(RelMetadataQuery mq) {
-        return RelMdUtil.estimateFilteredRows(getInput(), program, mq);
-    }
-
-    public RelOptCost computeSelfCost(RelOptPlanner planner,
-                                      RelMetadataQuery mq) {
-        double dRows = mq.getRowCount(this);
-        double dCpu = mq.getRowCount(getInput())
-                * program.getExprCount();
-        double dIo = 0;
-        return planner.getCostFactory().makeCost(dRows, dCpu, dIo);
-    }
-
 
     @Override
     public Calc copy(RelTraitSet traitSet, RelNode child, RexProgram program) {
@@ -293,7 +282,7 @@ public class MycatCalc extends Calc implements MycatRel {
 
     @Override
     public boolean isSupportStream() {
-        return this.getCorrelVariable() == null;
+        return this.getCorrelVariable()==null;
     }
 
     @Override
@@ -323,18 +312,18 @@ public class MycatCalc extends Calc implements MycatRel {
             final RelOptPredicateList predicates = mq.getPulledUpPredicates(child);
             final RexSimplify simplify =
                     new RexSimplify(rexBuilder, predicates, RexUtil.EXECUTOR);
-            final RexProgram program = this.program.normalize(rexBuilder, simplify);
+            final RexProgram program = this.program;
             Expression condition = null;
+            final BlockBuilder conditionBuilder = new BlockBuilder();
             Expression project = null;
-            ParameterExpression rowParameter = Expressions.parameter(inputJavaType, "row");
+            final BlockBuilder projectBuilder = new BlockBuilder();
 
             ParameterExpression input = Expressions.parameter(inputJavaType, "row");
-            final BlockBuilder builder2 = new BlockBuilder();
             if (program.getCondition() != null) {
                 condition = RexToLixTranslator.translateCondition(
                         program,
                         typeFactory,
-                        builder2,
+                        conditionBuilder,
                         new RexToLixTranslator.InputGetterImpl(
                                 Collections.singletonList(
                                         Pair.of(input, result.physType))),
@@ -349,7 +338,7 @@ public class MycatCalc extends Calc implements MycatRel {
                                 program,
                                 typeFactory,
                                 conformance,
-                                builder,
+                                projectBuilder,
                                 physType,
                                 DataContext.ROOT,
                                 new RexToLixTranslator.InputGetterImpl(
@@ -360,18 +349,19 @@ public class MycatCalc extends Calc implements MycatRel {
             }
 
             if (condition != null) {
-                FunctionExpression<Function<?>> lambda = Expressions.lambda(condition, input);
+                conditionBuilder.add(condition);
+                FunctionExpression<Function<?>> lambda = Expressions.lambda(conditionBuilder.toBlock(), input);
                 inputObservalbe = Expressions.call(RxBuiltInMethod.OBSERVABLE_FILTER.method,
                         inputObservalbe,
                         lambda
                 );
             }
-            FunctionExpression<Function<?>> lambda = Expressions.lambda(project, input);
+            projectBuilder.add(project);
+            FunctionExpression<Function<?>> lambda = Expressions.lambda(projectBuilder.toBlock(), input);
             builder.add(Expressions.call(RxBuiltInMethod.OBSERVABLE_SELECT.method,
                     inputObservalbe,
                     lambda
             ));
-            Expressions.lambda(EnumUtils.convert(rowParameter, inputJavaType), rowParameter);
 
             return implementor.result(physType, builder.toBlock());
         }

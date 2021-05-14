@@ -23,10 +23,14 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.ImmutableIntList;
 
 public class MycatSortAggRule extends MycatConverterRule {
+
+    public static final MycatSortAggRule INSTANCE = new MycatSortAggRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
+
     public MycatSortAggRule(final MycatConvention out,
                             RelBuilderFactory relBuilderFactory) {
         super(Aggregate.class, project ->

@@ -1086,6 +1086,7 @@ public abstract class SqlImplementor {
         }
 
         void addOrderItem(List<SqlNode> orderByList, RelFieldCollation field) {
+            boolean added = false;
             if (field.nullDirection != RelFieldCollation.NullDirection.UNSPECIFIED) {
                 final boolean first =
                         field.nullDirection == RelFieldCollation.NullDirection.FIRST;
@@ -1097,9 +1098,13 @@ public abstract class SqlImplementor {
                     field = new RelFieldCollation(field.getFieldIndex(),
                             field.getDirection(),
                             RelFieldCollation.NullDirection.UNSPECIFIED);
+                    added = true;
                 }
             }
-            orderByList.add(toSql(field));
+            //Each(targetName=c0, sql=SELECT * FROM db1_0.travelrecord_0 WHERE (`id` = ?) ORDER BY (`id` IS NULL), `id`)
+//            if (!added) {
+                orderByList.add(toSql(field));
+//            }
         }
 
         /**

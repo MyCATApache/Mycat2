@@ -38,7 +38,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class MycatEnumerableRelImplementor extends EnumerableRelImplementor {
-    final IdentityHashMap<RelNode,Integer> leafRelNodes = new IdentityHashMap<>();
+
 
     public MycatEnumerableRelImplementor(Map<String, Object> internalParameters) {
         super(MycatCalciteSupport.RexBuilder, internalParameters);
@@ -98,16 +98,5 @@ public class MycatEnumerableRelImplementor extends EnumerableRelImplementor {
                 null,
                 Collections.singletonList(Bindable.class),
                 memberDeclarations);
-    }
-
-    public void collectLeafRelNode(RelNode view) {
-        leafRelNodes.compute(view, (node, integer) -> {
-            if (integer == null) integer=0;
-            return integer+1;
-        });
-    }
-
-    public IdentityHashMap<RelNode,Integer> getLeafRelNodes() {
-        return  leafRelNodes;
     }
 }

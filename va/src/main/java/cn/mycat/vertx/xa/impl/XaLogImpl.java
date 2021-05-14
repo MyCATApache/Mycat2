@@ -187,10 +187,23 @@ public class XaLogImpl implements XaLog {
 
     @SneakyThrows
     public Future<Void> readXARecoveryLog() {
-        Future<Void> future = mySQLManager.getConnectionMap().flatMap(stringSqlConnectionMap -> CompositeFuture.all(
+        Future<Map<String, SqlConnection>> connectionMapFuture = mySQLManager.getConnectionMap();
+        connectionMapFuture.onComplete(new Handler<AsyncResult<Map<String, SqlConnection>>>() {
+            @Override
+            public void handle(AsyncResult<Map<String, SqlConnection>> event) {
+                LOGGER.info("get connectionMap end");
+            }
+        });
+        Future<Void> future = connectionMapFuture.flatMap(stringSqlConnectionMap -> CompositeFuture.all(
                 stringSqlConnectionMap.values().stream()
                         .map(c -> LocalXaMemoryRepositoryImpl.tryCreateLogTable(c)
                                 .onComplete(unused -> c.close())).collect(Collectors.toList())).mapEmpty());
+        future.onComplete(new Handler<AsyncResult<Void>>() {
+            @Override
+            public void handle(AsyncResult<Void> event) {
+                LOGGER.info("check xa_log end");
+            }
+        });
         return future.flatMap(new Function<Void, Future<Void>>() {
             @Override
             @SneakyThrows

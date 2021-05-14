@@ -15,6 +15,7 @@
 package io.mycat.calcite.physical;
 
 
+import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.*;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
@@ -27,6 +28,8 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rex.RexDynamicParam;
@@ -35,11 +38,13 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
 
+import java.util.Objects;
+
 
 public class MycatTopN extends Sort implements MycatRel {
 
-    protected MycatTopN(RelOptCluster cluster, RelTraitSet traits, RelNode child, RelCollation collation, RexNode offset, RexNode fetch) {
-        super(cluster, traits, child, collation, offset, fetch);
+    protected MycatTopN(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation, RexNode offset, RexNode fetch) {
+        super(cluster,Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE).replace(RelCollationTraitDef.INSTANCE, ImmutableList.of(collation)), child, collation, offset, fetch);
     }
 
     public static MycatTopN create(RelTraitSet traits, RelNode child, RelCollation collation, RexNode offset, RexNode fetch) {
@@ -52,6 +57,12 @@ public class MycatTopN extends Sort implements MycatRel {
                 offset,
                 fetch
         );
+    }
+    public MycatTopN(RelInput input) {
+        this(input.getCluster(), input.getTraitSet().plus(input.getCollation()),
+                input.getInput(),
+                RelCollationTraitDef.INSTANCE.canonize(input.getCollation()),
+                input.getExpression("offset"), input.getExpression("fetch"));
     }
 
     @Override

@@ -5,7 +5,7 @@ Distributed database based on MySQL.
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Main/badge.svg)
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Dev/badge.svg)
 
-[v1.17-release](https://github.com/MyCATApache/Mycat2/releases/tag/v1.17-2021-3-24)
+[v1.17-release](https://github.com/MyCATApache/Mycat2/releases/tag/v1.17-2021-4-13)
 
 [v1.18-dev]
 Development objectives:Improve performance

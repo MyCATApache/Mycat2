@@ -14,15 +14,13 @@
  */
 package io.mycat.vertxmycat;
 
+import io.mycat.IOExecutor;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
+import io.vertx.core.*;
 import io.vertx.jdbcclient.impl.JDBCRow;
 import io.vertx.mysqlclient.MySQLConnection;
 import io.vertx.mysqlclient.impl.codec.VertxRowSetImpl;
@@ -43,12 +41,7 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 
 public class JdbcMySqlConnection extends AbstractMySqlConnection {
-    private static final ReadWriteThreadPool IO_EXECUTOR = new ReadWriteThreadPool(
-            JdbcMySqlConnection.class.getSimpleName(),
-            1000,
-            300,
-            10 * 1000
-    );
+
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcMySqlConnection.class);
     private final DefaultConnection connection;
     private final String targetName;
@@ -97,15 +90,15 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
 
     @Override
     public PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
-        return new RowSetJdbcPreparedJdbcQuery(targetName,sql,connection.unwrap(Connection.class), IO_EXECUTOR);
+        return new RowSetJdbcPreparedJdbcQuery(targetName, sql, connection.unwrap(Connection.class));
     }
 
     @Override
     public Future<Void> close() {
         try {
             connection.close();
-        }catch (Throwable throwable){
-            LOGGER.error("",throwable);
+        } catch (Throwable throwable) {
+            LOGGER.error("", throwable);
         }
         return Future.succeededFuture();
     }
@@ -139,15 +132,14 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
         @Override
         @SneakyThrows
         public Future<RowSet<Row>> execute() {
-            return Future.future(event -> {
-                IO_EXECUTOR.execute(isRead, () -> {
-                    try {
-                        event.complete(innerExecute());
-                    } catch (Throwable throwable) {
-                        LOGGER.error("", throwable);
-                        event.tryFail(throwable);
-                    }
-                });
+            IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
+            return ioExecutor.executeBlocking(event -> {
+                try {
+                    event.complete(innerExecute());
+                } catch (SQLException sqlException) {
+                    LOGGER.error("", sqlException);
+                    event.fail(sqlException);
+                }
             });
         }
 
@@ -162,6 +154,9 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
             Statement statement = rawConnection.createStatement();
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("MycatMySQLManager targetName:{} sql:{} rawConnection:{}", targetName, sql, rawConnection);
+            }
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(sql);
             }
             if (!statement.execute(sql, Statement.RETURN_GENERATED_KEYS)) {
                 VertxRowSetImpl vertxRowSet = new VertxRowSetImpl();
@@ -178,6 +173,9 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
                 return (vertxRowSet);
             }
             ResultSet resultSet = statement.getResultSet();
+            if (resultSet == null) {
+                return new VertxRowSetImpl();
+            }
             JdbcRowMetaData metaData = new JdbcRowMetaData(
                     resultSet.getMetaData());
             int columnCount = metaData.getColumnCount();
@@ -227,21 +225,11 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
                 @Override
                 @SneakyThrows
                 public Future<SqlResult<R>> execute() {
+                    IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
                     Connection rawConnection = connection.getRawConnection();
-                    return Future.future(new Handler<Promise<SqlResult<R>>>() {
+                    return ioExecutor.executeBlocking(new Handler<Promise<SqlResult<R>>>() {
                         @Override
                         public void handle(Promise<SqlResult<R>> promise) {
-                            IO_EXECUTOR.execute(isRead, () -> {
-                                try {
-                                    extracted(promise);
-                                } catch (Throwable throwable) {
-                                    promise.tryFail(throwable);
-                                }
-                            });
-                        }
-
-                        @SneakyThrows
-                        private void extracted(Promise<SqlResult<R>> promise) {
                             try (Statement statement = rawConnection.createStatement()) {
                                 if (LOGGER.isDebugEnabled()) {
                                     LOGGER.debug("MycatMySQLManager targetName:{} sql:{}", targetName, sql);
@@ -249,7 +237,7 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
                                 statement.execute(sql);
                                 ResultSet resultSet = statement.getResultSet();
                                 RowSetJdbcPreparedJdbcQuery.extracted(promise, statement, resultSet, collector);
-                            }catch (Throwable throwable){
+                            } catch (Throwable throwable) {
                                 promise.tryFail(throwable);
                             }
                         }

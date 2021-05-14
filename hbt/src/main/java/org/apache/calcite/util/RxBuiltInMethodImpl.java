@@ -68,7 +68,14 @@ public class RxBuiltInMethodImpl {
     public static <T> Observable<T> mergeSort(List<Observable<T>> inputs,
                                               Comparator<T> sortFunction,
                                               long skip, long limit) {
-        return mergeSort(inputs, sortFunction).skip(skip).take(limit);
+        Observable<T> observable = mergeSort(inputs, sortFunction);
+        if (skip > 0) {
+            observable = observable.skip(skip);
+        }
+        if (limit > 0) {
+            observable = observable.take(limit);
+        }
+        return observable;
     }
 
     public static <T> Observable<T> mergeSort(List<Observable<T>> inputs, Comparator<T> sortFunction) {

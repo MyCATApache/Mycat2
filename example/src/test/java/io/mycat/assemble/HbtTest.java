@@ -43,12 +43,7 @@ public class HbtTest implements MycatTest {
             execute(mycatConnection,
                     CreateClusterHint
                             .create("prototype",
-                                    Arrays.asList("dw0"), Arrays.asList("dr0")));
-
-            execute(mycatConnection,
-                    CreateClusterHint
-                            .create("prototype",
-                                    Arrays.asList("dw1"), Arrays.asList("dr1")));
+                                    Arrays.asList("dw0"), Arrays.asList()));
 
             execute(mycatConnection, "CREATE DATABASE db1");
             execute(mycatConnection, "USE `db1`;");

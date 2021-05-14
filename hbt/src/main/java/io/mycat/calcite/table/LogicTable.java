@@ -27,10 +27,7 @@ import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.router.CustomRuleFunction;
 import lombok.Getter;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Getter
 public class LogicTable {
@@ -53,6 +50,8 @@ public class LogicTable {
                       Map<String,IndexInfo> indexInfos,
                       String createTableSQL) {
         /////////////////////////////////////////
+        schemaName = SQLUtils.normalize(schemaName).toLowerCase();
+        tableName = SQLUtils.normalize(tableName).toLowerCase();
         this.uniqueName = schemaName + "_" + tableName;
         this.type = type;
         this.schemaName = schemaName;

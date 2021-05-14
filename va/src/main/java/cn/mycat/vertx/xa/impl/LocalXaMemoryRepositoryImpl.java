@@ -45,7 +45,9 @@ public class LocalXaMemoryRepositoryImpl extends MemoryRepositoryImpl {
         String createTableSQL = "create table if not exists `" + database + "`." + "`" + tableName + "`"
                 + "(`xid` bigint PRIMARY KEY NOT NULL"+
                 ") ENGINE=InnoDB";
-        return dataSource.query(createDatabaseSQL).execute().mapEmpty().flatMap(o -> dataSource.query(createTableSQL).execute().mapEmpty()).otherwise(throwable -> null).mapEmpty();
+        return dataSource.query(createDatabaseSQL).execute().mapEmpty().flatMap(o -> dataSource.query(createTableSQL).execute().mapEmpty()).otherwise(throwable -> {
+            return null;
+        }).mapEmpty();
     }
 
     @Override

@@ -11,18 +11,15 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.RxBuiltInMethodImpl;
 
-import java.util.Comparator;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
-    private final IdentityHashMap<RelNode, List<Observable<Object[]>>> viewMap;
+    private final Map<String, List<Observable<Object[]>>> viewMap;
 
     public AsyncMycatDataContextImpl(MycatDataContext dataContext,
                                      CodeExecuterContext context,
-                                     IdentityHashMap<RelNode, List<Observable<Object[]>>> map,
+                                     Map<String, List<Observable<Object[]>>> map,
                                      List<Object> params,
                                      boolean forUpdate) {
         super(dataContext, context, params, forUpdate);
@@ -31,25 +28,24 @@ public class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
 
 
     @Override
-    public Enumerable<Object[]> getEnumerable(RelNode node) {
+    public Enumerable<Object[]> getEnumerable(String node) {
         return Linq4j.asEnumerable(getObservable(node).blockingIterable());
     }
 
     @Override
-    public Enumerable<Object[]> getEnumerable(RelNode node, Function1 function1, Comparator comparator, int offset, int fetch) {
+    public Enumerable<Object[]> getEnumerable(String node, Function1 function1, Comparator comparator, int offset, int fetch) {
         return Linq4j.asEnumerable(getObservable(node, function1, comparator, offset, fetch).blockingIterable());
     }
 
     @Override
-    public Observable<Object[]> getObservable(RelNode node) {
+    public Observable<Object[]> getObservable(String node) {
         List<Observable<Object[]>> observables = viewMap.get(node);
         return Observable.merge(observables);
     }
 
     @Override
-    public Observable<Object[]> getObservable(RelNode relNode, Function1 function1, Comparator comparator, int offset, int fetch) {
-            return MycatMergeSort.streamOrderBy(viewMap.get(relNode), function1, comparator, offset, fetch);
-
+    public Observable<Object[]> getObservable(String relNode, Function1 function1, Comparator comparator, int offset, int fetch) {
+            return MycatView.streamOrderBy(Objects.requireNonNull(viewMap.get(relNode)), function1, comparator, offset, fetch);
     }
 
 }

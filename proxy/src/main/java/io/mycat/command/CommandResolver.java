@@ -152,7 +152,7 @@ public class CommandResolver {
                         }
                         int[] params = null;
                         BindValue[] values = null;
-                        boolean newParameterBoundFlag = curPacket.readByte() == 1;
+                        boolean newParameterBoundFlag =!curPacket.readFinished()&&curPacket.readByte() == 1;
                         if (newParameterBoundFlag) {
                             params = new int[numParams];
                             for (int i = 0; i < numParams; i++) {

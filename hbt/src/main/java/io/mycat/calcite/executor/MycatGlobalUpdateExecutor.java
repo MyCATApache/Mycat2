@@ -8,8 +8,8 @@ import io.mycat.calcite.rewriter.Distribution;
 import java.util.List;
 
 public class MycatGlobalUpdateExecutor extends MycatUpdateExecutor {
-    public MycatGlobalUpdateExecutor(MycatDataContext context, MycatUpdateRel mycatUpdateRel, Distribution values, SQLStatement sqlStatement, List<Object> parameters) {
-        super(context, mycatUpdateRel, values, sqlStatement, parameters);
+    public MycatGlobalUpdateExecutor(MycatDataContext context, MycatUpdateRel mycatUpdateRel, SQLStatement sqlStatement, List<Object> parameters) {
+        super(context, mycatUpdateRel, sqlStatement, parameters);
     }
 
     @Override

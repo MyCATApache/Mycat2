@@ -22,6 +22,7 @@ import io.mycat.calcite.physical.MycatHashAggregate;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 import java.util.function.Predicate;
@@ -31,7 +32,7 @@ import java.util.function.Predicate;
  * to a {@link MycatAggregateRule}.
  */
 public class MycatAggregateRule extends MycatConverterRule {
-
+    public static final MycatAggregateRule INSTANCE = new MycatAggregateRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
     /**
      * Creates a MycatAggregateRule.
      */

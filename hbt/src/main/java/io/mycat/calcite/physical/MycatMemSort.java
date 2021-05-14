@@ -14,6 +14,7 @@
  */
 package io.mycat.calcite.physical;
 
+import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.*;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
@@ -28,6 +29,8 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -38,6 +41,8 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.RxBuiltInMethod;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Objects;
 
 /**
  * Sort operator implemented in Mycat convention.
@@ -52,9 +57,15 @@ public class MycatMemSort
             RelCollation collation,
             RexNode offset,
             RexNode fetch) {
-        super(cluster, traitSet, input, collation, offset, fetch);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE).replace(RelCollationTraitDef.INSTANCE, ImmutableList.of(collation)), input, collation, offset, fetch);
         assert getConvention() instanceof MycatConvention;
         assert getConvention() == input.getConvention();
+    }
+    public MycatMemSort(RelInput input) {
+        this(input.getCluster(), input.getTraitSet().plus(input.getCollation()),
+                input.getInput(),
+                RelCollationTraitDef.INSTANCE.canonize(input.getCollation()),
+                input.getExpression("offset"), input.getExpression("fetch"));
     }
 
     public static MycatMemSort create(
@@ -76,7 +87,8 @@ public class MycatMemSort
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner,
                                       RelMetadataQuery mq) {
-        return super.computeSelfCost(planner, mq).multiplyBy(0.9);
+        RelOptCost relOptCost = super.computeSelfCost(planner, mq);
+        return relOptCost;
     }
 
 

@@ -65,7 +65,7 @@ public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
             int index = Integer.parseInt(name.substring(1));
             return params.get(index);
         }
-        return codeExecuterContext.getContext().get(name);
+        return codeExecuterContext.getVarContext().get(name);
     }
 
     public Object getSessionVariable(String name) {

@@ -31,6 +31,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 
 import static io.mycat.beans.mysql.MySQLErrorCode.ER_ACCESS_DENIED_ERROR;
@@ -126,8 +127,8 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
         if (authenticator != null) {
             userInfo = authenticator.getUserInfo(username);
         }
-
-        mycatDataContext.setUser(new MycatUser(username, null, null, host, userInfo));
+        InetSocketAddress remoteAddress = new InetSocketAddress(socket.remoteAddress().host(), socket.remoteAddress().port());
+        mycatDataContext.setUser(new MycatUser(username, null, null, host, remoteAddress,userInfo));
         mycatDataContext.useShcema(authPacket.getDatabase());
         mycatDataContext.setServerCapabilities(authPacket.getCapabilities());
         mycatDataContext.setAutoCommit(true);

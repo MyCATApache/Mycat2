@@ -20,6 +20,10 @@ import java.sql.ResultSetMetaData;
 public class CopyMycatRowMetaData implements MycatRowMetaData, Serializable {
     final Column[] columns;
 
+    public CopyMycatRowMetaData(Column[] columns) {
+        this.columns = columns;
+    }
+
     public CopyMycatRowMetaData(MycatRowMetaData mycatRowMetaData) {
         int columnCount = mycatRowMetaData.getColumnCount();
         this.columns = new Column[columnCount];
@@ -124,7 +128,7 @@ public class CopyMycatRowMetaData implements MycatRowMetaData, Serializable {
     }
 
 
-    public static class Column {
+    public static class Column implements Serializable{
         boolean autoIncrement;
         boolean caseSensitive;
         boolean signed;

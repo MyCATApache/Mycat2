@@ -21,11 +21,14 @@ import io.mycat.calcite.physical.MycatCorrelate;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Correlate;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 import java.util.function.Predicate;
 
 public class MycatCorrelateRule extends MycatConverterRule {
+
+    public static final MycatCorrelateRule INSTANCE = new MycatCorrelateRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
     /**
      * Creates a MycatSortRule.
      */

@@ -1,18 +1,16 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/**
+ * Copyright (C) <2021>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.connectionschedule;
 
@@ -22,8 +20,10 @@ import cn.mycat.vertx.xa.XaSqlConnection;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.MycatSqlDialect;
+import io.mycat.calcite.Rel;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatMergeSort;
@@ -64,7 +64,7 @@ public  class Scheduler implements Runnable {
                                       @NonNull ObservableEmitter<Object[]> emitter,
                                       SqlString sqlString,
                                       List<Object> params,
-                                      CalciteRowMetaData calciteRowMetaData,
+                                       MycatRowMetaData calciteRowMetaData,
                                       AtomicBoolean cancel) {
         Future<Void> closeFuture = Future.future(promise -> {
             Observable<Object[]> observable = Objects.requireNonNull(VertxExecuter.runQuery(connectionFuture,
@@ -121,24 +121,25 @@ public  class Scheduler implements Runnable {
 
     }
 
-    private static ImmutableMultimap<String, SqlString> expand(RelNode relNode,
+    private static ImmutableMultimap<String, SqlString> expand(String relNode,
                                                                List<Object> params,
                                                                CodeExecuterContext executerContext) {
-        if (relNode instanceof MycatView) {
-            MycatView mycatView = (MycatView) relNode;
-            return mycatView.expandToSql(executerContext.isForUpdate(), params);
-        } else if (relNode instanceof MycatTransientSQLTableScan) {
-            MycatTransientSQLTableScan transientSQLTableScan = (MycatTransientSQLTableScan) relNode;
-            return ImmutableMultimap.of(transientSQLTableScan.getTargetName(),
-                    new SqlString(MycatSqlDialect.DEFAULT, transientSQLTableScan.getSql()));
-        }else if (relNode instanceof MycatMergeSort) {
-            MycatView input =(MycatView) ((MycatMergeSort) relNode).getInput();
-         return expand(input, params, executerContext);
-        }  else {
-            throw new UnsupportedOperationException();
-        }
+       return executerContext.expand(relNode,params);
+//        if (relNode instanceof MycatView) {
+//            MycatView mycatView = (MycatView) relNode;
+//            return null;
+//        } else if (relNode instanceof MycatTransientSQLTableScan) {
+//            MycatTransientSQLTableScan transientSQLTableScan = (MycatTransientSQLTableScan) relNode;
+//            return ImmutableMultimap.of(transientSQLTableScan.getTargetName(),
+//                    new SqlString(MycatSqlDialect.DEFAULT, transientSQLTableScan.getSql()));
+//        }else if (relNode instanceof MycatMergeSort) {
+//            MycatView input =(MycatView) ((MycatMergeSort) relNode).getInput();
+//         return expand(input, params, executerContext);
+//        }  else {
+//            throw new UnsupportedOperationException();
+//        }
     }
-    public Future<IdentityHashMap<RelNode, List<Observable<Object[]>>>> schedule(MycatDataContext context,
+    public Future<Map<String, List<Observable<Object[]>>>> schedule(MycatDataContext context,
                                                                                                         List<Object> params,
                                                                                                         CodeExecuterContext executerContext) {
         XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
@@ -146,12 +147,12 @@ public  class Scheduler implements Runnable {
                computeTargetConnectionByTranscation(context,params,executerContext):
                Future.succeededFuture(computeTargetConnectionByFree(context,params,executerContext));
     }
-    private Future<IdentityHashMap<RelNode, List<Observable<Object[]>>>> computeTargetConnectionByTranscation(MycatDataContext context,
+    private Future<Map<String, List<Observable<Object[]>>>> computeTargetConnectionByTranscation(MycatDataContext context,
                                                                                                         List<Object> params,
                                                                                                         CodeExecuterContext executerContext) {
         XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
-        Map<RelNode, Integer> mycatViews = executerContext.getMycatViews();
-        Set<String> targets = getTargets(params, executerContext, mycatViews);
+        Map<String, Rel> nodes = executerContext.getRelContext().nodes;
+        Set<String> targets = getTargets(params, executerContext, nodes.keySet());
         ArrayList<Future> futures = new ArrayList<>();
         for (String target : targets) {
             futures.add(transactionSession.getConnection(context.resolveDatasourceTargetName(target,true)));
@@ -160,11 +161,11 @@ public  class Scheduler implements Runnable {
     }
 
 
-    private static Set<String> getTargets(List<Object> params, CodeExecuterContext executerContext, Map<RelNode, Integer> mycatViews) {
-        return mycatViews.keySet().stream().map(r -> expand(r, params, executerContext)).flatMap(c -> c.keySet().stream()).collect(Collectors.toSet());
+    private static Set<String> getTargets(List<Object> params, CodeExecuterContext executerContext, Set<String> mycatViews) {
+        return mycatViews.stream().map(r -> expand(r, params, executerContext)).flatMap(c -> c.keySet().stream()).collect(Collectors.toSet());
     }
 
-    private IdentityHashMap<RelNode, List<Observable<Object[]>>> computeTargetConnectionByFree(MycatDataContext context,
+    private Map<String, List<Observable<Object[]>>> computeTargetConnectionByFree(MycatDataContext context,
                                                                                          List<Object> params,
                                                                                          CodeExecuterContext executerContext) {
 
@@ -175,11 +176,11 @@ public  class Scheduler implements Runnable {
                     return Future.future(promise -> scheduler.queue.add(new SubTask(order, refCount, context.resolveDatasourceTargetName(target), promise, deadline)));
                 } :
                 new SequenceSchedulePolicy();
-        Map<RelNode, Integer> mycatViews = executerContext.getMycatViews();
-        IdentityHashMap<RelNode, List<Observable<Object[]>>> observableIdentityHashMap = new IdentityHashMap<>();
-        for (Map.Entry<RelNode, Integer> e : mycatViews.entrySet()) {
-            RelNode relNode = e.getKey();
-            Integer refCount = e.getValue();
+        Map<String, Rel> nodes = executerContext.getRelContext().nodes;
+        Map<String, List<Observable<Object[]>>> observableIdentityHashMap = new HashMap<>();
+        for (Map.Entry<String, Rel> e : nodes.entrySet()) {
+            String relNode = e.getKey();
+            int refCount = e.getValue().count;
             List<Observable<Object[]>> observables = schedule(
                     schedulePolicy,
                     context,
@@ -196,7 +197,7 @@ public  class Scheduler implements Runnable {
 
     private List<Observable<Object[]>> schedule(SchedulePolicy schedulePolicy,
                                                 MycatDataContext context,
-                                          RelNode relNode,
+                                          String relNode,
                                           int refCount,
                                           List<Object> params,
                                           CodeExecuterContext executerContext) {
@@ -205,12 +206,12 @@ public  class Scheduler implements Runnable {
 
     private List<Observable<Object[]>> schedule(SchedulePolicy schedulePolicy,
                                                 MycatDataContext context,
-                                          RelNode relNode,
+                                                String relNode,
                                           int refCount,
                                           List<Object> params,
                                           CodeExecuterContext executerContext,
                                           long deadline) {
-        CalciteRowMetaData calciteRowMetaData = new CalciteRowMetaData(relNode.getRowType().getFieldList());
+        MycatRowMetaData calciteRowMetaData = executerContext.get(relNode);
         ImmutableMultimap<String, SqlString> sqls = expand(relNode, params, executerContext);
         List<Observable<Object[]>> observables = new ArrayList<>(sqls.size());
         int order = 0;
@@ -228,7 +229,7 @@ public  class Scheduler implements Runnable {
                                           int order, int refCount, String target, long deadline,
                                           SqlString sqlString,
                                           List<Object> params,
-                                          CalciteRowMetaData calciteRowMetaData) {
+                                          MycatRowMetaData calciteRowMetaData) {
         return Observable.create(emitter -> {
             Promise<Void> resultSetClosePromise = VertxUtil.newPromise();
             Promise<SqlConnection> sqlConnectionRecyclePromise = VertxUtil.newPromise();

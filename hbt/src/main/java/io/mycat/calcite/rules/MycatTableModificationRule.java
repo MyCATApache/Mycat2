@@ -20,6 +20,7 @@ import io.mycat.calcite.MycatRules;
 import io.mycat.calcite.physical.MycatTableModify;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.tools.RelBuilderFactory;
 
@@ -29,6 +30,8 @@ import java.util.function.Predicate;
  * Rule that converts a table-modification to Mycat.
  */
 public  class MycatTableModificationRule extends MycatConverterRule {
+
+    public static final MycatTableModificationRule INSTANCE = new MycatTableModificationRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
     /**
      * Creates a MycatTableModificationRule.
      */

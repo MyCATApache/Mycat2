@@ -21,6 +21,7 @@ import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.rel.core.CorrelationId;
@@ -32,6 +33,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.Objects;
 
 public class MycatCorrelate extends Correlate implements MycatRel {
     protected MycatCorrelate(
@@ -42,7 +44,14 @@ public class MycatCorrelate extends Correlate implements MycatRel {
             CorrelationId correlationId,
             ImmutableBitSet requiredColumns,
             JoinRelType joinType) {
-        super(cluster, traitSet, left, right, correlationId, requiredColumns, joinType);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), left, right, correlationId, requiredColumns, joinType);
+    }
+    public MycatCorrelate(RelInput input) {
+        this(input.getCluster(), input.getTraitSet(), input.getInputs().get(0),
+                input.getInputs().get(1),
+                new CorrelationId((Integer) input.get("correlation")),
+                input.getBitSet("requiredColumns"),
+                input.getEnum("joinType", JoinRelType.class));
     }
 
     public static MycatCorrelate create(RelTraitSet traitSet,

@@ -21,16 +21,15 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.gsi.GSIService;
 import io.mycat.plug.sequence.SequenceGenerator;
+import io.mycat.querycondition.KeyMeta;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.CreateTableUtils;
 import lombok.Getter;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static io.mycat.util.CreateTableUtils.normalizeCreateTableSQLToMySQL;
 import static io.mycat.util.DDLHelper.createDatabaseIfNotExist;
@@ -227,5 +226,14 @@ public class ShardingTable implements ShardingTableHandler {
         if (this.backends == null || this.backends.isEmpty()) {
             this.backends = shardingFuntion.calculate(Collections.emptyMap());
         }
+    }
+
+    public  List<KeyMeta> keyMetas(){
+        List<SimpleColumnInfo> shardingKeys = this.getColumns().stream().filter(i -> i.isShardingKey()).collect(Collectors.toList());
+        List<KeyMeta> keyMetas = new ArrayList<>();
+        for (int i = 0; i < shardingKeys.size(); i++) {
+            keyMetas.add(KeyMeta.of("" + i, shardingKeys.get(i).getColumnName()));
+        }
+        return keyMetas;
     }
 }

@@ -22,6 +22,7 @@ import io.mycat.calcite.physical.MycatIntersect;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Intersect;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 import java.util.function.Predicate;
@@ -31,6 +32,8 @@ import java.util.function.Predicate;
  * to a {@link MycatIntersectRule}.
  */
 public class MycatIntersectRule extends MycatConverterRule {
+
+    public static final MycatIntersectRule INSTANCE = new MycatIntersectRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
     /**
      * Creates a MycatIntersectRule.
      */
