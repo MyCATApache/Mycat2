@@ -16,21 +16,16 @@
  */
 package io.mycat.statistic;
 
-import com.alibaba.druid.DbType;
-import com.alibaba.druid.sql.builder.SQLBuilderFactory;
-import com.alibaba.druid.sql.builder.SQLSelectBuilder;
 import com.alibaba.druid.util.JdbcUtils;
-import io.mycat.DataNode;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.*;
+import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
+import io.mycat.calcite.table.ShardingTable;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.calcite.table.GlobalTable;
-import io.mycat.MetadataManager;
-import io.mycat.calcite.table.ShardingTable;
-import io.mycat.TableHandler;
-import io.mycat.replica.ReplicaSelectorManager;
+import io.mycat.statistic.histogram.MySQLHistogram;
+import io.mycat.statistic.histogram.MycatHistogram;
+import io.mycat.util.JsonUtil;
 import lombok.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,12 +33,16 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
+import java.util.stream.Stream;
 
 public class StatisticCenter {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatisticCenter.class);
     private final ConcurrentHashMap<Key, StatisticObject> statisticMap = new ConcurrentHashMap<>();
     private final String targetName = "prototype";
     private boolean init = false;
+    private final DialectStatistic dialectStatistic = new MySQLDialectStatisticImpl();
 
     public StatisticCenter() {
     }
@@ -66,8 +65,7 @@ public class StatisticCenter {
                 Number table_rows = (Number) map.get("table_rows");
                 String name = (String) map.get("name");
                 String[] strings = name.split("_");
-                StatisticObject statisticObject = new StatisticObject();
-                statisticObject.setRowCount(table_rows.doubleValue());
+                StatisticObject statisticObject = new StatisticObject(table_rows.doubleValue(),JsonUtil.from((String) map.get("histogram"),StatisticObject.class).getColumnHistogramMap());
                 statisticMap.put(Key.of(strings[0], strings[1]), statisticObject);
             }
 
@@ -91,23 +89,73 @@ public class StatisticCenter {
     }
 
     public void fetchTableRowCount(TableHandler tableHandler) {
-        Double aDouble = computeTableRowCount(tableHandler);
-        if (aDouble != null) {
-            updateRowCount(Key.of(tableHandler.getSchemaName(), tableHandler.getTableName()), aDouble);
+        StatisticObject statisticObject = computeTableRowCount(tableHandler);
+        if (statisticObject != null) {
+            updateRowCount(Key.of(tableHandler.getSchemaName(), tableHandler.getTableName()), statisticObject);
         }
     }
 
-    public Double computeTableRowCount(TableHandler tableHandler) {
+    public StatisticObject computeTableRowCount(TableHandler tableHandler) {
+        String schemaName = tableHandler.getSchemaName();
+        String tableName = tableHandler.getTableName();
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+
         try {
             if (tableHandler instanceof GlobalTable) {
                 GlobalTable globalTable = (GlobalTable) tableHandler;
-                return computeGlobalRowCount(globalTable);
+                double rowCount = computeGlobalRowCount(globalTable);
+                DataNode backendTableInfo = globalTable.getGlobalDataNode().iterator().next();
+                Map<String, MycatHistogram> columnHistograms = new HashMap<>();
+                for (SimpleColumnInfo column : globalTable.getColumns()) {
+                    String columnName = column.getColumnName();
+                    Optional<MySQLHistogram> histogramOptional = dialectStatistic.histogram(backendTableInfo.getTargetName(), backendTableInfo.getSchema(), backendTableInfo.getTable(), columnName);
+                    histogramOptional.ifPresent(c -> {
+                        columnHistograms.put(columnName, MycatHistogram.of(rowCount, metadataManager, schemaName, tableName, columnName, c));
+                    });
+                }
+                return new StatisticObject(rowCount, columnHistograms);
+
             } else if (tableHandler instanceof ShardingTable) {
                 ShardingTable shardingTable = (ShardingTable) tableHandler;
-                return computeShardingTableRowCount(shardingTable);
+                double rowCount = computeShardingTableRowCount(shardingTable);
+
+                Map<String, MycatHistogram> columnHistograms = new HashMap<>();
+
+                List<DataNode> dataNodes = shardingTable.getShardingFuntion().calculate(Collections.emptyMap());
+                out:
+                for (SimpleColumnInfo column : shardingTable.getColumns()) {
+                    String columnName = column.getColumnName();
+
+                    List<Optional<MySQLHistogram>> list = new ArrayList<>();
+                    for (DataNode backendTableInfo : dataNodes) {
+                        Optional<MySQLHistogram> histogramOptional = dialectStatistic.histogram(backendTableInfo.getTargetName(), backendTableInfo.getSchema(), backendTableInfo.getTable(), columnName);
+                        if (!histogramOptional.isPresent()) {
+                          continue out;
+                        }else {
+                            list.add(histogramOptional);
+                        }
+                    }
+                    list.stream().map(i->i.get()).map(i->MycatHistogram.of(rowCount,metadataManager,schemaName,tableName,columnName,i))
+                    .reduce((mycatHistogram, mycatHistogram2) -> mycatHistogram.merge(mycatHistogram2))
+                    .ifPresent(c->columnHistograms.put(columnName,c));
+
+                }
+                return new StatisticObject(rowCount, columnHistograms);
+
             } else if (tableHandler instanceof NormalTable) {
                 NormalTable normalTable = (NormalTable) tableHandler;
-                return computeNormalTableRowCount(normalTable);
+                DataNode backendTableInfo = normalTable.getDataNode();
+                double rowCount = computeNormalTableRowCount(normalTable);
+                Map<String, MycatHistogram> columnHistograms = new HashMap<>();
+
+                for (SimpleColumnInfo column : normalTable.getColumns()) {
+                    String columnName = column.getColumnName();
+                    Optional<MySQLHistogram> histogramOptional = dialectStatistic.histogram(backendTableInfo.getTargetName(), backendTableInfo.getSchema(), backendTableInfo.getTable(), columnName);
+                    histogramOptional.ifPresent(c -> {
+                        columnHistograms.put(columnName, MycatHistogram.of(rowCount, metadataManager, schemaName, tableName, columnName, c));
+                    });
+                }
+                return new StatisticObject(rowCount, columnHistograms);
             }
         } catch (Throwable e) {
             LOGGER.error("统计逻辑表行,物理表行失败", e);
@@ -118,16 +166,13 @@ public class StatisticCenter {
     private Double computeNormalTableRowCount(NormalTable normalTable) {
         DataNode dataNode = normalTable.getDataNode();
         String targetName = dataNode.getTargetName();
-        String sql = makeCountSql(dataNode);
-        return fetchRowCount(targetName, sql);
+        return dialectStatistic.rowCount(targetName, dataNode.getSchema(), dataNode.getTable());
     }
 
     private Double computeShardingTableRowCount(ShardingTable shardingTable) {
         Double sum = 0d;
         for (DataNode backendTableInfo : shardingTable.getBackends()) {
-            String targetName = backendTableInfo.getTargetName();
-            String sql = makeCountSql(backendTableInfo);
-            Double onePhyRowCount = fetchRowCount(targetName, sql);
+            Double onePhyRowCount = dialectStatistic.rowCount(backendTableInfo.getTargetName(), backendTableInfo.getSchema(), backendTableInfo.getTable());
             if (onePhyRowCount == null) {
 
             } else {
@@ -139,55 +184,24 @@ public class StatisticCenter {
 
     private Double computeGlobalRowCount(GlobalTable globalTable) {
         DataNode backendTableInfo = globalTable.getGlobalDataNode().iterator().next();
-        String targetName = backendTableInfo.getTargetName();
-        String sql = makeCountSql(backendTableInfo);
-        return fetchRowCount(targetName, sql);
+        return dialectStatistic.rowCount(backendTableInfo.getTargetName(), backendTableInfo.getSchema(), backendTableInfo.getTable());
     }
 
     @SneakyThrows
-    private void updateRowCount(Key key1, Double value) {
-        if (value == null) return;
+    private void updateRowCount(Key key1, StatisticObject statisticObject) {
+        if (statisticObject == null) return;
 
         //lock
-        StatisticObject res = statisticMap.compute(key1, (key, statisticObject) -> {
-            if (statisticObject == null) {
-                statisticObject = new StatisticObject();
-            }
-            statisticObject.setRowCount(value);
-            return statisticObject;
-        });
+        statisticMap.put(key1,statisticObject);
 
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
             Connection rawConnection = connection.getRawConnection();
-            JdbcUtils.execute(rawConnection, "insert into mycat.analyze_table (table_rows,name) values(?,?)",
-                    Arrays.asList(value, key1.getSchemaName() + key1.getTableName()));
+            JdbcUtils.execute(rawConnection, "insert into mycat.analyze_table (table_rows,histogram,name) values(?,?,?)",
+                    Arrays.asList(statisticObject.getRowCount(), JsonUtil.toJson(statisticObject), key1.getSchemaName() + key1.getTableName()));
         }
 
-        LOGGER.info("行统计更新  tableName:" + key1 + " " + res);
-    }
-
-    private String makeCountSql(DataNode schemaInfo) {
-        SQLSelectBuilder selectSQLBuilder = SQLBuilderFactory.createSelectSQLBuilder(DbType.mysql);
-        return selectSQLBuilder.from(schemaInfo.getTargetSchemaTable()).select("count(1)").toString();
-    }
-
-
-    private Double fetchRowCount(String targetName, String sql) {
-        try {
-            ReplicaSelectorManager runtime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
-            targetName = runtime.getDatasourceNameByReplicaName(targetName, false, null);
-            JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-            try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
-                try (RowBaseIterator rowBaseIterator = connection.executeQuery(sql)) {
-                    rowBaseIterator.next();
-                    return rowBaseIterator.getBigDecimal(1).doubleValue();
-                }
-            }
-        } catch (Throwable e) {
-            LOGGER.error("不能获取行统计 " + targetName + " " + sql, e);
-            return null;
-        }
+        LOGGER.info("行统计更新  tableName:" + key1 + " " + statisticObject);
     }
 
     @Getter
@@ -221,8 +235,10 @@ public class StatisticCenter {
     }
 
     @Data
-    static class StatisticObject {
-        private Double rowCount;
+    @AllArgsConstructor
+    public static class StatisticObject {
+        private final Double rowCount;
+        private final Map<String, MycatHistogram> columnHistogramMap;
     }
 
 

@@ -14,12 +14,14 @@
  */
 package io.mycat.statistic.histogram;
 
+import io.mycat.util.JsonUtil;
+import io.vertx.core.json.Json;
 import lombok.Getter;
 import lombok.ToString;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 @Getter
 @ToString
@@ -32,5 +34,27 @@ public class MySQLHistogram {
         this.lastUpdated = lastUpdated;
         this.equiHeight = equiHeight;
         this.mySQLBuckets = Collections.unmodifiableList(mySQLBuckets);
+    }
+
+    public String toJson() {
+        HashMap<Object, Object> root = new HashMap<>();
+        root.put("last-updated", Timestamp.valueOf(lastUpdated).toString());
+        root.put("histogram-type", equiHeight ? "equi-height" : "singleton");
+        List<Object> list = new ArrayList<>();
+        if (equiHeight) {
+            for (MySQLBucket mySQLBucket : mySQLBuckets) {
+                list.add(Objects.toString(mySQLBucket.getLowerInclusiveValue()));
+                list.add(Objects.toString(mySQLBucket.getUpperInclusiveValue()));
+                list.add(Objects.toString(mySQLBucket.getCumulativeFrequence()));
+                list.add(Objects.toString(mySQLBucket.getNumberOfDistinctValues()));
+            }
+        } else {
+            for (MySQLBucket mySQLBucket : mySQLBuckets) {
+                list.add(Objects.toString(mySQLBucket.getLowerInclusiveValue()));
+                list.add(Objects.toString(mySQLBucket.getCumulativeFrequence()));
+            }
+        }
+        root.put("buckets", list);
+        return JsonUtil.toJson(root);
     }
 }
