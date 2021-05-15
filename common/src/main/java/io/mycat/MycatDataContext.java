@@ -119,6 +119,8 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     void endSqlRecord();
 
+
+
     default String setLastMessage(Throwable e) {
         LOGGER.error("",e);
         String string = getThrowableString(e);
@@ -139,4 +141,6 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     void setLastErrorCode(int errorCode);
 
+    Map<String,Object> getProcessStateMap();
+    void putProcessStateMap(Map<String, Object> map);
 }

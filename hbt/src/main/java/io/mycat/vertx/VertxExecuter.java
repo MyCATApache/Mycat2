@@ -54,7 +54,6 @@ public class VertxExecuter {
         MycatInsertExecutor insertExecutor = MycatInsertExecutor.create(context, insertRel, params);
         Map<SQL, Group> groupMap = insertExecutor.getGroupMap();
         Map<String, List<Map.Entry<SQL, Group>>> map1 = groupMap.entrySet().stream().collect(Collectors.groupingBy(i -> i.getKey().getTarget()));
-        TransactionSession transactionSession = context.getTransactionSession();
         List<Future<long[]>> list = new LinkedList<>();
         for (Map.Entry<String, List<Map.Entry<SQL, Group>>> entry : map1.entrySet()) {
             List<Map.Entry<SQL, Group>> value = entry.getValue();
@@ -64,7 +63,7 @@ public class VertxExecuter {
                 List<List<Object>> lists = insertMap.computeIfAbsent(parameterizedSql, s -> new LinkedList<>());
                 lists.addAll(e.getValue().getArgs());
             }
-            list.add(runInsert(insertMap, sqlConnection.getConnection(transactionSession.resolveFinalTargetName(entry.getKey(),true))));
+            list.add(runInsert(insertMap, sqlConnection.getConnection(context.resolveDatasourceTargetName(entry.getKey(),true))));
         }
         if (list.isEmpty()) {
             throw new AssertException();
@@ -87,7 +86,7 @@ public class VertxExecuter {
         for (SQL sql : reallySqlSet) {
             String k = context.resolveDatasourceTargetName(sql.getTarget(),true);
             if (uniqueValues.add(k)) {
-                if (targetMap.put(sql.getTarget(), transactionSession.resolveFinalTargetName(k)) != null) {
+                if (targetMap.put(sql.getTarget(), context.resolveDatasourceTargetName(k)) != null) {
                     throw new IllegalStateException("Duplicate key");
                 }
             }

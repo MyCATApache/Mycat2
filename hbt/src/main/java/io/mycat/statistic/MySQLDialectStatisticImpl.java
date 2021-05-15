@@ -7,6 +7,7 @@ import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.DataNode;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataManager;
+import io.mycat.ReplicaBalanceType;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
@@ -29,7 +30,7 @@ public class MySQLDialectStatisticImpl implements DialectStatistic {
         String sql = makeCountSql(schemaName, tableName);
         try {
             ReplicaSelectorManager runtime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
-            targetName = runtime.getDatasourceNameByReplicaName(targetName, false, null);
+            targetName = runtime.getDatasourceNameByReplicaName(targetName, false, ReplicaBalanceType.NONE,null);
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
             try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
                 try (RowBaseIterator rowBaseIterator = connection.executeQuery(sql)) {
@@ -53,7 +54,7 @@ public class MySQLDialectStatisticImpl implements DialectStatistic {
     public Optional<MySQLHistogram> histogram(String targetName, String schemaName, String tableName, String columnName) {
         try {
             ReplicaSelectorManager runtime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
-            targetName = runtime.getDatasourceNameByReplicaName(targetName, false, null);
+            targetName = runtime.getDatasourceNameByReplicaName(targetName, false, ReplicaBalanceType.NONE,null);
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
             try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
                 List<Map<String, Object>> maps = JdbcUtils.executeQuery(connection.getRawConnection(),

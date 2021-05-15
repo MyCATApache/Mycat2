@@ -1,14 +1,14 @@
 /**
  * Copyright (C) <2021>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
@@ -20,7 +20,6 @@ import com.alibaba.druid.sql.SQLUtils;
 import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.util.packet.AbstractWritePacket;
@@ -76,6 +75,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     private final AtomicLong prepareStatementIds = new AtomicLong(0);
     private ObservableEmitter<AbstractWritePacket> emitter;
     private volatile Observable<AbstractWritePacket> observable;
+    private Map<String, Object> processStateMap;
 
     public MycatDataContextImpl() {
         this.id = IDS.getAndIncrement();
@@ -382,12 +382,16 @@ public class MycatDataContextImpl implements MycatDataContext {
 //    }
     @Override
     public String resolveDatasourceTargetName(String targetName) {
-        return transactionSession.resolveFinalTargetName(targetName);
+        return resolveDatasourceTargetName(targetName, false);
     }
 
     @Override
     public String resolveDatasourceTargetName(String targetName, boolean master) {
-        return transactionSession.resolveFinalTargetName(targetName, master);
+        ReplicaBalanceType balanceType = ReplicaBalanceType.NONE;
+        if (processStateMap != null) {
+            balanceType = (ReplicaBalanceType) processStateMap.getOrDefault("REP_BALANCE_TYPE", ReplicaBalanceType.NONE);
+        }
+        return transactionSession.resolveFinalTargetName(targetName, master, balanceType);
     }
 
     @Override
@@ -418,6 +422,16 @@ public class MycatDataContextImpl implements MycatDataContext {
     @Override
     public long nextPrepareStatementId() {
         return prepareStatementIds.getAndIncrement();
+    }
+
+    @Override
+    public Map<String, Object> getProcessStateMap() {
+        return processStateMap;
+    }
+
+    @Override
+    public void putProcessStateMap(Map<String, Object> map) {
+        this.processStateMap = map;
     }
 
     @Override

@@ -339,7 +339,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                     new Timestamp(heartbeatFlow.getLastReceivedQryTime()).toLocalDateTime();
                             Optional<DatasourceConfig> e = Optional.ofNullable(dataSourceConfig.get(NAME));
 
-                            String replicaDataSourceSelectorList = String.join(",", replicaSelectorRuntime.getRepliaNameListByInstanceName(NAME));
+                            String replicaDataSourceSelectorList = String.join(",", replicaSelectorRuntime.getReplicaNameListByInstanceName(NAME));
 
                             resultSetBuilder.addObjectRowPayload(
                                     Arrays.asList(NAME,
@@ -415,7 +415,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                             Optional<DatasourceConfig> e = Optional.ofNullable(dataSourceConfig.get(NAME));
 
 
-                            String replicaDataSourceSelectorList = String.join(",", replicaSelectorRuntime.getRepliaNameListByInstanceName(NAME));
+                            String replicaDataSourceSelectorList = String.join(",", replicaSelectorRuntime.getReplicaNameListByInstanceName(NAME));
 
                             resultSetBuilder.addObjectRowPayload(
                                     Arrays.asList(NAME, ALIVE, READABLE, TYPE, SESSION_COUNT, WEIGHT, MASTER,

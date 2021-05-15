@@ -20,6 +20,7 @@ import cn.mycat.vertx.xa.XaSqlConnection;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
+import io.mycat.ReplicaBalanceType;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.MycatSqlDialect;
@@ -97,7 +98,7 @@ public  class Scheduler implements Runnable {
                 ReplicaSelectorManager selector = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
                 if (subTask != null) {
                     SubTask curTask = subTask;
-                    String datasourceName = selector.getDatasourceNameByReplicaName(curTask.getTarget(), false, null);
+                    String datasourceName = selector.getDatasourceNameByReplicaName(curTask.getTarget(), false, ReplicaBalanceType.NONE,null);
                     Future<SqlConnection> connectionFuture = mySQLManager.getConnection(datasourceName);
                     connectionFuture
                             .onSuccess(sqlConnection -> curTask.getPromise().complete(sqlConnection))

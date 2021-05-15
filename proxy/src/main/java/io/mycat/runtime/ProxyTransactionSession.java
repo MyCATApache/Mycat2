@@ -19,10 +19,7 @@ import cn.mycat.vertx.xa.XaLog;
 import cn.mycat.vertx.xa.impl.BaseXaSqlConnection;
 import cn.mycat.vertx.xa.impl.LocalSqlConnection;
 import cn.mycat.vertx.xa.impl.LocalXaSqlConnection;
-import io.mycat.DataSourceNearness;
-import io.mycat.MycatConnection;
-import io.mycat.ThreadUsageEnum;
-import io.mycat.TransactionSession;
+import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.replica.DataSourceNearnessImpl;
@@ -44,16 +41,6 @@ public class ProxyTransactionSession extends LocalSqlConnection implements Trans
     }
 
     @Override
-    public String resolveFinalTargetName(String targetName) {
-        return dataSourceNearness.getDataSourceByTargetName(targetName);
-    }
-
-    @Override
-    public String resolveFinalTargetName(String targetName, boolean master) {
-        return dataSourceNearness.getDataSourceByTargetName(targetName, master);
-    }
-
-    @Override
     public TransactionType transactionType() {
         return TransactionType.PROXY_TRANSACTION_TYPE;
     }
@@ -67,5 +54,10 @@ public class ProxyTransactionSession extends LocalSqlConnection implements Trans
     public Future<Void> closeStatementState() {
         dataSourceNearness.clear();
         return super.closeStatementState();
+    }
+
+    @Override
+    public String resolveFinalTargetName(String targetName, boolean master, ReplicaBalanceType replicaBalanceType) {
+        return dataSourceNearness.getDataSourceByTargetName(targetName,master,replicaBalanceType);
     }
 }

@@ -578,7 +578,7 @@ public class MetadataManager implements MysqlVariableService {
         DataNode backendTableInfo = backends.get(0);
         String targetName = backendTableInfo.getTargetName();
         String targetSchemaTable = backendTableInfo.getTargetSchemaTable();
-        String name = replicaSelectorRuntime.getDatasourceNameByReplicaName(targetName, true, null);
+        String name = replicaSelectorRuntime.getDatasourceNameByReplicaName(targetName, true, ReplicaBalanceType.NONE,null);
         try (DefaultConnection connection = jdbcConnectionManager.getConnection(name)) {
             Connection rawConnection = connection.getRawConnection();
             String sql = "select * from " + targetSchemaTable + " where 0 ";
@@ -609,7 +609,7 @@ public class MetadataManager implements MysqlVariableService {
                 DataNode backendTableInfo = backend;
                 String targetName = backendTableInfo.getTargetName();
                 String targetSchemaTable = backendTableInfo.getTargetSchemaTable();
-                String name = replicaSelectorRuntime.getDatasourceNameByReplicaName(targetName, true, null);
+                String name = replicaSelectorRuntime.getDatasourceNameByReplicaName(targetName, true, ReplicaBalanceType.NONE,null);
                 try (DefaultConnection connection = jdbcConnectionManager.getConnection(name)) {
                     String sql = "SHOW CREATE TABLE " + targetSchemaTable;
                     try (RowBaseIterator rowBaseIterator = connection.executeQuery(sql)) {

@@ -18,21 +18,28 @@ package io.mycat.commands;
 
 import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLCommentHint;
+import com.alibaba.druid.sql.ast.SQLHint;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLNumericLiteralExpr;
+import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLStartTransactionStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowAuthorsStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowStatement;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import io.mycat.*;
+import io.mycat.Process;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
+import io.mycat.calcite.MycatHint;
 import io.mycat.calcite.spm.*;
+import io.mycat.replica.BalanceType;
 import io.mycat.sqlhandler.SQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.sqlhandler.ShardingSQLHandler;
@@ -42,8 +49,11 @@ import io.mycat.sqlhandler.ddl.CreateSequenceHandler;
 import io.mycat.sqlhandler.dml.*;
 import io.mycat.sqlhandler.dql.*;
 import io.mycat.sqlrecorder.SqlRecord;
+import io.mycat.util.NameMap;
 import io.reactivex.rxjava3.core.Observable;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -53,6 +63,7 @@ import java.sql.JDBCType;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 
 /**
  * @author Junwen Chen
@@ -298,10 +309,12 @@ public enum MycatdbCommand {
 
     public static Future<Void> execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) {
         sqlStatement.setAfterSemi(false);//remove semi
+        Map<String, Object> route = getHintRoute(sqlStatement);
         boolean existSqlResultSetService = MetaClusterCurrent.exist(SqlResultSetService.class);
         //////////////////////////////////apply transaction///////////////////////////////////
         TransactionSession transactionSession = dataContext.getTransactionSession();
         return transactionSession.openStatementState().flatMap(unused -> {
+            dataContext.putProcessStateMap(route);
             //////////////////////////////////////////////////////////////////////////////////////
             if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
                 SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
@@ -323,7 +336,79 @@ public enum MycatdbCommand {
                     return receiver.sendOk();
                 }
             }
-        });
+        }).onComplete((Handler<AsyncResult>) event -> dataContext.putProcessStateMap(Collections.emptyMap()));
+    }
+
+    @NotNull
+    private static Map<String,Object> getHintRoute(SQLStatement sqlStatement) {
+        List<SQLHint> hints = new LinkedList<>();
+        MySqlASTVisitorAdapter mySqlASTVisitorAdapter = new MySqlASTVisitorAdapter() {
+            @Override
+            public boolean visit(SQLSelect x) {
+                hints.addAll(x.getHints());
+                hints.addAll(x.getFirstQueryBlock().getHints());
+                return false;
+            }
+        };
+
+        sqlStatement.accept(mySqlASTVisitorAdapter);
+        hints.addAll(Optional.ofNullable(sqlStatement.getHeadHintsDirect()).orElse(Collections.emptyList()));
+        for (SQLHint hint : hints) {
+            MycatHint mycatHint = null;
+            if (hint instanceof SQLCommentHint) {
+                String text = ((SQLCommentHint) hint).getText();
+                mycatHint = new MycatHint(text);
+            }
+            if (mycatHint != null) {
+                HashMap<String,Object> map = new HashMap<>();
+                map.put("REP_BALANCE_TYPE",ReplicaBalanceType.NONE);
+                for (MycatHint.Function function : mycatHint.getFunctions()) {
+                    String name = function.getName();
+                    switch (name.toUpperCase()) {
+                        case "EXECUTE_TIMEOUT": {
+                            MycatHint.Argument argument = function.getArguments().get(0);
+                            SQLNumericLiteralExpr value = (SQLNumericLiteralExpr) argument.getValue();
+                            long time = value.getNumber().longValue();//milliseconds毫秒
+                            map.put("EXECUTE_TIMEOUT",time);
+                            continue;
+                        }
+                        case "MASTER": {
+                            map.put("REP_BALANCE_TYPE",ReplicaBalanceType.MASTER);
+                            continue;
+                        }
+                        case "SLAVE": {
+                            map.put("REP_BALANCE_TYPE",ReplicaBalanceType.SLAVE);
+                            continue;
+                        }
+                        case "INDEX": {
+                            map.put("INDEX",function.getArguments().stream().map(i -> i.toString()).collect(Collectors.toList()));
+                            continue;
+                        }
+                        case "SCAN": {
+                            List<MycatHint.Argument> arguments = function.getArguments();
+                            Map<String, List<String>> collect = arguments.stream().collect(Collectors.groupingBy(m -> SQLUtils.toSQLString(m.getName()),
+                                    Collectors.mapping(v -> SQLUtils.toSQLString(v.getValue()), Collectors.toList())));
+                            NameMap<List<String>> nameMap = NameMap.immutableCopyOf(collect);
+                            List<String> logicalTables = Optional.ofNullable(nameMap.get("LOGICAL_TABLE", false)).orElse(Collections.emptyList());
+                            List<String> physicalTables = Optional.ofNullable(nameMap.get("PHYSICAL_TABLE", false)).orElse(Collections.emptyList());
+                            List<String> targets = Optional.ofNullable(nameMap.get("TARGET", false)).orElse(Collections.emptyList());
+                            map.put("SCAN_LOGICAL_TABLE",logicalTables);
+                            map.put("SCAN_PHYSICAL_TABLE",physicalTables);
+                            map.put("SCAN_TARGET",targets);
+                            continue;
+                        }
+                        case "DATANODE":
+                        case "TARGET": {
+                            List<MycatHint.Argument> arguments = function.getArguments();
+                            map.put("TARGET",arguments.stream().map(i -> SQLUtils.toSQLString(i.getValue())).collect(Collectors.toList()));
+                            continue;
+                        }
+                    }
+                }
+                return map;
+            }
+        }
+        return Collections.emptyMap();
     }
 
     @NotNull

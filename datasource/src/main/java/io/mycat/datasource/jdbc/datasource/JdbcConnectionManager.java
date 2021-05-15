@@ -16,10 +16,7 @@ package io.mycat.datasource.jdbc.datasource;
 
 
 import com.alibaba.druid.util.JdbcUtils;
-import io.mycat.ConnectionManager;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.MycatException;
-import io.mycat.ScheduleUtil;
+import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
@@ -122,7 +119,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                                            int transactionIsolation, boolean readOnly) {
         final JdbcDataSource key = Objects.requireNonNull(Optional.ofNullable(dataSourceMap.get(name))
                 .orElseGet(() -> {
-                    JdbcDataSource jdbcDataSource = dataSourceMap.get(replicaSelector.getDatasourceNameByReplicaName(name, true, null));
+                    JdbcDataSource jdbcDataSource = dataSourceMap.get(replicaSelector.getDatasourceNameByReplicaName(name, true, ReplicaBalanceType.NONE,null));
 
                     return jdbcDataSource;
                 }), () -> "unknown target:" + name);

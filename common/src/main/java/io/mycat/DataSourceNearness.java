@@ -7,7 +7,7 @@ public interface DataSourceNearness {
 
     public String getDataSourceByTargetName(String targetName);
 
-    public String getDataSourceByTargetName(String targetName, boolean master);
+    public String getDataSourceByTargetName(String targetName, boolean master, ReplicaBalanceType replicaBalanceType);
 
     public void setLoadBalanceStrategy(String loadBalanceStrategy);
 

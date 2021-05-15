@@ -145,10 +145,6 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
         return voidFuture;
     }
 
-    @Override
-    public String resolveFinalTargetName(String targetName) {
-        return dataSourceNearness.getDataSourceByTargetName(targetName);
-    }
 
     public MySQLIsolation getTransactionIsolation() {
         return dataContext.getIsolation();
@@ -217,7 +213,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     }
 
     @Override
-    public String resolveFinalTargetName(String targetName, boolean master) {
-        return dataSourceNearness.getDataSourceByTargetName(targetName, master);
+    public String resolveFinalTargetName(String targetName, boolean master,ReplicaBalanceType replicaBalanceType) {
+        return dataSourceNearness.getDataSourceByTargetName(targetName, master,replicaBalanceType);
     }
 }

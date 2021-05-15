@@ -14,6 +14,7 @@
  */
 package io.mycat.replica;
 
+import io.mycat.ReplicaBalanceType;
 import io.mycat.config.*;
 import io.mycat.plug.loadBalance.LoadBalanceElement;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
@@ -250,12 +251,18 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
         int i = ThreadLocalRandom.current().nextInt(0, values.size());
         ReplicaSelector replicaDataSourceSelector = values.get(i);
         String name = replicaDataSourceSelector.getName();
-        return getDatasourceNameByReplicaName(name, false, null);
+        return getDatasourceNameByReplicaName(name, false,ReplicaBalanceType.NONE, null);
     }
 
-    public String getDatasourceNameByReplicaName(String replicaName, boolean master, String loadBalanceStrategy) {
-        BiFunction<LoadBalanceStrategy, ReplicaSelector, PhysicsInstance> function =
-                master ? this::getWriteDatasource : this::getDatasource;
+    public String getDatasourceNameByReplicaName(String replicaName, boolean master, ReplicaBalanceType replicaBalanceType, String loadBalanceStrategy) {
+        BiFunction<LoadBalanceStrategy, ReplicaSelector, PhysicsInstance> function;
+        if (master || replicaBalanceType == ReplicaBalanceType.MASTER) {
+            function = this::getWriteDatasource;
+        } else if (replicaBalanceType == ReplicaBalanceType.SLAVE){
+            function = this::getReadDatasource;
+        }else {
+            function = this::getDatasource;
+        }
         ReplicaSelector replicaDataSourceSelector = replicaMap.get(Objects.requireNonNull(replicaName));
         if (replicaDataSourceSelector == null) {
             return replicaName;
@@ -302,6 +309,13 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
                                               ReplicaSelector selector) {
         LoadBalanceStrategy defaultWriteLoadBalanceStrategy = selector.getDefaultWriteLoadBalanceStrategy();
         List<PhysicsInstance> writeDataSource = selector.getWriteDataSourceByReplicaType();
+        return getDatasource(balanceStrategy, selector, defaultWriteLoadBalanceStrategy,
+                writeDataSource);
+    }
+    public PhysicsInstance getReadDatasource(LoadBalanceStrategy balanceStrategy,
+                                              ReplicaSelector selector) {
+        LoadBalanceStrategy defaultWriteLoadBalanceStrategy = selector.getDefaultWriteLoadBalanceStrategy();
+        List<PhysicsInstance> writeDataSource = selector.getReadDataSourceByReplica();
         return getDatasource(balanceStrategy, selector, defaultWriteLoadBalanceStrategy,
                 writeDataSource);
     }
@@ -424,7 +438,7 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
         return Collections.unmodifiableMap(heartbeatDetectorMap);
     }
 
-    public List<String> getRepliaNameListByInstanceName(String name) {
+    public List<String> getReplicaNameListByInstanceName(String name) {
         List<String> replicaDataSourceSelectorList = new ArrayList<>();
         for (ReplicaSelector replicaDataSourceSelector : this.getReplicaMap().values()) {
             for (PhysicsInstance physicsInstance : replicaDataSourceSelector.getRawDataSourceMap().values()) {

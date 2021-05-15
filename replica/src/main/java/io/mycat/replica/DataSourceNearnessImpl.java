@@ -16,6 +16,7 @@ package io.mycat.replica;
 
 import io.mycat.DataSourceNearness;
 import io.mycat.MetaClusterCurrent;
+import io.mycat.ReplicaBalanceType;
 import io.mycat.TransactionSession;
 
 import java.util.Objects;
@@ -36,7 +37,7 @@ public class DataSourceNearnessImpl implements DataSourceNearness {
         this.transactionSession = transactionSession;
     }
 
-    public synchronized String getDataSourceByTargetName(final String targetName, boolean masterArg) {
+    public synchronized String getDataSourceByTargetName(final String targetName, boolean masterArg, ReplicaBalanceType replicaBalanceType) {
         Objects.requireNonNull(targetName);
         boolean master = masterArg || transactionSession.isInTransaction();
         ReplicaSelectorManager selector = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
@@ -44,7 +45,7 @@ public class DataSourceNearnessImpl implements DataSourceNearness {
         String datasource;
         if (replicaMode) {
             datasource = map.computeIfAbsent(targetName, (s) -> {
-                String datasourceNameByReplicaName = selector.getDatasourceNameByReplicaName(targetName, master, loadBalanceStrategy);
+                String datasourceNameByReplicaName = selector.getDatasourceNameByReplicaName(targetName, master,replicaBalanceType, loadBalanceStrategy);
                 return Objects.requireNonNull(datasourceNameByReplicaName);
             });
         } else {
@@ -55,7 +56,7 @@ public class DataSourceNearnessImpl implements DataSourceNearness {
 
     @Override
     public String getDataSourceByTargetName(String targetName) {
-        return getDataSourceByTargetName(targetName, false);
+        return getDataSourceByTargetName(targetName, false,ReplicaBalanceType.NONE);
     }
 
     public void setLoadBalanceStrategy(String loadBalanceStrategy) {
