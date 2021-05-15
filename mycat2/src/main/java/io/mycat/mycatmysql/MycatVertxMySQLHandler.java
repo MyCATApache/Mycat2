@@ -117,6 +117,7 @@ public class MycatVertxMySQLHandler {
         try {
             byte command = readView.readByte();
             process.setCommand(command);
+            process.setCloseCallback(()->socket.close());
             process.setContext(mycatDataContext);
             switch (command) {
                 case MySQLCommandType.COM_SLEEP: {

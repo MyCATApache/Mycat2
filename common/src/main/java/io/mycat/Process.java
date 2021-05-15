@@ -32,6 +32,11 @@ public interface Process {
         }
 
         @Override
+        public void setCloseCallback(Runnable o) {
+
+        }
+
+        @Override
         public void setState(State state) {
 
         }
@@ -119,6 +124,8 @@ public interface Process {
     default <T extends SqlConnection> T trace(T connection) {
         return connection;
     }
+
+    void setCloseCallback(Runnable o);
 
     /**
      * show processlist 的Command字段

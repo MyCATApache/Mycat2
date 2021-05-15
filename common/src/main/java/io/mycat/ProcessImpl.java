@@ -30,6 +30,7 @@ public class ProcessImpl implements Process {
     private Command command;
     private volatile State state;
     private MycatDataContext context;
+    private Runnable closeCallback;
 
     public ProcessImpl() {
         getHoldThreads().add(Thread.currentThread());
@@ -122,6 +123,9 @@ public class ProcessImpl implements Process {
         }
         holdThreads.clear();
         state = State.END;
+        if (closeCallback != null) {
+            closeCallback.run();
+        }
         Process.setCurrentProcess(null);
     }
 
@@ -142,6 +146,11 @@ public class ProcessImpl implements Process {
             connections.addFirst(connection);
         }
         return connection;
+    }
+
+    @Override
+    public void setCloseCallback(Runnable o) {
+        this.closeCallback = o;
     }
 
     @Override
