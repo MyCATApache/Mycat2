@@ -28,7 +28,7 @@ public class ProcessImpl implements Process {
     private final AtomicInteger referenceCount = new AtomicInteger();
     private String query;
     private Command command;
-    private State state;
+    private volatile State state;
     private MycatDataContext context;
 
     public ProcessImpl() {
@@ -121,6 +121,7 @@ public class ProcessImpl implements Process {
             PROCESS_MAP.remove(holdThread);
         }
         holdThreads.clear();
+        state = State.END;
         Process.setCurrentProcess(null);
     }
 

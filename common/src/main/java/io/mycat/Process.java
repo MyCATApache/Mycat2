@@ -298,6 +298,7 @@ public interface Process {
      */
     enum State {
         /**/
-        INIT
+        INIT,
+        END
     }
 }

@@ -40,6 +40,7 @@ import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.MycatHint;
 import io.mycat.calcite.spm.*;
+import io.mycat.config.ServerConfig;
 import io.mycat.replica.BalanceType;
 import io.mycat.sqlhandler.SQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
@@ -55,6 +56,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -312,6 +314,19 @@ public enum MycatdbCommand {
         sqlStatement.setAfterSemi(false);//remove semi
         Map<String, Object> route = getHintRoute(sqlStatement);
         dataContext.putProcessStateMap(route);
+        ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
+        Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+
+        Long executeTimeout = (Long) route.getOrDefault("EXECUTE_TIMEOUT", null);
+        if (executeTimeout != null) {
+            Process currentProcess = Process.getCurrentProcess();
+            vertx.setTimer(executeTimeout, event -> {
+                if (currentProcess.getState() != Process.State.END) {
+                    currentProcess.kill();
+                }
+            });
+        }
+
         String target = (String) route.getOrDefault("TARGET", null);
         if (target != null) {
             String sqlText = sqlStatement.toString();
