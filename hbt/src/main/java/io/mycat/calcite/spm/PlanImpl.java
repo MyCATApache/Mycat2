@@ -157,7 +157,7 @@ public class PlanImpl implements Plan {
                 String parameterizedSql = "";
                 if (relNode instanceof MycatView||relNode instanceof MycatTransientSQLTableScan) {
                     String digest = relNode.getDigest();
-                    ImmutableMultimap<String, SqlString> stringImmutableMultimap = executerContext.expand(digest, drdsSql.getParams());
+                    ImmutableMultimap<String, SqlString> stringImmutableMultimap = executerContext.expand(digest, drdsSql);
                     for (Map.Entry<String, SqlString> entry : (stringImmutableMultimap.entries())) {
                         SqlString sqlString = new SqlString(
                                 entry.getValue().getDialect(),

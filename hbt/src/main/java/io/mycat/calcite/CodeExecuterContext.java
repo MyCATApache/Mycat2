@@ -17,6 +17,7 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableMultimap;
+import io.mycat.DrdsSqlWithParams;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.logical.MycatViewSqlString;
 import io.mycat.util.JsonUtil;
@@ -70,10 +71,10 @@ public class CodeExecuterContext implements Serializable {
         return relContext.nodes.get(name).columnInfo;
     }
 
-    public ImmutableMultimap<String, SqlString> expand(String relNode, List<Object> params) {
+    public ImmutableMultimap<String, SqlString> expand(String relNode, DrdsSqlWithParams drdsSql) {
         Objects.requireNonNull(relContext);
         Objects.requireNonNull(relContext.nodes);
-        MycatViewSqlString apply = Objects.requireNonNull(relContext.nodes).get(relNode).dataNodeMapping.apply(params);
+        MycatViewSqlString apply = Objects.requireNonNull(relContext.nodes).get(relNode).dataNodeMapping.apply(drdsSql.getParams());
         return apply.getSqls();
     }
 

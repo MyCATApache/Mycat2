@@ -326,10 +326,9 @@ public class DrdsRunnerHelper {
     @NotNull
     public static PlanImplementor getPlanImplementor(MycatDataContext dataContext, Response response, DrdsSqlWithParams drdsSqlWithParams) {
         XaSqlConnection transactionSession = (XaSqlConnection) dataContext.getTransactionSession();
-        List<Object> params = drdsSqlWithParams.getParams();
         return new ObservablePlanImplementorImpl(
                 transactionSession,
-                dataContext, params, response);
+                dataContext, drdsSqlWithParams, response);
     }
 
 }

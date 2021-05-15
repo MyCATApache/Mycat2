@@ -18,6 +18,7 @@ package io.mycat.connectionschedule;
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.XaSqlConnection;
 import com.google.common.collect.ImmutableMultimap;
+import io.mycat.DrdsSqlWithParams;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.ReplicaBalanceType;
@@ -123,7 +124,7 @@ public  class Scheduler implements Runnable {
     }
 
     private static ImmutableMultimap<String, SqlString> expand(String relNode,
-                                                               List<Object> params,
+                                                               DrdsSqlWithParams params,
                                                                CodeExecuterContext executerContext) {
        return executerContext.expand(relNode,params);
 //        if (relNode instanceof MycatView) {
@@ -141,33 +142,33 @@ public  class Scheduler implements Runnable {
 //        }
     }
     public Future<Map<String, List<Observable<Object[]>>>> schedule(MycatDataContext context,
-                                                                                                        List<Object> params,
+                                                                                                        DrdsSqlWithParams sqlWithParams,
                                                                                                         CodeExecuterContext executerContext) {
         XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
        return transactionSession.isInTransaction()?
-               computeTargetConnectionByTranscation(context,params,executerContext):
-               Future.succeededFuture(computeTargetConnectionByFree(context,params,executerContext));
+               computeTargetConnectionByTranscation(context,sqlWithParams,executerContext):
+               Future.succeededFuture(computeTargetConnectionByFree(context,sqlWithParams,executerContext));
     }
     private Future<Map<String, List<Observable<Object[]>>>> computeTargetConnectionByTranscation(MycatDataContext context,
-                                                                                                        List<Object> params,
+                                                                                                        DrdsSqlWithParams sqlWithParams,
                                                                                                         CodeExecuterContext executerContext) {
         XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
         Map<String, Rel> nodes = executerContext.getRelContext().nodes;
-        Set<String> targets = getTargets(params, executerContext, nodes.keySet());
+        Set<String> targets = getTargets(sqlWithParams, executerContext, nodes.keySet());
         ArrayList<Future> futures = new ArrayList<>();
         for (String target : targets) {
             futures.add(transactionSession.getConnection(context.resolveDatasourceTargetName(target,true)));
         }
-        return CompositeFuture.all(futures).map(compositeFuture -> computeTargetConnectionByFree(context, params, executerContext));
+        return CompositeFuture.all(futures).map(compositeFuture -> computeTargetConnectionByFree(context, sqlWithParams, executerContext));
     }
 
 
-    private static Set<String> getTargets(List<Object> params, CodeExecuterContext executerContext, Set<String> mycatViews) {
-        return mycatViews.stream().map(r -> expand(r, params, executerContext)).flatMap(c -> c.keySet().stream()).collect(Collectors.toSet());
+    private static Set<String> getTargets(DrdsSqlWithParams sqlWithParams, CodeExecuterContext executerContext, Set<String> mycatViews) {
+        return mycatViews.stream().map(r -> expand(r, sqlWithParams, executerContext)).flatMap(c -> c.keySet().stream()).collect(Collectors.toSet());
     }
 
     private Map<String, List<Observable<Object[]>>> computeTargetConnectionByFree(MycatDataContext context,
-                                                                                         List<Object> params,
+                                                                                         DrdsSqlWithParams drdsSqlWithParams,
                                                                                          CodeExecuterContext executerContext) {
 
         SchedulePolicy schedulePolicy = !context.isInTransaction() ?
@@ -187,7 +188,7 @@ public  class Scheduler implements Runnable {
                     context,
                     relNode,
                     refCount,
-                    params, executerContext);
+                    drdsSqlWithParams, executerContext);
             if (refCount > 1) {
                 observables = observables.stream().map(s->s.share()).collect(Collectors.toList());
             }
@@ -200,26 +201,26 @@ public  class Scheduler implements Runnable {
                                                 MycatDataContext context,
                                           String relNode,
                                           int refCount,
-                                          List<Object> params,
+                                          DrdsSqlWithParams sqlWithParams,
                                           CodeExecuterContext executerContext) {
-        return schedule(schedulePolicy, context, relNode, refCount, params, executerContext, System.currentTimeMillis() + timeout);
+        return schedule(schedulePolicy, context, relNode, refCount, sqlWithParams, executerContext, System.currentTimeMillis() + timeout);
     }
 
     private List<Observable<Object[]>> schedule(SchedulePolicy schedulePolicy,
                                                 MycatDataContext context,
                                                 String relNode,
                                           int refCount,
-                                          List<Object> params,
+                                                DrdsSqlWithParams drdsSqlWithParams,
                                           CodeExecuterContext executerContext,
                                           long deadline) {
         MycatRowMetaData calciteRowMetaData = executerContext.get(relNode);
-        ImmutableMultimap<String, SqlString> sqls = expand(relNode, params, executerContext);
+        ImmutableMultimap<String, SqlString> sqls = expand(relNode, drdsSqlWithParams, executerContext);
         List<Observable<Object[]>> observables = new ArrayList<>(sqls.size());
         int order = 0;
         for (Map.Entry<String, SqlString> e : sqls.entries()) {
             String target = e.getKey();
             SqlString sqlString = e.getValue();
-            observables.add(schedule(schedulePolicy, context, order, refCount, target, deadline, sqlString, params, calciteRowMetaData));
+            observables.add(schedule(schedulePolicy, context, order, refCount, target, deadline, sqlString, drdsSqlWithParams, calciteRowMetaData));
             order++;
         }
         return observables;
@@ -229,7 +230,7 @@ public  class Scheduler implements Runnable {
                                           MycatDataContext context,
                                           int order, int refCount, String target, long deadline,
                                           SqlString sqlString,
-                                          List<Object> params,
+                                          DrdsSqlWithParams drdsSqlWithParams,
                                           MycatRowMetaData calciteRowMetaData) {
         return Observable.create(emitter -> {
             Promise<Void> resultSetClosePromise = VertxUtil.newPromise();
@@ -240,7 +241,7 @@ public  class Scheduler implements Runnable {
                     .getConnetion(context, order, refCount, (target), deadline, sqlConnectionRecyclePromise.future());
             AtomicBoolean cancel = new AtomicBoolean(false);
             Future<Void> closeFuture = addTask(connectionFuture,
-                    emitter, sqlString, params, calciteRowMetaData,cancel);
+                    emitter, sqlString, drdsSqlWithParams.getParams(), calciteRowMetaData,cancel);
             closeFuture.onFailure(event -> emitter.tryOnError(event));
             closeFuture.onSuccess(event -> emitter.onComplete());
             XaSqlConnection xaSqlConnection = (XaSqlConnection)context.getTransactionSession();

@@ -121,7 +121,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         Plan plan = drdsRunner.doHbt(hbt);
                         return new ObservablePlanImplementorImpl(
                                 (XaSqlConnection)dataContext.getTransactionSession(),
-                                dataContext, Collections.emptyList(), response).executeQuery(plan);
+                                dataContext,DrdsSqlWithParams.EMPTY, response).executeQuery(plan);
                     }
                     if ("createSqlCache".equalsIgnoreCase(cmd)) {
                         MycatRouterConfigOps ops = ConfigUpdater.getOps();

@@ -3,6 +3,7 @@ package io.mycat;
 import io.mycat.calcite.MycatHint;
 import org.apache.calcite.sql.type.SqlTypeName;
 
+import java.util.Collections;
 import java.util.List;
 
 public class DrdsSqlWithParams  extends DrdsSql{
@@ -27,4 +28,6 @@ public class DrdsSqlWithParams  extends DrdsSql{
     public List<String> getAliasList() {
         return aliasList;
     }
+
+    public static final DrdsSqlWithParams EMPTY = new DrdsSqlWithParams("SELECT 1", Collections.emptyList(),false,Collections.emptyList(),Collections.emptyList(),Collections.emptyList());
 }

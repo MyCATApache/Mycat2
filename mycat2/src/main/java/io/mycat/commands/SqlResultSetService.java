@@ -168,8 +168,8 @@ public class  SqlResultSetService implements Closeable, Dumpable {
                 XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
                 ObservablePlanImplementorImpl planImplementor = new ObservablePlanImplementorImpl(
                         transactionSession,
-                        context, drdsSql.getParams(), null);
-                Observable<MysqlPayloadObject> observable = planImplementor.getMysqlPayloadObjectObservable(context, drdsSql.getParams(), plan);
+                        context, drdsSql, null);
+                Observable<MysqlPayloadObject> observable = planImplementor.getMysqlPayloadObjectObservable(context, drdsSql, plan);
                 observable = observable.doOnTerminate(new Action() {
                     @Override
                     public void run() throws Throwable {
