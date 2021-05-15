@@ -29,6 +29,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
+import com.alibaba.druid.sql.parser.SQLType;
 import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import io.mycat.*;
@@ -310,6 +311,29 @@ public enum MycatdbCommand {
     public static Future<Void> execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) {
         sqlStatement.setAfterSemi(false);//remove semi
         Map<String, Object> route = getHintRoute(sqlStatement);
+        dataContext.putProcessStateMap(route);
+        String target = (String) route.getOrDefault("TARGET", null);
+        if (target != null) {
+            String sqlText = sqlStatement.toString();
+            SQLType sqlType = SQLParserUtils.getSQLType(sqlText, DbType.mysql);
+            boolean select;
+            switch (sqlType) {
+                case SELECT:
+                case EXPLAIN:
+                case SHOW:
+                case DESC:
+                case UNKNOWN:
+                    select = true;
+                    break;
+                default:
+                    select = false;
+            }
+            String targetName = dataContext.resolveDatasourceTargetName(target);
+            if (select) {
+                return receiver.proxySelect(targetName, sqlText);
+            }
+            return receiver.proxyUpdate(targetName, sqlText);
+        }
         boolean existSqlResultSetService = MetaClusterCurrent.exist(SqlResultSetService.class);
         //////////////////////////////////apply transaction///////////////////////////////////
         TransactionSession transactionSession = dataContext.getTransactionSession();
@@ -340,7 +364,7 @@ public enum MycatdbCommand {
     }
 
     @NotNull
-    private static Map<String,Object> getHintRoute(SQLStatement sqlStatement) {
+    private static Map<String, Object> getHintRoute(SQLStatement sqlStatement) {
         List<SQLHint> hints = new LinkedList<>();
         MySqlASTVisitorAdapter mySqlASTVisitorAdapter = new MySqlASTVisitorAdapter() {
             @Override
@@ -360,8 +384,8 @@ public enum MycatdbCommand {
                 mycatHint = new MycatHint(text);
             }
             if (mycatHint != null) {
-                HashMap<String,Object> map = new HashMap<>();
-                map.put("REP_BALANCE_TYPE",ReplicaBalanceType.NONE);
+                HashMap<String, Object> map = new HashMap<>();
+                map.put("REP_BALANCE_TYPE", ReplicaBalanceType.NONE);
                 for (MycatHint.Function function : mycatHint.getFunctions()) {
                     String name = function.getName();
                     switch (name.toUpperCase()) {
@@ -369,19 +393,19 @@ public enum MycatdbCommand {
                             MycatHint.Argument argument = function.getArguments().get(0);
                             SQLNumericLiteralExpr value = (SQLNumericLiteralExpr) argument.getValue();
                             long time = value.getNumber().longValue();//milliseconds毫秒
-                            map.put("EXECUTE_TIMEOUT",time);
+                            map.put("EXECUTE_TIMEOUT", time);
                             continue;
                         }
                         case "MASTER": {
-                            map.put("REP_BALANCE_TYPE",ReplicaBalanceType.MASTER);
+                            map.put("REP_BALANCE_TYPE", ReplicaBalanceType.MASTER);
                             continue;
                         }
                         case "SLAVE": {
-                            map.put("REP_BALANCE_TYPE",ReplicaBalanceType.SLAVE);
+                            map.put("REP_BALANCE_TYPE", ReplicaBalanceType.SLAVE);
                             continue;
                         }
                         case "INDEX": {
-                            map.put("INDEX",function.getArguments().stream().map(i -> i.toString()).collect(Collectors.toList()));
+                            map.put("INDEX", function.getArguments().stream().map(i -> i.toString()).collect(Collectors.toList()));
                             continue;
                         }
                         case "SCAN": {
@@ -392,15 +416,15 @@ public enum MycatdbCommand {
                             List<String> logicalTables = Optional.ofNullable(nameMap.get("LOGICAL_TABLE", false)).orElse(Collections.emptyList());
                             List<String> physicalTables = Optional.ofNullable(nameMap.get("PHYSICAL_TABLE", false)).orElse(Collections.emptyList());
                             List<String> targets = Optional.ofNullable(nameMap.get("TARGET", false)).orElse(Collections.emptyList());
-                            map.put("SCAN_LOGICAL_TABLE",logicalTables);
-                            map.put("SCAN_PHYSICAL_TABLE",physicalTables);
-                            map.put("SCAN_TARGET",targets);
+                            map.put("SCAN_LOGICAL_TABLE", logicalTables);
+                            map.put("SCAN_PHYSICAL_TABLE", physicalTables);
+                            map.put("SCAN_TARGET", targets);
                             continue;
                         }
                         case "DATANODE":
                         case "TARGET": {
                             List<MycatHint.Argument> arguments = function.getArguments();
-                            map.put("TARGET",arguments.stream().map(i -> SQLUtils.toSQLString(i.getValue())).collect(Collectors.toList()));
+                            map.put("TARGET", arguments.stream().map(i -> SQLUtils.toSQLString(i.getValue())).collect(Collectors.toList()));
                             continue;
                         }
                     }
