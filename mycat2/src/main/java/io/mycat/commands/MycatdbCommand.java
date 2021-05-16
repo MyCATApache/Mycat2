@@ -430,12 +430,14 @@ public enum MycatdbCommand {
                             Map<String, List<String>> collect = arguments.stream().collect(Collectors.groupingBy(m -> SQLUtils.toSQLString(m.getName()),
                                     Collectors.mapping(v -> SQLUtils.toSQLString(v.getValue()), Collectors.toList())));
                             NameMap<List<String>> nameMap = NameMap.immutableCopyOf(collect);
+                            List<String> condition = Optional.ofNullable(nameMap.get("CONDITION", false)).orElse(Collections.emptyList());
                             List<String> logicalTables = Optional.ofNullable(nameMap.get("LOGICAL_TABLE", false)).orElse(Collections.emptyList());
                             List<String> physicalTables = Optional.ofNullable(nameMap.get("PHYSICAL_TABLE", false)).orElse(Collections.emptyList());
                             List<String> targets = Optional.ofNullable(nameMap.get("TARGET", false)).orElse(Collections.emptyList());
                             map.put("SCAN_LOGICAL_TABLE", logicalTables);
                             map.put("SCAN_PHYSICAL_TABLE", physicalTables);
                             map.put("SCAN_TARGET", targets);
+                            map.put("SCAN_CONDITION", condition);
                             continue;
                         }
                         case "DATANODE":

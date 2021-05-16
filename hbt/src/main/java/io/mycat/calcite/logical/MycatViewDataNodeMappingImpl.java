@@ -3,9 +3,7 @@ package io.mycat.calcite.logical;
 import io.mycat.*;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.IndexCondition;
-import io.mycat.calcite.table.ShardingTable;
 import io.mycat.util.JsonUtil;
-import io.vertx.core.json.Json;
 import lombok.Getter;
 
 import java.util.HashMap;
@@ -19,11 +17,13 @@ public class MycatViewDataNodeMappingImpl implements MycatViewDataNodeMapping {
     boolean containsOrder;
     List<String> uniqueTableNames;
     IndexCondition indexCondition;
+    private ViewInfo viewInfo;
 
-    public MycatViewDataNodeMappingImpl(boolean containsOrder, List<String> uniqueTableNames, IndexCondition indexCondition) {
+    public MycatViewDataNodeMappingImpl(boolean containsOrder, List<String> uniqueTableNames, IndexCondition indexCondition, ViewInfo viewInfo) {
         this.containsOrder = containsOrder;
         this.distribution = Distribution.of(uniqueTableNames);
         this.indexCondition = indexCondition;
+        this.viewInfo = viewInfo;
     }
 
     @Override
@@ -46,11 +46,20 @@ public class MycatViewDataNodeMappingImpl implements MycatViewDataNodeMapping {
     }
 
     @Override
-    public String toJson() {
-        Map<String,String> map = new HashMap<>();
-        map.put("containsOrder",containsOrder?"true":"false");
-        map.put("uniqueTableNames", JsonUtil.toJson(uniqueTableNames));
-        map.put("indexCondition", indexCondition.toJson());
-        return JsonUtil.toJson(map);
+    public ViewInfo viewInfo() {
+        return viewInfo;
+    }
+
+//    @Override
+//    public String toJson() {
+//        Map<String,String> map = new HashMap<>();
+//        map.put("containsOrder",containsOrder?"true":"false");
+//        map.put("uniqueTableNames", JsonUtil.toJson(uniqueTableNames));
+//        map.put("indexCondition", indexCondition.toJson());
+//        return JsonUtil.toJson(map);
+//    }
+
+    public ViewInfo getViewInfo() {
+        return viewInfo;
     }
 }

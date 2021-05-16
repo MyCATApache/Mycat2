@@ -1,6 +1,5 @@
 package io.mycat.calcite.spm;
 
-import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLCommentHint;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -9,10 +8,9 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.ImmutableList;
 import io.mycat.*;
 import io.mycat.calcite.CodeExecuterContext;
+import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.rewriter.OptimizationContext;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import lombok.SneakyThrows;
 import org.apache.calcite.rel.externalize.RelJsonReader;
 import org.apache.calcite.rel.externalize.RelJsonWriter;
@@ -94,10 +92,10 @@ public class MemPlanCache implements QueryPlanCache {
         return new PlanResultSet(newBaselinePlan.getBaselineId(), true, codeExecuterContext);
     }
 
-    public static CodeExecuterContext getCodeExecuterContext(BaselinePlan plan, MycatRel defaultMycatRel) {
+    public static CodeExecuterContext getCodeExecuterContext(BaselinePlan plan, MycatRel defaultMycatRel,DrdsSql drdsSql) {
         if (defaultMycatRel != null) {
             boolean forUpdate = DrdsSql.isForUpdate(plan.getSql());
-            CodeExecuterContext codeExecuterContext = DrdsExecutorCompiler.getCodeExecuterContext(defaultMycatRel, forUpdate);
+            CodeExecuterContext codeExecuterContext = DrdsExecutorCompiler.getCodeExecuterContext(defaultMycatRel, forUpdate,drdsSql);
             plan.setAttach(codeExecuterContext);
         }
         return getCodeExecuterContext(plan);
@@ -118,7 +116,7 @@ public class MemPlanCache implements QueryPlanCache {
                 DrdsSqlCompiler drdsSqlCompiler = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
                 RelJsonReader relJsonReader = new RelJsonReader(DrdsSqlCompiler.newCluster(), drdsSqlCompiler.newCalciteCatalogReader(), null);
                 MycatRel mycatRel = (MycatRel) relJsonReader.read(rel);
-                CodeExecuterContext codeExecuterContext = DrdsExecutorCompiler.getCodeExecuterContext(mycatRel, forUpdate);
+                CodeExecuterContext codeExecuterContext = DrdsExecutorCompiler.getCodeExecuterContext(mycatRel, forUpdate, DrdsRunnerHelper.preParse(plan.getSql(),null));
                 plan.setAttach(codeExecuterContext);
             } catch (Throwable throwable) {
                 log.error("", throwable);
@@ -163,7 +161,7 @@ public class MemPlanCache implements QueryPlanCache {
             mycatRel.explain(relJsonWriter);
             long hash = planIds.nextPlanId();
             BaselinePlan newBaselinePlan = new BaselinePlan(drdsSql.getParameterizedSql(), relJsonWriter.asString(), hash, baselineId = baseline.getBaselineId(), null);
-            getCodeExecuterContext(newBaselinePlan, mycatRel);
+            getCodeExecuterContext(newBaselinePlan, mycatRel,drdsSql);
             return saveBaselinePlan(fix, false, baseline, newBaselinePlan);
     }
 

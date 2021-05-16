@@ -17,5 +17,5 @@ public interface MycatViewDataNodeMapping extends Function<List<Object>, Stream<
 
     public Distribution distribution();
 
-    String toJson();
+    ViewInfo viewInfo();
 }

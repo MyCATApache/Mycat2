@@ -145,7 +145,7 @@ public class DrdsSqlCompiler {
             }
         });
         MycatRel mycatRel = optimizeWithCBO(bestExp, Collections.emptyList());
-        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(mycatRel, false);
+        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(mycatRel, false, null);
         return new PlanImpl(mycatRel, codeExecuterContext, mycatRel.getRowType().getFieldNames());
     }
 

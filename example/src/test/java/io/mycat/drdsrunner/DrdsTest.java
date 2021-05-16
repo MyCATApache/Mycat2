@@ -2,7 +2,6 @@ package io.mycat.drdsrunner;
 
 import io.mycat.*;
 import io.mycat.assemble.MycatTest;
-import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.rewriter.OptimizationContext;
@@ -11,7 +10,6 @@ import io.mycat.calcite.spm.PlanImpl;
 import io.mycat.config.*;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
-import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.util.JsonUtil;
 import lombok.SneakyThrows;
 import org.apache.calcite.plan.RelOptUtil;
@@ -188,7 +186,7 @@ public abstract class DrdsTest implements MycatTest {
         DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sql, null);
         OptimizationContext optimizationContext = new OptimizationContext();
         MycatRel dispatch = drds.dispatch(optimizationContext, drdsSqlWithParams);
-        Plan plan = new PlanImpl(dispatch, DrdsExecutorCompiler.getCodeExecuterContext(dispatch,false), drdsSqlWithParams.getAliasList());
+        Plan plan = new PlanImpl(dispatch, DrdsExecutorCompiler.getCodeExecuterContext(dispatch,false, drdsSql), drdsSqlWithParams.getAliasList());
         return new Explain(plan,drdsSqlWithParams);
     }
 

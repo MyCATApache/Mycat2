@@ -15,8 +15,6 @@
 package io.mycat.calcite.logical;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import io.mycat.DataNode;
 import io.mycat.calcite.*;
@@ -46,6 +44,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rel.logical.LogicalTableScan;
@@ -59,7 +58,6 @@ import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.RxBuiltInMethodImpl;
@@ -68,9 +66,7 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 public class MycatView extends AbstractRelNode implements MycatRel {
@@ -120,31 +116,21 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     }
 
 
-    static class FindOrder extends RelShuttleImpl {
-        boolean containsOrder = false;
-
-        @Override
-        public RelNode visit(LogicalSort sort) {
-            containsOrder = true;
-            return sort;
-        }
-    }
-
 
     public MycatViewDataNodeMapping getMycatViewDataNodeMapping() {
-        FindOrder findOrder = new FindOrder();
-        relNode.accept(findOrder);
-        boolean containsOrder = findOrder.containsOrder;
+        ViewInfo viewInfo = new ViewInfo();
+        relNode.accept(viewInfo);
+        boolean containsOrder = viewInfo.containsOrder;
         Distribution.Type type = distribution.type();
         switch (type) {
             case BroadCast:
             case PHY:
-                return new MycatViewDataNodeMappingImpl(containsOrder, distribution.toNameList(), IndexCondition.EMPTY);
+                return new MycatViewDataNodeMappingImpl(containsOrder, distribution.toNameList(), IndexCondition.EMPTY, viewInfo);
             case Sharding:
                 ShardingTable shardingTable = distribution.getShardingTables().get(0);
                 PredicateAnalyzer predicateAnalyzer = new PredicateAnalyzer(shardingTable.keyMetas(), shardingTable.getColumns().stream().map(i -> i.getColumnName()).collect(Collectors.toList()));
                 IndexCondition indexCondition = predicateAnalyzer.translateMatch(condition);
-                return new MycatViewDataNodeMappingImpl(containsOrder, distribution.toNameList(), indexCondition);
+                return new MycatViewDataNodeMappingImpl(containsOrder, distribution.toNameList(), indexCondition,viewInfo);
             default:
                 throw new IllegalStateException("Unexpected value: " + distribution.type());
         }

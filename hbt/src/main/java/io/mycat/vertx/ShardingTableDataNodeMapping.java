@@ -1,20 +1,26 @@
 package io.mycat.vertx;
 
+import com.alibaba.druid.sql.SQLUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
-import io.mycat.DataNode;
-import io.mycat.DrdsSqlWithParams;
-import io.mycat.MetaClusterCurrent;
+import io.mycat.*;
+import io.mycat.calcite.CodeExecuterContext;
+import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatHint;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.logical.MycatViewDataNodeMapping;
 import io.mycat.calcite.logical.MycatViewSqlString;
+import io.mycat.calcite.logical.ViewInfo;
 import io.mycat.calcite.rewriter.Distribution;
+import io.mycat.calcite.rewriter.IndexCondition;
+import io.mycat.calcite.spm.*;
 import io.mycat.calcite.table.GlobalTable;
+import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.config.ServerConfig;
 import io.mycat.util.JsonUtil;
+import io.mycat.util.NameMap;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.apache.calcite.sql.SqlDialect;
@@ -24,6 +30,7 @@ import org.apache.calcite.sql.util.SqlString;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -57,15 +64,7 @@ public class ShardingTableDataNodeMapping implements DataNodeMapping {
                                            DrdsSqlWithParams drdsSqlWithParams,
                                            int mergeUnionSize) {
         SqlNode sqlTemplate = sqlTemplateArg;
-        for (MycatHint mycatHint : Optional.ofNullable(drdsSqlWithParams.getHints()).orElse(Collections.emptyList())) {
-            for (MycatHint.Function function : mycatHint.getFunctions()) {
-               if("SCAN".equals(function.getName())){
-                   List<MycatHint.Argument> arguments = function.getArguments();
-                   break;
-               }
-            }
 
-        }
 
         Stream<Map<String, DataNode>> dataNodes = mycatViewDataNodeMapping.apply(drdsSqlWithParams.getParams());
         if (mycatViewDataNodeMapping.getType() == Distribution.Type.BroadCast) {
