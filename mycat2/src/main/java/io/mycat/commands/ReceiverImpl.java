@@ -29,6 +29,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
@@ -36,9 +37,8 @@ import io.vertx.sqlclient.SqlConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 
 import static io.mycat.ExecuteType.*;
@@ -70,20 +70,20 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public Future<Void> proxySelect(String defaultTargetName, String statement) {
-        return execute(ExplainDetail.create(QUERY, defaultTargetName, statement, null));
+    public Future<Void> proxySelect(List<String> targets, String statement) {
+        return execute(ExplainDetail.create(QUERY, targets, statement, null));
     }
 
 
     @Override
-    public Future<Void> proxyUpdate(String defaultTargetName, String sql) {
-        return execute(ExplainDetail.create(UPDATE, Objects.requireNonNull(defaultTargetName), sql, null));
+    public Future<Void> proxyUpdate(List<String> targets, String sql) {
+        return execute(ExplainDetail.create(UPDATE, Objects.requireNonNull(targets), sql, null));
     }
 
     @Override
     public Future<Void> proxySelectToPrototype(String statement) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        return execute(ExplainDetail.create(QUERY_MASTER, Objects.requireNonNull(metadataManager.getPrototype()), statement, null));
+        return execute(ExplainDetail.create(QUERY_MASTER, Collections.singletonList(Objects.requireNonNull(metadataManager.getPrototype())), statement, null));
     }
 
 
@@ -106,81 +106,81 @@ public class ReceiverImpl implements Response {
     public Future<Void> rollback() {
         count++;
         boolean hasMoreResultSet = hasMoreResultSet();
-       return transactionSession.rollback()
-               .eventually((u)-> transactionSession.closeStatementState())
-                .flatMap(u->session.writeOk(hasMoreResultSet));
+        return transactionSession.rollback()
+                .eventually((u) -> transactionSession.closeStatementState())
+                .flatMap(u -> session.writeOk(hasMoreResultSet));
     }
 
     @Override
     public Future<Void> begin() {
         count++;
         boolean hasMoreResultSet = hasMoreResultSet();
-        return  transactionSession.begin()
-                .eventually((u)-> transactionSession.closeStatementState())
-                .flatMap(u->session.writeOk(hasMoreResultSet));
+        return transactionSession.begin()
+                .eventually((u) -> transactionSession.closeStatementState())
+                .flatMap(u -> session.writeOk(hasMoreResultSet));
     }
 
     @Override
     public Future<Void> commit() {
         count++;
         boolean moreResultSet = hasMoreResultSet();
-        return transactionSession.commit().eventually((u)->transactionSession.closeStatementState())
-                .flatMap(u->session.writeOk(moreResultSet));
+        return transactionSession.commit().eventually((u) -> transactionSession.closeStatementState())
+                .flatMap(u -> session.writeOk(moreResultSet));
     }
 
     @Override
     public Future<Void> execute(ExplainDetail detail) {
         boolean directPacket = false;
         boolean master = dataContext.isInTransaction() || !dataContext.isAutocommit() || detail.getExecuteType().isMaster();
-        String datasource = session.getDataContext().resolveDatasourceTargetName(detail.getTarget(), master);
+        Set<String> targets = new HashSet<>();
+        for (String target : detail.getTargets()) {
+            String datasource = session.getDataContext().resolveDatasourceTargetName(target, master);
+            targets.add(datasource);
+        }
+
         String sql = detail.getSql();
-        PromiseInternal<Void> promise = VertxUtil.newPromise();
         boolean inTransaction = dataContext.isInTransaction();
-        Future<SqlConnection> connectionFuture = transactionSession.getConnection(datasource);
+        ArrayList<String> targetOrderList = new ArrayList<>(targets);
         switch (detail.getExecuteType()) {
             case QUERY:
             case QUERY_MASTER: {
-                Future<Void> future = connectionFuture.flatMap(connection -> {
-                    Observable<MysqlPayloadObject> mysqlPacketObservable = VertxExecuter.runQueryOutputAsMysqlPayloadObject(Future.succeededFuture(
-                            connection), sql, Collections.emptyList());
-                    if (!inTransaction) {
-                        return sendResultSet(mysqlPacketObservable);
+                List<Observable<MysqlPayloadObject>> outputs = new LinkedList<>();
+                for (int i = 0; i < targetOrderList.size(); i++) {
+                    String datasource = targetOrderList.get(i);
+                    Future<SqlConnection> connectionFuture = transactionSession.getConnection(datasource);
+                    if (i == 0) {
+                        outputs.add(VertxExecuter.runQueryOutputAsMysqlPayloadObject(connectionFuture, sql, Collections.emptyList()));
                     } else {
-                        return sendResultSet(mysqlPacketObservable);
+                        outputs.add(VertxExecuter.runQuery(connectionFuture, sql, Collections.emptyList(), null).map(row -> new MysqlRow(row)));
                     }
-                });
-                future.onComplete(event -> {
-                    if (event.succeeded()) {
-                        promise.tryComplete();
-                    } else {
-                        promise.tryFail(event.cause());
-                    }
-                });
-                return promise;
+                }
+                return sendResultSet(Observable.concat(outputs));
             }
             case UPDATE:
             case INSERT:
-                Future<long[]> future1 = VertxExecuter.runUpdate(connectionFuture, sql);
-                future1.onComplete(event -> {
-                    if (event.succeeded()) {
-                        long[] result = event.result();
-                        sendOk(result[0], result[1]).onComplete(result1 -> promise.tryComplete());
-                    } else {
-                        promise.tryFail(event.cause());
-                    }
-
+                List<Future<long[]>> updateInfoList = new ArrayList<>(targetOrderList.size());
+                for (int i = 0; i < targetOrderList.size(); i++) {
+                    String datasource = targetOrderList.get(i);
+                    Future<SqlConnection> connectionFuture = transactionSession.getConnection(datasource);
+                    updateInfoList.add(VertxExecuter.runUpdate(connectionFuture, sql));
+                }
+                CompositeFuture all = CompositeFuture.all((List) updateInfoList);
+               return all.map(u-> {
+                    List<long[]> list = all.list();
+                    return list.stream().reduce(new long[]{0,0},(o, o2) -> new long[]{o[0] + o2[0], o[1] + o2[1]});
+                }).flatMap(result->{
+                  return   sendOk(result[0], result[1]);
                 });
-                return promise;
             default:
                 throw new IllegalStateException("Unexpected value: " + detail.getExecuteType());
         }
-    }
+}
 
     @Override
     public Future<Void> sendOk() {
         count++;
         boolean hasMoreResultSet = hasMoreResultSet();
-        return transactionSession.closeStatementState().flatMap(u->session.writeOk(hasMoreResultSet));
+        return transactionSession.closeStatementState().flatMap(u -> session.writeOk(hasMoreResultSet));
     }
 
     @Override
@@ -207,61 +207,61 @@ public class ReceiverImpl implements Response {
     }
 
 
-    public   static class MysqlPayloadObjectObserver implements Observer<MysqlPayloadObject> {
-        private final PromiseInternal<Void> promise;
-        private final boolean moreResultSet;
-        private boolean binary;
-        private MySQLServerSession session;
-        private Disposable disposable;
-        Function<Object[], byte[]> convertor;
+public static class MysqlPayloadObjectObserver implements Observer<MysqlPayloadObject> {
+    private final PromiseInternal<Void> promise;
+    private final boolean moreResultSet;
+    private boolean binary;
+    private MySQLServerSession session;
+    private Disposable disposable;
+    Function<Object[], byte[]> convertor;
 
-        public MysqlPayloadObjectObserver(PromiseInternal<Void> promise,
-                                          boolean moreResultSet,boolean binary, MySQLServerSession session) {
-            this.promise = promise;
-            this.moreResultSet = moreResultSet;
-            this.binary = binary;
-            this.session = session;
-        }
+    public MysqlPayloadObjectObserver(PromiseInternal<Void> promise,
+                                      boolean moreResultSet, boolean binary, MySQLServerSession session) {
+        this.promise = promise;
+        this.moreResultSet = moreResultSet;
+        this.binary = binary;
+        this.session = session;
+    }
 
-        @Override
-        public void onSubscribe(@NonNull Disposable d) {
-            this.disposable = d;
-        }
+    @Override
+    public void onSubscribe(@NonNull Disposable d) {
+        this.disposable = d;
+    }
 
-        @Override
-        public void onNext(@NonNull MysqlPayloadObject next) {
-            if (next instanceof MysqlRow) {
-                session.writeBytes(this.convertor.apply(((MysqlRow) next).getRow()), false);
-            } else if (next instanceof MySQLColumnDef) {
-                MycatRowMetaData rowMetaData = ((MySQLColumnDef) next).getMetaData();
-                session.writeColumnCount(rowMetaData.getColumnCount());
-                if (!binary) {
-                    convertor = ResultSetMapping.concertToDirectTextResultSet(rowMetaData);
-                } else {
-                    convertor = ResultSetMapping.concertToDirectBinaryResultSet(rowMetaData);
-                }
-                Iterator<byte[]> columnIterator = MySQLPacketUtil.generateAllColumnDefPayload(rowMetaData).iterator();
-                while (columnIterator.hasNext()) {
-                    session.writeBytes(columnIterator.next(), false);
-                }
-                session.writeColumnEndPacket(moreResultSet);
+    @Override
+    public void onNext(@NonNull MysqlPayloadObject next) {
+        if (next instanceof MysqlRow) {
+            session.writeBytes(this.convertor.apply(((MysqlRow) next).getRow()), false);
+        } else if (next instanceof MySQLColumnDef) {
+            MycatRowMetaData rowMetaData = ((MySQLColumnDef) next).getMetaData();
+            session.writeColumnCount(rowMetaData.getColumnCount());
+            if (!binary) {
+                convertor = ResultSetMapping.concertToDirectTextResultSet(rowMetaData);
+            } else {
+                convertor = ResultSetMapping.concertToDirectBinaryResultSet(rowMetaData);
             }
-        }
-
-        @Override
-        public void onError(@NonNull Throwable throwable) {
-            disposable.dispose();
-            promise.tryFail(throwable);
-        }
-
-        @Override
-        public void onComplete() {
-            disposable.dispose();
-            session.getDataContext().getTransactionSession().closeStatementState()
-                    .onComplete(event -> {
-                        session.writeRowEndPacket(moreResultSet, false)
-                                .onComplete((Handler<AsyncResult>) event1 -> promise.tryComplete());
-                    });
+            Iterator<byte[]> columnIterator = MySQLPacketUtil.generateAllColumnDefPayload(rowMetaData).iterator();
+            while (columnIterator.hasNext()) {
+                session.writeBytes(columnIterator.next(), false);
+            }
+            session.writeColumnEndPacket(moreResultSet);
         }
     }
+
+    @Override
+    public void onError(@NonNull Throwable throwable) {
+        disposable.dispose();
+        promise.tryFail(throwable);
+    }
+
+    @Override
+    public void onComplete() {
+        disposable.dispose();
+        session.getDataContext().getTransactionSession().closeStatementState()
+                .onComplete(event -> {
+                    session.writeRowEndPacket(moreResultSet, false)
+                            .onComplete((Handler<AsyncResult>) event1 -> promise.tryComplete());
+                });
+    }
+}
 }

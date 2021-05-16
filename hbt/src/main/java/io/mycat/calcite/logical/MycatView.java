@@ -167,69 +167,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         return MycatCalciteSupport.INSTANCE.convertToSqlTemplate(relNode, dialect, update);
     }
 
-    /**
-     * ImmutableMultimap<String, SQLSelectStatement>
-     *
-     * @param mycatViewDataNodeMapping
-     * @param sqlTemplateArg
-     * @param params
-     * @param mergeUnionSize
-     * @return
-     */
-    public static MycatViewSqlString apply(MycatViewDataNodeMapping mycatViewDataNodeMapping,
-                                           SqlNode sqlTemplateArg,
-                                           List<Object> params,
-                                           int mergeUnionSize) {
-        SqlNode sqlTemplate = sqlTemplateArg;
-        Stream<Map<String, DataNode>> dataNodes = mycatViewDataNodeMapping.apply(params);
-        if (mycatViewDataNodeMapping.getType() == Distribution.Type.BroadCast) {
-            GlobalTable globalTable = mycatViewDataNodeMapping.distribution().getGlobalTables().get(0);
-            List<DataNode> globalDataNode = globalTable.getGlobalDataNode();
-            int i = ThreadLocalRandom.current().nextInt(0, globalDataNode.size());
-            DataNode dataNode = globalDataNode.get(i);
-            String targetName = dataNode.getTargetName();
-            Map<String, DataNode> nodeMap = dataNodes.findFirst().get();
-            SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
-            SqlNode sqlSelectStatement = MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params, nodeMap);
-            return new MycatViewSqlString(ImmutableMultimap.of(targetName, sqlSelectStatement.toSqlString(dialect)));
-        }
-        if (mergeUnionSize == 0 || mycatViewDataNodeMapping.containsOrder()) {
-            ImmutableMultimap.Builder<String, SqlString> builder = ImmutableMultimap.builder();
-            dataNodes.forEach(m -> {
-                String targetName = m.values().iterator().next().getTargetName();
-                SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
-                SqlString sqlString = MycatCalciteSupport.toSqlString(MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params, m), (dialect));
-                builder.put(targetName, sqlString);
-            });
-            return new MycatViewSqlString(builder.build());
-        }
-        Map<String, List<Map<String, DataNode>>> collect = dataNodes.collect(Collectors.groupingBy(m -> m.values().iterator().next().getTargetName()));
-        ImmutableMultimap.Builder<String, SqlString> resMapBuilder = ImmutableMultimap.builder();
-        for (Map.Entry<String, List<Map<String, DataNode>>> entry : collect.entrySet()) {
-            String targetName = entry.getKey();
-            SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
-            Iterator<List<Map<String, DataNode>>> iterator = Iterables.partition(entry.getValue(), mergeUnionSize + 1).iterator();
-            while (iterator.hasNext()) {
-                List<Map<String, DataNode>> eachList = iterator.next();
-                ImmutableList.Builder<SqlString> builderList = ImmutableList.builder();
-                SqlString string = null;
-                List<Integer> list = new ArrayList<>();
-                for (Map<String, DataNode> each : eachList) {
-                    string = MycatCalciteSupport.toSqlString(MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params, each), dialect);
-                    if (string.getDynamicParameters() != null) {
-                        list.addAll(string.getDynamicParameters());
-                    }
-                    builderList.add(string);
-                }
-                ImmutableList<SqlString> relNodes = builderList.build();
-                resMapBuilder.put(targetName,
-                        new SqlString(dialect,
-                                relNodes.stream().map(i -> i.getSql()).collect(Collectors.joining(" union all ")),
-                                ImmutableList.copyOf(list)));
-            }
-        }
-        return new MycatViewSqlString(resMapBuilder.build());
-    }
+
 
     public RelNode getRelNode() {
         return relNode;

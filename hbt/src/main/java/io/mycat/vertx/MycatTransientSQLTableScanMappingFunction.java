@@ -2,6 +2,7 @@ package io.mycat.vertx;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
+import io.mycat.DrdsSqlWithParams;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.logical.MycatViewSqlString;
 import io.mycat.util.JsonUtil;
@@ -24,7 +25,7 @@ public class MycatTransientSQLTableScanMappingFunction implements DataNodeMappin
      String sql;
 
     @Override
-    public MycatViewSqlString apply(List<Object> objects) {
+    public MycatViewSqlString apply(DrdsSqlWithParams objects) {
 //        SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
         return new MycatViewSqlString(ImmutableMultimap.of(targetName,new SqlString( MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName),sql,ImmutableList.of())) );
     }

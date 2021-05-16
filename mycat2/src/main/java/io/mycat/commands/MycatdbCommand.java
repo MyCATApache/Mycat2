@@ -327,8 +327,8 @@ public enum MycatdbCommand {
             });
         }
 
-        String target = (String) route.getOrDefault("TARGET", null);
-        if (target != null) {
+        Object targetArray =  route.getOrDefault("TARGET", null);
+        if (targetArray != null) {
             String sqlText = sqlStatement.toString();
             SQLType sqlType = SQLParserUtils.getSQLType(sqlText, DbType.mysql);
             boolean select;
@@ -343,11 +343,13 @@ public enum MycatdbCommand {
                 default:
                     select = false;
             }
-            String targetName = dataContext.resolveDatasourceTargetName(target);
-            if (select) {
-                return receiver.proxySelect(targetName, sqlText);
+            if (!(targetArray instanceof List)){
+                targetArray = Collections.singletonList(targetArray.toString());
             }
-            return receiver.proxyUpdate(targetName, sqlText);
+            if (select) {
+                return receiver.proxySelect((List)targetArray, sqlText);
+            }
+            return receiver.proxyUpdate((List)targetArray, sqlText);
         }
         boolean existSqlResultSetService = MetaClusterCurrent.exist(SqlResultSetService.class);
         //////////////////////////////////apply transaction///////////////////////////////////

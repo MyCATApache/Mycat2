@@ -27,15 +27,25 @@ import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 import org.reactivestreams.Publisher;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Supplier;
 
 public interface Response {
 
     Future<Void> sendError(Throwable e);
 
-    Future<Void> proxySelect(String defaultTargetName, String statement);
+    default Future<Void> proxySelect(String defaultTargetName, String statement) {
+        return proxySelect(Collections.singletonList(defaultTargetName), statement);
+    }
 
-    Future<Void> proxyUpdate(String defaultTargetName, String proxyUpdate);
+    Future<Void> proxySelect(List<String> defaultTargetName, String statement);
+
+    default Future<Void> proxyUpdate(String defaultTargetName, String proxyUpdate) {
+        return proxyUpdate(Collections.singletonList(defaultTargetName), proxyUpdate);
+    }
+
+    Future<Void> proxyUpdate(List<String> defaultTargetName, String proxyUpdate);
 
     Future<Void> proxySelectToPrototype(String statement);
 
@@ -47,22 +57,23 @@ public interface Response {
     }
 
     default Future<Void> sendResultSet(RowIterable rowIterable) {
-       return sendResultSet(Observable.create(emitter -> {
-           try (RowBaseIterator rowBaseIterator = rowIterable.get()) {
-               MycatRowMetaData metaData = rowBaseIterator.getMetaData();
-               emitter.onNext(new MySQLColumnDef(metaData));
-               while (rowBaseIterator.next()) {
-                   emitter.onNext(new MysqlRow(rowBaseIterator.getObjects()));
-               }
-               emitter.onComplete();
-           }catch (Throwable throwable){
-               emitter.onError(throwable);
-           }
-       }));
+        return sendResultSet(Observable.create(emitter -> {
+            try (RowBaseIterator rowBaseIterator = rowIterable.get()) {
+                MycatRowMetaData metaData = rowBaseIterator.getMetaData();
+                emitter.onNext(new MySQLColumnDef(metaData));
+                while (rowBaseIterator.next()) {
+                    emitter.onNext(new MysqlRow(rowBaseIterator.getObjects()));
+                }
+                emitter.onComplete();
+            } catch (Throwable throwable) {
+                emitter.onError(throwable);
+            }
+        }));
     }
 
     /**
      * check it right
+     *
      * @param rowBaseIteratorSupper
      * @return
      */

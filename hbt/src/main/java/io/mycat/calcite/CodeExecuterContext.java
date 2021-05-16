@@ -74,7 +74,7 @@ public class CodeExecuterContext implements Serializable {
     public ImmutableMultimap<String, SqlString> expand(String relNode, DrdsSqlWithParams drdsSql) {
         Objects.requireNonNull(relContext);
         Objects.requireNonNull(relContext.nodes);
-        MycatViewSqlString apply = Objects.requireNonNull(relContext.nodes).get(relNode).dataNodeMapping.apply(drdsSql.getParams());
+        MycatViewSqlString apply = Objects.requireNonNull(relContext.nodes).get(relNode).dataNodeMapping.apply(drdsSql);
         return apply.getSqls();
     }
 
