@@ -139,4 +139,7 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     void setLastErrorCode(int errorCode);
 
+    public Map<String, Object> getProcessStateMap();
+
+    public void putProcessStateMap(Map<String, Object> map);
 }

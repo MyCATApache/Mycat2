@@ -76,6 +76,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     private final AtomicLong prepareStatementIds = new AtomicLong(0);
     private ObservableEmitter<AbstractWritePacket> emitter;
     private volatile Observable<AbstractWritePacket> observable;
+    private Map<String, Object> processStateMap;
 
     public MycatDataContextImpl() {
         this.id = IDS.getAndIncrement();
@@ -444,4 +445,13 @@ public class MycatDataContextImpl implements MycatDataContext {
         this.lastInsertId = lastInsertId;
     }
 
+    @Override
+    public Map<String, Object> getProcessStateMap() {
+        return processStateMap;
+    }
+
+    @Override
+    public void putProcessStateMap(Map<String, Object> map) {
+        this.processStateMap = map;
+    }
 }
