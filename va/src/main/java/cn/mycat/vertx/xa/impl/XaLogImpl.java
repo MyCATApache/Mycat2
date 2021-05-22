@@ -199,16 +199,12 @@ public class XaLogImpl implements XaLog {
         try {
             for (Map.Entry<String, Connection> connectionEntry : connectionMap.entrySet()) {
                 Connection connection = connectionEntry.getValue();
-                List<Map<String, Object>> maps = JdbcUtils.executeQuery(connection,
-                        "select count(*)  from information_schema.TABLES t where t.TABLE_SCHEMA ='mycat' and t.TABLE_NAME ='xa_log'", Collections.emptyList());
-                if (maps.isEmpty()) {
-                    JdbcUtils.executeUpdate(connection,
-                            "create database if not exists `mycat`", Collections.emptyList());
-                    JdbcUtils.executeUpdate(connection,
-                            "create table if not exists `mycat`." + "`xa_log`"
-                                    + "(`xid` bigint PRIMARY KEY NOT NULL" +
-                                    ") ENGINE=InnoDB", Collections.emptyList());
-                }
+                JdbcUtils.executeUpdate(connection,
+                        "create database if not exists `mycat`", Collections.emptyList());
+                JdbcUtils.executeUpdate(connection,
+                        "create table if not exists `mycat`." + "`xa_log`"
+                                + "(`xid` bigint PRIMARY KEY NOT NULL" +
+                                ") ENGINE=InnoDB", Collections.emptyList());
             }
             ConcurrentHashMap<String, Set<String>> xid_targets = new ConcurrentHashMap<>();//xid,Se
             for (Map.Entry<String, Connection> connectionEntry : connectionMap.entrySet()) {
@@ -243,8 +239,8 @@ public class XaLogImpl implements XaLog {
                     JdbcUtils.executeUpdate(connection, "delete from mycat.xa_log where xid = '" + xid + "'", Collections.emptyList());
                 }
             }
-        }finally {
-            connectionMap.forEach((k, v)->JdbcUtils.close(v));
+        } finally {
+            connectionMap.forEach((k, v) -> JdbcUtils.close(v));
         }
     }
 
