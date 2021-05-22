@@ -202,9 +202,9 @@ public class XaLogImpl implements XaLog {
                 List<Map<String, Object>> maps = JdbcUtils.executeQuery(connection,
                         "select count(*)  from information_schema.TABLES t where t.TABLE_SCHEMA ='mycat' and t.TABLE_NAME ='xa_log'", Collections.emptyList());
                 if (maps.isEmpty()) {
-                    JdbcUtils.executeQuery(connection,
+                    JdbcUtils.executeUpdate(connection,
                             "create database if not exists `mycat`", Collections.emptyList());
-                    JdbcUtils.executeQuery(connection,
+                    JdbcUtils.executeUpdate(connection,
                             "create table if not exists `mycat`." + "`xa_log`"
                                     + "(`xid` bigint PRIMARY KEY NOT NULL" +
                                     ") ENGINE=InnoDB", Collections.emptyList());
