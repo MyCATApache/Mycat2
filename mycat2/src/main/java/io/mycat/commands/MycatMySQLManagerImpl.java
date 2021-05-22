@@ -87,7 +87,7 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         Map<String, JdbcDataSource> datasourceInfo = jdbcConnectionManager.getDatasourceInfo();
         HashMap<String, Connection> map = new HashMap<>();
-        for (String string : map.keySet()) {
+        for (String string : datasourceInfo.keySet()) {
             Connection connection = datasourceInfo.get(string).getDataSource().getConnection();
             map.put(string, connection);
         }
