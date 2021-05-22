@@ -376,10 +376,17 @@ public class ConfigPrepareExecuter {
         StatisticCenter statisticCenter = MetaClusterCurrent.wrapper(StatisticCenter.class);
         statisticCenter.init();
         boolean allMatchMySQL = curConfig.getDatasources().stream().allMatch(s -> "mysql".equalsIgnoreCase(s.getDbType()));
+        XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
         if (allMatchMySQL){
-            XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
             LOGGER.info("readXARecoveryLog start");
              xaLog.readXARecoveryLog();
+        }else {
+            try{
+                xaLog.readXARecoveryLog();
+            }catch (Throwable throwable){
+                LOGGER.warn("try readXARecoveryLog",throwable);
+            }
+
         }
     }
 }

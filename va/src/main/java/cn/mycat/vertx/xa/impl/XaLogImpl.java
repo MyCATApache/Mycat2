@@ -31,6 +31,7 @@ import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -191,6 +192,10 @@ public class XaLogImpl implements XaLog {
     @SneakyThrows
     public void readXARecoveryLog() {
         Map<String, Connection> connectionMap = mySQLManager.getConnectionMap();
+        readXARecoveryLog(connectionMap);
+    }
+
+    public void readXARecoveryLog(Map<String, Connection> connectionMap) throws SQLException {
         try {
             for (Map.Entry<String, Connection> connectionEntry : connectionMap.entrySet()) {
                 Connection connection = connectionEntry.getValue();
@@ -220,7 +225,7 @@ public class XaLogImpl implements XaLog {
                 Connection connectionEntryValue = connectionEntry.getValue();
                 List<Map<String, Object>> maps = JdbcUtils.executeQuery(connectionEntryValue, "select xid from mycat.xa_log", Collections.emptyList());
                 for (Map<String, Object> map : maps) {
-                    xidSet.add((String) map.get("xid"));
+                    xidSet.add((String) Objects.toString(map.get("xid")));
                 }
             }
             for (Map.Entry<String, Set<String>> entry : xid_targets.entrySet()) {
@@ -239,7 +244,7 @@ public class XaLogImpl implements XaLog {
                 }
             }
         }finally {
-            connectionMap.forEach((k,v)->JdbcUtils.close(v));
+            connectionMap.forEach((k, v)->JdbcUtils.close(v));
         }
     }
 
