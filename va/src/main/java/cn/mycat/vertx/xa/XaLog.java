@@ -19,6 +19,9 @@ package cn.mycat.vertx.xa;
 import io.vertx.core.Future;
 
 import java.io.Closeable;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Map;
 
 public interface XaLog extends AutoCloseable, Closeable {
 
@@ -83,4 +86,6 @@ public interface XaLog extends AutoCloseable, Closeable {
     void logCancelCommitBeforeXaCommit(String xid);
 
     public void readXARecoveryLog();
+
+    public void readXARecoveryLog(Map<String, Connection> connectionMap) throws SQLException;
 }

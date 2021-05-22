@@ -24,7 +24,9 @@ import com.alibaba.druid.pool.DruidPooledConnection;
 import com.alibaba.druid.util.JdbcUtils;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -33,7 +35,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.concurrent.TimeUnit;
+import java.util.HashMap;
+import java.util.Map;
 
 import static io.mycat.xa.XaTestSuite.demoConfig;
 
@@ -42,6 +45,7 @@ import static io.mycat.xa.XaTestSuite.demoConfig;
 public class XaLogImplTest {
     public static final String DB1 = System.getProperty("db1", "jdbc:mysql://127.0.0.1:3306/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true");
     public static final String DB2 = System.getProperty("db2", "jdbc:mysql://127.0.0.1:3307/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true");
+    public static final Map<String, Connection> connectionMap = new HashMap<>();
 
     private XaLog getDemoRepository() {
         return XaLogImpl.createXaLog(new MySQLManagerImpl(
@@ -56,16 +60,29 @@ public class XaLogImplTest {
         mySQLConnection1.close();
     }
 
+    @BeforeEach
+    public  void before() {
+        connectionMap.put("ds1", XaTestSuite.getMySQLConnection(DB1));
+        connectionMap.put("ds2", XaTestSuite.getMySQLConnection(DB2));
+    }
+
+    @AfterEach
+    public  void after() throws Exception {
+        for (Map.Entry<String, Connection> entry : connectionMap.entrySet()) {
+            String k = entry.getKey();
+            Connection v = entry.getValue();
+            v.close();
+        }
+    }
+
     @Test
     public void nextXid(VertxTestContext testContext) throws Exception {
         XaLog demoRepository = getDemoRepository();
-        demoRepository.readXARecoveryLog().onComplete(event -> {
-            int start = Integer.parseInt(demoRepository.nextXid());
-            int end = Integer.parseInt(demoRepository.nextXid());
-            Assertions.assertEquals(1,
-                    end - start);
-            testContext.completeNow();
-        });
+        int start = Integer.parseInt(demoRepository.nextXid());
+        int end = Integer.parseInt(demoRepository.nextXid());
+        Assertions.assertEquals(1,
+                end - start);
+        testContext.completeNow();
     }
 
     @Test
@@ -77,17 +94,16 @@ public class XaLogImplTest {
             Connection mySQLConnection = XaTestSuite.getMySQLConnection(DB1);
             extracteXaCmd(xid, mySQLConnection, XaSqlConnection.XA_START);
             demoRepository.log(xid, "ds1", State.XA_STARTED);
-            demoRepository.readXARecoveryLog().onComplete(event -> {
-                try {
-                    extracteXaCmd(xid, mySQLConnection, XaSqlConnection.XA_END);
-                    extracteXaCmd(xid, mySQLConnection, XaSqlConnection.XA_COMMIT_ONE_PHASE);
-                    testContext.completeNow();
-                } catch (SQLException throwables) {
-                    testContext.failNow(throwables);
-                } finally {
-                    JdbcUtils.close(mySQLConnection);
-                }
-            });
+            demoRepository.readXARecoveryLog(connectionMap);
+            try {
+                extracteXaCmd(xid, mySQLConnection, XaSqlConnection.XA_END);
+                extracteXaCmd(xid, mySQLConnection, XaSqlConnection.XA_COMMIT_ONE_PHASE);
+                testContext.completeNow();
+            } catch (SQLException throwables) {
+                testContext.failNow(throwables);
+            } finally {
+                JdbcUtils.close(mySQLConnection);
+            }
         }
     }
 
@@ -102,16 +118,15 @@ public class XaLogImplTest {
             extracteXaCmd(xid, mySQLConnection, XaSqlConnection.XA_END);
             demoRepository.log(xid, "ds1", State.XA_STARTED);
             demoRepository.log(xid, "ds1", State.XA_ENDED);
-            demoRepository.readXARecoveryLog().onComplete(event -> {
-                try {
-                    extracteXaCmd(xid, mySQLConnection, XaSqlConnection.XA_COMMIT_ONE_PHASE);
-                    testContext.completeNow();
-                } catch (SQLException throwables) {
-                    testContext.failNow(throwables);
-                } finally {
-                    JdbcUtils.close(mySQLConnection);
-                }
-            });
+            demoRepository.readXARecoveryLog(connectionMap);
+            try {
+                extracteXaCmd(xid, mySQLConnection, XaSqlConnection.XA_COMMIT_ONE_PHASE);
+                testContext.completeNow();
+            } catch (SQLException throwables) {
+                testContext.failNow(throwables);
+            } finally {
+                JdbcUtils.close(mySQLConnection);
+            }
         }
 
     }
@@ -135,21 +150,20 @@ public class XaLogImplTest {
         demoRepository.log(xid, "ds1", State.XA_ENDED);
         demoRepository.log(xid, "ds1", State.XA_PREPARED);
         forceClose((DruidPooledConnection) mySQLConnection);
-        demoRepository.readXARecoveryLog().onComplete(event -> {
-            try {
-                Connection
-                        connection = XaTestSuite.getMySQLConnection(DB1);
-                Assertions.assertTrue(
-                        JdbcUtils
-                                .executeQuery(connection, XaSqlConnection.XA_RECOVER, Collections.emptyList()).isEmpty());
-                JdbcUtils.close(connection);
-                testContext.completeNow();
-            } catch (Exception throwables) {
-                testContext.failNow(throwables);
-            } finally {
-                JdbcUtils.close(mySQLConnection);
-            }
-        });
+        demoRepository.readXARecoveryLog(connectionMap);
+        try {
+            Connection
+                    connection = XaTestSuite.getMySQLConnection(DB1);
+            Assertions.assertTrue(
+                    JdbcUtils
+                            .executeQuery(connection, XaSqlConnection.XA_RECOVER, Collections.emptyList()).isEmpty());
+            JdbcUtils.close(connection);
+            testContext.completeNow();
+        } catch (Exception throwables) {
+            testContext.failNow(throwables);
+        } finally {
+            JdbcUtils.close(mySQLConnection);
+        }
     }
 
 
@@ -168,35 +182,34 @@ public class XaLogImplTest {
             demoRepository.log(xid, "ds1", State.XA_ENDED);
             demoRepository.log(xid, "ds1", State.XA_PREPARED);
             demoRepository.log(xid, "ds1", State.XA_COMMITED);
-            demoRepository.readXARecoveryLog().onComplete(event -> {
-                try {
-                    Assertions.assertTrue(
-                            JdbcUtils
-                                    .executeQuery(mySQLConnection, XaSqlConnection.XA_RECOVER, Collections.emptyList()).isEmpty());
+            demoRepository.readXARecoveryLog(connectionMap);
+            try {
+                Assertions.assertTrue(
+                        JdbcUtils
+                                .executeQuery(mySQLConnection, XaSqlConnection.XA_RECOVER, Collections.emptyList()).isEmpty());
 
-                    testContext.completeNow();
-                } catch (SQLException throwables) {
-                    testContext.failNow(throwables);
-                } finally {
-                    JdbcUtils.close(mySQLConnection);
-                }
-            });
+                testContext.completeNow();
+            } catch (SQLException throwables) {
+                testContext.failNow(throwables);
+            } finally {
+                JdbcUtils.close(mySQLConnection);
+            }
         }
     }
 
     @Test
     public void xaFailAndXARecoverCommit(VertxTestContext testContext) throws Exception {
         XaLog demoRepository = getDemoRepository();
-        demoRepository.readXARecoveryLog().toCompletionStage().toCompletableFuture().get(30, TimeUnit.SECONDS);
+        demoRepository.readXARecoveryLog(connectionMap);
         {
             String xid = "367";
             demoRepository.beginXa(xid);
             Connection mySQLConnection = XaTestSuite.getMySQLConnection(DB1);
-            extracteXaCmd(xid,mySQLConnection,"delete from mycat.xa_log");
+            extracteXaCmd(xid, mySQLConnection, "delete from mycat.xa_log");
             Connection mySQLConnection2 = XaTestSuite.getMySQLConnection(DB2);
 
             extracteXaCmd(xid, mySQLConnection, XaSqlConnection.XA_START);
-            extracteXaCmd(xid,mySQLConnection,"insert mycat.xa_log (xid) values ('%s')");
+            extracteXaCmd(xid, mySQLConnection, "insert mycat.xa_log (xid) values ('%s')");
             extracteXaCmd(xid, mySQLConnection2, XaSqlConnection.XA_START);
 
             extracteXaCmd(xid, mySQLConnection, XaSqlConnection.XA_END);
@@ -218,21 +231,23 @@ public class XaLogImplTest {
             demoRepository.log(xid, "ds2", State.XA_ENDED);
             demoRepository.log(xid, "ds2", State.XA_PREPARED);
 
+            //recover connection
+            after();
+            before();
 
-            demoRepository.readXARecoveryLog().onComplete(event -> {
-                try {
-                    Connection mySQLConnection1 = XaTestSuite.getMySQLConnection(DB2);
-                    Assertions.assertTrue(
-                            JdbcUtils
-                                    .executeQuery(mySQLConnection1, XaSqlConnection.XA_RECOVER, Collections.emptyList()).isEmpty());
-                    JdbcUtils.close(mySQLConnection1);
-                    testContext.completeNow();
-                } catch (SQLException throwables) {
-                    testContext.failNow(throwables);
-                } finally {
-                    JdbcUtils.close(mySQLConnection);
-                }
-            });
+            demoRepository.readXARecoveryLog(connectionMap);
+            try {
+                Connection mySQLConnection1 = XaTestSuite.getMySQLConnection(DB2);
+                Assertions.assertTrue(
+                        JdbcUtils
+                                .executeQuery(mySQLConnection1, XaSqlConnection.XA_RECOVER, Collections.emptyList()).isEmpty());
+                JdbcUtils.close(mySQLConnection1);
+                testContext.completeNow();
+            } catch (SQLException throwables) {
+                testContext.failNow(throwables);
+            } finally {
+                JdbcUtils.close(mySQLConnection);
+            }
         }
     }
 
@@ -267,20 +282,19 @@ public class XaLogImplTest {
             demoRepository.log(xid, "ds2", State.XA_PREPARED);
 
 
-            demoRepository.readXARecoveryLog().onComplete(event -> {
-                try {
-                    Connection mySQLConnection1 = XaTestSuite.getMySQLConnection(DB2);
-                    Assertions.assertTrue(
-                            JdbcUtils
-                                    .executeQuery(mySQLConnection1, XaSqlConnection.XA_RECOVER, Collections.emptyList()).isEmpty());
-                    JdbcUtils.close(mySQLConnection1);
-                    testContext.completeNow();
-                } catch (SQLException throwables) {
-                    testContext.failNow(throwables);
-                } finally {
-                    JdbcUtils.close(mySQLConnection);
-                }
-            });
+            demoRepository.readXARecoveryLog(connectionMap);
+            try {
+                Connection mySQLConnection1 = XaTestSuite.getMySQLConnection(DB2);
+                Assertions.assertTrue(
+                        JdbcUtils
+                                .executeQuery(mySQLConnection1, XaSqlConnection.XA_RECOVER, Collections.emptyList()).isEmpty());
+                JdbcUtils.close(mySQLConnection1);
+                testContext.completeNow();
+            } catch (SQLException throwables) {
+                testContext.failNow(throwables);
+            } finally {
+                JdbcUtils.close(mySQLConnection);
+            }
         }
     }
 
