@@ -14,6 +14,7 @@
  */
 package io.mycat.replica;
 
+import io.mycat.ReplicaBalanceType;
 import io.mycat.config.*;
 import io.mycat.plug.loadBalance.LoadBalanceElement;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
@@ -121,6 +122,46 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
         if (selector != null) {
             selector.unregister(datasourceName);
         }
+    }
+    public String getDatasourceNameByReplicaName(String replicaName, boolean master, ReplicaBalanceType replicaBalanceType, String loadBalanceStrategy) {
+        BiFunction<LoadBalanceStrategy, ReplicaSelector, PhysicsInstance> function;
+        if (master || replicaBalanceType == ReplicaBalanceType.MASTER) {
+            function = this::getWriteDatasource;
+        } else if (replicaBalanceType == ReplicaBalanceType.SLAVE){
+            function = this::getReadDatasource;
+        }else {
+            function = this::getDatasource;
+        }
+        ReplicaSelector replicaDataSourceSelector = replicaMap.get(Objects.requireNonNull(replicaName));
+        if (replicaDataSourceSelector == null) {
+            return replicaName;
+        }
+        LoadBalanceStrategy loadBalanceByBalance = null;
+        if (loadBalanceStrategy != null) {
+            loadBalanceByBalance = loadBalanceManager.getLoadBalanceByBalanceName(loadBalanceStrategy);
+        }//传null集群配置的负载均衡生效
+        if (replicaDataSourceSelector.getWriteDataSourceByReplicaType().isEmpty()
+                &&
+                replicaDataSourceSelector.getReadDataSourceByReplica().isEmpty()) {
+            LOGGER.error("No data sources are available {}", replicaName);
+            if (replicaDataSourceSelector.getRawDataSourceMap().size() == 1) {
+                return replicaDataSourceSelector.getRawDataSourceMap().keySet().stream().iterator().next();
+            }
+        }
+        try {
+            PhysicsInstance physicsInstance = function.apply(loadBalanceByBalance, replicaDataSourceSelector);
+            if (physicsInstance == null) {
+                return replicaName;
+            }
+            return physicsInstance.getName();
+        } catch (Throwable throwable) {
+            LOGGER.error("No data sources are available {}", replicaName, throwable);
+        }
+        if (!master) {
+            LOGGER.error("need abnormal cluster check {}", replicaName);
+            return replicaDataSourceSelector.getRawDataSourceMap().values().iterator().next().getName();
+        }
+        return replicaName;
     }
 
 
@@ -469,5 +510,13 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
 
     public ScheduleProvider getScheduleProvider() {
         return scheduleProvider;
+    }
+
+    public PhysicsInstance getReadDatasource(LoadBalanceStrategy balanceStrategy,
+                                             ReplicaSelector selector) {
+        LoadBalanceStrategy defaultWriteLoadBalanceStrategy = selector.getDefaultWriteLoadBalanceStrategy();
+        List<PhysicsInstance> writeDataSource = selector.getReadDataSourceByReplica();
+        return getDatasource(balanceStrategy, selector, defaultWriteLoadBalanceStrategy,
+                writeDataSource);
     }
 }
