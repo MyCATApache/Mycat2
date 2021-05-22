@@ -64,7 +64,7 @@ public class VertxExecuter {
                 List<List<Object>> lists = insertMap.computeIfAbsent(parameterizedSql, s -> new LinkedList<>());
                 lists.addAll(e.getValue().getArgs());
             }
-            list.add(runInsert(insertMap, sqlConnection.getConnection(transactionSession.resolveFinalTargetName(entry.getKey()))));
+            list.add(runInsert(insertMap, sqlConnection.getConnection(context.resolveDatasourceTargetName(entry.getKey(),true))));
         }
         if (list.isEmpty()) {
             throw new AssertException();
@@ -87,7 +87,7 @@ public class VertxExecuter {
         for (SQL sql : reallySqlSet) {
             String k = context.resolveDatasourceTargetName(sql.getTarget());
             if (uniqueValues.add(k)) {
-                if (targetMap.put(sql.getTarget(), transactionSession.resolveFinalTargetName(k)) != null) {
+                if (targetMap.put(sql.getTarget(), context.resolveDatasourceTargetName(k,true)) != null) {
                     throw new IllegalStateException("Duplicate key");
                 }
             }

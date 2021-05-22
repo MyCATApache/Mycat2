@@ -130,22 +130,21 @@ public class ProxyConnectionUsage {
     private Future<Map<String, List<SQLKey>>> getConnectionWhenTranscation(XaSqlConnection connection) {
         Map<String, List<SQLKey>> map = targets.stream().collect(Collectors.groupingBy(i ->
                 context.resolveDatasourceTargetName(i.getTargetName(), context.isInTransaction())));
-        TransactionSession transactionSession = context.getTransactionSession();
         PromiseInternal<Map<String, List<SQLKey>>> promise = VertxUtil.newPromise();
-        getTrxExecutorService().execute(new SequenceTranscationTask(map, connection, transactionSession, promise));
+        getTrxExecutorService().execute(new SequenceTranscationTask(map, connection,context, promise));
         return promise;
     }
 
     private static class SequenceTranscationTask implements Runnable {
         private final Map<String, List<SQLKey>> map;
         private final XaSqlConnection connection;
-        private final TransactionSession transactionSession;
         private final PromiseInternal<Map<String, List<SQLKey>>> promise;
+        private final MycatDataContext context;
 
-        public SequenceTranscationTask(Map<String, List<SQLKey>> map, XaSqlConnection connection, TransactionSession transactionSession, PromiseInternal<Map<String, List<SQLKey>>> promise) {
+        public SequenceTranscationTask(Map<String, List<SQLKey>> map, XaSqlConnection connection,MycatDataContext context, PromiseInternal<Map<String, List<SQLKey>>> promise) {
             this.map = map;
             this.connection = connection;
-            this.transactionSession = transactionSession;
+            this.context = context;
             this.promise = promise;
         }
 
@@ -158,7 +157,7 @@ public class ProxyConnectionUsage {
                 for (String s : map.keySet()) {
                     future = future
                             .flatMap(unused -> {
-                                return (Future) connection.getConnection(transactionSession.resolveFinalTargetName(s, true)).mapEmpty();
+                                return (Future) connection.getConnection(context.resolveDatasourceTargetName(s, true)).mapEmpty();
                             });
                 }
                 future.onComplete(event -> {
