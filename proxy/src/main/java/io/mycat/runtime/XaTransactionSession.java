@@ -19,6 +19,7 @@ import cn.mycat.vertx.xa.XaLog;
 import cn.mycat.vertx.xa.impl.LocalSqlConnection;
 import cn.mycat.vertx.xa.impl.LocalXaSqlConnection;
 import io.mycat.DataSourceNearness;
+import io.mycat.ReplicaBalanceType;
 import io.mycat.TransactionSession;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.replica.DataSourceNearnessImpl;
@@ -39,16 +40,6 @@ public class XaTransactionSession extends LocalXaSqlConnection implements Transa
     }
 
     @Override
-    public String resolveFinalTargetName(String targetName) {
-        return dataSourceNearness.getDataSourceByTargetName(targetName);
-    }
-
-    @Override
-    public String resolveFinalTargetName(String targetName, boolean master) {
-        return dataSourceNearness.getDataSourceByTargetName(targetName, master);
-    }
-
-    @Override
     public TransactionType transactionType() {
         return TransactionType.JDBC_TRANSACTION_TYPE;
     }
@@ -62,5 +53,10 @@ public class XaTransactionSession extends LocalXaSqlConnection implements Transa
     public Future<Void> closeStatementState() {
         dataSourceNearness.clear();
         return super.closeStatementState();
+    }
+
+    @Override
+    public String resolveFinalTargetName(String targetName, boolean master, ReplicaBalanceType replicaBalanceType) {
+        return dataSourceNearness.getDataSourceByTargetName(targetName,master,replicaBalanceType);
     }
 }

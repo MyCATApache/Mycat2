@@ -383,12 +383,16 @@ public class MycatDataContextImpl implements MycatDataContext {
 //    }
     @Override
     public String resolveDatasourceTargetName(String targetName) {
-        return transactionSession.resolveFinalTargetName(targetName);
+        return resolveDatasourceTargetName(targetName, false);
     }
 
     @Override
     public String resolveDatasourceTargetName(String targetName, boolean master) {
-        return transactionSession.resolveFinalTargetName(targetName, master);
+        ReplicaBalanceType balanceType = ReplicaBalanceType.NONE;
+        if (processStateMap != null) {
+            balanceType = (ReplicaBalanceType) processStateMap.getOrDefault("REP_BALANCE_TYPE", ReplicaBalanceType.NONE);
+        }
+        return transactionSession.resolveFinalTargetName(targetName, master, balanceType);
     }
 
     @Override

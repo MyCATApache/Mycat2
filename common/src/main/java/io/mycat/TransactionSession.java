@@ -51,10 +51,7 @@ public interface TransactionSession extends Dumpable {
     Future<Void> closeStatementState();
 
     Future<Void> close();
-
-    String resolveFinalTargetName(String targetName);
-
-    String resolveFinalTargetName(String targetName, boolean master);
+    String resolveFinalTargetName(String targetName, boolean master,ReplicaBalanceType replicaBalanceType);
 
     /**
      * 模拟autocommit = 0 时候自动开启事务
