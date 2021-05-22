@@ -85,11 +85,6 @@ public class MemoryRepositoryImpl implements Repository {
         return Future.succeededFuture();
     }
 
-    @Override
-    public Future<Collection<String>> getCoordinatorLogsForRecover() {
-        return Future.succeededFuture(storage.values().stream().map(i->i.getXid()).collect(Collectors.toList()));
-    }
-
     public boolean isClosed() {
         return closed;
     }

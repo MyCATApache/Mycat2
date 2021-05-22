@@ -64,12 +64,6 @@ public class KvRepositoryImpl implements Repository {
     }
 
     @Override
-    public Future<Collection<String>> getCoordinatorLogsForRecover() {
-        return Future.succeededFuture(
-                map.values().stream().map(i->Json.decodeValue(i, ImmutableCoordinatorLog.class)).map(i->i.getXid()).collect(Collectors.toList()));
-    }
-
-    @Override
     public Future<Void> close() {
         return Future.succeededFuture();
     }

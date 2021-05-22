@@ -49,11 +49,6 @@ public interface Repository {
 
     ImmutableCoordinatorLog get(String xid);
 
-    /**
-     *
-     * @return get all saved log
-     */
-    Future<Collection<String>> getCoordinatorLogsForRecover();
 
     Future<Void>  close();
 

@@ -123,25 +123,6 @@ public class FileRepositoryImpl implements Repository {
         }
     }
 
-    @Override
-    public Future<Collection<String>> getCoordinatorLogsForRecover() {
-
-        try {
-            return Future.succeededFuture(Files.list(Paths.get(baseDir))
-                    .filter(path -> !Files.isDirectory(path) && path.toFile().getPath().endsWith(suffix))
-                    .map(path -> {
-                        try {
-                            return new String(Files.readAllBytes(path));
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-
-                        }
-                    }).map(i -> Json.decodeValue(i, ImmutableCoordinatorLog.class)).map(i->i.getXid()).collect(Collectors.toList()));
-        } catch (Throwable throwable) {
-            return Future.failedFuture(throwable);
-        }
-
-    }
 
     @Override
     public  Future<Void>  close() {

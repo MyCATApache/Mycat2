@@ -66,11 +66,6 @@ public class LocalXaMemoryRepositoryImpl extends MemoryRepositoryImpl {
         });
     }
 
-    @Override
-    public Future<Collection<String>> getCoordinatorLogsForRecover() {
-        return innerInit().flatMap((u)->innerGetCollectionFuture());
-    }
-
     @Nullable
     private Future<Collection<String>> innerGetCollectionFuture() {
         MySQLManager mySQLManager = mySQLManagerSupplier.get();
