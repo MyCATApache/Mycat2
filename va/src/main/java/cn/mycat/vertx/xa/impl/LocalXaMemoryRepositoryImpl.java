@@ -55,40 +55,6 @@ public class LocalXaMemoryRepositoryImpl extends MemoryRepositoryImpl {
       return super.init();
     }
 
-    private Future<Void> innerInit() {
-        return Future.succeededFuture().flatMap(unused -> {
-            MySQLManager mySQLManager = mySQLManagerSupplier.get();
-            Future<Map<String, SqlConnection>> mapFuture = mySQLManager.getConnectionMap();
-            return mapFuture
-                    .flatMap(stringSqlConnectionMap -> CompositeFuture.all(stringSqlConnectionMap.values().stream()
-                            .map(connection -> tryCreateLogTable(connection)).collect(Collectors.toList()))
-                            .onComplete(event -> stringSqlConnectionMap.values().forEach(c -> c.close())).mapEmpty());
-        });
-    }
-
-    @Nullable
-    private Future<Collection<String>> innerGetCollectionFuture() {
-        MySQLManager mySQLManager = mySQLManagerSupplier.get();
-        Future<Map<String, SqlConnection>> mapFuture = mySQLManager.getConnectionMap();
-        LinkedBlockingQueue<String> objects = new LinkedBlockingQueue<>();
-        Future<Void> future = mapFuture
-                .flatMap(stringSqlConnectionMap -> CompositeFuture.all(stringSqlConnectionMap.values().stream()
-                        .map(connection -> {
-                                    Future<Object> future1 = connection.query("select xid from " + database + "." + tableName)
-                                            .execute()
-                                            .map(rows -> {
-                                                for (Row row : rows) {
-                                                    objects.add((row.getString("xid")));
-                                                }
-                                                return null;
-                                            }).mapEmpty();
-                                    return future1;
-                                }
-                        ).collect(Collectors.toList()))
-                        .onComplete(event -> stringSqlConnectionMap.values().forEach(c -> c.close())).mapEmpty());
-        return future.map(objects);
-    }
-
     @Override
     public Future<Void> close() {
         return super.close();

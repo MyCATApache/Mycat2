@@ -264,7 +264,7 @@ public class ConfigPrepareExecuter {
         return authenticator;
     }
 
-    public Future<Void> commit() throws IOException {
+    public void commit() throws IOException {
 
         ReplicaSelectorManager replicaSelector = this.replicaSelector;
         JdbcConnectionManager jdbcConnectionManager = this.jdbcConnectionManager;
@@ -379,14 +379,7 @@ public class ConfigPrepareExecuter {
         if (allMatchMySQL){
             XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
             LOGGER.info("readXARecoveryLog start");
-            return xaLog.readXARecoveryLog().onComplete(new Handler<AsyncResult<Void>>() {
-                @Override
-                public void handle(AsyncResult<Void> event) {
-                    LOGGER.info("readXARecoveryLog end");
-                }
-            });
-        }else {
-            return Future.succeededFuture();
+             xaLog.readXARecoveryLog();
         }
     }
 }

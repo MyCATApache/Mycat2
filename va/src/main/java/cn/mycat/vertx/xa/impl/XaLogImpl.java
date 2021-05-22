@@ -17,6 +17,8 @@
 package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.*;
+import com.alibaba.druid.util.JdbcUtils;
+import io.mycat.MetaClusterCurrent;
 import io.vertx.core.*;
 import io.vertx.core.impl.ConcurrentHashSet;
 import io.vertx.core.impl.logging.Logger;
@@ -28,6 +30,7 @@ import io.vertx.sqlclient.SqlConnection;
 import lombok.SneakyThrows;
 
 import java.io.IOException;
+import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -186,88 +189,58 @@ public class XaLogImpl implements XaLog {
     }
 
     @SneakyThrows
-    public Future<Void> readXARecoveryLog() {
-        Future<Map<String, SqlConnection>> connectionMapFuture = mySQLManager.getConnectionMap();
-        connectionMapFuture.onComplete(new Handler<AsyncResult<Map<String, SqlConnection>>>() {
-            @Override
-            public void handle(AsyncResult<Map<String, SqlConnection>> event) {
-                LOGGER.info("get connectionMap end");
+    public void readXARecoveryLog() {
+        Map<String, Connection> connectionMap = mySQLManager.getConnectionMap();
+        try {
+            for (Map.Entry<String, Connection> connectionEntry : connectionMap.entrySet()) {
+                Connection connection = connectionEntry.getValue();
+                List<Map<String, Object>> maps = JdbcUtils.executeQuery(connection,
+                        "select count(*)  from information_schema.TABLES t where t.TABLE_SCHEMA ='mycat' and t.TABLE_NAME ='xa_log'", Collections.emptyList());
+                if (maps.isEmpty()) {
+                    JdbcUtils.executeQuery(connection,
+                            "create database if not exists `mycat`", Collections.emptyList());
+                    JdbcUtils.executeQuery(connection,
+                            "create table if not exists `mycat`." + "`xa_log`"
+                                    + "(`xid` bigint PRIMARY KEY NOT NULL" +
+                                    ") ENGINE=InnoDB", Collections.emptyList());
+                }
             }
-        });
-        Future<Void> future = connectionMapFuture.flatMap(stringSqlConnectionMap -> CompositeFuture.all(
-                stringSqlConnectionMap.values().stream()
-                        .map(c -> LocalXaMemoryRepositoryImpl.tryCreateLogTable(c)
-                                .onComplete(unused -> c.close())).collect(Collectors.toList())).mapEmpty());
-        future.onComplete(new Handler<AsyncResult<Void>>() {
-            @Override
-            public void handle(AsyncResult<Void> event) {
-                LOGGER.info("check xa_log end");
+            ConcurrentHashMap<String, Set<String>> xid_targets = new ConcurrentHashMap<>();//xid,Se
+            for (Map.Entry<String, Connection> connectionEntry : connectionMap.entrySet()) {
+                String targetName = connectionEntry.getKey();
+                Connection connectionEntryValue = connectionEntry.getValue();
+                List<Map<String, Object>> maps = JdbcUtils.executeQuery(connectionEntryValue, "XA RECOVER", Collections.emptyList());
+                for (Map<String, Object> map : maps) {
+                    Set<String> targetNameSet = xid_targets.computeIfAbsent((String) map.get("data"), (s) -> new ConcurrentHashSet<>());
+                    targetNameSet.add(targetName);
+                }
             }
-        });
-        return future.flatMap(new Function<Void, Future<Void>>() {
-            @Override
-            @SneakyThrows
-            public Future<Void> apply(Void unused) {
-                ConcurrentHashMap<String, Set<String>> xid_targets = new ConcurrentHashMap<>();//xid,Set<targetName>
-                List<Future> rootFutureList = Collections.synchronizedList(new ArrayList<>());
-                List<Future> subFutureList = Collections.synchronizedList(new ArrayList<>());
-                rootFutureList.add(mySQLManager.getConnectionMap().onSuccess(event -> {
-                    for (Map.Entry<String, SqlConnection> entry : event.entrySet()) {
-                        String targetName = entry.getKey();
-                        subFutureList.add(entry.getValue().query("XA RECOVER").execute().flatMap(event1 -> {
-                            RowIterator<Row> iterator = event1.iterator();
-                            while (iterator.hasNext()) {
-                                Row next = iterator.next();
-                                Set<String> targetNameSet = xid_targets.computeIfAbsent(next.getString("data"), (s) -> new ConcurrentHashSet<>());
-                                targetNameSet.add(targetName);
-                            }
-                            return entry.getValue().close();
-                        }));
-                    }
-                }));
-                Set<String> xidSet = new ConcurrentHashSet<>();//xid set
-                rootFutureList.add(mySQLManager.getConnectionMap().onSuccess(new Handler<Map<String, SqlConnection>>() {
-                    @Override
-                    public void handle(Map<String, SqlConnection> stringSqlConnectionMap) {
-                        for (Map.Entry<String, SqlConnection> entry : stringSqlConnectionMap.entrySet()) {
-                            subFutureList.add(entry.getValue().query("select xid from mycat.xa_log").execute().flatMap(event1 -> {
-                                RowIterator<Row> iterator = event1.iterator();
-                                while (iterator.hasNext()) {
-                                    Row next = iterator.next();
-                                    xidSet.add(Objects.toString(next.getValue("xid")));
-                                }
-                                return entry.getValue().close();
-                            }));
-                        }
-                    }
-                }));
-                return CompositeFuture.all(rootFutureList).flatMap(i->CompositeFuture.all(subFutureList)).flatMap(unuse -> {
-                    List<Future<Void>> futureList1 = new ArrayList<>();
-                    for (Map.Entry<String, Set<String>> entry : xid_targets.entrySet()) {
-                        String xid = entry.getKey();
-                        Set<String> targets = entry.getValue();
-                        String sql;
-                        if (xidSet.contains(xid)) {
-                            sql = "XA COMMIT '" + xid + "'";
-                        } else {
-                            sql = "XA ROLLBACK '" + xid + "'";
-                        }
-                        for (String target : targets) {
-                            futureList1.add(mySQLManager.getConnection(target)
-                                    .flatMap(sqlConnection -> sqlConnection.query(sql)
-                                            .execute()
-                                            .flatMap((Function<RowSet<Row>, Future<Void>>) rows ->
-                                                    sqlConnection.query("delete from mycat.xa_log where xid = '" + xid + "'").execute()
-                                                            .mapEmpty())
-                                            .onComplete(u -> {
-                                                sqlConnection.close().mapEmpty();
-                                            }).mapEmpty()));
-                        }
-                    }
-                    return CompositeFuture.all((List) futureList1);
-                }).onFailure(event -> System.out.println(event)).mapEmpty();
+            Set<String> xidSet = new ConcurrentHashSet<>();//xid set
+            for (Map.Entry<String, Connection> connectionEntry : connectionMap.entrySet()) {
+                Connection connectionEntryValue = connectionEntry.getValue();
+                List<Map<String, Object>> maps = JdbcUtils.executeQuery(connectionEntryValue, "select xid from mycat.xa_log", Collections.emptyList());
+                for (Map<String, Object> map : maps) {
+                    xidSet.add((String) map.get("xid"));
+                }
             }
-        });
+            for (Map.Entry<String, Set<String>> entry : xid_targets.entrySet()) {
+                String xid = entry.getKey();
+                Set<String> targets = entry.getValue();
+                String sql;
+                if (xidSet.contains(xid)) {
+                    sql = "XA COMMIT '" + xid + "'";
+                } else {
+                    sql = "XA ROLLBACK '" + xid + "'";
+                }
+                for (String target : targets) {
+                    Connection connection = connectionMap.get(target);
+                    JdbcUtils.executeUpdate(connection, sql, Collections.emptyList());
+                    JdbcUtils.executeUpdate(connection, "delete from mycat.xa_log where xid = '" + xid + "'", Collections.emptyList());
+                }
+            }
+        }finally {
+            connectionMap.forEach((k,v)->JdbcUtils.close(v));
+        }
     }
 
 

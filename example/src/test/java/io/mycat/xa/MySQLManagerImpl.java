@@ -1,12 +1,12 @@
 /**
  * Copyright [2021] [chen junwen]
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,11 @@
 package io.mycat.xa;
 
 import cn.mycat.vertx.xa.SimpleConfig;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.commands.AbstractMySQLManagerImpl;
+import io.mycat.commands.MycatDatasourcePool;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.vertx.core.Future;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
@@ -25,7 +29,10 @@ import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.SqlConnection;
+import lombok.SneakyThrows;
 
+import java.sql.Connection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -69,8 +76,17 @@ public class MySQLManagerImpl extends AbstractMySQLManagerImpl {
     }
 
     @Override
-    public Future<Map<String, SqlConnection>> getConnectionMap() {
-        return getMapFuture(nameMap.keySet());
+    @SneakyThrows
+    public Map<String, java.sql.Connection> getConnectionMap() {
+        ConcurrentHashMap.KeySetView<String, MySQLPool> strings = nameMap.keySet();
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        Map<String, JdbcDataSource> datasourceInfo = jdbcConnectionManager.getDatasourceInfo();
+        HashMap<String, Connection> map = new HashMap<>();
+        for (String string : strings) {
+            Connection connection = datasourceInfo.get(string).getDataSource().getConnection();
+            map.put(string, connection);
+        }
+        return map;
     }
 
     @Override

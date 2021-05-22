@@ -247,7 +247,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
 
             @Override
             public void commit(Object ops) throws Exception {
-                commitAndSyncDisk((MycatRouterConfigOps) ops).mapEmpty().toCompletionStage().toCompletableFuture().get();
+                commitAndSyncDisk((MycatRouterConfigOps) ops);
             }
 
             @Override
@@ -264,7 +264,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         };
     }
 
-    public Future<State> commitAndSyncDisk(MycatRouterConfigOps ops) throws IOException {
+    public State commitAndSyncDisk(MycatRouterConfigOps ops) throws IOException {
         String suffix = "json";
         MycatRouterConfigOps routerConfig = ops;
         ConfigPrepareExecuter prepare = new ConfigPrepareExecuter(routerConfig, FileMetadataStorageManager.this, datasourceProvider);
@@ -343,21 +343,14 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         State state = new State();
         ReplicaSelectorManager replicaSelector = Optional.ofNullable(prepare.getReplicaSelector()).orElseGet(() -> MetaClusterCurrent.wrapper(ReplicaSelectorManager.class));
         state.replica.putAll(replicaSelector.getState());
-        Future<Void> commitFuture = prepare.commit();
-        return commitFuture.flatMap(unused -> {
-            try {
-                Path statePath = baseDirectory.resolve("state.json");
-                Files.deleteIfExists(statePath);
-                if (Files.notExists(statePath)) Files.createFile(statePath);
-                writeFile(
-                        ConfigReaderWriter.getReaderWriterBySuffix("json")
-                                .transformation(state), statePath);
-                return Future.succeededFuture(state);
-            } catch (Exception e) {
-                return Future.failedFuture(e);
-            }
-        });
-
+        prepare.commit();
+        Path statePath = baseDirectory.resolve("state.json");
+        Files.deleteIfExists(statePath);
+        if (Files.notExists(statePath)) Files.createFile(statePath);
+        writeFile(
+                ConfigReaderWriter.getReaderWriterBySuffix("json")
+                        .transformation(state), statePath);
+        return (state);
     }
 
 

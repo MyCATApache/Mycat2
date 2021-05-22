@@ -171,60 +171,55 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
             public void commit(Object ops) {
                 MycatRouterConfigOps routerConfig = (MycatRouterConfigOps) ops;
                 MycatRouterConfig mycatRouterConfig = routerConfig.getMycatRouterConfig();
-                Future<FileMetadataStorageManager.State> stateFuture = storageManager.commitAndSyncDisk(routerConfig);
-                 stateFuture.flatMap(state -> {
-                    try {
-                        store.set("schemas",
-                                mycatRouterConfig
-                                        .getSchemas()
-                                        .stream()
-                                        .collect(Collectors
-                                                .toMap(k -> k.getSchemaName(), v -> readerWriter.transformation(v))));
+                FileMetadataStorageManager.State state = storageManager.commitAndSyncDisk(routerConfig);
+                {
+                    store.set("schemas",
+                            mycatRouterConfig
+                                    .getSchemas()
+                                    .stream()
+                                    .collect(Collectors
+                                            .toMap(k -> k.getSchemaName(), v -> readerWriter.transformation(v))));
 //                }
-                        store.set("clusters",
-                                mycatRouterConfig
-                                        .getClusters()
-                                        .stream()
-                                        .collect(Collectors
-                                                .toMap(k -> k.getName(), v -> readerWriter.transformation(v))));
+                    store.set("clusters",
+                            mycatRouterConfig
+                                    .getClusters()
+                                    .stream()
+                                    .collect(Collectors
+                                            .toMap(k -> k.getName(), v -> readerWriter.transformation(v))));
 //                }
-                        store.set("datasources",
-                                mycatRouterConfig
-                                        .getDatasources()
-                                        .stream()
-                                        .collect(Collectors
-                                                .toMap(k -> k.getName(), v -> readerWriter.transformation(v))));
+                    store.set("datasources",
+                            mycatRouterConfig
+                                    .getDatasources()
+                                    .stream()
+                                    .collect(Collectors
+                                            .toMap(k -> k.getName(), v -> readerWriter.transformation(v))));
 //                }
-                        store.set("users",
-                                mycatRouterConfig
-                                        .getUsers()
-                                        .stream()
-                                        .collect(Collectors
-                                                .toMap(k -> k.getUsername(), v -> readerWriter.transformation(v))));
+                    store.set("users",
+                            mycatRouterConfig
+                                    .getUsers()
+                                    .stream()
+                                    .collect(Collectors
+                                            .toMap(k -> k.getUsername(), v -> readerWriter.transformation(v))));
 
 //                }
-                        store.set("sequences",
-                                mycatRouterConfig
-                                        .getSequences()
-                                        .stream()
-                                        .collect(Collectors
-                                                .toMap(k -> k.getName(), v -> readerWriter.transformation(v))));
+                    store.set("sequences",
+                            mycatRouterConfig
+                                    .getSequences()
+                                    .stream()
+                                    .collect(Collectors
+                                            .toMap(k -> k.getName(), v -> readerWriter.transformation(v))));
 
-                        store.set("sqlcaches",
-                                mycatRouterConfig
-                                        .getSqlCacheConfigs()
-                                        .stream()
-                                        .collect(Collectors
-                                                .toMap(k -> k.getName(), v -> readerWriter.transformation(v))));
+                    store.set("sqlcaches",
+                            mycatRouterConfig
+                                    .getSqlCacheConfigs()
+                                    .stream()
+                                    .collect(Collectors
+                                            .toMap(k -> k.getName(), v -> readerWriter.transformation(v))));
 
 
-                        store.set("state", readerWriter.transformation(state));
-                        store.commit();
-                        return Future.succeededFuture();
-                    } catch (Throwable throwable) {
-                        return Future.failedFuture(throwable);
-                    }
-                }).toCompletionStage().toCompletableFuture().get();
+                    store.set("state", readerWriter.transformation(state));
+                    store.commit();
+                }
             }
 
             @Override

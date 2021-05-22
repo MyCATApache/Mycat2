@@ -82,5 +82,5 @@ public interface XaLog extends AutoCloseable, Closeable {
      */
     void logCancelCommitBeforeXaCommit(String xid);
 
-    public Future<Void> readXARecoveryLog();
+    public void readXARecoveryLog();
 }

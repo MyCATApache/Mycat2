@@ -20,11 +20,15 @@ import io.mycat.MetaClusterCurrent;
 import io.mycat.NativeMycatServer;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.MycatRouterConfig;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.sqlclient.SqlConnection;
 import lombok.SneakyThrows;
 
+import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -78,8 +82,16 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
     }
 
     @Override
-    public Future<Map<String, SqlConnection>> getConnectionMap() {
-        return getMapFuture(map.keySet());
+    @SneakyThrows
+    public Map<String, java.sql.Connection> getConnectionMap() {
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        Map<String, JdbcDataSource> datasourceInfo = jdbcConnectionManager.getDatasourceInfo();
+        HashMap<String, Connection> map = new HashMap<>();
+        for (String string : map.keySet()) {
+            Connection connection = datasourceInfo.get(string).getDataSource().getConnection();
+            map.put(string, connection);
+        }
+        return map;
     }
 
     @Override
@@ -89,11 +101,11 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
 
     @Override
     public Future<Map<String, Integer>> computeConnectionUsageSnapshot() {
-        HashMap<String,Integer> resMap = new HashMap<>();
+        HashMap<String, Integer> resMap = new HashMap<>();
         for (Map.Entry<String, MycatDatasourcePool> entry : map.entrySet()) {
             MycatDatasourcePool pool = entry.getValue();
             Integer n = pool.getAvailableNumber();
-            resMap.put(entry.getKey(),n);
+            resMap.put(entry.getKey(), n);
         }
         return Future.succeededFuture(resMap);
     }
