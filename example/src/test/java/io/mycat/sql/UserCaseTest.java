@@ -141,9 +141,9 @@ public class UserCaseTest implements MycatTest {
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8;");
             deleteData(mycatConnection, "db1", "user");
             execute(mycatConnection, "insert into `user`(`id`,`name`,`is_enable`) values (1,'abc',1);");
-            List<Map<String, Object>> maps = executeQuery(mycatConnection, "SELECT * FROM `user`;");
-            List<Map<String, Object>> right = executeQuery(mysqlConnection, "SELECT * FROM db1.`user`;");
-            Assert.assertEquals(right,maps);
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, "SELECT * FROM `user`;");//[{id=1, name=abc, is_enable=1}]
+            List<Map<String, Object>> right = executeQuery(mysqlConnection, "SELECT * FROM db1.`user`;");//[{id=1, name=abc, is_enable=true}]
+            Assert.assertEquals("[{id=1, name=abc, is_enable=1}]",maps.toString());
 //            Assert.assertArrayEquals(new byte[]{1}, ((byte[]) maps.get(0).get("is_enable")));
         }
     }
@@ -179,9 +179,9 @@ public class UserCaseTest implements MycatTest {
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8;");
             deleteData(mycatConnection, "db1", "user");
             execute(mycatConnection, "insert into `user`(`id`,`name`,`is_enable`) values (1,'abc',1);");
-            List<Map<String, Object>> maps = executeQuery(mycatConnection, "SELECT * FROM `user`;");
-            List<Map<String, Object>> right = executeQuery(mysqlConnection, "SELECT * FROM db1.`user`;");
-            Assert.assertEquals(right,maps);
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, "SELECT * FROM `user`;");//[{id=1, name=abc, is_enable=1}]
+            List<Map<String, Object>> right = executeQuery(mysqlConnection, "SELECT * FROM db1.`user`;");//[{id=1, name=abc, is_enable=true}]
+            Assert.assertEquals("[{id=1, name=abc, is_enable=1}]",maps.toString());
         }
     }
 }

@@ -1,15 +1,19 @@
 package io.mycat.calcite.localrel;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 
@@ -20,7 +24,17 @@ import static java.util.Objects.requireNonNull;
 
 public class LocalJoin extends Join implements LocalRel {
     protected LocalJoin(RelOptCluster cluster, RelTraitSet traitSet, List<RelHint> hints, RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
-        super(cluster, traitSet, hints, left, right, condition, variablesSet, joinType);
+        super(cluster, traitSet.replace(LocalConvention.INSTANCE), hints, left, right, condition, variablesSet, joinType);
+    }
+    public LocalJoin(RelInput input) {
+        this(input.getCluster(), input.getTraitSet(),
+                ImmutableList.of(),
+                input.getInputs().get(0), input.getInputs().get(1),
+                input.getExpression("condition"), ImmutableSet.of(),
+                input.getEnum("joinType", JoinRelType.class));
+    }
+    public static LocalJoin create(Join join, RelNode left, RelNode right) {
+        return new LocalJoin(join.getCluster(), join.getTraitSet(), join.getHints(), left,right,join.getCondition(),join.getVariablesSet(),join.getJoinType());
     }
 
     @Override

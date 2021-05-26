@@ -18,6 +18,7 @@ import io.mycat.calcite.*;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.logical.LogicalCalc;
@@ -46,6 +47,11 @@ public class MycatFilter extends Filter implements MycatRel {
         super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), input, condition);
         assert getConvention() instanceof MycatConvention;
     }
+
+    public MycatFilter(RelInput input) {
+        super(input);
+    }
+
     public static MycatFilter  create(
             RelTraitSet traitSet,
             RelNode input,

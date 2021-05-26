@@ -6,11 +6,13 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.InvalidRelException;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.ImmutableBitSet;
 
@@ -26,7 +28,13 @@ public class LocalAggregate extends Aggregate implements LocalRel {
                              ImmutableBitSet groupSet,
                              List<ImmutableBitSet> groupSets,
                              List<AggregateCall> aggCalls) {
-        super(cluster, traitSet, hints, input, groupSet, groupSets, aggCalls);
+        super(cluster, traitSet.replace(LocalConvention.INSTANCE), hints, input, groupSet, groupSets, aggCalls);
+    }
+    public static LocalAggregate create(Aggregate aggregate, RelNode input) {
+        return new LocalAggregate(aggregate.getCluster(), aggregate.getTraitSet(), aggregate.getHints(), input, aggregate.getGroupSet(), aggregate.getGroupSets(), aggregate.getAggCallList());
+    }
+    public LocalAggregate(RelInput input) {
+        super(input);
     }
 
     @Override

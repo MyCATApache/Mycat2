@@ -16,11 +16,13 @@
  */
 package org.apache.calcite.rex;
 
+import io.mycat.calcite.MycatRexExecutor;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.linq4j.function.Functions;
+import org.apache.calcite.mycat.MycatBuiltInMethodImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -54,7 +56,10 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.Period;
+import java.time.temporal.ChronoField;
+import java.time.temporal.TemporalField;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -1233,6 +1238,54 @@ public class RexLiteral extends RexNode {
         } else if (clazz == Long.class) {
           return clazz.cast(new BigInteger(i.toString()).longValue());
         } else if (clazz == String.class) {
+          SqlTypeName sqlTypeName = getType().getSqlTypeName();
+          if (this.value!=null&&this.value instanceof Duration){
+            Duration durationValue = (Duration) this.value;
+            LocalTime localTime = LocalTime.of(0, 0).plus(durationValue);
+            switch (sqlTypeName) {
+              case INTERVAL_DAY:
+                return clazz.cast((durationValue.toDays())+"");
+              case INTERVAL_DAY_HOUR:
+                return clazz.cast((localTime.getHour())+"");
+              case INTERVAL_DAY_MINUTE:
+                return clazz.cast((localTime.toSecondOfDay()/60)+"");
+              case INTERVAL_DAY_SECOND:
+                return clazz.cast((localTime.toSecondOfDay())+"");
+              case INTERVAL_HOUR:
+                return clazz.cast((localTime.getHour())+"");
+              case INTERVAL_HOUR_MINUTE:
+                return clazz.cast((localTime.getMinute())+"");
+              case INTERVAL_HOUR_SECOND:
+                return clazz.cast((localTime.getSecond())+"");
+              case INTERVAL_MINUTE:
+                return clazz.cast((durationValue.toMinutes())+"");
+              case INTERVAL_MINUTE_SECOND:
+                return clazz.cast((localTime.getMinute())+"");
+              case INTERVAL_SECOND:
+                return clazz.cast((durationValue.getSeconds())+"");
+              case INTERVAL_MICROSECOND:
+                return clazz.cast((durationValue.toMillis())+"");
+              case INTERVAL_WEEK:
+                break;
+              case INTERVAL_QUARTER:
+                break;
+              case INTERVAL_SECOND_MICROSECOND:
+                break;
+              case INTERVAL_MINUTE_MICROSECOND:
+                break;
+              case INTERVAL_HOUR_MICROSECOND:
+                break;
+              case INTERVAL_DAY_MICROSECOND:
+                break;
+              case INTERVAL_YEAR:
+                break;
+              case INTERVAL_YEAR_MONTH:
+                break;
+              case INTERVAL_MONTH:
+              default:
+                throw new UnsupportedOperationException("unsupport type "+sqlTypeName);
+            }
+          }
           return clazz.cast(intervalString(getValueAs(BigDecimal.class).abs()));
         } else if (clazz == BigDecimal.class) {
           return clazz.cast(new BigDecimal(i.toString()));

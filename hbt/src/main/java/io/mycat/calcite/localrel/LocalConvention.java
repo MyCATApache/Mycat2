@@ -22,6 +22,8 @@ import org.apache.calcite.plan.RelOptRule;
 
 public class LocalConvention extends Convention.Impl {
 
+  public static final LocalConvention INSTANCE = new LocalConvention();
+
   public static final double COST_MULTIPLIER = 0.8d;
 
   public LocalConvention() {

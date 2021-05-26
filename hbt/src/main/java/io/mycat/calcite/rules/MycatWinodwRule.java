@@ -24,6 +24,7 @@ import org.apache.calcite.adapter.enumerable.EnumerableWindow;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
+import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.logical.LogicalRepeatUnion;
 import org.apache.calcite.rel.logical.LogicalWindow;
 import org.apache.calcite.tools.RelBuilderFactory;
@@ -36,11 +37,11 @@ public class MycatWinodwRule extends MycatConverterRule {
     /** Called from the Config. */
     public MycatWinodwRule(final MycatConvention out,
                            RelBuilderFactory relBuilderFactory) {
-        super(LogicalWindow.class,(p)->true,   MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatWinodwRule");
+        super(Window.class,(p)->true,   MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatWinodwRule");
     }
 
     @Override public RelNode convert(RelNode rel) {
-        final LogicalWindow winAgg = (LogicalWindow) rel;
+        final Window winAgg = (Window) rel;
         final RelTraitSet traitSet =
                 winAgg.getTraitSet().replace(MycatConvention.INSTANCE);
         final RelNode child = winAgg.getInput();

@@ -34,6 +34,7 @@ public enum RxBuiltInMethod {
 //    OBSERVABLE_BIND(Bindable.class, "bindObservable", NewMycatDataContext.class),
     AS_OBSERVABLE(RxBuiltInMethodImpl.class, "asObservable", Object[][].class),
     AS_GATHER(RxBuiltInMethodImpl.class, "asGather", Enumerable.class),
+    AS_LIST(RxBuiltInMethodImpl.class, "asList", Object.class);
     ;
     public final Method method;
     public final Constructor constructor;

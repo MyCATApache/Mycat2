@@ -6,15 +6,25 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.RelFactories;
+import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 
 public class LocalFilter  extends Filter implements LocalRel {
     protected LocalFilter(RelOptCluster cluster, RelTraitSet traits, RelNode child, RexNode condition) {
-        super(cluster, traits, child, condition);
+        super(cluster, traits.replace(LocalConvention.INSTANCE), child, condition);
+    }
+
+    public LocalFilter(RelInput input) {
+        super(input);
+    }
+
+    public static LocalFilter create(Filter filter, RelNode input) {
+        return new LocalFilter(filter.getCluster(), filter.getTraitSet(), input, filter.getCondition());
     }
 
     @Override
@@ -23,7 +33,8 @@ public class LocalFilter  extends Filter implements LocalRel {
     }
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        return super.computeSelfCost(planner, mq).multiplyBy(.9);
+        RelOptCost relOptCost = super.computeSelfCost(planner, mq).multiplyBy(.9);
+        return relOptCost;
     }
     static final RelFactories.FilterFactory FILTER_FACTORY =
             (input, condition, variablesSet) -> {

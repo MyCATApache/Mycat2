@@ -202,7 +202,7 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
             VertxRowSetImpl vertxRowSet = new VertxRowSetImpl();
             RowDesc rowDesc = new RowDesc(metaData.getColumnList(), columnDescriptors);
             while (resultSet.next()) {
-                JDBCRow jdbcRow = new JDBCRow(rowDesc);
+                JDBCRow jdbcRow = new MycatRow(rowDesc);
                 for (int i = 0; i < columnCount; i++) {
                     jdbcRow.addValue(resultSet.getObject(i + 1));
                 }

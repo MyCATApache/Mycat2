@@ -58,7 +58,7 @@ public class QueryPlanner {
 
     private List<CodeExecuterContext> getAcceptedMycatRelList(DrdsSql drdsSql) {
         List<CodeExecuterContext> acceptedMycatRelList = planCache2.getAcceptedMycatRelList(drdsSql);
-        if (acceptedMycatRelList.isEmpty()) {
+        if (acceptedMycatRelList.isEmpty()) {//for debug,set it true
             PlanResultSet add = planCache2.add(false, drdsSql);
             return Collections.singletonList(add.getContext());
         } else {

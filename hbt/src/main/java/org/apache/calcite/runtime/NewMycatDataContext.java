@@ -4,11 +4,13 @@ import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.sql.util.SqlString;
 
 import java.util.List;
+import java.util.Map;
 
 public interface NewMycatDataContext extends DataContext {
-
+    Enumerable<Object[]> getEnumerable( Map<String, List<SqlString>> map);
     Enumerable<Object[]> getEnumerable(String node);
 
     Enumerable<Object[]> getEnumerable(String node,

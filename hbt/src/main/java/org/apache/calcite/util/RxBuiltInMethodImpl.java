@@ -13,9 +13,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Predicate1;
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -138,6 +136,19 @@ public class RxBuiltInMethodImpl {
             return Linq4j.asEnumerable(() -> StreamSupport.stream(input1.spliterator(), true).iterator());
         } else {
             return asGather(toEnumerable(input));
+        }
+    }
+    public static List<Object[]> asList(Object input){
+        if (input instanceof  Observable){
+           return (List) ((Observable<?>) input).toList();
+        }else if (input instanceof Enumerable){
+            return (List)((Enumerable<?>) input).toList();
+        }else if (input instanceof List){
+            return (List)input;
+        }else if (input instanceof Collection){
+            return new ArrayList<>((Collection)input);
+        }else {
+            throw new UnsupportedOperationException();
         }
     }
 }

@@ -504,9 +504,9 @@ public class AssembleTest implements MycatTest {
             JdbcUtils.execute(mycat,"insert db1.reader (locked) VALUES (?)",Arrays.asList(true));
 
             List<Map<String, Object>> mycatMaps = executeQuery(mycat, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");
-            List<Map<String, Object>> mysqlMaps = executeQuery(db1Connection, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");
+            List<Map<String, Object>> mysqlMaps = executeQuery(db1Connection, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");//[{locked=true}]
 //
-            Assert.assertEquals( mysqlMaps,mycatMaps);
+            Assert.assertEquals( "[{locked=1}]",mycatMaps.toString());
         }
     }
 

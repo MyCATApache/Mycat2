@@ -21,6 +21,7 @@ import io.mycat.calcite.physical.MycatRepeatUnion;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
+import org.apache.calcite.rel.core.RepeatUnion;
 import org.apache.calcite.rel.logical.LogicalRepeatUnion;
 import org.apache.calcite.tools.RelBuilderFactory;
 
@@ -30,7 +31,7 @@ public class MycatRepeatUnionRule extends MycatConverterRule {
     /** Called from the Config. */
     public MycatRepeatUnionRule(final MycatConvention out,
                                 RelBuilderFactory relBuilderFactory) {
-        super(LogicalRepeatUnion.class,(p)->true,   MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatRepeatUnionRule");
+        super(RepeatUnion.class,(p)->true,   MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatRepeatUnionRule");
     }
 
     @Override public RelNode convert(RelNode rel) {

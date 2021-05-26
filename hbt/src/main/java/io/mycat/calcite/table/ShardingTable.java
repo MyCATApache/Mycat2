@@ -39,6 +39,7 @@ public class ShardingTable implements ShardingTableHandler {
     private final LogicTable logicTable;
     private CustomRuleFunction shardingFuntion;
     private List<DataNode> backends;
+    public List<ShardingTable> indexTables;
 
     public ShardingTable(LogicTable logicTable,
                          List<DataNode> backends,

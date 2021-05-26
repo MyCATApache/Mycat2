@@ -14,7 +14,9 @@
  */
 package io.mycat.calcite.rewriter.rules;
 
-import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.MycatConvention;
+import io.mycat.calcite.localrel.ToLocalConverter;
+import io.mycat.calcite.logical.LocalToMycatRelConverter;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.rewriter.SQLRBORewriter;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -22,12 +24,9 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.core.*;
-import org.apache.calcite.rel.logical.*;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Function;
 
 public abstract class MycatSingleViewRule extends RelRule<MycatSingleViewRule.Config> {
 
@@ -42,8 +41,16 @@ public abstract class MycatSingleViewRule extends RelRule<MycatSingleViewRule.Co
 
     @Override
     public void onMatch(RelOptRuleCall call) {
-        SQLRBORewriter.on(call.rel(1), call.rel(0)).ifPresent(c->{
-            call.transformTo(c);
+        SQLRBORewriter.on(call.rel(1), call.rel(0)).ifPresent(c -> {
+            if (c instanceof MycatView) {
+                RelNode relNode = ((MycatView) c).getRelNode();
+                ToLocalConverter toLocalConverter = new ToLocalConverter();
+                RelNode accept = relNode.accept(toLocalConverter);
+                LocalToMycatRelConverter localToMycatRelConverter = new LocalToMycatRelConverter(c.getCluster(), c.getTraitSet().replace(MycatConvention.INSTANCE), accept);
+
+            }
+
+
         });
     }
 

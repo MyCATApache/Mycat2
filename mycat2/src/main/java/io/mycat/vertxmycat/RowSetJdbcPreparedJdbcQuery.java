@@ -112,7 +112,7 @@ public class RowSetJdbcPreparedJdbcQuery implements AbstractMySqlPreparedQuery<R
             VertxRowSetImpl vertxRowSet = new VertxRowSetImpl();
             RowDesc rowDesc = new RowDesc(metaData.getColumnList(), columnDescriptors);
             while (resultSet.next()) {
-                JDBCRow jdbcRow = new JDBCRow(rowDesc);
+                JDBCRow jdbcRow = new MycatRow(rowDesc);
                 for (int i = 0; i < columnCount; i++) {
                     jdbcRow.addValue(resultSet.getObject(i + 1));
                 }
@@ -274,7 +274,7 @@ public class RowSetJdbcPreparedJdbcQuery implements AbstractMySqlPreparedQuery<R
                 Function<Object, Object> finisher = (Function) collector.finisher();
                 int count = 0;
                 while (resultSet.next()) {
-                    JDBCRow jdbcRow = new JDBCRow(rowDesc);
+                    JDBCRow jdbcRow = new MycatRow(rowDesc);
                     for (int i = 0; i < columnCount; i++) {
                         jdbcRow.addValue(resultSet.getObject(i + 1));
                     }

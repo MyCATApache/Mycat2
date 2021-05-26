@@ -24,6 +24,7 @@ import org.apache.calcite.adapter.enumerable.EnumerableTableSpool;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
+import org.apache.calcite.rel.core.TableSpool;
 import org.apache.calcite.rel.logical.LogicalRepeatUnion;
 import org.apache.calcite.rel.logical.LogicalTableSpool;
 import org.apache.calcite.tools.RelBuilderFactory;
@@ -34,11 +35,11 @@ public class MycatTableSpoolRule extends MycatConverterRule {
 
     public MycatTableSpoolRule(final MycatConvention out,
                                RelBuilderFactory relBuilderFactory) {
-        super(LogicalTableSpool.class,(p)->true,   MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatTableSpoolRule");
+        super(TableSpool.class,(p)->true,   MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatTableSpoolRule");
     }
 
     @Override public RelNode convert(RelNode rel) {
-        LogicalTableSpool spool = (LogicalTableSpool) rel;
+        TableSpool spool = (TableSpool) rel;
         return MycatTableSpool.create(
                 convert(spool.getInput(),
                         spool.getInput().getTraitSet().replace(MycatConvention.INSTANCE)),

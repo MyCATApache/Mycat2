@@ -20,6 +20,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import io.mycat.DataNode;
 import io.mycat.calcite.*;
+import io.mycat.calcite.localrel.ToLocalConverter;
 import io.mycat.calcite.physical.MycatMergeSort;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.IndexCondition;
@@ -40,11 +41,12 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.*;
-import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.*;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.*;
+import org.apache.calcite.rel.convert.ConverterImpl;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalSort;
@@ -88,16 +90,16 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     }
 
     public MycatView(RelTraitSet relTrait, RelNode input, Distribution dataNode, RexNode conditions) {
-        super(input.getCluster(), relTrait);
+        super(input.getCluster(), relTrait=relTrait.replace(MycatConvention.INSTANCE));
         this.distribution = Objects.requireNonNull(dataNode);
         this.condition = conditions;
         this.rowType = input.getRowType();
         if (input instanceof MycatRel) {
             this.relNode = input.accept(new ToLogicalConverter(MycatCalciteSupport.relBuilderFactory.create(input.getCluster(), null)));
         } else {
-            this.relNode = input;
+            ToLocalConverter toLocalConverter = new ToLocalConverter();
+            this.relNode = input.accept(toLocalConverter);
         }
-        this.traitSet = relTrait;
     }
 
 
@@ -124,9 +126,11 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         boolean containsOrder = false;
 
         @Override
-        public RelNode visit(LogicalSort sort) {
-            containsOrder = true;
-            return sort;
+        protected RelNode visitChildren(RelNode rel) {
+            if (rel instanceof Sort){
+                containsOrder = true;
+            }
+            return super.visitChildren(rel);
         }
     }
 
@@ -271,11 +275,8 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        RelOptCost relOptCost = relNode.computeSelfCost(planner, mq);
-        return planner.getCostFactory().makeCost(relOptCost.getRows(), 0, 0);
+        return planner.getCost(relNode,mq);
     }
-
-
     private RelNode applyDataNode(Map<String, DataNode> map, RelNode relNode) {
         return relNode.accept(new RelShuttleImpl() {
             @Override
@@ -296,7 +297,6 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             }
         });
     }
-
 
 
     public Result implementView(MycatEnumerableRelImplementor implementor, Prefer pref) {
@@ -387,8 +387,8 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         MycatMergeSort mycatMergeSort = null;
         MycatView view = (MycatView) relNode;
         if (view.getDistribution().type() == Distribution.Type.Sharding) {
-            if (view.getRelNode() instanceof LogicalSort) {
-                LogicalSort viewRelNode = (LogicalSort) view.getRelNode();
+            if (view.getRelNode() instanceof Sort) {
+                Sort viewRelNode = (Sort) view.getRelNode();
                 RexNode rexNode = (RexNode) viewRelNode.fetch;
                 if (rexNode != null && rexNode.getKind() == SqlKind.PLUS) {
                     RexCall plus = (RexCall) rexNode;
@@ -397,7 +397,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                     mycatMergeSort = MycatMergeSort.create(viewRelNode.getTraitSet(), relNode, viewRelNode.getCollation(), viewRelNode.offset, viewRelNode.fetch);
                 }
             }
-        }else {
+        } else {
             throw new IllegalArgumentException();
         }
 //            MycatView view = (MycatView) relNode;
@@ -482,7 +482,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     public boolean isMergeSort() {
         MycatView view = this;
         if (view.getDistribution().type() == Distribution.Type.Sharding) {
-            return (view.getRelNode() instanceof LogicalSort);
+            return (view.getRelNode() instanceof Sort);
         } else {
             return false;
         }
@@ -491,7 +491,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     public boolean isMergeAgg() {
         MycatView view = this;
         if (view.getDistribution().type() == Distribution.Type.Sharding) {
-            return (view.getRelNode() instanceof LogicalAggregate);
+            return (view.getRelNode() instanceof Aggregate);
         } else {
             return false;
         }
@@ -563,17 +563,17 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     @Override
     public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
-        if (isMergeSort()){
-            return implementMergeView((MycatEnumerableRelImplementor) implementor,pref);
+        if (isMergeSort()) {
+            return implementMergeView((MycatEnumerableRelImplementor) implementor, pref);
         }
-        return implementView((MycatEnumerableRelImplementor) implementor,pref);
+        return implementView((MycatEnumerableRelImplementor) implementor, pref);
     }
 
     @Override
     public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
-        if (isMergeSort()){
-            return implementMergeViewStream( implementor,pref);
+        if (isMergeSort()) {
+            return implementMergeViewStream(implementor, pref);
         }
-        return implementViewStream(implementor,pref);
+        return implementViewStream(implementor, pref);
     }
 }

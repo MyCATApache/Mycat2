@@ -5,9 +5,11 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Values;
+import org.apache.calcite.rel.logical.LogicalValues;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
@@ -16,9 +18,14 @@ import java.util.List;
 
 public class LocalValues extends Values implements LocalRel{
     protected LocalValues(RelOptCluster cluster, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traits) {
-        super(cluster, rowType, tuples, traits);
+        super(cluster, rowType, tuples, traits.replace(LocalConvention.INSTANCE));
     }
-
+    public LocalValues(RelInput input){
+        this(input.getCluster(),input.getRowType("type"),input.getTuples("tuples"),input.getTraitSet());
+    }
+    public static LocalValues create(LogicalValues logicalunion) {
+        return new LocalValues(logicalunion.getCluster(), logicalunion.getRowType(),logicalunion.getTuples(),logicalunion.getTraitSet());
+    }
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new LocalValues(getCluster(),getRowType(),getTuples(),traitSet);

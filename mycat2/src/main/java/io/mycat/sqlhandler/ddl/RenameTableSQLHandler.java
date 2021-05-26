@@ -118,6 +118,7 @@ public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableSt
                         if (newConfig instanceof NormalTableConfig) {
                             NormalTableConfig normalTableConfig = (NormalTableConfig) newConfig;
                             normalTableConfig.setCreateTableSQL(newCreateTableSql);
+                            normalTableConfig.setDataNode(new NormalBackEndTableInfoConfig(metadataManager.getPrototype(),newSchemaName,newTableName));
                             ops.putNormalTable(newSchemaName, newTableName, normalTableConfig);
                         } else if (newConfig instanceof GlobalTableConfig) {
                             GlobalTableConfig globalTableConfig = (GlobalTableConfig) newConfig;

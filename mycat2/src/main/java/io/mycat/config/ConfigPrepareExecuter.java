@@ -358,11 +358,13 @@ public class ConfigPrepareExecuter {
         MycatRouterConfig curConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
 
         Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+        MemPlanCache memPlanCache = MetaClusterCurrent.wrapper(MemPlanCache.class);
+        memPlanCache.clearCache();
         vertx.executeBlocking(new Handler<Promise<Void>>() {
             @Override
             public void handle(Promise<Void> promise) {
                 try {
-                    MemPlanCache memPlanCache = MetaClusterCurrent.wrapper(MemPlanCache.class);
+
                     memPlanCache.init();
                 }catch (Throwable throwable){
                     LOGGER.error("",throwable);

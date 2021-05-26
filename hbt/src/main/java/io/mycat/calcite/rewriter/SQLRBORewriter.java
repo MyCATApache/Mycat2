@@ -19,9 +19,9 @@ import io.mycat.LogicTableType;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatConvention;
+import io.mycat.calcite.localrel.LocalRules;
+import io.mycat.calcite.localrel.LocalSort;
 import io.mycat.calcite.logical.MycatView;
-import io.mycat.calcite.physical.MycatMergeSort;
-import io.mycat.calcite.sqlfunction.infofunction.MycatSessionValueFunction;
 import io.mycat.calcite.table.*;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.util.NameMap;
@@ -33,10 +33,10 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.*;
+import org.apache.calcite.rel.metadata.RelColumnOrigin;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rex.*;
-import org.apache.calcite.sql.SqlFunction;
-import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -51,55 +51,79 @@ import java.util.*;
 
 
 public class SQLRBORewriter extends RelShuttleImpl {
-    final static NextConvertor nextConvertor = new NextConvertor();
 
-
-    static {
-        nextConvertor.put(TableScan.class,
-                Project.class, Union.class, Aggregate.class, Sort.class, Filter.class, Join.class);
-        nextConvertor.put(Filter.class,
-                Project.class, Union.class, Aggregate.class, Sort.class);
-        nextConvertor.put(Join.class,
-                Project.class, Union.class, Aggregate.class, Filter.class, Join.class, Sort.class);
-        nextConvertor.put(Project.class,
-                Project.class, Union.class, Aggregate.class, Sort.class);
-        nextConvertor.put(Aggregate.class,
-                Project.class, Union.class, Filter.class, Sort.class);
+   public static RelBuilder relbuilder(RelOptCluster cluster, RelOptSchema schema){
+        return LocalRules.LOCAL_BUILDER.create(cluster,schema);
     }
 
+    public final static io.mycat.calcite.rewriter.RelMdSqlViews RelMdSqlViews = new RelMdSqlViews() {
+
+        @Override
+        public boolean filter(RelNode relNode) {
+            return true;
+        }
+
+
+        @Override
+        public boolean join(RelNode relNode) {
+            return true;
+        }
+
+
+        @Override
+        public boolean project(RelNode relNode) {
+            return true;
+        }
+
+
+        @Override
+        public boolean aggregate(RelNode relNode) {
+            return true;
+        }
+
+        @Override
+        public boolean correlate(RelNode left) {
+            return true;
+        }
+
+        @Override
+        public boolean sort(RelNode input) {
+            return true;
+        }
+    };
 
     public SQLRBORewriter() {
 
     }
 
     public static Optional<RelNode> on(RelNode bottom, RelNode up) {
-        if (bottom instanceof MycatView){
-            MycatView view = (MycatView)bottom;
-            if (view.isMergeAgg()||view.isMergeSort()){
+        if (bottom instanceof MycatView) {
+            MycatView view = (MycatView) bottom;
+            if (view.isMergeAgg() || view.isMergeSort()) {
                 return Optional.empty();
             }
         }
-        if (up instanceof Calc){
-            return view(bottom,(Calc)up);
+        if (up instanceof Calc) {
+            return view(bottom, (Calc) up);
         }
-        if (up instanceof Filter){
-            return view(bottom,(Filter)up);
+        if (up instanceof Filter) {
+            return view(bottom, (Filter) up);
         }
-        if (up instanceof Project){
-            return view(bottom,(Project)up);
+        if (up instanceof Project) {
+            return view(bottom, (Project) up);
         }
-        if (up instanceof Aggregate){
-            return view(bottom,(Aggregate)up);
+        if (up instanceof Aggregate) {
+            return view(bottom, (Aggregate) up);
         }
-        if (up instanceof Sort){
-            return view(bottom,(Sort)up);
+        if (up instanceof Sort) {
+            return view(bottom, (Sort) up);
         }
         return Optional.empty();
     }
 
     public static Optional<RelNode> on(RelNode left, RelNode right, RelNode up) {
-        if (up instanceof Join){
-           return view(left,right,(Join) up);
+        if (up instanceof Join) {
+            return view(left, right, (Join) up);
         }
         return Optional.empty();
     }
@@ -161,19 +185,19 @@ public class SQLRBORewriter extends RelShuttleImpl {
     public static final Optional<RelNode> view(RelNode input, Calc calc) {
         final Pair<ImmutableList<RexNode>, ImmutableList<RexNode>> projectFilter =
                 calc.getProgram().split();
-        RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(calc.getCluster(), null);
+        RelBuilder relBuilder = relbuilder(calc.getCluster(), null);
         RelNode relNode = relBuilder.push(input).filter(projectFilter.right).build();
         if (relNode instanceof Filter) {
-            return view(input, (Filter)relNode)
+            return view(input, (Filter) relNode)
                     .flatMap(u -> {
                         RelNode node = relBuilder.push(u).project(projectFilter.left).build();
                         if (node instanceof Project) {
-                            return view(u, (Project)node);
-                        }else {
+                            return view(u, (Project) node);
+                        } else {
                             return Optional.empty();
                         }
                     });
-        }else {
+        } else {
             return Optional.empty();
         }
     }
@@ -205,7 +229,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         return false;
     }
 
-    private static boolean userDefinedFunctionInFilter(Filter filter) {
+    public static boolean userDefinedFunctionInFilter(Filter filter) {
         CheckingUserDefinedAndConvertFunctionVisitor visitor = new CheckingUserDefinedAndConvertFunctionVisitor();
         RexNode condition = filter.getCondition();
 
@@ -213,42 +237,6 @@ public class SQLRBORewriter extends RelShuttleImpl {
         return filter.containsOver() || visitor.containsUserDefinedFunction();
     }
 
-    /**
-     * Visitor that checks whether part of a projection is a user-defined
-     * function (UDF).
-     */
-    private static class CheckingUserDefinedAndConvertFunctionVisitor
-            extends RexVisitorImpl<Void> {
-
-        private boolean containsUsedDefinedFunction = false;
-
-        CheckingUserDefinedAndConvertFunctionVisitor() {
-            super(true);
-        }
-
-        public boolean containsUserDefinedFunction() {
-            return containsUsedDefinedFunction;
-        }
-
-        @Override
-        public Void visitCall(RexCall call) {
-            SqlOperator operator = call.getOperator();
-            String name = operator.getName();
-            if (operator instanceof SqlFunction) {
-                containsUsedDefinedFunction |= Information_Functions.containsKey(name, false);
-            }
-            if (operator == MycatSessionValueFunction.INSTANCE) {
-                containsUsedDefinedFunction = true;
-            }
-            return super.visitCall(call);
-        }
-
-        @Override
-        public Void visitCorrelVariable(RexCorrelVariable correlVariable) {
-            containsUsedDefinedFunction = true;
-            return super.visitCorrelVariable(correlVariable);
-        }
-    }
 
     public static NameMap<Object> Information_Functions = new NameMap<>();
 
@@ -352,7 +340,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     public static Optional<RelNode> view(RelNode input, Aggregate aggregate) {
         if (RelMdSqlViews.aggregate(input)) {
-            return Optional.of(aggregate(input, aggregate));
+            return (aggregate(input, aggregate));
         }
         return Optional.empty();
     }
@@ -365,11 +353,12 @@ public class SQLRBORewriter extends RelShuttleImpl {
     @Override
     public RelNode visit(LogicalSort sort) {
         RelNode input = sort.getInput().accept(this);
-        return view(input,sort).orElse( sort.copy(sort.getTraitSet(), ImmutableList.of(input)));
+        return view(input, sort).orElse(sort.copy(sort.getTraitSet(), ImmutableList.of(input)));
     }
-    public  static Optional<RelNode> view(RelNode input,Sort sort) {
+
+    public static Optional<RelNode> view(RelNode input, Sort sort) {
         if (RelMdSqlViews.sort(input)) {
-            return Optional.of(sort(input, sort));
+            return (sort(input, sort));
         }
         return Optional.empty();
     }
@@ -418,7 +407,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         return logicalWindow.copy(logicalWindow.getTraitSet(), ImmutableList.of(logicalWindow.getInput().accept(this)));
     }
 
-    public static RelNode sort(RelNode original, Sort sort) {
+    public static Optional<RelNode> sort(RelNode original, Sort sort) {
         RelNode input = original;
         MycatView view = null;
         Distribution dataNodeInfo = null;
@@ -428,7 +417,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             input = ((MycatView) input).getRelNode();
         }
         if (dataNodeInfo == null) {
-            return sort.copy(input.getTraitSet(), ImmutableList.of(input));
+            return Optional.empty();
         }
         if (input instanceof QueryBuilder) {
             RexNode fetchRex = sort.fetch;
@@ -454,22 +443,22 @@ public class SQLRBORewriter extends RelShuttleImpl {
             Optional<QueryBuilder> queryBuilder = mycatCustomTable
                     .sort(offsetNumber, fetchNumber, collation);
             if (queryBuilder.isPresent()) {
-                return queryBuilder.get();
+                return Optional.of(queryBuilder.get());
             }
             return
-                    sort.copy(sort.getTraitSet()
-                            .replace(MycatConvention.INSTANCE), mycatCustomTable, collation);
+                    Optional.of(sort.copy(sort.getTraitSet()
+                            .replace(MycatConvention.INSTANCE), mycatCustomTable, collation));
         }
         if (dataNodeInfo.type() == Distribution.Type.PHY || dataNodeInfo.type() == Distribution.Type.BroadCast) {
             input = sort.copy(input.getTraitSet(), ImmutableList.of(input));
-            return view.changeTo(input, dataNodeInfo);
+            return Optional.of(view.changeTo(input, dataNodeInfo));
         } else {
             if (sort.offset == null && sort.fetch == null) {
                 input = LogicalSort.create(input, sort.getCollation()
                         , null
                         , null);
-                input = view.changeTo(input, dataNodeInfo);
-                return input;
+                input = view.changeTo(LocalSort.create((LogicalSort) input, ((LogicalSort) input).getInput()), dataNodeInfo);
+                return Optional.of(input);
             }
             RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
             RexNode rexNode;
@@ -489,13 +478,13 @@ public class SQLRBORewriter extends RelShuttleImpl {
             input = LogicalSort.create(input, sort.getCollation()
                     , rexBuilder.makeExactLiteral(BigDecimal.ZERO)
                     , rexNode);
-            input = view.changeTo(input, dataNodeInfo);
-            return input;
+            input = view.changeTo(LocalSort.create((LogicalSort) input, ((LogicalSort) input).getInput()), dataNodeInfo);
+            return Optional.of(input);
         }
     }
 
 
-    public static RelNode aggregate(RelNode original, Aggregate aggregate) {
+    public static Optional<RelNode> aggregate(RelNode original, Aggregate aggregate) {
         RelNode input = original;
         Distribution dataNodeInfo = null;
         MycatView view = null;
@@ -505,27 +494,25 @@ public class SQLRBORewriter extends RelShuttleImpl {
             input = ((MycatView) input).getRelNode();
         }
         if (dataNodeInfo == null) {
-            input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
-            return input;
+            return Optional.empty();
         }
         if (dataNodeInfo.type() == Distribution.Type.PHY || dataNodeInfo.type() == Distribution.Type.BroadCast) {
             input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
-            return view.changeTo(input, dataNodeInfo);
+            return Optional.of(view.changeTo(input, dataNodeInfo));
         } else {
-            ColumnRefResolver columnMapping = new ColumnRefResolver();
-            input.accept(columnMapping);
             ImmutableBitSet groupSet = aggregate.getGroupSet();
+            RelMetadataQuery metadataQuery = aggregate.getCluster().getMetadataQuery();
             boolean canPushDown = false;
             for (Integer integer : groupSet) {
-                ColumnInfo bottomColumnInfo = columnMapping.getBottomColumnInfoList(integer).stream()
-                        .filter(i -> i.getTableScan().getTable().unwrap(MycatLogicTable.class).isSharding())
-                        .findFirst().orElse(null);
-                if (bottomColumnInfo == null) {
+                RelColumnOrigin columnOrigin = metadataQuery.getColumnOrigin(input, integer);
+                if (columnOrigin == null||!columnOrigin.isDerived()) {
                     continue;
                 }
-                MycatLogicTable shardingTable = bottomColumnInfo.getTableScan().getTable().unwrap(MycatLogicTable.class);
-                List<SimpleColumnInfo> columns = shardingTable.getTable().getColumns();
-                SimpleColumnInfo simpleColumnInfo = columns.get(bottomColumnInfo.getIndex());
+                MycatLogicTable mycatLogicTable = columnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
+                if (!mycatLogicTable.isSharding()){
+                    continue;
+                }
+                SimpleColumnInfo simpleColumnInfo =  mycatLogicTable.getTable().getColumns().get(columnOrigin.getOriginColumnOrdinal());
                 if (simpleColumnInfo.isShardingKey()) {
                     canPushDown = true;
                     break;
@@ -533,7 +520,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             }
             if (canPushDown) {
                 input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
-                return view.changeTo(input, dataNodeInfo);
+                return Optional.of(view.changeTo(input, dataNodeInfo));
             }
 
 
@@ -552,11 +539,9 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 MycatView multiView = view.changeTo(
                         bestExp.getInput(0).getInput(0),
                         dataNodeInfo);
-                return bestExp.copy(aggregate.getTraitSet(), ImmutableList.of(multiView));
+                return Optional.of(bestExp.copy(aggregate.getTraitSet(), ImmutableList.of(multiView)));
             } else {
-                return view.changeTo(
-                        backup,
-                        dataNodeInfo);
+                return Optional.empty();
             }
 
         }
@@ -721,33 +706,29 @@ public class SQLRBORewriter extends RelShuttleImpl {
             if (pairs.isEmpty()) return Optional.empty();
 
             RexNode conditions = left.getCondition().orElse(right.getCondition().orElse(null));
-
+            RelMetadataQuery metadataQuery = join.getCluster().getMetadataQuery();
             ColumnRefResolver leftColumnMapping = new ColumnRefResolver();
             ColumnRefResolver rightColumnMapping = new ColumnRefResolver();
+
             left.getRelNode().accept(leftColumnMapping);
             right.getRelNode().accept(rightColumnMapping);
 
             for (IntPair pair : pairs) {
+                RelColumnOrigin leftColumnOrigin = metadataQuery.getColumnOrigin(left.getRelNode(), pair.source);
+                RelColumnOrigin rightColumnOrigin = metadataQuery.getColumnOrigin(right.getRelNode(), pair.target);
 
-                Optional<ColumnInfo> leftBottomColumnInfoOptional = leftColumnMapping.getBottomColumnInfoList(pair.source).stream()
-                        .filter(i -> i.getTableScan().getTable().unwrap(MycatLogicTable.class).isSharding()).findFirst();
-                Optional<ColumnInfo> rightBottomColumnInfoOptional = rightColumnMapping.getBottomColumnInfoList(pair.target).stream()
-                        .filter(i -> i.getTableScan().getTable().unwrap(MycatLogicTable.class).isSharding()).findFirst();
-
-                if (leftBottomColumnInfoOptional.isPresent() && rightBottomColumnInfoOptional.isPresent()) {
-                    ColumnInfo leftBottomColumnInfo = leftBottomColumnInfoOptional.get();
-                    ColumnInfo rightBottomColumnInfo = rightBottomColumnInfoOptional.get();
-                    MycatLogicTable leftRelNode = leftBottomColumnInfo.getTableScan().getTable().unwrap(MycatLogicTable.class);
-                    MycatLogicTable rightRelNode = rightBottomColumnInfo.getTableScan().getTable().unwrap(MycatLogicTable.class);
+                if (leftColumnOrigin!=null&&!leftColumnOrigin.isDerived()&&rightColumnOrigin!=null&&!rightColumnOrigin.isDerived()){
+                    MycatLogicTable leftRelNode = leftColumnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
+                    MycatLogicTable rightRelNode = rightColumnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
                     LogicTableType leftTableType = leftRelNode.getTable().getType();
                     LogicTableType rightTableType = rightRelNode.getTable().getType();
 
-                    if (leftTableType == LogicTableType.SHARDING && leftTableType == rightTableType) {
+                    if ((leftTableType == LogicTableType.SHARDING &&leftTableType == rightTableType)) {
                         ShardingTable leftTableHandler = (ShardingTable) leftRelNode.logicTable();
                         ShardingTable rightTableHandler = (ShardingTable) rightRelNode.logicTable();
 
-                        SimpleColumnInfo lColumn = leftTableHandler.getColumns().get(leftBottomColumnInfo.getIndex());
-                        SimpleColumnInfo rColumn = rightTableHandler.getColumns().get(rightBottomColumnInfo.getIndex());
+                        SimpleColumnInfo lColumn = leftTableHandler.getColumns().get(leftColumnOrigin.getOriginColumnOrdinal());
+                        SimpleColumnInfo rColumn = rightTableHandler.getColumns().get(rightColumnOrigin.getOriginColumnOrdinal());
 
                         CustomRuleFunction lFunction = leftTableHandler.getShardingFuntion();
                         CustomRuleFunction rFunction = rightTableHandler.getShardingFuntion();
@@ -806,12 +787,11 @@ public class SQLRBORewriter extends RelShuttleImpl {
             input = ((MycatView) input).getRelNode();
         }
 
-        if (input instanceof LogicalTableScan) {
+        if (input instanceof TableScan) {
             RexNode condition = filter.getCondition();
             RelOptTable table = input.getTable();
-            AbstractMycatTable nodes = table.unwrap(AbstractMycatTable.class);
-            Distribution distribution = nodes.createDistribution();
-            return MycatView.ofCondition(filter.copy(filter.getTraitSet(), input, condition), distribution, (condition));
+            MycatLogicTable mycatTable = table.unwrap(MycatLogicTable.class);
+            return MycatView.ofCondition(filter.copy(filter.getTraitSet(), input, condition), mycatTable.createDistribution(), (condition));
         }
         if (input instanceof QueryBuilder) {
             QueryBuilder queryBuilder = (QueryBuilder) input;

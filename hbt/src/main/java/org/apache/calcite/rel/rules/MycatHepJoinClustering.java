@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 
 
 public class MycatHepJoinClustering
-        extends RelRule<MycatHepJoinClustering.Config> implements TransformationRule{
+        extends RelRule<MycatHepJoinClustering.Config> implements TransformationRule {
 
     protected MycatHepJoinClustering(Config config) {
         super(config);
@@ -251,25 +251,31 @@ public class MycatHepJoinClustering
                 if (ldistribution.type() == rdistribution.type()) {
                     return 0;
                 }
-                if (ldistribution.type() == Distribution.Type.BroadCast) {
-                    return 0;
-                }
-                if (rdistribution.type() == Distribution.Type.BroadCast) {
-                    return 0;
-                }
-                if (ldistribution.type() == Distribution.Type.PHY) {
+                if (ldistribution.type() == Distribution.Type.BroadCast && rdistribution.type() == Distribution.Type.Sharding) {
                     return 1;
                 }
-                if (rdistribution.type() == Distribution.Type.PHY) {
+                if (ldistribution.type() == Distribution.Type.Sharding && rdistribution.type() == Distribution.Type.BroadCast) {
                     return -1;
+                }
+                if (ldistribution.type() == Distribution.Type.PHY && rdistribution.type() == Distribution.Type.Sharding) {
+                    return 1;
+                }
+                if (ldistribution.type() == Distribution.Type.Sharding && rdistribution.type() == Distribution.Type.PHY) {
+                    return -1;
+                }
+                if (ldistribution.type() == Distribution.Type.BroadCast && rdistribution.type() == Distribution.Type.PHY) {
+                    return -1;
+                }
+                if (ldistribution.type() == Distribution.Type.PHY && rdistribution.type() == Distribution.Type.BroadCast) {
+                    return 1;
                 }
                 return 0;
             }
-            if (left != null) {
+            if (left != null&&right == null) {
                 return -1;
             }
-            if (right != null) {
-                return -1;
+            if (left==null&&right != null) {
+                return 1;
             }
             return 0;
         }

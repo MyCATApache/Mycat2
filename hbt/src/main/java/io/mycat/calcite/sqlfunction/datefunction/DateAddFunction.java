@@ -22,10 +22,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.mycat.MycatBuiltInMethodImpl;
 import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.sql.SqlCallBinding;
-import org.apache.calcite.sql.SqlFunction;
-import org.apache.calcite.sql.SqlFunctionCategory;
-import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.type.*;
 
 import java.lang.reflect.Method;
@@ -48,7 +45,13 @@ public  class DateAddFunction extends SqlFunction {
     public boolean checkOperandTypes(SqlCallBinding callBinding, boolean throwOnFailure) {
       return super.checkOperandTypes(callBinding, throwOnFailure);
     }
-   public RexImpTable.RexCallImplementor getRexCallImplementor(){
+
+    @Override
+    public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
+        super.unparse(writer, call, leftPrec, rightPrec);
+    }
+
+    public RexImpTable.RexCallImplementor getRexCallImplementor(){
       return  new RexImpTable.MycatAbstractRexCallImplementor(NullPolicy.ANY, false) {
 
           @Override

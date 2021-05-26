@@ -18,6 +18,8 @@ package io.mycat.calcite;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.localrel.LocalConvention;
+import io.mycat.calcite.localrel.LocalRel;
 import io.mycat.calcite.physical.*;
 import io.mycat.calcite.rewriter.rules.MycatBiRelViewRule;
 import io.mycat.calcite.rewriter.rules.MycatBottomTableScanViewRule;
@@ -172,9 +174,6 @@ public class MycatRules {
         return builder.add(
 //                AggregateReduceFunctionsRule.Config.DEFAULT.toRule(),
                 CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
-                FilterJoinRule.FilterIntoJoinRule.Config.DEFAULT.toRule(),
-                JoinExtractFilterRule.Config.DEFAULT.toRule(),
-                SortJoinTransposeRule.Config.DEFAULT.toRule(),
                 MycatJoinRule.INSTANCE,
                 MycatCalcRule.INSTANCE,
                 MycatProjectRule.INSTANCE,
@@ -203,9 +202,10 @@ public class MycatRules {
                 MycatMergeJoinRule.INSTANCE
 //                MycatBottomTableScanViewRule.Config.DEFAULT.toRule()
         )
-//                .addAll(MycatExtraSortRule.RULES)
+                .addAll(MycatExtraSortRule.RULES)
 //                .addAll(MycatSingleViewRule.RULES)
 //                .addAll(MycatBiRelViewRule.RULES)
+//                .add(MycatBottomTableScanViewRule.Config.DEFAULT.toRule())
                 .build();
     }
 

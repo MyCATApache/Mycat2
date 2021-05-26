@@ -28,7 +28,7 @@ public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
     protected Future<Void> onExecute(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response){
         HackRouter hackRouter = new HackRouter(request.getAst(), dataContext);
         try {
-            if (hackRouter.analyse()) {
+            if (false) {
                 Pair<String, String> plan = hackRouter.getPlan();
                 return response.proxySelect(plan.getKey(),plan.getValue());
             } else {

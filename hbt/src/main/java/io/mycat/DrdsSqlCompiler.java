@@ -27,7 +27,10 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
+import io.mycat.calcite.localrel.LocalRules;
+import io.mycat.calcite.logical.LocalToMycatConverterRule;
 import io.mycat.calcite.physical.MycatInsertRel;
+import io.mycat.calcite.physical.MycatTopN;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.rewriter.*;
 import io.mycat.calcite.rules.MycatExtraSortRule;
@@ -51,9 +54,7 @@ import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.*;
-import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.core.TableModify;
-import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableModify;
@@ -325,7 +326,7 @@ public class DrdsSqlCompiler {
             }
         }
         RelNode rboLogPlan = optimizeWithRBO(logPlan);
-        if (!RelOptUtil.areRowTypesEqual(rboLogPlan.getRowType(),logPlan.getRowType(),true)){
+        if (!RelOptUtil.areRowTypesEqual(rboLogPlan.getRowType(), logPlan.getRowType(), true)) {
             rboLogPlan = relNodeContext.getRelBuilder().push(rboLogPlan).rename(logPlan.getRowType().getFieldNames()).build();
         }
 //        rboLogPlan = rboLogPlan.accept(new RelShuttleImpl(){
@@ -334,6 +335,7 @@ public class DrdsSqlCompiler {
 //                return SQLRBORewriter.view(scan).orElse(scan);
 //            }
 //        });
+//        rboLogPlan = rboLogPlan.accept(new ToLocalConverter());
         MycatRel mycatRel = optimizeWithCBO(rboLogPlan, Collections.emptyList());
         return mycatRel;
     }
@@ -402,41 +404,30 @@ public class DrdsSqlCompiler {
         if (logPlan instanceof MycatRel) {
             return (MycatRel) logPlan;
         } else {
-            boolean needJoinReorder = false;
-            if (needJoinReorder) {
-                logPlan = preJoinReorder(logPlan);
-            }
             RelOptCluster cluster = logPlan.getCluster();
             RelOptPlanner planner = cluster.getPlanner();
             planner.clear();
             MycatConvention.INSTANCE.register(planner);
             ImmutableList.Builder<RelOptRule> listBuilder = ImmutableList.builder();
-//            listBuilder.add(CoreRules.JOIN_COMMUTE);
-//            listBuilder.add(CoreRules.JOIN_COMMUTE_OUTER);
-//            listBuilder.add(CoreRules.JOIN_ASSOCIATE);
-//            listBuilder.add(CoreRules.FILTER_INTO_JOIN);
-//            listBuilder.add(CoreRules.JOIN_PUSH_EXPRESSIONS);
-//            listBuilder.add(CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES);
-//            listBuilder.add(JoinPushThroughJoinRule.LEFT);
-//            listBuilder.add(JoinPushThroughJoinRule.RIGHT);
-//            listBuilder.add(MycatJoinPushThroughJoinRule.RIGHT);
-//
+            listBuilder.addAll(MycatExtraSortRule.RULES);
+            listBuilder.addAll(LocalRules.RULES);
 
-//            listBuilder.add(MycatJoinClusteringRule.Config.DEFAULT.toRule());
-//            listBuilder.add(MycatProjectJoinClusteringRule.Config.DEFAULT.toRule());
-//            listBuilder.add(MycatJoinPushThroughJoinRule.LEFT);
-//            listBuilder.add(MycatJoinPushThroughJoinRule.RIGHT);
-//            listBuilder.add(MycatFilterJoinRule.JoinConditionPushRule.Config.DEFAULT.withPredicate((join1, joinType, exp) -> false).toRule());
-            listBuilder.addAll(  MycatExtraSortRule.RULES);
+            //算子交换
+            // Filter/Join, TopN/Join, Agg/Join, Filter/Agg, Sort/Project, Join/TableLookup
+            listBuilder.add(CoreRules.JOIN_PUSH_EXPRESSIONS);
+            listBuilder.add(CoreRules.FILTER_INTO_JOIN);
+
+//          TopN/Join
+            listBuilder.add(CoreRules.SORT_JOIN_TRANSPOSE.config.withOperandFor(MycatTopN.class, Join.class).toRule());
+
+            listBuilder.add(CoreRules.FILTER_SET_OP_TRANSPOSE.config.toRule());
+            listBuilder.add(CoreRules.AGGREGATE_JOIN_TRANSPOSE.config.withOperandFor(Aggregate.class,Join.class,false).toRule());
+
+            //Sort/Project
+            listBuilder.add(CoreRules.SORT_PROJECT_TRANSPOSE.config.withOperandFor(Sort.class,Project.class).toRule());
+
             listBuilder.build().forEach(c -> planner.addRule(c));
-
             MycatConvention.INSTANCE.register(planner);
-
-            //joinReorder
-            if (needJoinReorder) {
-                planner.addRule(CoreRules.MULTI_JOIN_OPTIMIZE);
-            }
-
             if (relOptRules != null) {
                 for (RelOptRule relOptRule : relOptRules) {
                     planner.addRule(relOptRule);
@@ -498,7 +489,7 @@ public class DrdsSqlCompiler {
         unAvg = unAvg.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(TableScan scan) {
-                return SQLRBORewriter.view((LogicalTableScan) scan).orElse(scan);
+                return SQLRBORewriter.view(scan).orElse(scan);
             }
         });
         RelNode joinClustering = toMultiJoin(unAvg).map(relNode -> {
@@ -507,7 +498,7 @@ public class DrdsSqlCompiler {
             builder.addGroupBegin();
             builder.addRuleInstance(MycatHepJoinClustering.Config.DEFAULT.toRule());
             builder.addGroupEnd();
-
+            builder.addMatchLimit(8);
             builder.addGroupBegin();
             builder.addRuleInstance(CoreRules.MULTI_JOIN_OPTIMIZE);
             builder.addGroupEnd();
@@ -517,12 +508,24 @@ public class DrdsSqlCompiler {
             return planner.findBestExp();
         }).orElse(unAvg);
         HepProgramBuilder builder = new HepProgramBuilder();
-        builder.addGroupBegin().addRuleCollection(FILTER).addGroupEnd();
-        builder.addGroupBegin().addRuleInstance(CoreRules.PROJECT_MERGE).addGroupEnd();
-        builder.addMatchLimit(10000);
+        builder.addGroupBegin().addRuleCollection(ImmutableList.of(
+                CoreRules.PROJECT_MERGE,
+                CoreRules.PROJECT_CORRELATE_TRANSPOSE,
+                CoreRules.PROJECT_SET_OP_TRANSPOSE,
+                CoreRules.PROJECT_JOIN_TRANSPOSE,
+                CoreRules.PROJECT_WINDOW_TRANSPOSE,
+                CoreRules.PROJECT_FILTER_TRANSPOSE
+        )).addGroupEnd().addMatchOrder(HepMatchOrder.BOTTOM_UP);
+        builder.addGroupBegin().addRuleCollection(FILTER).addGroupEnd().addMatchOrder(HepMatchOrder.BOTTOM_UP);
+        builder.addGroupBegin().addRuleInstance(CoreRules.PROJECT_MERGE).addGroupEnd().addMatchOrder(HepMatchOrder.ARBITRARY);
+        builder.addGroupBegin()
+                .addRuleCollection(LocalRules.RULES)
+                .addGroupEnd().addMatchOrder(HepMatchOrder.BOTTOM_UP);
+        builder.addMatchLimit(1024);
         HepPlanner planner = new HepPlanner(builder.build());
         planner.setRoot(joinClustering);
-        return planner.findBestExp().accept(new SQLRBORewriter());
+        RelNode bestExp = planner.findBestExp();
+        return bestExp;
     }
 
     private Optional<RelNode> toMultiJoin(RelNode logPlan) {

@@ -9,6 +9,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.RxBuiltInMethodImpl;
 
 import java.util.*;
@@ -26,6 +27,11 @@ public class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
         this.viewMap = map;
     }
 
+
+    @Override
+    public Enumerable<Object[]> getEnumerable(Map<String, List<SqlString>> map) {
+        return null;
+    }
 
     @Override
     public Enumerable<Object[]> getEnumerable(String node) {
