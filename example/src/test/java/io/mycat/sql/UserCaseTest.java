@@ -143,7 +143,7 @@ public class UserCaseTest implements MycatTest {
             execute(mycatConnection, "insert into `user`(`id`,`name`,`is_enable`) values (1,'abc',1);");
             List<Map<String, Object>> maps = executeQuery(mycatConnection, "SELECT * FROM `user`;");//[{id=1, name=abc, is_enable=1}]
             List<Map<String, Object>> right = executeQuery(mysqlConnection, "SELECT * FROM db1.`user`;");//[{id=1, name=abc, is_enable=true}]
-            Assert.assertEquals("[{id=1, name=abc, is_enable=1}]",maps.toString());
+            Assert.assertTrue("[{id=1, name=abc, is_enable=1}]".equals(maps.toString())||"[{id=1, name=abc, is_enable=true}]".equals(maps.toString()));
 //            Assert.assertArrayEquals(new byte[]{1}, ((byte[]) maps.get(0).get("is_enable")));
         }
     }
@@ -181,7 +181,7 @@ public class UserCaseTest implements MycatTest {
             execute(mycatConnection, "insert into `user`(`id`,`name`,`is_enable`) values (1,'abc',1);");
             List<Map<String, Object>> maps = executeQuery(mycatConnection, "SELECT * FROM `user`;");//[{id=1, name=abc, is_enable=1}]
             List<Map<String, Object>> right = executeQuery(mysqlConnection, "SELECT * FROM db1.`user`;");//[{id=1, name=abc, is_enable=true}]
-            Assert.assertEquals("[{id=1, name=abc, is_enable=1}]",maps.toString());
+            Assert.assertTrue("[{id=1, name=abc, is_enable=1}]".equals(maps.toString())||"[{id=1, name=abc, is_enable=true}]".equals(maps.toString()));
         }
     }
 }

@@ -506,7 +506,7 @@ public class AssembleTest implements MycatTest {
             List<Map<String, Object>> mycatMaps = executeQuery(mycat, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");
             List<Map<String, Object>> mysqlMaps = executeQuery(db1Connection, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");//[{locked=true}]
 //
-            Assert.assertEquals( "[{locked=1}]",mycatMaps.toString());
+            Assert.assertTrue( "[{locked=1}]".equals(mycatMaps.toString())||"[{locked=true}]".equals(mycatMaps.toString()));
         }
     }
 
