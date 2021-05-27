@@ -16,16 +16,49 @@
  */
 package io.mycat.calcite;
 
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexExecutor;
-import org.apache.calcite.rex.RexNode;
+import com.google.common.collect.ImmutableList;
+import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rex.*;
+import org.apache.calcite.sql.SqlKind;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class MycatRexExecutor implements RexExecutor {
-    public static final  MycatRexExecutor INSTANCE = new MycatRexExecutor();
+    public static final MycatRexExecutor INSTANCE = new MycatRexExecutor();
+
     @Override
     public void reduce(RexBuilder rexBuilder, List<RexNode> constExps, List<RexNode> reducedValues) {
+        for (RexNode constExp : constExps) {
+            RexNode rexNode = RexUtil.toDnf(rexBuilder, constExp);
+            if (rexNode.getKind() == SqlKind.OR) {
+                List<RexNode> disjunctions = RelOptUtil.disjunctions(rexNode);
+                List<RexNode> rexNodes = new ArrayList<>(disjunctions);
+                for (RexNode node : ImmutableList.copyOf(rexNodes)) {
+                    if (node.getKind() == SqlKind.AND) {
+                        List<RexNode> ands = ((RexCall) node).getOperands();
+                        Set<RexNode> equals = new HashSet<>();
+                        for (RexNode and : ands) {
+                            if (and.getKind() == SqlKind.EQUALS) {
+                                equals.add(and);
+                            }
+                        }
+                        if (equals.size() > 1) {
+                            rexNodes.remove(node);
+                        }
+                    }
+                }
+                if (disjunctions.size() == rexNodes.size()) {
+                    continue;
+                } else {
+                    reducedValues.add(RexUtil.composeConjunction(rexBuilder, rexNodes));
+                    continue;
+                }
+
+            }
+        }
 
     }
 }
