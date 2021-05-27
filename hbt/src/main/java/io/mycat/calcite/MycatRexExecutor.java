@@ -65,7 +65,7 @@ public class MycatRexExecutor implements RexExecutor {
         if (disjunctions.size() == rexNodes.size()) {
             res = constExp;
         } else {
-            res = (RexUtil.composeConjunction(rexBuilder, rexNodes));
+            res = RexUtil.composeConjunction(rexBuilder, rexNodes);
         }
         return res;
     }
