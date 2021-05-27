@@ -37,6 +37,7 @@ public abstract class DrdsTest implements MycatTest {
         }
         synchronized (DrdsTest.class) {
             if (drdsRunner == null) {
+                System.setProperty("mode","local");
                 MycatCore mycatCore = new MycatCore();
                 FileMetadataStorageManager fileMetadataStorageManager = MetaClusterCurrent.wrapper(FileMetadataStorageManager.class);
                 MycatRouterConfig mycatRouterConfig = new MycatRouterConfig();
