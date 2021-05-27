@@ -53,7 +53,7 @@ public class MycatUnion extends Union implements MycatRel {
             boolean all) {
         super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), inputs, all);
     }
-    protected MycatUnion(RelInput input) {
+    public MycatUnion(RelInput input) {
         super(input);
     }
 
