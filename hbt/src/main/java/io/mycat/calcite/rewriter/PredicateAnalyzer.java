@@ -91,7 +91,7 @@ public class PredicateAnalyzer {
         }
 
         // left-prefix index rule not match
-        Collection<InternalRexNode> leftMostKeyNodes = keyOrdToNodesMap.get(0);
+        Collection<InternalRexNode> leftMostKeyNodes = new ArrayList<>(keyOrdToNodesMap.values());
         if (leftMostKeyNodes.isEmpty()) {
             return IndexCondition.EMPTY;
         }
@@ -294,8 +294,7 @@ public class PredicateAnalyzer {
         } else {
             // because MySQL's TIMESTAMP is mapped to TIMESTAMP_WITH_TIME_ZONE sql type,
             // we should cast the value to literal.
-            if (right.isA(SqlKind.CAST)
-                    && isSqlTypeMatch((RexCall) right, SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE)) {
+            if (right.isA(SqlKind.CAST)) {
                 rightLiteral = ((RexCall) right).operands.get(0);
             } else {
                 return Optional.empty();
