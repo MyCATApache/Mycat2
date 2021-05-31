@@ -177,6 +177,14 @@ public class AutoFunctionFactory {
                 }
                 dbFunction = specilizeSingleRangeHash(num, n, column1);
             }
+            if (SQLUtils.nameEquals("YYYYMM", methodInvokeExpr.getMethodName())) {
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                dbShardingKeys.add(shardingKey);
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey)
+                );
+                dbFunction = specilizeyyyymm(num, column1);
+            }
             if (SQLUtils.nameEquals("YYYYDD", methodInvokeExpr.getMethodName())) {
                 String shardingKey = getShardingKey(methodInvokeExpr);
                 dbShardingKeys.add(shardingKey);
@@ -184,7 +192,6 @@ public class AutoFunctionFactory {
                 SimpleColumnInfo column1 = Objects.requireNonNull(
                         tableHandler.getColumnByName(shardingKey)
                 );
-
                 dbFunction = specilizeyyyydd(num, column1);
             }
             if (SQLUtils.nameEquals("YYYYWEEK", methodInvokeExpr.getMethodName())) {
