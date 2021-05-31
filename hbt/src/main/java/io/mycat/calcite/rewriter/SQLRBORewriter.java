@@ -42,7 +42,9 @@ import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Permutation;
 import org.apache.calcite.util.mapping.IntPair;
+import org.apache.calcite.util.mapping.MappingType;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
@@ -52,8 +54,8 @@ import java.util.*;
 
 public class SQLRBORewriter extends RelShuttleImpl {
 
-   public static RelBuilder relbuilder(RelOptCluster cluster, RelOptSchema schema){
-        return LocalRules.LOCAL_BUILDER.create(cluster,schema);
+    public static RelBuilder relbuilder(RelOptCluster cluster, RelOptSchema schema) {
+        return LocalRules.LOCAL_BUILDER.create(cluster, schema);
     }
 
     public final static io.mycat.calcite.rewriter.RelMdSqlViews RelMdSqlViews = new RelMdSqlViews() {
@@ -505,14 +507,14 @@ public class SQLRBORewriter extends RelShuttleImpl {
             boolean canPushDown = false;
             for (Integer integer : groupSet) {
                 RelColumnOrigin columnOrigin = metadataQuery.getColumnOrigin(input, integer);
-                if (columnOrigin == null||!columnOrigin.isDerived()) {
+                if (columnOrigin == null || !columnOrigin.isDerived()) {
                     continue;
                 }
                 MycatLogicTable mycatLogicTable = columnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
-                if (!mycatLogicTable.isSharding()){
+                if (!mycatLogicTable.isSharding()) {
                     continue;
                 }
-                SimpleColumnInfo simpleColumnInfo =  mycatLogicTable.getTable().getColumns().get(columnOrigin.getOriginColumnOrdinal());
+                SimpleColumnInfo simpleColumnInfo = mycatLogicTable.getTable().getColumns().get(columnOrigin.getOriginColumnOrdinal());
                 if (simpleColumnInfo.isShardingKey()) {
                     canPushDown = true;
                     break;
@@ -717,13 +719,13 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 RelColumnOrigin leftColumnOrigin = metadataQuery.getColumnOrigin(left.getRelNode(), pair.source);
                 RelColumnOrigin rightColumnOrigin = metadataQuery.getColumnOrigin(right.getRelNode(), pair.target);
 
-                if (leftColumnOrigin!=null&&!leftColumnOrigin.isDerived()&&rightColumnOrigin!=null&&!rightColumnOrigin.isDerived()){
+                if (leftColumnOrigin != null && !leftColumnOrigin.isDerived() && rightColumnOrigin != null && !rightColumnOrigin.isDerived()) {
                     MycatLogicTable leftRelNode = leftColumnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
                     MycatLogicTable rightRelNode = rightColumnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
                     LogicTableType leftTableType = leftRelNode.getTable().getType();
                     LogicTableType rightTableType = rightRelNode.getTable().getType();
 
-                    if ((leftTableType == LogicTableType.SHARDING &&leftTableType == rightTableType)) {
+                    if ((leftTableType == LogicTableType.SHARDING && leftTableType == rightTableType)) {
                         ShardingTable leftTableHandler = (ShardingTable) leftRelNode.logicTable();
                         ShardingTable rightTableHandler = (ShardingTable) rightRelNode.logicTable();
 
@@ -815,6 +817,9 @@ public class SQLRBORewriter extends RelShuttleImpl {
         Distribution dataNodeInfo = null;
         RelNode input = original;
         MycatView mycatView = null;
+        if (RexUtil.isIdentity(project.getProjects(), original.getRowType())) {
+            return original;//ProjectRemoveRule
+        }
         if (input instanceof MycatView) {
             dataNodeInfo = ((MycatView) input).getDistribution();
             mycatView = (MycatView) original;
