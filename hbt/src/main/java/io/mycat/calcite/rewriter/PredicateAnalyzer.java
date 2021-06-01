@@ -275,11 +275,11 @@ public class PredicateAnalyzer {
         final RexNode left = call.operands.get(0);
         final RexNode right = call.operands.get(1);
         Optional<InternalRexNode> expression =
-                translateBinary2(op, left, right, call, keyMeta);
+                translateBinary2(op, left, right, keyMeta);
         if (expression.isPresent()) {
             return expression;
         }
-        expression = translateBinary2(rop, right, left, call, keyMeta);
+        expression = translateBinary2(rop, right, left, keyMeta);
         return expression;
     }
 
@@ -287,7 +287,7 @@ public class PredicateAnalyzer {
      * Translates a call to a binary operator. Returns null on failure.
      */
     private Optional<InternalRexNode> translateBinary2(String op, RexNode left,
-                                                       RexNode right, RexNode originNode, KeyMeta keyMeta) {
+                                                       RexNode right, KeyMeta keyMeta) {
         RexNode rightLiteral;
         if (right.isA(SqlKind.LITERAL)|| right.isA(SqlKind.DYNAMIC_PARAM))  {
             rightLiteral = right;
@@ -308,10 +308,10 @@ public class PredicateAnalyzer {
                 if (!keyMeta.findColumnName(name)) {
                     return Optional.empty();
                 }
-                return translateOp2(op, name, rightLiteral, originNode);
+                return translateOp2(op, name, rightLiteral, rightLiteral);
             case CAST:
-                return translateBinary2(op, ((RexCall) left).operands.get(0), right,
-                        originNode, keyMeta);
+                return translateBinary2(op, ((RexCall) left).operands.get(0), rightLiteral,
+                        keyMeta);
             default:
                 return Optional.empty();
         }
