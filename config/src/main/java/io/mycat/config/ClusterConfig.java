@@ -25,7 +25,7 @@ public class ClusterConfig {
             .minSwitchTimeInterval(300)
             .heartbeatTimeout(1000)
             .slaveThreshold(0)
-            .maxRetry(3)
+            .maxRetryCount(3)
             .build();
     private Integer maxCon = 2000;
     private TimerConfig timer = null;

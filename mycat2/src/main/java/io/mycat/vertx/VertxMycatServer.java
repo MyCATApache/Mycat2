@@ -105,7 +105,7 @@ public class VertxMycatServer implements MycatServer {
             }).listen(this.serverConfig.getServer().getPort(),
                     this.serverConfig.getServer().getIp(), listenResult -> {//代理服务器的监听端口
                         if (listenResult.succeeded()) {
-                            LOGGER.info("Mycat Vertx server start up.");
+                            LOGGER.info("Mycat Vertx server started up.");
                         } else {
                             LOGGER.error("Mycat Vertx server exit. because: " + listenResult.cause().getMessage(), listenResult.cause());
                             System.exit(1);

@@ -391,7 +391,7 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
                 if (selector != null) {
                     PhysicsInstance physicsInstance = selector.getRawDataSourceMap().get(datasourceName);
                     DefaultHeartbeatFlow heartbeatFlow = new DefaultHeartbeatFlow(selector, physicsInstance, datasourceName,
-                            heartbeat.getMaxRetry(), heartbeat.getMinSwitchTimeInterval(), heartbeat.getHeartbeatTimeout(),
+                            heartbeat.getMaxRetryCount(), heartbeat.getMinSwitchTimeInterval(), heartbeat.getHeartbeatTimeout(),
                             ReplicaSwitchType.valueOf(c.getSwitchType()),
                             heartbeat.getSlaveThreshold(), getStrategyByReplicaType(c.getClusterType()),
                             executer);
