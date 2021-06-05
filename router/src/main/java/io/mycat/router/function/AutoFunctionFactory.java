@@ -19,6 +19,8 @@ import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.druid.sql.parser.SQLExprParser;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import groovy.text.SimpleTemplateEngine;
 import groovy.text.Template;
 import io.mycat.BackendTableInfo;
@@ -80,7 +82,8 @@ public class AutoFunctionFactory {
                 String.join(sep, "c${targetIndex}",
                         tableHandler.getSchemaName() + "_${dbIndex}",
                         tableHandler.getTableName() + "_${tableIndex}"));
-        Map<Integer, List<IndexDataNode>> datanodes = new HashMap<>();
+        Map<Integer, List<IndexDataNode>> dbIndexToDatanodes = new TreeMap<>();
+        Map<Integer, IndexDataNode> tableIndexToDatanodes = new TreeMap<>();
         List<int[]> seq = new ArrayList<>();
         int tableCount = 0;
         for (int dbIndex = 0; dbIndex < dbNum; dbIndex++) {
@@ -110,8 +113,9 @@ public class AutoFunctionFactory {
 
             IndexDataNode backendTableInfo = new IndexDataNode(strings[0], strings[1], strings[2], currentDbIndex, currentTableCount);
             cache.put(new Key(ints[0], ints[1]), backendTableInfo);
-            List<IndexDataNode> nodeList = datanodes.computeIfAbsent(currentDbIndex, (k) -> new ArrayList<>());
+            List<IndexDataNode> nodeList = dbIndexToDatanodes.computeIfAbsent(currentDbIndex, (k) -> new ArrayList<>());
             nodeList.add(backendTableInfo);
+            tableIndexToDatanodes.put(backendTableInfo.getTableIndex(),backendTableInfo);
         }
 
 
@@ -366,79 +370,46 @@ public class AutoFunctionFactory {
             }
         }
         if (dbMethod != null && tableMethod != null) {
-            if (SQLUtils.nameEquals("MOD_HASH", dbMethod.getMethodName())) {
-                if (SQLUtils.nameEquals("MOD_HASH", tableMethod.getMethodName())) {
+            if ((dbMethod.equals(tableMethod))) {
+                ImmutableSet<String> supportDoubleMapping = ImmutableSet.of("MOD_HASH", "UNI_HASH", "RIGHT_SHIFT", "YYYYMM", "YYYYDD", "YYYYWEEK");
+                String needMethodName = SQLUtils.normalize(dbMethod.getMethodName().toUpperCase());
+                if (supportDoubleMapping.contains(needMethodName)) {
                     String tableShardingKey = Objects.requireNonNull(getShardingKey(tableMethod));
-                    String dbShardingKey = getShardingKey(dbMethod);
-
                     SimpleColumnInfo tableColumn = tableHandler.getColumnByName(tableShardingKey);
-                    SimpleColumnInfo dbColumn = tableHandler.getColumnByName(dbShardingKey);
-
-                    tableShardingKeys.add(tableShardingKey);
-                    dbShardingKeys.add(dbShardingKey);
-
-
-                    if (tableShardingKey.equalsIgnoreCase(dbShardingKey)) {
-                        int total = dbNum * tableNum;
-                        tableFunction = (o) -> {
-                            o = tableColumn.normalizeValue(o);
-                            if (o == null) o = 0;
-                            if (o instanceof Number) {
-                                long l = ((Number) o).longValue();
-                                long i = l % total;
-                                if (i < 0) {
-                                    throw new IllegalArgumentException();
-                                }
-                                return (int) i;
-                            }
-                            if (o instanceof String) {
-                                return hashCode((String) o) % total;
-                            }
-                            throw new UnsupportedOperationException();
+                    int total = dbNum * tableNum;
+                    if (SQLUtils.nameEquals("MOD_HASH", needMethodName)) {
+                        ToIntFunction<Object> core = specilizeSingleModHash(total, tableColumn);
+                        tableFunction = core;
+                        dbFunction = value -> core.applyAsInt(value) / tableNum;
+                    } else if (SQLUtils.nameEquals("UNI_HASH", needMethodName)) {
+                        ToIntFunction<Object> core = specilizeSingleModHash(dbNum, tableColumn);
+                        dbFunction = core;
+                        tableFunction = value -> {
+                            int coreIndex = core.applyAsInt(value);
+                            return coreIndex * tableNum + coreIndex % tableNum;
                         };
-                        ToIntFunction<Object> function = tableFunction;
-                        dbFunction = (o) -> {
-                            return function.applyAsInt(o) / tableNum;
+                    } else if (SQLUtils.nameEquals("RIGHT_SHIFT", needMethodName)) {
+                        int shift = Integer.parseInt(getShardingKey(dbMethod, 1));
+                        ToIntFunction<Object> core = specilizeSingleRightShift(dbNum, shift, tableColumn);
+                        dbFunction = core;
+                        tableFunction = value -> {
+                            int coreIndex = core.applyAsInt(value);
+                            return coreIndex * tableNum + coreIndex % tableNum;
                         };
-                    } else {
-                        tableFunction = specilizeSingleModHash(tableNum, tableColumn);
-                    }
-
-                }
-            }
-            if (SQLUtils.nameEquals("UNI_HASH", dbMethod.getMethodName())) {
-                if (SQLUtils.nameEquals("UNI_HASH", tableMethod.getMethodName())) {
-                    String tableShardingKey = Objects.requireNonNull(getShardingKey(tableMethod));
-                    String dbShardingKey = getShardingKey(dbMethod);
-                    SimpleColumnInfo tableColumn = tableHandler.getColumnByName(tableShardingKey);
-                    SimpleColumnInfo dbColumn = tableHandler.getColumnByName(dbShardingKey);
-                    dbShardingKeys.add(dbShardingKey);
-                    tableShardingKeys.add(tableShardingKey);
-
-                    dbFunction = specilizeSingleModHash(dbNum, dbColumn);
-
-                    if (tableShardingKey.equalsIgnoreCase(dbShardingKey)) {
-                        tableFunction = (o) -> {
-                            o = tableColumn.normalizeValue(o);
-                            int total = dbNum * tableNum;
-                            if (o instanceof Number) {
-                                long intValue = ((Number) o).longValue();
-
-                                long l = (intValue) % dbNum * tableNum
-                                        +
-                                        (intValue / dbNum) % tableNum;
-                                return (int) l;
-                            }
-                            if (o instanceof String) {
-                                return hashCode((String) o) % total / tableNum;
-                            }
-                            throw new UnsupportedOperationException();
-                        };
-                    } else {
-                        tableFunction = specilizeSingleModHash(tableNum, tableColumn);
+                    } else if (SQLUtils.nameEquals("YYYYMM", needMethodName)) {
+                        ToIntFunction<Object> core = specilizeyyyymm(total, tableColumn);
+                        tableFunction = core;
+                        dbFunction = value -> core.applyAsInt(value) / tableNum;
+                    } else if (SQLUtils.nameEquals("YYYYDD", needMethodName)) {
+                        ToIntFunction<Object> core = specilizeyyyydd(total, tableColumn);
+                        tableFunction = core;
+                        dbFunction = value -> core.applyAsInt(value) / tableNum;
+                    } else if (SQLUtils.nameEquals("YYYYWEEK", needMethodName)) {
+                        ToIntFunction<Object> core = specilizeyyyyWeek(total, tableColumn);
+                        tableFunction = core;
+                        dbFunction = value -> core.applyAsInt(value) / tableNum;
                     }
                 }
-
             }
         }
         final ToIntFunction<Object> finalDbFunction = dbFunction;
@@ -505,27 +476,13 @@ public class AutoFunctionFactory {
                         }
                     }
                 }
-                if (getDbIndex && getTIndex) {
-                    List<IndexDataNode> indexDataNodes = Objects.requireNonNull((List) datanodes.get(dIndex));
-                    for (IndexDataNode indexDataNode : indexDataNodes) {
-                        if (indexDataNode.getTableIndex() == tIndex) {
-                            return Collections.singletonList(indexDataNode);
-                        }
-                    }
+                if (getTIndex) {
+                    return Collections.singletonList(tableIndexToDatanodes.get(tIndex));
                 }
                 if (getDbIndex) {
-                    return new ArrayList<>((List) datanodes.get(dIndex));
+                    return new ArrayList<>((List) dbIndexToDatanodes.get(dIndex));
                 }
-                if (getTIndex) {
-                    for (List<IndexDataNode> value : datanodes.values()) {
-                        for (IndexDataNode indexDataNode : value) {
-                            if (indexDataNode.getTableIndex() == tIndex) {
-                                return Collections.singletonList(indexDataNode);
-                            }
-                        }
-                    }
-                }
-                return datanodes.values().stream().flatMap(i -> i.stream()).collect(Collectors.toList());
+                return dbIndexToDatanodes.values().stream().flatMap(i -> i.stream()).collect(Collectors.toList());
             }
         };
 
@@ -790,22 +747,22 @@ public class AutoFunctionFactory {
         ToIntFunction<Object> dbFunction;
         switch (column1.getType()) {
             case NUMBER:
-                dbFunction = o -> yyyydd(num, (Number) column1.normalizeValue(o));
+                dbFunction = o -> yyyydd(num, column1.normalizeValue(o));
                 break;
             case STRING:
-                dbFunction = o -> yyyydd(num, (String) column1.normalizeValue(o));
+                dbFunction = o -> yyyydd(num, column1.normalizeValue(o));
                 break;
             case BLOB:
-                dbFunction = o -> yyyydd(num, (byte[]) column1.normalizeValue(o));
+                dbFunction = o -> yyyydd(num, column1.normalizeValue(o));
                 break;
             case TIME:
-                dbFunction = o -> yyyydd(num, (Duration) column1.normalizeValue(o));
+                dbFunction = o -> yyyydd(num, column1.normalizeValue(o));
                 break;
             case DATE:
-                dbFunction = o -> yyyydd(num, (LocalDate) column1.normalizeValue(o));
+                dbFunction = o -> yyyydd(num, column1.normalizeValue(o));
                 break;
             case TIMESTAMP:
-                dbFunction = o -> yyyydd(num, (LocalDateTime) column1.normalizeValue(o));
+                dbFunction = o -> yyyydd(num, column1.normalizeValue(o));
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + column1.getType());
