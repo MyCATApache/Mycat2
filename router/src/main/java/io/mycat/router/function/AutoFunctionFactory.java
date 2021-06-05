@@ -29,10 +29,7 @@ import io.mycat.config.ShardingFuntion;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.SplitUtil;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.SneakyThrows;
+import lombok.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -76,9 +73,9 @@ public class AutoFunctionFactory {
         SQLMethodInvokeExpr tableMethod = converyToMethodExpr((String) properties.get("tableMethod"));
         SQLMethodInvokeExpr dbMethod = converyToMethodExpr((String) properties.get("dbMethod"));
         String sep = "/";
-        String erUniqueName = Optional.ofNullable(dbMethod).map(i->i.getMethodName()).orElse("")
-                +Optional.ofNullable(tableMethod).map(i->i.getMethodName()).orElse("")
-                +" storeNum:"+storeNum+" storeDbNum:"+storeDbNum+" dbNum:"+dbNum+" tableNum:"+tableNum;
+        String erUniqueName = Optional.ofNullable(dbMethod).map(i -> i.getMethodName()).orElse("")
+                + Optional.ofNullable(tableMethod).map(i -> i.getMethodName()).orElse("")
+                + " storeNum:" + storeNum + " storeDbNum:" + storeDbNum + " dbNum:" + dbNum + " tableNum:" + tableNum;
         String mappingFormat = (String) properties.getOrDefault("mappingFormat",
                 String.join(sep, "c${targetIndex}",
                         tableHandler.getSchemaName() + "_${dbIndex}",
@@ -87,8 +84,8 @@ public class AutoFunctionFactory {
         List<int[]> seq = new ArrayList<>();
         int tableCount = 0;
         for (int dbIndex = 0; dbIndex < dbNum; dbIndex++) {
-            for ( int tableIndex = 0; tableIndex < tableNum; tableCount++,tableIndex++) {
-                seq.add(new int[]{dbIndex, tableCount,tableIndex});
+            for (int tableIndex = 0; tableIndex < tableNum; tableCount++, tableIndex++) {
+                seq.add(new int[]{dbIndex, tableCount, tableIndex});
             }
         }
 
@@ -102,7 +99,7 @@ public class AutoFunctionFactory {
             int seqIndex = i / storeDbNum;
             int[] ints = seq.get(i);
             int currentDbIndex = ints[0];
-            int currentTableCount= ints[1];
+            int currentTableCount = ints[1];
             int currentTableIndex = ints[2];
             context.put("targetIndex", String.valueOf(seqIndex));
             context.put("dbIndex", String.valueOf(currentDbIndex));
@@ -381,7 +378,6 @@ public class AutoFunctionFactory {
                     dbShardingKeys.add(dbShardingKey);
 
 
-
                     if (tableShardingKey.equalsIgnoreCase(dbShardingKey)) {
                         int total = dbNum * tableNum;
                         tableFunction = (o) -> {
@@ -402,7 +398,7 @@ public class AutoFunctionFactory {
                         };
                         ToIntFunction<Object> function = tableFunction;
                         dbFunction = (o) -> {
-                          return   function.applyAsInt(o)/tableNum;
+                            return function.applyAsInt(o) / tableNum;
                         };
                     } else {
                         tableFunction = specilizeSingleModHash(tableNum, tableColumn);
@@ -512,7 +508,7 @@ public class AutoFunctionFactory {
                 if (getDbIndex && getTIndex) {
                     List<IndexDataNode> indexDataNodes = Objects.requireNonNull((List) datanodes.get(dIndex));
                     for (IndexDataNode indexDataNode : indexDataNodes) {
-                        if(indexDataNode.getTableIndex() ==  tIndex){
+                        if (indexDataNode.getTableIndex() == tIndex) {
                             return Collections.singletonList(indexDataNode);
                         }
                     }
@@ -523,7 +519,7 @@ public class AutoFunctionFactory {
                 if (getTIndex) {
                     for (List<IndexDataNode> value : datanodes.values()) {
                         for (IndexDataNode indexDataNode : value) {
-                            if(indexDataNode.getTableIndex() ==  tIndex){
+                            if (indexDataNode.getTableIndex() == tIndex) {
                                 return Collections.singletonList(indexDataNode);
                             }
                         }
@@ -534,7 +530,7 @@ public class AutoFunctionFactory {
         };
 
 
-        return new AutoFunction(dbNum, tableNum, dbMethod, tableMethod,dbShardingKeys,tableShardingKeys,function,erUniqueName);
+        return new AutoFunction(dbNum, tableNum, dbMethod, tableMethod, dbShardingKeys, tableShardingKeys, function, erUniqueName);
     }
 
     @NotNull
@@ -1124,12 +1120,14 @@ public class AutoFunctionFactory {
         }
         return (int) (o.longValue() / num);
     }
+
     public static int singleDivHash(int num, String o) {
         if (o == null) {
             o = "null";
         }
         return (int) (hashCode(o) / num);
     }
+
     public static int singleDivHash(int num, Object o) {
         if (o instanceof Number) {
             return singleDivHash(num, (Number) o);
@@ -1217,6 +1215,8 @@ public class AutoFunctionFactory {
     }
 
     @Getter
+    @EqualsAndHashCode
+    @ToString
     static class IndexDataNode extends BackendTableInfo {
 
         private final int dbIndex;
@@ -1227,6 +1227,17 @@ public class AutoFunctionFactory {
             super(targetName, targetSchema, targetTable);
             this.dbIndex = dbIndex;
             this.tableIndex = tableIndex;
+        }
+
+        @Override
+        public String toString() {
+            return "{" +
+                    "targetName='" + getTargetName() + '\'' +
+                    ", schemaName='" + getSchema() + '\'' +
+                    ", tableName='" + getTable() + '\'' +
+                    ", dbIndex=" + dbIndex +
+                    ", tableIndex=" + tableIndex +
+                    '}';
         }
     }
 }
