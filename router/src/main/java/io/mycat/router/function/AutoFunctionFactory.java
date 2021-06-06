@@ -755,22 +755,22 @@ public class AutoFunctionFactory {
         ToIntFunction<Object> dbFunction;
         switch (column1.getType()) {
             case NUMBER:
-                dbFunction = o -> yyyyWeek(num, (Number) column1.normalizeValue(o));
+                dbFunction = o -> yyyyWeek(num, column1.normalizeValue(o));
                 break;
             case STRING:
-                dbFunction = o -> yyyyWeek(num, (String) column1.normalizeValue(o));
+                dbFunction = o -> yyyyWeek(num, column1.normalizeValue(o));
                 break;
             case BLOB:
-                dbFunction = o -> yyyyWeek(num, (byte[]) column1.normalizeValue(o));
+                dbFunction = o -> yyyyWeek(num, column1.normalizeValue(o));
                 break;
             case TIME:
-                dbFunction = o -> yyyyWeek(num, (Duration) column1.normalizeValue(o));
+                dbFunction = o -> yyyyWeek(num, column1.normalizeValue(o));
                 break;
             case DATE:
-                dbFunction = o -> yyyyWeek(num, (LocalDate) column1.normalizeValue(o));
+                dbFunction = o -> yyyyWeek(num, column1.normalizeValue(o));
                 break;
             case TIMESTAMP:
-                dbFunction = o -> yyyyWeek(num, (LocalDateTime) column1.normalizeValue(o));
+                dbFunction = o -> yyyyWeek(num, column1.normalizeValue(o));
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + column1.getType());
