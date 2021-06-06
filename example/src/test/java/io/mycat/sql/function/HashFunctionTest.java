@@ -53,10 +53,47 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
         CustomRuleFunction shardingFuntion = tableHandler.getShardingFuntion();
         List<DataNode> calculate = shardingFuntion.calculate(Collections.singletonMap("id", Collections.singleton(new RangeVariable("id", RangeVariableType.EQUAL, 15))));
         String s = calculate.toString();
-        Assert.assertTrue(s.contains("[{targetName='c0', schemaName='db1_1', tableName='sharding_3', dbIndex=1, tableIndex=7}]"));
+        Assert.assertTrue(s.contains("[{targetName='c0', schemaName='db1_1', tableName='sharding_3', index=7, dbIndex=1, tableIndex=3}]"));
 
         String s1 = shardingFuntion.calculate(Collections.emptyMap()).toString();
-        Assert.assertEquals("[{targetName='c0', schemaName='db1_0', tableName='sharding_0', dbIndex=0, tableIndex=0}, {targetName='c0', schemaName='db1_0', tableName='sharding_1', dbIndex=0, tableIndex=1}, {targetName='c0', schemaName='db1_0', tableName='sharding_2', dbIndex=0, tableIndex=2}, {targetName='c0', schemaName='db1_0', tableName='sharding_3', dbIndex=0, tableIndex=3}, {targetName='c0', schemaName='db1_1', tableName='sharding_0', dbIndex=1, tableIndex=4}, {targetName='c0', schemaName='db1_1', tableName='sharding_1', dbIndex=1, tableIndex=5}, {targetName='c0', schemaName='db1_1', tableName='sharding_2', dbIndex=1, tableIndex=6}, {targetName='c0', schemaName='db1_1', tableName='sharding_3', dbIndex=1, tableIndex=7}]",
+        Assert.assertEquals("[{targetName='c0', schemaName='db1_0', tableName='sharding_0', index=0, dbIndex=0, tableIndex=0}, {targetName='c0', schemaName='db1_0', tableName='sharding_1', index=1, dbIndex=0, tableIndex=1}, {targetName='c0', schemaName='db1_0', tableName='sharding_2', index=2, dbIndex=0, tableIndex=2}, {targetName='c0', schemaName='db1_0', tableName='sharding_3', index=3, dbIndex=0, tableIndex=3}, {targetName='c0', schemaName='db1_1', tableName='sharding_0', index=4, dbIndex=1, tableIndex=0}, {targetName='c0', schemaName='db1_1', tableName='sharding_1', index=5, dbIndex=1, tableIndex=1}, {targetName='c0', schemaName='db1_1', tableName='sharding_2', index=6, dbIndex=1, tableIndex=2}, {targetName='c0', schemaName='db1_1', tableName='sharding_3', index=7, dbIndex=1, tableIndex=3}]",
+                s1);
+        System.out.println();
+    }
+    /*
+    test for mappingFormat
+     */
+    @Test
+    public void testHashIdHashId2() {
+        ShardingTableConfig mainSharding = new ShardingTableConfig();
+        mainSharding.setCreateTableSQL("CREATE TABLE db1.`sharding` (\n" +
+                "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                "  `traveldate` date DEFAULT NULL,\n" +
+                "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                "  `days` int DEFAULT NULL,\n" +
+                "  `blob` longblob,\n" +
+                "  PRIMARY KEY (`id`),\n" +
+                "  KEY `id` (`id`)\n" +
+                ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
+                + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 4;");
+        mainSharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
+                "\t\t\t\t\t\"dbNum\":\"2\",\n" +
+                "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${index}\",\n" +
+                "\t\t\t\t\t\"tableNum\":\"4\",\n" +
+                "\t\t\t\t\t\"tableMethod\":\"hash(id)\",\n" +
+                "\t\t\t\t\t\"storeNum\":1,\n" +
+                "\t\t\t\t\t\"dbMethod\":\"hash(id)\"\n" +
+                "\t\t\t\t}", Map.class)).build());
+        MetadataManager metadataManager = getMetadataManager(mainSharding);
+        ShardingTable tableHandler = (ShardingTable) metadataManager.getTable("db1", "sharding");
+        CustomRuleFunction shardingFuntion = tableHandler.getShardingFuntion();
+        List<DataNode> calculate = shardingFuntion.calculate(Collections.singletonMap("id", Collections.singleton(new RangeVariable("id", RangeVariableType.EQUAL, 15))));
+        String s = calculate.toString();
+        Assert.assertTrue(s.contains("[{targetName='c0', schemaName='db1_1', tableName='sharding_7', index=7, dbIndex=1, tableIndex=3}]"));
+
+        String s1 = shardingFuntion.calculate(Collections.emptyMap()).toString();
+        Assert.assertEquals("[{targetName='c0', schemaName='db1_0', tableName='sharding_0', index=0, dbIndex=0, tableIndex=0}, {targetName='c0', schemaName='db1_0', tableName='sharding_1', index=1, dbIndex=0, tableIndex=1}, {targetName='c0', schemaName='db1_0', tableName='sharding_2', index=2, dbIndex=0, tableIndex=2}, {targetName='c0', schemaName='db1_0', tableName='sharding_3', index=3, dbIndex=0, tableIndex=3}, {targetName='c0', schemaName='db1_1', tableName='sharding_4', index=4, dbIndex=1, tableIndex=0}, {targetName='c0', schemaName='db1_1', tableName='sharding_5', index=5, dbIndex=1, tableIndex=1}, {targetName='c0', schemaName='db1_1', tableName='sharding_6', index=6, dbIndex=1, tableIndex=2}, {targetName='c0', schemaName='db1_1', tableName='sharding_7', index=7, dbIndex=1, tableIndex=3}]",
                 s1);
         System.out.println();
     }
@@ -85,7 +122,7 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
         ShardingTable tableHandler = (ShardingTable) metadataManager.getTable("db1", "sharding");
         CustomRuleFunction shardingFuntion = tableHandler.getShardingFuntion();
         String s1 = shardingFuntion.calculate(Collections.emptyMap()).toString();
-        Assert.assertEquals("[{targetName='c0', schemaName='db1_0', tableName='sharding_0', dbIndex=0, tableIndex=0}, {targetName='c0', schemaName='db1_1', tableName='sharding_0', dbIndex=1, tableIndex=1}]",
+        Assert.assertEquals("[{targetName='c0', schemaName='db1_0', tableName='sharding_0', index=0, dbIndex=0, tableIndex=0}, {targetName='c0', schemaName='db1_1', tableName='sharding_0', index=1, dbIndex=1, tableIndex=0}]",
                 s1);
         System.out.println();
     }
@@ -159,12 +196,11 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
         List<DataNode> secondColumn = shardingFuntion.calculate(
                 ImmutableMap.of("user_id", Collections.singletonList(new RangeVariable("user_id", RangeVariableType.EQUAL, 2))));
 
-        Assert.assertTrue(firstColumn.containsAll(secondColumn));
 
-        Assert.assertTrue(insertRoute.equals(secondColumn));
+        Assert.assertTrue(secondColumn.containsAll(insertRoute));
 
         String s1 = shardingFuntion.calculate(Collections.emptyMap()).toString();
-        Assert.assertEquals("[{targetName='c0', schemaName='db1_0', tableName='sharding_0', dbIndex=0, tableIndex=0}, {targetName='c0', schemaName='db1_0', tableName='sharding_1', dbIndex=0, tableIndex=1}, {targetName='c0', schemaName='db1_0', tableName='sharding_2', dbIndex=0, tableIndex=2}, {targetName='c0', schemaName='db1_0', tableName='sharding_3', dbIndex=0, tableIndex=3}, {targetName='c0', schemaName='db1_1', tableName='sharding_0', dbIndex=1, tableIndex=4}, {targetName='c0', schemaName='db1_1', tableName='sharding_1', dbIndex=1, tableIndex=5}, {targetName='c0', schemaName='db1_1', tableName='sharding_2', dbIndex=1, tableIndex=6}, {targetName='c0', schemaName='db1_1', tableName='sharding_3', dbIndex=1, tableIndex=7}]",
+        Assert.assertEquals("[{targetName='c0', schemaName='db1_0', tableName='sharding_0', index=0, dbIndex=0, tableIndex=0}, {targetName='c0', schemaName='db1_0', tableName='sharding_1', index=1, dbIndex=0, tableIndex=1}, {targetName='c0', schemaName='db1_0', tableName='sharding_2', index=2, dbIndex=0, tableIndex=2}, {targetName='c0', schemaName='db1_0', tableName='sharding_3', index=3, dbIndex=0, tableIndex=3}, {targetName='c0', schemaName='db1_1', tableName='sharding_0', index=4, dbIndex=1, tableIndex=0}, {targetName='c0', schemaName='db1_1', tableName='sharding_1', index=5, dbIndex=1, tableIndex=1}, {targetName='c0', schemaName='db1_1', tableName='sharding_2', index=6, dbIndex=1, tableIndex=2}, {targetName='c0', schemaName='db1_1', tableName='sharding_3', index=7, dbIndex=1, tableIndex=3}]",
                 s1);
 
         System.out.println();

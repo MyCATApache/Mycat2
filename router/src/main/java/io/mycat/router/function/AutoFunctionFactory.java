@@ -36,7 +36,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.StringWriter;
-import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -56,6 +55,8 @@ public class AutoFunctionFactory {
         int dbIndex;
         int tableIndex;
     }
+
+    public static final ImmutableSet<String> FLATTEN_MAPPING = ImmutableSet.of("MOD_HASH", "UNI_HASH", "RIGHT_SHIFT", "YYYYMM", "YYYYDD", "YYYYWEEK");
 
     @SneakyThrows
     public static final CustomRuleFunction
@@ -78,45 +79,6 @@ public class AutoFunctionFactory {
         String erUniqueName = Optional.ofNullable(dbMethod).map(i -> i.getMethodName()).orElse("")
                 + Optional.ofNullable(tableMethod).map(i -> i.getMethodName()).orElse("")
                 + " storeNum:" + storeNum + " storeDbNum:" + storeDbNum + " dbNum:" + dbNum + " tableNum:" + tableNum;
-        String mappingFormat = (String) properties.getOrDefault("mappingFormat",
-                String.join(sep, "c${targetIndex}",
-                        tableHandler.getSchemaName() + "_${dbIndex}",
-                        tableHandler.getTableName() + "_${tableIndex}"));
-        Map<Integer, List<IndexDataNode>> dbIndexToDatanodes = new TreeMap<>();
-        Map<Integer, IndexDataNode> tableIndexToDatanodes = new TreeMap<>();
-        List<int[]> seq = new ArrayList<>();
-        int tableCount = 0;
-        for (int dbIndex = 0; dbIndex < dbNum; dbIndex++) {
-            for (int tableIndex = 0; tableIndex < tableNum; tableCount++, tableIndex++) {
-                seq.add(new int[]{dbIndex, tableCount, tableIndex});
-            }
-        }
-
-        SimpleTemplateEngine templateEngine = new SimpleTemplateEngine();
-        Template template = templateEngine.createTemplate(mappingFormat);
-        HashMap<String, Object> context = new HashMap<>(properties);
-
-
-        Map<Key, DataNode> cache = new ConcurrentHashMap<>();
-        for (int i = 0; i < seq.size(); i++) {
-            int seqIndex = i / storeDbNum;
-            int[] ints = seq.get(i);
-            int currentDbIndex = ints[0];
-            int currentTableCount = ints[1];
-            int currentTableIndex = ints[2];
-            context.put("targetIndex", String.valueOf(seqIndex));
-            context.put("dbIndex", String.valueOf(currentDbIndex));
-            context.put("tableIndex", String.valueOf(currentTableIndex));
-            StringWriter stringWriter = new StringWriter();
-            template.make(context).writeTo(stringWriter);
-            String[] strings = SplitUtil.split(stringWriter.getBuffer().toString(), sep);
-
-            IndexDataNode backendTableInfo = new IndexDataNode(strings[0], strings[1], strings[2], currentDbIndex, currentTableCount);
-            cache.put(new Key(ints[0], ints[1]), backendTableInfo);
-            List<IndexDataNode> nodeList = dbIndexToDatanodes.computeIfAbsent(currentDbIndex, (k) -> new ArrayList<>());
-            nodeList.add(backendTableInfo);
-            tableIndexToDatanodes.put(backendTableInfo.getTableIndex(),backendTableInfo);
-        }
 
 
         ToIntFunction<Object> tableFunction = (o) -> 0;
@@ -369,11 +331,12 @@ public class AutoFunctionFactory {
                 tableFunction = specilizeStrHash(num, startIndex, endIndex, valType, randSeed, column1);
             }
         }
+        boolean flattenMapping = false;
         if (dbMethod != null && tableMethod != null) {
             if ((dbMethod.equals(tableMethod))) {
-                ImmutableSet<String> supportDoubleMapping = ImmutableSet.of("MOD_HASH", "UNI_HASH", "RIGHT_SHIFT", "YYYYMM", "YYYYDD", "YYYYWEEK");
                 String needMethodName = SQLUtils.normalize(dbMethod.getMethodName().toUpperCase());
-                if (supportDoubleMapping.contains(needMethodName)) {
+                if (FLATTEN_MAPPING.contains(needMethodName)) {
+                    flattenMapping = true;
                     String tableShardingKey = Objects.requireNonNull(getShardingKey(tableMethod));
                     SimpleColumnInfo tableColumn = tableHandler.getColumnByName(tableShardingKey);
                     int total = dbNum * tableNum;
@@ -414,80 +377,97 @@ public class AutoFunctionFactory {
         }
         final ToIntFunction<Object> finalDbFunction = dbFunction;
         final ToIntFunction<Object> finalTableFunction = tableFunction;
+        List<IndexDataNode> indexDataNodes = new ArrayList<>();
 
+        String mappingFormat = (String) properties.getOrDefault("mappingFormat",
+                String.join(sep, "c${targetIndex}",
+                        tableHandler.getSchemaName() + "_${dbIndex}",
+                        tableHandler.getTableName() +( (!flattenMapping)?"_${tableIndex}":"_${index}")));
 
-        Function<Map<String, Collection<RangeVariable>>, List<DataNode>> function = new Function<Map<String, Collection<RangeVariable>>, List<DataNode>>() {
-            @Override
-            public List<DataNode> apply(Map<String, Collection<RangeVariable>> stringCollectionMap) {
-                boolean getDbIndex = false;
-                int dIndex = 0;
-
-                boolean getTIndex = false;
-                int tIndex = 0;
-
-                Set<Map.Entry<String, Collection<RangeVariable>>> entries = stringCollectionMap.entrySet();
-                for (Map.Entry<String, Collection<RangeVariable>> e : entries) {
-                    for (String dbShardingKey : dbShardingKeys) {
-                        if (SQLUtils.nameEquals(dbShardingKey, e.getKey())) {
-                            Collection<RangeVariable> rangeVariables = e.getValue();
-                            if (rangeVariables.size() != 1) {
-                                break;
-                            }
-                            if (rangeVariables != null && !rangeVariables.isEmpty()) {
-                                for (RangeVariable rangeVariable : rangeVariables) {
-                                    switch (rangeVariable.getOperator()) {
-                                        case EQUAL:
-                                            Object value = rangeVariable.getValue();
-                                            dIndex = finalDbFunction.applyAsInt(value);
-                                            getDbIndex = true;
-                                            if (dIndex < 0) {
-                                                finalDbFunction.applyAsInt(value);
-                                                throw new IllegalArgumentException();
-                                            }
-                                            break;
-                                        case RANGE:
-                                        default:
-                                            continue;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    for (String tableShardingKey : tableShardingKeys) {
-                        if (SQLUtils.nameEquals(tableShardingKey, e.getKey())) {
-                            Collection<RangeVariable> rangeVariables = e.getValue();
-                            if (rangeVariables.size() != 1) {
-                                break;
-                            }
-                            if (rangeVariables != null && !rangeVariables.isEmpty()) {
-                                for (RangeVariable rangeVariable : rangeVariables) {
-                                    switch (rangeVariable.getOperator()) {
-                                        case EQUAL:
-                                            Object value = rangeVariable.getValue();
-                                            tIndex = finalTableFunction.applyAsInt(value);
-                                            getTIndex = true;
-                                            break;
-                                        case RANGE:
-                                        default:
-                                            continue;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                if (getTIndex) {
-                    return Collections.singletonList(tableIndexToDatanodes.get(tIndex));
-                }
-                if (getDbIndex) {
-                    return new ArrayList<>((List) dbIndexToDatanodes.get(dIndex));
-                }
-                return dbIndexToDatanodes.values().stream().flatMap(i -> i.stream()).collect(Collectors.toList());
+        List<int[]> seq = new ArrayList<>();
+        int tableCount = 0;
+        for (int dbIndex = 0; dbIndex < dbNum; dbIndex++) {
+            for (int tableIndex = 0; tableIndex < tableNum; tableCount++, tableIndex++) {
+                seq.add(new int[]{dbIndex, tableIndex, tableCount});
             }
-        };
+        }
+
+        SimpleTemplateEngine templateEngine = new SimpleTemplateEngine();
+        Template template = templateEngine.createTemplate(mappingFormat);
+        HashMap<String, Object> context = new HashMap<>(properties);
 
 
-        return new AutoFunction(dbNum, tableNum, dbMethod, tableMethod, dbShardingKeys, tableShardingKeys, function, erUniqueName);
+        for (int i = 0; i < seq.size(); i++) {
+            int seqIndex = i / storeDbNum;
+            int[] ints = seq.get(i);
+            int currentDbIndex = ints[0];
+            int currentTableIndex = ints[1];
+            int currentTableCount = ints[2];
+            context.put("targetIndex", String.valueOf(seqIndex));
+            context.put("dbIndex", String.valueOf(currentDbIndex));
+            context.put("tableIndex", String.valueOf(currentTableIndex));
+            context.put("index", String.valueOf(currentTableCount));
+            StringWriter stringWriter = new StringWriter();
+            template.make(context).writeTo(stringWriter);
+            String[] strings = SplitUtil.split(stringWriter.getBuffer().toString(), sep);
+
+            IndexDataNode backendTableInfo = new IndexDataNode(strings[0], strings[1], strings[2], currentTableCount, currentDbIndex, currentTableIndex);
+            indexDataNodes.add(backendTableInfo);
+        }
+        if (flattenMapping) {
+            Map<Integer, List<IndexDataNode>> dbIndexToNode = indexDataNodes.stream().collect(Collectors.groupingBy(k -> k.getDbIndex()));
+            return new AutoFunction(dbNum, tableNum, dbMethod, tableMethod, dbShardingKeys, tableShardingKeys, finalDbFunction, finalTableFunction, storeNum) {
+                @Override
+                public List<IndexDataNode> scanAll() {
+                    return ImmutableList.copyOf(indexDataNodes);
+                }
+
+                @Override
+                public List<IndexDataNode> scanOnlyTableIndex(int index) {
+                    return ImmutableList.of(indexDataNodes.get(index));
+                }
+
+                @Override
+                public List<IndexDataNode> scanOnlyDbIndex(int index) {
+                    return dbIndexToNode.get(index);
+                }
+
+                @Override
+                public List<IndexDataNode> scanOnlyDbTableIndex(int dbIndex, int tableIndex) {
+                    return scanOnlyTableIndex(tableIndex);
+                }
+            };
+        } else {
+            Map<Integer, List<IndexDataNode>> dbIndexToNode = indexDataNodes.stream().collect(Collectors.groupingBy(k -> k.getDbIndex()));
+            Map<Integer, List<IndexDataNode>> tableIndexToNode = indexDataNodes.stream().collect(Collectors.groupingBy(k -> k.getTableIndex()));
+            return new AutoFunction(dbNum, tableNum, dbMethod, tableMethod, dbShardingKeys, tableShardingKeys, finalDbFunction, finalTableFunction, storeNum) {
+                @Override
+                public List<IndexDataNode> scanAll() {
+                    return ImmutableList.copyOf(indexDataNodes);
+                }
+
+                @Override
+                public List<IndexDataNode> scanOnlyTableIndex(int index) {
+                    return ImmutableList.copyOf(tableIndexToNode.get(index));
+                }
+
+                @Override
+                public List<IndexDataNode> scanOnlyDbIndex(int index) {
+                    return ImmutableList.copyOf(dbIndexToNode.get(index));
+                }
+
+                @Override
+                public List<IndexDataNode> scanOnlyDbTableIndex(int dbIndex, int tableIndex) {
+                    List<IndexDataNode> dataNodes = Objects.requireNonNull(dbIndexToNode.get(dbIndex));
+                    for (IndexDataNode dataNode : dataNodes) {
+                        if (dataNode.getTableIndex() == tableIndex) {
+                            return ImmutableList.of(dataNode);
+                        }
+                    }
+                    return dataNodes;
+                }
+            };
+        }
     }
 
     @NotNull
@@ -875,7 +855,7 @@ public class AutoFunctionFactory {
         } else {
             throw new UnsupportedOperationException();
         }
-        return (int) (mm % num);
+        return (int) (Math.abs((mm)) % num);
     }
 
     public static int dd(int num, Object o) {
@@ -893,7 +873,7 @@ public class AutoFunctionFactory {
         } else {
             throw new UnsupportedOperationException();
         }
-        return (int) (day % num);
+        return (int) (Math.abs(day) % num);
     }
 
     public static int mmdd(int num, Object o) {
@@ -911,7 +891,7 @@ public class AutoFunctionFactory {
         } else {
             throw new UnsupportedOperationException();
         }
-        return (int) ((day) % num);
+        return (int) Math.abs((day)) % num;
     }
 
     public static int strHash(int num, int startIndex, int endIndex, int valType, int randSeed, Object value) {
@@ -921,7 +901,7 @@ public class AutoFunctionFactory {
             return hashCode(s, randSeed) % num;
         }
         if (valType == 1) {
-            return (int) (Long.parseLong(s) % num);
+            return (int) (Math.abs(Long.parseLong(s)) % num);
         }
         throw new UnsupportedOperationException();
     }
@@ -944,7 +924,7 @@ public class AutoFunctionFactory {
         } else {
             throw new UnsupportedOperationException();
         }
-        return (int) ((YYYY * 54 + WEEK) % num);
+        return (int) (Math.abs((YYYY * 54 + WEEK)) % num);
     }
 
     public static int week(int num, Object o) {
@@ -962,7 +942,7 @@ public class AutoFunctionFactory {
         } else {
             throw new UnsupportedOperationException();
         }
-        return (int) ((day) % num);
+        return (int) (Math.abs((day)) % num);
     }
 
     public static int yyyydd(int num, Object o) {
@@ -983,7 +963,7 @@ public class AutoFunctionFactory {
         } else {
             throw new UnsupportedOperationException();
         }
-        return (int) ((YYYY * 366 + DD) % num);
+        return (int) Math.abs(((YYYY * 366 + DD)) % num);
     }
 
     public static int yyyymm(int num, Object o) {
@@ -1006,7 +986,7 @@ public class AutoFunctionFactory {
         if (YYYY == null && MM == null) {
             throw new UnsupportedOperationException();
         }
-        return (YYYY * 12 + MM) % num;
+        return Math.abs((YYYY * 12 + MM)) % num;
     }
 
     public static int singleRangeHash(int num, int n, Object o) {
@@ -1022,12 +1002,12 @@ public class AutoFunctionFactory {
 
     public static int singleRangeHash(int num, int n, String o) {
         if (o == null) o = "null";
-        return hashCode(o.substring(n)) % num;
+        return Math.abs(hashCode(o.substring(n))) % num;
     }
 
     public static int singleRangeHash(int num, Number o) {
         if (o == null) o = 0;
-        return (int) (o.longValue() % num);
+        return (int) Math.abs((o.longValue()) % num);
     }
 
     public static int singleRightShift(int num, int shift, Object o) {
@@ -1042,11 +1022,11 @@ public class AutoFunctionFactory {
 
     public static int singleRightShift(int num, int shift, String o) {
         if (o == null) o = "null";
-        return hashCode(o) >> shift % num;
+        return Math.abs((hashCode(o) >> shift)) % num;
     }
 
     public static int singleRightShift(int num, int shift, Number o) {
-        return (int) (o.longValue() >> shift % num);
+        return (int) (Math.abs((o.longValue() >> shift)) % num);
     }
 
     public static int singleModHash(int num, Object o) {
@@ -1061,28 +1041,28 @@ public class AutoFunctionFactory {
 
     public static int singleModHash(int num, String o) {
         if (o == null) o = "null";
-        return singleModHash(hashCode(o), num);
+        return singleModHash(num, hashCode(o));
     }
 
     public static int singleModHash(int num, Number o) {
         if (o == null) {
             o = 0;
         }
-        return (int) (o.longValue() % num);
+        return (int) (Math.abs(o.longValue()) % num);
     }
 
     public static int singleDivHash(int num, Number o) {
         if (o == null) {
             o = 0;
         }
-        return (int) (o.longValue() / num);
+        return (int) (Math.abs(o.longValue()) / num);
     }
 
     public static int singleDivHash(int num, String o) {
         if (o == null) {
             o = "null";
         }
-        return (int) (hashCode(o) / num);
+        return (int) (Math.abs(hashCode(o)) / num);
     }
 
     public static int singleDivHash(int num, Object o) {
@@ -1115,7 +1095,7 @@ public class AutoFunctionFactory {
             o = 1;
         }
         long l = o.longValue();
-        long l1 = l % num;
+        long l1 = Math.abs(l) % num;
         return (int) l1;
     }
 
@@ -1146,7 +1126,7 @@ public class AutoFunctionFactory {
         for (int i = 0; i < value.length(); i++) {
             h = randSeed * h + value.charAt(i);
         }
-        return h;
+        return Math.abs(h);
     }
 
     public static String mySubstring(int startIndex,
@@ -1171,30 +1151,4 @@ public class AutoFunctionFactory {
 
     }
 
-    @Getter
-    @EqualsAndHashCode
-    @ToString
-    static class IndexDataNode extends BackendTableInfo {
-
-        private final int dbIndex;
-        private final int tableIndex;
-
-        public IndexDataNode(String targetName, String targetSchema, String targetTable,
-                             int dbIndex, int tableIndex) {
-            super(targetName, targetSchema, targetTable);
-            this.dbIndex = dbIndex;
-            this.tableIndex = tableIndex;
-        }
-
-        @Override
-        public String toString() {
-            return "{" +
-                    "targetName='" + getTargetName() + '\'' +
-                    ", schemaName='" + getSchema() + '\'' +
-                    ", tableName='" + getTable() + '\'' +
-                    ", dbIndex=" + dbIndex +
-                    ", tableIndex=" + tableIndex +
-                    '}';
-        }
-    }
 }

@@ -1,14 +1,14 @@
 /**
  * Copyright (C) <2021>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
@@ -24,9 +24,9 @@ import io.mycat.router.ShardingTableHandler;
 
 import java.text.MessageFormat;
 import java.util.*;
-import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
-public class AutoFunction extends CustomRuleFunction {
+public  abstract class AutoFunction extends CustomRuleFunction {
     String name;
     int dbNum;
     int tableNum;
@@ -34,7 +34,8 @@ public class AutoFunction extends CustomRuleFunction {
     Object tableMethod;
     private Set<String> dbKeys;
     private Set<String> tableKeys;
-    Function<Map<String, Collection<RangeVariable>>, List<DataNode>> function;
+    final ToIntFunction<Object> finalDbFunction;
+    final ToIntFunction<Object> finalTableFunction;
 
     public AutoFunction(int dbNum,
                         int tableNum,
@@ -42,27 +43,30 @@ public class AutoFunction extends CustomRuleFunction {
                         SQLMethodInvokeExpr tableMethod,
                         Set<String> dbKeys,
                         Set<String> tableKeys,
-                        Function<Map<String, Collection<RangeVariable>>, List<DataNode>> function, String erUniqueName) {
+                        final ToIntFunction<Object> finalDbFunction,
+                        final ToIntFunction<Object> finalTableFunction,
+                        int storeNum) {
         this.dbNum = dbNum;
         this.tableNum = tableNum;
         this.dbMethod = dbMethod;
         this.tableMethod = tableMethod;
         this.dbKeys = dbKeys;
         this.tableKeys = tableKeys;
-        this.function = function;
+        this.finalDbFunction = finalDbFunction;
+        this.finalTableFunction = finalTableFunction;
 
-        this.name = MessageFormat.format("dbNum:{0} tableNum:{1} dbMethod:{2} tableMethod:{3}",
-                dbNum, tableNum, exractKey(dbMethod), exractKey(tableMethod));
+        this.name = MessageFormat.format("dbNum:{0} tableNum:{1} dbMethod:{2} tableMethod:{3} storeNum:{4}",
+                dbNum, tableNum, extractKey(dbMethod), extractKey(tableMethod),storeNum);
     }
 
-    private  static String exractKey(SQLMethodInvokeExpr method) {
-        if (method == null){
+    private static String extractKey(SQLMethodInvokeExpr method) {
+        if (method == null) {
             return "null";
         }
         String methodName = method.getMethodName().toUpperCase();
         //DD,MM,MMDD,MOD_HASH,UNI_HASH,WEEK,YYYYDD,YYYYMM,YYYYWEEK
-        String key ;
-        switch (methodName){
+        String key;
+        switch (methodName) {
             case "DD":
             case "MM":
             case "MMDD":
@@ -74,16 +78,16 @@ public class AutoFunction extends CustomRuleFunction {
             case "YYYYWEEK":
                 key = methodName;
                 break;
-            case "RANGE_HASH":{
+            case "RANGE_HASH": {
                 List<SQLExpr> arguments = method.getArguments();
                 SQLExpr sqlExpr = arguments.get(2);
-                key="RANGE_HASH$"+sqlExpr;
+                key = "RANGE_HASH$" + sqlExpr;
                 break;
             }
-            case "RIGHT_SHIFT":{
+            case "RIGHT_SHIFT": {
                 List<SQLExpr> arguments = method.getArguments();
                 SQLExpr sqlExpr = arguments.get(1);
-                key="RIGHT_SHIFT"+sqlExpr;
+                key = "RIGHT_SHIFT" + sqlExpr;
                 break;
             }
             default:
@@ -99,9 +103,78 @@ public class AutoFunction extends CustomRuleFunction {
 
     @Override
     public List<DataNode> calculate(Map<String, Collection<RangeVariable>> values) {
-        return Objects.requireNonNull(function.apply(values));
-    }
+        boolean getDbIndex = false;
+        int dIndex = 0;
 
+        boolean getTIndex = false;
+        int tIndex = 0;
+
+        Set<Map.Entry<String, Collection<RangeVariable>>> entries = values.entrySet();
+        for (Map.Entry<String, Collection<RangeVariable>> e : entries) {
+            for (String dbShardingKey : dbKeys) {
+                if (SQLUtils.nameEquals(dbShardingKey, e.getKey())) {
+                    Collection<RangeVariable> rangeVariables = e.getValue();
+                    if (rangeVariables.size() != 1) {
+                        break;
+                    }
+                    if (rangeVariables != null && !rangeVariables.isEmpty()) {
+                        for (RangeVariable rangeVariable : rangeVariables) {
+                            switch (rangeVariable.getOperator()) {
+                                case EQUAL:
+                                    Object value = rangeVariable.getValue();
+                                    dIndex = finalDbFunction.applyAsInt(value);
+                                    getDbIndex = true;
+                                    if (dIndex < 0) {
+                                        finalDbFunction.applyAsInt(value);
+                                        throw new IllegalArgumentException();
+                                    }
+                                    break;
+                                case RANGE:
+                                default:
+                                    continue;
+                            }
+                        }
+                    }
+                }
+            }
+            for (String tableShardingKey : tableKeys) {
+                if (SQLUtils.nameEquals(tableShardingKey, e.getKey())) {
+                    Collection<RangeVariable> rangeVariables = e.getValue();
+                    if (rangeVariables.size() != 1) {
+                        break;
+                    }
+                    if (rangeVariables != null && !rangeVariables.isEmpty()) {
+                        for (RangeVariable rangeVariable : rangeVariables) {
+                            switch (rangeVariable.getOperator()) {
+                                case EQUAL:
+                                    Object value = rangeVariable.getValue();
+                                    tIndex = finalTableFunction.applyAsInt(value);
+                                    getTIndex = true;
+                                    break;
+                                case RANGE:
+                                default:
+                                    continue;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (getDbIndex&&getTIndex){
+            return (List)scanOnlyDbTableIndex(dIndex,tIndex);
+        }
+        if (getTIndex){
+            return (List)scanOnlyTableIndex(tIndex);
+        }
+        if (getDbIndex){
+            return (List)scanOnlyDbIndex(dIndex);
+        }
+        return (List)scanAll();
+    }
+    public abstract List<IndexDataNode> scanAll();
+    public abstract List<IndexDataNode> scanOnlyTableIndex(int index);
+    public abstract List<IndexDataNode> scanOnlyDbIndex(int index);
+    public abstract List<IndexDataNode> scanOnlyDbTableIndex(int dbIndex,int tableIndex);
     @Override
     protected void init(ShardingTableHandler tableHandler, Map<String, Object> properties, Map<String, Object> ranges) {
 
