@@ -587,22 +587,22 @@ public class AutoFunctionFactory {
         ToIntFunction<Object> tableFunction;
         switch (column1.getType()) {
             case NUMBER:
-                tableFunction = o -> yyyymm(num, (Number) column1.normalizeValue(o));
+                tableFunction = o -> yyyymm(num, column1.normalizeValue(o));
                 break;
             case STRING:
-                tableFunction = o -> yyyymm(num, (String) column1.normalizeValue(o));
+                tableFunction = o -> yyyymm(num, column1.normalizeValue(o));
                 break;
             case BLOB:
-                tableFunction = o -> yyyymm(num, (byte[]) column1.normalizeValue(o));
+                tableFunction = o -> yyyymm(num, column1.normalizeValue(o));
                 break;
             case TIME:
-                tableFunction = o -> yyyymm(num, (Duration) column1.normalizeValue(o));
+                tableFunction = o -> yyyymm(num, column1.normalizeValue(o));
                 break;
             case DATE:
-                tableFunction = o -> yyyymm(num, (LocalDate) column1.normalizeValue(o));
+                tableFunction = o -> yyyymm(num, column1.normalizeValue(o));
                 break;
             case TIMESTAMP:
-                tableFunction = o -> yyyymm(num, (LocalDateTime) column1.normalizeValue(o));
+                tableFunction = o -> yyyymm(num, column1.normalizeValue(o));
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + column1.getType());
