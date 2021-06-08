@@ -13,10 +13,10 @@ import java.util.function.Supplier;
 public class TableHandlerMocks {
 
     public static ShardingTableHandler mockTableHandlerWithDataNodes(int count) {
-        ArrayList<DataNode> dataNodes = new ArrayList<>();
+        ArrayList<Partition> partitions = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             String name = String.valueOf(i);
-            DataNode dataNode = new DataNode() {
+            Partition partition = new Partition() {
 
                 @Override
                 public String getTargetName() {
@@ -33,7 +33,7 @@ public class TableHandlerMocks {
                     return name;
                 }
             };
-            dataNodes.add(dataNode);
+            partitions.add(partition);
         }
         return new ShardingTableHandler() {
 
@@ -43,8 +43,8 @@ public class TableHandlerMocks {
             }
 
             @Override
-            public List<DataNode> dataNodes() {
-                return dataNodes;
+            public List<Partition> dataNodes() {
+                return partitions;
             }
 
             @Override

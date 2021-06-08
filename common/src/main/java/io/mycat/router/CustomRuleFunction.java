@@ -15,7 +15,7 @@
 package io.mycat.router;
 
 import com.alibaba.druid.sql.SQLUtils;
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.RangeVariable;
 
 import java.util.Collection;
@@ -33,23 +33,23 @@ public abstract class CustomRuleFunction {
 
     public abstract String name();
 
-    public abstract List<DataNode> calculate(Map<String, Collection<RangeVariable>> values);
+    public abstract List<Partition> calculate(Map<String, Collection<RangeVariable>> values);
 
-    public DataNode calculateOne(Map<String, Collection<RangeVariable>> values) {
-        List<DataNode> dataNodes = calculate(values);
-        if (dataNodes.isEmpty()) {
+    public Partition calculateOne(Map<String, Collection<RangeVariable>> values) {
+        List<Partition> partitions = calculate(values);
+        if (partitions.isEmpty()) {
             throw new IllegalArgumentException("路由计算返回结果个数为0");
         }
-        if (dataNodes.size() != 1) {
-            List<DataNode> dataNodes2 = calculate(values);
+        if (partitions.size() != 1) {
+            List<Partition> dataNodes2 = calculate(values);
              dataNodes2 = calculate(values);
-            throw new IllegalArgumentException("路由计算返回结果个数为" + dataNodes.size());
+            throw new IllegalArgumentException("路由计算返回结果个数为" + partitions.size());
         }
-        DataNode dataNode = dataNodes.get(0);
-        if (dataNode == null) {
+        Partition partition = partitions.get(0);
+        if (partition == null) {
             throw new IllegalArgumentException("路由计算返回结果为NULL");
         }
-        return dataNodes.get(0);
+        return partitions.get(0);
     }
 
     protected abstract void init(ShardingTableHandler tableHandler, Map<String, Object> properties, Map<String, Object> ranges);

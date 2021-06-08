@@ -16,12 +16,12 @@
  */
 package io.mycat.util;
 
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 
 public class DDLHelper {
 
-    public static void createDatabaseIfNotExist(DefaultConnection connection, DataNode node) {
+    public static void createDatabaseIfNotExist(DefaultConnection connection, Partition node) {
         createDatabaseIfNotExist(connection, node.getSchema());
     }
 

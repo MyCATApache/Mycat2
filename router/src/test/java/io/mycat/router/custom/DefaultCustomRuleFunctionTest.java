@@ -1,13 +1,11 @@
 package io.mycat.router.custom;
 
-import com.google.common.collect.ImmutableList;
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class DefaultCustomRuleFunctionTest {
@@ -26,15 +24,15 @@ public class DefaultCustomRuleFunctionTest {
 
         mergeSubTablesFunction.init(null,map, new HashMap<>());
 
-        DataNode dataNode = mergeSubTablesFunction.calculate("11");
-        Assert.assertEquals(dataNode.getTargetName(),"defaultDs");
-        Assert.assertEquals(dataNode.getSchema(),"db1");
-        Assert.assertEquals(dataNode.getTable(),"prefix_1");
+        Partition partition = mergeSubTablesFunction.calculate("11");
+        Assert.assertEquals(partition.getTargetName(),"defaultDs");
+        Assert.assertEquals(partition.getSchema(),"db1");
+        Assert.assertEquals(partition.getTable(),"prefix_1");
 
-        List<DataNode> dataNodes = mergeSubTablesFunction.calculateRange("11", "13");
-        List<String> targets = dataNodes.stream().map(i -> i.getTargetName()).collect(Collectors.toList());
+        List<Partition> partitions = mergeSubTablesFunction.calculateRange("11", "13");
+        List<String> targets = partitions.stream().map(i -> i.getTargetName()).collect(Collectors.toList());
         Assert.assertEquals("[defaultDs, defaultDs, defaultDs]",targets.toString());
-        List<String> tables = dataNodes.stream().map(i -> i.getTargetSchemaTable()).collect(Collectors.toList());
+        List<String> tables = partitions.stream().map(i -> i.getTargetSchemaTable()).collect(Collectors.toList());
         Assert.assertEquals("[db1.prefix_1, db1.prefix_2, db1.prefix_3]",tables.toString());
     }
 
@@ -52,15 +50,15 @@ public class DefaultCustomRuleFunctionTest {
 
         mergeSubTablesFunction.init(null,map, new HashMap<>());
 
-        DataNode dataNode = mergeSubTablesFunction.calculate("11");
-        Assert.assertEquals(dataNode.getTargetName(),"defaultDs");
-        Assert.assertEquals(dataNode.getSchema(),"db1");
-        Assert.assertEquals(dataNode.getTable(),"prefix_1");
+        Partition partition = mergeSubTablesFunction.calculate("11");
+        Assert.assertEquals(partition.getTargetName(),"defaultDs");
+        Assert.assertEquals(partition.getSchema(),"db1");
+        Assert.assertEquals(partition.getTable(),"prefix_1");
 
-        List<DataNode> dataNodes = mergeSubTablesFunction.calculateRange("11", "13");
-        List<String> targets = dataNodes.stream().map(i -> i.getTargetName()).collect(Collectors.toList());
+        List<Partition> partitions = mergeSubTablesFunction.calculateRange("11", "13");
+        List<String> targets = partitions.stream().map(i -> i.getTargetName()).collect(Collectors.toList());
         Assert.assertEquals("[defaultDs]",targets.toString());
-        List<String> tables = dataNodes.stream().map(i -> i.getTargetSchemaTable()).collect(Collectors.toList());
+        List<String> tables = partitions.stream().map(i -> i.getTargetSchemaTable()).collect(Collectors.toList());
         Assert.assertEquals("[db1.travelrecord]",tables.toString());
     }
 }

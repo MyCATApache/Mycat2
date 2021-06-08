@@ -85,7 +85,7 @@ public class LogicTable {
 
     public static TableHandler createGlobalTable(String schemaName,
                                                  String tableName,
-                                                 List<DataNode> backendTableInfos,
+                                                 List<Partition> backendTableInfos,
                                                  LoadBalanceStrategy loadBalance,
                                                  List<SimpleColumnInfo> columns,
                                                  Map<String,IndexInfo> indexInfos,
@@ -96,17 +96,17 @@ public class LogicTable {
 
     public static TableHandler createNormalTable(String schemaName,
                                                  String tableName,
-                                                 DataNode dataNode,
+                                                 Partition partition,
                                                  List<SimpleColumnInfo> columns,
                                                  Map<String,IndexInfo> indexInfos,
                                                  String createTableSQL) {
         LogicTable logicTable = new LogicTable(LogicTableType.NORMAL, schemaName, tableName, columns,indexInfos, createTableSQL);
-        return new NormalTable(logicTable, dataNode);
+        return new NormalTable(logicTable, partition);
     }
 
     public static ShardingTable createShardingTable(String schemaName,
                                                     String tableName,
-                                                    List<DataNode> backendTableInfos,
+                                                    List<Partition> backendTableInfos,
                                                     List<SimpleColumnInfo> columns,
                                                     CustomRuleFunction function,
                                                     Map<String,IndexInfo> indexInfos,

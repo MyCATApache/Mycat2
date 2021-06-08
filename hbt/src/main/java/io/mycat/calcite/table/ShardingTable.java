@@ -38,11 +38,11 @@ import static io.mycat.util.DDLHelper.createDatabaseIfNotExist;
 public class ShardingTable implements ShardingTableHandler {
     private final LogicTable logicTable;
     private CustomRuleFunction shardingFuntion;
-    private List<DataNode> backends;
+    private List<Partition> backends;
     public List<ShardingTable> indexTables;
 
     public ShardingTable(LogicTable logicTable,
-                         List<DataNode> backends,
+                         List<Partition> backends,
                          CustomRuleFunction shardingFuntion) {
         this.logicTable = logicTable;
         this.backends = (backends == null || backends.isEmpty()) ? Collections.emptyList() : backends;
@@ -55,7 +55,7 @@ public class ShardingTable implements ShardingTableHandler {
     }
 
     @Override
-    public List<DataNode> dataNodes() {
+    public List<Partition> dataNodes() {
         return backends;
     }
 

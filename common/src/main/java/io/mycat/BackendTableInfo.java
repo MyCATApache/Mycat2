@@ -28,7 +28,7 @@ import lombok.ToString;
 @EqualsAndHashCode
 @ToString
 @Builder
-public class BackendTableInfo implements DataNode {
+public class BackendTableInfo implements Partition {
     private String targetName;
     private SchemaInfo schemaInfo;
 

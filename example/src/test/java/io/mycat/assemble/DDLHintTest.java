@@ -33,7 +33,7 @@ public class DDLHintTest implements MycatTest {
                     CreateTableHint
                             .createNormal("db1", "normal", "create table normal(id int)", "prototype")
             );
-            List<Map<String, Object>> maps = executeQuery(mycat, ShowDataNodeHint.create("db1", "normal"));
+            List<Map<String, Object>> maps = executeQuery(mycat, ShowTopologyHint.create("db1", "normal"));
             Assert.assertTrue(maps.size() > 0);
 
 
@@ -44,7 +44,7 @@ public class DDLHintTest implements MycatTest {
                                     GlobalBackEndTableInfoConfig.builder().targetName("prototype").build()))
             );
 
-            maps = executeQuery(mycat, ShowDataNodeHint.create("db1", "global"));
+            maps = executeQuery(mycat, ShowTopologyHint.create("db1", "global"));
             Assert.assertTrue(maps.size() > 0);
 
             execute(
@@ -59,7 +59,7 @@ public class DDLHintTest implements MycatTest {
                                             .properties(Maps.of("defaultNode", "0", "columnName", "id")).build())
             );
 
-            maps = executeQuery(mycat, ShowDataNodeHint.create("db1", "sharding"));
+            maps = executeQuery(mycat, ShowTopologyHint.create("db1", "sharding"));
             Assert.assertTrue(maps.size() > 0);
         }
     }

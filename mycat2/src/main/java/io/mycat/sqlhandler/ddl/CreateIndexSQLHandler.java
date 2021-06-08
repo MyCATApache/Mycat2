@@ -26,8 +26,6 @@ import io.vertx.core.Future;
 import io.vertx.core.shareddata.Lock;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.function.Function;
 
 
 public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStatement> {
@@ -73,8 +71,8 @@ public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStat
     private void createLocalIndex(SQLCreateIndexStatement sqlCreateIndexStatement, SQLExprTableSource table, String schema, String tableName, MetadataManager metadataManager) {
         JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         TableHandler tableHandler = metadataManager.getTable(schema, tableName);
-        Collection<DataNode> dataNodes = getDataNodes(tableHandler);
-        dataNodes.add(new BackendTableInfo(metadataManager.getPrototype(), schema, tableName));//add Prototype
-        executeOnDataNodes(sqlCreateIndexStatement, connectionManager, dataNodes, table);
+        Collection<Partition> partitions = getDataNodes(tableHandler);
+        partitions.add(new BackendTableInfo(metadataManager.getPrototype(), schema, tableName));//add Prototype
+        executeOnDataNodes(sqlCreateIndexStatement, connectionManager, partitions, table);
     }
 }

@@ -3,9 +3,7 @@ package io.mycat.calcite.logical;
 import io.mycat.*;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.IndexCondition;
-import io.mycat.calcite.table.ShardingTable;
 import io.mycat.util.JsonUtil;
-import io.vertx.core.json.Json;
 import lombok.Getter;
 
 import java.util.HashMap;
@@ -37,7 +35,7 @@ public class MycatViewDataNodeMappingImpl implements MycatViewDataNodeMapping {
     }
 
     @Override
-    public Stream<Map<String, DataNode>> apply(List<Object> objects) {
+    public Stream<Map<String, Partition>> apply(List<Object> objects) {
         return distribution.getDataNodes(table -> IndexCondition.getObject(table.getShardingFuntion(), indexCondition, objects));
     }
 

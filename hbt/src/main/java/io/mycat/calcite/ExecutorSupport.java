@@ -2,14 +2,9 @@ package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
-import io.mycat.DataNode;
 import io.mycat.MetaClusterCurrent;
-import io.mycat.MetadataManager;
 import io.mycat.config.ServerConfig;
-import io.mycat.replica.ReplicaSelectorManager;
-import io.mycat.replica.ReplicaSelectorRuntime;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.util.SqlString;
 

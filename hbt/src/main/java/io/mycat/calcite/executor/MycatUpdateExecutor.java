@@ -13,7 +13,6 @@ import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
 import io.mycat.gsi.GSIService;
-import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.FastSqlUtils;
 import io.mycat.util.Pair;
 import io.mycat.util.SQL;
@@ -197,15 +196,15 @@ public class MycatUpdateExecutor {
         TableHandler table = metadataManager.getTable(mycatUpdateRel.getSchemaName(), mycatUpdateRel.getTableName());
         Distribution distribution = getDistribution(table);
         List<Object> readOnlyParameters = Collections.unmodifiableList(parameters);
-        Iterable<DataNode> dataNodes = distribution.getDataNodesAsSingleTableUpdate(mycatUpdateRel.getConditions(),readOnlyParameters);
+        Iterable<Partition> dataNodes = distribution.getDataNodesAsSingleTableUpdate(mycatUpdateRel.getConditions(),readOnlyParameters);
         Map<SQL,SQL> sqlMap = new LinkedHashMap<>();
 
-        for (DataNode dataNode : dataNodes) {
+        for (Partition partition : dataNodes) {
             SQLStatement currentStatement = FastSqlUtils.clone(orginalStatement);
             SQLExprTableSource tableSource = FastSqlUtils.getTableSource(currentStatement);
-            tableSource.setExpr(dataNode.getTable());
-            tableSource.setSchema(dataNode.getSchema());
-            SQL sql = SQL.of(currentStatement.toString(),dataNode, FastSqlUtils.clone(currentStatement),new ArrayList<>(parameters));
+            tableSource.setExpr(partition.getTable());
+            tableSource.setSchema(partition.getSchema());
+            SQL sql = SQL.of(currentStatement.toString(), partition, FastSqlUtils.clone(currentStatement),new ArrayList<>(parameters));
             SQL exist = sqlMap.put(sql, sql);
             if(exist != null){
                 LOGGER.debug("remove exist sql = {}",exist);

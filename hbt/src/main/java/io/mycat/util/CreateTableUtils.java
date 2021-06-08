@@ -20,7 +20,7 @@ import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
@@ -35,7 +35,7 @@ import static io.mycat.calcite.table.LogicTable.rewriteCreateTableSql;
 
 public class CreateTableUtils {
 
-    public static void createPhysicalTable(JdbcConnectionManager jdbcConnectionManager, DataNode node,String createSQL) {
+    public static void createPhysicalTable(JdbcConnectionManager jdbcConnectionManager, Partition node, String createSQL) {
         ReplicaSelectorManager selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
         Set<String> set = new HashSet<>();
         if (selectorRuntime.isDatasource(node.getTargetName())) {

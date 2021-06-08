@@ -105,8 +105,8 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     if ("showSlowSql".equalsIgnoreCase(cmd)) {
                         return showSlowSql(response, body);
                     }
-                    if ("showDataNodes".equalsIgnoreCase(cmd)) {
-                        return showDataNodes(response, body, metadataManager);
+                    if ("showTopology".equalsIgnoreCase(cmd)) {
+                        return showTopology(response, body, metadataManager);
                     }
                     if ("resetConfig".equalsIgnoreCase(cmd)) {
                         MycatRouterConfigOps ops = ConfigUpdater.getOps();
@@ -638,12 +638,12 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         return response.sendResultSet(() -> builder.build());
     }
 
-    private Future<Void> showDataNodes(Response response, String body, MetadataManager metadataManager) {
+    private Future<Void> showTopology(Response response, String body, MetadataManager metadataManager) {
         Map map = JsonUtil.from(body, Map.class);
         TableHandler table = metadataManager.getTable((String) map.get("schemaName"),
                 (String) map.get("tableName"));
         LogicTableType type = table.getType();
-        List<DataNode> backends = null;
+        List<Partition> backends = null;
         switch (type) {
             case SHARDING:
                 backends = ((ShardingTable) table).getBackends();
@@ -663,10 +663,10 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         resultSetBuilder.addColumnInfo("schemaName", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("tableName", JDBCType.VARCHAR);
 
-        for (DataNode dataNode : backends) {
-            String targetName = dataNode.getTargetName();
-            String schemaName = dataNode.getSchema();
-            String tableName = dataNode.getTable();
+        for (Partition partition : backends) {
+            String targetName = partition.getTargetName();
+            String schemaName = partition.getSchema();
+            String tableName = partition.getTable();
 
             resultSetBuilder.addObjectRowPayload(
                     Arrays.asList(targetName, schemaName, tableName));

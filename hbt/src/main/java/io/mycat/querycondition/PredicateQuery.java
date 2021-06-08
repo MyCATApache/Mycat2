@@ -1,6 +1,6 @@
 package io.mycat.querycondition;
 
-import io.mycat.DataNode;
+import io.mycat.Partition;
 
 import java.util.List;
 
@@ -15,5 +15,5 @@ public abstract class PredicateQuery {
         return type;
     }
 
-    public abstract List<DataNode> apply(Object[] params);
+    public abstract List<Partition> apply(Object[] params);
 }

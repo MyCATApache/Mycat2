@@ -41,7 +41,7 @@ public class CreateTableHint extends HintBuilder {
                 ShardingTableConfig.builder()
                         .createTableSQL(createTableSql)
                         .function(shardingFuntion)
-                        .dataNode(dataNodes)
+                        .partition(dataNodes)
                         .build());
     }
 
@@ -62,7 +62,7 @@ public class CreateTableHint extends HintBuilder {
                                       List<GlobalBackEndTableInfoConfig> dataNodes) {
         GlobalTableConfig config = new GlobalTableConfig();
         config.setCreateTableSQL(createTableSQL);
-        config.setDataNodes(dataNodes);
+        config.setBroadcast(dataNodes);
         return createGlobal(schemaName, tableName, config);
     }
 

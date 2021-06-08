@@ -2,7 +2,6 @@ package io.mycat.drdsrunner;
 
 import io.mycat.*;
 import io.mycat.assemble.MycatTest;
-import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.rewriter.OptimizationContext;
@@ -11,7 +10,6 @@ import io.mycat.calcite.spm.PlanImpl;
 import io.mycat.config.*;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
-import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.util.JsonUtil;
 import lombok.SneakyThrows;
 import org.apache.calcite.plan.RelOptUtil;
@@ -55,7 +53,7 @@ public abstract class DrdsTest implements MycatTest {
                 normalBackEndTableInfoConfig.setTargetName("prototype");
                 normalBackEndTableInfoConfig.setSchemaName("db1");
                 normalBackEndTableInfoConfig.setTableName("normal");
-                mainNormalTableConfig.setDataNode(normalBackEndTableInfoConfig);
+                mainNormalTableConfig.setLocality(normalBackEndTableInfoConfig);
                 logicSchemaConfig.getNormalTables().put("normal", mainNormalTableConfig);
 
                 NormalTableConfig orherNormalTableConfig = new NormalTableConfig();
@@ -68,14 +66,14 @@ public abstract class DrdsTest implements MycatTest {
                 otherNormalBackEndTableInfoConfig.setTargetName("prototype");
                 otherNormalBackEndTableInfoConfig.setSchemaName("db1");
                 otherNormalBackEndTableInfoConfig.setTableName("normal2");
-                orherNormalTableConfig.setDataNode(otherNormalBackEndTableInfoConfig);
+                orherNormalTableConfig.setLocality(otherNormalBackEndTableInfoConfig);
                 logicSchemaConfig.getNormalTables().put("normal2", orherNormalTableConfig);
 
                 GlobalTableConfig globalTableConfig = new GlobalTableConfig();
-                globalTableConfig.getDataNodes().add(
+                globalTableConfig.getBroadcast().add(
                         GlobalBackEndTableInfoConfig.builder().targetName("c0").build()
                         );
-                globalTableConfig.getDataNodes().add(
+                globalTableConfig.getBroadcast().add(
                         GlobalBackEndTableInfoConfig.builder().targetName("c1").build()
                         );
                 globalTableConfig.setCreateTableSQL("CREATE TABLE `global` (\n" +
@@ -166,7 +164,7 @@ public abstract class DrdsTest implements MycatTest {
                     otherTargetNormalBackEndTableInfoConfig.setTargetName("ds1");
                     otherTargetNormalBackEndTableInfoConfig.setSchemaName("db1");
                     otherTargetNormalBackEndTableInfoConfig.setTableName("normal3");
-                    orherTargetNormalTableConfig.setDataNode(otherTargetNormalBackEndTableInfoConfig);
+                    orherTargetNormalTableConfig.setLocality(otherTargetNormalBackEndTableInfoConfig);
                     logicSchemaConfig.getNormalTables().put("normal3", orherTargetNormalTableConfig);
 
                 }

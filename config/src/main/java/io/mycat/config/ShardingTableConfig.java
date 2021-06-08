@@ -10,7 +10,7 @@ import lombok.EqualsAndHashCode;
 @Builder
 @EqualsAndHashCode
 public class ShardingTableConfig {
-    ShardingBackEndTableInfoConfig dataNode;
+    ShardingBackEndTableInfoConfig partition;
     ShardingFuntion function;
     String createTableSQL;
 

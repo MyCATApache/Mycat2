@@ -15,18 +15,15 @@
 package io.mycat.calcite.table;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.TableHandler;
 import io.mycat.calcite.rewriter.Distribution;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalTableScan;
-import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.TranslatableTable;
-
-import java.util.List;
 
 /**
  * @author Junwen Chen
@@ -34,13 +31,13 @@ import java.util.List;
 @Getter
 public class MycatPhysicalTable extends MycatTableBase implements AbstractMycatTable, TranslatableTable {
     final MycatLogicTable logicTable;
-    final DataNode dataNode;//真实表名
+    final Partition partition;//真实表名
     final Statistic statistic;//MycatLogicTable的构造函数没有statistic
 
-    public MycatPhysicalTable(MycatLogicTable logicTable, DataNode dataNode) {
+    public MycatPhysicalTable(MycatLogicTable logicTable, Partition partition) {
         this.logicTable = logicTable;
-        this.dataNode = dataNode;
-        this.statistic = Statistics.createStatistic(logicTable.getStatistic(), dataNode);
+        this.partition = partition;
+        this.statistic = Statistics.createStatistic(logicTable.getStatistic(), partition);
     }
 
     @Override

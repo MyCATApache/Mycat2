@@ -11,7 +11,7 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.RangeVariable;
 import io.mycat.RangeVariableType;
 import io.mycat.SimpleColumnInfo;
@@ -96,10 +96,10 @@ public class MycatTableLookup extends SingleRel implements MycatRel {
     private static Map<String, List<SqlString>> route(ShardingTable shardingTable,MycatTableLookup relNode, List<Object[]> keys) {
         SqlNode sqlNode = MycatCalciteSupport.INSTANCE.convertToSqlTemplate(relNode.right, MycatSqlDialect.DEFAULT, false);
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sqlNode.toString());
-        ImmutableMultimap<DataNode, List<Object[]>> nodeListMap = routeKeys(shardingTable,relNode, keys);
+        ImmutableMultimap<Partition, List<Object[]>> nodeListMap = routeKeys(shardingTable,relNode, keys);
         Map<String, List<SqlString>> sqls = new HashMap<>();
-        for (Pair<DataNode, List<Object[]>> dataNodeListPair : nodeListMap.keyValuePairsView()) {
-            DataNode dataNode = dataNodeListPair.getOne();
+        for (Pair<Partition, List<Object[]>> dataNodeListPair : nodeListMap.keyValuePairsView()) {
+            Partition partition = dataNodeListPair.getOne();
             List<Object[]> objects = dataNodeListPair.getTwo();
             SQLStatement curStatement = sqlStatement.clone();
             curStatement.accept(new MySqlASTVisitorAdapter() {
@@ -120,18 +120,18 @@ public class MycatTableLookup extends SingleRel implements MycatRel {
 
                 @Override
                 public boolean visit(SQLExprTableSource x) {
-                    x.setSimpleName(dataNode.getTable());
-                    x.setSchema(dataNode.getSchema());
+                    x.setSimpleName(partition.getTable());
+                    x.setSchema(partition.getSchema());
                     return false;
                 }
             });
-            List<SqlString> strings = sqls.computeIfAbsent(dataNode.getTargetName(), s -> new ArrayList<>());
+            List<SqlString> strings = sqls.computeIfAbsent(partition.getTargetName(), s -> new ArrayList<>());
             strings.add(new SqlString(MycatSqlDialect.DEFAULT, curStatement.toString(), ImmutableList.of()));
         }
         return sqls;
     }
 
-    private static ImmutableMultimap<DataNode, List<Object[]>> routeKeys(ShardingTable shardingTable,MycatTableLookup relNode, List<Object[]> keys) {
+    private static ImmutableMultimap<Partition, List<Object[]>> routeKeys(ShardingTable shardingTable, MycatTableLookup relNode, List<Object[]> keys) {
         CustomRuleFunction shardingFuntion = shardingTable.getShardingFuntion();
         List<String> fieldNames = relNode.getInput().getRowType().getFieldNames();
         SimpleColumnInfo[] columns = new SimpleColumnInfo[fieldNames.size()];
@@ -142,7 +142,7 @@ public class MycatTableLookup extends SingleRel implements MycatRel {
             }
             index++;
         }
-        ImmutableListMultimap.Builder<DataNode, List<Object[]>> resBuilder = ImmutableListMultimap.builder();
+        ImmutableListMultimap.Builder<Partition, List<Object[]>> resBuilder = ImmutableListMultimap.builder();
 
         for (Object[] key : keys) {
             ImmutableMap.Builder<String, Collection<RangeVariable>> builder = ImmutableMap.builder();
@@ -153,12 +153,12 @@ public class MycatTableLookup extends SingleRel implements MycatRel {
                     builder.put(columnName,  Collections.singleton(new RangeVariable(columnName,RangeVariableType.EQUAL,column.normalizeValue(key[i]))));
                 }
             }
-            List<DataNode> dataNodes = shardingTable.getShardingFuntion().calculate(builder.build());
-            for (DataNode dataNode : dataNodes) {
-                resBuilder.put(dataNode,keys);
+            List<Partition> partitions = shardingTable.getShardingFuntion().calculate(builder.build());
+            for (Partition partition : partitions) {
+                resBuilder.put(partition,keys);
             }
         }
-       return (ImmutableMultimap<DataNode, List<Object[]>>) resBuilder.build();
+       return (ImmutableMultimap<Partition, List<Object[]>>) resBuilder.build();
     }
 
     public static Enumerable<Object[]> dispatch(NewMycatDataContext context, MycatTableLookup mycatTableLookup, List<Object[]> keys) {

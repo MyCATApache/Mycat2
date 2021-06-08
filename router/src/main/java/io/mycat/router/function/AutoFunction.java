@@ -17,7 +17,7 @@ package io.mycat.router.function;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.RangeVariable;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
@@ -102,7 +102,7 @@ public  abstract class AutoFunction extends CustomRuleFunction {
     }
 
     @Override
-    public List<DataNode> calculate(Map<String, Collection<RangeVariable>> values) {
+    public List<Partition> calculate(Map<String, Collection<RangeVariable>> values) {
         boolean getDbIndex = false;
         int dIndex = 0;
 

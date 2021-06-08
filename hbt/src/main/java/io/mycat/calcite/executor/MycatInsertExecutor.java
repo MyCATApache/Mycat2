@@ -136,11 +136,11 @@ public class MycatInsertExecutor {
             }
 
             Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues(), params);
-            DataNode dataNode = function.calculateOne((Map) variables);
+            Partition partition = function.calculateOne((Map) variables);
 
             SQLExprTableSource tableSource = cloneStatement.getTableSource();
-            tableSource.setExpr(dataNode.getTable());
-            tableSource.setSchema(dataNode.getSchema());
+            tableSource.setExpr(partition.getTable());
+            tableSource.setSchema(partition.getSchema());
             cloneStatement.addValueCause(valuesClause);
 
             int size = valuesClause.getValues().size();
@@ -156,7 +156,7 @@ public class MycatInsertExecutor {
             });
 
             String parameterizedString = cloneStatement.toString();
-            SQL key = SQL.of(parameterizedString, dataNode, cloneStatement, outParams);
+            SQL key = SQL.of(parameterizedString, partition, cloneStatement, outParams);
             Group group1 = group.computeIfAbsent(key, key1 -> new Group());
             group1.args.add(outParams);
 
@@ -190,16 +190,16 @@ public class MycatInsertExecutor {
             }
 
             Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues(), (List) param);
-            DataNode dataNode = function.calculateOne((Map) variables);
+            Partition partition = function.calculateOne((Map) variables);
             SQLExprTableSource tableSource = mySqlInsertStatement.getTableSource();
-            tableSource.setExpr(dataNode.getTable());
-            tableSource.setSchema(dataNode.getSchema());
+            tableSource.setExpr(partition.getTable());
+            tableSource.setSchema(partition.getSchema());
 
             StringBuilder sb = new StringBuilder();
             List<Object> out = new ArrayList<>();
             MycatPreparedStatementUtil.outputToParameterized(mySqlInsertStatement, sb, out);
             String parameterizedString = sb.toString();
-            SQL key = SQL.of(parameterizedString, dataNode, mySqlInsertStatement, arg);
+            SQL key = SQL.of(parameterizedString, partition, mySqlInsertStatement, arg);
             Group group1 = group.computeIfAbsent(key, key1 -> new Group());
             group1.args.add(arg);
         }

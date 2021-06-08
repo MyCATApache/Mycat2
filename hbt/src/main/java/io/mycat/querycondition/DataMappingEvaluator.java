@@ -37,7 +37,7 @@ public class DataMappingEvaluator {
         return columnMap.computeIfAbsent(columnName, s -> new HashSet<>());
     }
 
-    public List<DataNode> calculate(CustomRuleFunction ruleFunction, Map<String, Collection<RangeVariable>>  values) {
+    public List<Partition> calculate(CustomRuleFunction ruleFunction, Map<String, Collection<RangeVariable>>  values) {
         Objects.requireNonNull(ruleFunction);
         return ruleFunction.calculate(values);
     }

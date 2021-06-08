@@ -15,5 +15,5 @@ import java.util.List;
 public class GlobalTableConfig {
     String createTableSQL;
     String balance;
-    List<GlobalBackEndTableInfoConfig> dataNodes = new ArrayList<>();
+    List<GlobalBackEndTableInfoConfig> broadcast = new ArrayList<>();
 }

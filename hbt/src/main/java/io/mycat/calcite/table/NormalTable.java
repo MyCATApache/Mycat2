@@ -32,12 +32,12 @@ import static io.mycat.util.CreateTableUtils.normalizeCreateTableSQLToMySQL;
 public class NormalTable implements NormalTableHandler {
     private final GlobalTable table;
 
-    public NormalTable(LogicTable logicTable, DataNode backendTable) {
+    public NormalTable(LogicTable logicTable, Partition backendTable) {
         this.table = new GlobalTable(logicTable, Collections.singletonList(backendTable));
     }
 
     @Override
-    public DataNode getDataNode() {
+    public Partition getDataNode() {
         return this.table.getGlobalDataNode().get(0);
     }
 
@@ -113,7 +113,7 @@ public class NormalTable implements NormalTableHandler {
             DDLHelper.createDatabaseIfNotExist(connection, getSchemaName());
             connection.executeUpdate(normalizeCreateTableSQLToMySQL(getCreateTableSQL()), false);
         }
-        for (DataNode node : Collections.singleton(getDataNode())) {
+        for (Partition node : Collections.singleton(getDataNode())) {
             createPhysicalTable(jdbcConnectionManager,node,getCreateTableSQL());
         }
     }

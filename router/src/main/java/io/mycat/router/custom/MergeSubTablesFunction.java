@@ -16,7 +16,7 @@ package io.mycat.router.custom;
 
 import com.alibaba.druid.sql.SQLUtils;
 import com.google.common.collect.ImmutableList;
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.RangeVariable;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
  */
 public class MergeSubTablesFunction extends CustomRuleFunction {
     private static final Logger LOGGER = LoggerFactory.getLogger(MergeSubTablesFunction.class);
-    DataNode defaultDataNode;
+    Partition defaultPartition;
     String tablePrefix;
     int beginIndex;
     int endIndex;
@@ -46,8 +46,8 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
     }
 
     @Override
-    public List<DataNode> calculate(Map<String, Collection<RangeVariable>> values) {
-        ArrayList<DataNode> res = new ArrayList<>();
+    public List<Partition> calculate(Map<String, Collection<RangeVariable>> values) {
+        ArrayList<Partition> res = new ArrayList<>();
         for (RangeVariable rangeVariable : values.values().stream().flatMap(i -> i.stream()).collect(Collectors.toList())) {
             //匹配字段名
             if (getColumnName().equalsIgnoreCase(rangeVariable.getColumnName())) {
@@ -56,20 +56,20 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
                 String end = Objects.toString(rangeVariable.getEnd());
                 switch (rangeVariable.getOperator()) {
                     case EQUAL: {
-                        DataNode dataNode = this.calculate(begin);
-                        if (dataNode != null) {
-                            CollectionUtil.setOpAdd(res, dataNode);
+                        Partition partition = this.calculate(begin);
+                        if (partition != null) {
+                            CollectionUtil.setOpAdd(res, partition);
                         } else {
                             return getTable().dataNodes();
                         }
                         break;
                     }
                     case RANGE: {
-                        List<DataNode> dataNodes = this.calculateRange(begin, end);
-                        if (dataNodes == null || dataNodes.size() == 0) {
+                        List<Partition> partitions = this.calculateRange(begin, end);
+                        if (partitions == null || partitions.size() == 0) {
                             return getTable().dataNodes();
                         }
-                        CollectionUtil.setOpAdd(res, dataNodes);
+                        CollectionUtil.setOpAdd(res, partitions);
                         break;
                     }
                 }
@@ -83,33 +83,33 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
     }
 
 
-    public DataNode calculate(String columnValue) {
+    public Partition calculate(String columnValue) {
         if (columnValue == null) {
-            return defaultDataNode;
+            return defaultPartition;
         }
         String tableName = tablePrefix + columnValue.substring(beginIndex, endIndex);
         return getDataNode(tableName);
     }
 
 
-    public List<DataNode> calculateRange(String beginValue, String endValue) {
+    public List<Partition> calculateRange(String beginValue, String endValue) {
         if (segmentQuery) {
             if (beginValue == null) {
-                return ImmutableList.of(defaultDataNode);
+                return ImmutableList.of(defaultPartition);
             }
             if (endValue == null) {
-                return ImmutableList.of(defaultDataNode);
+                return ImmutableList.of(defaultPartition);
             }
             int begin = Integer.parseInt(beginValue.substring(beginIndex, endIndex));
             int end = Integer.parseInt(endValue.substring(beginIndex, endIndex));
-            ArrayList<DataNode> res = new ArrayList<>();
+            ArrayList<Partition> res = new ArrayList<>();
             for (int suffix = begin; suffix <= end; suffix++) {
                 String suffixName = tablePrefix + suffix;
                 res.add(getDataNode(suffixName));
             }
             return res;
         } else {
-            return ImmutableList.of(defaultDataNode);
+            return ImmutableList.of(defaultPartition);
         }
     }
 
@@ -129,7 +129,7 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
 
         this.segmentQuery = Boolean.parseBoolean(Objects.toString(properties.getOrDefault("segmentQuery", Boolean.FALSE.toString())));
 
-        this.defaultDataNode = new DataNode() {
+        this.defaultPartition = new Partition() {
             @Override
             public String getTargetName() {
                 return targetName;
@@ -164,19 +164,19 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
 
     @Override
     public String getErUniqueID() {
-        return defaultDataNode + tablePrefix + beginIndex + endIndex + segmentQuery;
+        return defaultPartition + tablePrefix + beginIndex + endIndex + segmentQuery;
     }
 
-    private DataNode getDataNode(String tableName) {
-        return new DataNode() {
+    private Partition getDataNode(String tableName) {
+        return new Partition() {
             @Override
             public String getTargetName() {
-                return defaultDataNode.getTargetName();
+                return defaultPartition.getTargetName();
             }
 
             @Override
             public String getSchema() {
-                return defaultDataNode.getSchema();
+                return defaultPartition.getSchema();
             }
 
             @Override
@@ -191,12 +191,12 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
         if (customRuleFunction == null) return false;
         if (MergeSubTablesFunction.class.isAssignableFrom(customRuleFunction.getClass())) {
             MergeSubTablesFunction tablesFunction = (MergeSubTablesFunction) customRuleFunction;
-            DataNode defaultDataNode = tablesFunction.defaultDataNode;
+            Partition defaultPartition = tablesFunction.defaultPartition;
             String tablePrefix = tablesFunction.tablePrefix;
             int beginIndex = tablesFunction.beginIndex;
             int endIndex = tablesFunction.endIndex;
             boolean segmentQuery = tablesFunction.segmentQuery;
-            return Objects.equals(this.defaultDataNode, defaultDataNode) &&
+            return Objects.equals(this.defaultPartition, defaultPartition) &&
                     Objects.equals(this.tablePrefix, tablePrefix) &&
                     Objects.equals(this.beginIndex, beginIndex) &&
                     Objects.equals(this.endIndex, endIndex) &&

@@ -2,9 +2,6 @@ package io.mycat.statistic;
 
 import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.*;
-import io.mycat.assemble.MycatTest;
-import io.mycat.calcite.DrdsRunnerHelper;
-import io.mycat.calcite.rewriter.OptimizationContext;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.SchemaHandler;
@@ -21,7 +18,6 @@ import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.NameMap;
 import io.vertx.core.Vertx;
-import lombok.SneakyThrows;
 import org.apache.groovy.util.Maps;
 import org.junit.*;
 import org.junit.jupiter.api.Disabled;
@@ -30,7 +26,6 @@ import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.*;
-import java.util.function.Supplier;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
@@ -183,9 +178,9 @@ public class StatisticCenterTest extends DrdsTest {
         }
         tableHandler.createPhysicalTables();
         ShardingTable table = (ShardingTable) tableHandler;
-        List<DataNode> backends = table.getBackends();
-        DataNode c0 = backends.get(0);
-        DataNode c1 = backends.get(1);
+        List<Partition> backends = table.getBackends();
+        Partition c0 = backends.get(0);
+        Partition c1 = backends.get(1);
         try (DefaultConnection connection = jdbcManager.getConnection("prototype")) {
             deleteData(connection.getRawConnection(), schemaName, tableName);
             JdbcUtils.execute(connection.getRawConnection(), "insert db1.sharding(id) values(?)", Arrays.asList(1));

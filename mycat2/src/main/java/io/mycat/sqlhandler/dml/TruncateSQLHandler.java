@@ -25,7 +25,6 @@ import io.vertx.core.Future;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 
 public class TruncateSQLHandler extends AbstractSQLHandler<SQLTruncateStatement> {
@@ -59,9 +58,9 @@ public class TruncateSQLHandler extends AbstractSQLHandler<SQLTruncateStatement>
 
     public void executeOnDataNodes(SQLTruncateStatement truncateStatement,
                                    JdbcConnectionManager connectionManager,
-                                   Collection<DataNode> dataNodes) {
+                                   Collection<Partition> partitions) {
         SQLExprTableSource tableSource = truncateStatement.getTableSources().get(0);
-        executeOnDataNodes(truncateStatement, connectionManager, dataNodes, tableSource);
+        executeOnDataNodes(truncateStatement, connectionManager, partitions, tableSource);
     }
 
 }

@@ -27,7 +27,6 @@ import io.vertx.core.shareddata.Lock;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 
@@ -50,9 +49,9 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
                 boolean changed = createTableStatement.apply(sqlAlterTableStatement);
                 if (changed) {
                     JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-                    Set<DataNode> dataNodes = getDataNodes(tableHandler);
-                    dataNodes.add(new BackendTableInfo(metadataManager.getPrototype(), schema, tableName));//add Prototype
-                    executeOnDataNodes(sqlAlterTableStatement, connectionManager, dataNodes);
+                    Set<Partition> partitions = getDataNodes(tableHandler);
+                    partitions.add(new BackendTableInfo(metadataManager.getPrototype(), schema, tableName));//add Prototype
+                    executeOnDataNodes(sqlAlterTableStatement, connectionManager, partitions);
                     CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(), schema, tableName, createTableStatement);
                 }
                 return response.sendOk();
@@ -67,9 +66,9 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
 
     public void executeOnDataNodes(SQLAlterTableStatement alterTableStatement,
                                    JdbcConnectionManager connectionManager,
-                                   Collection<DataNode> dataNodes) {
+                                   Collection<Partition> partitions) {
         SQLExprTableSource tableSource = alterTableStatement.getTableSource();
-        executeOnDataNodes(alterTableStatement, connectionManager, dataNodes, tableSource);
+        executeOnDataNodes(alterTableStatement, connectionManager, partitions, tableSource);
     }
 
 }

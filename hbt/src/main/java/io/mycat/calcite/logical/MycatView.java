@@ -18,7 +18,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.calcite.*;
 import io.mycat.calcite.localrel.ToLocalConverter;
 import io.mycat.calcite.physical.MycatMergeSort;
@@ -44,12 +44,9 @@ import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.*;
-import org.apache.calcite.rel.convert.ConverterImpl;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rel.logical.LogicalAggregate;
-import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.logical.ToLogicalConverter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -155,18 +152,18 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     }
 
     public SqlNode getSQLTemplate(boolean update) {
-        DataNode dataNode;
+        Partition partition;
         if (distribution.type() == Distribution.Type.BroadCast) {
             GlobalTable globalTable = distribution.getGlobalTables().get(0);
-            List<DataNode> globalDataNode = globalTable.getGlobalDataNode();
-            dataNode = globalDataNode.get(0);
+            List<Partition> globalPartition = globalTable.getGlobalDataNode();
+            partition = globalPartition.get(0);
         } else if (distribution.type() == Distribution.Type.PHY) {
-            dataNode = distribution.getNormalTables().get(0).getDataNode();
+            partition = distribution.getNormalTables().get(0).getDataNode();
         } else {
             ShardingTable shardingTable = distribution.getShardingTables().get(0);
-            dataNode = shardingTable.dataNodes().get(0);
+            partition = shardingTable.dataNodes().get(0);
         }
-        String targetName = dataNode.getTargetName();
+        String targetName = partition.getTargetName();
         SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
         return MycatCalciteSupport.INSTANCE.convertToSqlTemplate(relNode, dialect, update);
     }
@@ -185,14 +182,14 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                                            List<Object> params,
                                            int mergeUnionSize) {
         SqlNode sqlTemplate = sqlTemplateArg;
-        Stream<Map<String, DataNode>> dataNodes = mycatViewDataNodeMapping.apply(params);
+        Stream<Map<String, Partition>> dataNodes = mycatViewDataNodeMapping.apply(params);
         if (mycatViewDataNodeMapping.getType() == Distribution.Type.BroadCast) {
             GlobalTable globalTable = mycatViewDataNodeMapping.distribution().getGlobalTables().get(0);
-            List<DataNode> globalDataNode = globalTable.getGlobalDataNode();
-            int i = ThreadLocalRandom.current().nextInt(0, globalDataNode.size());
-            DataNode dataNode = globalDataNode.get(i);
-            String targetName = dataNode.getTargetName();
-            Map<String, DataNode> nodeMap = dataNodes.findFirst().get();
+            List<Partition> globalPartition = globalTable.getGlobalDataNode();
+            int i = ThreadLocalRandom.current().nextInt(0, globalPartition.size());
+            Partition partition = globalPartition.get(i);
+            String targetName = partition.getTargetName();
+            Map<String, Partition> nodeMap = dataNodes.findFirst().get();
             SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
             SqlNode sqlSelectStatement = MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params, nodeMap);
             return new MycatViewSqlString(ImmutableMultimap.of(targetName, sqlSelectStatement.toSqlString(dialect)));
@@ -207,18 +204,18 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             });
             return new MycatViewSqlString(builder.build());
         }
-        Map<String, List<Map<String, DataNode>>> collect = dataNodes.collect(Collectors.groupingBy(m -> m.values().iterator().next().getTargetName()));
+        Map<String, List<Map<String, Partition>>> collect = dataNodes.collect(Collectors.groupingBy(m -> m.values().iterator().next().getTargetName()));
         ImmutableMultimap.Builder<String, SqlString> resMapBuilder = ImmutableMultimap.builder();
-        for (Map.Entry<String, List<Map<String, DataNode>>> entry : collect.entrySet()) {
+        for (Map.Entry<String, List<Map<String, Partition>>> entry : collect.entrySet()) {
             String targetName = entry.getKey();
             SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
-            Iterator<List<Map<String, DataNode>>> iterator = Iterables.partition(entry.getValue(), mergeUnionSize + 1).iterator();
+            Iterator<List<Map<String, Partition>>> iterator = Iterables.partition(entry.getValue(), mergeUnionSize + 1).iterator();
             while (iterator.hasNext()) {
-                List<Map<String, DataNode>> eachList = iterator.next();
+                List<Map<String, Partition>> eachList = iterator.next();
                 ImmutableList.Builder<SqlString> builderList = ImmutableList.builder();
                 SqlString string = null;
                 List<Integer> list = new ArrayList<>();
-                for (Map<String, DataNode> each : eachList) {
+                for (Map<String, Partition> each : eachList) {
                     string = MycatCalciteSupport.toSqlString(MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params, each), dialect);
                     if (string.getDynamicParameters() != null) {
                         list.addAll(string.getDynamicParameters());
@@ -277,19 +274,19 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         return planner.getCost(relNode,mq);
     }
-    private RelNode applyDataNode(Map<String, DataNode> map, RelNode relNode) {
+    private RelNode applyDataNode(Map<String, Partition> map, RelNode relNode) {
         return relNode.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(TableScan scan) {
                 MycatLogicTable mycatLogicTable = scan.getTable().unwrap(MycatLogicTable.class);
                 if (mycatLogicTable != null) {
                     String uniqueName = mycatLogicTable.getTable().getUniqueName();
-                    DataNode dataNode = map.get(uniqueName);
-                    MycatPhysicalTable physicalTable = new MycatPhysicalTable(mycatLogicTable, dataNode);
+                    Partition partition = map.get(uniqueName);
+                    MycatPhysicalTable physicalTable = new MycatPhysicalTable(mycatLogicTable, partition);
                     RelOptTableImpl relOptTable1 = RelOptTableImpl.create(scan.getTable().getRelOptSchema(),
                             scan.getRowType(),
                             physicalTable,
-                            ImmutableList.of(dataNode.getTargetName(), dataNode.getSchema(), dataNode.getTable())
+                            ImmutableList.of(partition.getTargetName(), partition.getSchema(), partition.getTable())
                     );
                     return LogicalTableScan.create(scan.getCluster(), relOptTable1, ImmutableList.of());
                 }

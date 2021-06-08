@@ -15,18 +15,10 @@
 package io.mycat.hbt;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMultimap;
-import io.mycat.DataNode;
-import io.mycat.TableHandler;
-import io.mycat.calcite.logical.MycatViewDataNodeMapping;
-import io.mycat.calcite.table.MycatLogicTable;
-import io.mycat.calcite.table.MycatPhysicalTable;
-import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.AggregateCall;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
-import io.mycat.calcite.logical.MycatView;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
@@ -37,10 +29,8 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.NlsString;
 import org.slf4j.Logger;
@@ -54,7 +44,6 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;

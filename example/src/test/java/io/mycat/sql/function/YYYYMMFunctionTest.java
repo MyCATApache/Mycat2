@@ -1,6 +1,6 @@
 package io.mycat.sql.function;
 
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.MetadataManager;
 import io.mycat.RangeVariable;
 import io.mycat.RangeVariableType;
@@ -47,7 +47,7 @@ public class YYYYMMFunctionTest extends AutoFunctionFactoryTest{
         MetadataManager metadataManager = getMetadataManager(mainSharding);
         ShardingTable tableHandler = (ShardingTable) metadataManager.getTable("db1", "sharding");
         CustomRuleFunction shardingFuntion = tableHandler.getShardingFuntion();
-        List<DataNode> calculate = shardingFuntion
+        List<Partition> calculate = shardingFuntion
                 .calculate(Collections.singletonMap("traveldate",
                         Collections.singleton(new RangeVariable("traveldate", RangeVariableType.EQUAL,
                                 LocalDate.of(2020,6,5)))));
@@ -83,7 +83,7 @@ public class YYYYMMFunctionTest extends AutoFunctionFactoryTest{
         MetadataManager metadataManager = getMetadataManager(mainSharding);
         ShardingTable tableHandler = (ShardingTable) metadataManager.getTable("db1", "sharding");
         CustomRuleFunction shardingFuntion = tableHandler.getShardingFuntion();
-        List<DataNode> calculate = shardingFuntion
+        List<Partition> calculate = shardingFuntion
                 .calculate(Collections.singletonMap("traveldate",
                         Collections.singleton(new RangeVariable("traveldate", RangeVariableType.EQUAL,
                                 LocalDate.of(2020,6,5)))));

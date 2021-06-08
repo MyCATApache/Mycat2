@@ -15,10 +15,7 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.DataNode;
-import io.mycat.TableHandler;
 import io.mycat.calcite.table.MycatLogicTable;
-import io.mycat.calcite.table.MycatPhysicalTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.type.RelDataType;
@@ -26,15 +23,12 @@ import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlSingleValueAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.parser.SqlParserPos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Junwen Chen

@@ -21,7 +21,6 @@ import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.*;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.table.GlobalTableHandler;
-import io.mycat.calcite.table.NormalTableHandler;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.router.ShardingTableHandler;
@@ -42,7 +41,7 @@ public class MySQLCheckHandler extends AbstractSQLHandler<MySqlCheckTableStateme
     @AllArgsConstructor
     @Getter
     static class Each {
-        final DataNode dataNode;
+        final Partition partition;
         final List<Map<String, Object>> info;
     }
 
@@ -102,7 +101,7 @@ public class MySQLCheckHandler extends AbstractSQLHandler<MySqlCheckTableStateme
     }
 
     @NotNull
-    private Set<String> check(MetadataManager metadataManager, JdbcConnectionManager jdbcConnectionManager, List<Throwable> throwables, List<Map<String, Object>> curRrototypeColumnInfo, Stream<DataNode> dataNodeStream) {
+    private Set<String> check(MetadataManager metadataManager, JdbcConnectionManager jdbcConnectionManager, List<Throwable> throwables, List<Map<String, Object>> curRrototypeColumnInfo, Stream<Partition> dataNodeStream) {
         Set<String> errorInfo;
         List<Each> eachColumnInfos = Collections.synchronizedList(new LinkedList<>());
         dataNodeStream.forEach(dataNode -> {
@@ -115,7 +114,7 @@ public class MySQLCheckHandler extends AbstractSQLHandler<MySqlCheckTableStateme
         });
         errorInfo = eachColumnInfos.stream()
                 .filter(i -> !i.getInfo().equals(curRrototypeColumnInfo))
-                .map(i -> i.getDataNode().getUniqueName()).collect(Collectors.toSet());
+                .map(i -> i.getPartition().getUniqueName()).collect(Collectors.toSet());
         return errorInfo;
     }
 }

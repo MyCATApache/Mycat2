@@ -30,11 +30,11 @@ import static io.mycat.util.CreateTableUtils.normalizeCreateTableSQLToMySQL;
 
 public class GlobalTable implements GlobalTableHandler {
     private final LogicTable logicTable;
-    private final List<DataNode> backendTableInfos;
+    private final List<Partition> backendTableInfos;
 
 
     public GlobalTable(LogicTable logicTable,
-                       List<DataNode> backendTableInfos) {
+                       List<Partition> backendTableInfos) {
         this.logicTable = logicTable;
         this.backendTableInfos = backendTableInfos;
     }
@@ -138,7 +138,7 @@ public class GlobalTable implements GlobalTableHandler {
             DDLHelper.createDatabaseIfNotExist(connection, getSchemaName());
             connection.executeUpdate(normalizeCreateTableSQLToMySQL(getCreateTableSQL()), false);
         }
-        for (DataNode node : getGlobalDataNode()) {
+        for (Partition node : getGlobalDataNode()) {
             createPhysicalTable(jdbcConnectionManager,node,getCreateTableSQL());
         }
     }
@@ -157,11 +157,11 @@ public class GlobalTable implements GlobalTableHandler {
 //            }
 //        }
     }
-    public DataNode getDataNode(){
+    public Partition getDataNode(){
         return getGlobalDataNode().get(0);
     }
     @Override
-    public List<DataNode> getGlobalDataNode() {
+    public List<Partition> getGlobalDataNode() {
         return backendTableInfos;
     }
 }

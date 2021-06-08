@@ -28,7 +28,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
 import io.mycat.calcite.localrel.LocalRules;
-import io.mycat.calcite.logical.LocalToMycatConverterRule;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatTopN;
 import io.mycat.calcite.physical.MycatUpdateRel;
@@ -122,17 +121,17 @@ public class DrdsSqlCompiler {
                 AbstractMycatTable table = scan.getTable().unwrap(AbstractMycatTable.class);
                 if (table != null) {
                     if (table instanceof MycatPhysicalTable) {
-                        DataNode dataNode = ((MycatPhysicalTable) table).getDataNode();
+                        Partition partition = ((MycatPhysicalTable) table).getPartition();
                         MycatPhysicalTable mycatPhysicalTable = (MycatPhysicalTable) table;
                         SqlNode sqlNode = MycatCalciteSupport.INSTANCE.convertToSqlTemplate(
                                 scan,
-                                MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(dataNode.getTargetName()),
+                                MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(partition.getTargetName()),
                                 false
                         );
-                        SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(dataNode.getTargetName());
+                        SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(partition.getTargetName());
                         return new MycatTransientSQLTableScan(cluster,
                                 mycatPhysicalTable.getRowType(),
-                                dataNode.getTargetName(), sqlNode.toSqlString(dialect)
+                                partition.getTargetName(), sqlNode.toSqlString(dialect)
                                 .getSql());
                     }
                 }

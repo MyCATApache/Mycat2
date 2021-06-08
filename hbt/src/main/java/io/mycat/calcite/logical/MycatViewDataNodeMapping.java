@@ -1,6 +1,6 @@
 package io.mycat.calcite.logical;
 
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.calcite.rewriter.Distribution;
 
 import java.io.Serializable;
@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-public interface MycatViewDataNodeMapping extends Function<List<Object>, Stream<Map<String, DataNode>>>, Serializable {
+public interface MycatViewDataNodeMapping extends Function<List<Object>, Stream<Map<String, Partition>>>, Serializable {
 
     boolean containsOrder();
 

@@ -44,14 +44,14 @@ public class CalciteUtls {
     private final static Logger LOGGER = LoggerFactory.getLogger(CalciteUtls.class);
 
     public static List<QueryBackendTask> getQueryBackendTasks(ShardingTableHandler table, List<RexNode> filters, int[] projects) {
-        List<DataNode> calculate = getBackendTableInfos(table, filters);
+        List<Partition> calculate = getBackendTableInfos(table, filters);
 
 
         //
         List<SimpleColumnInfo> rawColumnList = table.getColumns();
         List<SimpleColumnInfo> projectColumnList = getColumnList(table, projects);
         List<QueryBackendTask> list = new ArrayList<>();
-        for (DataNode backendTableInfo : calculate) {
+        for (Partition backendTableInfo : calculate) {
             String targetName = backendTableInfo.getTargetName();
             SqlDialect dialect = MycatCalciteSupport.INSTANCE
                     .getSqlDialectByTargetName(targetName);
@@ -73,7 +73,7 @@ public class CalciteUtls {
         }
     }
 
-    public static List<DataNode> getBackendTableInfos(ShardingTableHandler table, List<RexNode> filters) {
+    public static List<Partition> getBackendTableInfos(ShardingTableHandler table, List<RexNode> filters) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("origin  filters:{}", filters);
         }
@@ -88,8 +88,8 @@ public class CalciteUtls {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("optimize filters:{}", filters);
         }
-        List<DataNode> dataNodeList = table.function().calculate(record.getColumnMap());
-        return dataNodeList;
+        List<Partition> partitionList = table.function().calculate(record.getColumnMap());
+        return partitionList;
     }
 
     @NotNull
@@ -97,7 +97,7 @@ public class CalciteUtls {
                                            List<RexNode> filters,
                                            List<SimpleColumnInfo> rawColumnList,
                                            List<SimpleColumnInfo> projectColumnList,
-                                           DataNode backendTableInfo) {
+                                           Partition backendTableInfo) {
         String targetSchema = backendTableInfo.getSchema();
         String targetTable = backendTableInfo.getTable();
         String targetSchemaTable = backendTableInfo.getTargetSchemaTable();

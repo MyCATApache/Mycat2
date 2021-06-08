@@ -19,14 +19,14 @@ import io.mycat.util.JsonUtil;
 import java.text.MessageFormat;
 import java.util.HashMap;
 
-public class ShowDataNodeHint extends HintBuilder {
+public class ShowTopologyHint extends HintBuilder {
     private String schemaName;
     private String tableName;
 
     public static String create(
             String schemaName,
             String tableName) {
-        ShowDataNodeHint showDataNodeHint = new ShowDataNodeHint();
+        ShowTopologyHint showDataNodeHint = new ShowTopologyHint();
         showDataNodeHint.setSchemaName(schemaName);
         showDataNodeHint.setTableName(tableName);
         return showDataNodeHint.build();
@@ -34,7 +34,7 @@ public class ShowDataNodeHint extends HintBuilder {
 
     @Override
     public String getCmd() {
-        return "showDataNodes";
+        return "showTopology";
     }
 
     @Override
@@ -56,6 +56,6 @@ public class ShowDataNodeHint extends HintBuilder {
     }
 
     public static void main(String[] args) {
-        System.out.println(ShowDataNodeHint.create("db1","travelrecord"));
+        System.out.println(ShowTopologyHint.create("db1","travelrecord"));
     }
 }

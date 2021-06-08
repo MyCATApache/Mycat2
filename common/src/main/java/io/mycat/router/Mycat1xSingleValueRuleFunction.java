@@ -15,7 +15,7 @@
 package io.mycat.router;
 
 import com.alibaba.druid.sql.SQLUtils;
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.MycatException;
 import io.mycat.RangeVariable;
 import io.mycat.util.CollectionUtil;
@@ -88,8 +88,8 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
     }
 
     @Override
-    public List<DataNode> calculate(Map<String, Collection<RangeVariable>> values) {
-        ArrayList<DataNode> res = new ArrayList<>();
+    public List<Partition> calculate(Map<String, Collection<RangeVariable>> values) {
+        ArrayList<Partition> res = new ArrayList<>();
         for (RangeVariable rangeVariable : values.values().stream().flatMap(i -> i.stream()).collect(Collectors.toList())) {
             //匹配字段名
             if (getColumnName().equalsIgnoreCase(rangeVariable.getColumnName())) {
@@ -98,20 +98,20 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
                 String end = Objects.toString(rangeVariable.getEnd());
                 switch (rangeVariable.getOperator()) {
                     case EQUAL: {
-                        DataNode dataNode = this.calculate(begin);
-                        if (dataNode != null) {
-                            CollectionUtil.setOpAdd(res, dataNode);
+                        Partition partition = this.calculate(begin);
+                        if (partition != null) {
+                            CollectionUtil.setOpAdd(res, partition);
                         } else {
                             return getTable().dataNodes();
                         }
                         break;
                     }
                     case RANGE: {
-                        List<DataNode> dataNodes = this.calculateRange(begin, end);
-                        if (dataNodes == null || dataNodes.size() == 0) {
+                        List<Partition> partitions = this.calculateRange(begin, end);
+                        if (partitions == null || partitions.size() == 0) {
                             return getTable().dataNodes();
                         }
-                        CollectionUtil.setOpAdd(res, dataNodes);
+                        CollectionUtil.setOpAdd(res, partitions);
                         break;
                     }
                 }
@@ -133,13 +133,13 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
 
     public abstract int[] calculateIndexRange(String beginValue, String endValue);
 
-    public DataNode calculate(String columnValue) {
+    public Partition calculate(String columnValue) {
         int i = calculateIndex(columnValue);
         if (i == -1) {
             return null;
         }
         ShardingTableHandler table = getTable();
-        List<DataNode> shardingBackends = table.dataNodes();
+        List<Partition> shardingBackends = table.dataNodes();
         int size = shardingBackends.size();
         if (0 <= i && i < size) {
             return shardingBackends.get(i);
@@ -151,15 +151,15 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
     }
 
 
-    public List<DataNode> calculateRange(String beginValue, String endValue) {
+    public List<Partition> calculateRange(String beginValue, String endValue) {
         int[] ints = calculateIndexRange(beginValue, endValue);
         ShardingTableHandler table = getTable();
-        List<DataNode> shardingBackends = (List) table.dataNodes();
+        List<Partition> shardingBackends = (List) table.dataNodes();
         int size = shardingBackends.size();
         if (ints == null) {
             return shardingBackends;
         }
-        ArrayList<DataNode> res = new ArrayList<>();
+        ArrayList<Partition> res = new ArrayList<>();
         for (int i : ints) {
             if (0 <= i && i < size) {
                 res.add(shardingBackends.get(i));

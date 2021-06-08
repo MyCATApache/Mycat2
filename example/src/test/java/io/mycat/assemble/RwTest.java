@@ -179,7 +179,7 @@ public class RwTest implements MycatTest {
                                     "role_edges",
                                     "CREATE TABLE mysql.role_edges (\n\t`FROM_HOST` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`FROM_USER` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`TO_HOST` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`TO_USER` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`WITH_ADMIN_OPTION` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\tPRIMARY KEY (`FROM_HOST`, `FROM_USER`, `TO_HOST`, `TO_USER`)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Role hierarchy and role grants'",
                                     "dw0")));
-            List<Map<String, Object>> maps = executeQuery(mycat, ShowDataNodeHint.create("mysql", "role_edges"));
+            List<Map<String, Object>> maps = executeQuery(mycat, ShowTopologyHint.create("mysql", "role_edges"));
            Assert.assertTrue(maps.toString().contains("dw0"));
         }
     }
@@ -203,7 +203,7 @@ public class RwTest implements MycatTest {
             execute(mycat,"create database db1");
             execute(mycat, "CREATE TABLE db1.`BROADCAST` (\n" +
                     "  `id` bigint) ENGINE=InnoDB  DEFAULT CHARSET=utf8 BROADCAST;");
-            List<Map<String, Object>> maps = executeQuery(mycat, ShowDataNodeHint.create("db1", "BROADCAST"));
+            List<Map<String, Object>> maps = executeQuery(mycat, ShowTopologyHint.create("db1", "BROADCAST"));
             Assert.assertTrue(maps.toString().contains("c0"));
             Assert.assertTrue(maps.toString().contains("c1"));
             execute(mycat, "insert db1.`BROADCAST` (`id`) values (1);");
@@ -222,7 +222,7 @@ public class RwTest implements MycatTest {
 
             execute(mycat,
                     CreateSchemaHint.create("mysql","dw0"));
-            List<Map<String, Object>> maps = executeQuery(mycat, ShowDataNodeHint.create("mysql", "role_edges"));
+            List<Map<String, Object>> maps = executeQuery(mycat, ShowTopologyHint.create("mysql", "role_edges"));
             Assert.assertTrue(maps.toString().contains("dw0"));
         }
     }

@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode
 public class NormalTableConfig {
     String createTableSQL;
-    NormalBackEndTableInfoConfig dataNode;
+    NormalBackEndTableInfoConfig locality;
 
     public static NormalTableConfig create(String schemaName,
                                            String tableName,
@@ -22,7 +22,7 @@ public class NormalTableConfig {
         normalBackEndTableInfoConfig.setSchemaName(schemaName);
         normalBackEndTableInfoConfig.setTableName(tableName);
         normalBackEndTableInfoConfig.setTargetName(targetName);
-        normalTableConfig.setDataNode(normalBackEndTableInfoConfig);
+        normalTableConfig.setLocality(normalBackEndTableInfoConfig);
         normalTableConfig.setCreateTableSQL(createTableSQL);
         return normalTableConfig;
     }

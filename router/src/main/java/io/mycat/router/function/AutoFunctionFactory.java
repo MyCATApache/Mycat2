@@ -23,9 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import groovy.text.SimpleTemplateEngine;
 import groovy.text.Template;
-import io.mycat.BackendTableInfo;
-import io.mycat.DataNode;
-import io.mycat.RangeVariable;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.config.ShardingFuntion;
 import io.mycat.router.CustomRuleFunction;
@@ -41,8 +38,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.WeekFields;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 

@@ -26,7 +26,6 @@ import io.vertx.core.Future;
 import io.vertx.core.shareddata.Lock;
 
 import java.util.Set;
-import java.util.function.Function;
 
 public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatement> {
     @Override
@@ -46,9 +45,9 @@ public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatemen
                 MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
                 JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                 TableHandler table = metadataManager.getTable(schema, tableName);
-                Set<DataNode> dataNodes = getDataNodes(table);
-                dataNodes.add(new BackendTableInfo(metadataManager.getPrototype(),schema,tableName));//add Prototype
-                executeOnDataNodes(sqlDropIndexStatement,jdbcConnectionManager,dataNodes,tableSource);
+                Set<Partition> partitions = getDataNodes(table);
+                partitions.add(new BackendTableInfo(metadataManager.getPrototype(),schema,tableName));//add Prototype
+                executeOnDataNodes(sqlDropIndexStatement,jdbcConnectionManager, partitions,tableSource);
                 return response.sendOk();
             }catch (Throwable throwable){
                 return Future.failedFuture(throwable);

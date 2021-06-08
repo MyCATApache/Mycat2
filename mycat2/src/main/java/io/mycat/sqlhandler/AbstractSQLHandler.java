@@ -25,7 +25,6 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.ClassUtil;
 import io.vertx.core.Future;
-import io.vertx.core.impl.future.PromiseInternal;
 import lombok.EqualsAndHashCode;
 import org.jetbrains.annotations.NotNull;
 
@@ -91,39 +90,39 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
 //            connection.executeUpdate(sqlStatement.toString(),false);
 //        }
 //    }
-    public void executeOnDataNodes(SQLStatement sqlStatement, JdbcConnectionManager connectionManager, Collection<DataNode> dataNodes, SQLExprTableSource tableSource) {
-        for (DataNode dataNode : dataNodes) {
-            tableSource.setSimpleName(dataNode.getTable());
-            tableSource.setSchema(dataNode.getSchema());
+    public void executeOnDataNodes(SQLStatement sqlStatement, JdbcConnectionManager connectionManager, Collection<Partition> partitions, SQLExprTableSource tableSource) {
+        for (Partition partition : partitions) {
+            tableSource.setSimpleName(partition.getTable());
+            tableSource.setSchema(partition.getSchema());
             String sql = sqlStatement.toString();
-            try (DefaultConnection connection = connectionManager.getConnection(dataNode.getTargetName())) {
+            try (DefaultConnection connection = connectionManager.getConnection(partition.getTargetName())) {
                 connection.executeUpdate(sql, false);
             }
         }
     }
 
-    public Set<DataNode> getDataNodes(TableHandler tableHandler) {
-        List<DataNode> dataNodes;
+    public Set<Partition> getDataNodes(TableHandler tableHandler) {
+        List<Partition> partitions;
         switch (tableHandler.getType()) {
             case SHARDING: {
                 ShardingTableHandler handler = (ShardingTableHandler) tableHandler;
-                dataNodes = handler.dataNodes();
+                partitions = handler.dataNodes();
                 break;
             }
             case GLOBAL: {
                 GlobalTableHandler handler = (GlobalTableHandler) tableHandler;
-                dataNodes = handler.getGlobalDataNode();
+                partitions = handler.getGlobalDataNode();
                 break;
             }
             case NORMAL: {
                 NormalTableHandler handler = (NormalTableHandler) tableHandler;
-                dataNodes = Collections.singletonList(handler.getDataNode());
+                partitions = Collections.singletonList(handler.getDataNode());
                 break;
             }
             case CUSTOM:
             default:
                 throw MycatErrorCode.createMycatException(MycatErrorCode.ERR_NOT_SUPPORT,"alter custom table supported");
         }
-        return new HashSet<>(dataNodes);
+        return new HashSet<>(partitions);
     }
 }

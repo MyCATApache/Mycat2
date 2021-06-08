@@ -14,16 +14,11 @@
  */
 package io.mycat.calcite;
 
-import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
-import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.HintTools;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.api.collector.RowBaseIterator;
@@ -69,10 +64,8 @@ import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.pretty.SqlPrettyWriter;
 import org.apache.calcite.sql.type.*;
-import org.apache.calcite.sql.util.SqlBasicVisitor;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.util.SqlString;
-import org.apache.calcite.sql.util.SqlVisitor;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlNameMatcher;
@@ -657,13 +650,13 @@ public enum MycatCalciteSupport implements Context {
         return writer.toSqlString();
     }
 
-    public SqlNode sqlTemplateApply(SqlNode sqlTemplate,List<Object> params, Map<String, DataNode> map) {
+    public SqlNode sqlTemplateApply(SqlNode sqlTemplate,List<Object> params, Map<String, Partition> map) {
         return sqlTemplate.accept(new SqlShuttle() {
                                       @Override
                                       public SqlNode visit(SqlIdentifier id) {
                                           if (id instanceof TableParamSqlNode) {
-                                              DataNode dataNode = map.get(id.getSimple());
-                                              return new SqlIdentifier(ImmutableList.of(dataNode.getSchema(), dataNode.getTable()), SqlParserPos.ZERO);
+                                              Partition partition = map.get(id.getSimple());
+                                              return new SqlIdentifier(ImmutableList.of(partition.getSchema(), partition.getTable()), SqlParserPos.ZERO);
                                           }
                                           return super.visit(id);
                                       }

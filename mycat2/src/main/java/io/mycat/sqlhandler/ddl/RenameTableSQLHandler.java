@@ -104,13 +104,13 @@ public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableSt
                     sqlStatement.setTableName(newTableName);
                     sqlStatement.setSchema(newSchemaName);
 
-                    Set<DataNode> dataNodes = new HashSet<>();
-                    dataNodes.add( new BackendTableInfo(metadataManager.getPrototype(), "", ""));
+                    Set<Partition> partitions = new HashSet<>();
+                    partitions.add( new BackendTableInfo(metadataManager.getPrototype(), "", ""));
 
                     if (tableHandler.getType() == LogicTableType.GLOBAL){
-                        dataNodes.addAll(getDataNodes(tableHandler));//更改所有节点
+                        partitions.addAll(getDataNodes(tableHandler));//更改所有节点
                     }
-                    executeOnDataNodes(sqlRenameTableStatement, jdbcConnectionManager,dataNodes);
+                    executeOnDataNodes(sqlRenameTableStatement, jdbcConnectionManager, partitions);
 
                     String newCreateTableSql = sqlStatement.toString();
                     try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
@@ -118,7 +118,7 @@ public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableSt
                         if (newConfig instanceof NormalTableConfig) {
                             NormalTableConfig normalTableConfig = (NormalTableConfig) newConfig;
                             normalTableConfig.setCreateTableSQL(newCreateTableSql);
-                            normalTableConfig.setDataNode(new NormalBackEndTableInfoConfig(metadataManager.getPrototype(),newSchemaName,newTableName));
+                            normalTableConfig.setLocality(new NormalBackEndTableInfoConfig(metadataManager.getPrototype(),newSchemaName,newTableName));
                             ops.putNormalTable(newSchemaName, newTableName, normalTableConfig);
                         } else if (newConfig instanceof GlobalTableConfig) {
                             GlobalTableConfig globalTableConfig = (GlobalTableConfig) newConfig;
@@ -154,18 +154,18 @@ public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableSt
     public void executeOnDataNodes(MySqlRenameTableStatement sqlStatement,
                                    JdbcConnectionManager connectionManager,
                                    TableHandler tableHandler) {
-        Collection<DataNode> dataNodes = getDataNodes(tableHandler);
+        Collection<Partition> partitions = getDataNodes(tableHandler);
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        dataNodes.add(new BackendTableInfo(metadataManager.getPrototype(),
+        partitions.add(new BackendTableInfo(metadataManager.getPrototype(),
                 tableHandler.getSchemaName(), tableHandler.getTableName()));//add Prototype
-        executeOnDataNodes(sqlStatement, connectionManager, dataNodes);
+        executeOnDataNodes(sqlStatement, connectionManager, partitions);
     }
 
-    private void executeOnDataNodes(MySqlRenameTableStatement sqlStatement, JdbcConnectionManager connectionManager, Collection<DataNode> dataNodes) {
-        for (DataNode dataNode : dataNodes) {
+    private void executeOnDataNodes(MySqlRenameTableStatement sqlStatement, JdbcConnectionManager connectionManager, Collection<Partition> partitions) {
+        for (Partition partition : partitions) {
             MySqlRenameTableStatement each = cloneSql(sqlStatement);
             String sql = each.toString();
-            try (DefaultConnection connection = connectionManager.getConnection(dataNode.getTargetName())) {
+            try (DefaultConnection connection = connectionManager.getConnection(partition.getTargetName())) {
                 connection.executeUpdate(sql, false);
             }
         }

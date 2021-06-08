@@ -17,7 +17,7 @@
 package io.mycat.calcite.table;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.statistic.StatisticCenter;
@@ -36,14 +36,14 @@ import java.util.List;
 public class Statistics {
     private static final Logger LOGGER = LoggerFactory.getLogger(Statistics.class);
 
-    public static Statistic createStatistic(Statistic parentStatistic, DataNode dataNode) {
+    public static Statistic createStatistic(Statistic parentStatistic, Partition partition) {
         return new Statistic() {
             @Override
             public Double getRowCount() {
                 StatisticCenter statisticCenter = MetaClusterCurrent.wrapper(StatisticCenter.class);
-                return statisticCenter.getPhysicsTableRow(dataNode.getSchema(),
-                        dataNode.getTable(),
-                        dataNode.getTargetName());
+                return statisticCenter.getPhysicsTableRow(partition.getSchema(),
+                        partition.getTable(),
+                        partition.getTargetName());
             }
 
             @Override

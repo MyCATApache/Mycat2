@@ -22,7 +22,6 @@ import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.apache.calcite.rex.RexNode;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -183,11 +182,11 @@ public class Distribution {
         return builder.build();
     }
 
-    public Stream<Map<String, DataNode>> getDataNodes() {
+    public Stream<Map<String, Partition>> getDataNodes() {
         return getDataNodes(table -> table.dataNodes());
     }
 
-    public Iterable<DataNode> getDataNodesAsSingleTableUpdate(IndexCondition conditions, List<Object> readOnlyParameters) {
+    public Iterable<Partition> getDataNodesAsSingleTableUpdate(IndexCondition conditions, List<Object> readOnlyParameters) {
         if (normalTables.size() == 1) {
             return Collections.singletonList(normalTables.get(0).getDataNode());
         }
@@ -200,11 +199,11 @@ public class Distribution {
         throw new UnsupportedOperationException();
     }
 
-    public Stream<Map<String, DataNode>> getDataNodes(Function<ShardingTable, List<DataNode>> function) {
+    public Stream<Map<String, Partition>> getDataNodes(Function<ShardingTable, List<Partition>> function) {
         switch (this.type()) {
             case BroadCast:
             case PHY: {
-                Map<String, DataNode> builder = new HashMap<>();
+                Map<String, Partition> builder = new HashMap<>();
                 for (NormalTable normalTable : this.normalTables) {
                     builder.put(normalTable.getUniqueName(), normalTable.getDataNode());
                 }
@@ -214,27 +213,27 @@ public class Distribution {
                 return Stream.of(builder);
             }
             case Sharding: {
-                ImmutableMap.Builder<String, DataNode> globalbuilder = ImmutableMap.builder();
+                ImmutableMap.Builder<String, Partition> globalbuilder = ImmutableMap.builder();
                 for (GlobalTable globalTable : this.globalTables) {
                     globalbuilder.put(globalTable.getUniqueName(), globalTable.getDataNode());
                 }
-                ImmutableMap<String, DataNode> globalMap = globalbuilder.build();
+                ImmutableMap<String, Partition> globalMap = globalbuilder.build();
                 ShardingTable shardingTable = this.shardingTables.get(0);
                 String primaryTableUniqueName = shardingTable.getLogicTable().getUniqueName();
-                List<DataNode> primaryTableFilterDataNodes = function.apply(shardingTable);
+                List<Partition> primaryTableFilterPartitions = function.apply(shardingTable);
 //                Map<String, List<DataNode>> collect = this.shardingTables.stream()
 //                        .collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getShardingFuntion().calculate(Collections.emptyMap())));
                 MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
                 List<ShardingTable> shardingTables = metadataManager.getErTableGroup().getOrDefault(shardingTable.getShardingFuntion().getErUniqueID(), Collections.emptyList());
-                Map<String, List<DataNode>> collect = shardingTables.stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.dataNodes()));
+                Map<String, List<Partition>> collect = shardingTables.stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.dataNodes()));
                 List<Integer> mappingIndex = new ArrayList<>();
                 List<String> allDataNodeUniqueNames = collect.get(primaryTableUniqueName).stream().sequential().map(i -> i.getUniqueName()).collect(Collectors.toList());
                 {
 
-                    for (DataNode filterDataNode : primaryTableFilterDataNodes) {
+                    for (Partition filterPartition : primaryTableFilterPartitions) {
                         int index = 0;
                         for (String allDataNodeUniqueName : allDataNodeUniqueNames) {
-                            if (allDataNodeUniqueName.equals(filterDataNode.getUniqueName())) {
+                            if (allDataNodeUniqueName.equals(filterPartition.getUniqueName())) {
                                 mappingIndex.add(index);
                                 break;
                             }
@@ -243,14 +242,14 @@ public class Distribution {
 
                     }
                 }
-                TreeMap<Integer, Map<String, DataNode>> res = new TreeMap<>();
+                TreeMap<Integer, Map<String, Partition>> res = new TreeMap<>();
                 {
-                    for (Map.Entry<String, List<DataNode>> e : collect.entrySet()) {
+                    for (Map.Entry<String, List<Partition>> e : collect.entrySet()) {
                         String key = e.getKey();
-                        List<DataNode> dataNodes = e.getValue();
+                        List<Partition> partitions = e.getValue();
                         for (Integer integer : mappingIndex) {
-                            Map<String, DataNode> stringDataNodeMap = res.computeIfAbsent(integer, integer1 -> new HashMap<>());
-                            stringDataNodeMap.put(key, dataNodes.get(integer));
+                            Map<String, Partition> stringDataNodeMap = res.computeIfAbsent(integer, integer1 -> new HashMap<>());
+                            stringDataNodeMap.put(key, partitions.get(integer));
                             stringDataNodeMap.putAll(globalMap);
                         }
                     }

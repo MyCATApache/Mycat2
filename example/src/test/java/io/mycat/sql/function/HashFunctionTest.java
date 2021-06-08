@@ -1,7 +1,7 @@
 package io.mycat.sql.function;
 
 import com.google.common.collect.ImmutableMap;
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.MetadataManager;
 import io.mycat.RangeVariable;
 import io.mycat.RangeVariableType;
@@ -51,7 +51,7 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
         MetadataManager metadataManager = getMetadataManager(mainSharding);
         ShardingTable tableHandler = (ShardingTable) metadataManager.getTable("db1", "sharding");
         CustomRuleFunction shardingFuntion = tableHandler.getShardingFuntion();
-        List<DataNode> calculate = shardingFuntion.calculate(Collections.singletonMap("id", Collections.singleton(new RangeVariable("id", RangeVariableType.EQUAL, 15))));
+        List<Partition> calculate = shardingFuntion.calculate(Collections.singletonMap("id", Collections.singleton(new RangeVariable("id", RangeVariableType.EQUAL, 15))));
         String s = calculate.toString();
         Assert.assertTrue(s.contains("[{targetName='c0', schemaName='db1_1', tableName='sharding_3', index=7, dbIndex=1, tableIndex=3}]"));
 
@@ -88,7 +88,7 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
         MetadataManager metadataManager = getMetadataManager(mainSharding);
         ShardingTable tableHandler = (ShardingTable) metadataManager.getTable("db1", "sharding");
         CustomRuleFunction shardingFuntion = tableHandler.getShardingFuntion();
-        List<DataNode> calculate = shardingFuntion.calculate(Collections.singletonMap("id", Collections.singleton(new RangeVariable("id", RangeVariableType.EQUAL, 15))));
+        List<Partition> calculate = shardingFuntion.calculate(Collections.singletonMap("id", Collections.singleton(new RangeVariable("id", RangeVariableType.EQUAL, 15))));
         String s = calculate.toString();
         Assert.assertTrue(s.contains("[{targetName='c0', schemaName='db1_1', tableName='sharding_7', index=7, dbIndex=1, tableIndex=3}]"));
 
@@ -150,7 +150,7 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
         MetadataManager metadataManager = getMetadataManager(mainSharding);
         ShardingTable tableHandler = (ShardingTable) metadataManager.getTable("db1", "sharding");
         CustomRuleFunction shardingFuntion = tableHandler.getShardingFuntion();
-        List<DataNode> calculate = shardingFuntion.calculate(Collections.singletonMap("id", Collections.singleton(new RangeVariable("id", RangeVariableType.EQUAL, 15))));
+        List<Partition> calculate = shardingFuntion.calculate(Collections.singletonMap("id", Collections.singleton(new RangeVariable("id", RangeVariableType.EQUAL, 15))));
         Assert.assertEquals(1, calculate.size());
         Assert.assertEquals(2, shardingFuntion.calculate(Collections.emptyMap()).size());
         System.out.println();
@@ -184,16 +184,16 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
         ImmutableMap<String, Collection<RangeVariable>> map = ImmutableMap.of("id", Collections.singletonList(new RangeVariable("id", RangeVariableType.EQUAL, 15)),
                 "user_id", Collections.singletonList(new RangeVariable("user_id", RangeVariableType.EQUAL, 2))
         );
-        List<DataNode> insertRoute = shardingFuntion.calculate(
+        List<Partition> insertRoute = shardingFuntion.calculate(
                 map);
         Assert.assertEquals(1, insertRoute.size());
 
-        List<DataNode> firstColumn = shardingFuntion.calculate(
+        List<Partition> firstColumn = shardingFuntion.calculate(
                 ImmutableMap.of("id", Collections.singletonList(new RangeVariable("id", RangeVariableType.EQUAL, 15))));
 
         Assert.assertTrue(firstColumn.containsAll(insertRoute));
 
-        List<DataNode> secondColumn = shardingFuntion.calculate(
+        List<Partition> secondColumn = shardingFuntion.calculate(
                 ImmutableMap.of("user_id", Collections.singletonList(new RangeVariable("user_id", RangeVariableType.EQUAL, 2))));
 
 

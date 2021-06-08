@@ -245,7 +245,7 @@ public class MetadataManager implements MysqlVariableService {
                 String tableName = e.getKey();
                 removeTable(schemaName, tableName);
                 GlobalTableConfig tableConfigEntry = e.getValue();
-                List<DataNode> backendTableInfos = tableConfigEntry.getDataNodes().stream().map(i -> new BackendTableInfo(i.getTargetName(), schemaName, tableName)).collect(Collectors.toList());
+                List<Partition> backendTableInfos = tableConfigEntry.getBroadcast().stream().map(i -> new BackendTableInfo(i.getTargetName(), schemaName, tableName)).collect(Collectors.toList());
                 addGlobalTable(schemaName, tableName,
                         tableConfigEntry,
                         prototype,
@@ -259,7 +259,7 @@ public class MetadataManager implements MysqlVariableService {
                 addShardingTable(schemaName, tableName,
                         tableConfigEntry,
                         prototype,
-                        getBackendTableInfos(tableConfigEntry.getDataNode()));
+                        getBackendTableInfos(tableConfigEntry.getPartition()));
             }
 
             for (Map.Entry<String, CustomTableConfig> e : value.getCustomTables().entrySet()) {
@@ -387,16 +387,16 @@ public class MetadataManager implements MysqlVariableService {
                                    NormalTableConfig tableConfigEntry,
                                    String prototypeServer) {
         //////////////////////////////////////////////
-        NormalBackEndTableInfoConfig dataNode = tableConfigEntry.getDataNode();
-        List<DataNode> dataNodes = ImmutableList.of(new BackendTableInfo(dataNode.getTargetName(),
+        NormalBackEndTableInfoConfig dataNode = tableConfigEntry.getLocality();
+        List<Partition> partitions = ImmutableList.of(new BackendTableInfo(dataNode.getTargetName(),
                 Optional.ofNullable(dataNode.getSchemaName()).orElse(schemaName),
                 Optional.ofNullable(dataNode.getTableName()).orElse(tableName)));
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL())
-                .orElseGet(() -> getCreateTableSQLByJDBC(schemaName, tableName, dataNodes));
+                .orElseGet(() -> getCreateTableSQLByJDBC(schemaName, tableName, partitions));
         if (createTableSQL != null) {
-            List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, dataNodes);
+            List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, partitions);
             Map<String, IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName, columns);
-            addLogicTable(LogicTable.createNormalTable(schemaName, tableName, dataNodes.get(0), columns, indexInfos, createTableSQL));
+            addLogicTable(LogicTable.createNormalTable(schemaName, tableName, partitions.get(0), columns, indexInfos, createTableSQL));
             return true;
         }
         return false;
@@ -406,7 +406,7 @@ public class MetadataManager implements MysqlVariableService {
                                 String orignalTableName,
                                 GlobalTableConfig tableConfigEntry,
                                 String prototypeServer,
-                                List<DataNode> backendTableInfos) {
+                                List<Partition> backendTableInfos) {
         //////////////////////////////////////////////
         final String tableName = orignalTableName;
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL())
@@ -422,7 +422,7 @@ public class MetadataManager implements MysqlVariableService {
     }
 
 
-    private List<DataNode> getBackendTableInfos(ShardingBackEndTableInfoConfig stringListEntry) {
+    private List<Partition> getBackendTableInfos(ShardingBackEndTableInfoConfig stringListEntry) {
         if (stringListEntry == null) {
             return Collections.emptyList();
         }
@@ -457,13 +457,13 @@ public class MetadataManager implements MysqlVariableService {
                                   String orignalTableName,
                                   ShardingTableConfig tableConfigEntry,
                                   String prototypeServer,
-                                  List<DataNode> backends) {
+                                  List<Partition> backends) {
         ShardingTable shardingTable = createShardingTable(schemaName, orignalTableName, tableConfigEntry, prototypeServer, backends);
         addLogicTable(shardingTable);
     }
 
     @NotNull
-    public  ShardingTable createShardingTable(String schemaName, String orignalTableName, ShardingTableConfig tableConfigEntry, String prototypeServer, List<DataNode> backends) throws Exception {
+    public  ShardingTable createShardingTable(String schemaName, String orignalTableName, ShardingTableConfig tableConfigEntry, String prototypeServer, List<Partition> backends) throws Exception {
         ShardingFuntion function = tableConfigEntry.getFunction();
         if (function != null) {
             if (function.getClazz() == null) {
@@ -510,7 +510,7 @@ public class MetadataManager implements MysqlVariableService {
                                                         String schemaName,
                                                         String tableName,
                                                         String createTableSQL,
-                                                        List<DataNode> backends) {
+                                                        List<Partition> backends) {
         List<SimpleColumnInfo> columns = null;
         /////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -541,7 +541,7 @@ public class MetadataManager implements MysqlVariableService {
         ////////////////////////////////////////////////////////////////////////////////////////////////
         if (columns == null && backends != null && !backends.isEmpty()) {
             try {
-                DataNode backendTableInfo = backends.get(0);
+                Partition backendTableInfo = backends.get(0);
                 String targetName = backendTableInfo.getTargetName();
                 String schema = backendTableInfo.getSchema();
                 String table = backendTableInfo.getTable();
@@ -571,11 +571,11 @@ public class MetadataManager implements MysqlVariableService {
         return null;
     }
 
-    private List<SimpleColumnInfo> getColumnInfoBySelectSQLOnJdbc(List<DataNode> backends) {
+    private List<SimpleColumnInfo> getColumnInfoBySelectSQLOnJdbc(List<Partition> backends) {
         if (backends.isEmpty()) {
             return null;
         }
-        DataNode backendTableInfo = backends.get(0);
+        Partition backendTableInfo = backends.get(0);
         String targetName = backendTableInfo.getTargetName();
         String targetSchemaTable = backendTableInfo.getTargetSchemaTable();
         String name = replicaSelectorRuntime.getDatasourceNameByReplicaName(targetName, true, null);
@@ -597,16 +597,16 @@ public class MetadataManager implements MysqlVariableService {
         return null;
     }
 
-    private String getCreateTableSQLByJDBC(String schemaName, String tableName, List<DataNode> backends) {
+    private String getCreateTableSQLByJDBC(String schemaName, String tableName, List<Partition> backends) {
         backends = new ArrayList<>(backends);
         backends.add(new BackendTableInfo(prototype,schemaName,tableName));
 
         if (backends == null || backends.isEmpty()) {
             return null;
         }
-        for (DataNode backend : backends) {
+        for (Partition backend : backends) {
             try {
-                DataNode backendTableInfo = backend;
+                Partition backendTableInfo = backend;
                 String targetName = backendTableInfo.getTargetName();
                 String targetSchemaTable = backendTableInfo.getTargetSchemaTable();
                 String name = replicaSelectorRuntime.getDatasourceNameByReplicaName(targetName, true, null);
@@ -715,18 +715,18 @@ public class MetadataManager implements MysqlVariableService {
             @Override
             public Map<String, List<String>> next() {
                 MySqlInsertStatement statement = listIterator.next();//会修改此对象
-                Map<DataNode, List<SQLInsertStatement.ValuesClause>> res = getInsertInfoValuesClause(currentSchemaNameText, statement);
+                Map<Partition, List<SQLInsertStatement.ValuesClause>> res = getInsertInfoValuesClause(currentSchemaNameText, statement);
                 listIterator.remove();
 
                 //////////////////////////////////////////////////////////////////
                 Map<String, List<String>> map = new HashMap<>();
-                for (Map.Entry<DataNode, List<SQLInsertStatement.ValuesClause>> entry : res.entrySet()) {
-                    DataNode dataNode = entry.getKey();
+                for (Map.Entry<Partition, List<SQLInsertStatement.ValuesClause>> entry : res.entrySet()) {
+                    Partition partition = entry.getKey();
                     SQLExprTableSource tableSource = statement.getTableSource();
-                    tableSource.setExpr(new SQLPropertyExpr(dataNode.getSchema(), dataNode.getTable()));
+                    tableSource.setExpr(new SQLPropertyExpr(partition.getSchema(), partition.getTable()));
                     statement.getValuesList().clear();
                     statement.getValuesList().addAll(entry.getValue());
-                    List<String> list = map.computeIfAbsent(dataNode.getTargetName(), s12 -> new ArrayList<>());
+                    List<String> list = map.computeIfAbsent(partition.getTargetName(), s12 -> new ArrayList<>());
                     list.add(statement.toString());
                 }
                 return map;
@@ -749,11 +749,11 @@ public class MetadataManager implements MysqlVariableService {
 
     public Map<String, List<String>> getInsertInfoMap(String currentSchemaName, MySqlInsertStatement statement) {
         Map<String, List<String>> res = new HashMap<>();
-        Map<DataNode, List<SQLInsertStatement.ValuesClause>> insertInfo = getInsertInfoValuesClause(currentSchemaName, statement);
+        Map<Partition, List<SQLInsertStatement.ValuesClause>> insertInfo = getInsertInfoValuesClause(currentSchemaName, statement);
         SQLExprTableSource tableSource = statement.getTableSource();
-        for (Map.Entry<DataNode, List<SQLInsertStatement.ValuesClause>> backendTableInfoListEntry : insertInfo.entrySet()) {
+        for (Map.Entry<Partition, List<SQLInsertStatement.ValuesClause>> backendTableInfoListEntry : insertInfo.entrySet()) {
             statement.getValuesList().clear();
-            DataNode key = backendTableInfoListEntry.getKey();
+            Partition key = backendTableInfoListEntry.getKey();
             statement.getValuesList().addAll(backendTableInfoListEntry.getValue());
             tableSource.setExpr(new SQLPropertyExpr(key.getSchema(), key.getTable()));
             List<String> strings = res.computeIfAbsent(key.getTargetName(), s -> new ArrayList<>());
@@ -762,13 +762,13 @@ public class MetadataManager implements MysqlVariableService {
         return res;
     }
 
-    public Map<DataNode, List<SQLInsertStatement.ValuesClause>> getInsertInfoValuesClause(String currentSchemaName, String statement) {
+    public Map<Partition, List<SQLInsertStatement.ValuesClause>> getInsertInfoValuesClause(String currentSchemaName, String statement) {
         SQLStatementParser sqlStatementParser = SQLParserUtils.createSQLStatementParser(statement, DbType.mysql);
         MySqlInsertStatement sqlStatement = (MySqlInsertStatement) sqlStatementParser.parseStatement();
         return getInsertInfoValuesClause(currentSchemaName, sqlStatement);
     }
 
-    public Map<DataNode, List<SQLInsertStatement.ValuesClause>> getInsertInfoValuesClause(String currentSchemaName, MySqlInsertStatement statement) {
+    public Map<Partition, List<SQLInsertStatement.ValuesClause>> getInsertInfoValuesClause(String currentSchemaName, MySqlInsertStatement statement) {
         String s = statement.getTableSource().getSchema();
         String schema = SQLUtils.normalize(s == null ? currentSchemaName : s);
         String tableName = SQLUtils.normalize(statement.getTableSource().getTableName());
@@ -824,9 +824,9 @@ public class MetadataManager implements MysqlVariableService {
         return getBackendTableInfoListMap(simpleColumnInfos, (ShardingTableHandler) logicTable, outValuesList);
     }
 
-    public Map<DataNode, List<SQLInsertStatement.ValuesClause>> getBackendTableInfoListMap(List<SimpleColumnInfo> columns, ShardingTableHandler logicTable, Iterable<SQLInsertStatement.ValuesClause> valuesList) {
+    public Map<Partition, List<SQLInsertStatement.ValuesClause>> getBackendTableInfoListMap(List<SimpleColumnInfo> columns, ShardingTableHandler logicTable, Iterable<SQLInsertStatement.ValuesClause> valuesList) {
         int index;
-        HashMap<DataNode, List<SQLInsertStatement.ValuesClause>> res = new HashMap<>(1);
+        HashMap<Partition, List<SQLInsertStatement.ValuesClause>> res = new HashMap<>(1);
         for (SQLInsertStatement.ValuesClause valuesClause : valuesList) {
             DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
             index = 0;
@@ -839,11 +839,11 @@ public class MetadataManager implements MysqlVariableService {
 
                 index++;
             }
-            List<DataNode> calculate = logicTable.function().calculate(dataMappingEvaluator.getColumnMap());
+            List<Partition> calculate = logicTable.function().calculate(dataMappingEvaluator.getColumnMap());
             if (calculate.size() != 1) {
                 throw new UnsupportedOperationException("插入语句多于1个目标:" + valuesList);
             }
-            DataNode endTableInfo = calculate.get(0);
+            Partition endTableInfo = calculate.get(0);
             List<SQLInsertStatement.ValuesClause> valuesGroup = res.computeIfAbsent(endTableInfo, backEndTableInfo -> new ArrayList<>(1));
             valuesGroup.add(valuesClause);
         }
@@ -857,7 +857,7 @@ public class MetadataManager implements MysqlVariableService {
         sqlStatement.accept(conditionCollector);
         Rrs rrs = assignment(conditionCollector.getRootQueryDataRange(), currentSchema);
         Map<String, List<String>> sqls = new HashMap<>();
-        for (DataNode endTableInfo : rrs.getBackEndTableInfos()) {
+        for (Partition endTableInfo : rrs.getBackEndTableInfos()) {
             SQLExprTableSource table = rrs.getTable();
             table.setExpr(new SQLPropertyExpr(endTableInfo.getSchema(), endTableInfo.getTable()));
             List<String> list = sqls.computeIfAbsent(endTableInfo.getTargetName(), s -> new ArrayList<>());
@@ -893,7 +893,7 @@ public class MetadataManager implements MysqlVariableService {
         for (ColumnRangeValue columnRangeValue : rangeValues1) {
             dataMappingEvaluator.assignmentRange(columnRangeValue.getColumn().computeAlias(), Objects.toString(columnRangeValue.getBegin()), Objects.toString(columnRangeValue.getEnd()));
         }
-        List<DataNode> calculate = logicTable.function().calculate(dataMappingEvaluator.getColumnMap());
+        List<Partition> calculate = logicTable.function().calculate(dataMappingEvaluator.getColumnMap());
         return new Rrs(calculate, table);
     }
 
@@ -952,10 +952,10 @@ public class MetadataManager implements MysqlVariableService {
                         if (tableHandler.getType() == LogicTableType.NORMAL
                                 ||
                                 tableHandler.getType() == LogicTableType.GLOBAL) {
-                            DataNode dataNode = null;
+                            Partition partition = null;
                             if (tableHandler.getType() == LogicTableType.NORMAL) {
                                 NormalTable tableHandler1 = (NormalTable) tableHandler;
-                                dataNode = tableHandler1.getDataNode();
+                                partition = tableHandler1.getDataNode();
                             } else if (tableHandler.getType() == LogicTableType.GLOBAL) {
                                 GlobalTable tableHandler1 = (GlobalTable) tableHandler;
                                 int size = tableHandler1.getGlobalDataNode().size();
@@ -963,13 +963,13 @@ public class MetadataManager implements MysqlVariableService {
                                     throw new IllegalArgumentException("datanodes of global table is empty");
                                 }
                                 int i = ThreadLocalRandom.current().nextInt(0, size);
-                                dataNode = tableHandler1.getGlobalDataNode().get(i);
+                                partition = tableHandler1.getGlobalDataNode().get(i);
                             } else {
                                 throw new IllegalArgumentException("unsupported table type:" + tableHandler.getType());
                             }
                             tables.put(tableHandler.getTableName(),
-                                    new SimpleRoute(tableName.getKey(), tableName.getValue(), dataNode.getTargetName()));
-                            if (targets.add(dataNode.getTargetName())) {
+                                    new SimpleRoute(tableName.getKey(), tableName.getValue(), partition.getTargetName()));
+                            if (targets.add(partition.getTargetName())) {
                                 if (targets.size() > 1) {
                                     return false;
                                 }
@@ -992,15 +992,15 @@ public class MetadataManager implements MysqlVariableService {
 
 
     public static class Rrs {
-        Collection<DataNode> backEndTableInfos;
+        Collection<Partition> backEndTableInfos;
         SQLExprTableSource table;
 
-        public Rrs(Collection<DataNode> backEndTableInfos, SQLExprTableSource table) {
+        public Rrs(Collection<Partition> backEndTableInfos, SQLExprTableSource table) {
             this.backEndTableInfos = backEndTableInfos;
             this.table = table;
         }
 
-        public Collection<DataNode> getBackEndTableInfos() {
+        public Collection<Partition> getBackEndTableInfos() {
             return backEndTableInfos;
         }
 

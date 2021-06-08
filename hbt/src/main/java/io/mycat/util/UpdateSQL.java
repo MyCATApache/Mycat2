@@ -27,7 +27,7 @@ import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateSetItem;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.druid.sql.visitor.SQLASTVisitorAdapter;
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.TableHandler;
 import lombok.Getter;
@@ -57,8 +57,8 @@ public class UpdateSQL<T extends SQLUpdateStatement> extends SQL<T> {
      */
     private final List<OrGroup> whereColumnList = new ArrayList<>();
 
-    public UpdateSQL(String parameterizedSql, DataNode dataNode,T statement,T originStatement, List<Object> parameters) {
-        super(parameterizedSql, dataNode, statement, parameters);
+    public UpdateSQL(String parameterizedSql, Partition partition, T statement, T originStatement, List<Object> parameters) {
+        super(parameterizedSql, partition, statement, parameters);
         this.tableSource = (SQLExprTableSource) statement.getTableSource();
         /**
          * 1. 给语法树的节点，绑定上列和值

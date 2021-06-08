@@ -20,7 +20,6 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStateme
 import io.mycat.ConfigOps;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataManager;
-import io.vertx.core.Future;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -138,7 +137,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
 
         NormalTableConfig normalTableConfig = new NormalTableConfig();
         normalTableConfig.setCreateTableSQL(sqlString.toString());
-        normalTableConfig.setDataNode(NormalBackEndTableInfoConfig.builder()
+        normalTableConfig.setLocality(NormalBackEndTableInfoConfig.builder()
                 .targetName(targetName)
                 .schemaName(schemaName)
                 .tableName(tableName)
@@ -212,7 +211,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
         List<String> allReplica = clusters.stream().map(i -> i.getName()).filter(i -> i.startsWith("c")).collect(Collectors.toList());
         GlobalTableConfig globalTableConfig = new GlobalTableConfig();
         globalTableConfig.setCreateTableSQL(sqlString.toString());
-        globalTableConfig.setDataNodes(allReplica.stream()
+        globalTableConfig.setBroadcast(allReplica.stream()
                 .map(i -> {
                     GlobalBackEndTableInfoConfig backEndTableInfoConfig = new GlobalBackEndTableInfoConfig();
                     backEndTableInfoConfig.setTargetName(i);
@@ -248,7 +247,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
         ShardingTableConfig config = builder
                 .createTableSQL(tableStatement.toString())
                 .function(ShardingFuntion.builder().name(name).clazz(aClass).properties((Map) properties).ranges((Map) ranges).build())
-                .dataNode(Optional.ofNullable(dataNodes).map(i -> ShardingBackEndTableInfoConfig
+                .partition(Optional.ofNullable(dataNodes).map(i -> ShardingBackEndTableInfoConfig
                         .builder()
                         .schemaNames(dataNodes.get("schemaNames"))
                         .tableNames(dataNodes.get("tableNames"))

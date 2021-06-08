@@ -55,8 +55,8 @@ public class PredicateAnalyzerTest {
         List<String> columnList = Arrays.asList("id");
         PredicateAnalyzer predicateAnalyzer2 = new PredicateAnalyzer(
                 Collections.singletonList(KeyMeta.of("default", "id")), columnList);
-        List<DataNode> dataNodes = getObject(table.getShardingFuntion(), predicateAnalyzer2.translateMatch (rexNode), Arrays.asList(1));
-        Assert.assertEquals(new ArrayList<>(Arrays.asList(new IndexDataNode ("c0", "db1_0", "sharding_1",1,0,1))).toString(), dataNodes.toString());
+        List<Partition> partitions = getObject(table.getShardingFuntion(), predicateAnalyzer2.translateMatch (rexNode), Arrays.asList(1));
+        Assert.assertEquals(new ArrayList<>(Arrays.asList(new IndexDataNode ("c0", "db1_0", "sharding_1",1,0,1))).toString(), partitions.toString());
     }
 
     @Test
@@ -73,8 +73,8 @@ public class PredicateAnalyzerTest {
                 Arrays.asList(KeyMeta.of("default", "id")),
                 columnList
         );
-        List<DataNode> dataNodes = getObject(table.getShardingFuntion(), predicateAnalyzer2.translateMatch (rexNode), Arrays.asList(0));
-        Assert.assertEquals(1, dataNodes.size());
+        List<Partition> partitions = getObject(table.getShardingFuntion(), predicateAnalyzer2.translateMatch (rexNode), Arrays.asList(0));
+        Assert.assertEquals(1, partitions.size());
     }
 
     @Test

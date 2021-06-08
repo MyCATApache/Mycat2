@@ -47,7 +47,7 @@ public class DrdsSqlWithParams extends DrdsSql {
         return aliasList;
     }
 
-    public Optional<List<Map<String, DataNode>>> getHintDataMapping() {
+    public Optional<List<Map<String, Partition>>> getHintDataMapping() {
         for (MycatHint hint : this.getHints()) {
             for (MycatHint.Function hintFunction : hint.getFunctions()) {
                 if ("SCAN".equalsIgnoreCase(hintFunction.getName())) {
@@ -65,8 +65,8 @@ public class DrdsSqlWithParams extends DrdsSql {
                     Detector detector = new Detector();
                     parameterizedStatement.accept(detector);
                     if (!detector.isSharding) {
-                        Collection<DataNode> dataNodes = Collections.emptyList();
-                        Collection<DataNode> newDataNodes = Collections.emptyList();
+                        Collection<Partition> partitions = Collections.emptyList();
+                        Collection<Partition> newPartitions = Collections.emptyList();
                         if (!logicalTables.isEmpty()) {
                             if (!condition.isEmpty()) {
                                 String sql = "select * from " + logicalTables.get(0) + "where " + condition;
@@ -74,33 +74,33 @@ public class DrdsSqlWithParams extends DrdsSql {
                                 DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sql, null);
                                 MycatView mycatView = (MycatView) queryPlanner.innerComputeMinCostCodeExecuterContext(drdsSqlWithParams).getMycatRel();
                                 MycatViewDataNodeMapping mycatViewDataNodeMapping = mycatView.getMycatViewDataNodeMapping();
-                                List<Map<String, DataNode>> list = mycatViewDataNodeMapping.apply(drdsSqlWithParams.getParams()).collect(Collectors.toList());
-                                newDataNodes = dataNodes = list.get(0).values();
+                                List<Map<String, Partition>> list = mycatViewDataNodeMapping.apply(drdsSqlWithParams.getParams()).collect(Collectors.toList());
+                                newPartitions = partitions = list.get(0).values();
                             } else if (!physicalTables.isEmpty()) {
-                                newDataNodes = physicalTables.get(0).stream().map(dataNodeParser()).collect(Collectors.toList());
+                                newPartitions = physicalTables.get(0).stream().map(dataNodeParser()).collect(Collectors.toList());
                             }
                             if (!targets.isEmpty()) {
-                                newDataNodes = dataNodes.stream().filter(dataNode -> {
+                                newPartitions = partitions.stream().filter(dataNode -> {
                                     return targets.contains(dataNode.getTargetName());
                                 }).collect(Collectors.toList());
                             }
-                            Collection<DataNode> finalNewDataNodes = newDataNodes;
+                            Collection<Partition> finalNewPartitions = newPartitions;
                             String uniqueName = detector.tableHandlerMap.values().iterator().next().getUniqueName();
-                            List<Map<String, DataNode>> res = new ArrayList<>(newDataNodes.size());
-                            for (DataNode finalNewDataNode : finalNewDataNodes) {
-                                res.add(ImmutableMap.of(uniqueName, finalNewDataNode));
+                            List<Map<String, Partition>> res = new ArrayList<>(newPartitions.size());
+                            for (Partition finalNewPartition : finalNewPartitions) {
+                                res.add(ImmutableMap.of(uniqueName, finalNewPartition));
                             }
                             return Optional.of(res);
                         }
                     } else {
-                        Map<String, List<DataNode>> logicalPhysicalMap = new HashMap<>();
+                        Map<String, List<Partition>> logicalPhysicalMap = new HashMap<>();
                         int physicalTableCount = 0;
                         if (!physicalTables.isEmpty()) {
                             int size = logicalTables.size();
 
                             for (int i = 0; i < size; i++) {
                                 String alias = logicalTables.get(i);
-                                List<DataNode> phyTableList = physicalTables.get(i).stream().map(dataNodeParser()).collect(Collectors.toList());
+                                List<Partition> phyTableList = physicalTables.get(i).stream().map(dataNodeParser()).collect(Collectors.toList());
                                 physicalTableCount += phyTableList.size();
                                 logicalPhysicalMap.put(alias, phyTableList);
                             }

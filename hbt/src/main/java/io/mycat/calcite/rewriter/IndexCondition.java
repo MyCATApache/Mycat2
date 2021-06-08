@@ -1,6 +1,6 @@
 package io.mycat.calcite.rewriter;
 
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.RangeVariable;
 import io.mycat.RangeVariableType;
 import io.mycat.querycondition.ComparisonOperator;
@@ -11,13 +11,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
 import org.apache.calcite.rex.RexDynamicParam;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -128,7 +126,7 @@ public class IndexCondition implements Comparable<IndexCondition>, Serializable 
     }
 
     @NotNull
-    public static List<DataNode> getObject(CustomRuleFunction customRuleFunction, IndexCondition condition, List<Object> params) {
+    public static List<Partition> getObject(CustomRuleFunction customRuleFunction, IndexCondition condition, List<Object> params) {
         if (condition == null) {
             return customRuleFunction.calculate(Collections.emptyMap());
         }

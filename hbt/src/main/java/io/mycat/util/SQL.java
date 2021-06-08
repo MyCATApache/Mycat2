@@ -19,7 +19,7 @@ package io.mycat.util;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLInsertInto;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataManager;
 import io.mycat.TableHandler;
@@ -52,29 +52,29 @@ import static java.sql.Statement.RETURN_GENERATED_KEYS;
 @AllArgsConstructor
 public class SQL<T extends SQLStatement> {
     private String parameterizedSql;
-    private DataNode dataNode;
+    private Partition partition;
     private T statement;
     private List<Object> parameters;
 
     public String getTarget() {
-        return dataNode.getTargetName();
+        return partition.getTargetName();
     }
 
     public static <T extends SQLStatement> SQL<T> of(String parameterizedSql,
-        DataNode dataNode, T statement, T originStatement,  List<Object> parameters){
+                                                     Partition partition, T statement, T originStatement, List<Object> parameters){
         SQL sql;
         if(statement instanceof SQLUpdateStatement){
-            sql = new UpdateSQL<>(parameterizedSql,dataNode,(SQLUpdateStatement)statement, (SQLUpdateStatement)originStatement,parameters);
+            sql = new UpdateSQL<>(parameterizedSql, partition,(SQLUpdateStatement)statement, (SQLUpdateStatement)originStatement,parameters);
         }else {
-            sql = new SQL<>(parameterizedSql,dataNode,statement,parameters);
+            sql = new SQL<>(parameterizedSql, partition,statement,parameters);
         }
         return sql;
     }
 
     public static <T extends SQLStatement> SQL<T> of(String parameterizedSql,
-                                                     DataNode dataNode, T statement, List<Object> parameters){
+                                                     Partition partition, T statement, List<Object> parameters){
         SQL sql;
-            sql = new SQL<>(parameterizedSql,dataNode,statement,parameters);
+            sql = new SQL<>(parameterizedSql, partition,statement,parameters);
         return sql;
     }
 
@@ -135,7 +135,7 @@ public class SQL<T extends SQLStatement> {
     }
 
     public TableHandler getTable(){
-        TableHandler table = getMetadataManager().getTable(dataNode.getSchema(), dataNode.getTable());
+        TableHandler table = getMetadataManager().getTable(partition.getSchema(), partition.getTable());
         return table;
     }
 

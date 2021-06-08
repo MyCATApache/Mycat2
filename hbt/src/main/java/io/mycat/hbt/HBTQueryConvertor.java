@@ -21,7 +21,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQueryBlock;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.google.common.collect.ImmutableList;
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.calcite.MycatCalciteSupport;
@@ -208,7 +208,7 @@ public class HBTQueryConvertor {
         relBuilder.clear();
         MycatLogicTable mycatTable = table.unwrap(MycatLogicTable.class);
         Distribution distribution = mycatTable.createDistribution();
-        Iterable<DataNode> dataNodes = distribution.getDataNodes().flatMap(i->i.values().stream()).collect(Collectors.toList());
+        Iterable<Partition> dataNodes = distribution.getDataNodes().flatMap(i->i.values().stream()).collect(Collectors.toList());
         return build.copy(build.getTraitSet(), ImmutableList.of(toPhyTable(mycatTable, dataNodes)));
     }
 
@@ -447,22 +447,22 @@ public class HBTQueryConvertor {
         //消除逻辑表,变成物理表
         if (mycatLogicTable != null) {
             relBuilder.clear();
-            Stream<Map<String, DataNode>> dataNodes = mycatLogicTable.createDistribution().getDataNodes();
+            Stream<Map<String, Partition>> dataNodes = mycatLogicTable.createDistribution().getDataNodes();
             return toPhyTable(mycatLogicTable, dataNodes.flatMap(i->i.values().stream()).collect(Collectors.toList()));
         }
 
         return build;
     }
 
-    private RelNode toPhyTable(MycatLogicTable unwrap, Iterable<DataNode> dataNodes) {
+    private RelNode toPhyTable(MycatLogicTable unwrap, Iterable<Partition> dataNodes) {
         int count = 0;
-        for (DataNode dataNode : dataNodes) {
-            MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(unwrap, dataNode);
+        for (Partition partition : dataNodes) {
+            MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(unwrap, partition);
             LogicalTableScan tableScan = LogicalTableScan.create(relBuilder.getCluster(),
                     RelOptTableImpl.create(relBuilder.getRelOptSchema(),
                             unwrap.getRowType(),
                             mycatPhysicalTable,
-                            ImmutableList.of(dataNode.getSchema(), dataNode.getTable())),
+                            ImmutableList.of(partition.getSchema(), partition.getTable())),
                     ImmutableList.of()
             );
             count++;

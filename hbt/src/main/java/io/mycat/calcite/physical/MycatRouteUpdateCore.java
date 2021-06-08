@@ -2,7 +2,7 @@ package io.mycat.calcite.physical;
 
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataManager;
 import io.mycat.TableHandler;
@@ -45,8 +45,8 @@ public class MycatRouteUpdateCore implements Serializable {
     }
 
     @Nullable
-    private List<DataNode> getDataNodes(TableHandler table) {
-        List<DataNode> backends = null;
+    private List<Partition> getDataNodes(TableHandler table) {
+        List<Partition> backends = null;
         switch (table.getType()) {
             case SHARDING:
                 backends = ((ShardingTableHandler) table).dataNodes();
@@ -77,8 +77,8 @@ public class MycatRouteUpdateCore implements Serializable {
         TableHandler table = MetaClusterCurrent.wrapper(MetadataManager.class).getTable(schemaName, tableName);
         pw.item("sql", sqlStatement + "\n");
         int index = 0;
-        for (DataNode dataNode : getDataNodes(table)) {
-            pw.item("dataNodes$" + index, dataNode + "\n");
+        for (Partition partition : getDataNodes(table)) {
+            pw.item("dataNodes$" + index, partition + "\n");
         }
         return pw;
     }

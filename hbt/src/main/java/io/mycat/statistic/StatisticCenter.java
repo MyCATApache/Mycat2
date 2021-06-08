@@ -20,14 +20,13 @@ import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.builder.SQLBuilderFactory;
 import com.alibaba.druid.sql.builder.SQLSelectBuilder;
 import com.alibaba.druid.util.JdbcUtils;
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.calcite.table.GlobalTable;
-import io.mycat.MetadataManager;
 import io.mycat.calcite.table.ShardingTable;
 import io.mycat.TableHandler;
 import io.mycat.replica.ReplicaSelectorManager;
@@ -116,15 +115,15 @@ public class StatisticCenter {
     }
 
     private Double computeNormalTableRowCount(NormalTable normalTable) {
-        DataNode dataNode = normalTable.getDataNode();
-        String targetName = dataNode.getTargetName();
-        String sql = makeCountSql(dataNode);
+        Partition partition = normalTable.getDataNode();
+        String targetName = partition.getTargetName();
+        String sql = makeCountSql(partition);
         return fetchRowCount(targetName, sql);
     }
 
     private Double computeShardingTableRowCount(ShardingTable shardingTable) {
         Double sum = 0d;
-        for (DataNode backendTableInfo : shardingTable.getBackends()) {
+        for (Partition backendTableInfo : shardingTable.getBackends()) {
             String targetName = backendTableInfo.getTargetName();
             String sql = makeCountSql(backendTableInfo);
             Double onePhyRowCount = fetchRowCount(targetName, sql);
@@ -138,7 +137,7 @@ public class StatisticCenter {
     }
 
     private Double computeGlobalRowCount(GlobalTable globalTable) {
-        DataNode backendTableInfo = globalTable.getGlobalDataNode().iterator().next();
+        Partition backendTableInfo = globalTable.getGlobalDataNode().iterator().next();
         String targetName = backendTableInfo.getTargetName();
         String sql = makeCountSql(backendTableInfo);
         return fetchRowCount(targetName, sql);
@@ -167,7 +166,7 @@ public class StatisticCenter {
         LOGGER.info("行统计更新  tableName:" + key1 + " " + res);
     }
 
-    private String makeCountSql(DataNode schemaInfo) {
+    private String makeCountSql(Partition schemaInfo) {
         SQLSelectBuilder selectSQLBuilder = SQLBuilderFactory.createSelectSQLBuilder(DbType.mysql);
         return selectSQLBuilder.from(schemaInfo.getTargetSchemaTable()).select("count(1)").toString();
     }

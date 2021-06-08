@@ -14,7 +14,7 @@
  */
 package io.mycat.router;
 
-import io.mycat.DataNode;
+import io.mycat.Partition;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.TableHandler;
 
@@ -25,7 +25,7 @@ public interface ShardingTableHandler extends TableHandler {
 
     CustomRuleFunction function();
 
-    List<DataNode> dataNodes();
+    List<Partition> dataNodes();
 
     @Override
     List<SimpleColumnInfo> getColumns();
