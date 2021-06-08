@@ -324,7 +324,7 @@ public class SqlFunctionTest implements MycatTest {
                 "  PRIMARY KEY (`id`),\n" +
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
+                + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
         execute(mycatConnection, "CREATE TABLE `company` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))");
         execute(mysql3306, "CREATE TABLE if not exists db1.`travelrecord` (\n" +
                 "  `id` bigint NOT NULL AUTO_INCREMENT\n," +

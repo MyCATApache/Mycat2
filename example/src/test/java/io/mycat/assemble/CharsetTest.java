@@ -68,7 +68,7 @@ public class CharsetTest implements MycatTest {
                     "  PRIMARY KEY (`id`),\n" +
                     "  KEY `id` (`id`)\n" +
                     ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                    + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
+                    + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
 
             deleteData(mycatConnection, "db1", "travelrecord");
             Assert.assertTrue(!hasData(mycatConnection, "db1", "travelrecord"));

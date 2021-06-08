@@ -65,7 +65,7 @@ public class DropTableTest implements MycatTest {
             execute(mycatConnection, "CREATE DATABASE db1");
             execute(mycatConnection, "CREATE TABLE db1.`travelrecord2` (\n" +
                     "  `id` bigint(20) NOT NULL KEY " +
-                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;\n");
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;\n");
             execute(mycatConnection, "drop  TABLE db1.`travelrecord2`");
             Assert.assertFalse(existTable(mycatConnection, "db1", "travelrecord2"));
         }

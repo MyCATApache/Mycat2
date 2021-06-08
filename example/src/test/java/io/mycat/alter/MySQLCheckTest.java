@@ -114,13 +114,13 @@ public class MySQLCheckTest implements MycatTest {
             execute(mycatConnection, "CREATE DATABASE db1");
             execute(mycatConnection, "CREATE TABLE db1.`travelrecord2` (\n" +
                     "  `id` bigint(20) NOT NULL KEY " +
-                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;\n");
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;\n");
 
             List<Map<String, Object>> maps = executeQuery(mycatConnection, "  CHECK TABLE  db1.travelrecord2;");
             Assert.assertFalse(maps.isEmpty());
             Assert.assertFalse(maps.toString().toLowerCase().contains("error"));
             JdbcUtils.execute(db2,
-                    "ALTER TABLE db1_1.`travelrecord2_1`\n MODIFY COLUMN id varchar(30);");
+                    "ALTER TABLE db1_1.`travelrecord2_3`\n MODIFY COLUMN id varchar(30);");
             maps = executeQuery(mycatConnection, "  CHECK TABLE  db1.travelrecord2;");
             Assert.assertFalse(maps.isEmpty());
             Assert.assertTrue(maps.toString().toLowerCase().contains("error"));

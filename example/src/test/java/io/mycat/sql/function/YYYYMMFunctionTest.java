@@ -71,7 +71,7 @@ public class YYYYMMFunctionTest extends AutoFunctionFactoryTest{
                 "  PRIMARY KEY (`id`),\n" +
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                + " dbpartition by HASH(id) tbpartition by YYYYMM(traveldate) tbpartitions 3 dbpartitions 24;");
+                + " dbpartition by mod_hash(id) tbpartition by YYYYMM(traveldate) tbpartitions 3 dbpartitions 24;");
         mainSharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
                 "\t\t\t\t\t\"dbNum\":\"24\",\n" +
                 "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${tableIndex}\",\n" +

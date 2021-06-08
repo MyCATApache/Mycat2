@@ -474,7 +474,7 @@ public class MetadataManager implements MysqlVariableService {
                             String.join("/", "c${targetIndex}",
                                     schemaName + "_${dbIndex}",
                                     orignalTableName + "_${tableIndex}"));
-                    properties.put("mappingFormat", mappingFormat);
+//                    properties.put("mappingFormat", mappingFormat);
                 }
             }
         }

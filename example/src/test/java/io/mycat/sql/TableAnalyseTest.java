@@ -58,7 +58,7 @@ public class TableAnalyseTest implements MycatTest {
                     "  PRIMARY KEY (`id`),\n" +
                     "  KEY `id` (`id`)\n" +
                     ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                    + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
+                    + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
             execute(mycatConnection, "CREATE TABLE db1.`travelrecord2` (\n" +
                     "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
                     "  `user_id` varchar(100) DEFAULT NULL,\n" +
@@ -69,7 +69,7 @@ public class TableAnalyseTest implements MycatTest {
                     "  PRIMARY KEY (`id`),\n" +
                     "  KEY `id` (`id`)\n" +
                     ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                    + " dbpartition by hash(user_id) tbpartition by hash(user_id) tbpartitions 2 dbpartitions 2;");
+                    + " dbpartition by mod_hash(user_id) tbpartition by mod_hash(user_id) tbpartitions 2 dbpartitions 2;");
 
             List<Map<String, Object>> maps = JdbcUtils.executeQuery(mycatConnection, "/*+ mycat:showErGroup{}*/", Collections.emptyList());
             Assert.assertEquals(2,maps.size() );

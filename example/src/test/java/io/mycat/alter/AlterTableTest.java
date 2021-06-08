@@ -168,7 +168,7 @@ public class AlterTableTest implements MycatTest {
             execute(mycatConnection, "CREATE DATABASE db1");
             execute(mycatConnection, "CREATE TABLE db1.`travelrecord2` (\n" +
                     "  `id` bigint(20) NOT NULL KEY " +
-                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;\n");
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;\n");
 
             Assert.assertEquals(1,
                     getColumns(mycatConnection, "db1", "travelrecord2")
@@ -190,7 +190,7 @@ public class AlterTableTest implements MycatTest {
                     "ALTER TABLE db1.`travelrecord2`\n DROP INDEX `iuser_id_idx_new`;");
 
             Assert.assertEquals(2,
-                    getColumns(db2, "db1_1", "travelrecord2_0")
+                    getColumns(db2, "db1_1", "travelrecord2_3")
                             .getColumnCount());
 
             JdbcUtils.execute(mycatConnection,

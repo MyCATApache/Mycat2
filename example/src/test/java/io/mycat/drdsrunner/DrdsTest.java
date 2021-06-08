@@ -97,7 +97,7 @@ public abstract class DrdsTest implements MycatTest {
                         "  PRIMARY KEY (`id`),\n" +
                         "  KEY `id` (`id`)\n" +
                         ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                        + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
+                        + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
                 mainSharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
                         "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                         "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${tableIndex}\",\n" +
@@ -119,7 +119,7 @@ public abstract class DrdsTest implements MycatTest {
                         "  PRIMARY KEY (`id`),\n" +
                         "  KEY `id` (`id`)\n" +
                         ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                        + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
+                        + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
                 er.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
                         "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                         "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/er_${tableIndex}\",\n" +
@@ -141,7 +141,7 @@ public abstract class DrdsTest implements MycatTest {
                         "  PRIMARY KEY (`id`),\n" +
                         "  KEY `id` (`id`)\n" +
                         ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                        + " dbpartition by mod_hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
+                        + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
                 other_sharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
                         "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                         "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/other_sharding_${tableIndex}\",\n" +

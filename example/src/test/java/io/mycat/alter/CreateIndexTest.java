@@ -112,14 +112,14 @@ public class CreateIndexTest implements MycatTest {
             execute(mycatConnection, "CREATE DATABASE db1");
             execute(mycatConnection, "CREATE TABLE db1.`travelrecord2` (\n" +
                     "  `id` bigint(20) NOT NULL KEY " +
-                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;\n");
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;\n");
 
             execute(mycatConnection,"CREATE INDEX testIdx ON db1.`travelrecord2` (id);");
             Assert.assertFalse(executeQuery(mycatConnection, " show index from db1.travelrecord2;").isEmpty());
-            Assert.assertTrue(executeQuery(db2, " show index from db1_1.travelrecord2_1;").toString().contains("testIdx"));
+            Assert.assertTrue(executeQuery(db2, " show index from db1_1.travelrecord2_3;").toString().contains("testIdx"));
 
             execute(mycatConnection,"DROP INDEX testIdx ON db1.`travelrecord2`;");
-            Assert.assertFalse(executeQuery(db2, " show index from db1_1.travelrecord2_1;").toString().contains("testIdx"));
+            Assert.assertFalse(executeQuery(db2, " show index from db1_1.travelrecord2_3;").toString().contains("testIdx"));
 
         }
     }

@@ -54,4 +54,8 @@ public class ShowDataNodeHint extends HintBuilder {
     public void setTableName(String tableName) {
         this.tableName = tableName;
     }
+
+    public static void main(String[] args) {
+        System.out.println(ShowDataNodeHint.create("db1","travelrecord"));
+    }
 }

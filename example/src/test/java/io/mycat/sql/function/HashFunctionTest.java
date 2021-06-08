@@ -39,7 +39,7 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
                 "  PRIMARY KEY (`id`),\n" +
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 4;");
+                + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 4;");
         mainSharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
                 "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                 "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${tableIndex}\",\n" +
@@ -76,7 +76,7 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
                 "  PRIMARY KEY (`id`),\n" +
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 4;");
+                + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 4;");
         mainSharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
                 "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                 "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${index}\",\n" +
@@ -111,7 +111,7 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
                 "  PRIMARY KEY (`id`),\n" +
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                + " dbpartition by hash(id);");
+                + " dbpartition by mod_hash(id);");
         mainSharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
                 "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                 "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${tableIndex}\",\n" +
@@ -140,7 +140,7 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
                 "  PRIMARY KEY (`id`),\n" +
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                + " tbpartition by hash(id) tbpartitions 2;");
+                + " tbpartition by mod_hash(id) tbpartitions 2;");
         mainSharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
                 "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${tableIndex}\",\n" +
                 "\t\t\t\t\t\"tableNum\":\"2\",\n" +
@@ -169,7 +169,7 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
                 "  PRIMARY KEY (`id`),\n" +
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                + " dbpartition by hash(id) tbpartition by hash(user_id) tbpartitions 2 dbpartitions 4;");
+                + " dbpartition by mod_hash(id) tbpartition by mod_hash(user_id) tbpartitions 2 dbpartitions 4;");
         mainSharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
                 "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                 "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${tableIndex}\",\n" +

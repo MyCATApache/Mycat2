@@ -64,7 +64,7 @@ public class AssembleTest implements MycatTest {
                     "  PRIMARY KEY (`id`),\n" +
                     "  KEY `id` (`id`)\n" +
                     ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                    + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
+                    + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
             execute(mycatConnection, "use db1");
             deleteData(mycatConnection, "db1", "travelrecord");
             mycatConnection.setAutoCommit(false);
@@ -243,7 +243,7 @@ public class AssembleTest implements MycatTest {
                     "  PRIMARY KEY (`id`),\n" +
                     "  KEY `id` (`id`)\n" +
                     ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                    + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
+                    + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
 
             Assert.assertTrue(existTable(mycatConnection, "db1", "travelrecord"));
             execute(mycatConnection, "delete from db1.travelrecord");
@@ -378,7 +378,7 @@ public class AssembleTest implements MycatTest {
                 "  PRIMARY KEY (`id`),\n" +
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
+                + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
 
         deleteData(mycatConnection, "db1", "travelrecord");
         mycatConnection.setAutoCommit(false);
@@ -475,7 +475,7 @@ public class AssembleTest implements MycatTest {
                     "  PRIMARY KEY (`id`),\n" +
                     "  KEY `id` (`id`)\n" +
                     ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                    + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
+                    + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
             deleteData(mycatConnection, "db1", "test_timezone");
             Assert.assertTrue(!hasData(mycatConnection, "db1", "test_timezone"));
             LocalDate localDate = LocalDate.now();
@@ -487,7 +487,7 @@ public class AssembleTest implements MycatTest {
                 preparedStatement.executeUpdate();
             }
             List<Map<String, Object>> mycat_result = executeQuery(mycatConnection, "select * from db1.test_timezone");
-            List<Map<String, Object>> mysql_result = executeQuery(db1, "SELECT * FROM `db1_1`.`test_timezone_1` LIMIT 0, 1000; ");
+            List<Map<String, Object>> mysql_result = executeQuery(db1, "SELECT * FROM `db1_1`.`test_timezone_3` LIMIT 0, 1000; ");
             Assert.assertEquals(mysql_result, mycat_result);
         }
     }

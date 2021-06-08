@@ -68,7 +68,7 @@ public class AddSequenceTest implements MycatTest {
                     "  PRIMARY KEY (`id`),\n" +
                     "  KEY `id` (`id`)\n" +
                     ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                    + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
+                    + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
             execute(connection, "delete from  db1.travelrecord");
             execute(connection, "INSERT INTO `db1`.`travelrecord` (`user_id`) VALUES ('9999999999');");
             List<Map<String, Object>> maps1 = executeQuery(connection, "select LAST_INSERT_ID()");

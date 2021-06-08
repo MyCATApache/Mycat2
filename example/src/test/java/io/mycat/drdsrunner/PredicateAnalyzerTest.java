@@ -10,6 +10,7 @@ import io.mycat.querycondition.ComparisonOperator;
 import io.mycat.querycondition.KeyMeta;
 import io.mycat.querycondition.QueryType;
 import io.mycat.router.CustomRuleFunction;
+import io.mycat.router.function.IndexDataNode;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
@@ -55,7 +56,7 @@ public class PredicateAnalyzerTest {
         PredicateAnalyzer predicateAnalyzer2 = new PredicateAnalyzer(
                 Collections.singletonList(KeyMeta.of("default", "id")), columnList);
         List<DataNode> dataNodes = getObject(table.getShardingFuntion(), predicateAnalyzer2.translateMatch (rexNode), Arrays.asList(1));
-        Assert.assertEquals(new ArrayList<>(Arrays.asList(new BackendTableInfo("c0", "db1_0", "sharding_1"))).toString(), dataNodes.toString());
+        Assert.assertEquals(new ArrayList<>(Arrays.asList(new IndexDataNode ("c0", "db1_0", "sharding_1",1,0,1))).toString(), dataNodes.toString());
     }
 
     @Test
@@ -148,7 +149,7 @@ public class PredicateAnalyzerTest {
         }
 
         Object o = getObject(table.getShardingFuntion(), predicateAnalyzer2.translateMatch (rexNode), params);
-        Assert.assertEquals("[{targetName='c0', schemaName='db1_0',tableName='sharding_0'}, {targetName='c0', schemaName='db1_0',tableName='sharding_1'}, {targetName='c1', schemaName='db1_1',tableName='sharding_0'}, {targetName='c1', schemaName='db1_1',tableName='sharding_1'}]", Objects.toString(o));
+        Assert.assertEquals("[{targetName='c0', schemaName='db1_0', tableName='sharding_0', index=0, dbIndex=0, tableIndex=0}, {targetName='c0', schemaName='db1_0', tableName='sharding_1', index=1, dbIndex=0, tableIndex=1}, {targetName='c1', schemaName='db1_1', tableName='sharding_0', index=2, dbIndex=1, tableIndex=0}, {targetName='c1', schemaName='db1_1', tableName='sharding_1', index=3, dbIndex=1, tableIndex=1}]", Objects.toString(o));
     }
 
     @Test
@@ -173,7 +174,7 @@ public class PredicateAnalyzerTest {
         MetadataManager metadataManager =DrdsTest.getMetadataManager();
         ShardingTable table = (ShardingTable) metadataManager.getTable("db1", "sharding");
         Object o = getObject(table.getShardingFuntion(), predicateAnalyzer2.translateMatch (rexNode), Arrays.asList());
-        Assert.assertEquals("[{targetName='c0', schemaName='db1_0',tableName='sharding_0'}, {targetName='c0', schemaName='db1_0',tableName='sharding_1'}, {targetName='c1', schemaName='db1_1',tableName='sharding_0'}, {targetName='c1', schemaName='db1_1',tableName='sharding_1'}]", Objects.toString(o));
+        Assert.assertEquals("[{targetName='c0', schemaName='db1_0', tableName='sharding_0', index=0, dbIndex=0, tableIndex=0}, {targetName='c0', schemaName='db1_0', tableName='sharding_1', index=1, dbIndex=0, tableIndex=1}, {targetName='c1', schemaName='db1_1', tableName='sharding_0', index=2, dbIndex=1, tableIndex=0}, {targetName='c1', schemaName='db1_1', tableName='sharding_1', index=3, dbIndex=1, tableIndex=1}]", Objects.toString(o));
     }
 
     //
@@ -193,7 +194,7 @@ public class PredicateAnalyzerTest {
                 columnList
         );
         Object o = getObject(table.getShardingFuntion(), predicateAnalyzer2.translateMatch (rexNode), Arrays.asList());
-        Assert.assertEquals("[{targetName='c0', schemaName='db1_0',tableName='sharding_0'}, {targetName='c0', schemaName='db1_0',tableName='sharding_1'}, {targetName='c1', schemaName='db1_1',tableName='sharding_0'}, {targetName='c1', schemaName='db1_1',tableName='sharding_1'}]", Objects.toString(o));
+        Assert.assertEquals("[{targetName='c0', schemaName='db1_0', tableName='sharding_0', index=0, dbIndex=0, tableIndex=0}, {targetName='c0', schemaName='db1_0', tableName='sharding_1', index=1, dbIndex=0, tableIndex=1}, {targetName='c1', schemaName='db1_1', tableName='sharding_0', index=2, dbIndex=1, tableIndex=0}, {targetName='c1', schemaName='db1_1', tableName='sharding_1', index=3, dbIndex=1, tableIndex=1}]", Objects.toString(o));
 
     }
 
