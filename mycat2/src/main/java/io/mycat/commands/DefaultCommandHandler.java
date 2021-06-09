@@ -27,13 +27,10 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.*;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
-import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.command.AbstractCommandHandler;
-import io.mycat.config.UserConfig;
 import io.mycat.proxy.session.MySQLServerSession;
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +61,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                 LOGGER.debug("-----------------reveice--------------------");
                 LOGGER.debug(sql);
             }
-            Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+            IOExecutor vertx = MetaClusterCurrent.wrapper(IOExecutor.class);
             return vertx.executeBlocking(event -> {
                 Future<Void> promise =
                         MycatdbCommand.INSTANCE.executeQuery(sql, session.getDataContext(),
@@ -211,7 +208,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             LOGGER.debug("=> {}", statement);
         }
         ReceiverImpl receiver = new ReceiverImpl(session, 1, true);
-        Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+        IOExecutor vertx = MetaClusterCurrent.wrapper(IOExecutor.class);
         return vertx.executeBlocking(promise -> MycatdbCommand.execute(dataContext, receiver, statement).onComplete(promise));
     }
 

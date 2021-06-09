@@ -26,7 +26,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Action;
 import io.reactivex.rxjava3.functions.Consumer;
-import io.vertx.core.Future;
+import io.vertx.core.*;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.impl.future.PromiseInternal;
@@ -86,7 +86,7 @@ public class MycatVertxMySQLHandler {
         if (handleIng.compareAndSet(false, true)) {
             try {
                 Process process = Process.getCurrentProcess();
-                handle0(packetId, event, socket,process);
+                handle0(packetId, event, socket, process);
                 checkPendingMessages();
             } finally {
                 handleIng.set(false);
@@ -98,7 +98,7 @@ public class MycatVertxMySQLHandler {
         }
     }
 
-    private void checkPendingMessages(){
+    private void checkPendingMessages() {
         PendingMessage pendingMessage;
         while ((pendingMessage = pendingMessages.poll()) != null) {
             Process process = Process.getCurrentProcess();
@@ -106,7 +106,7 @@ public class MycatVertxMySQLHandler {
         }
     }
 
-    public void handle0(int packetId, Buffer event, NetSocket socket,Process process) {
+    public void handle0(int packetId, Buffer event, NetSocket socket, Process process) {
         session.setPacketId(packetId);
         ReadView readView = new ReadView(event);
         Future<?> promise;
@@ -127,7 +127,8 @@ public class MycatVertxMySQLHandler {
                     String sql = new String(readView.readEOFStringBytes(), StandardCharsets.UTF_8);
                     process.setQuery(sql);
                     process.setState(Process.State.INIT);
-                    promise = handleQuery(sql, this.session);
+                    IOExecutor vertx = MetaClusterCurrent.wrapper(IOExecutor.class);
+                    promise = vertx.executeBlocking((Handler<Promise<Void>>) event1 -> handleQuery(sql, session).onComplete(event1));
                     break;
                 }
                 case MySQLCommandType.COM_INIT_DB: {
@@ -178,7 +179,7 @@ public class MycatVertxMySQLHandler {
                     int[] params = null;
                     BindValue[] values = null;
 
-                    boolean newParameterBoundFlag =!readView.readFinished()&& readView.readByte() == 1;
+                    boolean newParameterBoundFlag = !readView.readFinished() && readView.readByte() == 1;
                     if (newParameterBoundFlag) {
                         params = new int[numParams];
                         for (int i = 0; i < numParams; i++) {
@@ -331,12 +332,12 @@ public class MycatVertxMySQLHandler {
                     break;
                 }
                 default: {
-                    promise = VertxUtil.newFailPromise(new MycatException(MycatErrorCode.ERR_NOT_SUPPORT,"无法识别的MYSQL数据包"));
+                    promise = VertxUtil.newFailPromise(new MycatException(MycatErrorCode.ERR_NOT_SUPPORT, "无法识别的MYSQL数据包"));
                     assert false;
                 }
             }
-            promise.onComplete(o->{
-                if(o.failed()){
+            promise.onComplete(o -> {
+                if (o.failed()) {
                     mycatDataContext.setLastMessage(o.cause());
                     this.session.writeErrorEndPacketBySyncInProcessError(0);
                 }
@@ -348,28 +349,28 @@ public class MycatVertxMySQLHandler {
         }
     }
 
-    private Disposable subscribe(Observable<AbstractWritePacket> observable){
+    private Disposable subscribe(Observable<AbstractWritePacket> observable) {
         Disposable disposable = observable.subscribe(
-        // 收到数据包
-        new Consumer<AbstractWritePacket>() {
-            @Override
-            public void accept(AbstractWritePacket packet) throws Throwable {
-                packet.run();
-            }
-        }, new Consumer<Throwable>() {
-        // 异常
-            @Override
-            public void accept(Throwable throwable) throws Throwable {
+                // 收到数据包
+                new Consumer<AbstractWritePacket>() {
+                    @Override
+                    public void accept(AbstractWritePacket packet) throws Throwable {
+                        packet.run();
+                    }
+                }, new Consumer<Throwable>() {
+                    // 异常
+                    @Override
+                    public void accept(Throwable throwable) throws Throwable {
 
-            }
-        }, new Action() {
-        // 完毕
-            @Override
-            public void run() throws Throwable {
-                // check if handle set handleIng gap
-                checkPendingMessages();
-            }
-        });
+                    }
+                }, new Action() {
+                    // 完毕
+                    @Override
+                    public void run() throws Throwable {
+                        // check if handle set handleIng gap
+                        checkPendingMessages();
+                    }
+                });
         return disposable;
     }
 
@@ -391,7 +392,7 @@ public class MycatVertxMySQLHandler {
         return preparedStatement.getBindValues();
     }
 
-    private  Future<Void>  handlePrepareStatementExecute(long statementId, byte flags, int[] params, BindValue[] values, MycatVertxMysqlSession MycatMysqlSession) throws Exception {
+    private Future<Void> handlePrepareStatementExecute(long statementId, byte flags, int[] params, BindValue[] values, MycatVertxMysqlSession MycatMysqlSession) throws Exception {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         io.mycat.PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
@@ -399,8 +400,9 @@ public class MycatVertxMySQLHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("preparestatement:{}", statement);
         }
-        Response receiver = new ReceiverImpl(session, 1,true);
-        return MycatdbCommand.execute(dataContext, receiver, statement);
+        Response receiver = new ReceiverImpl(session, 1, true);
+        IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
+        return ioExecutor.executeBlocking(event -> MycatdbCommand.execute(dataContext, receiver, statement).onComplete(event));
     }
 
     private byte[] getLongData(long statementId, int i, MycatVertxMysqlSession MycatMysqlSession) {
@@ -422,7 +424,7 @@ public class MycatVertxMySQLHandler {
         return preparedStatement.getParametersNumber();
     }
 
-    private  PromiseInternal<Void>  handlePrepareStatementReset(long statementId, MycatVertxMysqlSession MycatMysqlSession) {
+    private PromiseInternal<Void> handlePrepareStatementReset(long statementId, MycatVertxMysqlSession MycatMysqlSession) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         io.mycat.PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
@@ -432,11 +434,11 @@ public class MycatVertxMySQLHandler {
         return session.writeOkEndPacket();
     }
 
-    private  PromiseInternal<Void>  handlePrepareStatementFetch(long statementId, long row, MycatVertxMysqlSession MycatMysqlSession) {
+    private PromiseInternal<Void> handlePrepareStatementFetch(long statementId, long row, MycatVertxMysqlSession MycatMysqlSession) {
         return MycatMysqlSession.writeErrorEndPacketBySyncInProcessError();
     }
 
-    private PromiseInternal<Void>  handlePrepareStatementClose(long statementId, MycatVertxMysqlSession MycatMysqlSession) {
+    private PromiseInternal<Void> handlePrepareStatementClose(long statementId, MycatVertxMysqlSession MycatMysqlSession) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         longPreparedStatementMap.remove(statementId);
@@ -546,92 +548,92 @@ public class MycatVertxMySQLHandler {
     }
 
 
-    public Future<Void> handleQuery(String sql, MycatVertxMysqlSession session) throws Exception {
+    public Future<Void> handleQuery(String sql, MycatVertxMysqlSession session) {
         return MycatdbCommand.INSTANCE.executeQuery(sql, mycatDataContext, (size) ->
                 new ReceiverImpl(session, size, false));
     }
 
-    public PromiseInternal<Void>  handleSleep(MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleSleep(MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
     public PromiseInternal<Void> handleQuit(MycatVertxMysqlSession session) {
-       return session.close();
+        return session.close();
     }
 
-    public PromiseInternal<Void>  handleInitDb(String db, MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleInitDb(String db, MycatVertxMysqlSession session) {
         session.getDataContext().useShcema(db);
         return session.writeOk(false);
     }
 
-    public PromiseInternal<Void>  handlePing(MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handlePing(MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleFieldList(String table, String filedWildcard, MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleFieldList(String table, String filedWildcard, MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleSetOption(boolean on, MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleSetOption(boolean on, MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleCreateDb(String schemaName, MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleCreateDb(String schemaName, MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleDropDb(String schemaName, MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleDropDb(String schemaName, MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleRefresh(int subCommand, MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleRefresh(int subCommand, MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleShutdown(int shutdownType, MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleShutdown(int shutdownType, MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleStatistics(MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleStatistics(MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleProcessInfo(MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleProcessInfo(MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleConnect(MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleConnect(MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleProcessKill(long connectionId, MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleProcessKill(long connectionId, MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleDebug(MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleDebug(MycatVertxMysqlSession session) {
         return session.writeErrorEndPacketBySyncInProcessError();
     }
 
-    public PromiseInternal<Void>  handleTime(MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleTime(MycatVertxMysqlSession session) {
         return session.writeErrorEndPacketBySyncInProcessError();
     }
 
-    public PromiseInternal<Void>  handleChangeUser(String userName, String authResponse, String schemaName,
-                                 int charsetSet, String authPlugin, Map<String, String> clientConnectAttrs,
-                                 MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleChangeUser(String userName, String authResponse, String schemaName,
+                                                  int charsetSet, String authPlugin, Map<String, String> clientConnectAttrs,
+                                                  MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleDelayedInsert(MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleDelayedInsert(MycatVertxMysqlSession session) {
         return session.writeErrorEndPacketBySyncInProcessError();
     }
 
-    public PromiseInternal<Void>  handleResetConnection(MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleResetConnection(MycatVertxMysqlSession session) {
         session.resetSession();
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleDaemon(MycatVertxMysqlSession session) {
+    public PromiseInternal<Void> handleDaemon(MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 }

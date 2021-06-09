@@ -93,7 +93,7 @@ public class  SqlResultSetService implements Closeable, Dumpable {
         SQLSelectStatement sqlSelectStatement = (SQLSelectStatement) sqlStatement;
         ScheduledFuture<?> scheduledFuture = timer.scheduleAtFixedRate(() -> {
             try {
-                Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+                IOExecutor vertx = MetaClusterCurrent.wrapper(IOExecutor.class);
                 vertx.executeBlocking(promise -> {
                     try {
                         cache.invalidate(sqlSelectStatement);

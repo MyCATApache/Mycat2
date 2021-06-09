@@ -357,7 +357,7 @@ public class ConfigPrepareExecuter {
 
         MycatRouterConfig curConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
 
-        Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+        IOExecutor vertx = MetaClusterCurrent.wrapper(IOExecutor.class);
         MemPlanCache memPlanCache = MetaClusterCurrent.wrapper(MemPlanCache.class);
         memPlanCache.clearCache();
         vertx.executeBlocking(new Handler<Promise<Void>>() {

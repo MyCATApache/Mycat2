@@ -16,10 +16,7 @@ package io.mycat.datasource.jdbc.datasource;
 
 
 import com.alibaba.druid.util.JdbcUtils;
-import io.mycat.ConnectionManager;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.MycatException;
-import io.mycat.ScheduleUtil;
+import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
@@ -197,7 +194,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         replicaSelector.putHeartFlow(replicaName, datasource, new Consumer<HeartBeatStrategy>() {
             @Override
             public void accept(HeartBeatStrategy heartBeatStrategy) {
-                Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+                IOExecutor vertx = MetaClusterCurrent.wrapper(IOExecutor.class);
                 vertx.executeBlocking(promise -> {
                     try {
                         heartbeat(heartBeatStrategy);

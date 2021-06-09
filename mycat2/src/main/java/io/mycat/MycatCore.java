@@ -24,10 +24,7 @@ import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.vertx.VertxMycatServer;
 import io.mycat.vertxmycat.MycatVertxMetricsFactory;
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
-import io.vertx.core.VertxOptions;
+import io.vertx.core.*;
 import lombok.SneakyThrows;
 import org.apache.calcite.util.RxBuiltInMethod;
 import org.apache.curator.framework.CuratorFramework;
@@ -95,7 +92,7 @@ public class MycatCore {
         System.out.println("path:" + this.baseDirectory);
         ServerConfiguration serverConfiguration = new ServerConfigurationImpl(MycatCore.class, path);
         MycatServerConfig serverConfig = serverConfiguration.serverConfig();
-        MetaClusterCurrent.register(Maps.of(MycatServerConfig.class,serverConfig,serverConfig.getServer().getClass(),serverConfig.getServer()));
+        MetaClusterCurrent.register(Maps.of(MycatServerConfig.class, serverConfig, serverConfig.getServer().getClass(), serverConfig.getServer()));
         MySQLVersion.setServerVersion(serverConfig.getServer().getServerVersion());
         String datasourceProvider = Optional.ofNullable(serverConfig.getDatasourceProvider()).orElse(io.mycat.datasource.jdbc.DruidDatasourceProvider.class.getCanonicalName());
         ThreadPoolExecutorConfig workerPool = serverConfig.getServer().getWorkerPool();
@@ -105,22 +102,23 @@ public class MycatCore {
         vertxOptions.setWorkerPoolSize(workerPool.getMaxPoolSize());
         vertxOptions.setMaxWorkerExecuteTime(workerPool.getTaskTimeout());
         vertxOptions.setMaxWorkerExecuteTimeUnit(TimeUnit.valueOf(workerPool.getTimeUnit()));
+        vertxOptions.setEventLoopPoolSize(serverConfig.getServer().getReactorNumber());
         vertxOptions.getMetricsOptions().setEnabled(true);
         vertxOptions.getMetricsOptions().setFactory(new MycatVertxMetricsFactory());
-
         this.mycatServer = newMycatServer(serverConfig);
 
         HashMap<Class, Object> context = new HashMap<>();
         Scheduler scheduler = new Scheduler(TimeUnit.valueOf(workerPool.getTimeUnit()).toMillis(workerPool.getTaskTimeout()));
         Thread thread = new Thread(scheduler, "mycat connection scheduler");
         thread.start();
-        context.put(IOExecutor.class,new IOExecutor());
+        context.put(IOExecutor.class, new IOExecutor());
         context.put(Scheduler.class, scheduler);
         context.put(serverConfig.getServer().getClass(), serverConfig.getServer());
         context.put(serverConfiguration.getClass(), serverConfiguration);
         context.put(serverConfig.getClass(), serverConfig);
         context.put(LoadBalanceManager.class, new LoadBalanceManager(serverConfig.getLoadBalance()));
-        context.put(Vertx.class, Vertx.vertx(vertxOptions));
+        Vertx vertx = Vertx.vertx(vertxOptions);
+        context.put(Vertx.class, vertx);
         context.put(this.mycatServer.getClass(), mycatServer);
         context.put(MycatServer.class, mycatServer);
         context.put(SqlRecorderRuntime.class, SqlRecorderRuntime.INSTANCE);
@@ -144,7 +142,7 @@ public class MycatCore {
                 String zkAddress = System.getProperty("zk_address", (String) serverConfig.getProperties().get("zk_address"));
                 if (zkAddress != null) {
                     testZkAddressOrStartDefaultZk(zkAddress);
-                }else {
+                } else {
                     zkAddress = "localhost:2181";
                     EmbeddedZKServer.startDefaultZK();
                 }
@@ -173,18 +171,18 @@ public class MycatCore {
         ConnectStringParser connectStringParser = new ConnectStringParser(zkAddress);
         CompositeFuture.any(connectStringParser.getServerAddresses().stream().parallel().map(is -> Future.future(promise -> {
             try {
-                Socket socket = new Socket(is.getHostName(),is.getPort());
+                Socket socket = new Socket(is.getHostName(), is.getPort());
                 socket.close();
                 promise.tryComplete();
             } catch (IOException e) {
                 promise.tryFail(e);
             }
         })).collect(Collectors.toList())).toCompletionStage().toCompletableFuture().get(1, TimeUnit.SECONDS).recover(throwable -> {
-            logger.error("",throwable);
-            try{
+            logger.error("", throwable);
+            try {
                 EmbeddedZKServer.startDefaultZK();
                 return Future.succeededFuture();
-            }catch (Throwable throwable1){
+            } catch (Throwable throwable1) {
                 return Future.failedFuture(throwable1);
             }
         }).toCompletionStage().toCompletableFuture().get(1, TimeUnit.SECONDS);

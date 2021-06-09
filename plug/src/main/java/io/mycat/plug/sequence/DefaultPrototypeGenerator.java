@@ -14,10 +14,7 @@
  */
 package io.mycat.plug.sequence;
 
-import io.mycat.ConnectionManager;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.MycatConnection;
-import io.mycat.ScheduleUtil;
+import io.mycat.*;
 import io.vertx.core.Vertx;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -87,7 +84,7 @@ public class DefaultPrototypeGenerator implements Supplier<Number> {
     }
 
     public void fetch() {
-        Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+        IOExecutor vertx = MetaClusterCurrent.wrapper(IOExecutor.class);
         vertx.executeBlocking(promise -> {
             try{
                 if (this.value == null) {

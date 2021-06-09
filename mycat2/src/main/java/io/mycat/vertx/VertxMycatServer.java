@@ -25,6 +25,7 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetServer;
+import io.vertx.core.net.NetServerOptions;
 import io.vertx.core.net.NetSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,23 +74,12 @@ public class VertxMycatServer implements MycatServer {
     }
 
     @Override
-    public void start() {
-        ServerConfig server = serverConfig.getServer();
-        ThreadPoolExecutorConfig workerPool = server.getWorkerPool();
-        DeploymentOptions workerOpts = new DeploymentOptions()
-                .setWorker(true)
-                .setInstances(1)
-                .setMaxWorkerExecuteTime(workerPool.getTaskTimeout())
-                .setMaxWorkerExecuteTimeUnit(TimeUnit.valueOf(workerPool.getTimeUnit()))
-                .setHa(true)
-                .setWorkerPoolName("vertx-mycat")
-                .setWorkerPoolSize(workerPool.getMaxPoolSize());
+    public void start() throws Exception {
         this.server = new MycatSessionManager(serverConfig);
-        Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
-        vertx.deployVerticle(this.server, workerOpts);
+        this.server.start();
     }
 
-    public static class MycatSessionManager extends AbstractVerticle implements MycatServer {
+    public static class MycatSessionManager implements MycatServer {
         private final ConcurrentLinkedDeque<VertxSession> sessions = new ConcurrentLinkedDeque<>();
         private MycatServerConfig serverConfig;
 
@@ -99,7 +89,8 @@ public class VertxMycatServer implements MycatServer {
 
         @Override
         public void start() throws Exception {
-            NetServer netServer = vertx.createNetServer();//创建代理服务器
+            Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+            NetServer netServer = vertx.createNetServer(new NetServerOptions().setReusePort(true));//创建代理服务器
             netServer.connectHandler(socket -> {
                 VertxMySQLAuthHandler vertxMySQLAuthHandler = new VertxMySQLAuthHandler(socket, MycatSessionManager.this);
             }).listen(this.serverConfig.getServer().getPort(),
