@@ -37,6 +37,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * @author jamie12221 date 2019-05-10 14:46 该类型需要并发处理
@@ -97,7 +98,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
     @Override
     public void addDatasource(DatasourceConfig key) {
         JdbcDataSource jdbcDataSource = dataSourceMap.get(key.getName());
-        if (jdbcDataSource!=null){
+        if (jdbcDataSource != null) {
             jdbcDataSource.close();
         }
         dataSourceMap.put(key.getName(), datasourceProvider.createDataSource(key));
@@ -117,46 +118,40 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
 
     public DefaultConnection getConnection(String name, Boolean autocommit,
                                            int transactionIsolation, boolean readOnly) {
-        final JdbcDataSource key = Objects.requireNonNull(Optional.ofNullable(dataSourceMap.get(name))
-                .orElseGet(() -> {
-                    JdbcDataSource jdbcDataSource = dataSourceMap.get(replicaSelector.getDatasourceNameByReplicaName(name, true, null));
-
-                    return jdbcDataSource;
-                }), () -> "unknown target:" + name);
-        synchronized (key) {
-            DefaultConnection defaultConnection;
-            Connection connection = null;
-            try {
-                DatasourceConfig config = key.getConfig();
-                connection = key.getDataSource().getConnection();
-                defaultConnection = new DefaultConnection(connection, key, autocommit, transactionIsolation, readOnly, this);
-                LOGGER.debug("get connection:{} {}", name, defaultConnection);
-                if (config.isInitSqlsGetConnection()) {
-                    if (config.getInitSqls() != null && !config.getInitSqls().isEmpty()) {
-                        try (Statement statement = connection.createStatement()) {
-                            for (String initSql : config.getInitSqls()) {
-                                statement.execute(initSql);
-                            }
+        final JdbcDataSource key = dataSourceMap.computeIfAbsent(name, s -> {
+            JdbcDataSource jdbcDataSource = dataSourceMap.get(replicaSelector.getDatasourceNameByReplicaName(s, true, null));
+            return Objects.requireNonNull(jdbcDataSource, "unknown target:" + name);
+        });
+        DefaultConnection defaultConnection;
+        Connection connection = null;
+        try {
+            DatasourceConfig config = key.getConfig();
+            connection = key.getDataSource().getConnection();
+            defaultConnection = new DefaultConnection(connection, key, autocommit, transactionIsolation, readOnly, this);
+            LOGGER.debug("get connection:{} {}", name, defaultConnection);
+            if (config.isInitSqlsGetConnection()) {
+                if (config.getInitSqls() != null && !config.getInitSqls().isEmpty()) {
+                    try (Statement statement = connection.createStatement()) {
+                        for (String initSql : config.getInitSqls()) {
+                            statement.execute(initSql);
                         }
                     }
                 }
-                key.counter.getAndIncrement();
-                return defaultConnection;
-            } catch (SQLException e) {
-                if (connection != null) {
-                    JdbcUtils.close(connection);
-                }
-                LOGGER.debug("", e);
-                throw new MycatException(e);
             }
+            key.counter.getAndIncrement();
+            return defaultConnection;
+        } catch (SQLException e) {
+            if (connection != null) {
+                JdbcUtils.close(connection);
+            }
+            LOGGER.debug("", e);
+            throw new MycatException(e);
         }
     }
 
     @Override
     public void closeConnection(DefaultConnection connection) {
-        synchronized (connection.getDataSource()) {
-            connection.getDataSource().counter.decrementAndGet();
-        }
+        connection.getDataSource().counter.decrementAndGet();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("close :{} {}", connection, connection.connection);
         }
@@ -200,7 +195,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                         heartbeat(heartBeatStrategy);
                     } catch (Exception e) {
                         heartBeatStrategy.onException(e);
-                    }finally {
+                    } finally {
                         promise.tryComplete();
                     }
                 });
@@ -210,14 +205,14 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                 DefaultConnection connection = null;
                 try {
                     connection = getConnection(datasource);
-                    ArrayList<List<Map<String, Object>> > resultList = new ArrayList<>();
+                    ArrayList<List<Map<String, Object>>> resultList = new ArrayList<>();
                     List<String> sqls = heartBeatStrategy.getSqls();
                     for (String sql : sqls) {
-                        try (RowBaseIterator iterator  = connection
+                        try (RowBaseIterator iterator = connection
                                 .executeQuery(sql)) {
-                            resultList.add( iterator.getResultSetMap());
+                            resultList.add(iterator.getResultSetMap());
 
-                        }catch (Exception e){
+                        } catch (Exception e) {
                             LOGGER.error("jdbc heartbeat ", e);
                             return;
                         }
@@ -226,7 +221,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                 } catch (Throwable e) {
                     heartBeatStrategy.onException(e);
                     LOGGER.error("", e);
-                }  finally {
+                } finally {
                     if (connection != null) {
                         connection.close();
                     }
