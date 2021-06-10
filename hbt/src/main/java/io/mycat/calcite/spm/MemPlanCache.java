@@ -90,7 +90,9 @@ public class MemPlanCache implements QueryPlanCache {
         if (fix) {
             baseline.setFixPlan(newBaselinePlan);
         }
-        map.put(baseline.getConstraint(), baseline);
+        Constraint constraint = baseline.getConstraint();
+        boolean b = map.containsKey(constraint);
+        map.put(constraint, baseline);
         return new PlanResultSet(newBaselinePlan.getBaselineId(), true, codeExecuterContext);
     }
 
@@ -132,9 +134,9 @@ public class MemPlanCache implements QueryPlanCache {
     public List<CodeExecuterContext> getAcceptedMycatRelList(DrdsSql baselineSql) {
         Baseline baseline = getBaseline(baselineSql);
         List<CodeExecuterContext> list = new ArrayList<>(1);
-        if (!baselineSql.getHints().isEmpty()){
+        if (!baselineSql.getHints().isEmpty()) {
             for (BaselinePlan p : baseline.getPlanList()) {
-                if (p.isAccept()&&p.getSql().equals(baselineSql.getParameterizedSql())) {
+                if (p.isAccept() && p.getSql().equals(baselineSql.getParameterizedSql())) {
                     CodeExecuterContext codeExecuterContext = getCodeExecuterContext(p);
                     list.add(codeExecuterContext);
                     return list;
@@ -155,16 +157,16 @@ public class MemPlanCache implements QueryPlanCache {
 
     public synchronized PlanResultSet add(boolean fix, DrdsSql drdsSql) {
         Long baselineId = null;
-            Baseline baseline = this.getBaseline(drdsSql);
-            DrdsSqlCompiler drdsSqlCompiler = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
-            OptimizationContext optimizationContext = new OptimizationContext();
-            MycatRel mycatRel = drdsSqlCompiler.dispatch(optimizationContext, drdsSql);
-            RelJsonWriter relJsonWriter = new RelJsonWriter();
-            mycatRel.explain(relJsonWriter);
-            long hash = planIds.nextPlanId();
-            BaselinePlan newBaselinePlan = new BaselinePlan(drdsSql.getParameterizedSql(), relJsonWriter.asString(), hash, baselineId = baseline.getBaselineId(), null);
-            getCodeExecuterContext(newBaselinePlan, mycatRel);
-            return saveBaselinePlan(fix, false, baseline, newBaselinePlan);
+        Baseline baseline = this.getBaseline(drdsSql);
+        DrdsSqlCompiler drdsSqlCompiler = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
+        OptimizationContext optimizationContext = new OptimizationContext();
+        MycatRel mycatRel = drdsSqlCompiler.dispatch(optimizationContext, drdsSql);
+        RelJsonWriter relJsonWriter = new RelJsonWriter();
+        mycatRel.explain(relJsonWriter);
+        long hash = planIds.nextPlanId();
+        BaselinePlan newBaselinePlan = new BaselinePlan(drdsSql.getParameterizedSql(), relJsonWriter.asString(), hash, baselineId = baseline.getBaselineId(), null);
+        getCodeExecuterContext(newBaselinePlan, mycatRel);
+        return saveBaselinePlan(fix, false, baseline, newBaselinePlan);
     }
 
     @Override
