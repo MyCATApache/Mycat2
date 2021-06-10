@@ -43,6 +43,7 @@ public class SpmTest implements MycatTest {
         HashMap<Class, Object> context = new HashMap<>();
         context.put(Vertx.class, Vertx.vertx());
         context.put(ServerConfig.class, new ServerConfig());
+        context.put(IOExecutor.class,new IOExecutor());
         context.put(DrdsSqlCompiler.class, new DrdsSqlCompiler(new DrdsConst() {
             @Override
             public NameMap<SchemaHandler> schemas() {
