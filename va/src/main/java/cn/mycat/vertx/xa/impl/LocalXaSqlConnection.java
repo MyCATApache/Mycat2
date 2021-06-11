@@ -61,24 +61,18 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
         }
         if (inTranscation && localSqlConnection != null) {
             return super.commitXa((coordinatorLog) -> localSqlConnection.query(
-                    "REPLACE INTO mycat.xa_log (xid) VALUES('" + curXid + "')").execute().mapEmpty())
-                    .compose((Function<Void, Future<Void>>) o -> localSqlConnection.query("commit;").execute().mapEmpty()).mapEmpty()
+                    "REPLACE INTO mycat.xa_log (xid) VALUES('" + curXid + "');").execute().mapEmpty())
+                    .compose((Function<Void, Future<Void>>) o -> {
+                        return localSqlConnection.query("commit;").execute().flatMap(unused->{
+                          return   localSqlConnection.query("delete from mycat.xa_log where xid = '" + curXid + "'").execute().mapEmpty();
+                        });
+                    }).mapEmpty()
                     .compose(o -> {
                         xid = null;
                         inTranscation = false;
                         SqlConnection localSqlConnection = this.localSqlConnection;
                         this.localSqlConnection = null;
                         return localSqlConnection.close();
-                    })
-                    .onSuccess(event -> {
-                        if (targetName != null) {
-                            Future<SqlConnection> connectionFuture = mySQLManager().getConnection(targetName);
-                            connectionFuture
-                                    .onSuccess(sqlConnection -> sqlConnection.query("delete from mycat.xa_log where xid = '" + curXid + "'")
-                                            .execute()
-                                            .onComplete(event1 -> connectionFuture.map(c -> c.close())));
-                        }
-                        targetName = null;
                     }).mapEmpty();
         } else {
             throw new AssertionError();
@@ -128,7 +122,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
         }
         String curXid = this.xid;
         return super.rollback().flatMap(unused -> localSqlConnection.query("rollback;")
-                .execute().eventually(unused1 -> {
+                .execute().flatMap(unused1 -> {
                     SqlConnection curLocalSqlConnection = this.localSqlConnection;
                     this.localSqlConnection = null;
                     targetName = null;
@@ -137,8 +131,9 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
                         Future<SqlConnection> sqlConnectionFuture = Future.succeededFuture(curLocalSqlConnection);
                         return sqlConnectionFuture
                                 .onSuccess(sqlConnection -> sqlConnection.query("delete from mycat.xa_log where xid = '" + curXid + "'")
-                                        .execute()
-                                        .onComplete(event1 -> sqlConnectionFuture.map(c -> c.close()))).mapEmpty();
+                                        .execute().eventually(u->{
+                                            return sqlConnection.close();
+                                        })).mapEmpty();
                     }else {
                         return curLocalSqlConnection.close();
                     }

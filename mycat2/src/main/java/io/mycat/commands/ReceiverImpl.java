@@ -143,11 +143,7 @@ public class ReceiverImpl implements Response {
                 Future<Void> future = connectionFuture.flatMap(connection -> {
                     Observable<MysqlPayloadObject> mysqlPacketObservable = VertxExecuter.runQueryOutputAsMysqlPayloadObject(Future.succeededFuture(
                             connection), sql, Collections.emptyList());
-                    if (!inTransaction) {
                         return sendResultSet(mysqlPacketObservable);
-                    } else {
-                        return sendResultSet(mysqlPacketObservable);
-                    }
                 });
                 future.onComplete(event -> {
                     if (event.succeeded()) {
