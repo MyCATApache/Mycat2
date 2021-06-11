@@ -161,13 +161,13 @@ public class MycatTableLookup extends SingleRel implements MycatRel {
        return (ImmutableMultimap<Partition, List<Object[]>>) resBuilder.build();
     }
 
-    public static Enumerable<Object[]> dispatch(NewMycatDataContext context, MycatTableLookup mycatTableLookup, List<Object[]> keys) {
-        List<RelOptTable> allTables = RelOptUtil.findAllTables(mycatTableLookup.right);
-        RelOptTable relOptTable = allTables.get(0);
-        MycatLogicTable mycatLogicTable = relOptTable.unwrap(MycatLogicTable.class);
-        ShardingTable shardingTable = (ShardingTable) mycatLogicTable.logicTable();
-        return context.getEnumerable(ExecutorSupport.physicalSqlMerge(route(shardingTable,mycatTableLookup, keys), false));
-    }
+//    public static Enumerable<Object[]> dispatch(NewMycatDataContext context, MycatTableLookup mycatTableLookup, List<Object[]> keys) {
+//        List<RelOptTable> allTables = RelOptUtil.findAllTables(mycatTableLookup.right);
+//        RelOptTable relOptTable = allTables.get(0);
+//        MycatLogicTable mycatLogicTable = relOptTable.unwrap(MycatLogicTable.class);
+//        ShardingTable shardingTable = (ShardingTable) mycatLogicTable.logicTable();
+//        return context.getEnumerable(ExecutorSupport.physicalSqlMerge(route(shardingTable,mycatTableLookup, keys), false));
+//    }
 
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {

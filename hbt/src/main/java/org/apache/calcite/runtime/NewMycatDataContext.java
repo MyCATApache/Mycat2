@@ -10,19 +10,13 @@ import java.util.List;
 import java.util.Map;
 
 public interface NewMycatDataContext extends DataContext {
-    Enumerable<Object[]> getEnumerable( Map<String, List<SqlString>> map);
-    Enumerable<Object[]> getEnumerable(String node);
 
-    Enumerable<Object[]> getEnumerable(String node,
+
+    Observable   <Object[]> getObservable(String node,
                                        org.apache.calcite.linq4j.function.Function1 function1,
                                        java.util.Comparator comparator, int offset, int fetch);
 
-     Observable<Object[]> getObservable(String node);
-
-
-     Observable<Object[]> getObservable(String relNode,
-                                               org.apache.calcite.linq4j.function.Function1 function1,
-                                               java.util.Comparator comparator, int offset, int fetch);
+    Observable <Object[]> getObservable(String node);
 
     public Object getSessionVariable(String name);
 

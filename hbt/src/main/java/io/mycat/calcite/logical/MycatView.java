@@ -305,8 +305,8 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                         JavaRowFormat.ARRAY);
         ParameterExpression root = implementor.getRootExpression();
         Expression mycatViewStash = Expressions.constant(getDigest());
-        Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getEnumerable", String.class);
-        builder.add(Expressions.call(root, getEnumerable, mycatViewStash));
+        Method getObservable = Types.lookupMethod(NewMycatDataContext.class, "getObservable", String.class);
+        builder.add(Expressions.call(root, getObservable, mycatViewStash));
         return implementor.result(physType, builder.toBlock());
     }
 
@@ -437,8 +437,8 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         final Expression offsetVal = mycatMergeSort.offset == null ? Expressions.constant(Integer.valueOf(0))
                 : getExpression(mycatMergeSort.offset);
 
-        Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getEnumerable", String.class, Function1.class, Comparator.class, int.class, int.class);
-        builder.add(Expressions.call(root, getEnumerable, mycatViewStash, pair.left, pair.right, offsetVal, fetchVal));
+        Method getObservable = Types.lookupMethod(NewMycatDataContext.class, "getObservable", String.class, Function1.class, Comparator.class, int.class, int.class);
+        builder.add(Expressions.call(root, getObservable, mycatViewStash, pair.left, pair.right, offsetVal, fetchVal));
         return implementor.result(physType, builder.toBlock());
 
     }

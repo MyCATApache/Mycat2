@@ -134,11 +134,8 @@ public class MycatUnion extends Union implements MycatRel {
             EnumerableRel input = (EnumerableRel) ord.e;
             results.add(implementor.visitChild(this, ord.i, input, pref));
         }
-        boolean toEnumerate = false;
-        for (Result result : results) {
-            Type type = result.block.getType();
-            toEnumerate |= (!(type instanceof Observable));
-        }
+        boolean toEnumerate = !results.stream().allMatch(result->result.block.getType().getTypeName().contains("Observable"));
+
         if (toEnumerate){
             for (Ord<Result> ord : Ord.zip(results)) {
                 Result result = ord.e;
@@ -174,7 +171,7 @@ public class MycatUnion extends Union implements MycatRel {
                 if (unionExp == null) {
                     unionExp = childExp;
                 } else  {
-                    unionExp = Expressions.call(unionExp, RxBuiltInMethod.OBSERVABLE_UNION_ALL.getMethodName(), childExp);
+                    unionExp = Expressions.call(RxBuiltInMethod.OBSERVABLE_UNION_ALL.method,unionExp, childExp);
                 }
             }
             builder.add(unionExp);
