@@ -16,22 +16,19 @@
 package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.*;
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
+import io.vertx.core.*;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
 
-import java.sql.SQLException;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -41,6 +38,8 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     private final static Logger LOGGER = LoggerFactory.getLogger(BaseXaSqlConnection.class);
     protected final ConcurrentHashMap<String, SqlConnection> map = new ConcurrentHashMap<>();
     protected final Map<SqlConnection, State> connectionState = Collections.synchronizedMap(new IdentityHashMap<>());
+    protected final List<SqlConnection> extraConnections = new CopyOnWriteArrayList<>();
+    protected final List<Future<Void>> closeList = new CopyOnWriteArrayList<>();
     private final Supplier<MySQLManager> mySQLManagerSupplier;
     protected volatile String xid;
 
@@ -99,7 +98,11 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
         }
         Future<SqlConnection> connection = mySQLManager.getConnection(targetName);
         return connection.map(connection1 -> {
-            addCloseConnection(connection1);
+            if (!map.containsKey(targetName)) {
+                map.put(targetName, connection1);
+            } else {
+                extraConnections.add(connection1);
+            }
             return connection1;
         });
     }
@@ -133,7 +136,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                 }
                 return future;
             };
-            Future<Void> future = executeAll(function);
+            Future<Void> future = executeTranscationConnection(function);
             future.onComplete(event -> {
 //                Throwable cause = event.cause();
 //                if (cause instanceof SQLException) {
@@ -212,7 +215,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     public Future<Void> commitXa(Function<ImmutableCoordinatorLog, Future<Void>> beforeCommit) {
         return Future.future((Promise<Void> promsie) -> {
             logParticipants();
-            Future<Void> xaEnd = executeAll(connection -> {
+            Future<Void> xaEnd = executeTranscationConnection(connection -> {
                 Future<Void> future = Future.succeededFuture();
                 switch (connectionState.get(connection)) {
                     case XA_INITED:
@@ -230,7 +233,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
             });
             xaEnd.onFailure(throwable -> promsie.tryFail(throwable));
             xaEnd.onSuccess(event -> {
-                executeAll(connection -> {
+                executeTranscationConnection(connection -> {
                     if (connectionState.get(connection) != State.XA_PREPARED) {
                         return connection.query(String.format(XA_PREPARE, xid)).execute()
                                 .map(c -> changeTo(connection, State.XA_PREPARED)).mapEmpty();
@@ -268,7 +271,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                                 promsie.fail(throwable);
                             });
                             future.onSuccess(event16 -> {
-                                executeAll(connection -> {
+                                executeTranscationConnection(connection -> {
                                     return connection.query(String.format(XA_COMMIT, xid)).execute()
                                             .map(c -> changeTo(connection, State.XA_COMMITED)).mapEmpty();
                                 })
@@ -335,7 +338,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
         return collect;
     }
 
-    public Future<Void> executeAll(Function<SqlConnection, Future<Void>> connectionFutureFunction) {
+    public Future<Void> executeTranscationConnection(Function<SqlConnection, Future<Void>> connectionFutureFunction) {
         if (map.isEmpty()) {
             return Future.succeededFuture();
         }
@@ -347,24 +350,36 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
      *
      */
     public Future<Void> close() {
+        Future<Void> allFuture = CompositeFuture.all((List) closeList).mapEmpty();
+        closeList.clear();
         if (inTranscation) {
-            return rollback().flatMap(unused -> clearConnections());
-        } else {
-            return clearConnections();
+            allFuture = rollback();
         }
+        return allFuture.flatMap(unused -> {
+            Future<Void> future = Future.succeededFuture();
+            for (SqlConnection extraConnection : extraConnections) {
+                future = future.compose(unused2 -> extraConnection.close());
+            }
+            future = future.onComplete(event -> extraConnections.clear());
+            return future.onComplete(u -> executeTranscationConnection(c -> {
+                return c.close();
+            }).onComplete(c -> {
+                map.clear();
+                connectionState.clear();
+            }));
+        });
     }
 
 
     @Override
     public Future<Void> closeStatementState() {
-        return super.closeStatementState().flatMap(unused -> {
+        Future<Void> future = CompositeFuture.all((List) closeList).mapEmpty();
+        closeList.clear();
+        return future.onComplete(event -> clearConnections().onComplete(unused -> {
             if (!inTranscation) {
                 xid = null;
-                return clearConnections();
-            } else {
-                return Future.succeededFuture();
             }
-        });
+        }));
     }
 
     @Override
@@ -372,20 +387,30 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
         return xid;
     }
 
+    @Override
+    public void addCloseFuture(Future<Void> future) {
+        closeList.add(future);
+    }
+
     /**
      * before clear connections,it should check not be in transaction
      */
-    public Future<Void>  clearConnections() {
-        dealCloseConnections();
+    public Future<Void> clearConnections() {
+        Future<Void> future = CompositeFuture.all((List) closeList).mapEmpty();
+        closeList.clear();
+        for (SqlConnection extraConnection : extraConnections) {
+            future = future.compose(unused -> extraConnection.close());
+        }
+        future = future.onComplete(event -> extraConnections.clear());
         if (inTranscation) {
-            return Future.succeededFuture();
+            return future;
         } else {
-            return executeAll(c -> {
+            return future.onComplete(u -> executeTranscationConnection(c -> {
                 return c.close();
             }).onComplete(c -> {
                 map.clear();
                 connectionState.clear();
-            }).mapEmpty();
+            }));
         }
     }
 }

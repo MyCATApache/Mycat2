@@ -77,6 +77,7 @@ public  class Scheduler implements Runnable {
                         emitter.onNext(objects);
                     },
                     throwable -> {
+                        emitter.tryOnError(throwable);
                         promise.tryFail(throwable);
                     }, () -> {
                         emitter.onComplete();
@@ -229,7 +230,7 @@ public  class Scheduler implements Runnable {
                                           int order, int refCount, String target, long deadline,
                                           SqlString sqlString,
                                           List<Object> params,
-                                          MycatRowMetaData calciteRowMetaData) {
+                                          MycatRowMetaData calciteRowMetaData) {;
         return Observable.create(emitter -> {
             Promise<Void> resultSetClosePromise = VertxUtil.newPromise();
             Promise<SqlConnection> sqlConnectionRecyclePromise = VertxUtil.newPromise();
@@ -243,7 +244,7 @@ public  class Scheduler implements Runnable {
             closeFuture.onFailure(event -> emitter.tryOnError(event));
             closeFuture.onSuccess(event -> emitter.onComplete());
             XaSqlConnection xaSqlConnection = (XaSqlConnection)context.getTransactionSession();
-            xaSqlConnection.addCloseFuture(resultSetCloseFuture.eventually(unused ->
+            xaSqlConnection.addCloseFuture(resultSetCloseFuture.compose(unused ->
             {cancel.set(true);return closeFuture;})
                     .onComplete(voidAsyncResult -> connectionFuture.onComplete(sqlConnectionRecyclePromise)));
         });

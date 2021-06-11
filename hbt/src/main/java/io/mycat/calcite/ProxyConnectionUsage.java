@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.MycatDataContext;
 import io.mycat.TransactionSession;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
+import io.mycat.calcite.logical.MycatView;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.core.Observable;
@@ -84,7 +85,7 @@ public class ProxyConnectionUsage {
                         LinkedList<SqlConnection> sqlConnections = stringLinkedListMap.get(context.resolveDatasourceTargetName(target.getTargetName()));
                         SqlConnection sqlConnection = sqlConnections.pop();
                         Promise<SqlConnection> closePromise = VertxUtil.newPromise();
-                        xaconnection.addCloseFuture(closePromise.future());
+//                        xaconnection.addCloseFuture(closePromise.future());
                         Observable<Object[]> observable = VertxExecuter.runQuery(Future.succeededFuture(sqlConnection),
                                 target.getSql().getSql(),
                                 MycatPreparedStatementUtil.extractParams(params, target.getSql().getDynamicParameters()),
@@ -203,7 +204,7 @@ public class ProxyConnectionUsage {
             ));
             return rowObservableFuture.flatMap(rowObservable -> {
                 PromiseInternal<SqlConnection> closePromise = VertxUtil.newPromise();
-                xaconnection.addCloseFuture(closePromise.future());
+//                xaconnection.addCloseFuture(closePromise.future());
                 rowObservable = rowObservable.doAfterTerminate(() -> {
                     closePromise.tryComplete(sqlConnection);
                 });
@@ -282,9 +283,6 @@ public class ProxyConnectionUsage {
                 synchronized (ProxyConnectionUsage.this) {
                     LinkedList<SqlConnection> defaultConnections = map.computeIfAbsent(string, s -> new LinkedList<>());
                     defaultConnections.add(i);
-                    if (!connection.isInTransaction()) {
-                        connection.addCloseConnection(i);
-                    }
                 }
                 return null;
             }
@@ -351,7 +349,7 @@ public class ProxyConnectionUsage {
                     sqlKey.getRowMetaData()));
             return rowObservableFuture.map(rowObservable -> {
                 Promise<SqlConnection> closePromise = VertxUtil.newPromise();
-                xaconnection.addCloseFuture(closePromise.future());
+                xaconnection.addCloseFuture(closePromise.future().compose(c->c.close()));
                 synchronized (ProxyConnectionUsage.this) {
                     List<Observable<Object[]>> rowObservables = resMap.computeIfAbsent(sqlKey.getMycatView(), node -> new ArrayList<>());
                     rowObservables.add(rowObservable.doOnTerminate(() -> closePromise.tryComplete(sqlConnection)));

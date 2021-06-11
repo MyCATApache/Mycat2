@@ -110,7 +110,11 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
             return super.getConnection(targetName);
         }
         return mySQLManager.getConnection(targetName).map(connection -> {
-            addCloseConnection(connection);
+            if (!map.containsKey(targetName)) {
+                map.put(targetName, connection);
+            } else {
+                extraConnections.add(connection);
+            }
             return connection;
         });
     }

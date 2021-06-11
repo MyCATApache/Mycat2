@@ -132,9 +132,5 @@ public interface XaSqlConnection {
 
     String getXid();
 
-    void addCloseConnection(SqlConnection sqlConnection);
-
-    Future<Void> clearConnections();
-
-    void addCloseFuture(Future<?> future);
+    void addCloseFuture(Future<Void> future);
 }

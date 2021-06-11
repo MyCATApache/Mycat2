@@ -22,11 +22,11 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
-import io.vertx.sqlclient.SqlClient;
 import io.vertx.sqlclient.SqlConnection;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -37,6 +37,8 @@ import java.util.stream.Collectors;
 public class LocalSqlConnection extends AbstractXaSqlConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(LocalSqlConnection.class);
     protected final ConcurrentHashMap<String, SqlConnection> map = new ConcurrentHashMap<>();
+    protected final List<SqlConnection> extraConnections = new CopyOnWriteArrayList<>();
+    protected final List<Future<Void>> closeList = new CopyOnWriteArrayList<>();
     protected final Supplier<MySQLManager> mySQLManagerSupplier;
 
     public LocalSqlConnection(Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog) {
@@ -74,7 +76,11 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
         }
         return mySQLManager().getConnection(targetName)
                 .map(connection -> {
-                    addCloseConnection(connection);
+                    if (!map.containsKey(targetName)) {
+                        map.put(targetName, connection);
+                    } else {
+                        extraConnections.add(connection);
+                    }
                     return connection;
                 });
     }
@@ -113,7 +119,17 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
 
     @Override
     public Future<Void> close() {
-        return clearConnections().onComplete(event -> inTranscation = false).mapEmpty();
+        Future future = CompositeFuture.all((List) closeList);
+        closeList.clear();
+        for (SqlConnection extraConnection : extraConnections) {
+            future = future.compose(unused -> extraConnection.close());
+        }
+        future = future.onComplete(event -> extraConnections.clear());
+        for (SqlConnection connection : map.values()) {
+            future = future.compose(unused -> connection.close());
+        }
+        future = future.onComplete(event -> map.clear());
+        return future.onComplete(event -> inTranscation = false).mapEmpty();
     }
 
 
@@ -123,26 +139,26 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
     }
 
     @Override
-    public Future<Void> clearConnections() {
-        if (inTranscation) {
-            return dealCloseConnections();
-        } else {
-            return executeAll(SqlClient::close).onComplete(event -> {
-                map.clear();
-            }).mapEmpty().flatMap(o -> dealCloseConnections());
-        }
+    public void addCloseFuture(Future<Void> future) {
+        closeList.add(future);
     }
 
     @Override
     public Future<Void> closeStatementState() {
-        return super.closeStatementState().flatMap(unused -> clearConnections());
-    }
-
-    public CompositeFuture executeAll(Function<SqlConnection, Future> connectionFutureFunction) {
-        if (map.isEmpty()) {
-            return CompositeFuture.any(Future.succeededFuture(), Future.succeededFuture());
+        Future<Void> future = CompositeFuture.all((List) closeList).mapEmpty();
+        closeList.clear();
+        for (SqlConnection extraConnection : extraConnections) {
+            future = future.compose(unused -> extraConnection.close());
         }
-        List<Future> futures = map.values().stream().map(connectionFutureFunction).collect(Collectors.toList());
-        return CompositeFuture.all(futures);
+        future = future.onComplete(event -> extraConnections.clear());
+        if (inTranscation) {
+            return future;
+        } else {
+            for (SqlConnection connection : map.values()) {
+                future = future.compose(unused -> connection.close());
+            }
+            future = future.onComplete(event -> map.clear());
+            return future;
+        }
     }
 }
