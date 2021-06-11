@@ -7,13 +7,13 @@ import io.mycat.serializable.OffHeapObjectList;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
-import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.Linq4j;
+import io.reactivex.rxjava3.internal.operators.observable.BlockingObservableIterable;
+import org.apache.calcite.linq4j.*;
 import org.apache.calcite.linq4j.function.Predicate1;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -48,16 +48,55 @@ public class RxBuiltInMethodImpl {
         return input.take(limit);
     }
 
-    public static Observable<Object[]> offset(Observable<Object[]> input, long limit) {
-        return input.skip(limit);
+    public static Observable<Object[]> offset(Observable<Object[]> input, long offset) {
+        return input.skip(offset);
     }
+
 
     public static Enumerable<Object[]> toEnumerable(Object input) {
         if (input instanceof Observable) {
-            return Linq4j.asEnumerable(((Observable) input).cache().blockingIterable());
+            Observable<Object[]> observable = (Observable) input;
+            return new AbstractEnumerable<Object[]>() {
+                @Override
+                public Enumerator<Object[]> enumerator() {
+                    return Linq4j.iterableEnumerator(new Iterable<Object[]>() {
+                        @NotNull
+                        @Override
+                        public Iterator<Object[]> iterator() {
+                            Iterator<Object[]> iterator = observable.blockingIterable().iterator();
+                            class Iter implements AutoCloseable, Iterator<Object[]> {
+                                Observable<Object[]> observable;
+
+                                public Iter(Observable<Object[]> observable) {
+                                    this.observable = observable;
+                                }
+
+                                @Override
+                                public void close() throws Exception {
+                                    while (iterator.hasNext()){
+                                        iterator.next();
+                                    }
+                                }
+
+                                @Override
+                                public boolean hasNext() {
+                                    return iterator.hasNext();
+                                }
+
+                                @Override
+                                public Object[] next() {
+                                    return iterator.next();
+                                }
+                            }
+                            return new Iter(observable);
+                        }
+                    });
+                }
+            };
         }
         return (Enumerable<Object[]>) input;
     }
+
 
     public static Observable<Object[]> toObservable(Object input) {
         return Observable.fromIterable((Enumerable) input);
@@ -138,16 +177,17 @@ public class RxBuiltInMethodImpl {
             return asGather(toEnumerable(input));
         }
     }
-    public static List<Object[]> asList(Object input){
-        if (input instanceof  Observable){
-           return (List) ((Observable<?>) input).toList();
-        }else if (input instanceof Enumerable){
-            return (List)((Enumerable<?>) input).toList();
-        }else if (input instanceof List){
-            return (List)input;
-        }else if (input instanceof Collection){
-            return new ArrayList<>((Collection)input);
-        }else {
+
+    public static List<Object[]> asList(Object input) {
+        if (input instanceof Observable) {
+            return (List) ((Observable<?>) input).toList();
+        } else if (input instanceof Enumerable) {
+            return (List) ((Enumerable<?>) input).toList();
+        } else if (input instanceof List) {
+            return (List) input;
+        } else if (input instanceof Collection) {
+            return new ArrayList<>((Collection) input);
+        } else {
             throw new UnsupportedOperationException();
         }
     }
