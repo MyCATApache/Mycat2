@@ -87,16 +87,15 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     }
 
     public MycatView(RelTraitSet relTrait, RelNode input, Distribution dataNode, RexNode conditions) {
-        super(input.getCluster(), relTrait=relTrait.replace(MycatConvention.INSTANCE));
+        super(input.getCluster(), relTrait = relTrait.replace(MycatConvention.INSTANCE));
         this.distribution = Objects.requireNonNull(dataNode);
         this.condition = conditions;
         this.rowType = input.getRowType();
         if (input instanceof MycatRel) {
-            this.relNode = input.accept(new ToLogicalConverter(MycatCalciteSupport.relBuilderFactory.create(input.getCluster(), null)));
-        } else {
-            ToLocalConverter toLocalConverter = new ToLocalConverter();
-            this.relNode = input.accept(toLocalConverter);
+            input = input.accept(new ToLocalConverter());
         }
+        ToLocalConverter toLocalConverter = new ToLocalConverter();
+        this.relNode = input.accept(toLocalConverter);
     }
 
 
@@ -124,7 +123,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
         @Override
         protected RelNode visitChildren(RelNode rel) {
-            if (rel instanceof Sort){
+            if (rel instanceof Sort) {
                 containsOrder = true;
             }
             return super.visitChildren(rel);
@@ -272,8 +271,9 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        return planner.getCost(relNode,mq);
+        return planner.getCost(relNode, mq);
     }
+
     private RelNode applyDataNode(Map<String, Partition> map, RelNode relNode) {
         return relNode.accept(new RelShuttleImpl() {
             @Override
