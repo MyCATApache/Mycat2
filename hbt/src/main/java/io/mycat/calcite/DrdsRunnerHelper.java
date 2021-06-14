@@ -113,7 +113,7 @@ public class DrdsRunnerHelper {
     }
 
     @NotNull
-    private static List<MycatHint> getMycatHints(List<SQLCommentHint> headHintsDirect) {
+    public static List<MycatHint> getMycatHints(List<SQLCommentHint> headHintsDirect) {
         List<MycatHint> hints = new LinkedList<>();
         if (headHintsDirect != null) {
             if (!headHintsDirect.isEmpty()) {

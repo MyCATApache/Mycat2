@@ -18,13 +18,19 @@ package io.mycat.commands;
 
 import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLCommentHint;
+import com.alibaba.druid.sql.ast.SQLHint;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLNumericLiteralExpr;
+import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLStartTransactionStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowAuthorsStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowStatement;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
+import com.alibaba.druid.sql.parser.SQLType;
 import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import io.mycat.*;
@@ -32,6 +38,7 @@ import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
+import io.mycat.calcite.MycatHint;
 import io.mycat.calcite.spm.*;
 import io.mycat.sqlhandler.SQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
@@ -42,6 +49,7 @@ import io.mycat.sqlhandler.ddl.CreateSequenceHandler;
 import io.mycat.sqlhandler.dml.*;
 import io.mycat.sqlhandler.dql.*;
 import io.mycat.sqlrecorder.SqlRecord;
+import io.mycat.util.NameMap;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
 import lombok.SneakyThrows;
@@ -53,6 +61,7 @@ import java.sql.JDBCType;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 
 /**
  * @author Junwen Chen
@@ -295,7 +304,79 @@ public enum MycatdbCommand {
         }
         return false;
     }
+    @NotNull
+    private static Map<String, Object> getHintRoute(SQLStatement sqlStatement) {
+        List<SQLHint> hints = new LinkedList<>();
+        MySqlASTVisitorAdapter mySqlASTVisitorAdapter = new MySqlASTVisitorAdapter() {
+            @Override
+            public boolean visit(SQLSelect x) {
+                hints.addAll(x.getHints());
+                hints.addAll(x.getFirstQueryBlock().getHints());
+                return false;
+            }
+        };
 
+        sqlStatement.accept(mySqlASTVisitorAdapter);
+        hints.addAll(Optional.ofNullable(sqlStatement.getHeadHintsDirect()).orElse(Collections.emptyList()));
+        for (SQLHint hint : hints) {
+            MycatHint mycatHint = null;
+            if (hint instanceof SQLCommentHint) {
+                String text = ((SQLCommentHint) hint).getText();
+                mycatHint = new MycatHint(text);
+            }
+            if (mycatHint != null) {
+                HashMap<String, Object> map = new HashMap<>();
+                map.put("REP_BALANCE_TYPE", ReplicaBalanceType.NONE);
+                for (MycatHint.Function function : mycatHint.getFunctions()) {
+                    String name = function.getName();
+                    switch (name.toUpperCase()) {
+                        case "EXECUTE_TIMEOUT": {
+                            MycatHint.Argument argument = function.getArguments().get(0);
+                            SQLNumericLiteralExpr value = (SQLNumericLiteralExpr) argument.getValue();
+                            long time = value.getNumber().longValue();//milliseconds毫秒
+                            map.put("EXECUTE_TIMEOUT", time);
+                            continue;
+                        }
+                        case "MASTER": {
+                            map.put("REP_BALANCE_TYPE", ReplicaBalanceType.MASTER);
+                            continue;
+                        }
+                        case "SLAVE": {
+                            map.put("REP_BALANCE_TYPE", ReplicaBalanceType.SLAVE);
+                            continue;
+                        }
+                        case "INDEX": {
+                            map.put("INDEX", function.getArguments().stream().map(i -> i.toString()).collect(Collectors.toList()));
+                            continue;
+                        }
+                        case "SCAN": {
+                            List<MycatHint.Argument> arguments = function.getArguments();
+                            Map<String, List<String>> collect = arguments.stream().collect(Collectors.groupingBy(m -> SQLUtils.toSQLString(m.getName()),
+                                    Collectors.mapping(v -> SQLUtils.toSQLString(v.getValue()), Collectors.toList())));
+                            NameMap<List<String>> nameMap = NameMap.immutableCopyOf(collect);
+                            List<String> condition = Optional.ofNullable(nameMap.get("CONDITION", false)).orElse(Collections.emptyList());
+                            List<String> logicalTables = Optional.ofNullable(nameMap.get("TABLE", false)).orElse(Collections.emptyList());
+                            List<String> physicalTables = Optional.ofNullable(nameMap.get("PHYSICAL_TABLE", false)).orElse(Collections.emptyList());
+                            List<String> targets = Optional.ofNullable(nameMap.get("TARGET", false)).orElse(Collections.emptyList());
+                            map.put("SCAN_TABLE", logicalTables);
+                            map.put("SCAN_DATANODE", physicalTables);
+                            map.put("SCAN_TARGET", targets);
+                            map.put("SCAN_CONDITION", condition);
+                            continue;
+                        }
+                        case "DATANODE":
+                        case "TARGET": {
+                            List<MycatHint.Argument> arguments = function.getArguments();
+                            map.put("TARGET", arguments.stream().map(i -> SQLUtils.toSQLString(i.getValue())).collect(Collectors.toList()));
+                            continue;
+                        }
+                    }
+                }
+                return map;
+            }
+        }
+        return Collections.emptyMap();
+    }
     public static Future<Void> execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) {
         sqlStatement.setAfterSemi(false);//remove semi
         boolean existSqlResultSetService = MetaClusterCurrent.exist(SqlResultSetService.class);
@@ -310,7 +391,37 @@ public enum MycatdbCommand {
                     return receiver.sendResultSet(baseIteratorOptional.get());
                 }
             }
+            dataContext.putProcessStateMap(Collections.emptyMap());
+            Map<String, Object> hintRoute = getHintRoute(sqlStatement);
+            if (!hintRoute.isEmpty()){
+                dataContext.putProcessStateMap(hintRoute);
+                Object targetArray =  hintRoute.getOrDefault("TARGET", null);
+                if (targetArray != null) {
+                    String sqlText = sqlStatement.toString();
+                    SQLType sqlType = SQLParserUtils.getSQLType(sqlText, DbType.mysql);
+                    boolean select;
+                    switch (sqlType) {
+                        case SELECT:
+                        case EXPLAIN:
+                        case SHOW:
+                        case DESC:
+                        case UNKNOWN:
+                            select = true;
+                            break;
+                        default:
+                            select = false;
+                    }
+                    if (!(targetArray instanceof List)){
+                        targetArray = Collections.singletonList(targetArray.toString());
+                    }
+                    if (select) {
+                        return receiver.proxySelect((List)targetArray, sqlText);
+                    }
+                    return receiver.proxyUpdate((List)targetArray, sqlText);
+                }
+            }
             SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
+
             Class aClass = sqlStatement.getClass();
             SQLHandler instance = sqlHandlerMap.getInstance(aClass);
             if (instance != null) {
