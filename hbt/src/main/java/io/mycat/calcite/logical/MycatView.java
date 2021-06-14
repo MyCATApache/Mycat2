@@ -18,6 +18,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.Partition;
 import io.mycat.calcite.*;
 import io.mycat.calcite.localrel.ToLocalConverter;
@@ -29,6 +30,7 @@ import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.calcite.table.ShardingTable;
+import io.mycat.config.ServerConfig;
 import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
@@ -131,25 +133,6 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     }
 
 
-    public MycatViewDataNodeMapping getMycatViewDataNodeMapping() {
-        FindOrder findOrder = new FindOrder();
-        relNode.accept(findOrder);
-        boolean containsOrder = findOrder.containsOrder;
-        Distribution.Type type = distribution.type();
-        switch (type) {
-            case BroadCast:
-            case PHY:
-                return new MycatViewDataNodeMappingImpl(containsOrder, distribution.toNameList(), IndexCondition.EMPTY);
-            case Sharding:
-                ShardingTable shardingTable = distribution.getShardingTables().get(0);
-                PredicateAnalyzer predicateAnalyzer = new PredicateAnalyzer(shardingTable.keyMetas(), shardingTable.getColumns().stream().map(i -> i.getColumnName()).collect(Collectors.toList()));
-                IndexCondition indexCondition = predicateAnalyzer.translateMatch(condition);
-                return new MycatViewDataNodeMappingImpl(containsOrder, distribution.toNameList(), indexCondition);
-            default:
-                throw new IllegalStateException("Unexpected value: " + distribution.type());
-        }
-    }
-
     public SqlNode getSQLTemplate(boolean update) {
         Partition partition;
         if (distribution.type() == Distribution.Type.BroadCast) {
@@ -167,33 +150,23 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         return MycatCalciteSupport.INSTANCE.convertToSqlTemplate(relNode, dialect, update);
     }
 
-    /**
-     * ImmutableMultimap<String, SQLSelectStatement>
-     *
-     * @param mycatViewDataNodeMapping
-     * @param sqlTemplateArg
-     * @param params
-     * @param mergeUnionSize
-     * @return
-     */
-    public static MycatViewSqlString apply(MycatViewDataNodeMapping mycatViewDataNodeMapping,
-                                           SqlNode sqlTemplateArg,
-                                           List<Object> params,
-                                           int mergeUnionSize) {
+    public  ImmutableMultimap<String, SqlString> apply(
+            SqlNode sqlTemplateArg,
+            List<Map<String, Partition>> dataNodes, List<Object> params) {
         SqlNode sqlTemplate = sqlTemplateArg;
-        Stream<Map<String, Partition>> dataNodes = mycatViewDataNodeMapping.apply(params);
-        if (mycatViewDataNodeMapping.getType() == Distribution.Type.BroadCast) {
-            GlobalTable globalTable = mycatViewDataNodeMapping.distribution().getGlobalTables().get(0);
+        int mergeUnionSize = MetaClusterCurrent.exist(ServerConfig.class) ? MetaClusterCurrent.wrapper(ServerConfig.class).getMergeUnionSize() : 5;
+        if (distribution.type() == Distribution.Type.BroadCast) {
+            GlobalTable globalTable = distribution.getGlobalTables().get(0);
             List<Partition> globalPartition = globalTable.getGlobalDataNode();
             int i = ThreadLocalRandom.current().nextInt(0, globalPartition.size());
             Partition partition = globalPartition.get(i);
             String targetName = partition.getTargetName();
-            Map<String, Partition> nodeMap = dataNodes.findFirst().get();
+            Map<String, Partition> nodeMap = dataNodes.get(0);
             SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
             SqlNode sqlSelectStatement = MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params, nodeMap);
-            return new MycatViewSqlString(ImmutableMultimap.of(targetName, sqlSelectStatement.toSqlString(dialect)));
+            return (ImmutableMultimap.of(targetName, sqlSelectStatement.toSqlString(dialect)));
         }
-        if (mergeUnionSize == 0 || mycatViewDataNodeMapping.containsOrder()) {
+        if (mergeUnionSize == 0 || isMergeSort()) {
             ImmutableMultimap.Builder<String, SqlString> builder = ImmutableMultimap.builder();
             dataNodes.forEach(m -> {
                 String targetName = m.values().iterator().next().getTargetName();
@@ -201,9 +174,9 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                 SqlString sqlString = MycatCalciteSupport.toSqlString(MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params, m), (dialect));
                 builder.put(targetName, sqlString);
             });
-            return new MycatViewSqlString(builder.build());
+            return (builder.build());
         }
-        Map<String, List<Map<String, Partition>>> collect = dataNodes.collect(Collectors.groupingBy(m -> m.values().iterator().next().getTargetName()));
+        Map<String, List<Map<String, Partition>>> collect = dataNodes.stream().collect(Collectors.groupingBy(m -> m.values().iterator().next().getTargetName()));
         ImmutableMultimap.Builder<String, SqlString> resMapBuilder = ImmutableMultimap.builder();
         for (Map.Entry<String, List<Map<String, Partition>>> entry : collect.entrySet()) {
             String targetName = entry.getKey();
@@ -228,7 +201,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                                 ImmutableList.copyOf(list)));
             }
         }
-        return new MycatViewSqlString(resMapBuilder.build());
+        return (resMapBuilder.build());
     }
 
     public RelNode getRelNode() {

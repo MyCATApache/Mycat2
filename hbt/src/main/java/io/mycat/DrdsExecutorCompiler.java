@@ -1,7 +1,5 @@
 package io.mycat;
 
-import cn.mycat.vertx.xa.XaSqlConnection;
-import com.alibaba.druid.sql.ast.SQLStatement;
 import io.mycat.beans.mycat.CopyMycatRowMetaData;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLType;
@@ -11,15 +9,12 @@ import io.mycat.calcite.logical.MycatViewDataNodeMapping;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatMergeSort;
 import io.mycat.calcite.physical.MycatUpdateRel;
-import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.plan.PlanImplementor;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.spm.PlanImpl;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.util.VertxUtil;
-import io.mycat.vertx.MycatTransientSQLTableScanMappingFunction;
-import io.mycat.vertx.ShardingTableDataNodeMapping;
 import io.vertx.core.Future;
 import lombok.SneakyThrows;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
@@ -282,41 +277,22 @@ public class DrdsExecutorCompiler {
     public static CodeExecuterContext getCodeExecuterContext(MycatRel relNode, boolean forUpdate) {
         HashMap<String, Object> varContext = new HashMap<>(2);
         StreamMycatEnumerableRelImplementor mycatEnumerableRelImplementor = new StreamMycatEnumerableRelImplementor(varContext);
-        RelContext relContext = new RelContext(relNode, forUpdate);
+        HashMap<String,MycatRelDatasourceSourceInfo> stat= new HashMap<>();
         relNode.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(RelNode other) {
                 if (other instanceof MycatView) {
-                    Rel rel = relContext.nodes.computeIfAbsent(other.getDigest(), s -> new Rel());
-                    rel.count += 1;
-                    MycatView mycatView = (MycatView) other;
-                    visitMycatView(rel, mycatView);
-                } else if (other instanceof MycatMergeSort) {
-                    Rel rel = relContext.nodes.computeIfAbsent(other.getDigest(), s -> new Rel());
-                    rel.count += 1;
-                    MycatMergeSort mycatMergeSort = (MycatMergeSort) other;
-                    visitMycatView(rel, (MycatView) mycatMergeSort.child);
-                } else if (other instanceof MycatTransientSQLTableScan) {
-                    Rel rel = relContext.nodes.computeIfAbsent(other.getDigest(), s -> new Rel());
-                    rel.count += 1;
-                    MycatTransientSQLTableScan transientSQLTableScan = (MycatTransientSQLTableScan) other;
-                    visitTableScan(rel, transientSQLTableScan);
+                    MycatView view = (MycatView) other;
+                    MycatRelDatasourceSourceInfo rel = stat.computeIfAbsent(other.getDigest(), s -> {
+                        return new MycatRelDatasourceSourceInfo(
+                                new CopyMycatRowMetaData(
+                                        new CalciteRowMetaData(other.getRowType().getFieldList())),
+                                view.getSQLTemplate(forUpdate),
+                                view);
+                    });
+                    rel.refCount += 1;
                 }
                 return super.visit(other);
-            }
-
-            private void visitTableScan(Rel rel, MycatTransientSQLTableScan transientSQLTableScan) {
-                String sql = transientSQLTableScan.getSql();
-                String targetName = transientSQLTableScan.getTargetName();
-                rel.dataNodeMapping = new MycatTransientSQLTableScanMappingFunction(targetName, sql);
-                rel.columnInfo = new CopyMycatRowMetaData(new CalciteRowMetaData(transientSQLTableScan.getRowType().getFieldList()));
-            }
-
-            private void visitMycatView(Rel rel, MycatView mycatView) {
-                MycatViewDataNodeMapping mycatViewDataNodeMapping = mycatView.getMycatViewDataNodeMapping();
-                SqlNode sqlTemplate = mycatView.getSQLTemplate(forUpdate);
-                rel.dataNodeMapping = new ShardingTableDataNodeMapping(mycatViewDataNodeMapping, sqlTemplate);
-                rel.columnInfo = new CopyMycatRowMetaData(new CalciteRowMetaData(mycatView.getRowType().getFieldList()));
             }
         });
 
@@ -328,7 +304,7 @@ public class DrdsExecutorCompiler {
         }
         CodeContext codeContext = new CodeContext(classDeclaration.name, code);
 
-        CodeExecuterContext executerContext = CodeExecuterContext.of(relContext, varContext, codeContext);
+        CodeExecuterContext executerContext = CodeExecuterContext.of(stat, varContext,relNode, codeContext);
         return executerContext;
     }
 //
@@ -358,7 +334,7 @@ public class DrdsExecutorCompiler {
     }
 
 
-//    public Future<Void> runHbtOnDrds(MycatDataContext dataContext, String statement, Response response) {
+    //    public Future<Void> runHbtOnDrds(MycatDataContext dataContext, String statement, Response response) {
 //        XaSqlConnection transactionSession = (XaSqlConnection) dataContext.getTransactionSession();
 //        List<Object> params = Collections.emptyList();
 //        PlanImplementor planImplementor = new ObservablePlanImplementorImpl(
@@ -372,7 +348,7 @@ public class DrdsExecutorCompiler {
             case PHYSICAL:
                 return planImplementor.executeQuery(plan);
             case UPDATE:
-                return planImplementor.executeUpdate( Objects.requireNonNull(plan));
+                return planImplementor.executeUpdate(Objects.requireNonNull(plan));
             case INSERT:
                 return planImplementor.executeInsert(Objects.requireNonNull(plan));
             default: {

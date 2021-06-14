@@ -7,18 +7,22 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.MycatHint;
+import io.mycat.calcite.MycatRelDatasourceSourceInfo;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.logical.MycatViewDataNodeMapping;
 import io.mycat.calcite.spm.ParamHolder;
 import io.mycat.calcite.spm.QueryPlanner;
 import io.mycat.util.NameMap;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.commons.lang3.mutable.Mutable;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.curator.shaded.com.google.common.collect.ImmutableMap;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -47,7 +51,7 @@ public class DrdsSqlWithParams extends DrdsSql {
         return aliasList;
     }
 
-    public Optional<List<Map<String, Partition>>> getHintDataMapping() {
+    public Optional< List<Map<String, Partition>> > getHintDataNodeFilter() {
         for (MycatHint hint : this.getHints()) {
             for (MycatHint.Function hintFunction : hint.getFunctions()) {
                 if ("SCAN".equalsIgnoreCase(hintFunction.getName())) {
@@ -58,24 +62,27 @@ public class DrdsSqlWithParams extends DrdsSql {
                     List<String> logicalTables = Optional.ofNullable(nameMap.get("TABLE", false)).orElse(Collections.emptyList());
                     List<List<String>> physicalTables = Optional.ofNullable(nameMap.get("DATANODE", false)).orElse(Collections.emptyList()).stream().map(i -> Arrays.asList(i.split(","))).collect(Collectors.toList());
                     List<String> targets = Optional.ofNullable(nameMap.get("TARGET", false)).orElse(Collections.emptyList());
-
-                    MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
                     SQLStatement parameterizedStatement = this.getParameterizedStatement();
 
                     Detector detector = new Detector();
                     parameterizedStatement.accept(detector);
                     if (!detector.isSharding) {
-                        Collection<Partition> partitions = Collections.emptyList();
-                        Collection<Partition> newPartitions = Collections.emptyList();
+                        List<Partition> partitions = Collections.emptyList();
+                        List<Partition> newPartitions = Collections.emptyList();
+                        Mutable<MycatView> viewBox = new MutableObject<>();
                         if (!logicalTables.isEmpty()) {
                             if (!condition.isEmpty()) {
                                 String sql = "select * from " + logicalTables.get(0) + "where " + condition;
                                 QueryPlanner queryPlanner = MetaClusterCurrent.wrapper(QueryPlanner.class);
                                 DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sql, null);
-                                MycatView mycatView = (MycatView) queryPlanner.innerComputeMinCostCodeExecuterContext(drdsSqlWithParams).getMycatRel();
-                                MycatViewDataNodeMapping mycatViewDataNodeMapping = mycatView.getMycatViewDataNodeMapping();
-                                List<Map<String, Partition>> list = mycatViewDataNodeMapping.apply(drdsSqlWithParams.getParams()).collect(Collectors.toList());
-                                newPartitions = partitions = list.get(0).values();
+                                CodeExecuterContext codeExecuterContext = queryPlanner.innerComputeMinCostCodeExecuterContext(drdsSqlWithParams);
+
+                                List<Map<String, Partition>> collect2 = codeExecuterContext.getRelContext()
+                                        .values()
+                                        .stream()
+                                        .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(i.getView(), drdsSqlWithParams).stream())
+                                        .collect(Collectors.toList());
+                                return Optional.of(collect2);
                             } else if (!physicalTables.isEmpty()) {
                                 newPartitions = physicalTables.get(0).stream().map(dataNodeParser()).collect(Collectors.toList());
                             }
@@ -84,13 +91,9 @@ public class DrdsSqlWithParams extends DrdsSql {
                                     return targets.contains(dataNode.getTargetName());
                                 }).collect(Collectors.toList());
                             }
-                            Collection<Partition> finalNewPartitions = newPartitions;
-                            String uniqueName = detector.tableHandlerMap.values().iterator().next().getUniqueName();
-                            List<Map<String, Partition>> res = new ArrayList<>(newPartitions.size());
-                            for (Partition finalNewPartition : finalNewPartitions) {
-                                res.add(ImmutableMap.of(uniqueName, finalNewPartition));
-                            }
-                            return Optional.of(res);
+                            List<Partition> finalNewPartitions = newPartitions;
+                            List<Map<String, Partition>> maps = finalNewPartitions.stream().map(i -> ImmutableMap.of(logicalTables.get(0), i)).collect(Collectors.toList());
+                            return Optional.of(maps);
                         }
                     } else {
                         Map<String, List<Partition>> logicalPhysicalMap = new HashMap<>();
@@ -126,7 +129,14 @@ public class DrdsSqlWithParams extends DrdsSql {
                                 ParamHolder.CURRENT_THREAD_LOCAL.set(hintSql.getParams());
                                 CodeExecuterContext codeExecuterContext = planner.innerComputeMinCostCodeExecuterContext(hintSql);
                                 MycatView mycatRel = (MycatView) codeExecuterContext.getMycatRel();
-                                return Optional.ofNullable(mycatRel.getMycatViewDataNodeMapping().apply(hintSql.getParams()).collect(Collectors.toList()));
+
+                                List<Map<String, Partition>> collect2 = codeExecuterContext.getRelContext()
+                                        .values()
+                                        .stream()
+                                        .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(i.getView(), hintSql).stream())
+                                        .collect(Collectors.toList());
+                                return Optional.of(collect2);
+
                             } catch (Exception e) {
                                 log.error("", e);
                             } finally {

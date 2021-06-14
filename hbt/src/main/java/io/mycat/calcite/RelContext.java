@@ -1,14 +1,11 @@
 package io.mycat.calcite;
 
-import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.util.JsonUtil;
-
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 public class RelContext implements Serializable {
-    public final Map<String, Rel> nodes = new HashMap<>();
+    public final Map<String, MycatRelDatasourceSourceInfo> nodes = new HashMap<>();
     public MycatRel relNode;
     public boolean forUpdate;
 

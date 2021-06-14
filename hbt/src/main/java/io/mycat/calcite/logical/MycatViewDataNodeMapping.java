@@ -11,11 +11,7 @@ import java.util.stream.Stream;
 
 public interface MycatViewDataNodeMapping extends Function<List<Object>, Stream<Map<String, Partition>>>, Serializable {
 
-    boolean containsOrder();
-
     Distribution.Type getType();
 
     public Distribution distribution();
-
-    String toJson();
 }

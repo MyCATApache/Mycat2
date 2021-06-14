@@ -39,8 +39,6 @@ import java.util.List;
 
 public interface Plan  {
 
-    boolean forUpdate();
-
     public Type getType();
 
     public CodeExecuterContext getCodeExecuterContext();

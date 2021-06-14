@@ -329,7 +329,7 @@ public class DrdsRunnerHelper {
         List<Object> params = drdsSqlWithParams.getParams();
         return new ObservablePlanImplementorImpl(
                 transactionSession,
-                dataContext, params, response);
+                dataContext, drdsSqlWithParams, response);
     }
 
 }

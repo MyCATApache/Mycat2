@@ -16,9 +16,7 @@
  */
 package io.mycat.calcite;
 
-import com.google.common.collect.ImmutableMultimap;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.calcite.logical.MycatViewSqlString;
 import io.mycat.util.JsonUtil;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -28,7 +26,6 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.runtime.Utilities;
-import org.apache.calcite.sql.util.SqlString;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IClassBodyEvaluator;
 import org.codehaus.commons.compiler.ICompilerFactory;
@@ -36,45 +33,39 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @Getter
 public class CodeExecuterContext implements Serializable {
 
-    RelContext relContext;
+    Map<String, MycatRelDatasourceSourceInfo> relContext;
     Map<String, Object> varContext;
+    MycatRel mycatRel;
     CodeContext codeContext;
     private final transient ArrayBindable bindable;
 
-    public CodeExecuterContext(RelContext relContext,
+    public CodeExecuterContext(Map<String, MycatRelDatasourceSourceInfo> relContext,
                                Map<String, Object> varContext,
+                               MycatRel mycatRel,
                                CodeContext codeContext) {
         this.relContext = relContext;
         this.varContext = varContext;
+        this.mycatRel = mycatRel;
         this.codeContext = codeContext;
         this.bindable = asObjectArray(getBindable(codeContext));
     }
 
     public static final CodeExecuterContext of(
-            RelContext relContext,
+            Map<String, MycatRelDatasourceSourceInfo> relContext,
             Map<String, Object> context,
+            MycatRel mycatRel,
             CodeContext codeContext
     ) {
-        return new CodeExecuterContext(relContext, context, codeContext);
+        return new CodeExecuterContext(relContext, context, mycatRel,codeContext);
     }
 
     public MycatRowMetaData get(String name) {
-        return relContext.nodes.get(name).columnInfo;
-    }
-
-    public ImmutableMultimap<String, SqlString> expand(String relNode, List<Object> params) {
-        Objects.requireNonNull(relContext);
-        Objects.requireNonNull(relContext.nodes);
-        MycatViewSqlString apply = Objects.requireNonNull(relContext.nodes).get(relNode).dataNodeMapping.apply(params);
-        return apply.getSqls();
+        return relContext.get(name).getColumnInfo();
     }
 
     public ArrayBindable getBindable() {
@@ -132,7 +123,7 @@ public class CodeExecuterContext implements Serializable {
 //    }
 
     public CodeExecuterContext fromJson(String json) {
-        Map<String,String> map = JsonUtil.from(json, Map.class);
+        Map<String, String> map = JsonUtil.from(json, Map.class);
         String relContext = map.get("relContext");
         String codeContext = map.get("codeContext");
 //
@@ -144,6 +135,6 @@ public class CodeExecuterContext implements Serializable {
     }
 
     public MycatRel getMycatRel() {
-        return relContext.relNode;
+        return mycatRel;
     }
 }

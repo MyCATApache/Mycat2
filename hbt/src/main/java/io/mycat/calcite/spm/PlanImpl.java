@@ -15,13 +15,11 @@
 package io.mycat.calcite.spm;
 
 import com.google.common.collect.ImmutableMultimap;
+import io.mycat.AsyncMycatDataContextImpl;
 import io.mycat.DrdsSqlWithParams;
 import io.mycat.MycatDataContext;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.calcite.CodeExecuterContext;
-import io.mycat.calcite.ExplainWriter;
-import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.MycatRel;
+import io.mycat.calcite.*;
 import io.mycat.calcite.executor.MycatInsertExecutor;
 import io.mycat.calcite.executor.MycatUpdateExecutor;
 import io.mycat.calcite.logical.MycatView;
@@ -32,6 +30,7 @@ import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.Util;
 import org.jetbrains.annotations.NotNull;
@@ -72,13 +71,6 @@ public class PlanImpl implements Plan {
         this.executerContext = null;
         this.aliasList = Collections.emptyList();
     }
-
-
-    @Override
-    public boolean forUpdate() {
-        return executerContext.getRelContext().forUpdate;
-    }
-
 
     @Override
     public Type getType() {
@@ -157,7 +149,11 @@ public class PlanImpl implements Plan {
                 String parameterizedSql = "";
                 if (relNode instanceof MycatView||relNode instanceof MycatTransientSQLTableScan) {
                     String digest = relNode.getDigest();
-                    ImmutableMultimap<String, SqlString> stringImmutableMultimap = executerContext.expand(digest, drdsSql.getParams());
+                    MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = executerContext.getRelContext().get(digest);
+                    MycatView view = mycatRelDatasourceSourceInfo.getView();
+                    SqlNode sqlTemplate = mycatRelDatasourceSourceInfo.getSqlTemplate();
+                    ImmutableMultimap<String, SqlString> apply = view.apply(sqlTemplate, AsyncMycatDataContextImpl.getSqlMap(view, drdsSql), drdsSql.getParams());
+                    ImmutableMultimap<String, SqlString> stringImmutableMultimap =apply;
                     for (Map.Entry<String, SqlString> entry : (stringImmutableMultimap.entries())) {
                         SqlString sqlString = new SqlString(
                                 entry.getValue().getDialect(),

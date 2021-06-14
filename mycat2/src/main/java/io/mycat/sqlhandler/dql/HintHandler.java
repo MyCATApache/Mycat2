@@ -114,15 +114,15 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         ops.commit();
                         return response.sendOk();
                     }
-                    if ("run".equalsIgnoreCase(cmd)) {
-                        Map<String, Object> map = JsonUtil.from(body, Map.class);
-                        String hbt = Objects.toString(map.get("hbt"));
-                        DrdsSqlCompiler drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
-                        Plan plan = drdsRunner.doHbt(hbt);
-                        return new ObservablePlanImplementorImpl(
-                                (XaSqlConnection)dataContext.getTransactionSession(),
-                                dataContext, Collections.emptyList(), response).executeQuery(plan);
-                    }
+//                    if ("run".equalsIgnoreCase(cmd)) {
+//                        Map<String, Object> map = JsonUtil.from(body, Map.class);
+//                        String hbt = Objects.toString(map.get("hbt"));
+//                        DrdsSqlCompiler drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
+//                        Plan plan = drdsRunner.doHbt(hbt);
+//                        return new ObservablePlanImplementorImpl(
+//                                (XaSqlConnection)dataContext.getTransactionSession(),
+//                                dataContext, Collections.emptyList(), response).executeQuery(plan);
+//                    }
                     if ("createSqlCache".equalsIgnoreCase(cmd)) {
                         MycatRouterConfigOps ops = ConfigUpdater.getOps();
                         SQLStatement sqlStatement = null;

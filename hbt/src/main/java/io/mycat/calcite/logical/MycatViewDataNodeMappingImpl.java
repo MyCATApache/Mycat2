@@ -14,20 +14,14 @@ import java.util.stream.Stream;
 @Getter
 public class MycatViewDataNodeMappingImpl implements MycatViewDataNodeMapping {
     transient Distribution distribution;
-    boolean containsOrder;
     List<String> uniqueTableNames;
     IndexCondition indexCondition;
 
-    public MycatViewDataNodeMappingImpl(boolean containsOrder, List<String> uniqueTableNames, IndexCondition indexCondition) {
-        this.containsOrder = containsOrder;
+    public MycatViewDataNodeMappingImpl( List<String> uniqueTableNames, IndexCondition indexCondition) {
         this.distribution = Distribution.of(uniqueTableNames);
         this.indexCondition = indexCondition;
     }
 
-    @Override
-    public boolean containsOrder() {
-        return containsOrder;
-    }
 
     @Override
     public Distribution.Type getType() {
@@ -43,12 +37,4 @@ public class MycatViewDataNodeMappingImpl implements MycatViewDataNodeMapping {
         return distribution;
     }
 
-    @Override
-    public String toJson() {
-        Map<String,String> map = new HashMap<>();
-        map.put("containsOrder",containsOrder?"true":"false");
-        map.put("uniqueTableNames", JsonUtil.toJson(uniqueTableNames));
-        map.put("indexCondition", indexCondition.toJson());
-        return JsonUtil.toJson(map);
-    }
 }

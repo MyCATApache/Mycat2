@@ -27,7 +27,6 @@ import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.config.SqlCacheConfig;
-import io.mycat.connectionschedule.Scheduler;
 import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.util.Dumper;
 import io.mycat.util.TimeUnitUtil;
@@ -168,8 +167,8 @@ public class  SqlResultSetService implements Closeable, Dumpable {
                 XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
                 ObservablePlanImplementorImpl planImplementor = new ObservablePlanImplementorImpl(
                         transactionSession,
-                        context, drdsSql.getParams(), null);
-                Observable<MysqlPayloadObject> observable = planImplementor.getMysqlPayloadObjectObservable(context, drdsSql.getParams(), plan);
+                        context, drdsSql, null);
+                Observable<MysqlPayloadObject> observable = planImplementor.getMysqlPayloadObjectObservable(context, drdsSql, plan);
                 observable = observable.doOnTerminate(new Action() {
                     @Override
                     public void run() throws Throwable {

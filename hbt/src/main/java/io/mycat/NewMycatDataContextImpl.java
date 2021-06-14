@@ -17,19 +17,15 @@
 package io.mycat;
 
 import io.mycat.calcite.CodeExecuterContext;
-import io.vertx.core.Future;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
-import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.schema.SchemaPlus;
-import org.slf4j.LoggerFactory;
 
-import java.util.IdentityHashMap;
 import java.util.List;
 
 public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
-    protected final MycatDataContext dataContext;
+    protected final MycatDataContext context;
     protected final CodeExecuterContext codeExecuterContext;
     protected final List<Object> params;
     protected final boolean forUpdate;
@@ -38,7 +34,7 @@ public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
                                    CodeExecuterContext context,
                                    List<Object> params,
                                    boolean forUpdate) {
-        this.dataContext = dataContext;
+        this.context = dataContext;
         this.codeExecuterContext = context;
         this.params = params;
         this.forUpdate = forUpdate;
@@ -69,23 +65,23 @@ public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
     }
 
     public Object getSessionVariable(String name) {
-        return dataContext.getVariable(false, name);
+        return context.getVariable(false, name);
     }
 
     public Object getGlobalVariable(String name) {
-        return dataContext.getVariable(true, name);
+        return context.getVariable(true, name);
     }
 
     public String getDatabase() {
-        return dataContext.getDefaultSchema();
+        return context.getDefaultSchema();
     }
 
     public Long getLastInsertId() {
-        return dataContext.getLastInsertId();
+        return context.getLastInsertId();
     }
 
     public Long getConnectionId() {
-        return dataContext.getSessionId();
+        return context.getSessionId();
     }
 
     public Object getUserVariable(String name) {
@@ -93,13 +89,13 @@ public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
     }
 
     public String getCurrentUser() {
-        MycatUser user = dataContext.getUser();
+        MycatUser user = context.getUser();
         Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
         return user.getUserName() + "@" + authenticator.getUserInfo(user.getUserName()).getIp();
     }
 
     public String getUser() {
-        MycatUser user = dataContext.getUser();
+        MycatUser user = context.getUser();
         return user.getUserName() + "@" + user.getHost();
     }
 
@@ -109,12 +105,7 @@ public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
     }
 
     @Override
-    public boolean isForUpdate() {
-        return forUpdate;
-    }
-
-    @Override
     public Long getRowCount() {
-        return dataContext.getAffectedRows();
+        return context.getAffectedRows();
     }
 }

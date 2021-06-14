@@ -37,6 +37,4 @@ public interface NewMycatDataContext extends DataContext {
     public String getUser();
 
     public List<Object> getParams();
-
-    public boolean isForUpdate();
 }
