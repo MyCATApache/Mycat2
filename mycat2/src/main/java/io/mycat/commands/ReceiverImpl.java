@@ -31,6 +31,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.sqlclient.SqlConnection;
 import org.slf4j.Logger;
@@ -65,7 +66,8 @@ public class ReceiverImpl implements Response {
 
     @Override
     public Future<Void> sendError(Throwable e) {
-        session.getDataContext().setLastMessage(e);
+        MycatDataContext dataContext = session.getDataContext();
+        dataContext.setLastMessage(e);
         return VertxUtil.newFailPromise(new RuntimeException(e));
     }
 
@@ -96,36 +98,37 @@ public class ReceiverImpl implements Response {
     public Future<Void> sendResultSet(Observable<MysqlPayloadObject> mysqlPacketObservable) {
         count++;
         boolean hasMoreResult = hasMoreResultSet();
-        PromiseInternal<Void> promise = VertxUtil.newPromise();
-        mysqlPacketObservable.subscribe(
-                new MysqlPayloadObjectObserver(promise, hasMoreResult, binary, session));
-        return promise;
+        IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
+
+        return ioExecutor.executeBlocking(promise1 -> mysqlPacketObservable.subscribe(
+                new MysqlPayloadObjectObserver(promise1, hasMoreResult, binary, session)));
+
     }
 
     @Override
     public Future<Void> rollback() {
         count++;
         boolean hasMoreResultSet = hasMoreResultSet();
-       return transactionSession.rollback()
-               .eventually((u)-> transactionSession.closeStatementState())
-                .flatMap(u->session.writeOk(hasMoreResultSet));
+        return transactionSession.rollback()
+                .eventually((u) -> transactionSession.closeStatementState())
+                .flatMap(u -> session.writeOk(hasMoreResultSet));
     }
 
     @Override
     public Future<Void> begin() {
         count++;
         boolean hasMoreResultSet = hasMoreResultSet();
-        return  transactionSession.begin()
-                .eventually((u)-> transactionSession.closeStatementState())
-                .flatMap(u->session.writeOk(hasMoreResultSet));
+        return transactionSession.begin()
+                .eventually((u) -> transactionSession.closeStatementState())
+                .flatMap(u -> session.writeOk(hasMoreResultSet));
     }
 
     @Override
     public Future<Void> commit() {
         count++;
         boolean moreResultSet = hasMoreResultSet();
-        return transactionSession.commit().eventually((u)->transactionSession.closeStatementState())
-                .flatMap(u->session.writeOk(moreResultSet));
+        return transactionSession.commit().eventually((u) -> transactionSession.closeStatementState())
+                .flatMap(u -> session.writeOk(moreResultSet));
     }
 
     @Override
@@ -143,7 +146,7 @@ public class ReceiverImpl implements Response {
                 Future<Void> future = connectionFuture.flatMap(connection -> {
                     Observable<MysqlPayloadObject> mysqlPacketObservable = VertxExecuter.runQueryOutputAsMysqlPayloadObject(Future.succeededFuture(
                             connection), sql, Collections.emptyList());
-                        return sendResultSet(mysqlPacketObservable);
+                    return sendResultSet(mysqlPacketObservable);
                 });
                 future.onComplete(event -> {
                     if (event.succeeded()) {
@@ -176,7 +179,7 @@ public class ReceiverImpl implements Response {
     public Future<Void> sendOk() {
         count++;
         boolean hasMoreResultSet = hasMoreResultSet();
-        return transactionSession.closeStatementState().flatMap(u->session.writeOk(hasMoreResultSet));
+        return transactionSession.closeStatementState().flatMap(u -> session.writeOk(hasMoreResultSet));
     }
 
     @Override
@@ -203,16 +206,16 @@ public class ReceiverImpl implements Response {
     }
 
 
-    public   static class MysqlPayloadObjectObserver implements Observer<MysqlPayloadObject> {
-        private final PromiseInternal<Void> promise;
+    public static class MysqlPayloadObjectObserver implements Observer<MysqlPayloadObject> {
+        private final Promise<Void> promise;
         private final boolean moreResultSet;
         private boolean binary;
         private MySQLServerSession session;
         private Disposable disposable;
         Function<Object[], byte[]> convertor;
 
-        public MysqlPayloadObjectObserver(PromiseInternal<Void> promise,
-                                          boolean moreResultSet,boolean binary, MySQLServerSession session) {
+        public MysqlPayloadObjectObserver(Promise<Void> promise,
+                                          boolean moreResultSet, boolean binary, MySQLServerSession session) {
             this.promise = promise;
             this.moreResultSet = moreResultSet;
             this.binary = binary;

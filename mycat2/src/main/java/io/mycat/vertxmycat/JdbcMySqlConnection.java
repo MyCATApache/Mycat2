@@ -14,6 +14,7 @@
  */
 package io.mycat.vertxmycat;
 
+import com.alibaba.druid.pool.DruidPooledConnection;
 import io.mycat.IOExecutor;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.beans.mycat.JdbcRowMetaData;

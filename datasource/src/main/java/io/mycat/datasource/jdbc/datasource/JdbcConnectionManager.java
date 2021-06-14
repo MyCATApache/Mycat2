@@ -15,6 +15,7 @@
 package io.mycat.datasource.jdbc.datasource;
 
 
+import com.alibaba.druid.pool.DruidPooledConnection;
 import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
@@ -164,6 +165,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         try {
             if (!connection.connection.getAutoCommit()) {
                 connection.connection.rollback();
+                connection.connection.setAutoCommit(true);
             }
         } catch (SQLException e) {
             LOGGER.error("", e);

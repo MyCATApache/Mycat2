@@ -12,10 +12,16 @@ import java.util.Collections;
 @net.jcip.annotations.NotThreadSafe
 public class HintTest implements MycatTest {
 
-    @Test
+    @Test(expected = java.sql.SQLException.class)
     public void testTimeout() throws Exception {
         try(Connection mySQLConnection = getMySQLConnection(DB_MYCAT);){
-            JdbcUtils.executeQuery(mySQLConnection,"/*+MYCAT:EXECUTE_TIMEOUT(time)*/ select sleep(1)", Collections.emptyList());
+            JdbcUtils.executeQuery(mySQLConnection,"/*+MYCAT:EXECUTE_TIMEOUT(1)*/ select sleep(100)", Collections.emptyList());
+        }
+    }
+    @Test()
+    public void testTimeout2() throws Exception {
+        try(Connection mySQLConnection = getMySQLConnection(DB_MYCAT);){
+            JdbcUtils.executeQuery(mySQLConnection,"/*+MYCAT:EXECUTE_TIMEOUT(2000)*/ select sleep(1)", Collections.emptyList());
         }
     }
 }

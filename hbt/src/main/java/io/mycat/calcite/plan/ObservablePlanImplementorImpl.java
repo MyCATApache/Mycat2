@@ -37,6 +37,9 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
 
 public class ObservablePlanImplementorImpl implements PlanImplementor {
     private final static Logger LOGGER = LoggerFactory.getLogger(ObservablePlanImplementorImpl.class);
@@ -74,11 +77,18 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
     public Future<Void> executeQuery(Plan plan) {
         AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSqlWithParams);
         Observable<MysqlPayloadObject> rowObservable = getMysqlPayloadObjectObservable(context, sqlMycatDataContext, plan);
+        Optional<Long> timeout = drdsSqlWithParams.getTimeout();
+        if (timeout.isPresent()) {
+            rowObservable = rowObservable.timeout(timeout.get(), TimeUnit.MILLISECONDS);
+        }
         return response.sendResultSet(rowObservable);
     }
 
     @NotNull
-    public static Observable<MysqlPayloadObject> getMysqlPayloadObjectObservable(MycatDataContext context, AsyncMycatDataContextImpl newMycatDataContext, Plan plan) {
+    public static Observable<MysqlPayloadObject> getMysqlPayloadObjectObservable(
+            MycatDataContext context,
+            AsyncMycatDataContextImpl newMycatDataContext,
+            Plan plan) {
         Observable<MysqlPayloadObject> rowObservable = Observable.<MysqlPayloadObject>create(emitter -> {
             emitter.onNext(new MySQLColumnDef(plan.getMetaData()));
             CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();

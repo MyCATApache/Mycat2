@@ -325,12 +325,14 @@ public class VertxMySQLHandler extends DefaultCommandHandler {
             }
             promise.onComplete(o -> {
                 if (o.failed()) {
+                    mycatDataContext.getTransactionSession().closeStatementState();
                     mycatDataContext.setLastMessage(o.cause());
                     this.session.writeErrorEndPacketBySyncInProcessError(0);
                 }
                 checkPendingMessages();
             });
         } catch (Throwable throwable) {
+            mycatDataContext.getTransactionSession().closeStatementState();
             mycatDataContext.setLastMessage(throwable);
             this.session.writeErrorEndPacketBySyncInProcessError(0);
         }

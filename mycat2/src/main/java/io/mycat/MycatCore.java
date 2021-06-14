@@ -24,6 +24,8 @@ import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.vertx.VertxMycatServer;
 import io.mycat.vertxmycat.MycatVertxMetricsFactory;
 import io.vertx.core.*;
+import io.vertx.core.impl.VertxImpl;
+import io.vertx.core.spi.metrics.VertxMetrics;
 import lombok.SneakyThrows;
 import org.apache.calcite.util.RxBuiltInMethod;
 import org.apache.curator.framework.CuratorFramework;
@@ -107,12 +109,12 @@ public class MycatCore {
         this.mycatServer = newMycatServer(serverConfig);
 
         HashMap<Class, Object> context = new HashMap<>();
+        Vertx vertx = Vertx.vertx(vertxOptions);
         context.put(IOExecutor.class, new IOExecutor());
         context.put(serverConfig.getServer().getClass(), serverConfig.getServer());
         context.put(serverConfiguration.getClass(), serverConfiguration);
         context.put(serverConfig.getClass(), serverConfig);
         context.put(LoadBalanceManager.class, new LoadBalanceManager(serverConfig.getLoadBalance()));
-        Vertx vertx = Vertx.vertx(vertxOptions);
         context.put(Vertx.class, vertx);
         context.put(this.mycatServer.getClass(), mycatServer);
         context.put(MycatServer.class, mycatServer);

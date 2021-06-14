@@ -2,6 +2,9 @@ package io.mycat;
 
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
+import com.alibaba.druid.sql.ast.expr.SQLNumberExpr;
+import com.alibaba.druid.sql.ast.expr.SQLNumericLiteralExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.calcite.CodeExecuterContext;
@@ -11,6 +14,7 @@ import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.spm.ParamHolder;
 import io.mycat.calcite.spm.QueryPlanner;
 import io.mycat.util.NameMap;
+import lombok.Getter;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -24,10 +28,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
+
 public class DrdsSqlWithParams extends DrdsSql {
     private final List<Object> params;
     private final List<String> aliasList;
     private final static Logger log = LoggerFactory.getLogger(DrdsSqlWithParams.class);
+
+    private Long timeout;
 
     public DrdsSqlWithParams(String parameterizedSqlStatement,
                              List<Object> params,
@@ -38,6 +45,16 @@ public class DrdsSqlWithParams extends DrdsSql {
         super(parameterizedSqlStatement, complex, typeNames, hints);
         this.params = params;
         this.aliasList = aliasList;
+
+        for (MycatHint hint : getHints()) {
+            for (MycatHint.Function function : hint.getFunctions()) {
+                if("EXECUTE_TIMEOUT".equalsIgnoreCase(function.getName())){
+                    MycatHint.Argument argument = function.getArguments().get(0);
+                    SQLNumericLiteralExpr value = (SQLNumericLiteralExpr) argument.getValue();
+                    timeout = value.getNumber().longValue();
+                }
+            }
+        }
     }
 
     public List<Object> getParams() {
@@ -185,4 +202,8 @@ public class DrdsSqlWithParams extends DrdsSql {
             return false;
         }
     }
+    public Optional<Long> getTimeout() {
+        return Optional.ofNullable(timeout);
+    }
+
 }
