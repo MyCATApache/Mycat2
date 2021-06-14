@@ -25,6 +25,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.util.SqlString;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -278,17 +279,28 @@ public class DrdsExecutorCompiler {
         HashMap<String, Object> varContext = new HashMap<>(2);
         StreamMycatEnumerableRelImplementor mycatEnumerableRelImplementor = new StreamMycatEnumerableRelImplementor(varContext);
         HashMap<String,MycatRelDatasourceSourceInfo> stat= new HashMap<>();
+
         relNode.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(RelNode other) {
+                CopyMycatRowMetaData rowMetaData = new CopyMycatRowMetaData(
+                        new CalciteRowMetaData(other.getRowType().getFieldList()));
                 if (other instanceof MycatView) {
                     MycatView view = (MycatView) other;
                     MycatRelDatasourceSourceInfo rel = stat.computeIfAbsent(other.getDigest(), s -> {
                         return new MycatRelDatasourceSourceInfo(
-                                new CopyMycatRowMetaData(
-                                        new CalciteRowMetaData(other.getRowType().getFieldList())),
+                                rowMetaData,
                                 view.getSQLTemplate(forUpdate),
                                 view);
+                    });
+                    rel.refCount += 1;
+                }
+                if (other instanceof MycatTransientSQLTableScan){
+                    MycatTransientSQLTableScan tableScan = (MycatTransientSQLTableScan) other;
+                    MycatRelDatasourceSourceInfo rel = stat.computeIfAbsent(other.getDigest(), s -> {
+                        return new MycatRelDatasourceSourceInfo(rowMetaData,
+                                new TextSqlNode(tableScan.getSql()),
+                                tableScan);
                     });
                     rel.refCount += 1;
                 }

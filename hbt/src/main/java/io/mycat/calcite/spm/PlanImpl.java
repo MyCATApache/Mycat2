@@ -150,7 +150,7 @@ public class PlanImpl implements Plan {
                 if (relNode instanceof MycatView||relNode instanceof MycatTransientSQLTableScan) {
                     String digest = relNode.getDigest();
                     MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = executerContext.getRelContext().get(digest);
-                    MycatView view = mycatRelDatasourceSourceInfo.getView();
+                    MycatView view = mycatRelDatasourceSourceInfo.getRelNode();
                     SqlNode sqlTemplate = mycatRelDatasourceSourceInfo.getSqlTemplate();
                     ImmutableMultimap<String, SqlString> apply = view.apply(sqlTemplate, AsyncMycatDataContextImpl.getSqlMap(view, drdsSql), drdsSql.getParams());
                     ImmutableMultimap<String, SqlString> stringImmutableMultimap =apply;

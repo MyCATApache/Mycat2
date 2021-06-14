@@ -7,9 +7,7 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.MycatHint;
-import io.mycat.calcite.MycatRelDatasourceSourceInfo;
 import io.mycat.calcite.logical.MycatView;
-import io.mycat.calcite.logical.MycatViewDataNodeMapping;
 import io.mycat.calcite.spm.ParamHolder;
 import io.mycat.calcite.spm.QueryPlanner;
 import io.mycat.util.NameMap;
@@ -22,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -80,7 +77,7 @@ public class DrdsSqlWithParams extends DrdsSql {
                                 List<Map<String, Partition>> collect2 = codeExecuterContext.getRelContext()
                                         .values()
                                         .stream()
-                                        .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(i.getView(), drdsSqlWithParams).stream())
+                                        .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(i.getRelNode(), drdsSqlWithParams).stream())
                                         .collect(Collectors.toList());
                                 return Optional.of(collect2);
                             } else if (!physicalTables.isEmpty()) {
@@ -133,7 +130,7 @@ public class DrdsSqlWithParams extends DrdsSql {
                                 List<Map<String, Partition>> collect2 = codeExecuterContext.getRelContext()
                                         .values()
                                         .stream()
-                                        .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(i.getView(), hintSql).stream())
+                                        .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(i.getRelNode(), hintSql).stream())
                                         .collect(Collectors.toList());
                                 return Optional.of(collect2);
 

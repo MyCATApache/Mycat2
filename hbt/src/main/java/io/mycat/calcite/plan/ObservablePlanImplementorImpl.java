@@ -32,6 +32,7 @@ import io.vertx.core.Future;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.runtime.ArrayBindable;
+import org.apache.calcite.runtime.NewMycatDataContext;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,12 +72,13 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
 
     @Override
     public Future<Void> executeQuery(Plan plan) {
-        Observable<MysqlPayloadObject> rowObservable = getMysqlPayloadObjectObservable(context, drdsSqlWithParams, plan);
+        AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSqlWithParams);
+        Observable<MysqlPayloadObject> rowObservable = getMysqlPayloadObjectObservable(context, sqlMycatDataContext, plan);
         return response.sendResultSet(rowObservable);
     }
 
     @NotNull
-    public static Observable<MysqlPayloadObject> getMysqlPayloadObjectObservable(MycatDataContext context, DrdsSqlWithParams drdsSqlWithParams, Plan plan) {
+    public static Observable<MysqlPayloadObject> getMysqlPayloadObjectObservable(MycatDataContext context, AsyncMycatDataContextImpl newMycatDataContext, Plan plan) {
         Observable<MysqlPayloadObject> rowObservable = Observable.<MysqlPayloadObject>create(emitter -> {
             emitter.onNext(new MySQLColumnDef(plan.getMetaData()));
             CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
@@ -84,7 +86,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
             XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
 
             try {
-                AsyncMycatDataContextImpl newMycatDataContext = new AsyncMycatDataContextImpl(context, codeExecuterContext,drdsSqlWithParams, drdsSqlWithParams.getParams(),false);
+
                 Object bindObservable;
                 bindObservable = bindable.bindObservable(newMycatDataContext);
                 Observable<Object[]> observable;

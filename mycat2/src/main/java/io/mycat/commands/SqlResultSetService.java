@@ -168,7 +168,8 @@ public class  SqlResultSetService implements Closeable, Dumpable {
                 ObservablePlanImplementorImpl planImplementor = new ObservablePlanImplementorImpl(
                         transactionSession,
                         context, drdsSql, null);
-                Observable<MysqlPayloadObject> observable = planImplementor.getMysqlPayloadObjectObservable(context, drdsSql, plan);
+                AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSql);
+                Observable<MysqlPayloadObject> observable = planImplementor.getMysqlPayloadObjectObservable(context, sqlMycatDataContext, plan);
                 observable = observable.doOnTerminate(new Action() {
                     @Override
                     public void run() throws Throwable {

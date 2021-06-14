@@ -11,6 +11,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlHintStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.google.common.collect.Iterables;
 import io.mycat.*;
+import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLErrorCode;
@@ -45,6 +46,7 @@ import io.mycat.util.JsonUtil;
 import io.mycat.util.NameMap;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
+import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 import org.apache.commons.csv.CSVFormat;
@@ -64,6 +66,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static io.mycat.calcite.plan.ObservablePlanImplementorImpl.getMysqlPayloadObjectObservable;
 
 public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
     @Override
@@ -114,15 +118,15 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         ops.commit();
                         return response.sendOk();
                     }
-//                    if ("run".equalsIgnoreCase(cmd)) {
-//                        Map<String, Object> map = JsonUtil.from(body, Map.class);
-//                        String hbt = Objects.toString(map.get("hbt"));
-//                        DrdsSqlCompiler drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
-//                        Plan plan = drdsRunner.doHbt(hbt);
-//                        return new ObservablePlanImplementorImpl(
-//                                (XaSqlConnection)dataContext.getTransactionSession(),
-//                                dataContext, Collections.emptyList(), response).executeQuery(plan);
-//                    }
+                    if ("run".equalsIgnoreCase(cmd)) {
+                        Map<String, Object> map = JsonUtil.from(body, Map.class);
+                        String hbt = Objects.toString(map.get("hbt"));
+                        DrdsSqlCompiler drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
+                        Plan plan = drdsRunner.doHbt(hbt);
+                        AsyncMycatDataContextImpl.HbtMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.HbtMycatDataContextImpl(dataContext, plan.getCodeExecuterContext());
+                        Observable<MysqlPayloadObject> rowObservable = getMysqlPayloadObjectObservable(dataContext, sqlMycatDataContext, plan);
+                        return response.sendResultSet(rowObservable);
+                    }
                     if ("createSqlCache".equalsIgnoreCase(cmd)) {
                         MycatRouterConfigOps ops = ConfigUpdater.getOps();
                         SQLStatement sqlStatement = null;

@@ -28,16 +28,13 @@ public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
     protected final MycatDataContext context;
     protected final CodeExecuterContext codeExecuterContext;
     protected final List<Object> params;
-    protected final boolean forUpdate;
 
     public NewMycatDataContextImpl(MycatDataContext dataContext,
                                    CodeExecuterContext context,
-                                   List<Object> params,
-                                   boolean forUpdate) {
+                                   List<Object> params) {
         this.context = dataContext;
         this.codeExecuterContext = context;
         this.params = params;
-        this.forUpdate = forUpdate;
     }
 
     @Override

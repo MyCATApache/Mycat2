@@ -5,18 +5,14 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import hu.akarnokd.rxjava3.operators.Flowables;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.calcite.CodeExecuterContext;
-import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.MycatRelDatasourceSourceInfo;
-import io.mycat.calcite.MycatRexExecutor;
+import io.mycat.calcite.*;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.logical.MycatView;
-import io.mycat.calcite.logical.MycatViewDataNodeMapping;
-import io.mycat.calcite.logical.MycatViewDataNodeMappingImpl;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.IndexCondition;
 import io.mycat.calcite.rewriter.PredicateAnalyzer;
 import io.mycat.calcite.table.GlobalTable;
+import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
 import io.mycat.util.VertxUtil;
@@ -29,28 +25,23 @@ import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.sqlclient.SqlConnection;
 import org.apache.calcite.linq4j.function.Function1;
-import org.apache.calcite.rex.*;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.util.SqlString;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-public class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
+public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
     final Map<String, Future<SqlConnection>> usedConnnectionMap = new HashMap<>();
     final Map<String, List<Observable<Object[]>>> shareObservable = new HashMap<>();
-    private DrdsSqlWithParams drdsSqlWithParams;
 
     public AsyncMycatDataContextImpl(MycatDataContext dataContext,
                                      CodeExecuterContext context,
-                                     DrdsSqlWithParams drdsSqlWithParams,
-                                     List<Object> params,
-                                     boolean forUpdate) {
-        super(dataContext, context, params, forUpdate);
-        this.drdsSqlWithParams = drdsSqlWithParams;
+                                     List<Object> params) {
+        super(dataContext, context, params);
     }
 
     @NotNull
@@ -101,40 +92,80 @@ public class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
         return CompositeFuture.all(new ArrayList<>(usedConnnectionMap.values()));
     }
 
+    public abstract List<Observable<Object[]>> getObservableList(String node);
 
-    @Override
-    public Observable<Object[]> getObservable(String node, Function1 function1, Comparator comparator, int offset, int fetch) {
-        List<Observable<Object[]>> observableList = getObservableList(node);
-        Iterable<Flowable<Object[]>> collect = observableList.stream().map(s -> Flowable.fromObservable(s, BackpressureStrategy.BUFFER)).collect(Collectors.toList());
-        Flowable<Object[]> flowable = Flowables.orderedMerge(collect, (o1, o2) -> {
-            Object left = function1.apply(o1);
-            Object right = function1.apply(o2);
-            return comparator.compare(left, right);
-        });
-        if (offset > 0) {
-            flowable = flowable.skip(offset);
+    public static final class HbtMycatDataContextImpl extends AsyncMycatDataContextImpl {
+
+        public HbtMycatDataContextImpl(MycatDataContext dataContext, CodeExecuterContext context) {
+            super(dataContext, context, Collections.emptyList());
         }
-        if (fetch > 0 && fetch != Integer.MAX_VALUE) {
-            flowable = flowable.take(fetch);
+
+        @Override
+        public List<Observable<Object[]>> getObservableList(String node) {
+            MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = codeExecuterContext.getRelContext().get(node);
+            MycatTransientSQLTableScan relNode = (MycatTransientSQLTableScan) mycatRelDatasourceSourceInfo.getRelNode();
+            ImmutableMultimap<String, SqlString> multimap = ImmutableMultimap.of(relNode.getTargetName(), new SqlString(MycatSqlDialect.DEFAULT, relNode.getSql()));
+            return getObservables(multimap, mycatRelDatasourceSourceInfo.getColumnInfo());
         }
-        return flowable.toObservable();
+
+        @Override
+        public Observable<Object[]> getObservable(String node, Function1 function1, Comparator comparator, int offset, int fetch) {
+            return null;
+        }
     }
 
-    public List<Observable<Object[]>> getObservableList(String node) {
-        if (shareObservable.containsKey(node)) {
-            return (shareObservable.get(node));
+
+    public static final class SqlMycatDataContextImpl extends AsyncMycatDataContextImpl {
+
+        private DrdsSqlWithParams drdsSqlWithParams;
+
+        public SqlMycatDataContextImpl(MycatDataContext dataContext, CodeExecuterContext context, DrdsSqlWithParams drdsSqlWithParams) {
+            super(dataContext, context, drdsSqlWithParams.getParams());
+            this.drdsSqlWithParams = drdsSqlWithParams;
         }
-        MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = this.codeExecuterContext.getRelContext().get(node);
-        MycatView view = mycatRelDatasourceSourceInfo.getView();
-        List<Map<String, Partition>> sqlMap = getSqlMap(view, drdsSqlWithParams);
-        boolean share = mycatRelDatasourceSourceInfo.refCount > 0;
-        List<Observable<Object[]>> observables = getObservables((mycatRelDatasourceSourceInfo.getView()
-                .apply(mycatRelDatasourceSourceInfo.getSqlTemplate(),sqlMap, params)),mycatRelDatasourceSourceInfo.getColumnInfo());
-        if (share) {
-            observables = observables.stream().map(i -> i.share()).collect(Collectors.toList());
-            shareObservable.put(node, observables);
+
+        public List<Observable<Object[]>> getObservableList(String node) {
+            if (shareObservable.containsKey(node)) {
+                return (shareObservable.get(node));
+            }
+            MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = this.codeExecuterContext.getRelContext().get(node);
+            MycatView view = mycatRelDatasourceSourceInfo.getRelNode();
+            List<Map<String, Partition>> sqlMap = getSqlMap(view, drdsSqlWithParams);
+            boolean share = mycatRelDatasourceSourceInfo.refCount > 0;
+            List<Observable<Object[]>> observables = getObservables((view
+                    .apply(mycatRelDatasourceSourceInfo.getSqlTemplate(), sqlMap, params)), mycatRelDatasourceSourceInfo.getColumnInfo());
+            if (share) {
+                observables = observables.stream().map(i -> i.share()).collect(Collectors.toList());
+                shareObservable.put(node, observables);
+            }
+            return observables;
         }
-        return observables;
+
+
+        @Override
+        public Observable<Object[]> getObservable(String node, Function1 function1, Comparator comparator, int offset, int fetch) {
+            List<Observable<Object[]>> observableList = getObservableList(node);
+            Iterable<Flowable<Object[]>> collect = observableList.stream().map(s -> Flowable.fromObservable(s, BackpressureStrategy.BUFFER)).collect(Collectors.toList());
+            Flowable<Object[]> flowable = Flowables.orderedMerge(collect, (o1, o2) -> {
+                Object left = function1.apply(o1);
+                Object right = function1.apply(o2);
+                return comparator.compare(left, right);
+            });
+            if (offset > 0) {
+                flowable = flowable.skip(offset);
+            }
+            if (fetch > 0 && fetch != Integer.MAX_VALUE) {
+                flowable = flowable.take(fetch);
+            }
+            return flowable.toObservable();
+        }
+
+    }
+
+
+    @Override
+    public Observable<Object[]> getObservable(String node) {
+        return Observable.merge(getObservableList(node));
     }
 
     public static List<Map<String, Partition>> getSqlMap(MycatView view, DrdsSqlWithParams drdsSqlWithParams) {
@@ -169,13 +200,13 @@ public class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
                 IndexCondition indexCondition = predicateAnalyzer.translateMatch(condition);
                 List<Partition> partitions = IndexCondition.getObject(shardingTable.getShardingFuntion(), indexCondition, drdsSqlWithParams.getParams());
 
-               return mapSharding(view, partitions);
+                return mapSharding(view, partitions);
             default:
                 throw new IllegalStateException("Unexpected value: " + distribution.type());
         }
     }
 
-    private static List<Map<String, Partition>> mapSharding(MycatView view, List<Partition> object) {
+    public static List<Map<String, Partition>> mapSharding(MycatView view, List<Partition> object) {
         Distribution distribution = view.getDistribution();
         ImmutableMap.Builder<String, Partition> globalbuilder = ImmutableMap.builder();
         for (GlobalTable globalTable : distribution.getGlobalTables()) {
@@ -219,11 +250,5 @@ public class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
             }
         }
         return new ArrayList<>(res.values());
-    }
-
-
-    @Override
-    public Observable<Object[]> getObservable(String node) {
-        return Observable.merge(getObservableList(node));
     }
 }
