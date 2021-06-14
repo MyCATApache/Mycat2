@@ -22,6 +22,8 @@ import io.vertx.core.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+
 public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
     private final static Logger LOGGER = LoggerFactory.getLogger(ShardingSQLHandler.class);
     @Override
@@ -30,7 +32,7 @@ public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         try {
             if (hackRouter.analyse()) {
                 Pair<String, String> plan = hackRouter.getPlan();
-                return response.proxySelect(plan.getKey(),plan.getValue());
+                return response.proxySelect(Collections.singletonList(plan.getKey()),plan.getValue());
             } else {
                return DrdsRunnerHelper.runOnDrds(dataContext,request.getAst(),response);
             }

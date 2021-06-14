@@ -27,15 +27,16 @@ import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 import org.reactivestreams.Publisher;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 public interface Response {
 
     Future<Void> sendError(Throwable e);
 
-    Future<Void> proxySelect(String defaultTargetName, String statement);
+    Future<Void> proxySelect(List<String> targets, String statement);
 
-    Future<Void> proxyUpdate(String defaultTargetName, String proxyUpdate);
+    Future<Void> proxyUpdate(List<String> targets, String proxyUpdate);
 
     Future<Void> proxySelectToPrototype(String statement);
 

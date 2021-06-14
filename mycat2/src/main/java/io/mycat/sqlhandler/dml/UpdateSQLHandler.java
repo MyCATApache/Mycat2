@@ -36,6 +36,7 @@ import io.vertx.core.Future;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -58,7 +59,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
         Optional<String> targetNameOptional = Optional.ofNullable(metadataManager.getPrototype());
         if (!handlerMapOptional.isPresent()) {
             if (targetNameOptional.isPresent()) {
-                return receiver.proxyUpdate(targetNameOptional.get(), Objects.toString(sqlStatement));
+                return receiver.proxyUpdate(Collections.singletonList(targetNameOptional.get()), Objects.toString(sqlStatement));
             } else {
                 return receiver.sendError(new MycatException("Unable to route:" + sqlStatement));
             }
@@ -81,7 +82,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
         ///////////////////////////////common///////////////////////////////
         if (tableHandler == null) {
             return receiver.proxyUpdate(
-                    Objects.requireNonNull(defaultTargetName,"can not route :"+sqlStatement),
+                    Collections.singletonList( Objects.requireNonNull(defaultTargetName,"can not route :"+sqlStatement)),
                     sqlStatement.toString());
         }
         switch (tableHandler.getType()) {
@@ -89,7 +90,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
                 HackRouter hackRouter = new HackRouter(sqlStatement, dataContext);
                 if(hackRouter.analyse()){
                     Pair<String, String> plan = hackRouter.getPlan();
-                    return receiver.proxyUpdate(plan.getKey(),plan.getValue());
+                    return receiver.proxyUpdate(Collections.singletonList(plan.getKey()),plan.getValue());
                 }
                 break;
             default:

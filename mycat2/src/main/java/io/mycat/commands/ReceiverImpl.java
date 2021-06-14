@@ -28,18 +28,13 @@ import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
+import io.vertx.core.*;
 import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.sqlclient.SqlConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 
 import static io.mycat.ExecuteType.*;
@@ -72,20 +67,20 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public Future<Void> proxySelect(String defaultTargetName, String statement) {
-        return execute(ExplainDetail.create(QUERY, defaultTargetName, statement, null));
+    public Future<Void> proxySelect(List<String> targets, String statement) {
+        return execute(ExplainDetail.create(QUERY, targets, statement, null));
     }
 
 
     @Override
-    public Future<Void> proxyUpdate(String defaultTargetName, String sql) {
-        return execute(ExplainDetail.create(UPDATE, Objects.requireNonNull(defaultTargetName), sql, null));
+    public Future<Void> proxyUpdate(List<String> targets, String sql) {
+        return execute(ExplainDetail.create(UPDATE, Objects.requireNonNull(targets), sql, null));
     }
 
     @Override
     public Future<Void> proxySelectToPrototype(String statement) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        return execute(ExplainDetail.create(QUERY_MASTER, Objects.requireNonNull(metadataManager.getPrototype()), statement, null));
+        return execute(ExplainDetail.create(QUERY_MASTER, Collections.singletonList(Objects.requireNonNull(metadataManager.getPrototype())), statement, null));
     }
 
 
@@ -135,41 +130,46 @@ public class ReceiverImpl implements Response {
     public Future<Void> execute(ExplainDetail detail) {
         boolean directPacket = false;
         boolean master = dataContext.isInTransaction() || !dataContext.isAutocommit() || detail.getExecuteType().isMaster();
-        String datasource = session.getDataContext().resolveDatasourceTargetName(detail.getTarget(), master);
+        Set<String> targets = new HashSet<>();
+        for (String target : detail.getTargets()) {
+            String datasource = session.getDataContext().resolveDatasourceTargetName(target, master);
+            targets.add(datasource);
+        }
+
         String sql = detail.getSql();
-        PromiseInternal<Void> promise = VertxUtil.newPromise();
-        boolean inTransaction = dataContext.isInTransaction();
-        Future<SqlConnection> connectionFuture = transactionSession.getConnection(datasource);
+        ArrayList<String> targetOrderList = new ArrayList<>(targets);
         switch (detail.getExecuteType()) {
             case QUERY:
             case QUERY_MASTER: {
-                Future<Void> future = connectionFuture.flatMap(connection -> {
-                    Observable<MysqlPayloadObject> mysqlPacketObservable = VertxExecuter.runQueryOutputAsMysqlPayloadObject(Future.succeededFuture(
-                            connection), sql, Collections.emptyList());
-                    return sendResultSet(mysqlPacketObservable);
-                });
-                future.onComplete(event -> {
-                    if (event.succeeded()) {
-                        promise.tryComplete();
+                List<Observable<MysqlPayloadObject>> outputs = new LinkedList<>();
+                for (int i = 0; i < targetOrderList.size(); i++) {
+                    String datasource = targetOrderList.get(i);
+                    Future<SqlConnection> connectionFuture = transactionSession.getConnection(datasource);
+                    if (i == 0) {
+                        outputs.add(VertxExecuter.runQueryOutputAsMysqlPayloadObject(connectionFuture, sql, Collections.emptyList()));
                     } else {
-                        promise.tryFail(event.cause());
+                        outputs.add(VertxExecuter.runQuery(connectionFuture, sql, Collections.emptyList(), null)
+                                .map(row -> new MysqlRow(row)));
                     }
-                });
-                return promise;
+                }
+                return sendResultSet(Observable.merge(outputs));
             }
             case UPDATE:
             case INSERT:
-                Future<long[]> future1 = VertxExecuter.runUpdate(connectionFuture, sql);
-                future1.onComplete(event -> {
-                    if (event.succeeded()) {
-                        long[] result = event.result();
-                        sendOk(result[0], result[1]).onComplete(result1 -> promise.tryComplete());
-                    } else {
-                        promise.tryFail(event.cause());
-                    }
-
+                List<Future<long[]>> updateInfoList = new ArrayList<>(targetOrderList.size());
+                for (int i = 0; i < targetOrderList.size(); i++) {
+                    String datasource = targetOrderList.get(i);
+                    Future<SqlConnection> connectionFuture = transactionSession.getConnection(datasource);
+                    updateInfoList.add(VertxExecuter.runUpdate(connectionFuture, sql));
+                }
+                CompositeFuture all = CompositeFuture.all((List) updateInfoList)
+                        .onSuccess(unused->dataContext.getTransactionSession().closeStatementState());
+                return all.map(u-> {
+                    List<long[]> list = all.list();
+                    return list.stream().reduce(new long[]{0,0},(o, o2) -> new long[]{o[0] + o2[0], o[1] + o2[1]});
+                }).flatMap(result->{
+                    return   sendOk(result[0], result[1]);
                 });
-                return promise;
             default:
                 throw new IllegalStateException("Unexpected value: " + detail.getExecuteType());
         }
