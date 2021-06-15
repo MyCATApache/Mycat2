@@ -104,7 +104,7 @@ public class Distribution {
 
     public Type type() {
         if (!globalTables.isEmpty() && shardingTables.isEmpty() && normalTables.isEmpty()) {
-            return Type.BroadCast;
+            return Type.BROADCAST;
         }
         if (globalTables.isEmpty() && shardingTables.isEmpty() && !normalTables.isEmpty()) {
             return Type.PHY;
@@ -113,9 +113,9 @@ public class Distribution {
             return Type.PHY;
         }
         if (globalTables.isEmpty() && !shardingTables.isEmpty() && normalTables.isEmpty()) {
-            return Type.Sharding;
+            return Type.SHARDING;
         }
-        return Type.Sharding;
+        return Type.SHARDING;
     }
 
     public Optional<Distribution> join(Distribution arg) {
@@ -131,31 +131,31 @@ public class Distribution {
                                             merge(this.normalTables, arg.normalTables)));
                         }
                         return Optional.empty();
-                    case BroadCast:
+                    case BROADCAST:
                         return Optional.of(
                                 new Distribution(merge(this.shardingTables, arg.shardingTables),
                                         merge(this.globalTables, arg.globalTables),
                                         merge(this.normalTables, arg.normalTables)));
-                    case Sharding:
+                    case SHARDING:
                         return Optional.empty();
                     default:
                         throw new IllegalStateException("Unexpected value: " + this.type());
                 }
-            case BroadCast:
+            case BROADCAST:
                 return Optional.of(
                         new Distribution(merge(this.shardingTables, arg.shardingTables),
                                 merge(this.globalTables, arg.globalTables),
                                 merge(this.normalTables, arg.normalTables)));
-            case Sharding:
+            case SHARDING:
                 switch (this.type()) {
                     case PHY:
                         return Optional.empty();
-                    case BroadCast:
+                    case BROADCAST:
                         return Optional.of(
                                 new Distribution(merge(this.shardingTables, arg.shardingTables),
                                         merge(this.globalTables, arg.globalTables),
                                         merge(this.normalTables, arg.normalTables)));
-                    case Sharding:
+                    case SHARDING:
                         if (this.shardingTables.get(0).getShardingFuntion()
                                 .isSameDistribution(
                                         (arg.shardingTables.get(0).getShardingFuntion()))) {
@@ -201,7 +201,7 @@ public class Distribution {
 
     public Stream<Map<String, Partition>> getDataNodes(Function<ShardingTable, List<Partition>> function) {
         switch (this.type()) {
-            case BroadCast:
+            case BROADCAST:
             case PHY: {
                 Map<String, Partition> builder = new HashMap<>();
                 for (NormalTable normalTable : this.normalTables) {
@@ -212,7 +212,7 @@ public class Distribution {
                 }
                 return Stream.of(builder);
             }
-            case Sharding: {
+            case SHARDING: {
                 ImmutableMap.Builder<String, Partition> globalbuilder = ImmutableMap.builder();
                 for (GlobalTable globalTable : this.globalTables) {
                     globalbuilder.put(globalTable.getUniqueName(), globalTable.getDataNode());
@@ -267,8 +267,8 @@ public class Distribution {
 
 
     public static enum Type {
-        BroadCast,
-        Sharding,
+        BROADCAST,
+        SHARDING,
         PHY
 
     }

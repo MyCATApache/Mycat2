@@ -251,22 +251,22 @@ public class MycatHepJoinClustering
                 if (ldistribution.type() == rdistribution.type()) {
                     return 0;
                 }
-                if (ldistribution.type() == Distribution.Type.BroadCast && rdistribution.type() == Distribution.Type.Sharding) {
+                if (ldistribution.type() == Distribution.Type.BROADCAST && rdistribution.type() == Distribution.Type.SHARDING) {
                     return 1;
                 }
-                if (ldistribution.type() == Distribution.Type.Sharding && rdistribution.type() == Distribution.Type.BroadCast) {
+                if (ldistribution.type() == Distribution.Type.SHARDING && rdistribution.type() == Distribution.Type.BROADCAST) {
                     return -1;
                 }
-                if (ldistribution.type() == Distribution.Type.PHY && rdistribution.type() == Distribution.Type.Sharding) {
+                if (ldistribution.type() == Distribution.Type.PHY && rdistribution.type() == Distribution.Type.SHARDING) {
                     return 1;
                 }
-                if (ldistribution.type() == Distribution.Type.Sharding && rdistribution.type() == Distribution.Type.PHY) {
+                if (ldistribution.type() == Distribution.Type.SHARDING && rdistribution.type() == Distribution.Type.PHY) {
                     return -1;
                 }
-                if (ldistribution.type() == Distribution.Type.BroadCast && rdistribution.type() == Distribution.Type.PHY) {
+                if (ldistribution.type() == Distribution.Type.BROADCAST && rdistribution.type() == Distribution.Type.PHY) {
                     return -1;
                 }
-                if (ldistribution.type() == Distribution.Type.PHY && rdistribution.type() == Distribution.Type.BroadCast) {
+                if (ldistribution.type() == Distribution.Type.PHY && rdistribution.type() == Distribution.Type.BROADCAST) {
                     return 1;
                 }
                 return 0;

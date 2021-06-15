@@ -24,8 +24,6 @@ import io.mycat.calcite.*;
 import io.mycat.calcite.localrel.ToLocalConverter;
 import io.mycat.calcite.physical.MycatMergeSort;
 import io.mycat.calcite.rewriter.Distribution;
-import io.mycat.calcite.rewriter.IndexCondition;
-import io.mycat.calcite.rewriter.PredicateAnalyzer;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
@@ -50,7 +48,6 @@ import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalTableScan;
-import org.apache.calcite.rel.logical.ToLogicalConverter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexDynamicParam;
@@ -71,7 +68,6 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 public class MycatView extends AbstractRelNode implements MycatRel {
@@ -135,7 +131,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     public SqlNode getSQLTemplate(boolean update) {
         Partition partition;
-        if (distribution.type() == Distribution.Type.BroadCast) {
+        if (distribution.type() == Distribution.Type.BROADCAST) {
             GlobalTable globalTable = distribution.getGlobalTables().get(0);
             List<Partition> globalPartition = globalTable.getGlobalDataNode();
             partition = globalPartition.get(0);
@@ -155,7 +151,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             List<Map<String, Partition>> dataNodes, List<Object> params) {
         SqlNode sqlTemplate = sqlTemplateArg;
         int mergeUnionSize = MetaClusterCurrent.exist(ServerConfig.class) ? MetaClusterCurrent.wrapper(ServerConfig.class).getMergeUnionSize() : 5;
-        if (distribution.type() == Distribution.Type.BroadCast) {
+        if (distribution.type() == Distribution.Type.BROADCAST) {
             GlobalTable globalTable = distribution.getGlobalTables().get(0);
             List<Partition> globalPartition = globalTable.getGlobalDataNode();
             int i = ThreadLocalRandom.current().nextInt(0, globalPartition.size());
@@ -356,7 +352,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     public Result implementMergeSort(MycatEnumerableRelImplementor implementor, Prefer pref, RelNode relNode) {
         MycatMergeSort mycatMergeSort = null;
         MycatView view = (MycatView) relNode;
-        if (view.getDistribution().type() == Distribution.Type.Sharding) {
+        if (view.getDistribution().type() == Distribution.Type.SHARDING) {
             if (view.getRelNode() instanceof Sort) {
                 Sort viewRelNode = (Sort) view.getRelNode();
                 RexNode rexNode = (RexNode) viewRelNode.fetch;
@@ -451,7 +447,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     public boolean isMergeSort() {
         MycatView view = this;
-        if (view.getDistribution().type() == Distribution.Type.Sharding) {
+        if (view.getDistribution().type() == Distribution.Type.SHARDING) {
             return (view.getRelNode() instanceof Sort);
         } else {
             return false;
@@ -460,7 +456,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     public boolean isMergeAgg() {
         MycatView view = this;
-        if (view.getDistribution().type() == Distribution.Type.Sharding) {
+        if (view.getDistribution().type() == Distribution.Type.SHARDING) {
             return (view.getRelNode() instanceof Aggregate);
         } else {
             return false;

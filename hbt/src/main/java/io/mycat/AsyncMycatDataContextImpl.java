@@ -1,7 +1,6 @@
 package io.mycat;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
-import com.alibaba.druid.sql.ast.expr.SQLNumberExpr;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import hu.akarnokd.rxjava3.operators.Flowables;
@@ -28,7 +27,6 @@ import io.vertx.sqlclient.SqlConnection;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.util.SqlString;
 import org.jetbrains.annotations.NotNull;
 
@@ -175,7 +173,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
 
         Distribution.Type type = distribution.type();
         switch (type) {
-            case BroadCast:
+            case BROADCAST:
             case PHY:
                 Map<String, Partition> builder = new HashMap<>();
                 for (NormalTable normalTable : distribution.getNormalTables()) {
@@ -185,7 +183,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                     builder.put(globalTable.getUniqueName(), globalTable.getDataNode());
                 }
                 return Collections.singletonList(builder);
-            case Sharding:
+            case SHARDING:
                 Optional<List<Map<String, Partition>>> hintDataMapping = drdsSqlWithParams.getHintDataNodeFilter();
                 if (hintDataMapping.isPresent()) {
                     return hintDataMapping.get();

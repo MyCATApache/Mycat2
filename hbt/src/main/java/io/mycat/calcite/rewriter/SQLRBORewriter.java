@@ -42,9 +42,7 @@ import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
-import org.apache.calcite.util.Permutation;
 import org.apache.calcite.util.mapping.IntPair;
-import org.apache.calcite.util.mapping.MappingType;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
@@ -451,7 +449,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                     Optional.of(sort.copy(sort.getTraitSet()
                             .replace(MycatConvention.INSTANCE), mycatCustomTable, collation));
         }
-        if (dataNodeInfo.type() == Distribution.Type.PHY || dataNodeInfo.type() == Distribution.Type.BroadCast) {
+        if (dataNodeInfo.type() == Distribution.Type.PHY || dataNodeInfo.type() == Distribution.Type.BROADCAST) {
             input = sort.copy(input.getTraitSet(), ImmutableList.of(input));
             return Optional.of(view.changeTo(input, dataNodeInfo));
         } else {
@@ -498,7 +496,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         if (dataNodeInfo == null) {
             return Optional.empty();
         }
-        if (dataNodeInfo.type() == Distribution.Type.PHY || dataNodeInfo.type() == Distribution.Type.BroadCast) {
+        if (dataNodeInfo.type() == Distribution.Type.PHY || dataNodeInfo.type() == Distribution.Type.BROADCAST) {
             input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
             return Optional.of(view.changeTo(input, dataNodeInfo));
         } else {
@@ -761,12 +759,12 @@ public class SQLRBORewriter extends RelShuttleImpl {
         Distribution rdistribution = right.getDistribution();
         Distribution.Type lType = ldistribution.type();
         Distribution.Type rType = rdistribution.type();
-        if (lType != Distribution.Type.Sharding && rType != Distribution.Type.Sharding) {
+        if (lType != Distribution.Type.SHARDING && rType != Distribution.Type.SHARDING) {
             return ldistribution.join(rdistribution).map(distribution -> MycatView.ofBottom(
                     join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
                     distribution));
         }
-        if (lType == Distribution.Type.BroadCast || rType == Distribution.Type.BroadCast) {
+        if (lType == Distribution.Type.BROADCAST || rType == Distribution.Type.BROADCAST) {
             return ldistribution.join(rdistribution).map(distribution -> MycatView.ofBottom(
                     join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
                     distribution));
@@ -826,7 +824,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             input = ((MycatView) input).getRelNode();
 
             if (project.containsOver()) {
-                if (dataNodeInfo.type() == Distribution.Type.PHY || (dataNodeInfo.type() == Distribution.Type.BroadCast)) {
+                if (dataNodeInfo.type() == Distribution.Type.PHY || (dataNodeInfo.type() == Distribution.Type.BROADCAST)) {
                     input = project.copy(project.getTraitSet(), ImmutableList.of(input));
                     return mycatView.changeTo(input, dataNodeInfo);
                 }
