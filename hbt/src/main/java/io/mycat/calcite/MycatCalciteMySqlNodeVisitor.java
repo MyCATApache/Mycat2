@@ -5,6 +5,7 @@ import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.*;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.dialect.mysql.ast.MySqlForceIndexHint;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.parser.ParserException;
@@ -37,6 +38,7 @@ import org.apache.calcite.util.TimestampString;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NULL;
 
@@ -394,7 +396,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         }
 
         //hints
-        SqlNodeList hints = convertHints(x.getHints());
+        SqlNodeList hints = convertHints((List)x.getHints());
 
         if (orderBy != null && x.getParent() instanceof SQLUnionQuery) {
             this.sqlNode = new SqlSelect(SqlParserPos.ZERO
@@ -856,7 +858,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         if (sqlNode instanceof SqlSelect) {
             SqlSelect select = (SqlSelect) sqlNode;
 
-            SqlNodeList headHints = convertHints(x.getHeadHintsDirect());
+            SqlNodeList headHints = convertHints((List)x.getHeadHintsDirect());
             select.setHints(headHints);
             this.sqlNode = select;
         } else {
@@ -2103,19 +2105,31 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         return new SqlNodeList(orderByNodes, SqlParserPos.ZERO);
     }
 
-    private SqlNodeList convertHints(List<SQLCommentHint> hints) {
+    private SqlNodeList convertHints(List<SQLHint> hints) {
         return convertHints(hints, null);
     }
 
-    private SqlNodeList convertHints(List<SQLCommentHint> hints, String alias) {
+    private SqlNodeList convertHints(List<SQLHint> hints, String alias) {
         if (hints == null) {
             return new SqlNodeList(SqlParserPos.ZERO);
         }
         List<MycatHint> list = new ArrayList<>(hints.size() + 1);
         boolean QB_NAME = false;
-        for (SQLCommentHint hint : hints) {
-            list.add(new MycatHint(hint.getText()));
-            QB_NAME = hint.getText().contains("QB_NAME");
+        for (SQLHint hint : hints) {
+            if (hint instanceof MySqlForceIndexHint){
+                MySqlForceIndexHint forceIndexHint = (MySqlForceIndexHint) hint;
+                List<SQLName> indexList = forceIndexHint.getIndexList();
+                list.add(new MycatHint( "+MYCAT:" +
+                        "INDEX(" +
+                        indexList.stream().map(i->i.getSimpleName()).collect(Collectors.joining(","))+")"));
+            }else if (hint instanceof SQLCommentHint ){
+                SQLCommentHint sqlCommentHint = (SQLCommentHint) hint;
+                list.add(new MycatHint(sqlCommentHint.getText()));
+                QB_NAME = sqlCommentHint.getText().contains("QB_NAME");
+            }else {
+
+            }
+
         }
         if (!QB_NAME) {
             String format;

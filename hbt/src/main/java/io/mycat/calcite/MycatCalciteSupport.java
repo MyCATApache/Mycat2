@@ -656,7 +656,13 @@ public enum MycatCalciteSupport implements Context {
                                       public SqlNode visit(SqlIdentifier id) {
                                           if (id instanceof TableParamSqlNode) {
                                               Partition partition = map.get(id.getSimple());
-                                              return new SqlIdentifier(ImmutableList.of(partition.getSchema(), partition.getTable()), SqlParserPos.ZERO);
+                                              return new SqlIdentifier(ImmutableList.of(partition.getSchema(), partition.getTable()), SqlParserPos.ZERO){
+                                                  @Override
+                                                  public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
+                                                      super.unparse(writer, leftPrec, rightPrec);
+                                                      writer.print(((TableParamSqlNode) id).getHint());
+                                                  }
+                                              };
                                           }
                                           return super.visit(id);
                                       }

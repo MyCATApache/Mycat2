@@ -84,6 +84,9 @@ public class HintTools {
             .hintStrategy("QB_NAME",
                     HintStrategy.builder((hint, rel) -> true)
                             .build())
+            .hintStrategy("INDEX",
+                    HintStrategy.builder((hint, rel) -> true)
+                            .build())
             .build();
 
     public static RelHint getLastJoinHint(List<RelHint> hints) {

@@ -14,13 +14,16 @@
  */
 package io.mycat.calcite;
 
+import cn.mycat.vertx.xa.MySQLManager;
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.table.MycatLogicTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.*;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.apache.calcite.sql.fun.SqlSingleValueAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.slf4j.Logger;
@@ -29,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Junwen Chen
@@ -39,12 +43,22 @@ public class MycatImplementor extends RelToSqlConverter {
     public MycatImplementor(SqlDialect dialect) {
         super(dialect);
     }
+
     @Override
     public Result visit(TableScan e) {
         try {
+
             MycatLogicTable logicTable = e.getTable().unwrap(MycatLogicTable.class);
-            if (logicTable!=null){
-                TableParamSqlNode tableParamSqlNode = new TableParamSqlNode(ImmutableList.of(logicTable.logicTable().getUniqueName()));
+            if (logicTable != null) {
+                String hintText = "";
+                if (dialect instanceof MysqlSqlDialect) {
+                    for (RelHint hint : e.getHints()) {
+                        if ("INDEX".equalsIgnoreCase(hint.hintName)) {
+                             hintText = "USE INDEX(" + String.join(",", hint.listOptions) + ")";
+                        }
+                    }
+                }
+                SqlNode tableParamSqlNode = new TableParamSqlNode(ImmutableList.of(logicTable.logicTable().getUniqueName()),hintText);
                 return result(tableParamSqlNode, ImmutableList.of(Clause.FROM), e, null);
             }
             return super.visit(e);
