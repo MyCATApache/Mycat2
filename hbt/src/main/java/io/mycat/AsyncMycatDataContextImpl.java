@@ -130,7 +130,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             }
             MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = this.codeExecuterContext.getRelContext().get(node);
             MycatView view = mycatRelDatasourceSourceInfo.getRelNode();
-            List<Map<String, Partition>> sqlMap = getSqlMap(view, drdsSqlWithParams);
+            List<Map<String, Partition>> sqlMap = getSqlMap(view, drdsSqlWithParams,drdsSqlWithParams.getHintDataNodeFilter());
             boolean share = mycatRelDatasourceSourceInfo.refCount > 0;
             List<Observable<Object[]>> observables = getObservables((view
                     .apply(mycatRelDatasourceSourceInfo.getSqlTemplate(), sqlMap, params)), mycatRelDatasourceSourceInfo.getColumnInfo());
@@ -168,7 +168,9 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         return Observable.merge(getObservableList(node));
     }
 
-    public static List<Map<String, Partition>> getSqlMap(MycatView view, DrdsSqlWithParams drdsSqlWithParams) {
+    public static List<Map<String, Partition>> getSqlMap(MycatView view,
+                                                         DrdsSqlWithParams drdsSqlWithParams,
+                                                         Optional<List<Map<String, Partition>>> hintDataMapping) {
         Distribution distribution = view.getDistribution();
 
         Distribution.Type type = distribution.type();
@@ -184,7 +186,6 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                 }
                 return Collections.singletonList(builder);
             case SHARDING:
-                Optional<List<Map<String, Partition>>> hintDataMapping = drdsSqlWithParams.getHintDataNodeFilter();
                 if (hintDataMapping.isPresent()) {
                     return hintDataMapping.get();
                 }

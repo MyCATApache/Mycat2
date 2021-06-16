@@ -100,16 +100,18 @@ public class DrdsRunnerHelper {
             alias = Collections.emptyList();
         }
         MutableBoolean complex = new MutableBoolean();
+        LinkedList<MycatHint> hints = new LinkedList<>();
         MycatPreparedStatementUtil.outputToParameterized(sqlStatement,
                 defaultSchemaName,
                 sb,
                 Collections.emptyList(),
                 params,
+                hints,
                 complex);
         String string = sb.toString();
         return new DrdsSqlWithParams(string,
                 params,
-                complex.getValue(), getTypes(params), alias, getMycatHints( sqlStatement.getHeadHintsDirect()));
+                complex.getValue(), getTypes(params), alias, hints);
     }
 
     @NotNull

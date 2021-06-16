@@ -6,8 +6,6 @@ import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLSelectGroupByClause;
-import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlFlushStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
@@ -18,17 +16,15 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorCloseCallback;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.calcite.MycatHint;
 import lombok.SneakyThrows;
-import org.apache.calcite.sql.SqlHint;
 import org.apache.calcite.sql.util.SqlString;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.sql.*;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -58,7 +54,15 @@ public class MycatPreparedStatementUtil {
                                              StringBuilder sb,
                                              List<Object> inputParameters,
                                              List<Object> outputParameters,
+                                             List<MycatHint> hints,
                                              MutableBoolean complex) {
+        List<SQLCommentHint> headHintsDirect = sqlStatement.getHeadHintsDirect();
+        if (headHintsDirect!=null){
+            for (SQLCommentHint sqlCommentHint : headHintsDirect) {
+                hints.add(new MycatHint(sqlCommentHint.getText()));
+            }
+        }
+
         MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(outputParameters, sb, true) {
            // SQLCommentHint
 //           @Override
@@ -72,6 +76,15 @@ public class MycatPreparedStatementUtil {
                         x.setSchema(defaultSchema);
                     }
                 }
+                return super.visit(x);
+            }
+
+            @Override
+            public boolean visit(MySqlSelectQueryBlock x) {
+                for (SQLCommentHint hint : x.getHints()) {
+                    hints.add(new MycatHint(hint.getText()));
+                }
+
                 return super.visit(x);
             }
 

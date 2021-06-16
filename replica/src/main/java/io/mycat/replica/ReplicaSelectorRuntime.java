@@ -515,8 +515,11 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
     public PhysicsInstance getReadDatasource(LoadBalanceStrategy balanceStrategy,
                                              ReplicaSelector selector) {
         LoadBalanceStrategy defaultWriteLoadBalanceStrategy = selector.getDefaultWriteLoadBalanceStrategy();
-        List<PhysicsInstance> writeDataSource = selector.getReadDataSourceByReplica();
+        List<PhysicsInstance> readDataSourceByReplica = selector.getReadDataSourceByReplica().stream().filter(i->i.getType() == READ).collect(Collectors.toList());
+        if (readDataSourceByReplica.isEmpty()){
+            readDataSourceByReplica = selector.getWriteDataSourceByReplicaType();
+        }
         return getDatasource(balanceStrategy, selector, defaultWriteLoadBalanceStrategy,
-                writeDataSource);
+                readDataSourceByReplica);
     }
 }
