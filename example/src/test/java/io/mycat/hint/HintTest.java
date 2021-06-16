@@ -73,7 +73,7 @@ public class HintTest implements MycatTest {
                 Assert.assertFalse(hasData);
             }
 
-            boolean hasData = !JdbcUtils.executeQuery(mycatConnection, "/*+MYCAT:node(prototypeRead)*/ select 1 from db1.m limit 1", Collections.emptyList()).isEmpty();
+            boolean hasData = !JdbcUtils.executeQuery(mycatConnection, "/*+MYCAT:TARGET(prototypeRead)*/ select 1 from db1.m limit 1", Collections.emptyList()).isEmpty();
             Assert.assertFalse(hasData);
 
             hasData = !JdbcUtils.executeQuery(mycatConnection, "/*+MYCAT:TARGET(dw1)*/ select 1 from db1.m limit 1", Collections.emptyList()).isEmpty();

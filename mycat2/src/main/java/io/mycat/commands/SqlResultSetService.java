@@ -51,7 +51,7 @@ import java.util.concurrent.TimeUnit;
 
 public class  SqlResultSetService implements Closeable, Dumpable {
     final HashMap<String, SqlCacheTask> cacheConfigMap = new HashMap<>();
-    final Cache<SQLSelectStatement, Optional<Observable<MysqlPayloadObject>>> cache = CacheBuilder.newBuilder().maximumSize(65535).build();
+    final Cache<String, Optional<Observable<MysqlPayloadObject>>> cache = CacheBuilder.newBuilder().maximumSize(65535).build();
     final static Logger log = LoggerFactory.getLogger(SqlResultSetService.class);
 
     public synchronized void clear() {
@@ -69,7 +69,7 @@ public class  SqlResultSetService implements Closeable, Dumpable {
                 if (!sqlCacheTask.scheduledFuture.isCancelled()) {
                     sqlCacheTask.scheduledFuture.cancel(false);
                 }
-                cache.invalidate(sqlCacheTask.getSqlSelectStatement());
+                cache.invalidate(sqlCacheTask.getSqlSelectStatement().toString());
             }
         }
     }
@@ -95,7 +95,7 @@ public class  SqlResultSetService implements Closeable, Dumpable {
                 IOExecutor vertx = MetaClusterCurrent.wrapper(IOExecutor.class);
                 vertx.executeBlocking(promise -> {
                     try {
-                        cache.invalidate(sqlSelectStatement);
+                        cache.invalidate(sqlSelectStatement.toString());
                         loadResultSet(sqlSelectStatement);
                     } catch (Throwable throwable) {
                         log.error("", throwable);
@@ -115,7 +115,7 @@ public class  SqlResultSetService implements Closeable, Dumpable {
         Dumper dumper = Dumper.create();
         cacheConfigMap.values().stream().map(i -> {
             String baseInfo = i.sqlCache.toString();
-            boolean hasCache = null != cache.getIfPresent(i.getSqlSelectStatement());
+            boolean hasCache = null != cache.getIfPresent(i.getSqlSelectStatement().toString());
             return baseInfo + " hasCache:" + hasCache;
         })
                 .forEach(dumper::addText);
@@ -141,12 +141,12 @@ public class  SqlResultSetService implements Closeable, Dumpable {
         if (cacheConfigMap.isEmpty()) {
             return Optional.empty();
         }
-        ConcurrentMap<SQLSelectStatement, Optional<Observable<MysqlPayloadObject>>> map = cache.asMap();
+        ConcurrentMap<String, Optional<Observable<MysqlPayloadObject>>> map = cache.asMap();
         Optional<Observable<MysqlPayloadObject>> optionalObservable;
-        if (!map.containsKey(sqlSelectStatement)) {
+        if (!map.containsKey(sqlSelectStatement.toString())) {
             return Optional.empty();
         }
-        optionalObservable = cache.getIfPresent(sqlSelectStatement);
+        optionalObservable = cache.getIfPresent(sqlSelectStatement.toString());
         if (optionalObservable == null) {
          return loadResultSet(sqlSelectStatement);
         } else {
@@ -156,7 +156,7 @@ public class  SqlResultSetService implements Closeable, Dumpable {
 
     @SneakyThrows
     private Optional<Observable<MysqlPayloadObject>> loadResultSet(SQLSelectStatement sqlSelectStatement) {
-        return cache.get(sqlSelectStatement, () -> {
+        return cache.get(sqlSelectStatement.toString(), () -> {
             if (!MetaClusterCurrent.exist(DrdsSqlCompiler.class)) {
                 return Optional.empty();
             }
