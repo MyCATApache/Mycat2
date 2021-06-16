@@ -68,6 +68,22 @@ public class NativeMycatServer implements MycatServer {
         startProxy(this.serverConfig.getServer());
     }
 
+    @Override
+    public int kill(List<Long> ids) {
+        int count = 0;
+        for (MycatReactorThread mycatReactorThread : this.reactorManager.getList()) {
+            for (MycatSession session : mycatReactorThread.getFrontManager().getAllSessions()) {
+                for (Long id : ids) {
+                    if(session.sessionId() == id){
+                        session.close(false,"kill command");
+                        count++;
+                    }
+                }
+            }
+        }
+        return count;
+    }
+
 
     private void startProxy(io.mycat.config.ServerConfig serverConfig) throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, java.lang.reflect.InvocationTargetException, IOException, InterruptedException {
         String handlerConstructorText = "io.mycat.commands.DefaultCommandHandler";

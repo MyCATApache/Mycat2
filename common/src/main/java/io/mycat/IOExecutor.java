@@ -4,17 +4,73 @@ import io.mycat.util.VertxUtil;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
+import io.vertx.core.impl.VertxImpl;
 import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.core.spi.metrics.PoolMetrics;
+import io.vertx.core.spi.metrics.VertxMetrics;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 
-public class IOExecutor {
-    final ExecutorService executorService = Executors.newCachedThreadPool();
+public interface IOExecutor {
 
-    public <T> Future<T> executeBlocking(Handler<Promise<T>> blockingCodeHandler) {
-        PromiseInternal<Object> promise = VertxUtil.newPromise();
-        executorService.execute(() -> blockingCodeHandler.handle((Promise<T>) promise));
-        return (Future) promise.future();
+    public <T> Future<T> executeBlocking(Handler<Promise<T>> blockingCodeHandler);
+
+    public static final IOExecutor DEFAULT = new IOExecutor() {
+        final ExecutorService executorService = Executors.newCachedThreadPool();
+
+        public <T> Future<T> executeBlocking(Handler<Promise<T>> blockingCodeHandler) {
+            PromiseInternal<Object> promise = VertxUtil.newPromise();
+            executorService.execute(() -> blockingCodeHandler.handle((Promise<T>) promise));
+            return (Future) promise.future();
+        }
+    };
+
+    public static IOExecutor fromVertx(Vertx vertx) {
+        class VertxIOExecutor implements IOExecutor {
+            private final ExecutorService executorService = Executors.newCachedThreadPool();
+            private final VertxMetrics metrics;
+            private PoolMetrics<?> poolMetrics;
+
+            public VertxIOExecutor(VertxMetrics metrics) {
+                this.metrics = metrics;
+                this.poolMetrics = metrics.createPoolMetrics("io", "mycat.io-thread", Integer.MAX_VALUE);
+            }
+
+            public <T> Future<T> executeBlocking(Handler<Promise<T>> blockingCodeHandler) {
+                Promise<T> promise = VertxUtil.newPromise();
+                PoolMetrics metrics = poolMetrics;
+                Object queueMetric = metrics != null ? metrics.submitted() : null;
+                Future<T> fut = promise.future();
+                try {
+                    Runnable command = () -> {
+                        Object execMetric = null;
+                        if (metrics != null) {
+                            execMetric = metrics.begin(queueMetric);
+                        }
+                        try {
+                            blockingCodeHandler.handle(promise);
+                        } catch (Throwable e) {
+                            promise.tryFail(e);
+                        }
+                        if (metrics != null) {
+                            metrics.end(execMetric, fut.succeeded());
+                        }
+                    };
+                    executorService.execute(command);
+                } catch (RejectedExecutionException e) {
+                    // Pool is already shut down
+                    if (metrics != null) {
+                        metrics.rejected(queueMetric);
+                    }
+                    throw e;
+                }
+                return fut;
+            }
+        }
+        return new VertxIOExecutor((VertxMetrics) ((VertxImpl) vertx).getMetrics());
     }
+
 }

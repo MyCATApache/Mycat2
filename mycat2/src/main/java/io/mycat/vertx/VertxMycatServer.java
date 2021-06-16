@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.JDBCType;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 
@@ -79,6 +80,11 @@ public class VertxMycatServer implements MycatServer {
         this.server.start();
     }
 
+    @Override
+    public int kill(List<Long> ids) {
+      return   server.kill(ids);
+    }
+
     public static class MycatSessionManager implements MycatServer {
         private final ConcurrentLinkedDeque<VertxSession> sessions = new ConcurrentLinkedDeque<>();
         private MycatServerConfig serverConfig;
@@ -102,6 +108,20 @@ public class VertxMycatServer implements MycatServer {
                             System.exit(1);
                         }
                     });
+        }
+
+        @Override
+        public int kill(List<Long> ids) {
+            int count = 0;
+            for (VertxSession session : sessions) {
+                for (Long id : ids) {
+                    if(session.getDataContext().getSessionId() == id){
+                        session.close();
+                        count++;
+                    }
+                }
+            }
+            return count;
         }
 
         public void addSession(VertxSession vertxSession) {

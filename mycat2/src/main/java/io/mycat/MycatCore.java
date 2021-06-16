@@ -110,7 +110,7 @@ public class MycatCore {
 
         HashMap<Class, Object> context = new HashMap<>();
         Vertx vertx = Vertx.vertx(vertxOptions);
-        context.put(IOExecutor.class, new IOExecutor());
+        context.put(IOExecutor.class, IOExecutor.fromVertx(vertx));
         context.put(serverConfig.getServer().getClass(), serverConfig.getServer());
         context.put(serverConfiguration.getClass(), serverConfiguration);
         context.put(serverConfig.getClass(), serverConfig);
