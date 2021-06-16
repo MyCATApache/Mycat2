@@ -378,6 +378,7 @@ public enum MycatdbCommand {
         return Collections.emptyMap();
     }
     public static Future<Void> execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) {
+        dataContext.putProcessStateMap(Collections.emptyMap());
         sqlStatement.setAfterSemi(false);//remove semi
         boolean existSqlResultSetService = MetaClusterCurrent.exist(SqlResultSetService.class);
         //////////////////////////////////apply transaction///////////////////////////////////
@@ -391,7 +392,6 @@ public enum MycatdbCommand {
                     return receiver.sendResultSet(baseIteratorOptional.get());
                 }
             }
-            dataContext.putProcessStateMap(Collections.emptyMap());
             Map<String, Object> hintRoute = getHintRoute(sqlStatement);
             if (!hintRoute.isEmpty()){
                 dataContext.putProcessStateMap(hintRoute);
