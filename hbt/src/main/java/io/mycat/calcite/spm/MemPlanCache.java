@@ -82,7 +82,7 @@ public class MemPlanCache implements QueryPlanCache {
                 }
             }
         }
-        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(newBaselinePlan);
+        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(baseline,newBaselinePlan);
         if (persist) {
             BaselinePlan newBaselinePlan1 = newBaselinePlan;
             persistor.savePlan(newBaselinePlan1, fix);
@@ -97,16 +97,21 @@ public class MemPlanCache implements QueryPlanCache {
         return new PlanResultSet(newBaselinePlan.getBaselineId(), true, codeExecuterContext);
     }
 
-    public static CodeExecuterContext getCodeExecuterContext(BaselinePlan plan, MycatRel defaultMycatRel) {
+    public  CodeExecuterContext getCodeExecuterContext(Baseline baseline,BaselinePlan plan, OptimizationContext optimizationContext, MycatRel defaultMycatRel) {
+        Object attach = plan.attach;
+        if (attach != null) {
+            return (CodeExecuterContext) attach;
+        }
         if (defaultMycatRel != null) {
-            CodeExecuterContext codeExecuterContext = getCodeExecuterContext(plan);
+            CodeExecuterContext codeExecuterContext = DrdsExecutorCompiler.getCodeExecuterContext(optimizationContext.getRelNodeContext().getConstantMap(),
+                    defaultMycatRel,  DrdsSql.isForUpdate(plan.getSql()));
             plan.setAttach(codeExecuterContext);
         }
-        return getCodeExecuterContext(plan);
+        return getCodeExecuterContext(baseline,plan);
     }
 
     @SneakyThrows
-    public static CodeExecuterContext getCodeExecuterContext(BaselinePlan plan) {
+    public  CodeExecuterContext getCodeExecuterContext(Baseline baseline,BaselinePlan plan) {
         boolean forUpdate = DrdsSql.isForUpdate(plan.getSql());
         Object attach = plan.attach;
 
@@ -117,12 +122,8 @@ public class MemPlanCache implements QueryPlanCache {
 
         synchronized (plan) {
             try {
-                String sql = plan.getSql();
-                DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sql, null);
-                DrdsSqlCompiler drdsSqlCompiler = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
-                RelNodeContext relRoot = drdsSqlCompiler.getRelRoot(drdsSqlWithParams);
-                ImmutableMap<RexNode, RexNode> constantMap = relRoot.getConstantMap();
-                RelJsonReader relJsonReader = new RelJsonReader(DrdsSqlCompiler.newCluster(), drdsSqlCompiler.newCalciteCatalogReader(), null);
+                ImmutableMap<RexNode, RexNode> constantMap = getConstantMap(baseline);
+                RelJsonReader relJsonReader = new RelJsonReader(DrdsSqlCompiler.newCluster(),   MetaClusterCurrent.wrapper(DrdsSqlCompiler.class).newCalciteCatalogReader(), null);
                 MycatRel mycatRel = (MycatRel) relJsonReader.read(rel);
                 CodeExecuterContext codeExecuterContext = DrdsExecutorCompiler.getCodeExecuterContext(constantMap, mycatRel, forUpdate);
                 plan.setAttach(codeExecuterContext);
@@ -134,6 +135,21 @@ public class MemPlanCache implements QueryPlanCache {
         return (CodeExecuterContext) plan.attach;
     }
 
+    private ImmutableMap<RexNode, RexNode> getConstantMap(Baseline baseline) {
+        DrdsSqlCompiler drdsSqlCompiler = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
+
+        ImmutableMap<RexNode, RexNode> constantMap;
+        try {
+            DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.fromBaseline(baseline);
+            RelNodeContext relRoot = drdsSqlCompiler.getRelRoot(drdsSqlWithParams);
+            constantMap = relRoot.getConstantMap();
+        }catch (Throwable throwable){
+            constantMap = ImmutableMap.of();
+            log.warn("",throwable);
+        }
+        return constantMap;
+    }
+
 
     public List<CodeExecuterContext> getAcceptedMycatRelList(DrdsSql baselineSql) {
         Baseline baseline = getBaseline(baselineSql);
@@ -141,18 +157,18 @@ public class MemPlanCache implements QueryPlanCache {
         if (!baselineSql.getHints().isEmpty()) {
             for (BaselinePlan p : baseline.getPlanList()) {
                 if (p.isAccept() && p.getSql().equals(baselineSql.getParameterizedSql())) {
-                    CodeExecuterContext codeExecuterContext = getCodeExecuterContext(p);
+                    CodeExecuterContext codeExecuterContext = getCodeExecuterContext(baseline,p);
                     list.add(codeExecuterContext);
                     return list;
                 }
             }
         }
         if (baseline.getFixPlan() != null) {
-            return ImmutableList.of(getCodeExecuterContext(baseline.getFixPlan()));
+            return ImmutableList.of(getCodeExecuterContext(baseline,baseline.getFixPlan()));
         }
         for (BaselinePlan p : baseline.getPlanList()) {
             if (p.isAccept()) {
-                CodeExecuterContext codeExecuterContext = getCodeExecuterContext(p);
+                CodeExecuterContext codeExecuterContext = getCodeExecuterContext(baseline,p);
                 list.add(codeExecuterContext);
             }
         }
@@ -169,7 +185,7 @@ public class MemPlanCache implements QueryPlanCache {
         mycatRel.explain(relJsonWriter);
         long hash = planIds.nextPlanId();
         BaselinePlan newBaselinePlan = new BaselinePlan(drdsSql.getParameterizedSql(), relJsonWriter.asString(), hash, baselineId = baseline.getBaselineId(), null);
-        getCodeExecuterContext(newBaselinePlan, mycatRel);
+        getCodeExecuterContext(baseline,newBaselinePlan,optimizationContext, mycatRel);
         return saveBaselinePlan(fix, false, baseline, newBaselinePlan);
     }
 
@@ -282,7 +298,7 @@ public class MemPlanCache implements QueryPlanCache {
         for (Baseline baseline : new ArrayList<>(this.map.values())) {
             for (BaselinePlan baselinePlan : baseline.getPlanList()) {
                 try {
-                    getCodeExecuterContext(baselinePlan);
+                    getCodeExecuterContext(baseline,baselinePlan);
                 } catch (Throwable throwable) {
                     map.remove(baseline.getConstraint());
                     deleteBaseline(baseline.getBaselineId());

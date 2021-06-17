@@ -112,7 +112,7 @@ public class RelMdMaxRowCount
     }
     final int offset;
     if(rel.offset instanceof RexDynamicParam){
-      offset = (((Number)ParamHolder.CURRENT_THREAD_LOCAL.get().get(((RexDynamicParam) rel.offset).getIndex()))).intValue();
+      offset = (((Number)ParamHolder.CURRENT_THREAD_LOCAL.get().getParams().get(((RexDynamicParam) rel.offset).getIndex()))).intValue();
     }else{
       offset = rel.offset == null ? 0 : RexLiteral.intValue(rel.offset);
     }
@@ -122,7 +122,7 @@ public class RelMdMaxRowCount
     if (rel.fetch != null) {
       final int limit ;
       if(rel.fetch instanceof RexDynamicParam){
-        limit = (((Number)ParamHolder.CURRENT_THREAD_LOCAL.get().get(((RexDynamicParam) rel.fetch).getIndex()))).intValue();
+        limit = (((Number)ParamHolder.CURRENT_THREAD_LOCAL.get().getParams().get(((RexDynamicParam) rel.fetch).getIndex()))).intValue();
       }else {
         limit  = RexLiteral.intValue(rel.fetch);
       }

@@ -19,10 +19,7 @@ import io.mycat.beans.mysql.MySQLType;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.plan.PlanImplementor;
-import io.mycat.calcite.spm.ParamHolder;
-import io.mycat.calcite.spm.Plan;
-import io.mycat.calcite.spm.PlanImpl;
-import io.mycat.calcite.spm.QueryPlanner;
+import io.mycat.calcite.spm.*;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.util.VertxUtil;
@@ -122,7 +119,7 @@ public class DrdsRunnerHelper {
                 for (SQLCommentHint sqlCommentHint : headHintsDirect) {
                     hints.add(new MycatHint(sqlCommentHint.getText()));
                 }
-            }else {
+            } else {
                 return Collections.emptyList();
             }
         }
@@ -165,6 +162,14 @@ public class DrdsRunnerHelper {
             }
         }
         return list;
+    }
+
+    public static DrdsSqlWithParams fromBaseline(Baseline baseline) {
+        Constraint constraint = baseline.getConstraint();
+        return new DrdsSqlWithParams(baseline.getSql(),
+                Collections.emptyList(),
+                false,
+                constraint.getParamTypes(),Collections.emptyList(),Collections.emptyList());
     }
 
 
@@ -223,7 +228,29 @@ public class DrdsRunnerHelper {
             private RelDataType resolveDynamicParam(SqlNode expr) {
                 if (expr != null && expr instanceof SqlDynamicParam) {
                     int index = ((SqlDynamicParam) expr).getIndex();
-                    return super.typeFactory.createSqlType(suggestedParamTypes.get(index));
+                    SqlTypeName sqlTypeName = null;
+                    if (suggestedParamTypes.size() > index) {
+                        sqlTypeName = suggestedParamTypes.get(index);
+                    }
+                    ParamHolder paramHolder = ParamHolder.CURRENT_THREAD_LOCAL.get();
+                    if (sqlTypeName == null) {
+                        List<SqlTypeName> curTypes = paramHolder.getTypes();
+                        if (curTypes.size() > index) {
+                            sqlTypeName = curTypes.get(index);
+                        }
+                    }
+                    if (sqlTypeName == null) {
+                        List<Object> contextParams =paramHolder.getParams();
+                        if (contextParams != null && contextParams.size() > index) {
+                            Object o = contextParams.get(index);
+                            if (o instanceof Number) {
+                                sqlTypeName = SqlTypeName.INTEGER;
+                            } else if (o instanceof String) {
+                                sqlTypeName = SqlTypeName.VARCHAR;
+                            }
+                        }
+                    }
+                    return super.typeFactory.createSqlType(Objects.requireNonNull(sqlTypeName));
                 }
                 return null;
             }
@@ -316,11 +343,11 @@ public class DrdsRunnerHelper {
         QueryPlanner planner = MetaClusterCurrent.wrapper(QueryPlanner.class);
         PlanImpl plan;
         try {
-            ParamHolder.CURRENT_THREAD_LOCAL.set(drdsSqlWithParams.getParams());
+            ParamHolder.CURRENT_THREAD_LOCAL.get().setData(drdsSqlWithParams.getParams(),drdsSqlWithParams.getTypeNames());
             CodeExecuterContext codeExecuterContext = planner.innerComputeMinCostCodeExecuterContext(drdsSqlWithParams);
             plan = new PlanImpl(codeExecuterContext.getMycatRel(), codeExecuterContext, drdsSqlWithParams.getAliasList());
         } finally {
-            ParamHolder.CURRENT_THREAD_LOCAL.set(null);
+            ParamHolder.CURRENT_THREAD_LOCAL.get().clear();
         }
         return plan;
     }

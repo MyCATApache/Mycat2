@@ -184,7 +184,7 @@ public class DrdsSqlWithParams extends DrdsSql {
 
                             QueryPlanner planner = MetaClusterCurrent.wrapper(QueryPlanner.class);
                             try {
-                                ParamHolder.CURRENT_THREAD_LOCAL.set(hintSql.getParams());
+                                ParamHolder.CURRENT_THREAD_LOCAL.get().setData(hintSql.getParams(),hintSql.getTypeNames());
                                 CodeExecuterContext codeExecuterContext = planner.innerComputeMinCostCodeExecuterContext(hintSql);
 
                                 List<Map<String, Partition>> collect2 = codeExecuterContext.getRelContext()
@@ -214,7 +214,7 @@ public class DrdsSqlWithParams extends DrdsSql {
                             } catch (Exception e) {
                                 log.error("", e);
                             } finally {
-                                ParamHolder.CURRENT_THREAD_LOCAL.set(null);
+                                ParamHolder.CURRENT_THREAD_LOCAL.get().clear();
                             }
                         }
 

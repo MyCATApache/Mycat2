@@ -152,11 +152,11 @@ public class RelMdRowCount
       return rowCount;
     }
     if (rel.offset instanceof RexDynamicParam && rel.fetch instanceof RexDynamicParam){
-      List<Object> objects = ParamHolder.CURRENT_THREAD_LOCAL.get();
+      List<Object> objects = ParamHolder.CURRENT_THREAD_LOCAL.get().getParams();
       if (objects!=null){
           RexDynamicParam offsetParam = (RexDynamicParam) rel.offset;
           RexDynamicParam fetchParam = (RexDynamicParam) rel.fetch;
-         Number offsetValue =   (Number)objects.get(offsetParam.getIndex());
+          Number offsetValue =   (Number)objects.get(offsetParam.getIndex());
           Number fetchValue =   (Number)objects.get(fetchParam.getIndex());
           return Double.valueOf(fetchValue.longValue() - offsetValue.longValue());
       }

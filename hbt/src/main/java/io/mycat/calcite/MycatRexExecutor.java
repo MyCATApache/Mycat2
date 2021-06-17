@@ -37,7 +37,7 @@ public class MycatRexExecutor implements RexExecutor {
     public static final RexShuttle PARAM_RESOLVER = new RexShuttle() {
         @Override
         public RexNode visitDynamicParam(RexDynamicParam dynamicParam) {
-            List<Object> params = ParamHolder.CURRENT_THREAD_LOCAL.get();
+            List<Object> params = ParamHolder.CURRENT_THREAD_LOCAL.get().getParams();
             if (params != null) {
                 Object o = params.get(dynamicParam.getIndex());
                 return rexBuilder.makeLiteral(o, dynamicParam.getType(), true);

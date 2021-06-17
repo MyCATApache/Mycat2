@@ -1,5 +1,6 @@
 package io.mycat.calcite.spm;
 
+import io.mycat.MetaClusterCurrent;
 import lombok.*;
 
 import java.util.Objects;
@@ -14,7 +15,7 @@ public class BaselinePlan<T> {
     final long baselineId;
     final boolean accept;
 
-     T attach;
+    T attach;
 
     public BaselinePlan(String sql, String rel, long id, long baselineId, T attach) {
         this(sql, rel, id, baselineId, false, (attach));
@@ -30,7 +31,12 @@ public class BaselinePlan<T> {
     }
 
     public T attach() {
-      return (T)  MemPlanCache.getCodeExecuterContext(this);
+        if (attach != null) {
+            return attach;
+        }
+        MemPlanCache memPlanCache = MetaClusterCurrent.wrapper(MemPlanCache.class);
+        attach = (T) memPlanCache.getCodeExecuterContext(memPlanCache.getBaseline(baselineId),this);
+        return (T) attach;
     }
 
     @Override

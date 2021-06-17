@@ -8,9 +8,7 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.*;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.logical.MycatView;
-import io.mycat.calcite.rewriter.Distribution;
-import io.mycat.calcite.rewriter.IndexCondition;
-import io.mycat.calcite.rewriter.PredicateAnalyzer;
+import io.mycat.calcite.rewriter.*;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.calcite.table.NormalTable;
@@ -203,12 +201,12 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                     inputConditions.add(rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, rexNodeRexNodeEntry.getKey(), rexNodeRexNodeEntry.getValue()));
                 }
                 ArrayList<RexNode> res = new ArrayList<>(inputConditions.size());
-                MycatRexExecutor.INSTANCE.reduce(rexBuilder, Collections.singletonList(condition), res);
+                MycatRexExecutor.INSTANCE.reduce(rexBuilder, inputConditions, res);
                 condition = res.get(0);
 
-                PredicateAnalyzer predicateAnalyzer = new PredicateAnalyzer(shardingTable.keyMetas(), shardingTable.getColumns().stream().map(i -> i.getColumnName()).collect(Collectors.toList()));
-                IndexCondition indexCondition = predicateAnalyzer.translateMatch(condition);
-                List<Partition> partitions = IndexCondition.getObject(shardingTable.getShardingFuntion(), indexCondition, drdsSqlWithParams.getParams());
+                ValuePredicateAnalyzer predicateAnalyzer = new ValuePredicateAnalyzer(shardingTable.keyMetas(), shardingTable.getColumns().stream().map(i -> i.getColumnName()).collect(Collectors.toList()));
+                ValueIndexCondition indexCondition = predicateAnalyzer.translateMatch(condition);
+                List<Partition> partitions = ValueIndexCondition.getObject(shardingTable.getShardingFuntion(), indexCondition, drdsSqlWithParams.getParams());
 
                 return mapSharding(view, partitions);
             default:

@@ -310,10 +310,32 @@ public class RelJson {
             return toJson((SchemaInfo) value);
         } else if (value instanceof Window.Group) {
             return toJson((Window.Group) value);
+        } else if (value instanceof org.apache.calcite.rel.hint.RelHint) {
+            return toJson((org.apache.calcite.rel.hint.RelHint) value);
         } else {
             throw new UnsupportedOperationException("type not serializable: "
                     + value + " (type " + value.getClass().getCanonicalName() + ")");
         }
+    }
+
+    private Object toJson(org.apache.calcite.rel.hint.RelHint relHint) {
+        final List<Integer> inheritPath = (List) jsonBuilder.list();
+        inheritPath.addAll(relHint.inheritPath);
+
+        final String hintName = relHint.hintName;
+
+        final List<String> listOptions = (List) jsonBuilder.list();
+        listOptions.addAll(relHint.listOptions);
+
+        final Map<String, String> kvOptions = (Map)jsonBuilder.map();
+        kvOptions.putAll(relHint.kvOptions);
+
+        Map<String, Object> map = jsonBuilder.map();
+        map.put("inheritPath", (inheritPath));
+        map.put("hintName", (hintName));
+        map.put("listOptions", (listOptions));
+        map.put("kvOptions", (kvOptions));
+        return map;
     }
 
     private Object toJson(Window.Group group) {
@@ -332,12 +354,13 @@ public class RelJson {
         map.put("orderKeys", toJson(orderKeys));
         map.put("class", Window.Group.class.getName());
         List<Object> list = jsonBuilder.list();
-        aggCalls.stream().map(i->toJson(i)).forEach(i->list.add(i));
-        map.put("aggCalls",list);
+        aggCalls.stream().map(i -> toJson(i)).forEach(i -> list.add(i));
+        map.put("aggCalls", list);
         return map;
     }
+
     private Object toJson(Window.RexWinAggCall aggCall) {
-        SqlAggFunction aggFun = (SqlAggFunction)aggCall.getOperator();
+        SqlAggFunction aggFun = (SqlAggFunction) aggCall.getOperator();
         RelDataType type = aggCall.getType();
         List<RexNode> operands = aggCall.getOperands();
         int ordinal = aggCall.ordinal;
@@ -345,12 +368,12 @@ public class RelJson {
         boolean ignoreNulls = aggCall.ignoreNulls;
 
         Map<String, Object> map = jsonBuilder.map();
-        map.put("distinct",toJson(distinct));
-        map.put("ignoreNulls",toJson(ignoreNulls));
-        map.put("ordinal",toJson(ordinal));
-        map.put("type",toJson(type));
-        map.put("operands",toJson(operands));
-        map.put("aggFun",toJson(aggFun));
+        map.put("distinct", toJson(distinct));
+        map.put("ignoreNulls", toJson(ignoreNulls));
+        map.put("ordinal", toJson(ordinal));
+        map.put("type", toJson(type));
+        map.put("operands", toJson(operands));
+        map.put("aggFun", toJson(aggFun));
 //        map.put("isRexWinAggCall",toJson(true));
         return map;
     }
@@ -391,8 +414,6 @@ public class RelJson {
     private Object toJson(CorrelationId node) {
         return node.getId();
     }
-
-
 
 
     private Object toJson(RexNode node) {
@@ -739,47 +760,47 @@ public class RelJson {
                 return rexBuilder.makeDynamicParam(type, index.intValue());
             }
 
-                throw new UnsupportedOperationException("cannot convert to rex " + o);
-            } else if (o instanceof Boolean) {
-                return rexBuilder.makeLiteral((Boolean) o);
-            } else if (o instanceof String) {
-                return rexBuilder.makeLiteral((String) o);
-            } else if (o instanceof Number) {
-                final Number number = (Number) o;
-                if (number instanceof Double || number instanceof Float) {
-                    return rexBuilder.makeApproxLiteral(
-                            BigDecimal.valueOf(number.doubleValue()));
-                } else {
-                    return rexBuilder.makeExactLiteral(
-                            BigDecimal.valueOf(number.longValue()));
-                }
+            throw new UnsupportedOperationException("cannot convert to rex " + o);
+        } else if (o instanceof Boolean) {
+            return rexBuilder.makeLiteral((Boolean) o);
+        } else if (o instanceof String) {
+            return rexBuilder.makeLiteral((String) o);
+        } else if (o instanceof Number) {
+            final Number number = (Number) o;
+            if (number instanceof Double || number instanceof Float) {
+                return rexBuilder.makeApproxLiteral(
+                        BigDecimal.valueOf(number.doubleValue()));
             } else {
-                throw new UnsupportedOperationException("cannot convert to rex " + o);
+                return rexBuilder.makeExactLiteral(
+                        BigDecimal.valueOf(number.longValue()));
             }
+        } else {
+            throw new UnsupportedOperationException("cannot convert to rex " + o);
+        }
     }
 
-    public  Window.Group toWindowGroup(RelInput relInput,Map map){
+    public Window.Group toWindowGroup(RelInput relInput, Map map) {
         ImmutableBitSet keys = ImmutableBitSet.of(Optional.ofNullable((List) map.get("keys")).orElse(Collections.emptyList()));
         boolean isRows = Optional.ofNullable((Boolean) map.get("isRows")).orElse(false);
-        RexWindowBound lowerBound = (RexWindowBound)Optional.ofNullable((Map) map.get("lowerBound")).map(node -> toRexWindowBound(relInput, node)).orElse(null);
-        RexWindowBound upperBound = (RexWindowBound)Optional.ofNullable((Map) map.get("upperBound")).map(node -> toRexWindowBound(relInput, node)).orElse(null);
-        RelCollation orderKeys =(RelCollation) Optional.ofNullable((List) map.get("orderKeys")).map(node -> toCollation(node)).orElse(null);
+        RexWindowBound lowerBound = (RexWindowBound) Optional.ofNullable((Map) map.get("lowerBound")).map(node -> toRexWindowBound(relInput, node)).orElse(null);
+        RexWindowBound upperBound = (RexWindowBound) Optional.ofNullable((Map) map.get("upperBound")).map(node -> toRexWindowBound(relInput, node)).orElse(null);
+        RelCollation orderKeys = (RelCollation) Optional.ofNullable((List) map.get("orderKeys")).map(node -> toCollation(node)).orElse(null);
         List<Window.RexWinAggCall> aggCalls = (List) Optional.ofNullable((List) map.get("aggCalls")).map(list -> {
-            return list.stream().map(i -> (Window.RexWinAggCall) toRexRexWinAggCall(relInput,(Map) i)).collect(Collectors.toList());
+            return list.stream().map(i -> (Window.RexWinAggCall) toRexRexWinAggCall(relInput, (Map) i)).collect(Collectors.toList());
         }).orElse(Collections.emptyList());
         return new Window.Group(keys, isRows, lowerBound, upperBound, orderKeys, aggCalls);
     }
 
-    private Window.RexWinAggCall toRexRexWinAggCall(RelInput relInput, Map<String,Object> map) {
+    private Window.RexWinAggCall toRexRexWinAggCall(RelInput relInput, Map<String, Object> map) {
         RelOptCluster cluster = relInput.getCluster();
         final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
-        SqlAggFunction aggFun =toAggregation((Map)map.get("aggFun"));
-        RelDataType type = toType(typeFactory,map.get("type"));
-        List<RexNode> operands = toRexList(relInput,(List)map.get("operands"));
+        SqlAggFunction aggFun = toAggregation((Map) map.get("aggFun"));
+        RelDataType type = toType(typeFactory, map.get("type"));
+        List<RexNode> operands = toRexList(relInput, (List) map.get("operands"));
         int ordinal = (Integer) map.get("ordinal");
         boolean distinct = (Boolean) map.get("distinct");
-        boolean ignoreNulls =  (Boolean)map.get("ignoreNulls");
-        return new Window.RexWinAggCall(aggFun,type,operands,ordinal,distinct,ignoreNulls);
+        boolean ignoreNulls = (Boolean) map.get("ignoreNulls");
+        return new Window.RexWinAggCall(aggFun, type, operands, ordinal, distinct, ignoreNulls);
     }
 
 
@@ -853,7 +874,7 @@ public class RelJson {
                 operators,
                 SqlNameMatchers.liberal());
         for (SqlOperator operator : operators) {
-            if (operator.kind == sqlKind&&aClass.equals(operator.getClass().getName())) {
+            if (operator.kind == sqlKind && aClass.equals(operator.getClass().getName())) {
                 return operator;
             }
         }
@@ -874,7 +895,7 @@ public class RelJson {
         map.put("name", operator.getName());
         map.put("kind", operator.kind.toString());
         map.put("syntax", operator.getSyntax().toString());
-        map.put("opClass",operator.getClass().getName());
+        map.put("opClass", operator.getClass().getName());
         return map;
     }
 
