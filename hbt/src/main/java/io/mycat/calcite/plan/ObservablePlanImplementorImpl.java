@@ -32,7 +32,6 @@ import io.vertx.core.Future;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.runtime.ArrayBindable;
-import org.apache.calcite.runtime.NewMycatDataContext;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,30 +99,32 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                 Object bindObservable;
                 bindObservable = bindable.bindObservable(newMycatDataContext);
                 Observable<Object[]> observable;
-                CompositeFuture compositeFuture = newMycatDataContext.endFuture();
-                compositeFuture.eventually(unused -> transactionSession.closeStatementState());
+                newMycatDataContext.endFuture();
                 if (bindObservable instanceof Observable) {
                     observable = (Observable) bindObservable;
                 } else {
                     Enumerable<Object[]> enumerable = (Enumerable) bindObservable;
-                    observable = toObservable(compositeFuture, enumerable);
+                    observable = toObservable(newMycatDataContext, enumerable);
                 }
                 observable.subscribe(objects -> emitter.onNext(new MysqlRow(objects)),
-                        throwable -> emitter.onError(throwable), () -> {
+                        throwable -> {
+                            newMycatDataContext.endFuture()
+                                    .onComplete(event -> emitter.onError(throwable));
+                        }, () -> {
+                            CompositeFuture compositeFuture = newMycatDataContext.endFuture();
                             compositeFuture.onSuccess(event -> emitter.onComplete());
                             compositeFuture.onFailure(event -> emitter.onError(event));
                         });
             } catch (Throwable throwable) {
-                emitter.onError(throwable);
+                CompositeFuture compositeFuture = newMycatDataContext.endFuture();
+                compositeFuture.onComplete(event -> emitter.onError(throwable));
             }
         });
-
-
         return rowObservable;
     }
 
     @NotNull
-    private static Observable<Object[]> toObservable(CompositeFuture compositeFuture, Enumerable<Object[]> enumerable) {
+    private static Observable<Object[]> toObservable(AsyncMycatDataContextImpl context, Enumerable<Object[]> enumerable) {
         Observable<Object[]> observable;
         observable = Observable.create(emitter1 -> {
             Future future;
@@ -135,7 +136,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
             } catch (Throwable throwable) {
                 future = Future.failedFuture(throwable);
             }
-            CompositeFuture.all(future, compositeFuture)
+            CompositeFuture.all(future, context.endFuture())
                     .onSuccess(event -> emitter1.onComplete())
                     .onFailure(event -> emitter1.onError(event));
         });
