@@ -72,17 +72,17 @@ public class DrdsSqlWithParams extends DrdsSql {
             for (MycatHint.Function hintFunction : hint.getFunctions()) {
                 if ("SCAN".equalsIgnoreCase(hintFunction.getName())) {
                     List<MycatHint.Argument> arguments = hintFunction.getArguments();
-                    Map<String, List<String>> collect = arguments.stream().collect(Collectors.toMap(m -> SQLUtils.toSQLString(m.getName()), v -> Arrays.stream(SQLUtils.normalize(SQLUtils.toSQLString((v.getValue())).replace("'","")
-                            .replace("(","")
-                            .replace(")","")
+                    Map<String, List<String>> collect = arguments.stream().collect(Collectors.toMap(m -> SQLUtils.toSQLString(m.getName()), v -> Arrays.stream(SQLUtils.normalize(SQLUtils.toSQLString((v.getValue())).replace("'", "")
+                            .replace("(", "")
+                            .replace(")", "")
                             .trim()).split(",")).map(i -> SQLUtils.normalize(i)).collect(Collectors.toList())));
                     NameMap<List<String>> nameMap = NameMap.immutableCopyOf(collect);
                     List<String> condition = new LinkedList<>(Optional.ofNullable(nameMap.get("CONDITION", false)).orElse(Collections.emptyList()));
                     List<String> logicalTables = new LinkedList<>(Optional.ofNullable(nameMap.get("TABLE", false)).orElse(Collections.emptyList()));
                     List<List<String>> physicalTables = new LinkedList<>(Optional.ofNullable(nameMap.get("PARTITION", false)).orElse(Collections.emptyList()).stream().map(i -> Arrays.asList(i.split(","))).collect(Collectors.toList()));
-                    if (!physicalTables.isEmpty()){
+                    if (!physicalTables.isEmpty()) {
                         for (MycatHint.Argument argument : arguments) {
-                            if("PARTITION".equals(argument.getName().toString())){
+                            if ("PARTITION".equals(argument.getName().toString())) {
                                 if (argument.getValue() instanceof SQLListExpr) {
                                     physicalTables.clear();
                                     SQLListExpr argumentValue = (SQLListExpr) argument.getValue();
@@ -129,7 +129,7 @@ public class DrdsSqlWithParams extends DrdsSql {
                                 List<Map<String, Partition>> collect2 = codeExecuterContext.getRelContext()
                                         .values()
                                         .stream()
-                                        .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(codeExecuterContext,i.getRelNode(), drdsSqlWithParams, Optional.empty()).stream())
+                                        .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(codeExecuterContext, i.getRelNode(), drdsSqlWithParams, Optional.empty()).stream())
                                         .filter(targetFilter)
                                         .collect(Collectors.toList());
                                 return Optional.of(collect2);
@@ -172,35 +172,36 @@ public class DrdsSqlWithParams extends DrdsSql {
                                 TableHandler table = e.getValue();
                                 String schemaName = table.getSchemaName();
                                 String tableName = table.getTableName();
-                                sb.add(schemaName + "." + tableName+" "+e.getKey());
+                                sb.add(schemaName + "." + tableName + " " + e.getKey());
                             }
-                            if (aliasTableMap.size()==1){
-                                sql = "select *  from " + sb.toString()+" where " + where;
-                            }else {
-                                sql = "select *  from " + sb.toString() +" on " + where;
+                            if (aliasTableMap.size() == 1) {
+                                sql = "select *  from " + sb.toString() + " where " + where;
+                            } else {
+                                sql = "select *  from " + sb.toString() + " on " + where;
                             }
 
                             DrdsSqlWithParams hintSql = DrdsRunnerHelper.preParse(sql, null);
 
                             QueryPlanner planner = MetaClusterCurrent.wrapper(QueryPlanner.class);
+                            ParamHolder paramHolder = ParamHolder.CURRENT_THREAD_LOCAL.get();
+                            paramHolder.setData(hintSql.getParams(), hintSql.getTypeNames());
                             try {
-                                ParamHolder.CURRENT_THREAD_LOCAL.get().setData(hintSql.getParams(),hintSql.getTypeNames());
                                 CodeExecuterContext codeExecuterContext = planner.innerComputeMinCostCodeExecuterContext(hintSql);
 
                                 List<Map<String, Partition>> collect2 = codeExecuterContext.getRelContext()
                                         .values()
                                         .stream()
-                                        .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(codeExecuterContext,i.getRelNode(), hintSql, Optional.empty()).stream())
+                                        .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(codeExecuterContext, i.getRelNode(), hintSql, Optional.empty()).stream())
                                         .filter(targetFilter)
                                         .collect(Collectors.toList());
                                 //逻辑优化
                                 if (!logicalPhysicalMap.isEmpty()) {
                                     int index = 0;
-                                    for (Map<String, Partition> stringPartitionMap : new ArrayList<>( collect2)) {
+                                    for (Map<String, Partition> stringPartitionMap : new ArrayList<>(collect2)) {
                                         for (Map.Entry<String, Partition> entry : new ArrayList<>(stringPartitionMap.entrySet())) {
                                             List<Partition> partitions = logicalPhysicalMap.get(entry.getKey());
                                             if (partitions == null) continue;
-                                            if (index>=partitions.size()){
+                                            if (index >= partitions.size()) {
                                                 collect2.remove(stringPartitionMap);
                                                 continue;
                                             }
@@ -214,7 +215,7 @@ public class DrdsSqlWithParams extends DrdsSql {
                             } catch (Exception e) {
                                 log.error("", e);
                             } finally {
-                                ParamHolder.CURRENT_THREAD_LOCAL.get().clear();
+                                paramHolder.clear();
                             }
                         }
 
@@ -231,7 +232,7 @@ public class DrdsSqlWithParams extends DrdsSql {
         return s -> {
             String[] s1 = s.split("_");
             if (s1.length >= 3) {
-                return new BackendTableInfo(s1[0], s1[1],String.join("_",Arrays.asList(s1).subList(2,s1.length)));
+                return new BackendTableInfo(s1[0], s1[1], String.join("_", Arrays.asList(s1).subList(2, s1.length)));
             }
             if (s1.length == 2) {
                 return new BackendTableInfo(null, s1[0], s1[1]);

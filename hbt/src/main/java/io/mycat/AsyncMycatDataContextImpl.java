@@ -9,6 +9,7 @@ import io.mycat.calcite.*;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.rewriter.*;
+import io.mycat.calcite.spm.ParamHolder;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.calcite.table.NormalTable;
@@ -200,15 +201,19 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                 for (Map.Entry<RexNode, RexNode> rexNodeRexNodeEntry : constantMap.entrySet()) {
                     inputConditions.add(rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, rexNodeRexNodeEntry.getKey(), rexNodeRexNodeEntry.getValue()));
                 }
-                ArrayList<RexNode> res = new ArrayList<>(inputConditions.size());
-                MycatRexExecutor.INSTANCE.reduce(rexBuilder, inputConditions, res);
-                condition = res.get(0);
-
-                ValuePredicateAnalyzer predicateAnalyzer = new ValuePredicateAnalyzer(shardingTable.keyMetas(), shardingTable.getColumns().stream().map(i -> i.getColumnName()).collect(Collectors.toList()));
-                ValueIndexCondition indexCondition = predicateAnalyzer.translateMatch(condition);
-                List<Partition> partitions = ValueIndexCondition.getObject(shardingTable.getShardingFuntion(), indexCondition, drdsSqlWithParams.getParams());
-
-                return mapSharding(view, partitions);
+                ParamHolder paramHolder = ParamHolder.CURRENT_THREAD_LOCAL.get();
+                paramHolder.setData(drdsSqlWithParams.getParams(), drdsSqlWithParams.getTypeNames());
+                try {
+                    ArrayList<RexNode> res = new ArrayList<>(inputConditions.size());
+                    MycatRexExecutor.INSTANCE.reduce(rexBuilder, inputConditions, res);
+                    condition = res.get(0);
+                    ValuePredicateAnalyzer predicateAnalyzer = new ValuePredicateAnalyzer(shardingTable.keyMetas(), shardingTable.getColumns().stream().map(i -> i.getColumnName()).collect(Collectors.toList()));
+                    ValueIndexCondition indexCondition = predicateAnalyzer.translateMatch(condition);
+                    List<Partition> partitions = ValueIndexCondition.getObject(shardingTable.getShardingFuntion(), indexCondition, drdsSqlWithParams.getParams());
+                    return mapSharding(view, partitions);
+                }finally {
+                    paramHolder.clear();
+                }
             default:
                 throw new IllegalStateException("Unexpected value: " + distribution.type());
         }

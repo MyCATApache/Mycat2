@@ -342,12 +342,13 @@ public class DrdsRunnerHelper {
     public static PlanImpl getPlan(DrdsSqlWithParams drdsSqlWithParams) {
         QueryPlanner planner = MetaClusterCurrent.wrapper(QueryPlanner.class);
         PlanImpl plan;
+        ParamHolder paramHolder = ParamHolder.CURRENT_THREAD_LOCAL.get();
         try {
-            ParamHolder.CURRENT_THREAD_LOCAL.get().setData(drdsSqlWithParams.getParams(),drdsSqlWithParams.getTypeNames());
+            paramHolder .setData(drdsSqlWithParams.getParams(),drdsSqlWithParams.getTypeNames());
             CodeExecuterContext codeExecuterContext = planner.innerComputeMinCostCodeExecuterContext(drdsSqlWithParams);
             plan = new PlanImpl(codeExecuterContext.getMycatRel(), codeExecuterContext, drdsSqlWithParams.getAliasList());
         } finally {
-            ParamHolder.CURRENT_THREAD_LOCAL.get().clear();
+
         }
         return plan;
     }

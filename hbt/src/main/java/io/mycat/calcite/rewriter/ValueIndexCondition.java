@@ -11,13 +11,15 @@ import io.mycat.util.JsonUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
-import org.apache.calcite.rex.RexDynamicParam;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexSlot;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.*;
+import org.apache.calcite.sql.SqlKind;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -188,8 +190,63 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
         for (Object o : pointQueryKeyArg) {
             if (o instanceof RexDynamicParam){
                 builder.add (params.get(((RexDynamicParam) o).getIndex()));
-            }else if (o instanceof RexLiteral){
-                builder.add (((RexLiteral) o).getValue());
+            }
+            if (o instanceof RexCall&&((RexCall) o).getKind()== SqlKind.CAST){
+                o = ((RexCall) o).getOperands().get(0);
+            }
+            if (o instanceof RexLiteral){
+                RexLiteral rexLiteral = (RexLiteral) o;
+                RelDataType type = rexLiteral.getType();
+                switch (type.getSqlTypeName()) {
+                    case BOOLEAN:
+                        o = rexLiteral.getValueAs(Boolean.class);
+                        break;
+                    case INTEGER:
+                    case SMALLINT:
+                    case TINYINT:
+                    case BIGINT:
+                        o = rexLiteral.getValueAs(Long.class);
+                        break;
+                    case DECIMAL:
+                        o = rexLiteral.getValueAs(BigDecimal.class);
+                        break;
+                    case FLOAT:
+                    case REAL:
+                    case DOUBLE:
+                        o = rexLiteral.getValueAs(Double.class);
+                        break;
+                    case DATE:
+                        o = rexLiteral.getValueAs(LocalDate.class);
+                        break;
+                    case TIMESTAMP:
+                    case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                        o = rexLiteral.getValueAs(LocalDateTime.class);
+                        break;
+                    case TIME:
+                    case TIME_WITH_LOCAL_TIME_ZONE:
+                    case CHAR:
+                    case VARCHAR:
+                    case BINARY:
+                    case VARBINARY:
+                    case NULL:
+                    case ANY: ;
+                    case SYMBOL:
+                    case MULTISET:
+                    case ARRAY:
+                    case MAP:
+                    case DISTINCT:
+                    case STRUCTURED:
+                    case ROW:
+                    case OTHER:
+                    case CURSOR:
+                    case COLUMN_LIST:
+                    case DYNAMIC_STAR:
+                    case GEOMETRY:
+                    case SARG:
+                        o = rexLiteral.getValueAs(String.class);
+                        break;
+                }
+                builder.add (o);
             }else {
                 builder.add (o);
             }
