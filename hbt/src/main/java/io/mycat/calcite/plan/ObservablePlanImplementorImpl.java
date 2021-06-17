@@ -92,14 +92,11 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
             emitter.onNext(new MySQLColumnDef(plan.getMetaData()));
             CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
             ArrayBindable bindable = codeExecuterContext.getBindable();
-            XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
-
             try {
 
                 Object bindObservable;
                 bindObservable = bindable.bindObservable(newMycatDataContext);
                 Observable<Object[]> observable;
-                newMycatDataContext.endFuture();
                 if (bindObservable instanceof Observable) {
                     observable = (Observable) bindObservable;
                 } else {

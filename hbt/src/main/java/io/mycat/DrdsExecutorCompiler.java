@@ -23,6 +23,7 @@ import org.apache.calcite.linq4j.tree.ClassDeclaration;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlString;
@@ -275,7 +276,7 @@ public class DrdsExecutorCompiler {
 
     @NotNull
     @SneakyThrows
-    public static CodeExecuterContext getCodeExecuterContext(MycatRel relNode, boolean forUpdate) {
+    public static CodeExecuterContext getCodeExecuterContext(Map<RexNode, RexNode> constantMap, MycatRel relNode, boolean forUpdate) {
         HashMap<String, Object> varContext = new HashMap<>(2);
         StreamMycatEnumerableRelImplementor mycatEnumerableRelImplementor = new StreamMycatEnumerableRelImplementor(varContext);
         HashMap<String,MycatRelDatasourceSourceInfo> stat= new HashMap<>();
@@ -316,7 +317,7 @@ public class DrdsExecutorCompiler {
         }
         CodeContext codeContext = new CodeContext(classDeclaration.name, code);
 
-        CodeExecuterContext executerContext = CodeExecuterContext.of(stat, varContext,relNode, codeContext);
+        CodeExecuterContext executerContext = CodeExecuterContext.of(constantMap,stat, varContext,relNode, codeContext);
         return executerContext;
     }
 //

@@ -27,6 +27,7 @@ import io.vertx.sqlclient.SqlConnection;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.util.SqlString;
 import org.jetbrains.annotations.NotNull;
 
@@ -130,7 +131,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             }
             MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = this.codeExecuterContext.getRelContext().get(node);
             MycatView view = mycatRelDatasourceSourceInfo.getRelNode();
-            List<Map<String, Partition>> sqlMap = getSqlMap(view, drdsSqlWithParams,drdsSqlWithParams.getHintDataNodeFilter());
+            List<Map<String, Partition>> sqlMap = getSqlMap( this.codeExecuterContext,view, drdsSqlWithParams, drdsSqlWithParams.getHintDataNodeFilter());
             boolean share = mycatRelDatasourceSourceInfo.refCount > 0;
             List<Observable<Object[]>> observables = getObservables((view
                     .apply(mycatRelDatasourceSourceInfo.getSqlTemplate(), sqlMap, params)), mycatRelDatasourceSourceInfo.getColumnInfo());
@@ -168,9 +169,10 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         return Observable.merge(getObservableList(node));
     }
 
-    public static List<Map<String, Partition>> getSqlMap(MycatView view,
-                                                         DrdsSqlWithParams drdsSqlWithParams,
-                                                         Optional<List<Map<String, Partition>>> hintDataMapping) {
+    public static List<Map<String, Partition>> getSqlMap(CodeExecuterContext codeExecuterContext,
+                                                         MycatView view,
+                                                  DrdsSqlWithParams drdsSqlWithParams,
+                                                  Optional<List<Map<String, Partition>>> hintDataMapping) {
         Distribution distribution = view.getDistribution();
 
         Distribution.Type type = distribution.type();
@@ -189,14 +191,21 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                 if (hintDataMapping.isPresent()) {
                     return hintDataMapping.get();
                 }
+
                 ShardingTable shardingTable = distribution.getShardingTables().get(0);
                 RexBuilder rexBuilder = MycatCalciteSupport.RexBuilder;
                 RexNode condition = view.getCondition().orElse(MycatCalciteSupport.RexBuilder.makeLiteral(true));
-                ArrayList<RexNode> res = new ArrayList<>();
-                MycatRexExecutor.INSTANCE.reduce(rexBuilder, Collections.singletonList(condition), res);
-                if (!res.isEmpty()) {
-                    condition = res.get(0);
+                Map<RexNode, RexNode> constantMap = codeExecuterContext.getConstantMap();
+                List<RexNode> inputConditions = new ArrayList<>(constantMap.size() + 1);
+
+                inputConditions.add(condition);
+                for (Map.Entry<RexNode, RexNode> rexNodeRexNodeEntry : constantMap.entrySet()) {
+                    inputConditions.add(rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, rexNodeRexNodeEntry.getKey(), rexNodeRexNodeEntry.getValue()));
                 }
+                ArrayList<RexNode> res = new ArrayList<>(inputConditions.size());
+                MycatRexExecutor.INSTANCE.reduce(rexBuilder, Collections.singletonList(condition), res);
+                condition = res.get(0);
+
                 PredicateAnalyzer predicateAnalyzer = new PredicateAnalyzer(shardingTable.keyMetas(), shardingTable.getColumns().stream().map(i -> i.getColumnName()).collect(Collectors.toList()));
                 IndexCondition indexCondition = predicateAnalyzer.translateMatch(condition);
                 List<Partition> partitions = IndexCondition.getObject(shardingTable.getShardingFuntion(), indexCondition, drdsSqlWithParams.getParams());

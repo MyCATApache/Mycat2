@@ -25,6 +25,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
 import io.mycat.calcite.localrel.LocalRules;
@@ -145,7 +146,7 @@ public class DrdsSqlCompiler {
             }
         });
         MycatRel mycatRel = optimizeWithCBO(bestExp, Collections.emptyList());
-        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(mycatRel, false);
+        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(ImmutableMap.of(),mycatRel, false);
         return new PlanImpl(mycatRel, codeExecuterContext, mycatRel.getRowType().getFieldNames());
     }
 
@@ -312,6 +313,7 @@ public class DrdsSqlCompiler {
         {
             relNodeContext = getRelRoot(plus, drdsSql);
             logPlan = relNodeContext.getRoot().rel;
+            optimizationContext.relNodeContext = relNodeContext;
         }
 
         if (logPlan instanceof TableModify) {
@@ -339,8 +341,11 @@ public class DrdsSqlCompiler {
         return mycatRel;
     }
 
+    public RelNodeContext getRelRoot(DrdsSql drdsSql) {
+        return getRelRoot(this.schemas, drdsSql);
+    }
 
-    private RelNodeContext getRelRoot(
+    public RelNodeContext getRelRoot(
             SchemaPlus plus, DrdsSql drdsSql) {
         CalciteCatalogReader catalogReader = DrdsRunnerHelper.newCalciteCatalogReader(plus);
         SqlValidator validator = DrdsRunnerHelper.getSqlValidator(drdsSql, catalogReader);
@@ -420,10 +425,10 @@ public class DrdsSqlCompiler {
             listBuilder.add(CoreRules.SORT_JOIN_TRANSPOSE.config.withOperandFor(MycatTopN.class, Join.class).toRule());
 
             listBuilder.add(CoreRules.FILTER_SET_OP_TRANSPOSE.config.toRule());
-            listBuilder.add(CoreRules.AGGREGATE_JOIN_TRANSPOSE.config.withOperandFor(Aggregate.class,Join.class,false).toRule());
+            listBuilder.add(CoreRules.AGGREGATE_JOIN_TRANSPOSE.config.withOperandFor(Aggregate.class, Join.class, false).toRule());
 
             //Sort/Project
-            listBuilder.add(CoreRules.SORT_PROJECT_TRANSPOSE.config.withOperandFor(Sort.class,Project.class).toRule());
+            listBuilder.add(CoreRules.SORT_PROJECT_TRANSPOSE.config.withOperandFor(Sort.class, Project.class).toRule());
 
             listBuilder.build().forEach(c -> planner.addRule(c));
             MycatConvention.INSTANCE.register(planner);

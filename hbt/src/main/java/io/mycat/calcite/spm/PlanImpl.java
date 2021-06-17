@@ -152,7 +152,7 @@ public class PlanImpl implements Plan {
                     MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = executerContext.getRelContext().get(digest);
                     MycatView view = mycatRelDatasourceSourceInfo.getRelNode();
                     SqlNode sqlTemplate = mycatRelDatasourceSourceInfo.getSqlTemplate();
-                    ImmutableMultimap<String, SqlString> apply = view.apply(sqlTemplate, AsyncMycatDataContextImpl.getSqlMap(view, drdsSql,drdsSql.getHintDataNodeFilter()), drdsSql.getParams());
+                    ImmutableMultimap<String, SqlString> apply = view.apply(sqlTemplate, AsyncMycatDataContextImpl.getSqlMap(executerContext,view, drdsSql,drdsSql.getHintDataNodeFilter()), drdsSql.getParams());
                     ImmutableMultimap<String, SqlString> stringImmutableMultimap =apply;
                     for (Map.Entry<String, SqlString> entry : (stringImmutableMultimap.entries())) {
                         SqlString sqlString = new SqlString(

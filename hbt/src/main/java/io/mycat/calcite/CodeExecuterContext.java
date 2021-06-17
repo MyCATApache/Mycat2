@@ -16,6 +16,7 @@
  */
 package io.mycat.calcite;
 
+import com.google.common.collect.ImmutableMap;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.util.JsonUtil;
 import lombok.Getter;
@@ -23,6 +24,7 @@ import lombok.SneakyThrows;
 import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
 import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.runtime.Utilities;
@@ -38,16 +40,19 @@ import java.util.Map;
 @Getter
 public class CodeExecuterContext implements Serializable {
 
+    private Map<RexNode, RexNode> constantMap;
     Map<String, MycatRelDatasourceSourceInfo> relContext;
     Map<String, Object> varContext;
     MycatRel mycatRel;
     CodeContext codeContext;
     private final transient ArrayBindable bindable;
 
-    public CodeExecuterContext(Map<String, MycatRelDatasourceSourceInfo> relContext,
+    public CodeExecuterContext(Map<RexNode, RexNode> constantMap,
+                               Map<String, MycatRelDatasourceSourceInfo> relContext,
                                Map<String, Object> varContext,
                                MycatRel mycatRel,
                                CodeContext codeContext) {
+        this.constantMap = constantMap;
         this.relContext = relContext;
         this.varContext = varContext;
         this.mycatRel = mycatRel;
@@ -56,12 +61,13 @@ public class CodeExecuterContext implements Serializable {
     }
 
     public static final CodeExecuterContext of(
+            Map<RexNode, RexNode> constantMap,
             Map<String, MycatRelDatasourceSourceInfo> relContext,
             Map<String, Object> context,
             MycatRel mycatRel,
             CodeContext codeContext
     ) {
-        return new CodeExecuterContext(relContext, context, mycatRel,codeContext);
+        return new CodeExecuterContext(constantMap,relContext, context, mycatRel,codeContext);
     }
 
     public MycatRowMetaData get(String name) {

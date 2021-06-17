@@ -187,7 +187,7 @@ public abstract class DrdsTest implements MycatTest {
         DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sql, null);
         OptimizationContext optimizationContext = new OptimizationContext();
         MycatRel dispatch = drds.dispatch(optimizationContext, drdsSqlWithParams);
-        Plan plan = new PlanImpl(dispatch, DrdsExecutorCompiler.getCodeExecuterContext(dispatch,false), drdsSqlWithParams.getAliasList());
+        Plan plan = new PlanImpl(dispatch, DrdsExecutorCompiler.getCodeExecuterContext(optimizationContext.relNodeContext.getConstantMap(),dispatch,false), drdsSqlWithParams.getAliasList());
         return new Explain(plan,drdsSqlWithParams);
     }
 

@@ -14,10 +14,13 @@
  */
 package io.mycat.calcite.rewriter;
 
+import io.mycat.calcite.RelNodeContext;
 import lombok.Getter;
+import org.apache.calcite.rel.RelNode;
 
 @Getter
 public class OptimizationContext {
+    public RelNodeContext relNodeContext;
     boolean complex = false;
     boolean predicateOnView = false;
     boolean parameterized = false;

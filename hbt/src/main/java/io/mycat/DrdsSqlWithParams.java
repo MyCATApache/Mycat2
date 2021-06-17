@@ -129,7 +129,7 @@ public class DrdsSqlWithParams extends DrdsSql {
                                 List<Map<String, Partition>> collect2 = codeExecuterContext.getRelContext()
                                         .values()
                                         .stream()
-                                        .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(i.getRelNode(), drdsSqlWithParams, Optional.empty()).stream())
+                                        .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(codeExecuterContext,i.getRelNode(), drdsSqlWithParams, Optional.empty()).stream())
                                         .filter(targetFilter)
                                         .collect(Collectors.toList());
                                 return Optional.of(collect2);
@@ -190,7 +190,7 @@ public class DrdsSqlWithParams extends DrdsSql {
                                 List<Map<String, Partition>> collect2 = codeExecuterContext.getRelContext()
                                         .values()
                                         .stream()
-                                        .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(i.getRelNode(), hintSql, Optional.empty()).stream())
+                                        .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(codeExecuterContext,i.getRelNode(), hintSql, Optional.empty()).stream())
                                         .filter(targetFilter)
                                         .collect(Collectors.toList());
                                 //逻辑优化
