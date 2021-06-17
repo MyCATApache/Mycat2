@@ -146,7 +146,7 @@ public class ReceiverImpl implements Response {
                     String datasource = targetOrderList.get(i);
                     Future<SqlConnection> connectionFuture = transactionSession.getConnection(datasource);
                     if (i == 0) {
-                        outputs.add(VertxExecuter.runQueryOutputAsMysqlPayloadObject(connectionFuture, sql, Collections.emptyList()));
+                        outputs.add(VertxExecuter.runQueryOutputAsMysqlPayloadObject(connectionFuture, sql, detail.getParams()));
                     } else {
                         outputs.add(VertxExecuter.runQuery(connectionFuture, sql, Collections.emptyList(), null)
                                 .map(row -> new MysqlRow(row)));

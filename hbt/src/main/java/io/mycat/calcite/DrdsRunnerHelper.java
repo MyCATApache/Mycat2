@@ -17,6 +17,7 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLType;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
+import io.mycat.calcite.plan.ObservableColocatedImplementor;
 import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.plan.PlanImplementor;
 import io.mycat.calcite.spm.*;
@@ -357,7 +358,7 @@ public class DrdsRunnerHelper {
     public static PlanImplementor getPlanImplementor(MycatDataContext dataContext, Response response, DrdsSqlWithParams drdsSqlWithParams) {
         XaSqlConnection transactionSession = (XaSqlConnection) dataContext.getTransactionSession();
         List<Object> params = drdsSqlWithParams.getParams();
-        return new ObservablePlanImplementorImpl(
+        return new ObservableColocatedImplementor(
                 transactionSession,
                 dataContext, drdsSqlWithParams, response);
     }

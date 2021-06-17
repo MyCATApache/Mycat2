@@ -31,6 +31,8 @@ import org.apache.calcite.sql.util.SqlString;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
@@ -117,6 +119,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
     public static final class SqlMycatDataContextImpl extends AsyncMycatDataContextImpl {
 
         private DrdsSqlWithParams drdsSqlWithParams;
+        private ConcurrentMap<String,List<Map<String, Partition>>> cache = new ConcurrentHashMap<>();
 
 
         public SqlMycatDataContextImpl(MycatDataContext dataContext, CodeExecuterContext context, DrdsSqlWithParams drdsSqlWithParams) {
@@ -130,7 +133,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             }
             MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = this.codeExecuterContext.getRelContext().get(node);
             MycatView view = mycatRelDatasourceSourceInfo.getRelNode();
-            List<Map<String, Partition>> sqlMap = getSqlMap( this.codeExecuterContext,view, drdsSqlWithParams, drdsSqlWithParams.getHintDataNodeFilter());
+            List<Map<String, Partition>> sqlMap = getPartition(node).get();
             boolean share = mycatRelDatasourceSourceInfo.refCount > 0;
             List<Observable<Object[]>> observables = getObservables((view
                     .apply(mycatRelDatasourceSourceInfo.getSqlTemplate(), sqlMap, params)), mycatRelDatasourceSourceInfo.getColumnInfo());
@@ -139,6 +142,13 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                 shareObservable.put(node, observables);
             }
             return observables;
+        }
+
+        public Optional<List<Map<String, Partition>>> getPartition(String node) {
+            MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = this.codeExecuterContext.getRelContext().get(node);
+            if (mycatRelDatasourceSourceInfo==null)return Optional.empty();
+            MycatView view = mycatRelDatasourceSourceInfo.getRelNode();
+           return Optional.ofNullable(cache.computeIfAbsent(node, s -> getSqlMap(codeExecuterContext, view, drdsSqlWithParams, drdsSqlWithParams.getHintDataNodeFilter())));
         }
 
 
@@ -170,8 +180,8 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
 
     public static List<Map<String, Partition>> getSqlMap(CodeExecuterContext codeExecuterContext,
                                                          MycatView view,
-                                                  DrdsSqlWithParams drdsSqlWithParams,
-                                                  Optional<List<Map<String, Partition>>> hintDataMapping) {
+                                                         DrdsSqlWithParams drdsSqlWithParams,
+                                                         Optional<List<Map<String, Partition>>> hintDataMapping) {
         Distribution distribution = view.getDistribution();
 
         Distribution.Type type = distribution.type();
@@ -211,7 +221,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                     ValueIndexCondition indexCondition = predicateAnalyzer.translateMatch(condition);
                     List<Partition> partitions = ValueIndexCondition.getObject(shardingTable.getShardingFuntion(), indexCondition, drdsSqlWithParams.getParams());
                     return mapSharding(view, partitions);
-                }finally {
+                } finally {
                     paramHolder.clear();
                 }
             default:

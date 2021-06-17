@@ -41,11 +41,11 @@ import java.util.concurrent.TimeUnit;
 
 
 public class ObservablePlanImplementorImpl implements PlanImplementor {
-    private final static Logger LOGGER = LoggerFactory.getLogger(ObservablePlanImplementorImpl.class);
-    private final XaSqlConnection xaSqlConnection;
-    private final MycatDataContext context;
-    private final DrdsSqlWithParams drdsSqlWithParams;
-    private final Response response;
+    protected final static Logger LOGGER = LoggerFactory.getLogger(ObservablePlanImplementorImpl.class);
+    protected final XaSqlConnection xaSqlConnection;
+    protected final MycatDataContext context;
+    protected final DrdsSqlWithParams drdsSqlWithParams;
+    protected final Response response;
 
     public ObservablePlanImplementorImpl(XaSqlConnection xaSqlConnection, MycatDataContext context, DrdsSqlWithParams drdsSqlWithParams, Response response) {
         this.xaSqlConnection = xaSqlConnection;
