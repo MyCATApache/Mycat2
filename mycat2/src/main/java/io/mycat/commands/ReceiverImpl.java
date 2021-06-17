@@ -152,7 +152,7 @@ public class ReceiverImpl implements Response {
                                 .map(row -> new MysqlRow(row)));
                     }
                 }
-                return sendResultSet(Observable.merge(outputs));
+                return sendResultSet(Observable.concat(outputs));
             }
             case UPDATE:
             case INSERT:
