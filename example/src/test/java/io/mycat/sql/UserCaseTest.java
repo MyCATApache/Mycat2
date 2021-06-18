@@ -184,4 +184,80 @@ public class UserCaseTest implements MycatTest {
             Assert.assertTrue("[{id=1, name=abc, is_enable=1}]".equals(maps.toString())||"[{id=1, name=abc, is_enable=true}]".equals(maps.toString()));
         }
     }
+
+    @Test
+    public void case4() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
+            execute(mycatConnection, RESET_CONFIG);
+
+            execute(mycatConnection, "DROP DATABASE cloud");
+
+
+            execute(mycatConnection, "CREATE DATABASE cloud");
+
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds0",
+                            DB1));
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds1",
+                            DB2));
+
+            execute(mycatConnection,
+                    CreateClusterHint.create("c0",
+                            Arrays.asList("ds0"), Collections.emptyList()));
+
+            execute(mycatConnection,
+                    CreateClusterHint.create("c1",
+                            Arrays.asList("ds1"), Collections.emptyList()));
+
+            execute(mycatConnection, "USE `cloud`;");
+
+            execute(mycatConnection,"CREATE TABLE IF NOT EXISTS `service` (\n" +
+                    "  `id` bigint(20) NOT NULL,\n" +
+                    "  `name` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,\n" +
+                    "  PRIMARY KEY (`id`)\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+
+            execute(mycatConnection,"CREATE TABLE IF NOT EXISTS `user` (\n" +
+                    "  `id` bigint(20) NOT NULL,\n" +
+                    "  `name` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,\n" +
+                    "  PRIMARY KEY (`id`)\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+
+            execute(mycatConnection,"CREATE TABLE cloud.log (\n" +
+                    "  `id` BIGINT(20) DEFAULT NULL,\n" +
+                    "  `user_id` BIGINT(20) DEFAULT NULL,\n" +
+                    "  `service_id` INT(11) DEFAULT NULL,\n" +
+                    "  `submit_time` DATETIME DEFAULT NULL\n" +
+                    ") ENGINE=INNODB DEFAULT CHARSET=utf8  dbpartition BY YYYYDD(submit_time) dbpartitions 2 tbpartition BY MOD_HASH (id) tbpartitions 8;\n");
+
+            deleteData(mycatConnection, "cloud", "service");
+            deleteData(mycatConnection, "cloud", "user");
+            deleteData(mycatConnection, "cloud", "log");
+
+            String sql1="SELECT log.id AS log_id,user.name AS user_name, service.name AS service_name,log.submit_time\n" +
+                    "FROM\n" +
+                    "`log` INNER JOIN `user`\n" +
+                    "ON log.user_id = user.id\n" +
+                    "INNER JOIN service\n" +
+                    "ON user.id  = service_id\n" +
+                    "ORDER BY log.submit_time DESC LIMIT 0,20;";
+
+            String explain1 = explain(mycatConnection, sql1);
+            System.out.println(explain1);
+            executeQuery(mycatConnection,sql1);
+
+            Assert.assertTrue(explain1.contains("MycatView(distribution=[[cloud.log]], conditions=[=($3, CAST(?0):TIMESTAMP(0) NOT NULL)])"));
+
+            String sql2 = "SELECT log.id ,user.id,service.`id` FROM (SELECT log.`id` ,log.`service_id`,log.`submit_time`,log.`user_id` FROM LOG  WHERE log.submit_time = '2021-5-31' ORDER BY log.submit_time DESC LIMIT 0,20) AS `log` INNER JOIN `user` ON log.user_id = user.id INNER JOIN `service`  ON service.id  = log.service_id ORDER BY log.submit_time DESC LIMIT 0,20;";
+
+            String explain2 = explain(mycatConnection, sql2);
+            System.out.println(explain2);
+            executeQuery(mycatConnection,sql2);
+            Assert.assertTrue(explain2.contains("WHERE (`submit_time` = ?) ORDER BY (`submit_time` IS NULL) DESC, `submit_time` DESC LIMIT 20 OFFSET 0)"));
+
+        }
+    }
 }
