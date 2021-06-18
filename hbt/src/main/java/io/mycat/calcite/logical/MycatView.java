@@ -221,6 +221,9 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         if (condition != null) {
             writer.item("conditions", condition);
         }
+        if (isMergeSort()) {
+            writer.item("mergeSort", isMergeSort());
+        }
         return writer;
     }
 

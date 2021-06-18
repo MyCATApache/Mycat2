@@ -249,7 +249,7 @@ public class UserCaseTest implements MycatTest {
             System.out.println(explain1);
             executeQuery(mycatConnection,sql1);
 
-            Assert.assertTrue(explain1.contains("MycatView(distribution=[[cloud.log]], conditions=[=($3, CAST(?0):TIMESTAMP(0) NOT NULL)])"));
+            Assert.assertTrue(explain1.contains("MycatView(distribution=[[cloud.log]]"));
 
             String sql2 = "SELECT log.id ,user.id,service.`id` FROM (SELECT log.`id` ,log.`service_id`,log.`submit_time`,log.`user_id` FROM LOG  WHERE log.submit_time = '2021-5-31' ORDER BY log.submit_time DESC LIMIT 0,20) AS `log` INNER JOIN `user` ON log.user_id = user.id INNER JOIN `service`  ON service.id  = log.service_id ORDER BY log.submit_time DESC LIMIT 0,20;";
 
@@ -258,6 +258,10 @@ public class UserCaseTest implements MycatTest {
             executeQuery(mycatConnection,sql2);
             Assert.assertTrue(explain2.contains("WHERE (`submit_time` = ?) ORDER BY (`submit_time` IS NULL) DESC, `submit_time` DESC LIMIT 20 OFFSET 0)"));
 
+            //test transaction
+            mycatConnection.setAutoCommit(false);
+            executeQuery(mycatConnection,sql2);
+            mycatConnection.setAutoCommit(true);
         }
     }
 }

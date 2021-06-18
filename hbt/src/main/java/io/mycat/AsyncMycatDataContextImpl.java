@@ -1,6 +1,8 @@
 package io.mycat;
 
+import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.XaSqlConnection;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import hu.akarnokd.rxjava3.operators.Flowables;
@@ -36,7 +38,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
-    final Map<String, Future<SqlConnection>> usedConnnectionMap = new HashMap<>();
+    final Map<String, Future<SqlConnection>> transactionConnnectionMap = new HashMap<>();// int transaction
+    final List<Future<SqlConnection>> connnectionFutureCollection = new LinkedList<>();//not int transaction
     final Map<String, List<Observable<Object[]>>> shareObservable = new HashMap<>();
 
     public AsyncMycatDataContextImpl(MycatDataContext dataContext,
@@ -45,44 +48,64 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         super(dataContext, context, params);
     }
 
-    @NotNull
-    public List<Observable<Object[]>> getObservables(ImmutableMultimap<String, SqlString> expand, MycatRowMetaData calciteRowMetaData) {
-        LinkedList<Observable<Object[]>> observables = new LinkedList<>();
+    Future<SqlConnection> getConnection(String key) {
         XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
+        if (context.isInTransaction()) {
+            return transactionConnnectionMap
+                    .computeIfAbsent(key, s -> transactionSession.getConnection(key));
+        }
+        MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
+        Future<SqlConnection> connection = mySQLManager.getConnection(key);
+        connnectionFutureCollection.add(connection);
+        return connection;
+    }
+
+    void recycleConnection(String key, Future<SqlConnection> connectionFuture) {
+        XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
+        if (context.isInTransaction()) {
+            transactionConnnectionMap.put(key, connectionFuture);
+            return;
+        }
+        connectionFuture = connectionFuture.flatMap(c -> c.close().mapEmpty());
+        transactionSession.addCloseFuture(connectionFuture.mapEmpty());
+        connnectionFutureCollection.add(connectionFuture);
+    }
+
+    @NotNull
+    public synchronized List<Observable<Object[]>> getObservables(ImmutableMultimap<String, SqlString> expand, MycatRowMetaData calciteRowMetaData) {
+        LinkedList<Observable<Object[]>> observables = new LinkedList<>();
         for (Map.Entry<String, SqlString> entry : expand.entries()) {
             String key = context.resolveDatasourceTargetName(entry.getKey());
             SqlString sqlString = entry.getValue();
             Observable<Object[]> observable = Observable.create(emitter -> {
-                synchronized (usedConnnectionMap) {
-                    Future<SqlConnection> sessionConnection = usedConnnectionMap
-                            .computeIfAbsent(key, s -> transactionSession.getConnection(key));
-                    PromiseInternal<SqlConnection> promise = VertxUtil.newPromise();
-                    Observable<Object[]> innerObservable = Objects.requireNonNull(VertxExecuter.runQuery(sessionConnection,
-                            sqlString.getSql(),
-                            MycatPreparedStatementUtil.extractParams(params, sqlString.getDynamicParameters()), calciteRowMetaData));
-                    innerObservable.subscribe(objects -> {
-                                emitter.onNext((objects));
-                            },
-                            throwable -> {
-                                sessionConnection.onSuccess(c -> {
-                                    promise.fail(throwable);
+                Future<SqlConnection> sessionConnection = getConnection(key);
+                PromiseInternal<SqlConnection> promise = VertxUtil.newPromise();
+                Observable<Object[]> innerObservable = Objects.requireNonNull(VertxExecuter.runQuery(sessionConnection,
+                        sqlString.getSql(),
+                        MycatPreparedStatementUtil.extractParams(params, sqlString.getDynamicParameters()), calciteRowMetaData));
+                innerObservable.subscribe(objects -> {
+                            emitter.onNext((objects));
+                        },
+                        throwable -> {
+                            sessionConnection.onSuccess(c -> {
+                                //close connection?
+                                promise.fail(throwable);
+                            })
+                                    .onFailure(t -> promise.fail(t));
+                        }, () -> {
+                            sessionConnection.onSuccess(c -> {
+                                promise.tryComplete(c);
+                            }).onFailure(t -> promise.fail(t));
+                            ;
+                        });
+                recycleConnection(key,
+                        promise.future()
+                                .onSuccess(c -> {
+                                    emitter.onComplete();
                                 })
-                                        .onFailure(t -> promise.fail(t));
-                            }, () -> {
-                                sessionConnection.onSuccess(c -> {
-                                    promise.tryComplete(c);
-                                }).onFailure(t -> promise.fail(t));
-                                ;
-                            });
-                    usedConnnectionMap.put(key,
-                            promise.future()
-                                    .onSuccess(c -> {
-                                        emitter.onComplete();
-                                    })
-                                    .onFailure(t -> {
-                                        emitter.onError(t);
-                                    }));
-                }
+                                .onFailure(t -> {
+                                    emitter.onError(t);
+                                }));
             });
             observables.add(observable);
         }
@@ -90,7 +113,9 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
     }
 
     public CompositeFuture endFuture() {
-        return CompositeFuture.all(new ArrayList<>(usedConnnectionMap.values()));
+        return CompositeFuture.all((List) ImmutableList.builder()
+                .addAll(transactionConnnectionMap.values())
+                .addAll(connnectionFutureCollection).build());
     }
 
     public abstract List<Observable<Object[]>> getObservableList(String node);
@@ -119,7 +144,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
     public static final class SqlMycatDataContextImpl extends AsyncMycatDataContextImpl {
 
         private DrdsSqlWithParams drdsSqlWithParams;
-        private ConcurrentMap<String,List<Map<String, Partition>>> cache = new ConcurrentHashMap<>();
+        private ConcurrentMap<String, List<Map<String, Partition>>> cache = new ConcurrentHashMap<>();
 
 
         public SqlMycatDataContextImpl(MycatDataContext dataContext, CodeExecuterContext context, DrdsSqlWithParams drdsSqlWithParams) {
@@ -146,9 +171,9 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
 
         public Optional<List<Map<String, Partition>>> getPartition(String node) {
             MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = this.codeExecuterContext.getRelContext().get(node);
-            if (mycatRelDatasourceSourceInfo==null)return Optional.empty();
+            if (mycatRelDatasourceSourceInfo == null) return Optional.empty();
             MycatView view = mycatRelDatasourceSourceInfo.getRelNode();
-           return Optional.ofNullable(cache.computeIfAbsent(node, s -> getSqlMap(codeExecuterContext, view, drdsSqlWithParams, drdsSqlWithParams.getHintDataNodeFilter())));
+            return Optional.ofNullable(cache.computeIfAbsent(node, s -> getSqlMap(codeExecuterContext, view, drdsSqlWithParams, drdsSqlWithParams.getHintDataNodeFilter())));
         }
 
 
