@@ -1,8 +1,10 @@
 package org.apache.calcite.util;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Predicate1;
 import org.apache.calcite.linq4j.tree.Types;
@@ -34,7 +36,9 @@ public enum RxBuiltInMethod {
 //    OBSERVABLE_BIND(Bindable.class, "bindObservable", NewMycatDataContext.class),
     AS_OBSERVABLE(RxBuiltInMethodImpl.class, "asObservable", Object[][].class),
     AS_GATHER(RxBuiltInMethodImpl.class, "asGather", Enumerable.class),
-    AS_LIST(RxBuiltInMethodImpl.class, "asList", Object.class);
+    AS_LIST(RxBuiltInMethodImpl.class, "asList", Object.class),
+    BATCH_AS_OBSERVABLE(RxBuiltInMethodImpl.class,"batch",Observable.class),
+    BATCH_AS_ENUMERABLE(RxBuiltInMethodImpl.class,"batch",Enumerable.class);
     ;
     public final Method method;
     public final Constructor constructor;

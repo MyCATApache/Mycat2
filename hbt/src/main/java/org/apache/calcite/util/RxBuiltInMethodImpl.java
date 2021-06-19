@@ -1,19 +1,21 @@
 package org.apache.calcite.util;
 
 
+import com.google.common.collect.Iterables;
 import hu.akarnokd.rxjava3.operators.Flowables;
 import io.mycat.serializable.MaterializedRecordSetFactory;
 import io.mycat.serializable.OffHeapObjectList;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.internal.operators.observable.BlockingObservableIterable;
-import org.apache.calcite.linq4j.*;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Predicate1;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -73,7 +75,7 @@ public class RxBuiltInMethodImpl {
 
                                 @Override
                                 public void close() throws Exception {
-                                    while (iterator.hasNext()){
+                                    while (iterator.hasNext()) {
                                         iterator.next();
                                     }
                                 }
@@ -100,6 +102,27 @@ public class RxBuiltInMethodImpl {
 
     public static Observable<Object[]> toObservable(Object input) {
         return Observable.fromIterable((Enumerable) input);
+    }
+
+    public static Enumerable<List<Object[]>> batch(Enumerable<Object[]> input) {
+        return Linq4j.asEnumerable(Iterables.partition(input, 300));
+    }
+
+    public static Observable<List<Object[]>> batch(Observable<Object[]> input) {
+        Observable observable = input;
+        return observable.buffer(300, 50);
+    }
+
+    public static Observable<List<Object[]>> batch(Object input) {
+        if (input instanceof Observable) {
+            Observable<Object[]> observable = (Observable) input;
+            return observable.buffer(300, 50);
+        }
+        if (input instanceof Iterable) {//Enumerable
+            Iterable enumerable = (Iterable) input;
+            return Observable.fromIterable(Iterables.partition(enumerable, 300));
+        }
+        throw new UnsupportedOperationException();
     }
 
     public static <T> Observable<T> mergeSort(List<Observable<T>> inputs,
