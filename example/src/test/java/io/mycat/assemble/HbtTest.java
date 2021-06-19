@@ -101,7 +101,8 @@ public class HbtTest implements MycatTest {
 
 
             //集合操作测试
-            Assert.assertEquals("[{1=1}, {1=2}]",runHBT("unionAll(fromSql('prototype','select 1'),fromSql('prototype','select 2'))"));
+            String r = runHBT("unionAll(fromSql('prototype','select 1'),fromSql('prototype','select 2'))");
+            Assert.assertTrue(r.equals("[{1=1}, {1=2}]")||r.equals("[{1=[2}, {1=1]}]"));
 
             //distinct
             Assert.assertEquals("[{1=1}]",runHBT("unionAll(fromSql('prototype','select 1'),fromSql('prototype','select 1')).distinct()"));
