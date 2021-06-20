@@ -707,12 +707,6 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
             RexNode conditions = left.getCondition().orElse(right.getCondition().orElse(null));
             RelMetadataQuery metadataQuery = join.getCluster().getMetadataQuery();
-            ColumnRefResolver leftColumnMapping = new ColumnRefResolver();
-            ColumnRefResolver rightColumnMapping = new ColumnRefResolver();
-
-            left.getRelNode().accept(leftColumnMapping);
-            right.getRelNode().accept(rightColumnMapping);
-
             for (IntPair pair : pairs) {
                 RelColumnOrigin leftColumnOrigin = metadataQuery.getColumnOrigin(left.getRelNode(), pair.source);
                 RelColumnOrigin rightColumnOrigin = metadataQuery.getColumnOrigin(right.getRelNode(), pair.target);
