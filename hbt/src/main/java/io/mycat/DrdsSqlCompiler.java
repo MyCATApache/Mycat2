@@ -434,10 +434,10 @@ public class DrdsSqlCompiler {
             listBuilder.add(CoreRules.SORT_PROJECT_TRANSPOSE.config.withOperandFor(Sort.class, Project.class).toRule());
 
             //TABLELOOKUP
-            listBuilder.add(MycatTableLookupSemiJoinRule.Config.DEFAULT.toRule());
-            listBuilder.add(MycatTableLookupCombineRule.Config.DEFAULT.toRule());
-            listBuilder.add(MycatJoinTableLookupTransposeRule.Config.DEFAULT_LEFT.toRule());
-            listBuilder.add(MycatJoinTableLookupTransposeRule.Config.DEFAULT_RIGHT.toRule());
+            listBuilder.add(MycatTableLookupSemiJoinRule.INSTANCE);
+            listBuilder.add(MycatTableLookupCombineRule.INSTANCE);
+            listBuilder.add(MycatJoinTableLookupTransposeRule.LEFT_INSTANCE);
+            listBuilder.add(MycatJoinTableLookupTransposeRule.RIGHT_INSTANCE);
 
             listBuilder.build().forEach(c -> planner.addRule(c));
             MycatConvention.INSTANCE.register(planner);

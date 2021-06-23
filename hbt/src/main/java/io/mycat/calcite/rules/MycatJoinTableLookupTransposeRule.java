@@ -15,6 +15,10 @@ import org.apache.calcite.tools.RelBuilder;
 
 public class MycatJoinTableLookupTransposeRule extends RelRule<MycatJoinTableLookupTransposeRule.Config> {
 
+    public static final MycatJoinTableLookupTransposeRule LEFT_INSTANCE = Config.DEFAULT_LEFT.toRule();
+
+    public static final MycatJoinTableLookupTransposeRule RIGHT_INSTANCE = Config.DEFAULT_RIGHT.toRule();
+
     public MycatJoinTableLookupTransposeRule(Config config) {
         super(config);
     }
@@ -26,18 +30,18 @@ public class MycatJoinTableLookupTransposeRule extends RelRule<MycatJoinTableLoo
         RelNode outerLeft = call.rel(1);
         RelNode outerRight = call.rel(2);
 
-        if (outerLeft instanceof MycatSQLTableLookup){
+        if (outerLeft instanceof MycatSQLTableLookup) {
             MycatSQLTableLookup mycatSQLTableLookup = (MycatSQLTableLookup) outerLeft;
             RelNode bottomInput = mycatSQLTableLookup.getInput();
-            MycatView indexRightView = (MycatView)mycatSQLTableLookup.getRight();
-            RelNode newInputJoin  = join.copy(bottomInput.getTraitSet(),ImmutableList.of(bottomInput,outerRight));
-            call.transformTo(mycatSQLTableLookup.copy(join.getTraitSet(), ImmutableList.of(newInputJoin,indexRightView)));
+            MycatView indexRightView = (MycatView) mycatSQLTableLookup.getRight();
+            RelNode newInputJoin = join.copy(bottomInput.getTraitSet(), ImmutableList.of(bottomInput, outerRight));
+            call.transformTo(mycatSQLTableLookup.copy(join.getTraitSet(), ImmutableList.of(newInputJoin, indexRightView)));
         }
-        if (outerRight instanceof MycatSQLTableLookup){
+        if (outerRight instanceof MycatSQLTableLookup) {
             MycatSQLTableLookup mycatSQLTableLookup = (MycatSQLTableLookup) outerRight;
-            MycatView indexRightView = (MycatView)mycatSQLTableLookup.getRight();
-            RelNode newInputJoin  = join.copy(outerLeft.getTraitSet(),ImmutableList.of(mycatSQLTableLookup.getInput(),indexRightView));
-            call.transformTo(mycatSQLTableLookup.copy(join.getTraitSet(), ImmutableList.of(newInputJoin,indexRightView)));
+            MycatView indexRightView = (MycatView) mycatSQLTableLookup.getRight();
+            RelNode newInputJoin = join.copy(outerLeft.getTraitSet(), ImmutableList.of(mycatSQLTableLookup.getInput(), indexRightView));
+            call.transformTo(mycatSQLTableLookup.copy(join.getTraitSet(), ImmutableList.of(newInputJoin, indexRightView)));
         }
     }
 

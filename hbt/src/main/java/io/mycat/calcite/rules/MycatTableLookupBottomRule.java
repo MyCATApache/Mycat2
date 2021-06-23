@@ -24,6 +24,8 @@ import java.util.List;
 
 public class MycatTableLookupBottomRule extends RelRule<MycatTableLookupBottomRule.Config> {
 
+    public static final MycatTableLookupBottomRule INSTANCE = MycatTableLookupBottomRule.Config.DEFAULT.toRule();
+
     public MycatTableLookupBottomRule(Config config) {
         super(config);
     }
@@ -76,7 +78,7 @@ public class MycatTableLookupBottomRule extends RelRule<MycatTableLookupBottomRu
                         .push(mycatView.getRelNode())
                         .join(joinType, join.getCondition());
                 MycatView view = mycatView.changeTo(relBuilder.build());
-                call.transformTo(new MycatSQLTableLookup(cluster, join.getTraitSet(), left, view, joinType, join.getCondition(),correlationIds, MycatSQLTableLookup.Type.NONE));
+                call.transformTo(new MycatSQLTableLookup(cluster, join.getTraitSet(), left, view, joinType, join.getCondition(), correlationIds, MycatSQLTableLookup.Type.NONE));
                 break;
             default:
         }

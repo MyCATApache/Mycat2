@@ -18,6 +18,8 @@ import java.util.Optional;
 
 public class MycatTableLookupCombineRule extends RelRule<MycatTableLookupCombineRule.Config> {
 
+    public static final MycatTableLookupCombineRule INSTANCE = MycatTableLookupCombineRule.Config.DEFAULT.toRule();
+
     public MycatTableLookupCombineRule(Config config) {
         super(config);
     }

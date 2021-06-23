@@ -31,6 +31,8 @@ import static io.mycat.calcite.MycatImplementor.MYCAT_SQL_LOOKUP_IN;
 
 public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJoinRule.Config> {
 
+    public static final MycatTableLookupSemiJoinRule INSTANCE = Config.DEFAULT.toRule();
+
     public MycatTableLookupSemiJoinRule(Config config) {
         super(config);
     }
@@ -75,10 +77,10 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
         RexBuilder rexBuilder = MycatCalciteSupport.RexBuilder;
         RelDataTypeFactory typeFactory = cluster.getTypeFactory();
         relBuilder.push(left);
-        List<RexNode> rightExprs  = new ArrayList<>();
+        List<RexNode> rightExprs = new ArrayList<>();
         {
             for (Integer rightKey : join.analyzeCondition().rightSet()) {
-                rightExprs.add( relBuilder.field(rightKey));
+                rightExprs.add(relBuilder.field(rightKey));
             }
         }
         List<RexNode> leftExprs = new ArrayList<>();
@@ -89,7 +91,7 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
                 correlationIds.add(correl);
                 RelDataType type = left.getRowType().getFieldList().get(leftKey).getType();
                 RexNode rexNode = rexBuilder.makeCorrel(typeFactory.createUnknownType(), correl);
-                leftExprs.add( rexBuilder.makeCast(type,rexNode));
+                leftExprs.add(rexBuilder.makeCast(type, rexNode));
             }
         }
         RexNode condition = relBuilder.call(MYCAT_SQL_LOOKUP_IN,
@@ -104,14 +106,14 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
                 relBuilder.filter(condition);
                 relBuilder.rename(mycatView.getRowType().getFieldNames());
                 MycatView view = mycatView.changeTo(relBuilder.build());
-                call.transformTo(new MycatSQLTableLookup(cluster, join.getTraitSet(), left, view, joinType, join.getCondition(),correlationIds, MycatSQLTableLookup.Type.BACK));
+                call.transformTo(new MycatSQLTableLookup(cluster, join.getTraitSet(), left, view, joinType, join.getCondition(), correlationIds, MycatSQLTableLookup.Type.BACK));
                 return;
             }
             case SHARDING: {
                 RelNode innerRelNode = mycatView.getRelNode();
                 boolean bottomFilter = innerRelNode instanceof TableScan;
 
-                relBuilder.push( mycatView.getRelNode());
+                relBuilder.push(mycatView.getRelNode());
                 relBuilder.filter(condition);
 
                 RelNode innerDataNode = relBuilder
@@ -120,16 +122,16 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
 
                 Optional<RexNode> viewConditionOptional = mycatView.getCondition();
                 RexNode finalCondition = null;
-                if (!viewConditionOptional.isPresent()&&bottomFilter){
+                if (!viewConditionOptional.isPresent() && bottomFilter) {
                     finalCondition = condition;
-                }else if (bottomFilter){
-                    finalCondition=
+                } else if (bottomFilter) {
+                    finalCondition =
                             viewConditionOptional
-                            .map(i -> RexUtil.composeConjunction(MycatCalciteSupport.RexBuilder, ImmutableList.of(i, condition))).orElse(condition);
+                                    .map(i -> RexUtil.composeConjunction(MycatCalciteSupport.RexBuilder, ImmutableList.of(i, condition))).orElse(condition);
 
                 }
-                MycatView resView = MycatView.ofCondition(innerDataNode,mycatView.getDistribution(),finalCondition);
-                call.transformTo(new MycatSQLTableLookup(cluster, join.getTraitSet(), left, resView, joinType, join.getCondition(),correlationIds, MycatSQLTableLookup.Type.BACK));
+                MycatView resView = MycatView.ofCondition(innerDataNode, mycatView.getDistribution(), finalCondition);
+                call.transformTo(new MycatSQLTableLookup(cluster, join.getTraitSet(), left, resView, joinType, join.getCondition(), correlationIds, MycatSQLTableLookup.Type.BACK));
                 break;
             }
             default:
