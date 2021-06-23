@@ -45,14 +45,12 @@ import org.apache.calcite.plan.*;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexDynamicParam;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.*;
 import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlKind;
@@ -93,7 +91,14 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             input = input.accept(new ToLocalConverter());
         }
         ToLocalConverter toLocalConverter = new ToLocalConverter();
-        this.relNode = input.accept(toLocalConverter);
+        input = input.accept(toLocalConverter);
+        if (input instanceof Project){
+            Project project = (Project)input ;
+            if (RexUtil.isIdentity(project.getProjects(), project.getInput().getRowType())) {
+                input = project.getInput();//ProjectRemoveRule
+            }
+        }
+        this.relNode = input;
     }
 
 

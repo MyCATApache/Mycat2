@@ -81,7 +81,7 @@ public class MycatTableLookupValues extends AbstractRelNode {
                             if (object == null) {
                                 return rexBuilder.makeNullLiteral(call.type);
                             }
-                            rexBuilder.makeCast(call.type, rexBuilder.makeLiteral(Objects.toString(object)));
+                           return rexBuilder.makeCast(call.type, rexBuilder.makeLiteral(Objects.toString(object)));
                         }
                         return super.visitCall(call);
                     }

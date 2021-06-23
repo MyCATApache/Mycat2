@@ -9,10 +9,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.CorrelationId;
-import org.apache.calcite.rel.core.Join;
-import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -100,8 +97,14 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
         switch (type) {
             case PHY:
             case BROADCAST: {
-                relBuilder.push(mycatView.getRelNode());
-                relBuilder.filter(condition);
+                RelNode relNode = mycatView.getRelNode();
+                if (relNode instanceof Filter){
+                    relBuilder.push(((Filter) relNode).getInput());
+                    relBuilder.filter(((Filter) relNode).getCondition(),condition);
+                }else {
+                    relBuilder.push(relNode);
+                    relBuilder.filter(condition);
+                }
                 relBuilder.rename(mycatView.getRowType().getFieldNames());
                 MycatView view = mycatView.changeTo(relBuilder.build());
                 call.transformTo(new MycatSQLTableLookup(cluster, join.getTraitSet(), left, view, joinType, join.getCondition(),correlationIds, MycatSQLTableLookup.Type.BACK));
@@ -111,9 +114,16 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
                 RelNode innerRelNode = mycatView.getRelNode();
                 boolean bottomFilter = innerRelNode instanceof TableScan;
 
+                RelNode relNode = mycatView.getRelNode();
+                if (relNode instanceof Filter){
+                    relBuilder.push(((Filter) relNode).getInput());
+                    relBuilder.filter(((Filter) relNode).getCondition(),condition);
+                }else {
+                    relBuilder.push(relNode);
+                    relBuilder.filter(condition);
+                }
+
                 RelNode innerDataNode = relBuilder
-                        .push(mycatView.getRelNode())
-                        .filter(condition)
                         .rename(mycatView.getRowType().getFieldNames())
                         .build();
 

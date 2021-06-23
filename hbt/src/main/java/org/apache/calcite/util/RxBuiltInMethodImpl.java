@@ -101,7 +101,14 @@ public class RxBuiltInMethodImpl {
 
 
     public static Observable<Object[]> toObservable(Object input) {
+        if (input instanceof Observable) {
+            return (Observable) input;
+        }
         return Observable.fromIterable((Enumerable) input);
+    }
+
+    public static Observable<Object[]> toObservableCache(Object input) {
+        return toObservable(input).cache();
     }
 
     public static Enumerable<List<Object[]>> batch(Enumerable<Object[]> input) {

@@ -29,6 +29,7 @@ public enum RxBuiltInMethod {
     OBSERVABLE_OFFSET(RxBuiltInMethodImpl.class, "offset", Observable.class, long.class),
     TO_ENUMERABLE(RxBuiltInMethodImpl.class, "toEnumerable", Object.class),
     TO_OBSERVABLE(RxBuiltInMethodImpl.class, "toObservable", Object.class),
+    TO_OBSERVABLE_CACHE(RxBuiltInMethodImpl.class, "toObservableCache", Object.class),
     OBSERVABLE_MERGE_SORT(RxBuiltInMethodImpl.class, "mergeSort", List.class, Comparator.class, long.class, long.class),
     OBSERVABLE_MERGE_SORT2(RxBuiltInMethodImpl.class, "mergeSort", List.class, Comparator.class),
 //    OBSERVABLE_MATIERIAL(RxBuiltInMethodImpl.class, "matierial", Observable.class),

@@ -24,6 +24,7 @@ import io.mycat.calcite.executor.MycatInsertExecutor;
 import io.mycat.calcite.executor.MycatUpdateExecutor;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatInsertRel;
+import io.mycat.calcite.physical.MycatSQLTableLookup;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
@@ -147,11 +148,9 @@ public class PlanImpl implements Plan {
             protected RelNode visitChildren(RelNode relNode) {
                 List< Each> sqls  = new ArrayList<>();
                 String parameterizedSql = "";
-                if (relNode instanceof MycatView||relNode instanceof MycatTransientSQLTableScan) {
-                    String digest = relNode.getDigest();
-                    MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = executerContext.getRelContext().get(digest);
-                    MycatView view = mycatRelDatasourceSourceInfo.getRelNode();
-                    SqlNode sqlTemplate = mycatRelDatasourceSourceInfo.getSqlTemplate();
+                if (relNode instanceof MycatView) {
+                    MycatView view =  (MycatView)relNode;
+                    SqlNode sqlTemplate = view.getSQLTemplate(false);
                     ImmutableMultimap<String, SqlString> apply = view.apply(sqlTemplate, AsyncMycatDataContextImpl.getSqlMap(executerContext.getConstantMap(),view, drdsSql,drdsSql.getHintDataNodeFilter()), drdsSql.getParams());
                     ImmutableMultimap<String, SqlString> stringImmutableMultimap =apply;
                     for (Map.Entry<String, SqlString> entry : (stringImmutableMultimap.entries())) {
@@ -168,6 +167,9 @@ public class PlanImpl implements Plan {
                         parameterizedSql = ((MycatTransientSQLTableScan) relNode).getSql();
                     }
                     res.add(new SpecificSql(relNode.getDigest(),parameterizedSql,sqls));
+                }else if (relNode instanceof MycatSQLTableLookup){
+                    MycatView right = ((MycatSQLTableLookup) relNode).getRight();
+                    right.accept(this);
                 }
 
                 return super.visitChildren(relNode);

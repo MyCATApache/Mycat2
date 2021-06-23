@@ -78,9 +78,9 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
                 .input("left", input)
                 .input("right", right)
                 .item("leftKeys",joinInfo.leftKeys);
-        if (pw instanceof RelWriterImpl){
-            pw.item("rightSQL",right.getSQLTemplate(false));
-        }
+//        if (pw instanceof RelWriterImpl){
+//            pw.item("rightSQL",right.getSQLTemplate(false));
+//        }
         return relWriter;
     }
 
@@ -187,6 +187,9 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
         final PhysType physType =
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(), getRowType(), pref.preferArray());
+        final PhysType rightPhysType =
+                PhysTypeImpl.of(
+                        implementor.getTypeFactory(), right.getRowType(), pref.preferArray());
         BlockBuilder builder = new BlockBuilder();
         Result leftResult =
                 implementor.visitChild(this, 0, (EnumerableRel) left, pref);
@@ -194,19 +197,30 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
                 toObservable(builder.append(
                         "left", leftResult.block));
 
+        switch (type) {
+            case NONE: {
+                leftExpression = leftExpression;
+            break;
+            }
+            case BACK: {
+                leftExpression = toObservableCache(leftExpression);
+
+                break;
+            }
+            default:
+                throw new IllegalStateException("Unexpected value: " + type);
+        }
         ParameterExpression root = implementor.getRootExpression();
 
         Method dispatch = Types.lookupMethod(MycatSQLTableLookup.class, "dispatchRightObservable", NewMycatDataContext.class, MycatSQLTableLookup.class, Observable.class);
 
-        Result rightResult = implementor.result(
-                physType,
-                builder.append(Expressions.call(dispatch, root, implementor.stash(this, MycatSQLTableLookup.class), leftExpression)).toBlock());
+        Expression rightExpression  = Expressions.call(dispatch, root, implementor.stash(this, MycatSQLTableLookup.class), leftExpression);
         switch (type) {
             case NONE: {
-                return rightResult;
+                return implementor.result(physType,builder.append(rightExpression).toBlock());
             }
             case BACK: {
-                return implementHashJoin(implementor, pref, leftResult, rightResult);
+                return implementHashJoin(implementor, pref, builder,leftResult.physType, rightPhysType,leftExpression,rightExpression);
             }
             default:
                 throw new IllegalStateException("Unexpected value: " + type);
@@ -258,8 +272,7 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
                     RexNode rexNode = operands.get(1);
                     RexCall rexCall = (RexCall) rexNode;
                     LinkedList<RexNode> accept = MycatTableLookupValues.apply(argsList, rexCall.getOperands());
-                    accept.addFirst(operands.get(0));
-                    return MycatCalciteSupport.RexBuilder.makeCall(call.getOperator(), accept);
+                    return MycatCalciteSupport.RexBuilder.makeIn(operands.get(0), accept);
                 }
                 return call;
             }
@@ -306,21 +319,20 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
 
     ;
 
-    private Result implementHashJoin(EnumerableRelImplementor implementor, Prefer pref, final Result leftResult, final Result rightResult) {
+    private Result implementHashJoin(EnumerableRelImplementor implementor, Prefer pref, BlockBuilder builder, final PhysType leftPhysType, final PhysType rightPhysType,
+                                     Expression leftExpression,
+                                     Expression rightExpression) {
         RelNode left = input;
         JoinInfo joinInfo = JoinInfo.of(left, right, condition);
-        BlockBuilder builder = new BlockBuilder();
-        Expression leftExpression =
-                toEnumerate(builder.append(
-                        "left", leftResult.block));
-        Expression rightExpression =
-                toEnumerate(builder.append(
-                        "right", rightResult.block));
+         leftExpression =
+                toEnumerate(leftExpression);
+         rightExpression =
+                toEnumerate(rightExpression);
         final PhysType physType =
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(), getRowType(), pref.preferArray());
         final PhysType keyPhysType =
-                leftResult.physType.project(
+                leftPhysType.project(
                         joinInfo.leftKeys, JavaRowFormat.LIST);
         Expression predicate = Expressions.constant(null);
         if (!joinInfo.nonEquiConditions.isEmpty()) {
@@ -328,7 +340,7 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
                     getCluster().getRexBuilder(), joinInfo.nonEquiConditions, true);
             if (nonEquiCondition != null) {
                 predicate = EnumUtils.generatePredicate(implementor, getCluster().getRexBuilder(),
-                        left, right, leftResult.physType, rightResult.physType, nonEquiCondition);
+                        left, right, leftPhysType, rightPhysType, nonEquiCondition);
             }
         }
         return implementor.result(
@@ -339,12 +351,12 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
                                 BuiltInMethod.HASH_JOIN.method,
                                 Expressions.list(
                                         rightExpression,
-                                        leftResult.physType.generateAccessor(joinInfo.leftKeys),
-                                        rightResult.physType.generateAccessor(joinInfo.rightKeys),
+                                        leftPhysType.generateAccessor(joinInfo.leftKeys),
+                                        rightPhysType.generateAccessor(joinInfo.rightKeys),
                                         EnumUtils.joinSelector(joinType,
                                                 physType,
                                                 ImmutableList.of(
-                                                        leftResult.physType, rightResult.physType)))
+                                                        leftPhysType, rightPhysType)))
                                         .append(
                                                 Util.first(keyPhysType.comparer(),
                                                         Expressions.constant(null)))

@@ -133,4 +133,8 @@ public interface MycatRel extends RelNode, EnumerableRel, Serializable {
                 return input;
             }
     }
+    public default Expression toObservableCache(Expression input) {
+            return Expressions.call(RxBuiltInMethod.TO_OBSERVABLE_CACHE.method, input);
+
+    }
 }
