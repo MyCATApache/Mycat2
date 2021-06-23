@@ -44,8 +44,8 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
 
     public AsyncMycatDataContextImpl(MycatDataContext dataContext,
                                      CodeExecuterContext context,
-                                     List<Object> params) {
-        super(dataContext, context, params);
+                                     DrdsSqlWithParams drdsSqlWithParams) {
+        super(dataContext, context, drdsSqlWithParams);
     }
 
     Future<SqlConnection> getConnection(String key) {
@@ -82,7 +82,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                 PromiseInternal<SqlConnection> promise = VertxUtil.newPromise();
                 Observable<Object[]> innerObservable = Objects.requireNonNull(VertxExecuter.runQuery(sessionConnection,
                         sqlString.getSql(),
-                        MycatPreparedStatementUtil.extractParams(params, sqlString.getDynamicParameters()), calciteRowMetaData));
+                        MycatPreparedStatementUtil.extractParams(drdsSqlWithParams.getParams(), sqlString.getDynamicParameters()), calciteRowMetaData));
                 innerObservable.subscribe(objects -> {
                             emitter.onNext((objects));
                         },
@@ -123,7 +123,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
     public static final class HbtMycatDataContextImpl extends AsyncMycatDataContextImpl {
 
         public HbtMycatDataContextImpl(MycatDataContext dataContext, CodeExecuterContext context) {
-            super(dataContext, context, Collections.emptyList());
+            super(dataContext, context,DrdsRunnerHelper.preParse("select 1",null));
         }
 
         @Override
@@ -148,7 +148,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
 
 
         public SqlMycatDataContextImpl(MycatDataContext dataContext, CodeExecuterContext context, DrdsSqlWithParams drdsSqlWithParams) {
-            super(dataContext, context, drdsSqlWithParams.getParams());
+            super(dataContext, context, drdsSqlWithParams);
             this.drdsSqlWithParams = drdsSqlWithParams;
         }
 
@@ -161,7 +161,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             List<Map<String, Partition>> sqlMap = getPartition(node).get();
             boolean share = mycatRelDatasourceSourceInfo.refCount > 0;
             List<Observable<Object[]>> observables = getObservables((view
-                    .apply(mycatRelDatasourceSourceInfo.getSqlTemplate(), sqlMap, params)), mycatRelDatasourceSourceInfo.getColumnInfo());
+                    .apply(mycatRelDatasourceSourceInfo.getSqlTemplate(), sqlMap, drdsSqlWithParams.getParams())), mycatRelDatasourceSourceInfo.getColumnInfo());
             if (share) {
                 observables = observables.stream().map(i -> i.share()).collect(Collectors.toList());
                 shareObservable.put(node, observables);
@@ -173,7 +173,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = this.codeExecuterContext.getRelContext().get(node);
             if (mycatRelDatasourceSourceInfo == null) return Optional.empty();
             MycatView view = mycatRelDatasourceSourceInfo.getRelNode();
-            return Optional.ofNullable(cache.computeIfAbsent(node, s -> getSqlMap(codeExecuterContext, view, drdsSqlWithParams, drdsSqlWithParams.getHintDataNodeFilter())));
+            return Optional.ofNullable(cache.computeIfAbsent(node, s -> getSqlMap(codeExecuterContext.getConstantMap(), view, drdsSqlWithParams, drdsSqlWithParams.getHintDataNodeFilter())));
         }
 
 
@@ -203,7 +203,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         return Observable.merge(getObservableList(node));
     }
 
-    public static List<Map<String, Partition>> getSqlMap(CodeExecuterContext codeExecuterContext,
+    public static List<Map<String, Partition>> getSqlMap(Map<RexNode, RexNode> constantMap,
                                                          MycatView view,
                                                          DrdsSqlWithParams drdsSqlWithParams,
                                                          Optional<List<Map<String, Partition>>> hintDataMapping) {
@@ -229,7 +229,6 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                 ShardingTable shardingTable = distribution.getShardingTables().get(0);
                 RexBuilder rexBuilder = MycatCalciteSupport.RexBuilder;
                 RexNode condition = view.getCondition().orElse(MycatCalciteSupport.RexBuilder.makeLiteral(true));
-                Map<RexNode, RexNode> constantMap = codeExecuterContext.getConstantMap();
                 List<RexNode> inputConditions = new ArrayList<>(constantMap.size() + 1);
 
                 inputConditions.add(condition);

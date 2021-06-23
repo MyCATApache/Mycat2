@@ -34,6 +34,9 @@ import io.mycat.calcite.physical.MycatTopN;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.rewriter.*;
 import io.mycat.calcite.rules.MycatExtraSortRule;
+import io.mycat.calcite.rules.MycatJoinTableLookupTransposeRule;
+import io.mycat.calcite.rules.MycatTableLookupCombineRule;
+import io.mycat.calcite.rules.MycatTableLookupSemiJoinRule;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.spm.PlanImpl;
 import io.mycat.calcite.table.*;
@@ -429,6 +432,12 @@ public class DrdsSqlCompiler {
 
             //Sort/Project
             listBuilder.add(CoreRules.SORT_PROJECT_TRANSPOSE.config.withOperandFor(Sort.class, Project.class).toRule());
+
+            //TABLELOOKUP
+            listBuilder.add(MycatTableLookupSemiJoinRule.Config.DEFAULT.toRule());
+            listBuilder.add(MycatTableLookupCombineRule.Config.DEFAULT.toRule());
+            listBuilder.add(MycatJoinTableLookupTransposeRule.Config.DEFAULT_LEFT.toRule());
+            listBuilder.add(MycatJoinTableLookupTransposeRule.Config.DEFAULT_RIGHT.toRule());
 
             listBuilder.build().forEach(c -> planner.addRule(c));
             MycatConvention.INSTANCE.register(planner);

@@ -27,12 +27,15 @@ import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.apache.calcite.sql.fun.SqlSingleValueAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.InferTypes;
+import org.apache.calcite.sql.type.ReturnTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Junwen Chen
@@ -80,6 +83,17 @@ public class MycatImplementor extends RelToSqlConverter {
             writer.endList(frame);
         }
     };
+    public static final SqlBinaryOperator MYCAT_SQL_LOOKUP_IN = new SqlBinaryOperator("MYCAT_LOOK_UP_IN", SqlKind.OTHER, 32, true,
+            ReturnTypes.BOOLEAN_NULLABLE,
+            InferTypes.FIRST_KNOWN,
+            null) {
+
+    };
+
+//    @Override
+//    public Context aliasContext(Map<String, RelDataType> aliases, boolean qualified) {
+//        return new AliasContext(dialect, aliases, qualified);
+//    }
 
     public Result visit(MycatTableLookupValues e) {
         RelDataType rowType = e.getRowType();

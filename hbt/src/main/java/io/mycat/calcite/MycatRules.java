@@ -174,7 +174,7 @@ public class MycatRules {
         return builder.add(
 //                AggregateReduceFunctionsRule.Config.DEFAULT.toRule(),
                 CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
-                MycatJoinRule.INSTANCE,
+//                MycatJoinRule.INSTANCE,
                 MycatCalcRule.INSTANCE,
                 MycatProjectRule.INSTANCE,
                 MycatFilterRule.INSTANCE,
