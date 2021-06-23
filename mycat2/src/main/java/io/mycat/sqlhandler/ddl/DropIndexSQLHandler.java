@@ -16,8 +16,15 @@ package io.mycat.sqlhandler.ddl;
 
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLName;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
 import com.alibaba.druid.sql.ast.statement.SQLDropIndexStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLTableElement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
+import com.google.common.collect.ImmutableMap;
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import io.mycat.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
@@ -25,7 +32,10 @@ import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
 import io.vertx.core.shareddata.Lock;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatement> {
     @Override
@@ -35,7 +45,7 @@ public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatemen
         return lockFuture.flatMap(lock -> {
             try{
                 SQLDropIndexStatement sqlDropIndexStatement = request.getAst();
-                SQLName indexName = sqlDropIndexStatement.getIndexName();
+                String indexName = SQLUtils.normalize(sqlDropIndexStatement.getIndexName().toString());
                 resolveSQLExprTableSource(sqlDropIndexStatement.getTableName(), dataContext);
                 SQLExprTableSource tableSource = sqlDropIndexStatement.getTableName();
 
@@ -44,10 +54,20 @@ public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatemen
                 String tableName = SQLUtils.normalize(tableSource.getTableName());
                 MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
                 JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+
                 TableHandler table = metadataManager.getTable(schema, tableName);
-                Set<Partition> partitions = getDataNodes(table);
-                partitions.add(new BackendTableInfo(metadataManager.getPrototype(),schema,tableName));//add Prototype
-                executeOnDataNodes(sqlDropIndexStatement,jdbcConnectionManager, partitions,tableSource);
+
+                MySqlCreateTableStatement sqlStatement = (MySqlCreateTableStatement)SQLUtils.parseSingleMysqlStatement(table.getCreateTableSQL());
+
+                boolean updateShardingTable = false;
+                updateShardingTable = isUpdateShardingTable(indexName, sqlStatement, updateShardingTable);
+                if (!updateShardingTable){
+                    Set<Partition> partitions = getDataNodes(table);
+                    partitions.add(new BackendTableInfo(metadataManager.getPrototype(),schema,tableName));//add Prototype
+                    executeOnDataNodes(sqlDropIndexStatement,jdbcConnectionManager, partitions,tableSource);
+                }else {
+                    CreateTableSQLHandler.INSTANCE.createTable(ImmutableMap.of(),schema,tableName,sqlStatement);
+                }
                 return response.sendOk();
             }catch (Throwable throwable){
                 return Future.failedFuture(throwable);
@@ -56,5 +76,21 @@ public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatemen
             }
         });
 
+    }
+
+    private boolean isUpdateShardingTable(String indexName, MySqlCreateTableStatement sqlStatement, boolean updateShardingTable) {
+        for (SQLTableElement c : new ArrayList<>(sqlStatement.getTableElementList())) {
+            if (c instanceof MySqlTableIndex) {
+                MySqlTableIndex mySqlTableIndex = (MySqlTableIndex) c;
+                String normalize = SQLUtils.normalize(mySqlTableIndex.getName().toString());
+                if (normalize.equals(indexName)){
+                    if(mySqlTableIndex.getDbPartitionBy()!=null){
+                        sqlStatement.getTableElementList().remove(mySqlTableIndex);
+                        updateShardingTable = true;
+                    }
+                }
+            }
+        }
+        return updateShardingTable;
     }
 }
