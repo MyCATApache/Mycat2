@@ -2,6 +2,7 @@ package io.mycat.calcite.rules;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.calcite.MycatRelBuilder;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatSQLTableLookup;
 import io.mycat.calcite.rewriter.Distribution;
@@ -61,7 +62,8 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
             default:
                 return;
         }
-        RelBuilder relBuilder = call.builder();
+
+        RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(cluster, null);
 //
 //        ImmutableList.Builder<RelDataTypeField> listBuilder = ImmutableList.builder();
 //        Map<Integer, Integer> sourcePosToTargetPos = new HashMap<>();
@@ -98,13 +100,8 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
             case PHY:
             case BROADCAST: {
                 RelNode relNode = mycatView.getRelNode();
-                if (relNode instanceof Filter){
-                    relBuilder.push(((Filter) relNode).getInput());
-                    relBuilder.filter(((Filter) relNode).getCondition(),condition);
-                }else {
-                    relBuilder.push(relNode);
-                    relBuilder.filter(condition);
-                }
+                relBuilder.push(relNode);
+                relBuilder.filter(condition);
                 relBuilder.rename(mycatView.getRowType().getFieldNames());
                 MycatView view = mycatView.changeTo(relBuilder.build());
                 call.transformTo(new MycatSQLTableLookup(cluster, join.getTraitSet(), left, view, joinType, join.getCondition(),correlationIds, MycatSQLTableLookup.Type.BACK));
@@ -114,14 +111,8 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
                 RelNode innerRelNode = mycatView.getRelNode();
                 boolean bottomFilter = innerRelNode instanceof TableScan;
 
-                RelNode relNode = mycatView.getRelNode();
-                if (relNode instanceof Filter){
-                    relBuilder.push(((Filter) relNode).getInput());
-                    relBuilder.filter(((Filter) relNode).getCondition(),condition);
-                }else {
-                    relBuilder.push(relNode);
-                    relBuilder.filter(condition);
-                }
+                relBuilder.push( mycatView.getRelNode());
+                relBuilder.filter(condition);
 
                 RelNode innerDataNode = relBuilder
                         .rename(mycatView.getRowType().getFieldNames())
@@ -133,7 +124,6 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
                     finalCondition = condition;
                 }else if (bottomFilter){
                     finalCondition=
-
                             viewConditionOptional
                             .map(i -> RexUtil.composeConjunction(MycatCalciteSupport.RexBuilder, ImmutableList.of(i, condition))).orElse(condition);
 
