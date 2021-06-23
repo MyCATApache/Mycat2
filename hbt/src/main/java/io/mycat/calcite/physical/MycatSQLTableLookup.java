@@ -27,6 +27,7 @@ import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
@@ -68,12 +69,19 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
 
     @Override
     public RelWriter explainTerms(RelWriter pw) {
-        return super.explainTerms(pw)
+        JoinInfo joinInfo = JoinInfo.of(getInput(), right, condition);
+        RelWriter relWriter = super.explainTerms(pw)
                 .item("condition", condition)
-                .item("joinType", joinType)
-                .item("type", type)
+                .item("joinType", joinType.lowerName)
+                .item("type", type.toString())
                 .item("correlationIds", correlationIds)
-                .item("right", right);
+                .input("left", input)
+                .input("right", right)
+                .item("leftKeys",joinInfo.leftKeys);
+        if (pw instanceof RelWriterImpl){
+            pw.item("rightSQL",right.getSQLTemplate(false));
+        }
+        return relWriter;
     }
 
     public MycatSQLTableLookup changeTo(RelNode input, MycatView right) {
@@ -92,7 +100,7 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
                                RexNode condition,
                                List<CorrelationId> correlationIds,
                                Type type) {
-        super(cluster, traits, input);
+        super(cluster, traits.replace(MycatConvention.INSTANCE), input);
         this.condition = condition;
         this.joinType = joinType;
         this.correlationIds = correlationIds;
@@ -140,7 +148,7 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
 
     @Override
     public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
-        return implement((StreamMycatEnumerableRelImplementor) implementor, pref);
+        return implementStream((StreamMycatEnumerableRelImplementor) implementor, pref);
     }
 
 
@@ -205,6 +213,10 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
         }
     }
 
+    @Override
+    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+        return new MycatSQLTableLookup(getCluster(),traitSet,inputs.get(0),right,joinType,condition,correlationIds,type);
+    }
 
     public static Observable<Object[]> dispatchRightObservable(NewMycatDataContext context, MycatSQLTableLookup tableLookup, Observable<Object[]> leftInput) {
         MycatView rightView = (MycatView) tableLookup.getRight();
@@ -347,6 +359,6 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
 
     @Override
     public boolean isSupportStream() {
-        return true;
+        return type == Type.NONE;
     }
 }

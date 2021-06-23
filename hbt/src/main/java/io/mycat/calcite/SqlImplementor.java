@@ -38,6 +38,9 @@ import org.apache.calcite.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.util.SqlVisitor;
+import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.*;
 
@@ -804,6 +807,10 @@ public abstract class SqlImplementor {
                 default:
                     if (rex instanceof RexOver) {
                         return toSql(program, (RexOver) rex);
+                    }
+                    if(rex instanceof RexCorrelVariable){
+                        SqlNode sqlNode = new SqlIdentifier(rex.toString(),SqlParserPos.ZERO);
+                        return sqlNode;
                     }
 
                     final RexCall call = (RexCall) stripCastFromString(rex, dialect);

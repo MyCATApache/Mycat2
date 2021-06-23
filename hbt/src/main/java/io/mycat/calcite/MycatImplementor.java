@@ -48,6 +48,11 @@ public class MycatImplementor extends RelToSqlConverter {
     }
 
     @Override
+    public Context aliasContext(Map<String, RelDataType> aliases, boolean qualified) {
+        return super.aliasContext(aliases, qualified);
+    }
+
+    @Override
     public Result visit(TableScan e) {
         try {
 
@@ -83,11 +88,10 @@ public class MycatImplementor extends RelToSqlConverter {
             writer.endList(frame);
         }
     };
-    public static final SqlBinaryOperator MYCAT_SQL_LOOKUP_IN = new SqlBinaryOperator("MYCAT_LOOK_UP_IN", SqlKind.OTHER, 32, true,
+    public static final SqlBinaryOperator MYCAT_SQL_LOOKUP_IN = new SqlBinaryOperator("IN", SqlKind.OTHER, 32, true,
             ReturnTypes.BOOLEAN_NULLABLE,
             InferTypes.FIRST_KNOWN,
             null) {
-
     };
 
 //    @Override

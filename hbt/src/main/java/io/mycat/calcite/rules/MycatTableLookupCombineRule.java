@@ -61,7 +61,7 @@ public class MycatTableLookupCombineRule extends RelRule<MycatTableLookupCombine
                                     .join(joinType, join.getCondition());
                             RelNode relNode = relBuilder.build();
                             MycatView view = MycatView.ofCondition(relNode, c, null);
-                            call.transformTo(left.changeTo(left.getInput(),view));
+                            call.transformTo(left.changeTo(left.getInput(0),view));
                         });
                 break;
             }
@@ -69,7 +69,7 @@ public class MycatTableLookupCombineRule extends RelRule<MycatTableLookupCombine
                 SQLRBORewriter
                         .bottomJoin(inneRightMycatView, outerRightmycatView, join)
                         .ifPresent(relNode1 -> {
-                    call.transformTo(left.changeTo(left.getInput(),(MycatView) relNode1));
+                    call.transformTo(left.changeTo(left.getInput(0),(MycatView) relNode1));
                 });
                 break;
             }
