@@ -79,7 +79,22 @@ public class HintTools {
                             HintPredicates.and(HintPredicates.JOIN, joinWithFixedTableName()))
                             .converterRules(MycatMergeJoinRule.INSTANCE)
                             .excludedRules(MycatJoinRule.INSTANCE,
-
+                                    MycatTableLookupBottomRule.INSTANCE,
+                                    MycatTableLookupCombineRule.INSTANCE)
+                            .build())
+            .hintStrategy("no_hash_join",
+                    HintStrategy.builder(
+                            HintPredicates.and(HintPredicates.JOIN, joinWithFixedTableName()))
+                            .build())
+            .hintStrategy("no_merge_join",
+                    HintStrategy.builder(
+                            HintPredicates.and(HintPredicates.JOIN, joinWithFixedTableName()))
+                            .excludedRules(MycatMergeJoinRule.INSTANCE)
+                            .build())
+            .hintStrategy("no_bka_join",
+                    HintStrategy.builder(
+                            HintPredicates.and(HintPredicates.JOIN, joinWithFixedTableName()))
+                            .excludedRules(MycatJoinRule.INSTANCE,
                                     MycatTableLookupBottomRule.INSTANCE,
                                     MycatTableLookupCombineRule.INSTANCE)
                             .build())
