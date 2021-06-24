@@ -1,6 +1,7 @@
 package io.mycat.calcite.rules;
 
 import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatSQLTableLookup;
 import io.mycat.calcite.physical.MycatTableLookupValues;
@@ -56,7 +57,6 @@ public class MycatTableLookupBottomRule extends RelRule<MycatTableLookupBottomRu
             default:
                 return;
         }
-        RelBuilder relBuilder = call.builder();
         RexBuilder rexBuilder = MycatCalciteSupport.RexBuilder;
         RelDataTypeFactory typeFactory = cluster.getTypeFactory();
         List<RexNode> leftExprs = new ArrayList<>();
@@ -77,8 +77,9 @@ public class MycatTableLookupBottomRule extends RelRule<MycatTableLookupBottomRu
                 builder.push(MycatTableLookupValues.create(cluster, left.getRowType(), leftExprs, left.getTraitSet()))
                         .push(mycatView.getRelNode())
                         .join(joinType, join.getCondition());
-                MycatView view = mycatView.changeTo(relBuilder.build());
-                call.transformTo(new MycatSQLTableLookup(cluster, join.getTraitSet(), left, view, joinType, join.getCondition(), correlationIds, MycatSQLTableLookup.Type.NONE));
+                MycatView view = mycatView.changeTo(builder.build());
+                MycatSQLTableLookup mycatSQLTableLookup = new MycatSQLTableLookup(cluster, join.getTraitSet(), left, view, joinType, join.getCondition(), correlationIds, MycatSQLTableLookup.Type.NONE);
+                call.transformTo(mycatSQLTableLookup);
                 break;
             default:
         }
@@ -88,7 +89,7 @@ public class MycatTableLookupBottomRule extends RelRule<MycatTableLookupBottomRu
         MycatTableLookupBottomRule.Config DEFAULT = EMPTY
                 .as(MycatTableLookupBottomRule.Config.class)
                 .withOperandFor(b0 ->
-                        b0.operand(Join.class).inputs(b1 -> b1.operand(MycatSQLTableLookup.class).anyInputs(), b1 -> b1.operand(MycatView.class).noInputs()))
+                        b0.operand(Join.class).inputs(b1 -> b1.operand(MycatRel.class).predicate(i->!(i instanceof MycatSQLTableLookup)).anyInputs(), b1 -> b1.operand(MycatView.class).noInputs()))
                 .withDescription("MycatTableLookupBottomRule")
                 .as(MycatTableLookupBottomRule.Config.class);
 

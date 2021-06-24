@@ -150,7 +150,7 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
     public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
         return implementStream((StreamMycatEnumerableRelImplementor) implementor, pref);
     }
-
+   
 
     //hashJoin
     @Override

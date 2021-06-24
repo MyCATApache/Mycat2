@@ -15,6 +15,7 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.TableHandler;
 import io.mycat.calcite.physical.MycatTableLookupValues;
 import io.mycat.calcite.table.MycatLogicTable;
 import org.apache.calcite.rel.RelNode;
@@ -22,8 +23,12 @@ import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexCorrelVariable;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;
+import org.apache.calcite.sql.fun.SqlRowOperator;
 import org.apache.calcite.sql.fun.SqlSingleValueAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -66,7 +71,9 @@ public class MycatImplementor extends RelToSqlConverter {
                         }
                     }
                 }
-                SqlNode tableParamSqlNode = new TableParamSqlNode(ImmutableList.of(logicTable.logicTable().getUniqueName()), hintText);
+                TableHandler tableHandler = logicTable.logicTable();
+                SqlNode tableParamSqlNode = new TableParamSqlNode(ImmutableList.of(tableHandler.getSchemaName(),tableHandler.getTableName()),tableHandler.getUniqueName(), hintText);
+
                 return result(tableParamSqlNode, ImmutableList.of(Clause.FROM), e, null);
             }
             return super.visit(e);
@@ -80,7 +87,7 @@ public class MycatImplementor extends RelToSqlConverter {
         @Override
         public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
             final SqlWriter.Frame frame =
-                    writer.startList(SqlWriter.FrameTypeEnum.VALUES, "VALUES(", ")");
+                    writer.startList(SqlWriter.FrameTypeEnum.VALUES, "VALUES", "");
             for (SqlNode operand : call.getOperandList()) {
                 writer.sep(",");
                 operand.unparse(writer, 0, 0);
@@ -98,17 +105,23 @@ public class MycatImplementor extends RelToSqlConverter {
 //    public Context aliasContext(Map<String, RelDataType> aliases, boolean qualified) {
 //        return new AliasContext(dialect, aliases, qualified);
 //    }
-
+public static final SqlSpecialOperator ROW = new SqlSpecialOperator("ROW",SqlKind.OTHER){
+    @Override
+    public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
+        SqlUtil.unparseFunctionSyntax(this,writer, call);
+    }
+};
     public Result visit(MycatTableLookupValues e) {
         RelDataType rowType = e.getRowType();
         int fieldCount = rowType.getFieldCount();
-        ImmutableList.Builder<SqlLiteral> builder = ImmutableList.builder();
-        for (int i = 0; i < fieldCount; i++) {
-            SqlLiteral sqlLiteral = SqlLiteral.createNull(SqlParserPos.ZERO);
-            builder.add(sqlLiteral);
+        ImmutableList.Builder<SqlNode> builder = ImmutableList.builder();
+        Context context = aliasContext(Collections.emptyMap(),false);
+        for (RexNode expr : e.getExprs()) {
+            SqlNode sqlNode = context.toSql(null, expr);
+            builder.add(sqlNode);
         }
         SqlBasicCall sqlBasicCall = new SqlBasicCall(MYCAT_SQL_VAULES, new SqlNode[]{
-                new SqlBasicCall(SqlStdOperatorTable.ROW, builder.build().toArray(new SqlLiteral[0]), SqlParserPos.ZERO)
+                new SqlBasicCall(ROW, builder.build().toArray(new SqlNode[0]), SqlParserPos.ZERO)
         }, SqlParserPos.ZERO);
         return result(sqlBasicCall, ImmutableList.of(Clause.FROM), e, null);
     }

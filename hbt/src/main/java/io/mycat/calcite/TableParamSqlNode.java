@@ -10,13 +10,14 @@ import java.util.List;
 @Getter
 public class TableParamSqlNode extends SqlIdentifier {
     private final String hint;
-
-    public TableParamSqlNode(List<String> names, String hint) {
+    private String uniqueName;
+    public TableParamSqlNode(List<String> names,String uniqueName, String hint) {
         super(names, SqlParserPos.ZERO);
+        this.uniqueName = uniqueName;
         this.hint = hint;
     }
     @Override
     public SqlNode clone(SqlParserPos pos) {
-        return new TableParamSqlNode(names,hint);
+        return new TableParamSqlNode(names,uniqueName,hint);
     }
 }

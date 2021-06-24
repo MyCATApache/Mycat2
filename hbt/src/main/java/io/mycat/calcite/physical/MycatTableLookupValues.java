@@ -2,6 +2,7 @@ package io.mycat.calcite.physical;
 
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatConvention;
+import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
@@ -22,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
+@Getter
 public class MycatTableLookupValues extends AbstractRelNode {
 
     private final List<RexNode> exprs;

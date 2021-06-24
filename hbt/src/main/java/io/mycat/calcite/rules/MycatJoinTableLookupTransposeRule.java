@@ -6,11 +6,13 @@ import io.mycat.calcite.physical.MycatSQLTableLookup;
 import io.mycat.calcite.physical.MycatTableLookupValues;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.tools.RelBuilder;
 
 public class MycatJoinTableLookupTransposeRule extends RelRule<MycatJoinTableLookupTransposeRule.Config> {
@@ -26,22 +28,57 @@ public class MycatJoinTableLookupTransposeRule extends RelRule<MycatJoinTableLoo
     @Override
     public void onMatch(RelOptRuleCall call) {
         Join join = call.rel(0);
+        RelDataType rowType = join.getRowType();
         RelOptCluster cluster = join.getCluster();
         RelNode outerLeft = call.rel(1);
         RelNode outerRight = call.rel(2);
 
         if (outerLeft instanceof MycatSQLTableLookup) {
             MycatSQLTableLookup mycatSQLTableLookup = (MycatSQLTableLookup) outerLeft;
-            RelNode bottomInput = mycatSQLTableLookup.getInput();
-            MycatView indexRightView = (MycatView) mycatSQLTableLookup.getRight();
-            RelNode newInputJoin = join.copy(bottomInput.getTraitSet(), ImmutableList.of(bottomInput, outerRight));
-            call.transformTo(mycatSQLTableLookup.copy(join.getTraitSet(), ImmutableList.of(newInputJoin, indexRightView)));
+            if (mycatSQLTableLookup.getType() == MycatSQLTableLookup.Type.BACK){
+                RelNode bottomInput = mycatSQLTableLookup.getInput();
+                MycatView indexRightView = (MycatView) mycatSQLTableLookup.getRight();
+                RelNode newInputJoin = join.copy(bottomInput.getTraitSet(), ImmutableList.of(bottomInput, outerRight));
+                MycatSQLTableLookup newMycatSQLTableLookup = new MycatSQLTableLookup(join.getCluster(),
+                        join.getTraitSet(),
+                        newInputJoin,
+                        indexRightView,
+                        mycatSQLTableLookup.getJoinType(),
+                        mycatSQLTableLookup.getCondition(),
+                        mycatSQLTableLookup.getCorrelationIds(),
+                        mycatSQLTableLookup.getType());
+                RelDataType newRowType = newMycatSQLTableLookup.getRowType();
+                if (RelOptUtil.areRowTypesEqual(rowType,newRowType,false)){
+                    call.transformTo(newMycatSQLTableLookup);
+                }else {
+                    System.out.println();
+                }
+
+                return;
+            }
+
         }
         if (outerRight instanceof MycatSQLTableLookup) {
             MycatSQLTableLookup mycatSQLTableLookup = (MycatSQLTableLookup) outerRight;
             MycatView indexRightView = (MycatView) mycatSQLTableLookup.getRight();
             RelNode newInputJoin = join.copy(outerLeft.getTraitSet(), ImmutableList.of(mycatSQLTableLookup.getInput(), indexRightView));
-            call.transformTo(mycatSQLTableLookup.copy(join.getTraitSet(), ImmutableList.of(newInputJoin, indexRightView)));
+            if (mycatSQLTableLookup.getType() == MycatSQLTableLookup.Type.BACK){
+                MycatSQLTableLookup newMycatSQLTableLookup = new MycatSQLTableLookup(join.getCluster(),
+                        join.getTraitSet(),
+                        newInputJoin,
+                        indexRightView,
+                        mycatSQLTableLookup.getJoinType(),
+                        mycatSQLTableLookup.getCondition(),
+                        mycatSQLTableLookup.getCorrelationIds(),
+                        mycatSQLTableLookup.getType());
+                RelDataType newRowType = newMycatSQLTableLookup.getRowType();
+                if (RelOptUtil.areRowTypesEqual(rowType,newRowType,false)){
+                    call.transformTo(newMycatSQLTableLookup);
+                }else {
+                    System.out.println();
+                }
+                return;
+            }
         }
     }
 
