@@ -41,7 +41,7 @@ public class MycatRelBuilder extends RelBuilder {
                 (cluster, relOptSchema, rootSchema, statement) ->
                         new MycatRelBuilder(config.getContext(), cluster, relOptSchema));
     }
-
+//
     @Override
     public RelBuilder filter(Iterable<CorrelationId> variablesSet,
                              Iterable<? extends RexNode> predicates) {
@@ -49,16 +49,14 @@ public class MycatRelBuilder extends RelBuilder {
         if (correlationIds.isEmpty()) {
             RelNode peek = peek();
             if (peek instanceof Filter) {
-                Filter filter = (Filter) peek;
+                Filter filter = (Filter) build();
                 ImmutableList.Builder<RexNode> builder = ImmutableList.builder();
                 ImmutableList<RexNode> rexNodes = builder.add(filter.getCondition()).addAll(predicates).build();
-                this.build();
-                push(filter.copy(peek.getTraitSet(), ((Filter) peek).getInput(), RexUtil.composeConjunction(getRexBuilder(), rexNodes)));
+                push(filter.copy(filter.getTraitSet(), filter.getInput(), RexUtil.composeConjunction(getRexBuilder(), rexNodes)));
+                return this;
             }
-        } else {
-            super.filter(variablesSet, predicates);
         }
-        return this;
+      return super.filter(variablesSet, predicates);
     }
 
 }
