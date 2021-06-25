@@ -245,6 +245,9 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
             buffer  = leftInput.toList().toObservable();
         }
         Observable<Object[]> rightObservable = buffer.flatMap(argsList -> {
+            if (argsList.isEmpty()){
+                return Observable.empty();
+            }
             RexShuttle rexShuttle = argSolver(argsList);
             RelNode mycatInnerRelNode = rightView.getRelNode().accept(new RelShuttleImpl() {
                 @Override
