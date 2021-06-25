@@ -90,7 +90,7 @@ public class DrdsRunnerHelper {
                         columnNodes.add(sbText.toString().replaceAll(" ", ""));
                     }
                 } else {
-                    columnNodes.add(selectItem.getAlias());
+                    columnNodes.add(SQLUtils.normalize(selectItem.getAlias()));
                 }
             }
             alias = columnNodes;
