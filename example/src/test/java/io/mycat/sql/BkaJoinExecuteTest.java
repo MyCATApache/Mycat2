@@ -17,7 +17,7 @@ import java.util.Collections;
 public class BkaJoinExecuteTest implements MycatTest {
 
     @Test
-    public void testAggFunction() throws Exception {
+    public void testBase() throws Exception {
         initShardingTable();
         String sql;
         String explain;
