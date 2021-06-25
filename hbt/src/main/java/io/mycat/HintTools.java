@@ -1,9 +1,6 @@
 package io.mycat;
 
-import io.mycat.calcite.rules.MycatJoinRule;
-import io.mycat.calcite.rules.MycatMergeJoinRule;
-import io.mycat.calcite.rules.MycatTableLookupBottomRule;
-import io.mycat.calcite.rules.MycatTableLookupCombineRule;
+import io.mycat.calcite.rules.*;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.Join;
@@ -51,7 +48,7 @@ public class HintTools {
                             .converterRules(MycatJoinRule.INSTANCE)
                             .excludedRules(MycatMergeJoinRule.INSTANCE,
 
-                                    MycatTableLookupBottomRule.INSTANCE,
+                                    MycatValuesJoinRule.INSTANCE,
                                     MycatTableLookupCombineRule.INSTANCE)
                             .build())
             .hintStrategy("use_bka_join",
@@ -70,16 +67,15 @@ public class HintTools {
                             HintPredicates.and(HintPredicates.JOIN, joinWithFixedTableName()))
                             .converterRules(MycatJoinRule.INSTANCE)
                             .excludedRules(MycatMergeJoinRule.INSTANCE,
-
-                                    MycatTableLookupBottomRule.INSTANCE,
-                                    MycatTableLookupCombineRule.INSTANCE)
+                                    MycatTableLookupSemiJoinRule.INSTANCE,
+                                    MycatValuesJoinRule.INSTANCE)
                             .build())
             .hintStrategy("use_merge_join",
                     HintStrategy.builder(
                             HintPredicates.and(HintPredicates.JOIN, joinWithFixedTableName()))
                             .converterRules(MycatMergeJoinRule.INSTANCE)
                             .excludedRules(MycatJoinRule.INSTANCE,
-                                    MycatTableLookupBottomRule.INSTANCE,
+                                    MycatValuesJoinRule.INSTANCE,
                                     MycatTableLookupCombineRule.INSTANCE)
                             .build())
             .hintStrategy("no_hash_join",
@@ -94,9 +90,15 @@ public class HintTools {
             .hintStrategy("no_bka_join",
                     HintStrategy.builder(
                             HintPredicates.and(HintPredicates.JOIN, joinWithFixedTableName()))
-                            .excludedRules(MycatJoinRule.INSTANCE,
-                                    MycatTableLookupBottomRule.INSTANCE,
-                                    MycatTableLookupCombineRule.INSTANCE)
+                            .excludedRules(
+                                    MycatTableLookupSemiJoinRule.INSTANCE)
+                            .build())
+            .hintStrategy("use_values_join",
+                    HintStrategy.builder(
+                            HintPredicates.and(HintPredicates.JOIN,joinWithFixedTableName()))
+                            .excludedRules(
+                                    MycatTableLookupSemiJoinRule.INSTANCE,
+                                    MycatMergeJoinRule.INSTANCE)
                             .build())
             .hintStrategy("QB_NAME",
                     HintStrategy.builder((hint, rel) -> true)
@@ -110,11 +112,14 @@ public class HintTools {
         if (hints == null) return null;
         return hints.stream().filter(relHint -> {
             switch (relHint.hintName.toLowerCase()) {
-                case "no_hash_join":
                 case "use_hash_join":
                 case "use_bka_join":
                 case "use_nl_join":
-                case "use_merge_join": {
+                case "use_merge_join":
+                case "use_values_join":
+                case "no_hash_join":
+                case "no_merge_join":
+                case "no_bka_join":{
                     return true;
                 }
                 default:

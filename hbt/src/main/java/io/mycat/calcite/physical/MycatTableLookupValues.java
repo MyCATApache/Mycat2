@@ -2,6 +2,7 @@ package io.mycat.calcite.physical;
 
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatConvention;
+import io.mycat.calcite.MycatImplementor;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptUtil;
@@ -62,12 +63,12 @@ public class MycatTableLookupValues extends AbstractRelNode {
     public MycatTableLookupValues apply(List<Object[]> argsList) {
         int size = exprs.size();
 
-        List<RexNode> newExprs = apply(argsList, exprs);
+        List<RexNode> newExprs = apply(false,argsList, exprs);
         return new MycatTableLookupValues(getCluster(), getRowType(), newExprs, traitSet);
     }
 
     @NotNull
-    public static LinkedList<RexNode> apply(List<Object[]> argsList, List<RexNode> exprs) {
+    public static LinkedList<RexNode> apply(boolean in,List<Object[]> argsList, List<RexNode> exprs) {
         RexBuilder rexBuilder = MycatCalciteSupport.RexBuilder;
         LinkedList<RexNode> res = new LinkedList<>();
         for (Object[] objects : argsList) {
@@ -89,7 +90,7 @@ public class MycatTableLookupValues extends AbstractRelNode {
                     }
                 }));
             }
-            res.add(  rexBuilder.makeCall(SqlStdOperatorTable.ROW,newExprs));
+            res.add(  rexBuilder.makeCall(in?SqlStdOperatorTable.ROW: MycatImplementor.ROW,newExprs));
         }
         return res;
     }

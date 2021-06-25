@@ -67,7 +67,7 @@ public class DrdsSqlWithParams extends DrdsSql {
         return aliasList;
     }
 
-    public Optional<List<Map<String, Partition>>> getHintDataNodeFilter() {
+    public Optional<List<PartitionGroup>> getHintDataNodeFilter() {
         for (MycatHint hint : this.getHints()) {
             for (MycatHint.Function hintFunction : hint.getFunctions()) {
                 if ("SCAN".equalsIgnoreCase(hintFunction.getName())) {
@@ -98,10 +98,10 @@ public class DrdsSqlWithParams extends DrdsSql {
                         }
                     }
                     HashSet<String> targets = new HashSet<>(Optional.ofNullable(nameMap.get("TARGET", false)).orElse(Collections.emptyList()));
-                    Predicate<Map<String, Partition>> targetFilter = targets.isEmpty() ? (u) -> true : new Predicate<Map<String, Partition>>() {
+                    Predicate<PartitionGroup> targetFilter = targets.isEmpty() ? (u) -> true : new Predicate<PartitionGroup>() {
                         @Override
-                        public boolean test(Map<String, Partition> stringPartitionMap) {
-                            String targetName = stringPartitionMap.values().iterator().next().getTargetName();
+                        public boolean test(PartitionGroup stringPartitionMap) {
+                            String targetName = stringPartitionMap.getTargetName();
                             boolean contains = targets.contains(targetName);
                             return contains;
                         }
@@ -126,7 +126,7 @@ public class DrdsSqlWithParams extends DrdsSql {
                                 DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sql, null);
                                 CodeExecuterContext codeExecuterContext = queryPlanner.innerComputeMinCostCodeExecuterContext(drdsSqlWithParams);
 
-                                List<Map<String, Partition>> collect2 = codeExecuterContext.getRelContext()
+                                List<PartitionGroup> collect2 = codeExecuterContext.getRelContext()
                                         .values()
                                         .stream()
                                         .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(codeExecuterContext.getConstantMap(), i.getRelNode(), drdsSqlWithParams, Optional.empty()).stream())
@@ -142,7 +142,9 @@ public class DrdsSqlWithParams extends DrdsSql {
                                 }).collect(Collectors.toList());
                             }
                             List<Partition> finalNewPartitions = newPartitions;
-                            List<Map<String, Partition>> maps = finalNewPartitions.stream().map(i -> ImmutableMap.of(logicalTables.get(0), i)).collect(Collectors.toList());
+                            List<PartitionGroup> maps = finalNewPartitions.stream().map(i -> {
+                                return  new PartitionGroup(i.getTargetName(), ImmutableMap.of(logicalTables.get(0), i));
+                            }).collect(Collectors.toList());
                             return Optional.of(maps);
                         }
                     } else {
@@ -188,7 +190,7 @@ public class DrdsSqlWithParams extends DrdsSql {
                             try {
                                 CodeExecuterContext codeExecuterContext = planner.innerComputeMinCostCodeExecuterContext(hintSql);
 
-                                List<Map<String, Partition>> collect2 = codeExecuterContext.getRelContext()
+                                List<PartitionGroup> collect2 = codeExecuterContext.getRelContext()
                                         .values()
                                         .stream()
                                         .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(codeExecuterContext.getConstantMap(), i.getRelNode(), hintSql, Optional.empty()).stream())
@@ -197,12 +199,12 @@ public class DrdsSqlWithParams extends DrdsSql {
                                 //逻辑优化
                                 if (!logicalPhysicalMap.isEmpty()) {
                                     int index = 0;
-                                    for (Map<String, Partition> stringPartitionMap : new ArrayList<>(collect2)) {
-                                        for (Map.Entry<String, Partition> entry : new ArrayList<>(stringPartitionMap.entrySet())) {
+                                    for (PartitionGroup group : new ArrayList<>(collect2)) {
+                                        for (Map.Entry<String, Partition> entry : new ArrayList<>(group.getMap().entrySet())) {
                                             List<Partition> partitions = logicalPhysicalMap.get(entry.getKey());
                                             if (partitions == null) continue;
                                             if (index >= partitions.size()) {
-                                                collect2.remove(stringPartitionMap);
+                                                collect2.remove(group);
                                                 continue;
                                             }
                                             entry.setValue(partitions.get(index));

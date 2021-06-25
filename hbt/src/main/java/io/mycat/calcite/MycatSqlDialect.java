@@ -67,6 +67,11 @@ public class MycatSqlDialect extends MysqlSqlDialect {
             operator.unparse(writer, call, leftPrec, rightPrec);
             return;
         }
+//        switch (call.getKind()) {
+//            case ROW:
+//                call.getOperator().unparse(writer, call, leftPrec, rightPrec);
+//                break;
+//        }
 //        if (operator instanceof SqlFunction){
 //            operator.unparse(writer,call,leftPrec,rightPrec);
 //            List<SqlNode> operandList = call.getOperandList();// should not with `` in fun name

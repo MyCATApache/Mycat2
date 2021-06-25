@@ -13,6 +13,7 @@ import io.mycat.calcite.*;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.rewriter.Distribution;
+import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
 import lombok.Getter;
 import org.apache.calcite.adapter.enumerable.*;
@@ -77,7 +78,7 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
                 .item("correlationIds", correlationIds)
                 .input("left", input)
                 .input("right", right)
-                .item("leftKeys",joinInfo.leftKeys);
+                .item("leftKeys", joinInfo.leftKeys);
 //        if (pw instanceof RelWriterImpl){
 //            pw.item("rightSQL",right.getSQLTemplate(false));
 //        }
@@ -150,7 +151,7 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
     public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
         return implementStream((StreamMycatEnumerableRelImplementor) implementor, pref);
     }
-   
+
 
     //hashJoin
     @Override
@@ -200,7 +201,7 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
         switch (type) {
             case NONE: {
                 leftExpression = leftExpression;
-            break;
+                break;
             }
             case BACK: {
                 leftExpression = toObservableCache(leftExpression);
@@ -214,13 +215,13 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
 
         Method dispatch = Types.lookupMethod(MycatSQLTableLookup.class, "dispatchRightObservable", NewMycatDataContext.class, MycatSQLTableLookup.class, Observable.class);
 
-        Expression rightExpression  = Expressions.call(dispatch, root, implementor.stash(this, MycatSQLTableLookup.class), leftExpression);
+        Expression rightExpression = Expressions.call(dispatch, root, implementor.stash(this, MycatSQLTableLookup.class), leftExpression);
         switch (type) {
             case NONE: {
-                return implementor.result(physType,builder.append(rightExpression).toBlock());
+                return implementor.result(physType, builder.append(rightExpression).toBlock());
             }
             case BACK: {
-                return implementHashJoin(implementor, pref, builder,leftResult.physType, rightPhysType,leftExpression,rightExpression);
+                return implementHashJoin(implementor, pref, builder, leftResult.physType, rightPhysType, leftExpression, rightExpression);
             }
             default:
                 throw new IllegalStateException("Unexpected value: " + type);
@@ -229,7 +230,7 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
 
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new MycatSQLTableLookup(getCluster(),traitSet,inputs.get(0),right,joinType,condition,correlationIds,type);
+        return new MycatSQLTableLookup(getCluster(), traitSet, inputs.get(0), right, joinType, condition, correlationIds, type);
     }
 
     public static Observable<Object[]> dispatchRightObservable(NewMycatDataContext context, MycatSQLTableLookup tableLookup, Observable<Object[]> leftInput) {
@@ -237,7 +238,13 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
         CopyMycatRowMetaData rightRowMetaData = new CopyMycatRowMetaData(new CalciteRowMetaData(rightView.getRowType().getFieldList()));
         AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = (AsyncMycatDataContextImpl.SqlMycatDataContextImpl) context;
 
-        Observable<Object[]> rightObservable = leftInput.buffer(300, 50).flatMap(argsList -> {
+        Observable<@NonNull List<Object[]>> buffer;
+        if (tableLookup.getType() == Type.BACK) {//semi 可以分解
+            buffer = leftInput.buffer(300, 50);
+        }else {//NONE 该运算不能分解
+            buffer  = leftInput.toList().toObservable();
+        }
+        Observable<Object[]> rightObservable = buffer.flatMap(argsList -> {
             RexShuttle rexShuttle = argSolver(argsList);
             RelNode mycatInnerRelNode = rightView.getRelNode().accept(new RelShuttleImpl() {
                 @Override
@@ -271,7 +278,7 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
                     List<RexNode> operands = call.getOperands();
                     RexNode rexNode = operands.get(1);
                     RexCall rexCall = (RexCall) rexNode;
-                    LinkedList<RexNode> accept = MycatTableLookupValues.apply(argsList, rexCall.getOperands());
+                    LinkedList<RexNode> accept = MycatTableLookupValues.apply(true, argsList, rexCall.getOperands());
                     return MycatCalciteSupport.RexBuilder.makeIn(operands.get(0), accept);
                 }
                 return call;
@@ -324,9 +331,9 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
                                      Expression rightExpression) {
         RelNode left = input;
         JoinInfo joinInfo = JoinInfo.of(left, right, condition);
-         leftExpression =
+        leftExpression =
                 toEnumerate(leftExpression);
-         rightExpression =
+        rightExpression =
                 toEnumerate(rightExpression);
         final PhysType physType =
                 PhysTypeImpl.of(

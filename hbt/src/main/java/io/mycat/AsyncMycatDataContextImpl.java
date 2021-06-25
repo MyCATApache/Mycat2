@@ -35,6 +35,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
@@ -123,7 +124,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
     public static final class HbtMycatDataContextImpl extends AsyncMycatDataContextImpl {
 
         public HbtMycatDataContextImpl(MycatDataContext dataContext, CodeExecuterContext context) {
-            super(dataContext, context,DrdsRunnerHelper.preParse("select 1",null));
+            super(dataContext, context, DrdsRunnerHelper.preParse("select 1", null));
         }
 
         @Override
@@ -144,7 +145,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
     public static final class SqlMycatDataContextImpl extends AsyncMycatDataContextImpl {
 
         private DrdsSqlWithParams drdsSqlWithParams;
-        private ConcurrentMap<String, List<Map<String, Partition>>> cache = new ConcurrentHashMap<>();
+        private ConcurrentMap<String, List<PartitionGroup>> cache = new ConcurrentHashMap<>();
 
 
         public SqlMycatDataContextImpl(MycatDataContext dataContext, CodeExecuterContext context, DrdsSqlWithParams drdsSqlWithParams) {
@@ -158,7 +159,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             }
             MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = this.codeExecuterContext.getRelContext().get(node);
             MycatView view = mycatRelDatasourceSourceInfo.getRelNode();
-            List<Map<String, Partition>> sqlMap = getPartition(node).get();
+            List<PartitionGroup> sqlMap = getPartition(node).get();
             boolean share = mycatRelDatasourceSourceInfo.refCount > 0;
             List<Observable<Object[]>> observables = getObservables((view
                     .apply(mycatRelDatasourceSourceInfo.getSqlTemplate(), sqlMap, drdsSqlWithParams.getParams())), mycatRelDatasourceSourceInfo.getColumnInfo());
@@ -169,7 +170,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             return observables;
         }
 
-        public Optional<List<Map<String, Partition>>> getPartition(String node) {
+        public Optional<List<PartitionGroup>> getPartition(String node) {
             MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = this.codeExecuterContext.getRelContext().get(node);
             if (mycatRelDatasourceSourceInfo == null) return Optional.empty();
             MycatView view = mycatRelDatasourceSourceInfo.getRelNode();
@@ -203,24 +204,40 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         return Observable.merge(getObservableList(node));
     }
 
-    public static List<Map<String, Partition>> getSqlMap(Map<RexNode, RexNode> constantMap,
-                                                         MycatView view,
-                                                         DrdsSqlWithParams drdsSqlWithParams,
-                                                         Optional<List<Map<String, Partition>>> hintDataMapping) {
+    public static List<PartitionGroup> getSqlMap(Map<RexNode, RexNode> constantMap,
+                                                 MycatView view,
+                                                 DrdsSqlWithParams drdsSqlWithParams,
+                                                 Optional<List<PartitionGroup>> hintDataMapping) {
         Distribution distribution = view.getDistribution();
 
         Distribution.Type type = distribution.type();
         switch (type) {
-            case BROADCAST:
+            case BROADCAST: {
+                Map<String, Partition> builder = new HashMap<>();
+                String targetName = null;
+                for (GlobalTable globalTable : distribution.getGlobalTables()) {
+                    if (targetName == null) {
+                        int i = ThreadLocalRandom.current().nextInt(0, globalTable.getGlobalDataNode().size());
+                        Partition partition = globalTable.getGlobalDataNode().get(i);
+                        targetName = partition.getTargetName();
+                    }
+                    builder.put(globalTable.getUniqueName(), globalTable.getDataNode());
+                }
+                return Collections.singletonList(new PartitionGroup(targetName, builder));
+            }
             case PHY:
                 Map<String, Partition> builder = new HashMap<>();
-                for (NormalTable normalTable : distribution.getNormalTables()) {
-                    builder.put(normalTable.getUniqueName(), normalTable.getDataNode());
-                }
+                String targetName = null;
                 for (GlobalTable globalTable : distribution.getGlobalTables()) {
                     builder.put(globalTable.getUniqueName(), globalTable.getDataNode());
                 }
-                return Collections.singletonList(builder);
+                for (NormalTable normalTable : distribution.getNormalTables()) {
+                    if (targetName == null) {
+                        targetName = normalTable.getDataNode().getTargetName();
+                    }
+                    builder.put(normalTable.getUniqueName(), normalTable.getDataNode());
+                }
+                return Collections.singletonList(new PartitionGroup(targetName, builder));
             case SHARDING:
                 if (hintDataMapping.isPresent()) {
                     return hintDataMapping.get();
@@ -253,7 +270,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         }
     }
 
-    public static List<Map<String, Partition>> mapSharding(MycatView view, List<Partition> object) {
+    public static List<PartitionGroup> mapSharding(MycatView view, List<Partition> object) {
         Distribution distribution = view.getDistribution();
         ImmutableMap.Builder<String, Partition> globalbuilder = ImmutableMap.builder();
         for (GlobalTable globalTable : distribution.getGlobalTables()) {
@@ -268,7 +285,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         List<ShardingTable> shardingTables = metadataManager.getErTableGroup().getOrDefault(shardingTable.getShardingFuntion().getErUniqueID(), Collections.emptyList());
         Map<String, List<Partition>> collect = shardingTables.stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.dataNodes()));
-        List<Integer> mappingIndex = new ArrayList<>();
+        Map<Integer,String> mappingIndex = new HashMap<>();
         List<String> allDataNodeUniqueNames = collect.get(primaryTableUniqueName).stream().sequential().map(i -> i.getUniqueName()).collect(Collectors.toList());
         {
 
@@ -276,7 +293,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                 int index = 0;
                 for (String allDataNodeUniqueName : allDataNodeUniqueNames) {
                     if (allDataNodeUniqueName.equals(filterPartition.getUniqueName())) {
-                        mappingIndex.add(index);
+                        mappingIndex.put(index,filterPartition.getTargetName());
                         break;
                     }
                     index++;
@@ -284,18 +301,24 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
 
             }
         }
-        TreeMap<Integer, Map<String, Partition>> res = new TreeMap<>();
+        PartitionGroup[] res = new PartitionGroup[primaryTableFilterPartitions.size()];
         {
             for (Map.Entry<String, List<Partition>> e : collect.entrySet()) {
                 String key = e.getKey();
                 List<Partition> partitions = e.getValue();
-                for (Integer integer : mappingIndex) {
-                    Map<String, Partition> stringDataNodeMap = res.computeIfAbsent(integer, integer1 -> new HashMap<>());
+                for (Map.Entry<Integer, String> entry : mappingIndex.entrySet()) {
+                    Integer integer = entry.getKey();
+
+                    PartitionGroup partitionGroup  = res[integer];
+                    if (partitionGroup == null) {
+                        partitionGroup = res[integer] = new PartitionGroup(entry.getValue(),new HashMap<>());
+                    }
+                    Map<String, Partition> stringDataNodeMap  = partitionGroup.getMap();
                     stringDataNodeMap.put(key, partitions.get(integer));
                     stringDataNodeMap.putAll(globalMap);
                 }
             }
         }
-        return new ArrayList<>(res.values());
+        return ImmutableList.copyOf(res);
     }
 }

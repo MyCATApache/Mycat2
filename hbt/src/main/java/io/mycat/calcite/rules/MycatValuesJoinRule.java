@@ -1,5 +1,6 @@
 package io.mycat.calcite.rules;
 
+import io.mycat.HintTools;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.logical.MycatView;
@@ -13,27 +14,36 @@ import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.RelBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MycatTableLookupBottomRule extends RelRule<MycatTableLookupBottomRule.Config> {
+public class MycatValuesJoinRule extends RelRule<MycatValuesJoinRule.Config> {
 
-    public static final MycatTableLookupBottomRule INSTANCE = MycatTableLookupBottomRule.Config.DEFAULT.toRule();
+    public static final MycatValuesJoinRule INSTANCE = MycatValuesJoinRule.Config.DEFAULT.toRule();
 
-    public MycatTableLookupBottomRule(Config config) {
+    public MycatValuesJoinRule(Config config) {
         super(config);
     }
 
     @Override
     public void onMatch(RelOptRuleCall call) {
         Join join = call.rel(0);
+        RelHint lastJoinHint = HintTools.getLastJoinHint(join.getHints());
+        if (lastJoinHint != null) {
+            if (!"use_values_join".equalsIgnoreCase(lastJoinHint.hintName)) {
+                return;
+            }
+        }else {
+            return;
+        }
         RelOptCluster cluster = join.getCluster();
         RelNode left = call.rel(1);
         RelNode right = call.rel(2);
@@ -66,7 +76,7 @@ public class MycatTableLookupBottomRule extends RelRule<MycatTableLookupBottomRu
                 CorrelationId correl = cluster.createCorrel();
                 correlationIds.add(correl);
                 RelDataType type = left.getRowType().getFieldList().get(leftKey).getType();
-                RexNode rexNode = rexBuilder.makeCorrel(typeFactory.createUnknownType(), correl);
+                RexNode rexNode = rexBuilder.makeCorrel(typeFactory.createSqlType(SqlTypeName.VARCHAR), correl);
                 leftExprs.add(rexBuilder.makeCast(type, rexNode));
             }
         }
@@ -86,21 +96,21 @@ public class MycatTableLookupBottomRule extends RelRule<MycatTableLookupBottomRu
     }
 
     public interface Config extends RelRule.Config {
-        MycatTableLookupBottomRule.Config DEFAULT = EMPTY
-                .as(MycatTableLookupBottomRule.Config.class)
+        MycatValuesJoinRule.Config DEFAULT = EMPTY
+                .as(MycatValuesJoinRule.Config.class)
                 .withOperandFor(b0 ->
-                        b0.operand(Join.class).inputs(b1 -> b1.operand(MycatRel.class).predicate(i->!(i instanceof MycatSQLTableLookup)).anyInputs(), b1 -> b1.operand(MycatView.class).noInputs()))
-                .withDescription("MycatTableLookupBottomRule")
-                .as(MycatTableLookupBottomRule.Config.class);
+                        b0.operand(Join.class).inputs(b1 -> b1.operand(MycatRel.class).anyInputs(), b1 -> b1.operand(MycatView.class).noInputs()))
+                .withDescription("MycatValuesJoinRule")
+                .as(MycatValuesJoinRule.Config.class);
 
         @Override
-        default MycatTableLookupBottomRule toRule() {
-            return new MycatTableLookupBottomRule(this);
+        default MycatValuesJoinRule toRule() {
+            return new MycatValuesJoinRule(this);
         }
 
-        default MycatTableLookupBottomRule.Config withOperandFor(OperandTransform transform) {
+        default MycatValuesJoinRule.Config withOperandFor(OperandTransform transform) {
             return withOperandSupplier(transform)
-                    .as(MycatTableLookupBottomRule.Config.class);
+                    .as(MycatValuesJoinRule.Config.class);
         }
     }
 }

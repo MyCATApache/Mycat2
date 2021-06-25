@@ -120,6 +120,7 @@ public class MycatJoinRule extends MycatConverterRule {
         } else {
             return MycatNestedLoopJoin.create(
                     join.getTraitSet().replace(out),
+                    join.getHints(),
                     convert(left, out),
                     convert(right, out),
                     join.getCondition(),
@@ -143,6 +144,7 @@ public class MycatJoinRule extends MycatConverterRule {
             if (!join.isSemiJoin()) {
                 return MycatHashJoin.create(
                         join.getTraitSet().replace(out),
+                        join.getHints(),
                         convert(left, out),
                         convert(right, out),
                         condition,

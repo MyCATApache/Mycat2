@@ -86,11 +86,12 @@ public class MycatImplementor extends RelToSqlConverter {
     public static final SqlValuesOperator MYCAT_SQL_VAULES = new SqlValuesOperator() {
         @Override
         public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
+            writer.print("VALUES");
             final SqlWriter.Frame frame =
-                    writer.startList(SqlWriter.FrameTypeEnum.VALUES, "VALUES", "");
+                    writer.startList(SqlWriter.FrameTypeEnum.VALUES, " ", " ");
             for (SqlNode operand : call.getOperandList()) {
                 writer.sep(",");
-                operand.unparse(writer, 0, 0);
+                writer.print(operand.toString());
             }
             writer.endList(frame);
         }
@@ -105,12 +106,7 @@ public class MycatImplementor extends RelToSqlConverter {
 //    public Context aliasContext(Map<String, RelDataType> aliases, boolean qualified) {
 //        return new AliasContext(dialect, aliases, qualified);
 //    }
-public static final SqlSpecialOperator ROW = new SqlSpecialOperator("ROW",SqlKind.OTHER){
-    @Override
-    public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
-        SqlUtil.unparseFunctionSyntax(this,writer, call);
-    }
-};
+public static final SqlSpecialOperator ROW = new MycatSqlRowOperator("MYCAT_ROW");
     public Result visit(MycatTableLookupValues e) {
         RelDataType rowType = e.getRowType();
         int fieldCount = rowType.getFieldCount();
@@ -120,9 +116,7 @@ public static final SqlSpecialOperator ROW = new SqlSpecialOperator("ROW",SqlKin
             SqlNode sqlNode = context.toSql(null, expr);
             builder.add(sqlNode);
         }
-        SqlBasicCall sqlBasicCall = new SqlBasicCall(MYCAT_SQL_VAULES, new SqlNode[]{
-                new SqlBasicCall(ROW, builder.build().toArray(new SqlNode[0]), SqlParserPos.ZERO)
-        }, SqlParserPos.ZERO);
+        SqlBasicCall sqlBasicCall = new SqlBasicCall(MYCAT_SQL_VAULES, builder.build().toArray(new SqlNode[]{}), SqlParserPos.ZERO);
         return result(sqlBasicCall, ImmutableList.of(Clause.FROM), e, null);
     }
 

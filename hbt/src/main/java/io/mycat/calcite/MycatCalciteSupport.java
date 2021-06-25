@@ -21,6 +21,7 @@ import com.google.common.collect.Multimap;
 import io.mycat.Partition;
 import io.mycat.HintTools;
 import io.mycat.MetaClusterCurrent;
+import io.mycat.PartitionGroup;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
@@ -653,7 +654,7 @@ public enum MycatCalciteSupport implements Context {
         return writer.toSqlString();
     }
 
-    public SqlNode sqlTemplateApply(SqlNode sqlTemplate,List<Object> params, Map<String, Partition> map) {
+    public SqlNode sqlTemplateApply(SqlNode sqlTemplate,List<Object> params, PartitionGroup map) {
         return sqlTemplate.accept(new SqlShuttle() {
                                       @Override
                                       public SqlNode visit(SqlIdentifier id) {

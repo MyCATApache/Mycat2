@@ -442,13 +442,15 @@ public class DrdsSqlCompiler {
                 //TABLELOOKUP
                 listBuilder.add(MycatTableLookupSemiJoinRule.INSTANCE);
                 listBuilder.add(MycatTableLookupCombineRule.INSTANCE);
-                listBuilder.add(MycatJoinTableLookupTransposeRule.LEFT_INSTANCE);
-                listBuilder.add(MycatJoinTableLookupTransposeRule.RIGHT_INSTANCE);
-                listBuilder.add(MycatTableLookupBottomRule.INSTANCE);
+//                listBuilder.add(MycatJoinTableLookupTransposeRule.LEFT_INSTANCE);
+//                listBuilder.add(MycatJoinTableLookupTransposeRule.RIGHT_INSTANCE);
+                listBuilder.add(MycatValuesJoinRule.INSTANCE);
             }
+
 
             listBuilder.build().forEach(c -> planner.addRule(c));
             MycatConvention.INSTANCE.register(planner);
+
             if (relOptRules != null) {
                 for (RelOptRule relOptRule : relOptRules) {
                     planner.addRule(relOptRule);

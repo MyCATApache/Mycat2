@@ -32,7 +32,7 @@ public class DrdsConfig implements DrdsConst {
 
     @Override
     public boolean bkaJoin() {
-        return false;
+        return true;
     }
 
 //    @Override

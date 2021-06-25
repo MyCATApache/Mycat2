@@ -47,15 +47,17 @@ import java.util.Set;
 public class MycatHashJoin extends Join implements MycatRel {
     protected MycatHashJoin(RelOptCluster cluster,
                             RelTraitSet traitSet,
+                            List<RelHint> hints,
                             RelNode left,
                             RelNode right,
                             RexNode condition,
                             Set<CorrelationId> variablesSet,
                             JoinRelType joinType) {
-        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), ImmutableList.of(), left, right, condition, variablesSet, joinType);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), hints, left, right, condition, variablesSet, joinType);
     }
     public MycatHashJoin(RelInput input) {
         this(input.getCluster(), input.getTraitSet(),
+                input.getHints(),
                 input.getInputs().get(0), input.getInputs().get(1),
                 input.getExpression("condition"), ImmutableSet.of(),
                 input.getEnum("joinType", JoinRelType.class));
@@ -65,6 +67,7 @@ public class MycatHashJoin extends Join implements MycatRel {
      */
     public static MycatHashJoin create(
             RelTraitSet traitSet,
+            List<RelHint> hints,
             RelNode left,
             RelNode right,
             RexNode condition,
@@ -75,7 +78,7 @@ public class MycatHashJoin extends Join implements MycatRel {
                 traitSet.replace(MycatConvention.INSTANCE)
                         .replaceIfs(RelCollationTraitDef.INSTANCE,
                                 () -> RelMdCollation.enumerableHashJoin(mq, left, right, joinType));
-        return new MycatHashJoin(cluster, traitSet, left, right, condition,
+        return new MycatHashJoin(cluster, traitSet,hints, left, right, condition,
                 ImmutableSet.of(), joinType);
     }
 
@@ -91,7 +94,7 @@ public class MycatHashJoin extends Join implements MycatRel {
 
     @Override
     public MycatHashJoin copy(RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
-        return new MycatHashJoin(getCluster(), traitSet,left, right, conditionExpr, getVariablesSet(), joinType);
+        return new MycatHashJoin(getCluster(), traitSet,getHints(),left, right, conditionExpr, getVariablesSet(), joinType);
     }
 
     @Override

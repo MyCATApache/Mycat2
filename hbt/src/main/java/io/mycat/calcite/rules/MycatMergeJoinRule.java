@@ -133,6 +133,7 @@ public class MycatMergeJoinRule extends MycatConverterRule {
         if (!join.isSemiJoin()) {
             return MycatSortMergeJoin.create(
                     traitSet,
+                    join.getHints(),
                     convert(left, out),
                     convert(right, out),
                     condition,
@@ -140,6 +141,7 @@ public class MycatMergeJoinRule extends MycatConverterRule {
         } else {
             return MycatSortMergeSemiJoin.create(
                     traitSet,
+                    join.getHints(),
                     convert(left, out),
                     convert(right, out),
                     condition,

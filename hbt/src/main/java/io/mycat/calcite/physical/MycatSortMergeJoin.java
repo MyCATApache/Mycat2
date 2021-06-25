@@ -31,6 +31,7 @@ import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
@@ -47,15 +48,18 @@ import java.util.Set;
 public class MycatSortMergeJoin extends Join implements MycatRel {
     protected MycatSortMergeJoin(RelOptCluster cluster,
                                  RelTraitSet traitSet,
+                                 List<RelHint> hints,
                                  RelNode left,
                                  RelNode right,
                                  RexNode condition,
                                  Set<CorrelationId> variablesSet, JoinRelType joinType) {
-        super(cluster,  Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), ImmutableList.of(), left, right, condition, variablesSet, joinType);
+        super(cluster,  Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), hints, left, right, condition, variablesSet, joinType);
     }
 
     public MycatSortMergeJoin(RelInput input) {
-        this(input.getCluster(), input.getTraitSet(),
+        this(input.getCluster(),
+                input.getTraitSet(),
+                input.getHints(),
                 input.getInputs().get(0), input.getInputs().get(1),
                 input.getExpression("condition"), ImmutableSet.of(),
                 input.getEnum("joinType", JoinRelType.class));
@@ -63,6 +67,7 @@ public class MycatSortMergeJoin extends Join implements MycatRel {
 
     public static MycatSortMergeJoin create(
             RelTraitSet traitSet,
+            List<RelHint> hints,
             RelNode left,
             RelNode right,
             RexNode condition,
@@ -75,7 +80,7 @@ public class MycatSortMergeJoin extends Join implements MycatRel {
                 RelCollationTraitDef.INSTANCE,
                 () -> mq.collations(left));//SortMergeJoin结果也是已经排序的
         return new MycatSortMergeJoin(left.getCluster(),
-                traitSet.replace(MycatConvention.INSTANCE)
+                traitSet.replace(MycatConvention.INSTANCE),hints
                 , left, right, condition, ImmutableSet.of(), joinType);
     }
 
@@ -104,7 +109,7 @@ public class MycatSortMergeJoin extends Join implements MycatRel {
 
     @Override
     public Join copy(RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
-        return new MycatSortMergeJoin(getCluster(), traitSet, left, right, conditionExpr, getVariablesSet(), joinType);
+        return new MycatSortMergeJoin(getCluster(), traitSet,getHints(), left, right, conditionExpr, getVariablesSet(), joinType);
     }
 
     @Override

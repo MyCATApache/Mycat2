@@ -80,7 +80,7 @@ public class MycatRules {
             (left, right, hints, condition, variablesSet, joinType, semiJoinDone) -> {
                 final RelOptCluster cluster = left.getCluster();
                 final RelTraitSet traitSet = cluster.traitSetOf(left.getConvention());
-                return MycatNestedLoopJoin.create(traitSet, left, right, condition, joinType);
+                return MycatNestedLoopJoin.create(traitSet,hints, left, right, condition, joinType);
             };
 
     static final RelFactories.CorrelateFactory CORRELATE_FACTORY =
@@ -185,7 +185,6 @@ public class MycatRules {
                 MycatMinusRule.INSTANCE,
                 MycatTableModificationRule.INSTANCE,
                 MycatValuesRule.INSTANCE,
-                MycatMergeJoinRule.INSTANCE,
                 MycatSortAggRule.INSTANCE,
                 MycatCorrelateRule.INSTANCE,
                 MycatTopNRule.INSTANCE,

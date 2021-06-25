@@ -20,6 +20,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.Partition;
+import io.mycat.PartitionGroup;
 import io.mycat.calcite.*;
 import io.mycat.calcite.localrel.ToLocalConverter;
 import io.mycat.calcite.physical.MycatMergeSort;
@@ -153,7 +154,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     public  ImmutableMultimap<String, SqlString> apply(
             SqlNode sqlTemplateArg,
-            List<Map<String, Partition>> dataNodes, List<Object> params) {
+            List<PartitionGroup> dataNodes, List<Object> params) {
         SqlNode sqlTemplate = sqlTemplateArg;
         int mergeUnionSize = MetaClusterCurrent.exist(ServerConfig.class) ? MetaClusterCurrent.wrapper(ServerConfig.class).getMergeUnionSize() : 5;
         if (distribution.type() == Distribution.Type.BROADCAST) {
@@ -162,7 +163,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             int i = ThreadLocalRandom.current().nextInt(0, globalPartition.size());
             Partition partition = globalPartition.get(i);
             String targetName = partition.getTargetName();
-            Map<String, Partition> nodeMap = dataNodes.get(0);
+            PartitionGroup nodeMap = dataNodes.get(0);
             SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
             SqlNode sqlSelectStatement = MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params, nodeMap);
             return (ImmutableMultimap.of(targetName, sqlSelectStatement.toSqlString(dialect)));
@@ -170,14 +171,18 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         if (mergeUnionSize == 0 || isMergeSort()) {
             ImmutableMultimap.Builder<String, SqlString> builder = ImmutableMultimap.builder();
             dataNodes.forEach(m -> {
-                String targetName = m.values().iterator().next().getTargetName();
+                String targetName = m.getTargetName();
                 SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
                 SqlString sqlString = MycatCalciteSupport.toSqlString(MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params, m), (dialect));
                 builder.put(targetName, sqlString);
             });
             return (builder.build());
         }
-        Map<String, List<Map<String, Partition>>> collect = dataNodes.stream().collect(Collectors.groupingBy(m -> m.values().iterator().next().getTargetName()));
+        Map<String, List<Map<String, Partition>>> collect = new HashMap<>();
+        for (PartitionGroup m : dataNodes) {
+            collect.computeIfAbsent(m.getTargetName(), k -> new ArrayList<>())
+                    .add(m.getMap());
+        }
         ImmutableMultimap.Builder<String, SqlString> resMapBuilder = ImmutableMultimap.builder();
         for (Map.Entry<String, List<Map<String, Partition>>> entry : collect.entrySet()) {
             String targetName = entry.getKey();
@@ -189,7 +194,8 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                 SqlString string = null;
                 List<Integer> list = new ArrayList<>();
                 for (Map<String, Partition> each : eachList) {
-                    string = MycatCalciteSupport.toSqlString(MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params, each), dialect);
+                    string = MycatCalciteSupport.toSqlString(MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params,
+                           new PartitionGroup(targetName,each)), dialect);
                     if (string.getDynamicParameters() != null) {
                         list.addAll(string.getDynamicParameters());
                     }
