@@ -285,7 +285,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         List<ShardingTable> shardingTables = metadataManager.getErTableGroup().getOrDefault(shardingTable.getShardingFuntion().getErUniqueID(), Collections.emptyList());
         Map<String, List<Partition>> collect = shardingTables.stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.dataNodes()));
-        Map<Integer,String> mappingIndex = new HashMap<>();
+        Map<Integer, String> mappingIndex = new HashMap<>();
         List<String> allDataNodeUniqueNames = collect.get(primaryTableUniqueName).stream().sequential().map(i -> i.getUniqueName()).collect(Collectors.toList());
         {
 
@@ -293,7 +293,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                 int index = 0;
                 for (String allDataNodeUniqueName : allDataNodeUniqueNames) {
                     if (allDataNodeUniqueName.equals(filterPartition.getUniqueName())) {
-                        mappingIndex.put(index,filterPartition.getTargetName());
+                        mappingIndex.put(index, filterPartition.getTargetName());
                         break;
                     }
                     index++;
@@ -301,24 +301,21 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
 
             }
         }
-        PartitionGroup[] res = new PartitionGroup[primaryTableFilterPartitions.size()];
-        {
-            for (Map.Entry<String, List<Partition>> e : collect.entrySet()) {
-                String key = e.getKey();
-                List<Partition> partitions = e.getValue();
-                for (Map.Entry<Integer, String> entry : mappingIndex.entrySet()) {
-                    Integer integer = entry.getKey();
-
-                    PartitionGroup partitionGroup  = res[integer];
-                    if (partitionGroup == null) {
-                        partitionGroup = res[integer] = new PartitionGroup(entry.getValue(),new HashMap<>());
-                    }
-                    Map<String, Partition> stringDataNodeMap  = partitionGroup.getMap();
-                    stringDataNodeMap.put(key, partitions.get(integer));
-                    stringDataNodeMap.putAll(globalMap);
+        List<PartitionGroup> res = new ArrayList<>();
+        for (Map.Entry<Integer, String> entry : mappingIndex.entrySet()) {
+            Integer index = entry.getKey();
+            HashMap<String, Partition> map = new HashMap<>();
+            for (Map.Entry<String, List<Partition>> stringListEntry : collect.entrySet()) {
+                List<Partition> partitions = stringListEntry.getValue();
+                if (partitions.size() > index) {
+                    map.put(stringListEntry.getKey(), partitions.get(index));
+                }else {
+                    break;
                 }
             }
+            map.putAll(globalMap);
+            res.add(new PartitionGroup(entry.getValue(), map));
         }
-        return ImmutableList.copyOf(res);
+        return res;
     }
 }
