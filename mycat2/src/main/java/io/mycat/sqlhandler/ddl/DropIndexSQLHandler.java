@@ -15,16 +15,12 @@
 package io.mycat.sqlhandler.ddl;
 
 import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.ast.SQLName;
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
 import com.alibaba.druid.sql.ast.statement.SQLDropIndexStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
 import com.google.common.collect.ImmutableMap;
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import io.mycat.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
@@ -33,9 +29,7 @@ import io.vertx.core.Future;
 import io.vertx.core.shareddata.Lock;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatement> {
     @Override
