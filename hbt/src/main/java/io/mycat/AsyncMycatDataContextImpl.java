@@ -35,6 +35,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
@@ -44,8 +45,8 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
 
     public AsyncMycatDataContextImpl(MycatDataContext dataContext,
                                      CodeExecuterContext context,
-                                     List<Object> params) {
-        super(dataContext, context, params);
+                                     DrdsSqlWithParams drdsSqlWithParams) {
+        super(dataContext, context, drdsSqlWithParams);
     }
 
     Future<SqlConnection> getConnection(String key) {
@@ -82,7 +83,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                 PromiseInternal<SqlConnection> promise = VertxUtil.newPromise();
                 Observable<Object[]> innerObservable = Objects.requireNonNull(VertxExecuter.runQuery(sessionConnection,
                         sqlString.getSql(),
-                        MycatPreparedStatementUtil.extractParams(params, sqlString.getDynamicParameters()), calciteRowMetaData));
+                        MycatPreparedStatementUtil.extractParams(drdsSqlWithParams.getParams(), sqlString.getDynamicParameters()), calciteRowMetaData));
                 innerObservable.subscribe(objects -> {
                             emitter.onNext((objects));
                         },
@@ -123,7 +124,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
     public static final class HbtMycatDataContextImpl extends AsyncMycatDataContextImpl {
 
         public HbtMycatDataContextImpl(MycatDataContext dataContext, CodeExecuterContext context) {
-            super(dataContext, context, Collections.emptyList());
+            super(dataContext, context, DrdsRunnerHelper.preParse("select 1", null));
         }
 
         @Override
@@ -144,11 +145,11 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
     public static final class SqlMycatDataContextImpl extends AsyncMycatDataContextImpl {
 
         private DrdsSqlWithParams drdsSqlWithParams;
-        private ConcurrentMap<String, List<Map<String, Partition>>> cache = new ConcurrentHashMap<>();
+        private ConcurrentMap<String, List<PartitionGroup>> cache = new ConcurrentHashMap<>();
 
 
         public SqlMycatDataContextImpl(MycatDataContext dataContext, CodeExecuterContext context, DrdsSqlWithParams drdsSqlWithParams) {
-            super(dataContext, context, drdsSqlWithParams.getParams());
+            super(dataContext, context, drdsSqlWithParams);
             this.drdsSqlWithParams = drdsSqlWithParams;
         }
 
@@ -158,10 +159,10 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             }
             MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = this.codeExecuterContext.getRelContext().get(node);
             MycatView view = mycatRelDatasourceSourceInfo.getRelNode();
-            List<Map<String, Partition>> sqlMap = getPartition(node).get();
+            List<PartitionGroup> sqlMap = getPartition(node).get();
             boolean share = mycatRelDatasourceSourceInfo.refCount > 0;
             List<Observable<Object[]>> observables = getObservables((view
-                    .apply(mycatRelDatasourceSourceInfo.getSqlTemplate(), sqlMap, params)), mycatRelDatasourceSourceInfo.getColumnInfo());
+                    .apply(mycatRelDatasourceSourceInfo.getSqlTemplate(), sqlMap, drdsSqlWithParams.getParams())), mycatRelDatasourceSourceInfo.getColumnInfo());
             if (share) {
                 observables = observables.stream().map(i -> i.share()).collect(Collectors.toList());
                 shareObservable.put(node, observables);
@@ -169,11 +170,11 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             return observables;
         }
 
-        public Optional<List<Map<String, Partition>>> getPartition(String node) {
+        public Optional<List<PartitionGroup>> getPartition(String node) {
             MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = this.codeExecuterContext.getRelContext().get(node);
             if (mycatRelDatasourceSourceInfo == null) return Optional.empty();
             MycatView view = mycatRelDatasourceSourceInfo.getRelNode();
-            return Optional.ofNullable(cache.computeIfAbsent(node, s -> getSqlMap(codeExecuterContext, view, drdsSqlWithParams, drdsSqlWithParams.getHintDataNodeFilter())));
+            return Optional.ofNullable(cache.computeIfAbsent(node, s -> getSqlMap(codeExecuterContext.getConstantMap(), view, drdsSqlWithParams, drdsSqlWithParams.getHintDataNodeFilter())));
         }
 
 
@@ -203,24 +204,40 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         return Observable.merge(getObservableList(node));
     }
 
-    public static List<Map<String, Partition>> getSqlMap(CodeExecuterContext codeExecuterContext,
-                                                         MycatView view,
-                                                         DrdsSqlWithParams drdsSqlWithParams,
-                                                         Optional<List<Map<String, Partition>>> hintDataMapping) {
+    public static List<PartitionGroup> getSqlMap(Map<RexNode, RexNode> constantMap,
+                                                 MycatView view,
+                                                 DrdsSqlWithParams drdsSqlWithParams,
+                                                 Optional<List<PartitionGroup>> hintDataMapping) {
         Distribution distribution = view.getDistribution();
 
         Distribution.Type type = distribution.type();
         switch (type) {
-            case BROADCAST:
+            case BROADCAST: {
+                Map<String, Partition> builder = new HashMap<>();
+                String targetName = null;
+                for (GlobalTable globalTable : distribution.getGlobalTables()) {
+                    if (targetName == null) {
+                        int i = ThreadLocalRandom.current().nextInt(0, globalTable.getGlobalDataNode().size());
+                        Partition partition = globalTable.getGlobalDataNode().get(i);
+                        targetName = partition.getTargetName();
+                    }
+                    builder.put(globalTable.getUniqueName(), globalTable.getDataNode());
+                }
+                return Collections.singletonList(new PartitionGroup(targetName, builder));
+            }
             case PHY:
                 Map<String, Partition> builder = new HashMap<>();
-                for (NormalTable normalTable : distribution.getNormalTables()) {
-                    builder.put(normalTable.getUniqueName(), normalTable.getDataNode());
-                }
+                String targetName = null;
                 for (GlobalTable globalTable : distribution.getGlobalTables()) {
                     builder.put(globalTable.getUniqueName(), globalTable.getDataNode());
                 }
-                return Collections.singletonList(builder);
+                for (NormalTable normalTable : distribution.getNormalTables()) {
+                    if (targetName == null) {
+                        targetName = normalTable.getDataNode().getTargetName();
+                    }
+                    builder.put(normalTable.getUniqueName(), normalTable.getDataNode());
+                }
+                return Collections.singletonList(new PartitionGroup(targetName, builder));
             case SHARDING:
                 if (hintDataMapping.isPresent()) {
                     return hintDataMapping.get();
@@ -229,7 +246,6 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                 ShardingTable shardingTable = distribution.getShardingTables().get(0);
                 RexBuilder rexBuilder = MycatCalciteSupport.RexBuilder;
                 RexNode condition = view.getCondition().orElse(MycatCalciteSupport.RexBuilder.makeLiteral(true));
-                Map<RexNode, RexNode> constantMap = codeExecuterContext.getConstantMap();
                 List<RexNode> inputConditions = new ArrayList<>(constantMap.size() + 1);
 
                 inputConditions.add(condition);
@@ -254,7 +270,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         }
     }
 
-    public static List<Map<String, Partition>> mapSharding(MycatView view, List<Partition> object) {
+    public static List<PartitionGroup> mapSharding(MycatView view, List<Partition> object) {
         Distribution distribution = view.getDistribution();
         ImmutableMap.Builder<String, Partition> globalbuilder = ImmutableMap.builder();
         for (GlobalTable globalTable : distribution.getGlobalTables()) {
@@ -269,7 +285,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         List<ShardingTable> shardingTables = metadataManager.getErTableGroup().getOrDefault(shardingTable.getShardingFuntion().getErUniqueID(), Collections.emptyList());
         Map<String, List<Partition>> collect = shardingTables.stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.dataNodes()));
-        List<Integer> mappingIndex = new ArrayList<>();
+        Map<Integer, String> mappingIndex = new HashMap<>();
         List<String> allDataNodeUniqueNames = collect.get(primaryTableUniqueName).stream().sequential().map(i -> i.getUniqueName()).collect(Collectors.toList());
         {
 
@@ -277,7 +293,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                 int index = 0;
                 for (String allDataNodeUniqueName : allDataNodeUniqueNames) {
                     if (allDataNodeUniqueName.equals(filterPartition.getUniqueName())) {
-                        mappingIndex.add(index);
+                        mappingIndex.put(index, filterPartition.getTargetName());
                         break;
                     }
                     index++;
@@ -285,18 +301,21 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
 
             }
         }
-        TreeMap<Integer, Map<String, Partition>> res = new TreeMap<>();
-        {
-            for (Map.Entry<String, List<Partition>> e : collect.entrySet()) {
-                String key = e.getKey();
-                List<Partition> partitions = e.getValue();
-                for (Integer integer : mappingIndex) {
-                    Map<String, Partition> stringDataNodeMap = res.computeIfAbsent(integer, integer1 -> new HashMap<>());
-                    stringDataNodeMap.put(key, partitions.get(integer));
-                    stringDataNodeMap.putAll(globalMap);
+        List<PartitionGroup> res = new ArrayList<>();
+        for (Map.Entry<Integer, String> entry : mappingIndex.entrySet()) {
+            Integer index = entry.getKey();
+            HashMap<String, Partition> map = new HashMap<>();
+            for (Map.Entry<String, List<Partition>> stringListEntry : collect.entrySet()) {
+                List<Partition> partitions = stringListEntry.getValue();
+                if (partitions.size() > index) {
+                    map.put(stringListEntry.getKey(), partitions.get(index));
+                }else {
+                    break;
                 }
             }
+            map.putAll(globalMap);
+            res.add(new PartitionGroup(entry.getValue(), map));
         }
-        return new ArrayList<>(res.values());
+        return res;
     }
 }

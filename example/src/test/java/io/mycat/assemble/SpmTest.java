@@ -51,7 +51,7 @@ public class SpmTest implements MycatTest {
             }
 
             @Override
-            public boolean joinClustering() {
+            public boolean bkaJoin() {
                 return true;
             }
         }));

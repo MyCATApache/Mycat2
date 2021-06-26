@@ -522,7 +522,7 @@ public class SqlFunctionTest implements MycatTest {
             System.out.println(step2);
 
             List<Map<String, Object>> explainStep2 = JdbcUtils.executeQuery(mySQLConnection,
-                    ("explain select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"),
+                    ("explain /*+MYCAT:use_hash_join(n,s) */ select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"),
                     Collections.emptyList());
 
             System.out.println(explainStep2);
@@ -534,7 +534,7 @@ public class SqlFunctionTest implements MycatTest {
             System.out.println(step3);
 
             List<Map<String, Object>> explainStep3 = executeQuery(mySQLConnection,
-                    ("explain select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"));
+                    ("explain /*+MYCAT:use_merge_join(n,s) */ select * from db1.travelrecord n join db1.company s on n.id = s.id and n.id = 1"));
 
             System.out.println(explainStep3);
 
