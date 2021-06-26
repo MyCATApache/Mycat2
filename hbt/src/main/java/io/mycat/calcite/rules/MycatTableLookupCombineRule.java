@@ -7,6 +7,7 @@ import io.mycat.calcite.rewriter.RBORules;
 import io.mycat.calcite.rewriter.SQLRBORewriter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
@@ -45,11 +46,13 @@ public class MycatTableLookupCombineRule extends RelRule<MycatTableLookupCombine
         JoinRelType joinType = join.getJoinType();
         switch (joinType) {
             case INNER:
-            case LEFT:
-            case RIGHT:
+            case SEMI:
                 break;
             default:
                 return;
+        }
+        if (RelOptUtil.countJoins(outerRightmycatView.getRelNode())>1){
+            return;
         }
         switch (outerRightmycatView.getDistribution().type()) {
             case PHY:

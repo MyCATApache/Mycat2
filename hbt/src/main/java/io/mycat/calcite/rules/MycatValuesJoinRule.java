@@ -8,6 +8,7 @@ import io.mycat.calcite.physical.MycatSQLTableLookup;
 import io.mycat.calcite.physical.MycatTableLookupValues;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
@@ -61,11 +62,15 @@ public class MycatValuesJoinRule extends RelRule<MycatValuesJoinRule.Config> {
         JoinRelType joinType = join.getJoinType();
         switch (joinType) {
             case INNER:
+            case SEMI:
             case LEFT:
             case RIGHT:
                 break;
             default:
                 return;
+        }
+        if (RelOptUtil.countJoins(mycatView.getRelNode())>1){
+            return;
         }
         RexBuilder rexBuilder = MycatCalciteSupport.RexBuilder;
         RelDataTypeFactory typeFactory = cluster.getTypeFactory();

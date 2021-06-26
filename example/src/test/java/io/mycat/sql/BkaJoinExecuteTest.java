@@ -11,6 +11,8 @@ import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
@@ -32,20 +34,6 @@ public class BkaJoinExecuteTest implements MycatTest {
             Assert.assertEquals("[{id=1, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=1, companyname=Intel, addressid=1}, {id=2, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=2, companyname=IBM, addressid=2}, {id=3, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=3, companyname=Dell, addressid=3}]",
                     s);
 
-            sql = "select * from db1.sharding s left join db1.normal e on s.id = e.id order by s.id";
-            explain= explain(mycatConnection,sql );
-             s = executeQueryAsText(mycatConnection, sql);
-            Assert.assertEquals(true,explain.contains("MycatSQLTableLookup"));
-            Assert.assertEquals("[{id=1, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=1, companyname=Intel, addressid=1}, {id=2, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=2, companyname=IBM, addressid=2}, {id=3, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=3, companyname=Dell, addressid=3}, {id=4, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=null, companyname=null, addressid=null}, {id=5, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=null, companyname=null, addressid=null}, {id=6, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=null, companyname=null, addressid=null}, {id=7, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=null, companyname=null, addressid=null}, {id=8, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=null, companyname=null, addressid=null}, {id=9, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=null, companyname=null, addressid=null}]",
-                    s);
-
-            sql = "select * from db1.sharding s right join db1.normal e on s.id = e.id order by s.id";
-            explain= explain(mycatConnection,sql );
-            s = executeQueryAsText(mycatConnection, sql);
-            Assert.assertEquals(true,explain.contains("MycatSQLTableLookup"));
-            Assert.assertEquals("[{id=1, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=1, companyname=Intel, addressid=1}, {id=2, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=2, companyname=IBM, addressid=2}, {id=3, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=3, companyname=Dell, addressid=3}]",
-                    s);
-
             //second
             sql = "select * from db1.sharding s inner join db1.normal e on s.id = e.id inner join db1.global g on s.id = g.id order by s.id";
             explain= explain(mycatConnection,sql );
@@ -54,9 +42,23 @@ public class BkaJoinExecuteTest implements MycatTest {
             Assert.assertEquals("[{id=1, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=1, companyname=Intel, addressid=1, id1=1, companyname0=Intel, addressid0=1}, {id=2, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=2, companyname=IBM, addressid=2, id1=2, companyname0=IBM, addressid0=2}, {id=3, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=3, companyname=Dell, addressid=3, id1=3, companyname0=Dell, addressid0=3}]",
                     s);
 
+            sql = "select * from db1.normal s inner join db1.sharding e on s.id = e.id inner join db1.global g on s.id = g.id order by s.id";
+            explain= explain(mycatConnection,sql );
+            s = executeQueryAsText(mycatConnection, sql);
+            Assert.assertEquals(true,explain.contains("MycatSQLTableLookup"));
+            Assert.assertEquals("[{id=1, companyname=Intel, addressid=1, id0=1, user_id=null, traveldate=null, fee=null, days=null, blob=null, id1=1, companyname0=Intel, addressid0=1}, {id=2, companyname=IBM, addressid=2, id0=2, user_id=null, traveldate=null, fee=null, days=null, blob=null, id1=2, companyname0=IBM, addressid0=2}, {id=3, companyname=Dell, addressid=3, id0=3, user_id=null, traveldate=null, fee=null, days=null, blob=null, id1=3, companyname0=Dell, addressid0=3}]",
+                    s);
+
             sql = "/*+MYCAT:use_values_join(s,e) use_values_join(s,g)*/select * from db1.sharding s left join db1.normal e on s.id = e.id inner join db1.global g on s.id = g.id  order by s.id";
             explain= explain(mycatConnection,sql );
             Assert.assertEquals(true,explain.contains("SELECT * FROM (VALUES  $cor0 ) AS `t`     LEFT JOIN db1.normal AS `normal` ON (`t`.`column_0` = `normal`.`id`)     INNER JOIN db1.global AS `global` ON (`t`.`column_0` = `global`.`id`))"));
+            System.out.println();
+
+            sql = "select * from db1.sharding s inner join db1.normal e on s.id = e.id and s.user_id = e.companyname  order by s.id";
+            explain= explain(mycatConnection,sql );
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, sql);
+            Assert.assertEquals(true,
+                    explain.contains("((`normal`.`id`, `normal`.`companyname`) IN"));
             System.out.println();
         }
 

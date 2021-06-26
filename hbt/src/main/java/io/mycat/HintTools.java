@@ -47,9 +47,8 @@ public class HintTools {
                             }))
                             .converterRules(MycatJoinRule.INSTANCE)
                             .excludedRules(MycatMergeJoinRule.INSTANCE,
-
                                     MycatValuesJoinRule.INSTANCE,
-                                    MycatTableLookupCombineRule.INSTANCE)
+                                    MycatTableLookupSemiJoinRule.INSTANCE)
                             .build())
             .hintStrategy("use_bka_join",
                     HintStrategy.builder(
@@ -76,7 +75,7 @@ public class HintTools {
                             .converterRules(MycatMergeJoinRule.INSTANCE)
                             .excludedRules(MycatJoinRule.INSTANCE,
                                     MycatValuesJoinRule.INSTANCE,
-                                    MycatTableLookupCombineRule.INSTANCE)
+                                    MycatTableLookupSemiJoinRule.INSTANCE)
                             .build())
             .hintStrategy("no_hash_join",
                     HintStrategy.builder(

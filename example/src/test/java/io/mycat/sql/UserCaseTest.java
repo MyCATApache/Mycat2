@@ -10,6 +10,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.*;
 import java.sql.Date;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
@@ -251,12 +252,14 @@ public class UserCaseTest implements MycatTest {
 
             Assert.assertTrue(explain1.contains("MycatView(distribution=[[cloud.log]]"));
 
-            String sql2 = "SELECT log.id AS log_id,user.name AS user_name, service.name AS service_name,log.submit_time FROM (SELECT log.`id` ,log.`service_id`,log.`submit_time`,log.`user_id` FROM `cloud`.`log`  WHERE log.submit_time = '2021-5-31' ORDER BY log.submit_time DESC LIMIT 0,20) AS `log` INNER JOIN `cloud`.`user` ON log.user_id = user.id INNER JOIN `cloud`.`service`  ON service.id  = log.service_id ORDER BY log.submit_time DESC LIMIT 0,20;";
+           // String sql2 = "/*+MYCAT:use_values_join(log,user) use_values_join(log,service) */ SELECT log.id AS log_id,user.name AS user_name, service.name AS service_name,log.submit_time FROM (SELECT log.`id` ,log.`service_id`,log.`submit_time`,log.`user_id` FROM `cloud`.`log`  WHERE log.submit_time = '2021-5-31' ORDER BY log.submit_time DESC LIMIT 0,20) AS `log` INNER JOIN `cloud`.`user` ON log.user_id = user.id INNER JOIN `cloud`.`service`  ON service.id  = log.service_id ORDER BY log.submit_time DESC LIMIT 0,20;";
+            String sql2 = " SELECT log.id AS log_id,user.name AS user_name, service.name AS service_name,log.submit_time FROM (SELECT log.`id` ,log.`service_id`,log.`submit_time`,log.`user_id` FROM `cloud`.`log`  WHERE log.submit_time = '2021-5-31' ORDER BY log.submit_time DESC LIMIT 0,20) AS `log` INNER JOIN `cloud`.`user` ON log.user_id = user.id INNER JOIN `cloud`.`service`  ON service.id  = log.service_id ORDER BY log.submit_time DESC LIMIT 0,20;";
+
             System.out.println(sql2);
             String explain2 = explain(mycatConnection, sql2);
             System.out.println(explain2);
+            Assert.assertEquals(true,explain2.contains("TableLook"));
             executeQuery(mycatConnection,sql2);
-            Assert.assertTrue(explain2.contains("WHERE (`submit_time` = ?) ORDER BY (`submit_time` IS NULL) DESC, `submit_time` DESC LIMIT 20 OFFSET 0)"));
 
             //test transaction
             mycatConnection.setAutoCommit(false);

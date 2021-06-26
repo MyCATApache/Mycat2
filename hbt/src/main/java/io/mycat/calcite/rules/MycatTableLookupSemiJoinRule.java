@@ -8,6 +8,7 @@ import io.mycat.calcite.physical.MycatSQLTableLookup;
 import io.mycat.calcite.rewriter.Distribution;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.*;
@@ -58,13 +59,14 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
         JoinRelType joinType = join.getJoinType();
         switch (joinType) {
             case INNER:
-            case LEFT:
-            case RIGHT:
+            case SEMI:
                 break;
             default:
                 return;
         }
-
+        if (RelOptUtil.countJoins(mycatView.getRelNode())>1){
+            return;
+        }
         RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(cluster, null);
 //
 //        ImmutableList.Builder<RelDataTypeField> listBuilder = ImmutableList.builder();
