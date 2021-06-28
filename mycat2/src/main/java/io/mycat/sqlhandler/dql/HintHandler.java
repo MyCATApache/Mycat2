@@ -227,7 +227,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     if ("showDataSources".equalsIgnoreCase(cmd)) {
 
                         Optional<JdbcConnectionManager> connectionManager = Optional.ofNullable(jdbcConnectionManager);
-                        Collection<JdbcDataSource> jdbcDataSources = connectionManager.map(i -> i.getDatasourceInfo()).map(i -> i.values()).orElse(Collections.emptyList());
+                        Collection<JdbcDataSource> jdbcDataSources =new HashSet<>(connectionManager.map(i -> i.getDatasourceInfo()).map(i -> i.values()).orElse(Collections.emptyList()));
                         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
 
                         resultSetBuilder.addColumnInfo("NAME", JDBCType.VARCHAR);
