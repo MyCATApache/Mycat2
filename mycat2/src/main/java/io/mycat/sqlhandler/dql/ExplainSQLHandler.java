@@ -16,18 +16,21 @@ package io.mycat.sqlhandler.dql;
 
 import com.alibaba.druid.sql.ast.SQLCommentHint;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
-import io.mycat.*;
+import io.mycat.DrdsSqlWithParams;
+import io.mycat.MycatDataContext;
+import io.mycat.Response;
 import io.mycat.api.collector.RowIterable;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.spm.Plan;
-import io.mycat.calcite.spm.PlanImpl;
-import io.mycat.calcite.spm.QueryPlanner;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.HackRouter;
 import io.mycat.sqlhandler.SQLRequest;
+import io.mycat.sqlhandler.dml.UpdateSQLHandler;
 import io.mycat.util.Pair;
 import io.vertx.core.Future;
 import lombok.SneakyThrows;
@@ -36,12 +39,12 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.JDBCType;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 
 public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement> {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExplainSQLHandler.class);
+
     @Override
     @SneakyThrows
     protected Future<Void> onExecute(SQLRequest<MySqlExplainStatement> request, MycatDataContext dataContext, Response response) {
@@ -51,33 +54,38 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
         }
         SQLStatement statement = request.getAst().getStatement();
         boolean forUpdate = false;
-        if (statement instanceof SQLSelectStatement){
-            forUpdate = ((SQLSelectStatement) explainAst .getStatement()).getSelect().getFirstQueryBlock().isForUpdate();
+        if (statement instanceof SQLSelectStatement) {
+            forUpdate = ((SQLSelectStatement) explainAst.getStatement()).getSelect().getFirstQueryBlock().isForUpdate();
         }
         ResultSetBuilder builder = ResultSetBuilder.create().addColumnInfo("plan", JDBCType.VARCHAR);
-            try{
-                HackRouter hackRouter = new HackRouter(statement, dataContext);
-                if (hackRouter.analyse()) {
-                    Pair<String, String> plan = hackRouter.getPlan();
-                    builder.addObjectRowPayload(Arrays.asList("targetName: "+
-                            plan.getKey()+"   sql: "+plan.getValue()));
-                }else {
-                    List<SQLCommentHint> hints = explainAst.getHints();
-                    if (hints!=null){
-                        statement.setHeadHints(hints);
-                    }
-                    DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(statement, dataContext.getDefaultSchema());
-                    PlanImpl plan = DrdsRunnerHelper.getPlan(drdsSqlWithParams);
-                    List<String> explain = plan.explain(dataContext,drdsSqlWithParams,true);
-                    for (String s1 : explain) {
-                        builder.addObjectRowPayload(Arrays.asList(s1));
-                    }
+        try {
+            HackRouter hackRouter = new HackRouter(statement, dataContext);
+            if (hackRouter.analyse()) {
+                Pair<String, String> plan = hackRouter.getPlan();
+                builder.addObjectRowPayload(Arrays.asList("targetName: " +
+                        plan.getKey() + "   sql: " + plan.getValue()));
+            } else {
+                List<SQLCommentHint> hints = explainAst.getHints();
+                if (hints != null) {
+                    statement.setHeadHints(hints);
                 }
-
-            }catch (Throwable th){
-                LOGGER.error("",th);
-                builder.addObjectRowPayload(Arrays.asList(th.toString()));
+                DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(statement, dataContext.getDefaultSchema());
+                Plan plan;
+                if (statement instanceof SQLInsertStatement || statement instanceof SQLUpdateStatement) {
+                    plan = UpdateSQLHandler.getPlan(drdsSqlWithParams);
+                } else {
+                    plan = DrdsRunnerHelper.getPlan(drdsSqlWithParams);
+                }
+                List<String> explain = plan.explain(dataContext, drdsSqlWithParams, true);
+                for (String s1 : explain) {
+                    builder.addObjectRowPayload(Arrays.asList(s1));
+                }
             }
-            return response.sendResultSet(RowIterable.create(builder.build()));
+
+        } catch (Throwable th) {
+            LOGGER.error("", th);
+            builder.addObjectRowPayload(Arrays.asList(th.toString()));
+        }
+        return response.sendResultSet(RowIterable.create(builder.build()));
     }
 }

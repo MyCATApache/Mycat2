@@ -85,7 +85,7 @@ public class VertxExecuter {
         Map<String, String> targetMap = new HashMap<>();
         Set<String> uniqueValues = new HashSet<>();
         for (SQL sql : reallySqlSet) {
-            String k = context.resolveDatasourceTargetName(sql.getTarget());
+            String k = context.resolveDatasourceTargetName(sql.getTarget(),true);
             if (uniqueValues.add(k)) {
                 if (targetMap.put(sql.getTarget(), context.resolveDatasourceTargetName(k,true)) != null) {
                     throw new IllegalStateException("Duplicate key");
