@@ -67,9 +67,10 @@ public class Distribution {
         List<NormalTable> normalTables = new ArrayList<>();
         Distribution distribution = new Distribution(shardingTables, globalTables, normalTables);
 
-        unquineName.stream().map(i->{
+        unquineName.stream().map(i -> {
             String[] split = i.split("\\.");
-            return SchemaInfo.of(split[0],split[1]);})
+            return SchemaInfo.of(split[0], split[1]);
+        })
                 .map(n -> metadataManager.getTable(n.getTargetSchema(), n.getTargetTable())).forEach(t -> {
             switch (t.getType()) {
                 case SHARDING:
@@ -90,15 +91,15 @@ public class Distribution {
     }
 
     public static Distribution fromJson(List<String> list) {
-        return Distribution.of( list);
+        return Distribution.of(list);
     }
 
-    public List<String> toNameList(){
+    public List<String> toNameList() {
         ArrayList<TableHandler> tableHandlers = new ArrayList<>();
         tableHandlers.addAll(shardingTables);
         tableHandlers.addAll(globalTables);
         tableHandlers.addAll(normalTables);
-        return tableHandlers.stream().map(i->(i.getSchemaName()+"."+i.getTableName())).sorted().collect(Collectors.toList());
+        return tableHandlers.stream().map(i -> (i.getSchemaName() + "." + i.getTableName())).sorted().collect(Collectors.toList());
     }
 
 
@@ -265,6 +266,12 @@ public class Distribution {
         return getDataNodes().flatMap(i -> i.values().stream()).map(i -> i.getTargetName()).collect(Collectors.toSet());
     }
 
+    public Distribution changeToPrimaryShardingTable(ShardingTable indexTable) {
+        assert !(shardingTables.isEmpty());
+        ArrayList<ShardingTable> newShardingTables = new ArrayList<>(shardingTables);
+        newShardingTables.set(0,indexTable);
+        return new Distribution(newShardingTables,globalTables,normalTables);
+    }
 
     public static enum Type {
         BROADCAST,
