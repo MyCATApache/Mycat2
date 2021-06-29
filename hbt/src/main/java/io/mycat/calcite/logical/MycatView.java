@@ -25,6 +25,8 @@ import io.mycat.calcite.*;
 import io.mycat.calcite.localrel.ToLocalConverter;
 import io.mycat.calcite.physical.MycatMergeSort;
 import io.mycat.calcite.rewriter.Distribution;
+import io.mycat.calcite.rewriter.IndexCondition;
+import io.mycat.calcite.rewriter.PredicateAnalyzer;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
@@ -120,6 +122,24 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         return tableArrayList;
     }
 
+    public Optional<IndexCondition> getPredicateIndexCondition() {
+        if (this.distribution.getShardingTables().isEmpty() || condition == null) {
+            return Optional.empty();
+        }
+        ShardingTable shardingTable = this.distribution.getShardingTables().get(0);
+        PredicateAnalyzer predicateAnalyzer = new PredicateAnalyzer(shardingTable.keyMetas(), shardingTable.getLogicTable().getFieldNames());
+        IndexCondition indexCondition = predicateAnalyzer.translateMatch(condition);
+        return Optional.ofNullable(indexCondition);
+    }
+
+    public boolean isBetter(MycatView otherView) {
+        Optional<IndexCondition> leftPredicateIndexCondition = getPredicateIndexCondition();
+        Optional<IndexCondition> rightPredicateIndexCondition = otherView.getPredicateIndexCondition();
+        if (leftPredicateIndexCondition.isPresent() && rightPredicateIndexCondition.isPresent()) {
+            return leftPredicateIndexCondition.get().compareTo(rightPredicateIndexCondition.get()) > 0;
+        }
+        return false;
+    }
 
     public static MycatView ofCondition(RelNode input,
                                         Distribution dataNodeInfo,

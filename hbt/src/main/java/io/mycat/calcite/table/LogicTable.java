@@ -28,6 +28,7 @@ import io.mycat.router.CustomRuleFunction;
 import lombok.Getter;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Getter
 public class LogicTable {
@@ -38,7 +39,7 @@ public class LogicTable {
     private final List<SimpleColumnInfo> rawColumns;
     private final String createTableSQL;
     private final SimpleColumnInfo autoIncrementColumn;
-    private final Map<String,IndexInfo> indexes;
+    private final Map<String, IndexInfo> indexes;
 
     //优化,非必须
     private final Map<String, SimpleColumnInfo> map;
@@ -47,7 +48,7 @@ public class LogicTable {
     public LogicTable(LogicTableType type, String schemaName,
                       String tableName,
                       List<SimpleColumnInfo> rawColumns,
-                      Map<String,IndexInfo> indexInfos,
+                      Map<String, IndexInfo> indexInfos,
                       String createTableSQL) {
         /////////////////////////////////////////
         schemaName = SQLUtils.normalize(schemaName).toLowerCase();
@@ -88,9 +89,9 @@ public class LogicTable {
                                                  List<Partition> backendTableInfos,
                                                  LoadBalanceStrategy loadBalance,
                                                  List<SimpleColumnInfo> columns,
-                                                 Map<String,IndexInfo> indexInfos,
+                                                 Map<String, IndexInfo> indexInfos,
                                                  String createTableSQL) {
-        LogicTable logicTable = new LogicTable(LogicTableType.GLOBAL, schemaName, tableName, columns, indexInfos,createTableSQL);
+        LogicTable logicTable = new LogicTable(LogicTableType.GLOBAL, schemaName, tableName, columns, indexInfos, createTableSQL);
         return new GlobalTable(logicTable, backendTableInfos);
     }
 
@@ -98,9 +99,9 @@ public class LogicTable {
                                                  String tableName,
                                                  Partition partition,
                                                  List<SimpleColumnInfo> columns,
-                                                 Map<String,IndexInfo> indexInfos,
+                                                 Map<String, IndexInfo> indexInfos,
                                                  String createTableSQL) {
-        LogicTable logicTable = new LogicTable(LogicTableType.NORMAL, schemaName, tableName, columns,indexInfos, createTableSQL);
+        LogicTable logicTable = new LogicTable(LogicTableType.NORMAL, schemaName, tableName, columns, indexInfos, createTableSQL);
         return new NormalTable(logicTable, partition);
     }
 
@@ -109,9 +110,9 @@ public class LogicTable {
                                                     List<Partition> backendTableInfos,
                                                     List<SimpleColumnInfo> columns,
                                                     CustomRuleFunction function,
-                                                    Map<String,IndexInfo> indexInfos,
+                                                    Map<String, IndexInfo> indexInfos,
                                                     String createTableSQL) {
-        LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, tableName, columns, indexInfos,createTableSQL);
+        LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, tableName, columns, indexInfos, createTableSQL);
         return new ShardingTable(logicTable, backendTableInfos, function);
     }
 
@@ -156,5 +157,9 @@ public class LogicTable {
             tableSource.setSchema(schemaName);
         }
         return createTableAst.toString();
+    }
+
+    public List<String> getFieldNames() {
+        return this.rawColumns.stream().map(i -> i.getColumnName()).collect(Collectors.toList());
     }
 }
