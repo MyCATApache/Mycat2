@@ -88,18 +88,36 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         this.distribution = Objects.requireNonNull(dataNode);
         this.condition = conditions;
         this.rowType = input.getRowType();
-        if (input instanceof MycatRel) {
-            input = input.accept(new ToLocalConverter());
-        }
+//        if (input instanceof MycatRel) {
+//            input = input.accept(new ToLocalConverter());
+//        }
         ToLocalConverter toLocalConverter = new ToLocalConverter();
         input = input.accept(toLocalConverter);
-        if (input instanceof Project){
-            Project project = (Project)input ;
+        if (input instanceof Project) {
+            Project project = (Project) input;
             if (RexUtil.isIdentity(project.getProjects(), project.getInput().getRowType())) {
                 input = project.getInput();//ProjectRemoveRule
             }
         }
         this.relNode = input;
+    }
+
+    public List<MycatIndexView> produceIndexViews() {
+        List<ShardingTable> shardingTables = distribution.getShardingTables();
+        if (shardingTables == null || shardingTables.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        ShardingTable shardingTable = shardingTables.get(0);
+
+        List<ShardingTable> indexTables = shardingTable.getIndexTables();
+        if (indexTables.isEmpty()) return Collections.emptyList();
+
+        ArrayList<MycatIndexView> tableArrayList = new ArrayList<>(indexTables.size());
+        for (ShardingTable indexTable : indexTables) {
+            tableArrayList.add(new MycatIndexView(getTraitSet(), getRelNode(), distribution.changeToPrimaryShardingTable(indexTable), condition));
+        }
+        return tableArrayList;
     }
 
 
@@ -152,7 +170,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         return MycatCalciteSupport.INSTANCE.convertToSqlTemplate(relNode, dialect, update);
     }
 
-    public  ImmutableMultimap<String, SqlString> apply(
+    public ImmutableMultimap<String, SqlString> apply(
             SqlNode sqlTemplateArg,
             List<PartitionGroup> dataNodes, List<Object> params) {
         SqlNode sqlTemplate = sqlTemplateArg;
@@ -195,7 +213,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                 List<Integer> list = new ArrayList<>();
                 for (Map<String, Partition> each : eachList) {
                     string = MycatCalciteSupport.toSqlString(MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params,
-                           new PartitionGroup(targetName,each)), dialect);
+                            new PartitionGroup(targetName, each)), dialect);
                     if (string.getDynamicParameters() != null) {
                         list.addAll(string.getDynamicParameters());
                     }
