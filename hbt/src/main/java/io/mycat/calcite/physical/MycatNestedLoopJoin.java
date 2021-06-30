@@ -50,12 +50,13 @@ public class MycatNestedLoopJoin extends Join implements MycatRel {
     }
     public MycatNestedLoopJoin(RelInput input) {
         this(input.getCluster(), input.getTraitSet(),
-                ImmutableList.of(),
+                input.getHints(),
                 input.getInputs().get(0), input.getInputs().get(1),
                 input.getExpression("condition"),ImmutableSet.of(),
                 input.getEnum("joinType", JoinRelType.class));
     }
     public static MycatNestedLoopJoin create(RelTraitSet traitSet,
+                                             List<RelHint> hints,
                                              RelNode left,
                                              RelNode right,
                                              RexNode condition,
@@ -68,7 +69,7 @@ public class MycatNestedLoopJoin extends Join implements MycatRel {
                 });
         return new MycatNestedLoopJoin(cluster,
                 traitSet,
-                ImmutableList.of(),
+                hints,
                 left,
                 right,
                 condition,

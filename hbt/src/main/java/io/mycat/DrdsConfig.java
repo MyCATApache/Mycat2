@@ -31,12 +31,7 @@ public class DrdsConfig implements DrdsConst {
     }
 
     @Override
-    public boolean joinClustering() {
-        boolean exist = MetaClusterCurrent.exist(ServerConfig.class);
-        if (exist) {
-            ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
-            return serverConfig.isJoinClustering();
-        }
+    public boolean bkaJoin() {
         return true;
     }
 

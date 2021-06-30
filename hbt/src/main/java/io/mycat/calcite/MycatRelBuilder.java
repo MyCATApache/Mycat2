@@ -14,9 +14,15 @@
  */
 package io.mycat.calcite;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSchema;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.CorrelationId;
+import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
@@ -35,6 +41,22 @@ public class MycatRelBuilder extends RelBuilder {
                 (cluster, relOptSchema, rootSchema, statement) ->
                         new MycatRelBuilder(config.getContext(), cluster, relOptSchema));
     }
-
+//
+    @Override
+    public RelBuilder filter(Iterable<CorrelationId> variablesSet,
+                             Iterable<? extends RexNode> predicates) {
+        ImmutableList<CorrelationId> correlationIds = ImmutableList.copyOf(variablesSet);
+        if (correlationIds.isEmpty()) {
+            RelNode peek = peek();
+            if (peek instanceof Filter) {
+                Filter filter = (Filter) build();
+                ImmutableList.Builder<RexNode> builder = ImmutableList.builder();
+                ImmutableList<RexNode> rexNodes = builder.add(filter.getCondition()).addAll(predicates).build();
+                push(filter.copy(filter.getTraitSet(), filter.getInput(), RexUtil.composeConjunction(getRexBuilder(), rexNodes)));
+                return this;
+            }
+        }
+      return super.filter(variablesSet, predicates);
+    }
 
 }

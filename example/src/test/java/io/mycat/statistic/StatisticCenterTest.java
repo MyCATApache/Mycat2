@@ -49,7 +49,7 @@ public class StatisticCenterTest extends DrdsTest {
             }
 
             @Override
-            public boolean joinClustering() {
+            public boolean bkaJoin() {
                 return true;
             }
         }));

@@ -1,8 +1,10 @@
 package org.apache.calcite.util;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Predicate1;
 import org.apache.calcite.linq4j.tree.Types;
@@ -27,6 +29,7 @@ public enum RxBuiltInMethod {
     OBSERVABLE_OFFSET(RxBuiltInMethodImpl.class, "offset", Observable.class, long.class),
     TO_ENUMERABLE(RxBuiltInMethodImpl.class, "toEnumerable", Object.class),
     TO_OBSERVABLE(RxBuiltInMethodImpl.class, "toObservable", Object.class),
+    TO_OBSERVABLE_CACHE(RxBuiltInMethodImpl.class, "toObservableCache", Object.class),
     OBSERVABLE_MERGE_SORT(RxBuiltInMethodImpl.class, "mergeSort", List.class, Comparator.class, long.class, long.class),
     OBSERVABLE_MERGE_SORT2(RxBuiltInMethodImpl.class, "mergeSort", List.class, Comparator.class),
 //    OBSERVABLE_MATIERIAL(RxBuiltInMethodImpl.class, "matierial", Observable.class),
@@ -34,7 +37,9 @@ public enum RxBuiltInMethod {
 //    OBSERVABLE_BIND(Bindable.class, "bindObservable", NewMycatDataContext.class),
     AS_OBSERVABLE(RxBuiltInMethodImpl.class, "asObservable", Object[][].class),
     AS_GATHER(RxBuiltInMethodImpl.class, "asGather", Enumerable.class),
-    AS_LIST(RxBuiltInMethodImpl.class, "asList", Object.class);
+    AS_LIST(RxBuiltInMethodImpl.class, "asList", Object.class),
+    BATCH_AS_OBSERVABLE(RxBuiltInMethodImpl.class,"batch",Observable.class),
+    BATCH_AS_ENUMERABLE(RxBuiltInMethodImpl.class,"batch",Enumerable.class);
     ;
     public final Method method;
     public final Constructor constructor;

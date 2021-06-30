@@ -6,6 +6,7 @@ import com.google.common.collect.Iterables;
 import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.plan.RelOptUtil;
@@ -29,7 +30,7 @@ public class StreamMycatEnumerableRelImplementor extends MycatEnumerableRelImple
             if (rootRel.isSupportStream()){
                 result = rootRel.implementStream(this,prefer);
             }else {
-                result = rootRel.implement(this, prefer);
+                result = rootRel.implement((EnumerableRelImplementor) this, prefer);
             }
         } catch (RuntimeException e) {
             IllegalStateException ex = new IllegalStateException("Unable to implement "

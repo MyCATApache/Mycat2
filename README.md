@@ -5,7 +5,7 @@ Distributed database based on MySQL or JDBC.
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Main/badge.svg)
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Dev/badge.svg)
 
-[v1.19-release](https://github.com/MyCATApache/Mycat2/releases/tag/1.19-release)
+[v1.19-release](https://github.com/MyCATApache/Mycat2/releases/tag/1.19-2021-6-29)
 
 [v1.20-dev]
 Development objectives:TableLookupJoin(BKAJOIN)

@@ -15,9 +15,14 @@
 package io.mycat.sqlhandler.ddl;
 
 import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLIndexDefinition;
-import com.alibaba.druid.sql.ast.statement.SQLCreateIndexStatement;
-import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
+import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
+import com.google.common.collect.ImmutableList;
 import io.mycat.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
@@ -26,6 +31,9 @@ import io.vertx.core.Future;
 import io.vertx.core.shareddata.Lock;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStatement> {
@@ -50,7 +58,7 @@ public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStat
                             schema,
                             tableName,
                             metadataManager);
-                } else {
+                } else if (sqlCreateIndexStatement.getDbPartitionBy() != null) {
                     createGlobalIndex(sqlCreateIndexStatement);
                 }
                 return response.sendOk();
@@ -63,9 +71,20 @@ public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStat
 
     }
 
-    private void createGlobalIndex(SQLCreateIndexStatement sqlCreateIndexStatement) {
+    private void createGlobalIndex(SQLCreateIndexStatement sqlCreateIndexStatement) throws Exception {
         SQLIndexDefinition indexDefinition = sqlCreateIndexStatement.getIndexDefinition();
-        //todo
+        SQLExprTableSource table = (SQLExprTableSource) indexDefinition.getTable();
+        String tableName = SQLUtils.normalize(table.getTableName());
+        String schemaName = SQLUtils.normalize(table.getSchema());
+
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        TableHandler tableHandler = metadataManager.getTable(schemaName, tableName);
+        MySqlCreateTableStatement createTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(tableHandler.getCreateTableSQL());
+        MySqlTableIndex mySqlTableIndex = new MySqlTableIndex();
+        indexDefinition.cloneTo(mySqlTableIndex.getIndexDefinition());
+        createTableStatement.getTableElementList().add(mySqlTableIndex);
+
+        CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(), schemaName, tableName, createTableStatement);
     }
 
     private void createLocalIndex(SQLCreateIndexStatement sqlCreateIndexStatement, SQLExprTableSource table, String schema, String tableName, MetadataManager metadataManager) {

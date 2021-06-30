@@ -21,9 +21,11 @@ import com.google.common.collect.Multimap;
 import io.mycat.Partition;
 import io.mycat.HintTools;
 import io.mycat.MetaClusterCurrent;
+import io.mycat.PartitionGroup;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.calcite.physical.MycatSQLTableLookup;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.sqlfunction.cmpfunction.StrictEqualFunction;
 import io.mycat.calcite.sqlfunction.datefunction.*;
@@ -50,6 +52,7 @@ import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.DelegatingTypeSystem;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -82,6 +85,7 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -650,12 +654,12 @@ public enum MycatCalciteSupport implements Context {
         return writer.toSqlString();
     }
 
-    public SqlNode sqlTemplateApply(SqlNode sqlTemplate,List<Object> params, Map<String, Partition> map) {
+    public SqlNode sqlTemplateApply(SqlNode sqlTemplate,List<Object> params, PartitionGroup map) {
         return sqlTemplate.accept(new SqlShuttle() {
                                       @Override
                                       public SqlNode visit(SqlIdentifier id) {
                                           if (id instanceof TableParamSqlNode) {
-                                              Partition partition = map.get(id.getSimple());
+                                              Partition partition = map.get(((TableParamSqlNode) id).getUniqueName());
                                               return new SqlIdentifier(ImmutableList.of(partition.getSchema(), partition.getTable()), SqlParserPos.ZERO){
                                                   @Override
                                                   public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
@@ -692,7 +696,73 @@ public enum MycatCalciteSupport implements Context {
 
     public String convertToMycatRelNodeText(RelNode node) {
         final StringWriter sw = new StringWriter();
-        final RelWriter planWriter = new RelWriterImpl(new PrintWriter(sw), SqlExplainLevel.EXPPLAN_ATTRIBUTES, false);
+        final RelWriter planWriter = new RelWriterImpl(new PrintWriter(sw), SqlExplainLevel.EXPPLAN_ATTRIBUTES, false){
+            @Override
+            protected void explain_(RelNode rel, List<Pair<String, Object>> values) {
+                List<RelNode> inputs = rel.getInputs();
+                final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+                if (!mq.isVisibleInExplain(rel, detailLevel)) {
+                    // render children in place of this, at same level
+                    for (RelNode input : inputs) {
+                        input.explain(this);
+                    }
+                    return;
+                }
+
+                StringBuilder s = new StringBuilder();
+                spacer.spaces(s);
+                if (withIdPrefix) {
+                    s.append(rel.getId()).append(":");
+                }
+                s.append(rel.getRelTypeName());
+                if (detailLevel != SqlExplainLevel.NO_ATTRIBUTES) {
+                    int j = 0;
+                    for (Pair<String, Object> value : values) {
+                        if (value.right instanceof RelNode) {
+                            continue;
+                        }
+                        if (j++ == 0) {
+                            s.append("(");
+                        } else {
+                            s.append(", ");
+                        }
+                        s.append(value.left)
+                                .append("=[")
+                                .append(value.right)
+                                .append("]");
+                    }
+                    if (j > 0) {
+                        s.append(")");
+                    }
+                }
+                switch (detailLevel) {
+                    case ALL_ATTRIBUTES:
+                        s.append(": rowcount = ")
+                                .append(mq.getRowCount(rel))
+                                .append(", cumulative cost = ")
+                                .append(mq.getCumulativeCost(rel));
+                }
+                switch (detailLevel) {
+                    case NON_COST_ATTRIBUTES:
+                    case ALL_ATTRIBUTES:
+                        if (!withIdPrefix) {
+                            // If we didn't print the rel id at the start of the line, print
+                            // it at the end.
+                            s.append(", id = ").append(rel.getId());
+                        }
+                        break;
+                }
+                pw.println(s);
+                spacer.add(2);
+                for (RelNode input : inputs) {
+                    input.explain(this);
+                }
+                if (rel instanceof MycatSQLTableLookup){
+                    ((MycatSQLTableLookup) rel).getRight().explain(this);
+                }
+                spacer.subtract(2);
+            }
+        };
         node.explain(planWriter);
         return sw.toString();
     }
