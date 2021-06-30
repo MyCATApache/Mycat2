@@ -6,6 +6,7 @@ import io.mycat.config.ShardingFuntion;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
 import io.mycat.hint.CreateTableHint;
+import io.mycat.router.mycat1xfunction.PartitionByHotDate;
 import io.mycat.router.mycat1xfunction.PartitionByRangeMod;
 import org.apache.groovy.util.Maps;
 import org.junit.Assert;
@@ -273,51 +274,54 @@ public class UserCaseTest implements MycatTest {
 
     @Test
     public void test548() throws Exception {
-        try (Connection mycat = getMySQLConnection(DB_MYCAT);
-             Connection prototypeMysql = getMySQLConnection(DB1);) {
+        try (Connection mycat = getMySQLConnection(DB_MYCAT);) {
             execute(mycat, RESET_CONFIG);
-            String db = "testSchema";
+            String db = "db1";
             String tableName = "sharding";
             execute(mycat, "drop database if EXISTS " + db);
             execute(mycat, "create database " + db);
             execute(mycat, "use " + db);
 
-            execute(mycat, CreateDataSourceHint
-                    .create("c0", DB1));
+
+            execute(mycat, CreateClusterHint
+                    .create("c0", Arrays.asList("prototypeDs"), Arrays.asList()));
 
             execute(
                     mycat,
                     CreateTableHint
                             .createSharding(db, tableName,
-                                    null,
+                                    "CREATE TABLE db1.`sharding` (\n" +
+                                            "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                                            "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                                            "  `create_time` date DEFAULT NULL,\n" +
+                                            "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                                            "  `days` int DEFAULT NULL,\n" +
+                                            "  `blob` longblob,\n" +
+                                            "  PRIMARY KEY (`id`),\n" +
+                                            "  KEY `id` (`id`)\n" +
+                                            ") ENGINE=InnoDB  DEFAULT CHARSET=utf8",
                                     ShardingBackEndTableInfoConfig.builder()
                                             .schemaNames(db)
-                                            .tableNames(tableName)
-                                            .targetNames("").build(),
+                                            .tableNames("sharding_0,sharding_1")
+                                            .targetNames("c0").build(),
                                     ShardingFuntion.builder()
-                                            .clazz(PartitionByRangeMod.class.getCanonicalName())
+                                            .clazz(PartitionByHotDate.class.getCanonicalName())
                                             .properties(Maps.of(
-                                                    "defaultNode", -1,
-                                                    "columnName", "id"))
-                                            .ranges(Maps.of(
-                                                    "0-1", 1,
-                                                    "1-300", 2)).build())
+                                                    "dateFormat", "yyyy-MM-dd",
+                                                    "lastTime", 90,
+                                                    "partionDay",180 ,
+                                                    "columnName","create_time"
+                                                    )).build())
             );
-            execute(mycat,
-                    "/*+ mycat:setSequence{\"name\":\"" + db + "_" + tableName + "\",\"clazz\":\"io.mycat.plug.sequence.SequenceMySQLGenerator\",\"schemaName\":\"mysql\"} */;");
             deleteData(mycat, db, tableName);
-            execute(mycat, "insert into " + tableName + " (user_id,user_name) VALUES (1,'wang')");
-            execute(mycat, "insert into " + tableName + "(user_id,user_name) VALUES (3,'zhang')");
-            execute(mycat, "insert into " + tableName + " (user_id,user_name) VALUES (3,'li')");
-            long endTime = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(5);
-            boolean res = false;
-            while (true) {
-                res |= hasData(mycat, db, tableName);
-                if (res || System.currentTimeMillis() > endTime) {
-                    break;
-                }
-            }
-            Assert.assertTrue(res);
+            execute(mycat, "insert into " + tableName + " (create_time) VALUES ('2021-06-30')");
+            execute(mycat, "insert into " + tableName + "(create_time) VALUES ('2021-06-29')");
+            execute(mycat, "insert into " + tableName + " (create_time) VALUES ('2021-06-29')");
+            List<Map<String, Object>> maps = executeQuery(mycat, "select * from db1.sharding");
+            Assert.assertEquals(3,maps.size());
+            List<Map<String, Object>> maps1 = executeQuery(mycat, "select * from db1.sharding where create_time = '2021-06-30'");
+            Assert.assertEquals(1,maps1.size());
+            System.out.println();
 
 //            execute(mycat, "drop database " + db);
         }
