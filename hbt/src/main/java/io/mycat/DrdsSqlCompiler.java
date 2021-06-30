@@ -19,6 +19,7 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLReplaceStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
@@ -149,7 +150,7 @@ public class DrdsSqlCompiler {
             }
         });
         MycatRel mycatRel = optimizeWithCBO(bestExp, Collections.emptyList());
-        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(ImmutableMap.of(),mycatRel, false);
+        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(ImmutableMap.of(), mycatRel, false);
         return new PlanImpl(mycatRel, codeExecuterContext, mycatRel.getRowType().getFieldNames());
     }
 
@@ -199,6 +200,23 @@ public class DrdsSqlCompiler {
                 case CUSTOM:
                     throw new UnsupportedOperationException();
             }
+        } else if (sqlStatement instanceof SQLReplaceStatement) {
+            SQLExprTableSource tableSource = (SQLExprTableSource) ((SQLReplaceStatement) sqlStatement).getTableSource();
+            String schemaName = SQLUtils.normalize(Optional.ofNullable(tableSource).map(i -> i.getSchema()).orElse(null));
+            String tableName = SQLUtils.normalize(((SQLReplaceStatement) sqlStatement).getTableName().getSimpleName());
+            TableHandler logicTable = metadataManager.getTable(schemaName, tableName);
+            switch (logicTable.getType()) {
+                case SHARDING:
+                    return compileUpdate(logicTable, optimizationContext, drdsSql, plus);
+                case GLOBAL: {
+                    return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTable) logicTable);
+                }
+                case NORMAL: {
+                    return complieNormalUpdate(optimizationContext, drdsSql, sqlStatement, (NormalTable) logicTable);
+                }
+                case CUSTOM:
+                    throw new UnsupportedOperationException();
+            }
         } else if (sqlStatement instanceof MySqlDeleteStatement) {
             SQLExprTableSource tableSource = (SQLExprTableSource) ((MySqlDeleteStatement) sqlStatement).getTableSource();
             String schemaName = SQLUtils.normalize(Optional.ofNullable(tableSource).map(i -> i.getSchema()).orElse(null));
@@ -217,6 +235,7 @@ public class DrdsSqlCompiler {
                     throw new UnsupportedOperationException();
             }
         }
+
         return null;
     }
 

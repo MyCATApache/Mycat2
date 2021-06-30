@@ -16,17 +16,20 @@
  */
 package io.mycat.calcite.table;
 
+import com.google.common.collect.ImmutableList;
 import io.mycat.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.util.DDLHelper;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
 import static io.mycat.util.CreateTableUtils.createPhysicalTable;
 import static io.mycat.util.CreateTableUtils.normalizeCreateTableSQLToMySQL;
+import static org.apache.calcite.schema.impl.ReflectiveFunctionBase.builder;
 
 public class GlobalTable implements GlobalTableHandler {
     private final LogicTable logicTable;
@@ -107,7 +110,7 @@ public class GlobalTable implements GlobalTableHandler {
     }
 
     @Override
-    public Map<String,IndexInfo> getIndexes() {
+    public Map<String, IndexInfo> getIndexes() {
         return logicTable.getIndexes();
     }
 
@@ -134,13 +137,8 @@ public class GlobalTable implements GlobalTableHandler {
     @Override
     public void createPhysicalTables() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
-            DDLHelper.createDatabaseIfNotExist(connection, getSchemaName());
-            connection.executeUpdate(normalizeCreateTableSQLToMySQL(getCreateTableSQL()), false);
-        }
-        for (Partition node : getGlobalDataNode()) {
-            createPhysicalTable(jdbcConnectionManager,node,getCreateTableSQL());
-        }
+        List<Partition> partitions = (List) ImmutableList.builder().add((Partition) (new BackendTableInfo("prototype", getSchemaName(), getTableName()))).addAll(getGlobalDataNode()).build();
+        partitions.stream().parallel().forEach(node -> createPhysicalTable(jdbcConnectionManager, node, getCreateTableSQL()));
     }
 
 
@@ -157,9 +155,11 @@ public class GlobalTable implements GlobalTableHandler {
 //            }
 //        }
     }
-    public Partition getDataNode(){
+
+    public Partition getDataNode() {
         return getGlobalDataNode().get(0);
     }
+
     @Override
     public List<Partition> getGlobalDataNode() {
         return backendTableInfos;

@@ -1,8 +1,14 @@
 package io.mycat.sql;
 
 import io.mycat.assemble.MycatTest;
+import io.mycat.config.ShardingBackEndTableInfoConfig;
+import io.mycat.config.ShardingFuntion;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
+import io.mycat.hint.CreateTableHint;
+import io.mycat.router.mycat1xfunction.PartitionByHotDate;
+import io.mycat.router.mycat1xfunction.PartitionByRangeMod;
+import org.apache.groovy.util.Maps;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -10,7 +16,10 @@ import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.*;
 import java.sql.Date;
 import java.util.*;
+
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
@@ -265,6 +274,61 @@ public class UserCaseTest implements MycatTest {
             mycatConnection.setAutoCommit(false);
             executeQuery(mycatConnection,sql2);
             mycatConnection.setAutoCommit(true);
+        }
+    }
+
+    @Test
+    public void test548() throws Exception {
+        try (Connection mycat = getMySQLConnection(DB_MYCAT);) {
+            execute(mycat, RESET_CONFIG);
+            String db = "db1";
+            String tableName = "sharding";
+            execute(mycat, "drop database if EXISTS " + db);
+            execute(mycat, "create database " + db);
+            execute(mycat, "use " + db);
+
+
+            execute(mycat, CreateClusterHint
+                    .create("c0", Arrays.asList("prototypeDs"), Arrays.asList()));
+
+            execute(
+                    mycat,
+                    CreateTableHint
+                            .createSharding(db, tableName,
+                                    "CREATE TABLE db1.`sharding` (\n" +
+                                            "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                                            "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                                            "  `create_time` date DEFAULT NULL,\n" +
+                                            "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                                            "  `days` int DEFAULT NULL,\n" +
+                                            "  `blob` longblob,\n" +
+                                            "  PRIMARY KEY (`id`),\n" +
+                                            "  KEY `id` (`id`)\n" +
+                                            ") ENGINE=InnoDB  DEFAULT CHARSET=utf8",
+                                    ShardingBackEndTableInfoConfig.builder()
+                                            .schemaNames(db)
+                                            .tableNames("sharding_0,sharding_1")
+                                            .targetNames("c0").build(),
+                                    ShardingFuntion.builder()
+                                            .clazz(PartitionByHotDate.class.getCanonicalName())
+                                            .properties(Maps.of(
+                                                    "dateFormat", "yyyy-MM-dd",
+                                                    "lastTime", 90,
+                                                    "partionDay",180 ,
+                                                    "columnName","create_time"
+                                                    )).build())
+            );
+            deleteData(mycat, db, tableName);
+            execute(mycat, "insert into " + tableName + " (create_time) VALUES ('2021-06-30')");
+            execute(mycat, "insert into " + tableName + "(create_time) VALUES ('2021-06-29')");
+            execute(mycat, "insert into " + tableName + " (create_time) VALUES ('2021-06-29')");
+            List<Map<String, Object>> maps = executeQuery(mycat, "select * from db1.sharding");
+            Assert.assertEquals(3,maps.size());
+            List<Map<String, Object>> maps1 = executeQuery(mycat, "select * from db1.sharding where create_time = '2021-06-30'");
+            Assert.assertEquals(1,maps1.size());
+            System.out.println();
+
+//            execute(mycat, "drop database " + db);
         }
     }
 }

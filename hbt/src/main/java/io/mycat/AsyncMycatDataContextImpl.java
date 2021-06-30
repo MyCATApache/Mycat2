@@ -283,7 +283,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
 //                Map<String, List<DataNode>> collect = this.shardingTables.stream()
 //                        .collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getShardingFuntion().calculate(Collections.emptyMap())));
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        List<ShardingTable> shardingTables = metadataManager.getErTableGroup().getOrDefault(shardingTable.getShardingFuntion().getErUniqueID(), Collections.emptyList());
+        List<ShardingTable> shardingTables = metadataManager.getErTableGroup().getOrDefault(shardingTable.getShardingFuntion().getErUniqueID(), Collections.singletonList(shardingTable));
         Map<String, List<Partition>> collect = shardingTables.stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.dataNodes()));
         Map<Integer, String> mappingIndex = new HashMap<>();
         List<String> allDataNodeUniqueNames = collect.get(primaryTableUniqueName).stream().sequential().map(i -> i.getUniqueName()).collect(Collectors.toList());

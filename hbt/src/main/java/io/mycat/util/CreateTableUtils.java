@@ -62,6 +62,7 @@ public class CreateTableUtils {
         mySqlCreateTableStatement.setTableGroup("");
         mySqlCreateTableStatement.setTablePartitionBy(null);
         mySqlCreateTableStatement.setTablePartitions(null);
+        mySqlCreateTableStatement.setIfNotExiists(true);
 
         // 删掉阿里的 全局表语法 (不使用)
         List<SQLTableElement> tableElementList = mySqlCreateTableStatement.getTableElementList();
