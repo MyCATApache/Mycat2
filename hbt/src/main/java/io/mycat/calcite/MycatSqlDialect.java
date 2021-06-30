@@ -32,11 +32,17 @@ public class MycatSqlDialect extends MysqlSqlDialect {
     public MycatSqlDialect(Context context) {
         super(context);
     }
+
     public static final SqlDialect DEFAULT = new MycatSqlDialect(DEFAULT_CONTEXT);
 
     @Override
+    public boolean hasImplicitTableAlias() {
+        return false;
+    }
+
+    @Override
     public SqlNode getCastSpec(RelDataType type) {
-        if (type.getSqlTypeName() == SqlTypeName.BOOLEAN){
+        if (type.getSqlTypeName() == SqlTypeName.BOOLEAN) {
             return new SqlDataTypeSpec(
                     new SqlAlienSystemTypeNameSpec(
                             "SIGNED",
@@ -57,10 +63,15 @@ public class MycatSqlDialect extends MysqlSqlDialect {
     @Override
     public void unparseCall(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
         SqlOperator operator = call.getOperator();
-       if (operator instanceof MycatSqlDefinedFunction){
-           operator.unparse(writer, call, leftPrec, rightPrec);
-           return;
-       }
+        if (operator instanceof MycatSqlDefinedFunction) {
+            operator.unparse(writer, call, leftPrec, rightPrec);
+            return;
+        }
+//        switch (call.getKind()) {
+//            case ROW:
+//                call.getOperator().unparse(writer, call, leftPrec, rightPrec);
+//                break;
+//        }
 //        if (operator instanceof SqlFunction){
 //            operator.unparse(writer,call,leftPrec,rightPrec);
 //            List<SqlNode> operandList = call.getOperandList();// should not with `` in fun name

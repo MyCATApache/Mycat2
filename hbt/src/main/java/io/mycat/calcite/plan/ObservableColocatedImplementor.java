@@ -32,7 +32,7 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
 
         if (mycatRel instanceof MycatView && !drdsSqlWithParams.getAliasList().isEmpty()) {//case 1
             MycatView mycatView = (MycatView) mycatRel;
-            List<Map<String, Partition>> partitions = sqlMycatDataContext.getPartition(mycatRel.getDigest()).orElse(Collections.emptyList());
+            List<PartitionGroup> partitions = sqlMycatDataContext.getPartition(mycatRel.getDigest()).orElse(Collections.emptyList());
             if (partitions.size() == 1) {
                 ImmutableMultimap<String, SqlString> sqlMap = mycatView
                         .apply(codeExecuterContext.getRelContext().get(mycatView.getDigest()).getSqlTemplate(), partitions, drdsSqlWithParams.getParams());
@@ -44,9 +44,9 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
         }
         Map<String, MycatRelDatasourceSourceInfo> relContext = codeExecuterContext.getRelContext();
         if (relContext.size()==1){//Colocated Push Down
-            List<Map<String, Partition>> partitions = sqlMycatDataContext.getPartition(mycatRel.getDigest()).orElse(Collections.emptyList());
+            List<PartitionGroup> partitions = sqlMycatDataContext.getPartition(mycatRel.getDigest()).orElse(Collections.emptyList());
             if (partitions.size()==1){
-                NameMap<Partition> partition = NameMap.immutableCopyOf((partitions.get(0)));
+                NameMap<Partition> partition = NameMap.immutableCopyOf((partitions.get(0).getMap()));
                 String targetName = partition.values().iterator().next().getTargetName();
                 SQLStatement parameterizedStatement = drdsSqlWithParams.getParameterizedStatement().clone();
 

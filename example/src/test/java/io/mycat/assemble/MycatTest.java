@@ -49,9 +49,9 @@ public interface MycatTest {
                 dataSource.setUrl(url);
                 dataSource.setUsername(username);
                 dataSource.setPassword(password);
-                dataSource.setLoginTimeout(30);
-                dataSource.setCheckExecuteTime(true);
-                dataSource.setQueryTimeout(30);
+//                dataSource.setLoginTimeout(30);
+//                dataSource.setCheckExecuteTime(true);
+//                dataSource.setQueryTimeout(30);
                 dataSource.setMaxWait(TimeUnit.SECONDS.toMillis(10));
                 return dataSource;
             }
@@ -69,7 +69,9 @@ public interface MycatTest {
     }
 
     public default long count(Connection connection, String db, String table) throws Exception {
-        Number count = (Number) executeQuery(connection, String.format("select count(1) as `count` from %s.%s", db, table)).get(0).get("count");
+        String format = String.format("select count(1) as `count` from %s.%s", db, table);
+        List<Map<String, Object>> mapList = executeQuery(connection, format);
+        Number count = (Number) mapList.get(0).get("count");
         return count.longValue();
     }
 
@@ -85,6 +87,10 @@ public interface MycatTest {
     public default List<Map<String, Object>> executeQuery(Connection mySQLConnection, String sql) throws Exception {
         LOGGER.info(sql);
         return JdbcUtils.executeQuery(mySQLConnection, sql, Collections.emptyList());
+    }
+    public default String executeQueryAsText(Connection mySQLConnection, String sql) throws Exception {
+        LOGGER.info(sql);
+        return JdbcUtils.executeQuery(mySQLConnection, sql, Collections.emptyList()).toString();
     }
 
     public default String explain(Connection mySQLConnection, String sql) throws Exception {

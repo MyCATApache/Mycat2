@@ -27,14 +27,14 @@ import java.util.List;
 public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
     protected final MycatDataContext context;
     protected final CodeExecuterContext codeExecuterContext;
-    protected final List<Object> params;
+    protected final DrdsSqlWithParams drdsSqlWithParams;
 
     public NewMycatDataContextImpl(MycatDataContext dataContext,
                                    CodeExecuterContext context,
-                                   List<Object> params) {
+                                   DrdsSqlWithParams  drdsSqlWithParams) {
         this.context = dataContext;
         this.codeExecuterContext = context;
-        this.params = params;
+        this.drdsSqlWithParams = drdsSqlWithParams;
     }
 
     @Override
@@ -56,7 +56,7 @@ public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
     public Object get(String name) {
         if (name.startsWith("?")) {
             int index = Integer.parseInt(name.substring(1));
-            return params.get(index);
+            return drdsSqlWithParams.getParams().get(index);
         }
         return codeExecuterContext.getVarContext().get(name);
     }
@@ -97,8 +97,8 @@ public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
     }
 
     @Override
-    public List<Object> getParams() {
-        return params;
+    public DrdsSqlWithParams getDrdsSql() {
+        return drdsSqlWithParams;
     }
 
     @Override

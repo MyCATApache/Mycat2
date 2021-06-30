@@ -17,6 +17,7 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
+import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.linq4j.Enumerable;
@@ -123,5 +124,17 @@ public interface MycatRel extends RelNode, EnumerableRel, Serializable {
         }else {
             return input;
         }
+    }
+    public default Expression toObservable(Expression input) {
+            Type type = input.getType();
+            if ((type instanceof Enumerable)) {
+              return Expressions.call(RxBuiltInMethod.TO_OBSERVABLE.method, input);
+            }else {
+                return input;
+            }
+    }
+    public default Expression toObservableCache(Expression input) {
+            return Expressions.call(RxBuiltInMethod.TO_OBSERVABLE_CACHE.method, input);
+
     }
 }

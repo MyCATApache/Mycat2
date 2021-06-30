@@ -17,35 +17,7 @@ public class LocalTableScan extends TableScan implements LocalRel{
         super(cluster, traitSet.replace(LocalConvention.INSTANCE), hints, table);
     }
     public LocalTableScan(RelInput input) {
-        this(input.getCluster(), input.getTraitSet(),getHints(input), input.getTable("table"));
-    }
-    public static List<RelHint> getHints(RelInput input) {
-        List<Map<String,Object>> hints =(List) input.get("hints");
-        if (hints==null)return ImmutableList.of();
-
-        ImmutableList.Builder<RelHint> builder = ImmutableList.builder();
-        for (Map<String, Object> hint : hints) {
-            RelHint relHint = RelHint.builder((String) hint.get("hintName"))
-                    .inheritPath(toIntList((List) hint.get("inheritPath")))
-                    .hintOptions((Map) hint.get("kvOptions"))
-                    .hintOptions((List) hint.get("listOptions")).build();
-            builder.add(relHint);
-        }
-        return builder.build();
-    }
-
-    private static List<Integer> toIntList(List inheritPath) {
-        ImmutableList.Builder<Integer> builder = ImmutableList.builder();
-        for (Object o : inheritPath) {
-            int i ;
-            if (o instanceof Number){
-                i= (((Number) o).intValue());
-            }else {
-                i= Integer.parseInt(o.toString());
-            }
-            builder.add(i);
-        }
-        return builder.build();
+        this(input.getCluster(), input.getTraitSet(),input.getHints(), input.getTable("table"));
     }
 
 

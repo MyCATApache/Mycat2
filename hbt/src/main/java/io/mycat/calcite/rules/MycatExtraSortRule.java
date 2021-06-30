@@ -36,6 +36,7 @@ import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalJoin;
+import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.rules.AggregateExtractProjectRule;
 import org.apache.calcite.rex.RexBuilder;
@@ -99,7 +100,7 @@ public class MycatExtraSortRule extends RelRule<MycatExtraSortRule.Config> {
             relNode = mycatView.changeTo(relBuilder.push(innerRelNode).sort(relCollation).build());
             return relNode;
         } else {
-            return relBuilder.push(relNode).sort(relCollation).build();
+            return LogicalSort.create(relNode,relCollation,null,null);
         }
     }
    public static final ImmutableList<RelOptRule> RULES;

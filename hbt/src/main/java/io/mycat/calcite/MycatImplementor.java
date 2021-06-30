@@ -14,25 +14,33 @@
  */
 package io.mycat.calcite;
 
-import cn.mycat.vertx.xa.MySQLManager;
 import com.google.common.collect.ImmutableList;
+import io.mycat.TableHandler;
+import io.mycat.calcite.physical.MycatTableLookupValues;
 import io.mycat.calcite.table.MycatLogicTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.*;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexCorrelVariable;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;
+import org.apache.calcite.sql.fun.SqlRowOperator;
 import org.apache.calcite.sql.fun.SqlSingleValueAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.InferTypes;
+import org.apache.calcite.sql.type.ReturnTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 /**
  * @author Junwen Chen
@@ -45,6 +53,11 @@ public class MycatImplementor extends RelToSqlConverter {
     }
 
     @Override
+    public Context aliasContext(Map<String, RelDataType> aliases, boolean qualified) {
+        return super.aliasContext(aliases, qualified);
+    }
+
+    @Override
     public Result visit(TableScan e) {
         try {
 
@@ -54,11 +67,13 @@ public class MycatImplementor extends RelToSqlConverter {
                 if (dialect instanceof MysqlSqlDialect) {
                     for (RelHint hint : e.getHints()) {
                         if ("INDEX".equalsIgnoreCase(hint.hintName)) {
-                             hintText = "USE INDEX(" + String.join(",", hint.listOptions) + ")";
+                            hintText = "USE INDEX(" + String.join(",", hint.listOptions) + ")";
                         }
                     }
                 }
-                SqlNode tableParamSqlNode = new TableParamSqlNode(ImmutableList.of(logicTable.logicTable().getUniqueName()),hintText);
+                TableHandler tableHandler = logicTable.logicTable();
+                SqlNode tableParamSqlNode = new TableParamSqlNode(ImmutableList.of(tableHandler.getSchemaName(),tableHandler.getTableName()),tableHandler.getUniqueName(), hintText);
+
                 return result(tableParamSqlNode, ImmutableList.of(Clause.FROM), e, null);
             }
             return super.visit(e);
@@ -67,6 +82,44 @@ public class MycatImplementor extends RelToSqlConverter {
             return null;
         }
     }
+
+    public static final SqlValuesOperator MYCAT_SQL_VAULES = new SqlValuesOperator() {
+        @Override
+        public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
+            writer.print("VALUES");
+            final SqlWriter.Frame frame =
+                    writer.startList(SqlWriter.FrameTypeEnum.VALUES, " ", " ");
+            for (SqlNode operand : call.getOperandList()) {
+                writer.sep(",");
+                writer.print(operand.toString());
+            }
+            writer.endList(frame);
+        }
+    };
+    public static final SqlBinaryOperator MYCAT_SQL_LOOKUP_IN = new SqlBinaryOperator("IN", SqlKind.OTHER, 32, true,
+            ReturnTypes.BOOLEAN_NULLABLE,
+            InferTypes.FIRST_KNOWN,
+            null) {
+    };
+
+//    @Override
+//    public Context aliasContext(Map<String, RelDataType> aliases, boolean qualified) {
+//        return new AliasContext(dialect, aliases, qualified);
+//    }
+public static final SqlSpecialOperator ROW = new MycatSqlRowOperator("MYCAT_ROW");
+    public Result visit(MycatTableLookupValues e) {
+        RelDataType rowType = e.getRowType();
+        int fieldCount = rowType.getFieldCount();
+        ImmutableList.Builder<SqlNode> builder = ImmutableList.builder();
+        Context context = aliasContext(Collections.emptyMap(),false);
+        for (RexNode expr : e.getExprs()) {
+            SqlNode sqlNode = context.toSql(null, expr);
+            builder.add(sqlNode);
+        }
+        SqlBasicCall sqlBasicCall = new SqlBasicCall(MYCAT_SQL_VAULES, builder.build().toArray(new SqlNode[]{}), SqlParserPos.ZERO);
+        return result(sqlBasicCall, ImmutableList.of(Clause.FROM), e, null);
+    }
+
 
 //    public MycatImplementor(SqlDialect dialect) {
 //        this(dialect);

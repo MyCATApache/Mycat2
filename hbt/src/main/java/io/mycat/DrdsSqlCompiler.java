@@ -31,10 +31,11 @@ import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
 import io.mycat.calcite.localrel.LocalRules;
 import io.mycat.calcite.physical.MycatInsertRel;
+import io.mycat.calcite.physical.MycatProject;
 import io.mycat.calcite.physical.MycatTopN;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.rewriter.*;
-import io.mycat.calcite.rules.MycatExtraSortRule;
+import io.mycat.calcite.rules.*;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.spm.PlanImpl;
 import io.mycat.calcite.table.*;
@@ -45,6 +46,7 @@ import io.mycat.hbt.parser.HBTParser;
 import io.mycat.hbt.parser.ParseNode;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.*;
@@ -82,6 +84,7 @@ import java.util.*;
 
 import static io.mycat.DrdsExecutorCompiler.getCodeExecuterContext;
 
+@Getter
 public class DrdsSqlCompiler {
     private final static Logger log = LoggerFactory.getLogger(DrdsSqlCompiler.class);
     private final SchemaPlus schemas;
@@ -345,10 +348,11 @@ public class DrdsSqlCompiler {
                     throw new UnsupportedOperationException("unsupported DML operation " + tableModify.getOperation());
             }
         }
+        RelDataType finalRowType = logPlan.getRowType();
         RelNode rboLogPlan = optimizeWithRBO(logPlan);
-        if (!RelOptUtil.areRowTypesEqual(rboLogPlan.getRowType(), logPlan.getRowType(), true)) {
-            rboLogPlan = relNodeContext.getRelBuilder().push(rboLogPlan).rename(logPlan.getRowType().getFieldNames()).build();
-        }
+//        if (!RelOptUtil.areRowTypesEqual(rboLogPlan.getRowType(), logPlan.getRowType(), true)) {
+//            rboLogPlan = relNodeContext.getRelBuilder().push(rboLogPlan).rename(logPlan.getRowType().getFieldNames()).build();
+//        }
 //        rboLogPlan = rboLogPlan.accept(new RelShuttleImpl(){
 //            @Override
 //            public RelNode visit(TableScan scan) {
@@ -357,6 +361,10 @@ public class DrdsSqlCompiler {
 //        });
 //        rboLogPlan = rboLogPlan.accept(new ToLocalConverter());
         MycatRel mycatRel = optimizeWithCBO(rboLogPlan, Collections.emptyList());
+        if (!RelOptUtil.areRowTypesEqual(mycatRel.getRowType(), finalRowType, true)) {
+            Project relNode = (Project)relNodeContext.getRelBuilder().push(mycatRel).rename(finalRowType.getFieldNames()).build();
+            mycatRel =  MycatProject.create(relNode.getInput(),relNode.getProjects(),relNode.getRowType());
+        }
         return mycatRel;
     }
 
@@ -449,8 +457,19 @@ public class DrdsSqlCompiler {
             //Sort/Project
             listBuilder.add(CoreRules.SORT_PROJECT_TRANSPOSE.config.withOperandFor(Sort.class, Project.class).toRule());
 
+            if(config.bkaJoin()){
+                //TABLELOOKUP
+                listBuilder.add(MycatTableLookupSemiJoinRule.INSTANCE);
+                listBuilder.add(MycatTableLookupCombineRule.INSTANCE);
+//                listBuilder.add(MycatJoinTableLookupTransposeRule.LEFT_INSTANCE);
+//                listBuilder.add(MycatJoinTableLookupTransposeRule.RIGHT_INSTANCE);
+                listBuilder.add(MycatValuesJoinRule.INSTANCE);
+            }
+
+
             listBuilder.build().forEach(c -> planner.addRule(c));
             MycatConvention.INSTANCE.register(planner);
+
             if (relOptRules != null) {
                 for (RelOptRule relOptRule : relOptRules) {
                     planner.addRule(relOptRule);
@@ -537,7 +556,8 @@ public class DrdsSqlCompiler {
                 CoreRules.PROJECT_SET_OP_TRANSPOSE,
                 CoreRules.PROJECT_JOIN_TRANSPOSE,
                 CoreRules.PROJECT_WINDOW_TRANSPOSE,
-                CoreRules.PROJECT_FILTER_TRANSPOSE
+                CoreRules.PROJECT_FILTER_TRANSPOSE,
+                ProjectRemoveRule.Config.DEFAULT.toRule()
         )).addGroupEnd().addMatchOrder(HepMatchOrder.BOTTOM_UP);
         builder.addGroupBegin().addRuleCollection(FILTER).addGroupEnd().addMatchOrder(HepMatchOrder.BOTTOM_UP);
         builder.addGroupBegin().addRuleInstance(CoreRules.PROJECT_MERGE).addGroupEnd().addMatchOrder(HepMatchOrder.ARBITRARY);

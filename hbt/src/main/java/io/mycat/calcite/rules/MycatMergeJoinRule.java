@@ -73,12 +73,12 @@ public class MycatMergeJoinRule extends MycatConverterRule {
                 default:
             }
         }
-        return tryMycatSortMergeJoin((LogicalJoin) join);
+        return tryMycatSortMergeJoin((Join) join);
     }
 
     @Nullable
-    private MycatSortMergeJoin tryMycatSortMergeJoin(LogicalJoin rel) {
-        LogicalJoin join = rel;
+    private MycatSortMergeJoin tryMycatSortMergeJoin(Join rel) {
+        Join join = rel;
         final JoinInfo info = join.analyzeCondition();
         if (!EnumerableMergeJoin.isMergeJoinSupported(join.getJoinType())) {
             // EnumerableMergeJoin only supports certain join types.
@@ -133,6 +133,7 @@ public class MycatMergeJoinRule extends MycatConverterRule {
         if (!join.isSemiJoin()) {
             return MycatSortMergeJoin.create(
                     traitSet,
+                    join.getHints(),
                     convert(left, out),
                     convert(right, out),
                     condition,
@@ -140,6 +141,7 @@ public class MycatMergeJoinRule extends MycatConverterRule {
         } else {
             return MycatSortMergeSemiJoin.create(
                     traitSet,
+                    join.getHints(),
                     convert(left, out),
                     convert(right, out),
                     condition,

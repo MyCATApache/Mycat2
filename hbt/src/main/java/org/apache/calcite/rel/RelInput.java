@@ -21,6 +21,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Window;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
@@ -29,6 +30,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Context from which a relational expression can initialize itself,
@@ -98,4 +100,33 @@ public interface RelInput {
   boolean getBoolean(String tag, boolean default_);
 
   List<Window.Group> getWindowGroupList();
+
+  default public  List<RelHint> getHints() {
+    List<Map<String,Object>> hints =(List)get("hints");
+    if (hints==null)return ImmutableList.of();
+
+    ImmutableList.Builder<RelHint> builder = ImmutableList.builder();
+    for (Map<String, Object> hint : hints) {
+      RelHint relHint = RelHint.builder((String) hint.get("hintName"))
+              .inheritPath(toIntList((List) hint.get("inheritPath")))
+              .hintOptions((Map) hint.get("kvOptions"))
+              .hintOptions((List) hint.get("listOptions")).build();
+      builder.add(relHint);
+    }
+    return builder.build();
+  }
+   static List<Integer> toIntList(List inheritPath) {
+    ImmutableList.Builder<Integer> builder = ImmutableList.builder();
+    for (Object o : inheritPath) {
+      int i ;
+      if (o instanceof Number){
+        i= (((Number) o).intValue());
+      }else {
+        i= Integer.parseInt(o.toString());
+      }
+      builder.add(i);
+    }
+    return builder.build();
+  }
+
 }

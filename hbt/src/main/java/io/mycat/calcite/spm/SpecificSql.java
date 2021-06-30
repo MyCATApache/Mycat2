@@ -15,6 +15,7 @@
 package io.mycat.calcite.spm;
 
 
+import com.alibaba.druid.sql.SQLUtils;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -37,6 +38,7 @@ public class SpecificSql implements Comparable<SpecificSql> {
         this.sqls = sqls;
     }
     public static SpecificSql of (String relNode, String parameterizedSql, Each... sqls) {
+        parameterizedSql = SQLUtils.parseSingleMysqlStatement(parameterizedSql).toString();//check syntax
         return new SpecificSql(relNode, parameterizedSql, Arrays.asList(sqls));
     }
 

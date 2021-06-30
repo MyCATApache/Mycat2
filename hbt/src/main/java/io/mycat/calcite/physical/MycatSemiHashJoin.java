@@ -91,7 +91,7 @@ public class MycatSemiHashJoin extends Join implements MycatRel {
 
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
-        MycatHashJoin enumerableHashJoin = MycatHashJoin.create(getTraitSet(),left, right, condition, joinType);
+        MycatHashJoin enumerableHashJoin = MycatHashJoin.create(getTraitSet(),getHints(),left, right, condition, joinType);
         Result result = enumerableHashJoin.implement(implementor, pref);
         return result;
     }
