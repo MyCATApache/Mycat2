@@ -75,7 +75,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     final RelNode relNode;
     final Distribution distribution;
     final RexNode condition;
-
+    IndexCondition indexCondition = null;
 
     public MycatView(RelTraitSet relTrait, RelNode input, Distribution dataNode) {
         this(relTrait, input, dataNode, null);
@@ -123,12 +123,15 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     }
 
     public Optional<IndexCondition> getPredicateIndexCondition() {
+        if (indexCondition != null) {
+            return Optional.of(indexCondition);
+        }
         if (this.distribution.getShardingTables().isEmpty() || condition == null) {
             return Optional.empty();
         }
         ShardingTable shardingTable = this.distribution.getShardingTables().get(0);
         PredicateAnalyzer predicateAnalyzer = new PredicateAnalyzer(shardingTable.keyMetas(), shardingTable.getLogicTable().getFieldNames());
-        IndexCondition indexCondition = predicateAnalyzer.translateMatch(condition);
+        indexCondition = predicateAnalyzer.translateMatch(condition);
         return Optional.ofNullable(indexCondition);
     }
 
@@ -292,7 +295,14 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        return planner.getCost(relNode, mq);
+        Optional<IndexCondition> conditionOptional = getPredicateIndexCondition();
+        RelOptCost plannerCost = planner.getCost(relNode, mq);
+        double factor = 1;
+        if (conditionOptional.isPresent()) {
+            IndexCondition indexCondition = conditionOptional.get();
+            factor = indexCondition.getQueryType().factor();
+        }
+        return plannerCost.multiplyBy(factor);
     }
 
     private RelNode applyDataNode(Map<String, Partition> map, RelNode relNode) {
