@@ -116,6 +116,12 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         return new IndexMapping(indexColumnList.build(), restColumnList.build());
     }
 
+    public List<RelNode> produceIndexViews(RelBuilder relBuilder) {
+        RelNode relNode = getRelNode();
+        assert relNode instanceof TableScan;
+        return produceIndexViews(relBuilder, ((TableScan) relNode).identity().toIntArray());
+    }
+
     public List<RelNode> produceIndexViews(RelBuilder relBuilder, int[] projects) {
         List<ShardingTable> shardingTables = distribution.getShardingTables();
         if (shardingTables == null || shardingTables.isEmpty()) {
