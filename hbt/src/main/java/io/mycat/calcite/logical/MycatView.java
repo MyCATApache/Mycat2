@@ -27,10 +27,7 @@ import io.mycat.calcite.physical.MycatMergeSort;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.IndexCondition;
 import io.mycat.calcite.rewriter.PredicateAnalyzer;
-import io.mycat.calcite.table.GlobalTable;
-import io.mycat.calcite.table.MycatLogicTable;
-import io.mycat.calcite.table.MycatPhysicalTable;
-import io.mycat.calcite.table.ShardingTable;
+import io.mycat.calcite.table.*;
 import io.mycat.config.ServerConfig;
 import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.DataContext;
@@ -44,13 +41,13 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.*;
-import org.apache.calcite.plan.*;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.*;
-import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.Sort;
-import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.*;
@@ -59,6 +56,7 @@ import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.util.SqlString;
+import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.RxBuiltInMethodImpl;
@@ -104,22 +102,52 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         this.relNode = input;
     }
 
-    public List<MycatIndexView> produceIndexViews() {
+    public static IndexMapping project(ShardingIndexTable shardingIndexTable, int[] projects) {
+        ImmutableList.Builder<Integer> restColumnList = ImmutableList.builder();
+        ImmutableList.Builder<Integer> indexColumnList = ImmutableList.builder();
+        for (int i = 0; i < projects.length; i++) {
+            int project = projects[i];
+            if (shardingIndexTable.hasFactColumn(project)) {
+                indexColumnList.add(shardingIndexTable.mappingIndexTableIndex(i));
+            } else {
+                restColumnList.add(project);
+            }
+        }
+        return new IndexMapping(indexColumnList.build(), restColumnList.build());
+    }
+
+    public List<RelNode> produceIndexViews(RelBuilder relBuilder, int[] projects) {
         List<ShardingTable> shardingTables = distribution.getShardingTables();
         if (shardingTables == null || shardingTables.isEmpty()) {
             return Collections.emptyList();
         }
-
         ShardingTable shardingTable = shardingTables.get(0);
-
-        List<ShardingTable> indexTables = shardingTable.getIndexTables();
+        List<ShardingIndexTable> indexTables = (List) shardingTable.getIndexTables();
         if (indexTables.isEmpty()) return Collections.emptyList();
-
-        ArrayList<MycatIndexView> tableArrayList = new ArrayList<>(indexTables.size());
-        for (ShardingTable indexTable : indexTables) {
-            tableArrayList.add(new MycatIndexView(getTraitSet(), getRelNode(), distribution.changeToPrimaryShardingTable(indexTable), condition));
+        String[] shardingKeys = shardingTable.getLogicTable().getShardingKeys().toArray(new String[]{});
+        ArrayList<RelNode> tableArrayList = new ArrayList<>(indexTables.size());
+        for (ShardingIndexTable indexTable : indexTables) {
+            IndexMapping indexMapping = project(indexTable, projects);
+            ImmutableList<Integer> factColumns = indexMapping.getFactColumns();
+            boolean indexOnlyScan = factColumns.isEmpty();
+            RelNode orginalRelNode = getRelNode();
+            RelNode primaryTableScan = relBuilder.scan(shardingTable.getSchemaName(), shardingTable.getTableName()).build();
+            RelNode accept = orginalRelNode.accept(new RelShuttleImpl() {
+                @Override
+                public RelNode visit(TableScan scan) {
+                    RelNode indexTableScan = relBuilder.scan(indexTable.getSchemaName(), indexTable.getTableName()).build();
+                    if (indexOnlyScan) {
+                        return indexTableScan;
+                    } else {
+                        return relBuilder.push(indexTableScan)
+                                .push((RelOptUtil.createProject(primaryTableScan, factColumns)))//依赖TableLookupJoin优化
+                                .join(JoinRelType.INNER, shardingKeys).build();
+                    }
+                }
+            });
+            tableArrayList.add(accept);
         }
-        return tableArrayList;
+        return (List) tableArrayList;
     }
 
     public Optional<IndexCondition> getPredicateIndexCondition() {
@@ -173,6 +201,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             }
             return super.visitChildren(rel);
         }
+
     }
 
 

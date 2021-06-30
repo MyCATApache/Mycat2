@@ -162,4 +162,7 @@ public class LogicTable {
     public List<String> getFieldNames() {
         return this.rawColumns.stream().map(i -> i.getColumnName()).collect(Collectors.toList());
     }
+    public List<String> getShardingKeys() {
+        return this.rawColumns.stream().filter(i->i.isShardingKey()).map(i -> i.getColumnName()).collect(Collectors.toList());
+    }
 }

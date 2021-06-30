@@ -141,30 +141,24 @@ public class UpdateSQL<T extends SQLUpdateStatement> extends SQL<T> {
      */
     public boolean isWherePrimaryKeyCovering(){
         TableHandler table = getTable();
-        List<SimpleColumnInfo> primaryKeyList = table.getPrimaryKeyList();
         for (OrGroup orGroup : whereColumnList) {
-            Set<SimpleColumnInfo> fullSet = new HashSet<>(primaryKeyList);
             for (SQLBinaryOpExpr binaryOpExpr : orGroup.getBinaryOperatorList()) {
                 if(binaryOpExpr.getOperator() == SQLBinaryOperator.Equality){
                     SimpleColumnInfo columnInfo = (SimpleColumnInfo) binaryOpExpr.getAttribute(ATTR_COLUMN_INFO);
                     if(columnInfo.isPrimaryKey()){
-
+                        return true;
                     }
-                    fullSet.remove(columnInfo);
                 }
             }
-            if(fullSet.size() > 0){
-                return false;
-            }
         }
-        return true;
+        return false;
     }
 
     public Collection<Map<SimpleColumnInfo,Object>> selectPrimaryKey(Connection connection) throws SQLException {
         SQLUpdateStatement updateStatement = getStatement();
         TableHandler table = getTable();
         List<Object> parameters = getParameters();
-        FastSqlUtils.Select select = FastSqlUtils.conversionToSelectSql(updateStatement, table.getPrimaryKeyList(), parameters);
+        FastSqlUtils.Select select = FastSqlUtils.conversionToSelectSql(updateStatement, Collections.singletonList(table.getPrimaryKey()), parameters);
         return select.executeQuery(connection);
     }
 

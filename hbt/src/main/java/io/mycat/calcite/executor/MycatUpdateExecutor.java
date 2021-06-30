@@ -92,9 +92,9 @@ public class MycatUpdateExecutor {
         TableHandler table = sql.getTable();
         SQLStatement statement = sql.getStatement();
         if(statement instanceof SQLUpdateStatement) {
-            return FastSqlUtils.conversionToSelectSql((SQLUpdateStatement) statement, table.getPrimaryKeyList(),sql.getParameters());
+            return FastSqlUtils.conversionToSelectSql((SQLUpdateStatement) statement,Collections.singletonList( table.getPrimaryKey()),sql.getParameters());
         }else if(statement instanceof SQLDeleteStatement){
-            return FastSqlUtils.conversionToSelectSql((SQLDeleteStatement) statement,table.getPrimaryKeyList(),sql.getParameters());
+            return FastSqlUtils.conversionToSelectSql((SQLDeleteStatement) statement,Collections.singletonList( table.getPrimaryKey()),sql.getParameters());
         }
         throw new MycatException("更新语句转查询语句出错，不支持的语法。 \n sql = "+ statement);
     }
