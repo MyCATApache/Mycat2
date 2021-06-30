@@ -1,8 +1,13 @@
 package io.mycat.sql;
 
 import io.mycat.assemble.MycatTest;
+import io.mycat.config.ShardingBackEndTableInfoConfig;
+import io.mycat.config.ShardingFuntion;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
+import io.mycat.hint.CreateTableHint;
+import io.mycat.router.mycat1xfunction.PartitionByRangeMod;
+import org.apache.groovy.util.Maps;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -10,6 +15,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.*;
 import java.sql.Date;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
@@ -262,6 +268,58 @@ public class UserCaseTest implements MycatTest {
             mycatConnection.setAutoCommit(false);
             executeQuery(mycatConnection,sql2);
             mycatConnection.setAutoCommit(true);
+        }
+    }
+
+    @Test
+    public void test548() throws Exception {
+        try (Connection mycat = getMySQLConnection(DB_MYCAT);
+             Connection prototypeMysql = getMySQLConnection(DB1);) {
+            execute(mycat, RESET_CONFIG);
+            String db = "testSchema";
+            String tableName = "sharding";
+            execute(mycat, "drop database if EXISTS " + db);
+            execute(mycat, "create database " + db);
+            execute(mycat, "use " + db);
+
+            execute(mycat, CreateDataSourceHint
+                    .create("c0", DB1));
+
+            execute(
+                    mycat,
+                    CreateTableHint
+                            .createSharding(db, tableName,
+                                    null,
+                                    ShardingBackEndTableInfoConfig.builder()
+                                            .schemaNames(db)
+                                            .tableNames(tableName)
+                                            .targetNames("").build(),
+                                    ShardingFuntion.builder()
+                                            .clazz(PartitionByRangeMod.class.getCanonicalName())
+                                            .properties(Maps.of(
+                                                    "defaultNode", -1,
+                                                    "columnName", "id"))
+                                            .ranges(Maps.of(
+                                                    "0-1", 1,
+                                                    "1-300", 2)).build())
+            );
+            execute(mycat,
+                    "/*+ mycat:setSequence{\"name\":\"" + db + "_" + tableName + "\",\"clazz\":\"io.mycat.plug.sequence.SequenceMySQLGenerator\",\"schemaName\":\"mysql\"} */;");
+            deleteData(mycat, db, tableName);
+            execute(mycat, "insert into " + tableName + " (user_id,user_name) VALUES (1,'wang')");
+            execute(mycat, "insert into " + tableName + "(user_id,user_name) VALUES (3,'zhang')");
+            execute(mycat, "insert into " + tableName + " (user_id,user_name) VALUES (3,'li')");
+            long endTime = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(5);
+            boolean res = false;
+            while (true) {
+                res |= hasData(mycat, db, tableName);
+                if (res || System.currentTimeMillis() > endTime) {
+                    break;
+                }
+            }
+            Assert.assertTrue(res);
+
+//            execute(mycat, "drop database " + db);
         }
     }
 }
