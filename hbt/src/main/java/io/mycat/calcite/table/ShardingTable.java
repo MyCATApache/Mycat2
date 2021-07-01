@@ -16,6 +16,7 @@
  */
 package io.mycat.calcite.table;
 
+import com.google.common.collect.ImmutableList;
 import io.mycat.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
@@ -73,7 +74,7 @@ public class ShardingTable implements ShardingTableHandler {
     public Optional<Iterable<Object[]>> canIndexTableScan(int[] projects) {
         if (MetaClusterCurrent.exist(GSIService.class)) {
             GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
-            return gsiService.scanProject(getSchemaName(),getTableName(),projects);
+            return gsiService.scanProject(getSchemaName(), getTableName(), projects);
         } else {
             return Optional.empty();
         }
@@ -83,7 +84,7 @@ public class ShardingTable implements ShardingTableHandler {
     public Optional<Iterable<Object[]>> canIndexTableScan(int[] projects, int[] filterIndexes, Object[] values) {
         if (MetaClusterCurrent.exist(GSIService.class)) {
             GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
-            return gsiService.scanProjectFilter(getSchemaName(),getTableName(),projects, filterIndexes, values);
+            return gsiService.scanProjectFilter(getSchemaName(), getTableName(), projects, filterIndexes, values);
         } else {
             return Optional.empty();
         }
@@ -119,7 +120,7 @@ public class ShardingTable implements ShardingTableHandler {
     public Optional<Iterable<Object[]>> canIndexTableScan() {
         if (MetaClusterCurrent.exist(GSIService.class)) {
             GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
-            return gsiService.scan(getSchemaName(),getTableName());
+            return gsiService.scan(getSchemaName(), getTableName());
         } else {
             return Optional.empty();
         }
@@ -129,7 +130,7 @@ public class ShardingTable implements ShardingTableHandler {
     public boolean canIndex() {
         if (MetaClusterCurrent.exist(GSIService.class)) {
             GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
-            return gsiService.isIndexTable(getSchemaName(),getTableName());
+            return gsiService.isIndexTable(getSchemaName(), getTableName());
         } else {
             return false;
         }
@@ -164,11 +165,8 @@ public class ShardingTable implements ShardingTableHandler {
     @Override
     public void createPhysicalTables() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
-            createDatabaseIfNotExist(connection, getSchemaName());
-            connection.executeUpdate(normalizeCreateTableSQLToMySQL(getCreateTableSQL()), false);
-        }
-        getBackends().stream().parallel().forEach(node -> CreateTableUtils.createPhysicalTable(jdbcConnectionManager, node, getCreateTableSQL()));
+        List<Partition> partitions = (List) ImmutableList.builder().add((Partition) (new BackendTableInfo("prototype", getSchemaName(), getTableName()))).addAll(getBackends()).build();
+        partitions.stream().parallel().forEach(node -> CreateTableUtils.createPhysicalTable(jdbcConnectionManager, node, getCreateTableSQL()));
     }
 
     @Override
@@ -229,7 +227,7 @@ public class ShardingTable implements ShardingTableHandler {
         }
     }
 
-    public  List<KeyMeta> keyMetas(){
+    public List<KeyMeta> keyMetas() {
         List<SimpleColumnInfo> shardingKeys = this.getColumns().stream().filter(i -> i.isShardingKey()).collect(Collectors.toList());
         List<KeyMeta> keyMetas = new ArrayList<>();
         for (int i = 0; i < shardingKeys.size(); i++) {

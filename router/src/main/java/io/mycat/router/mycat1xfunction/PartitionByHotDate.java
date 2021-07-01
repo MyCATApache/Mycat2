@@ -105,12 +105,12 @@ public class PartitionByHotDate extends Mycat1xSingleValueRuleFunction {
         }
         return targetPartition;
     }
-
+    private static final long oneDay = 86400000;
     @Override
     public void init(ShardingTableHandler table, Map<String, Object> prot, Map<String, Object> ranges) {
         this.formatter = DateTimeFormatter.ofPattern(Objects.toString(prot.get("dateFormat")));
         this.lastTime = Integer.parseInt(Objects.toString(prot.get("lastTime")));
-        this.partionTime = Integer.parseInt(Objects.toString(prot.get("partionTime")));
+        this.partionTime = Integer.parseInt(Objects.toString(prot.get("partionDay")))*oneDay;
     }
 
     @Override

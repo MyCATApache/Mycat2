@@ -21,10 +21,12 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.util.DDLHelper;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static io.mycat.util.CreateTableUtils.createPhysicalTable;
 import static io.mycat.util.CreateTableUtils.normalizeCreateTableSQLToMySQL;
@@ -82,7 +84,7 @@ public class NormalTable implements NormalTableHandler {
     }
 
     @Override
-    public Map<String,IndexInfo> getIndexes() {
+    public Map<String, IndexInfo> getIndexes() {
         return table.getIndexes();
     }
 
@@ -109,13 +111,9 @@ public class NormalTable implements NormalTableHandler {
     @Override
     public void createPhysicalTables() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
-            DDLHelper.createDatabaseIfNotExist(connection, getSchemaName());
-            connection.executeUpdate(normalizeCreateTableSQLToMySQL(getCreateTableSQL()), false);
-        }
-        for (Partition node : Collections.singleton(getDataNode())) {
-            createPhysicalTable(jdbcConnectionManager,node,getCreateTableSQL());
-        }
+        Stream.of(new BackendTableInfo("prototype", getSchemaName(), getTableName()), getDataNode())
+                .parallel()
+                .forEach(node -> createPhysicalTable(jdbcConnectionManager, node, normalizeCreateTableSQLToMySQL(getCreateTableSQL())));
     }
 
 
