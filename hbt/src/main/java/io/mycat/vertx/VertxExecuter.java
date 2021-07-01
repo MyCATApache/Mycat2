@@ -36,11 +36,14 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.sqlclient.*;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -64,7 +67,7 @@ public class VertxExecuter {
                 List<List<Object>> lists = insertMap.computeIfAbsent(parameterizedSql, s -> new LinkedList<>());
                 lists.addAll(e.getValue().getArgs());
             }
-            list.add(runInsert(insertMap, sqlConnection.getConnection(context.resolveDatasourceTargetName(entry.getKey(),true))));
+            list.add(runInsert(insertMap, sqlConnection.getConnection(context.resolveDatasourceTargetName(entry.getKey(), true))));
         }
         if (list.isEmpty()) {
             throw new AssertException();
@@ -86,6 +89,63 @@ public class VertxExecuter {
         return Future.succeededFuture().flatMap(o -> function.apply(null));
     }
 
+    public static Future<long[]> simpleUpdate(MycatDataContext context, boolean xa, boolean firstSum, Iterable<EachSQL> eachSQLs) {
+        Function<Void, Future<long[]>> function = new Function<Void, Future<long[]>>() {
+            final long[] sum = new long[]{0, 0};
+
+            @Override
+            public Future<long[]> apply(Void unused) {
+                XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
+                ConcurrentHashMap<String, Future<SqlConnection>> map = new ConcurrentHashMap<>();
+                final AtomicBoolean firstRequest = new AtomicBoolean();
+                for (EachSQL eachSQL : eachSQLs) {
+
+                    String target = context.resolveDatasourceTargetName(eachSQL.getTarget(), true);
+                    String sql = eachSQL.getSql();
+                    List<Object> params = eachSQL.getParams();
+
+                    Future<SqlConnection> connectionFuture = map.computeIfAbsent(target, s -> transactionSession.getConnection(target));
+                    Future<long[]> future = VertxExecuter.runUpdate(connectionFuture, sql, params);
+
+                    Future<SqlConnection> returnConnectionFuture = future.map((Function<long[], Void>) longs2 -> {
+                        if (!firstSum) {
+                            synchronized (sum) {
+                                sum[0] = sum[0] + longs2[0];
+                                sum[1] = Math.max(sum[1], longs2[1]);
+                            }
+                        } else if (firstRequest.compareAndSet(true,false)) {
+                            firstRequest.set(true);
+                                sum[0] = longs2[0];
+                                sum[1] = longs2[1];
+                        }
+                        return null;
+                    }).mapEmpty().flatMap(c -> Future.succeededFuture(connectionFuture.result()));
+                    map.put(target, returnConnectionFuture);
+                }
+                List<Future<SqlConnection>> futures = new ArrayList<>(map.values());
+                return CompositeFuture.all((List) futures).map(sum);
+            }
+        };
+        if (xa) {
+            return wrapAsXaTransaction(context, function);
+        } else {
+            return Future.succeededFuture().flatMap(o -> function.apply(null));
+        }
+    }
+
+    @Getter
+    class EachSQL {
+        String target;
+        String sql;
+        List<Object> params;
+
+        public EachSQL(String target, String sql, List<Object> params) {
+            this.target = target;
+            this.sql = sql;
+            this.params = params;
+        }
+    }
+
 
     public static Future<long[]> runMycatUpdateRel(XaSqlConnection sqlConnection, MycatDataContext context, MycatUpdateRel updateRel, List<Object> params) {
         final Set<SQL> reallySqlSet = MycatUpdateExecutor.buildReallySqlList(updateRel,
@@ -95,9 +155,9 @@ public class VertxExecuter {
         Map<String, String> targetMap = new HashMap<>();
         Set<String> uniqueValues = new HashSet<>();
         for (SQL sql : reallySqlSet) {
-            String k = context.resolveDatasourceTargetName(sql.getTarget(),true);
+            String k = context.resolveDatasourceTargetName(sql.getTarget(), true);
             if (uniqueValues.add(k)) {
-                if (targetMap.put(sql.getTarget(), context.resolveDatasourceTargetName(k,true)) != null) {
+                if (targetMap.put(sql.getTarget(), context.resolveDatasourceTargetName(k, true)) != null) {
                     throw new IllegalStateException("Duplicate key");
                 }
             }
@@ -170,6 +230,11 @@ public class VertxExecuter {
 
     public static Future<long[]> runUpdate(Future<SqlConnection> sqlConnectionFuture, String sql) {
         return sqlConnectionFuture.flatMap(c -> c.query(sql).execute()
+                .map(r -> new long[]{r.rowCount(), Optional.ofNullable(r.property(MySQLClient.LAST_INSERTED_ID)).orElse(0L)}));
+    }
+
+    public static Future<long[]> runUpdate(Future<SqlConnection> sqlConnectionFuture, String sql, List<Object> params) {
+        return sqlConnectionFuture.flatMap(c -> c.preparedQuery(sql).execute(Tuple.tuple(params))
                 .map(r -> new long[]{r.rowCount(), Optional.ofNullable(r.property(MySQLClient.LAST_INSERTED_ID)).orElse(0L)}));
     }
 
