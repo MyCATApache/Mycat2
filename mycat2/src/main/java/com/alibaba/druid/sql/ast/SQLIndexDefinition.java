@@ -377,6 +377,10 @@ public class SQLIndexDefinition extends SQLObjectImpl implements SQLIndex {
             definition.tbPartitionBy = tbPartitionBy.clone();
             definition.tbPartitionBy.setParent(parent);
         }
+        if (dbPartitions != null) {
+            definition.dbPartitions = dbPartitions.clone();
+            definition.dbPartitions.setParent(parent);
+        }
         if (tbPartitions != null) {
             definition.tbPartitions = tbPartitions.clone();
             definition.tbPartitions.setParent(parent);
