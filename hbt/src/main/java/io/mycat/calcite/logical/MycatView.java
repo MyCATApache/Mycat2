@@ -118,8 +118,16 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     public List<RelNode> produceIndexViews(RelBuilder relBuilder) {
         RelNode relNode = getRelNode();
-        assert relNode instanceof TableScan;
-        return produceIndexViews(relBuilder, ((TableScan) relNode).identity().toIntArray());
+        if( relNode instanceof TableScan){
+           return produceIndexViews(relBuilder, ((TableScan) relNode).identity().toIntArray());
+        }
+        if( relNode instanceof Filter){
+            RelNode node = ((Filter) relNode).getInput();
+            if( node instanceof TableScan){
+                return produceIndexViews(relBuilder, ((TableScan) node).identity().toIntArray());
+            }
+        }
+        return Collections.emptyList();
     }
 
     public List<RelNode> produceIndexViews(RelBuilder relBuilder, int[] projects) {
