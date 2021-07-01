@@ -76,6 +76,16 @@ public class VertxExecuter {
                         .orElse(new long[2])).onComplete(event -> sqlConnection.closeStatementState());
     }
 
+    public static Future<long[]> wrapAsXaTransaction(MycatDataContext context, Function<Void, Future<long[]>> function) {
+        TransactionSession sqlConnection = context.getTransactionSession();
+        if ((!context.isInTransaction() && context.isAutocommit())) {
+            Future<long[]> future = sqlConnection.begin().flatMap(function);
+            return future.flatMap(longs -> sqlConnection.commit().map(longs))
+                    .recover(throwable -> CompositeFuture.all(Future.failedFuture(throwable), sqlConnection.rollback()).mapEmpty());
+        }
+        return Future.succeededFuture().flatMap(o -> function.apply(null));
+    }
+
 
     public static Future<long[]> runMycatUpdateRel(XaSqlConnection sqlConnection, MycatDataContext context, MycatUpdateRel updateRel, List<Object> params) {
         final Set<SQL> reallySqlSet = MycatUpdateExecutor.buildReallySqlList(updateRel,
