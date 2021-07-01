@@ -14,6 +14,7 @@
  */
 package io.mycat.config;
 
+import com.alibaba.druid.sql.MycatSQLUtils;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
@@ -277,7 +278,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
     public ShardingTableConfig putHashTable(String schemaName, String tableName, MySqlCreateTableStatement tableStatement, Map<String, Object> infos) {
         ShardingTableConfig.ShardingTableConfigBuilder builder = ShardingTableConfig.builder();
         ShardingTableConfig config = builder
-                .createTableSQL(tableStatement.toString())
+                .createTableSQL(MycatSQLUtils.toString(tableStatement))
                 .function(ShardingFuntion.builder().properties((Map) infos).build())
                 .build();
         return putShardingTable(schemaName, tableName, config);

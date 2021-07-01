@@ -14,6 +14,7 @@
  */
 package io.mycat.sqlhandler.ddl;
 
+import com.alibaba.druid.sql.MycatSQLUtils;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLIndexDefinition;
 import com.alibaba.druid.sql.ast.statement.SQLCreateIndexStatement;
@@ -30,6 +31,7 @@ import io.vertx.core.shareddata.Lock;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 
 public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStatement> {
@@ -78,8 +80,16 @@ public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStat
         MySqlCreateTableStatement createTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(tableHandler.getCreateTableSQL());
         MySqlTableIndex mySqlTableIndex = new MySqlTableIndex();
         indexDefinition.cloneTo(mySqlTableIndex.getIndexDefinition());
-        createTableStatement.getTableElementList().add(mySqlTableIndex);
 
+        //移除同名的索引
+        createTableStatement.getTableElementList().removeAll(createTableStatement.getTableElementList().stream().filter(i -> {
+            if (i instanceof MySqlTableIndex) {
+                return mySqlTableIndex.getName().equals(((MySqlTableIndex) i).getIndexDefinition().getName());
+            }
+            return false;
+        }).collect(Collectors.toList()));
+        createTableStatement.getTableElementList().add(mySqlTableIndex);
+        String s = MycatSQLUtils.toString(createTableStatement);
         CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(), schemaName, tableName, createTableStatement);
     }
 
