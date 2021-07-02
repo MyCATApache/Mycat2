@@ -44,10 +44,12 @@ public class ShardingTable implements ShardingTableHandler {
 
     public ShardingTable(LogicTable logicTable,
                          List<Partition> backends,
-                         CustomRuleFunction shardingFuntion) {
+                         CustomRuleFunction shardingFuntion,
+                         List<ShardingTable> shardingIndexTables) {
         this.logicTable = logicTable;
         this.backends = (backends == null || backends.isEmpty()) ? Collections.emptyList() : backends;
         this.shardingFuntion = shardingFuntion;
+        this.indexTables = shardingIndexTables;
     }
 
     @Override

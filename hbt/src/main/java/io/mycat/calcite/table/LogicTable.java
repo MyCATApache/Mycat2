@@ -111,9 +111,10 @@ public class LogicTable {
                                                     List<SimpleColumnInfo> columns,
                                                     CustomRuleFunction function,
                                                     Map<String, IndexInfo> indexInfos,
-                                                    String createTableSQL) {
+                                                    String createTableSQL,
+                                                    List<ShardingTable> shardingIndexTables) {
         LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, tableName, columns, indexInfos, createTableSQL);
-        return new ShardingTable(logicTable, backendTableInfos, function);
+        return new ShardingTable(logicTable, backendTableInfos, function,shardingIndexTables);
     }
 
     public SimpleColumnInfo getColumnByName(String name) {

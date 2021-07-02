@@ -9,8 +9,12 @@ import java.util.List;
 public class ShardingIndexTable extends ShardingTable {
     private final ShardingTable primaryTable;
 
-    public ShardingIndexTable(LogicTable logicTable, List<Partition> backends, CustomRuleFunction shardingFuntion, ShardingTable primaryTable) {
-        super(logicTable, backends, shardingFuntion);
+    public ShardingIndexTable(LogicTable logicTable,
+                              List<Partition> backends,
+                              CustomRuleFunction shardingFuntion,
+                              ShardingTable primaryTable,
+                              List<ShardingTable> shardingIndexTables) {
+        super(logicTable, backends, shardingFuntion,shardingIndexTables);
         this.primaryTable = primaryTable;
     }
 
