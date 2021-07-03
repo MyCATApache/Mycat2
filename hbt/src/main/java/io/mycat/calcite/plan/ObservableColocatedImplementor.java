@@ -1,6 +1,7 @@
 package io.mycat.calcite.plan;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
+import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
@@ -53,7 +54,9 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
                 parameterizedStatement.accept(new MySqlASTVisitorAdapter(){
                     @Override
                     public boolean visit(SQLExprTableSource x) {
-                        String s = x.getSchema() + "_" + x.getTableName();
+                        String schema = SQLUtils.normalize(x.getSchema());
+                        String table = SQLUtils.normalize(x.getTableName());
+                        String s = schema+ "_" +table ;
                         Partition tableInfo = partition.get(s,false);
                         x.setSimpleName(tableInfo.getTable());
                         x.setSchema(tableInfo.getSchema());
