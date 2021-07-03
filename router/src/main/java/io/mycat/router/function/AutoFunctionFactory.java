@@ -82,6 +82,12 @@ public class AutoFunctionFactory {
         ToIntFunction<Object> dbFunction = (o) -> 0;
         Set<String> tableShardingKeys = new HashSet<>();
 
+        String mappingFormat = (String) properties.computeIfAbsent("mappingFormat",(unused)->
+                String.join(sep, "c${targetIndex}",
+                        tableHandler.getSchemaName() + "_${dbIndex}",
+                        tableHandler.getTableName() +( (!isFlattenMapping(tableMethod, dbMethod))?"_${tableIndex}":"_${index}")));
+       final boolean flattenMapping = mappingFormat.contains("${index}");
+
         if (dbMethod != null) {
             int num = dbNum;
             SQLMethodInvokeExpr methodInvokeExpr = dbMethod;
@@ -326,13 +332,10 @@ public class AutoFunctionFactory {
                 tableFunction = specilizeStrHash(num, startIndex, endIndex, valType, randSeed, column1);
             }
         }
-        boolean flattenMapping = false;
-        if (dbMethod != null && tableMethod != null) {
-            if ((dbMethod.equals(tableMethod))) {
-                String needMethodName = SQLUtils.normalize(dbMethod.getMethodName().toUpperCase());
-                if (FLATTEN_MAPPING.contains(needMethodName)) {
-                    flattenMapping = true;
-                    String tableShardingKey = Objects.requireNonNull(getShardingKey(tableMethod));
+        if (flattenMapping) {
+            String needMethodName = SQLUtils.normalize(dbMethod.getMethodName().toUpperCase());
+
+            String tableShardingKey = Objects.requireNonNull(getShardingKey(tableMethod));
                     SimpleColumnInfo tableColumn = tableHandler.getColumnByName(tableShardingKey);
                     int total = dbNum * tableNum;
                     if (SQLUtils.nameEquals("MOD_HASH", needMethodName)) {
@@ -367,18 +370,11 @@ public class AutoFunctionFactory {
                         tableFunction = core;
                         dbFunction = value -> core.applyAsInt(value) / tableNum;
                     }
-                }
-            }
         }
         final boolean finalFlattenMapping = flattenMapping;
         final ToIntFunction<Object> finalDbFunction = dbFunction;
         final ToIntFunction<Object> finalTableFunction = tableFunction;
         List<IndexDataNode> indexDataNodes = new ArrayList<>();
-
-        String mappingFormat = (String) properties.computeIfAbsent("mappingFormat",(unused)->
-                String.join(sep, "c${targetIndex}",
-                        tableHandler.getSchemaName() + "_${dbIndex}",
-                        tableHandler.getTableName() +( (!finalFlattenMapping)?"_${tableIndex}":"_${index}")));
 
         List<int[]> seq = new ArrayList<>();
         int tableCount = 0;
@@ -464,6 +460,20 @@ public class AutoFunctionFactory {
                 }
             };
         }
+    }
+
+    private static boolean isFlattenMapping(SQLMethodInvokeExpr tableMethod, SQLMethodInvokeExpr dbMethod) {
+        boolean flattenMapping;
+        if (dbMethod != null && tableMethod != null) {
+            if ((dbMethod.equals(tableMethod))) {
+                String needMethodName = SQLUtils.normalize(dbMethod.getMethodName().toUpperCase());
+                if (FLATTEN_MAPPING.contains(needMethodName)) {
+                    flattenMapping = true;
+                }
+            }
+        }
+        flattenMapping = false;
+        return flattenMapping;
     }
 
     @NotNull
