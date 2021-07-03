@@ -52,7 +52,7 @@ public class ValuePredicateAnalyzerTest {
         ValuePredicateAnalyzer valuePredicateAnalyzer2 = new ValuePredicateAnalyzer(
                 Collections.singletonList(KeyMeta.of("default", "id")), columnList);
         List<Partition> dataNodes = ValueIndexCondition.getObject(table.getShardingFuntion(), valuePredicateAnalyzer2.translateMatch(rexNode), Arrays.asList(1));
-        Assert.assertEquals(("[{targetName='c0', schemaName='db1_0', tableName='sharding_1', index=1, dbIndex=0, tableIndex=1}]").toString(), dataNodes.toString());
+        Assert.assertEquals(("[{targetName='c1', schemaName='db1_1', tableName='sharding_1', index=3, dbIndex=1, tableIndex=1}]").toString(), dataNodes.toString());
     }
 
     @Test
