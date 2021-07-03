@@ -85,7 +85,7 @@ public class AutoFunctionFactory {
         String mappingFormat = (String) properties.computeIfAbsent("mappingFormat",(unused)->
                 String.join(sep, "c${targetIndex}",
                         tableHandler.getSchemaName() + "_${dbIndex}",
-                        tableHandler.getTableName() +( (!isFlattenMapping(tableMethod, dbMethod))?"_${tableIndex}":"_${index}")));
+                        tableHandler.getTableName() +( (!supportFlattenMapping(tableMethod, dbMethod))?"_${tableIndex}":"_${index}")));
        final boolean flattenMapping = mappingFormat.contains("${index}");
 
         if (dbMethod != null) {
@@ -462,18 +462,16 @@ public class AutoFunctionFactory {
         }
     }
 
-    private static boolean isFlattenMapping(SQLMethodInvokeExpr tableMethod, SQLMethodInvokeExpr dbMethod) {
-        boolean flattenMapping;
+    private static boolean supportFlattenMapping(SQLMethodInvokeExpr tableMethod, SQLMethodInvokeExpr dbMethod) {
         if (dbMethod != null && tableMethod != null) {
             if ((dbMethod.equals(tableMethod))) {
                 String needMethodName = SQLUtils.normalize(dbMethod.getMethodName().toUpperCase());
                 if (FLATTEN_MAPPING.contains(needMethodName)) {
-                    flattenMapping = true;
+                    return   true;
                 }
             }
         }
-        flattenMapping = false;
-        return flattenMapping;
+        return false;
     }
 
     @NotNull
