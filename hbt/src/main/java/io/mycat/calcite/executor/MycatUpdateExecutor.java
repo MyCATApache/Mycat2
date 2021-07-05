@@ -7,8 +7,13 @@ import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import io.mycat.*;
 import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.calcite.ExplainWriter;
+import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.calcite.MycatRexExecutor;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.rewriter.Distribution;
+import io.mycat.calcite.rewriter.ValueIndexCondition;
+import io.mycat.calcite.rewriter.ValuePredicateAnalyzer;
+import io.mycat.calcite.spm.ParamHolder;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
@@ -18,6 +23,7 @@ import io.mycat.util.Pair;
 import io.mycat.util.SQL;
 import io.mycat.util.UpdateSQL;
 import lombok.Getter;
+import org.apache.calcite.rex.RexNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -190,13 +196,48 @@ public class MycatUpdateExecutor {
                 primaryKeyList,sql.getTarget());
     }
 
+    public static Iterable<Partition> getDataNodesAsSingleTableUpdate(MycatUpdateRel mycatUpdateRel, List<Object> readOnlyParameters) {
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        TableHandler table = metadataManager.getTable(mycatUpdateRel.getSchemaName(), mycatUpdateRel.getTableName());
+        switch (table.getType()) {
+            case SHARDING:
+                ShardingTable shardingTable = (ShardingTable) table;
+
+                RexNode conditions = mycatUpdateRel.getConditions();
+                ParamHolder paramHolder = ParamHolder.CURRENT_THREAD_LOCAL.get();
+                paramHolder.setData(readOnlyParameters, Collections.emptyList());
+
+                if (conditions == null){
+                    conditions = MycatCalciteSupport.RexBuilder.makeLiteral(true);
+                }
+                try {
+                    ArrayList<RexNode> res = new ArrayList<>(1);
+                    MycatRexExecutor.INSTANCE.reduce(MycatCalciteSupport.RexBuilder,Collections.singletonList( conditions), res);
+                    ValuePredicateAnalyzer predicateAnalyzer = new ValuePredicateAnalyzer(shardingTable.keyMetas(), shardingTable.getColumns().stream().map(i -> i.getColumnName()).collect(Collectors.toList()));
+                    ValueIndexCondition indexCondition = predicateAnalyzer.translateMatch(res.get(0));
+                    List<Partition> partitions = ValueIndexCondition.getObject(shardingTable.getShardingFuntion(), indexCondition, readOnlyParameters);
+                    return partitions;
+                } finally {
+                    paramHolder.clear();
+                }
+            case GLOBAL:
+                GlobalTable globalTable = (GlobalTable) table;
+                return globalTable.getGlobalDataNode();
+            case NORMAL:
+                NormalTable normalTable = (NormalTable) table;
+                return Collections.singletonList(normalTable.getDataNode());
+            case CUSTOM:
+               throw new UnsupportedOperationException();
+        }
+        throw new UnsupportedOperationException();
+    }
+
 
     public static Set<SQL> buildReallySqlList(MycatUpdateRel mycatUpdateRel, SQLStatement orginalStatement, List<Object> parameters) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         TableHandler table = metadataManager.getTable(mycatUpdateRel.getSchemaName(), mycatUpdateRel.getTableName());
-        Distribution distribution = getDistribution(table);
         List<Object> readOnlyParameters = Collections.unmodifiableList(parameters);
-        Iterable<Partition> dataNodes = distribution.getDataNodesAsSingleTableUpdate(mycatUpdateRel.getConditions(),readOnlyParameters);
+        Iterable<Partition> dataNodes = getDataNodesAsSingleTableUpdate(mycatUpdateRel,readOnlyParameters);
         Map<SQL,SQL> sqlMap = new LinkedHashMap<>();
 
         for (Partition partition : dataNodes) {

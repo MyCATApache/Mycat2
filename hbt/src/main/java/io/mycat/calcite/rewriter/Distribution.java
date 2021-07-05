@@ -186,18 +186,7 @@ public class Distribution {
         return getDataNodes(table -> table.dataNodes());
     }
 
-    public Iterable<Partition> getDataNodesAsSingleTableUpdate(IndexCondition conditions, List<Object> readOnlyParameters) {
-        if (normalTables.size() == 1) {
-            return Collections.singletonList(normalTables.get(0).getDataNode());
-        }
-        if (globalTables.size() == 1) {
-            return ImmutableList.copyOf(globalTables.get(0).getGlobalDataNode());
-        }
-        if (shardingTables.size() == 1) {
-            return IndexCondition.getObject(shardingTables.get(0).getShardingFuntion(), conditions, readOnlyParameters);
-        }
-        throw new UnsupportedOperationException();
-    }
+
 
     public Stream<Map<String, Partition>> getDataNodes(Function<ShardingTable, List<Partition>> function) {
         switch (this.type()) {

@@ -26,6 +26,7 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 
 @Getter
@@ -34,12 +35,17 @@ public class MycatUpdateRel extends AbstractRelNode implements MycatRel {
     private static RelOptCluster cluster = DrdsSqlCompiler.newCluster();
     private static final RelDataType dmlRowType = RelOptUtil.createDmlRowType(SqlKind.INSERT, cluster.getTypeFactory());
 
-    public MycatUpdateRel(SQLStatement sqlStatement, String schemaName, String tableName, IndexCondition conditions) {
-        this(new MycatRouteUpdateCore(sqlStatement, schemaName, tableName, false, conditions));
+
+    public MycatUpdateRel(SQLStatement sqlStatement, String schemaName, String tableName) {
+        this(new MycatRouteUpdateCore(sqlStatement, schemaName, tableName, false, null));
     }
 
-    public MycatUpdateRel(SQLStatement sqlStatement, String schemaName, String tableName, boolean global, IndexCondition conditions) {
-        this(new MycatRouteUpdateCore(sqlStatement, schemaName, tableName, global, conditions));
+    public MycatUpdateRel(SQLStatement sqlStatement, String schemaName, String tableName, RexNode condition) {
+        this(new MycatRouteUpdateCore(sqlStatement, schemaName, tableName, false, condition));
+    }
+
+    public MycatUpdateRel(SQLStatement sqlStatement, String schemaName, String tableName, boolean global, RexNode condition) {
+        this(new MycatRouteUpdateCore(sqlStatement, schemaName, tableName, global, condition));
     }
 
     public MycatUpdateRel(MycatRouteUpdateCore mycatRouteUpdateCore) {
@@ -48,10 +54,10 @@ public class MycatUpdateRel extends AbstractRelNode implements MycatRel {
         this.rowType = dmlRowType;
     }
 
-    public static MycatUpdateRel create(SQLStatement sqlStatement, String schemaName, String tableName,IndexCondition conditions) {
-        return new MycatUpdateRel(new MycatRouteUpdateCore(sqlStatement, schemaName, tableName, false, conditions));
+    public static MycatUpdateRel create(SQLStatement sqlStatement, String schemaName, String tableName,RexNode condition) {
+        return new MycatUpdateRel(new MycatRouteUpdateCore(sqlStatement, schemaName, tableName, false, condition));
     }
-    public static MycatUpdateRel create(SQLStatement sqlStatement, String schemaName, String tableName, boolean global, IndexCondition conditions) {
+    public static MycatUpdateRel create(SQLStatement sqlStatement, String schemaName, String tableName, boolean global, RexNode conditions) {
         return new MycatUpdateRel(new MycatRouteUpdateCore(sqlStatement, schemaName, tableName, global, conditions));
     }
 
@@ -85,7 +91,7 @@ public class MycatUpdateRel extends AbstractRelNode implements MycatRel {
         return mycatRouteUpdateCore.getTableName();
     }
 
-    public IndexCondition getConditions() {
+    public RexNode getConditions() {
         return mycatRouteUpdateCore.getConditions();
     }
 }

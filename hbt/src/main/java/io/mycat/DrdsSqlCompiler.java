@@ -241,14 +241,14 @@ public class DrdsSqlCompiler {
 
     @NotNull
     private MycatRel complieGlobalUpdate(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, GlobalTable logicTable) {
-        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(sqlStatement, logicTable.getSchemaName(), logicTable.getTableName(), IndexCondition.EMPTY);
+        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(sqlStatement, logicTable.getSchemaName(), logicTable.getTableName());
         optimizationContext.saveAlways();
         return mycatUpdateRel;
     }
 
     @NotNull
     private MycatRel complieNormalUpdate(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, NormalTable logicTable) {
-        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(sqlStatement, logicTable.getSchemaName(), logicTable.getTableName(), IndexCondition.EMPTY);
+        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(sqlStatement, logicTable.getSchemaName(), logicTable.getTableName());
         optimizationContext.saveAlways();
         return mycatUpdateRel;
     }
@@ -407,25 +407,18 @@ public class DrdsSqlCompiler {
         if (input instanceof LogicalProject) {
             input = ((LogicalProject) input).getInput();
         }
+        RexNode condition;
         if (input instanceof Filter && ((Filter) input).getInput() instanceof LogicalTableScan) {
             RelDataType rowType = input.getRowType();
-            RexNode condition = ((Filter) input).getCondition();
-            PredicateAnalyzer predicateAnalyzer = new PredicateAnalyzer((ShardingTable) mycatTable.getTable(), input);
-            IndexCondition indexCondition = predicateAnalyzer.translateMatch(condition);
-            MycatUpdateRel mycatUpdateRel = MycatUpdateRel.create(
-                    drdsSql.getParameterizedStatement(),
-                    mycatTable.getTable().getSchemaName(),
-                    mycatTable.getTable().getTableName(),
-                    indexCondition);
-            optimizationContext.saveParameterized();
-            return mycatUpdateRel;
+             condition = ((Filter) input).getCondition();
+        }else {
+            condition = MycatCalciteSupport.RexBuilder.makeLiteral(true);
         }
         MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(
                 drdsSql.getParameterizedStatement(),
                 mycatTable.getTable().getSchemaName(),
                 mycatTable.getTable().getTableName(),
-                false,
-                IndexCondition.EMPTY);
+                condition);
         optimizationContext.saveAlways();
         return mycatUpdateRel;
     }
