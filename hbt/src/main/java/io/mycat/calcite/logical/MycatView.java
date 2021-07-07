@@ -25,11 +25,11 @@ import io.mycat.calcite.*;
 import io.mycat.calcite.localrel.ToLocalConverter;
 import io.mycat.calcite.physical.MycatMergeSort;
 import io.mycat.calcite.rewriter.Distribution;
-import io.mycat.calcite.table.GlobalTable;
-import io.mycat.calcite.table.MycatLogicTable;
-import io.mycat.calcite.table.MycatPhysicalTable;
-import io.mycat.calcite.table.ShardingTable;
+import io.mycat.calcite.rewriter.IndexCondition;
+import io.mycat.calcite.rewriter.PredicateAnalyzer;
+import io.mycat.calcite.table.*;
 import io.mycat.config.ServerConfig;
+import io.mycat.querycondition.QueryType;
 import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
@@ -42,13 +42,13 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.*;
-import org.apache.calcite.plan.*;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.*;
-import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.Sort;
-import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.*;
@@ -57,6 +57,7 @@ import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.util.SqlString;
+import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.RxBuiltInMethodImpl;
@@ -73,7 +74,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     final RelNode relNode;
     final Distribution distribution;
     final RexNode condition;
-
+    IndexCondition indexCondition = null;
 
     public MycatView(RelTraitSet relTrait, RelNode input, Distribution dataNode) {
         this(relTrait, input, dataNode, null);
@@ -88,13 +89,13 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         this.distribution = Objects.requireNonNull(dataNode);
         this.condition = conditions;
         this.rowType = input.getRowType();
-        if (input instanceof MycatRel) {
-            input = input.accept(new ToLocalConverter());
-        }
+//        if (input instanceof MycatRel) {
+//            input = input.accept(new ToLocalConverter());
+//        }
         ToLocalConverter toLocalConverter = new ToLocalConverter();
         input = input.accept(toLocalConverter);
-        if (input instanceof Project){
-            Project project = (Project)input ;
+        if (input instanceof Project) {
+            Project project = (Project) input;
             if (RexUtil.isIdentity(project.getProjects(), project.getInput().getRowType())) {
                 input = project.getInput();//ProjectRemoveRule
             }
@@ -102,6 +103,93 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         this.relNode = input;
     }
 
+    public static IndexMapping project(ShardingIndexTable shardingIndexTable, int[] projects) {
+        ImmutableList.Builder<Integer> restColumnList = ImmutableList.builder();
+        ImmutableList.Builder<Integer> indexColumnList = ImmutableList.builder();
+        for (int i = 0; i < projects.length; i++) {
+            int project = projects[i];
+            if (shardingIndexTable.hasFactColumn(project)) {
+                indexColumnList.add(shardingIndexTable.mappingIndexTableIndex(i));
+            } else {
+                restColumnList.add(project);
+            }
+        }
+        return new IndexMapping(indexColumnList.build(), restColumnList.build());
+    }
+
+    public List<RelNode> produceIndexViews(RelBuilder relBuilder) {
+        RelNode relNode = getRelNode();
+        if( relNode instanceof TableScan){
+           return produceIndexViews(relBuilder, ((TableScan) relNode).identity().toIntArray());
+        }
+        if( relNode instanceof Filter){
+            RelNode node = ((Filter) relNode).getInput();
+            if( node instanceof TableScan){
+                return produceIndexViews(relBuilder, ((TableScan) node).identity().toIntArray());
+            }
+        }
+        return Collections.emptyList();
+    }
+
+    public List<RelNode> produceIndexViews(RelBuilder relBuilder, int[] projects) {
+        List<ShardingTable> shardingTables = distribution.getShardingTables();
+        if (shardingTables == null || shardingTables.isEmpty()) {
+            return Collections.emptyList();
+        }
+        ShardingTable shardingTable = shardingTables.get(0);
+        List<ShardingIndexTable> indexTables = (List) shardingTable.getIndexTables();
+        if (indexTables.isEmpty()) return Collections.emptyList();
+        String[] shardingKeys = shardingTable.getLogicTable().getShardingKeys().toArray(new String[]{});
+        ArrayList<RelNode> tableArrayList = new ArrayList<>(indexTables.size());
+        for (ShardingIndexTable indexTable : indexTables) {
+            IndexMapping indexMapping = project(indexTable, projects);
+            ImmutableList<Integer> factColumns = indexMapping.getFactColumns();
+            boolean indexOnlyScan = factColumns.isEmpty();
+            RelNode orginalRelNode = getRelNode();
+            RelNode primaryTableScan = relBuilder.scan(shardingTable.getSchemaName(), shardingTable.getTableName()).build();
+            RelNode accept = orginalRelNode.accept(new RelShuttleImpl() {
+                @Override
+                public RelNode visit(TableScan scan) {
+                    RelNode indexTableScan = relBuilder.scan(indexTable.getSchemaName(), indexTable.getTableName()).build();
+                    if (indexOnlyScan) {
+                        return indexTableScan;
+                    } else {
+                        return relBuilder.push(indexTableScan)
+                                .push((RelOptUtil.createProject(primaryTableScan, factColumns)))//依赖TableLookupJoin优化
+                                .join(JoinRelType.INNER, shardingKeys).build();
+                    }
+                }
+            });
+            tableArrayList.add(accept);
+        }
+        return (List) tableArrayList;
+    }
+
+    public Optional<IndexCondition> getPredicateIndexCondition() {
+        if (indexCondition != null) {
+            return Optional.of(indexCondition);
+        }
+        if (this.distribution.getShardingTables().isEmpty() || condition == null) {
+            return Optional.empty();
+        }
+        ShardingTable shardingTable = this.distribution.getShardingTables().get(0);
+        PredicateAnalyzer predicateAnalyzer = new PredicateAnalyzer(shardingTable.keyMetas(), shardingTable.getLogicTable().getFieldNames());
+        Map<QueryType, List<IndexCondition>> queryTypeListMap = predicateAnalyzer.translateMatch(condition);
+        Collection<List<IndexCondition>> values = queryTypeListMap.values();
+        if(values.isEmpty()){
+            return Optional.empty();
+        }
+        return values.stream().flatMap(i->i.stream()).findFirst();
+    }
+
+    public boolean isBetter(MycatView otherView) {
+        Optional<IndexCondition> leftPredicateIndexCondition = getPredicateIndexCondition();
+        Optional<IndexCondition> rightPredicateIndexCondition = otherView.getPredicateIndexCondition();
+        if (leftPredicateIndexCondition.isPresent() && rightPredicateIndexCondition.isPresent()) {
+            return leftPredicateIndexCondition.get().compareTo(rightPredicateIndexCondition.get()) > 0;
+        }
+        return false;
+    }
 
     public static MycatView ofCondition(RelNode input,
                                         Distribution dataNodeInfo,
@@ -132,6 +220,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             }
             return super.visitChildren(rel);
         }
+
     }
 
 
@@ -152,7 +241,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         return MycatCalciteSupport.INSTANCE.convertToSqlTemplate(relNode, dialect, update);
     }
 
-    public  ImmutableMultimap<String, SqlString> apply(
+    public ImmutableMultimap<String, SqlString> apply(
             SqlNode sqlTemplateArg,
             List<PartitionGroup> dataNodes, List<Object> params) {
         SqlNode sqlTemplate = sqlTemplateArg;
@@ -195,7 +284,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                 List<Integer> list = new ArrayList<>();
                 for (Map<String, Partition> each : eachList) {
                     string = MycatCalciteSupport.toSqlString(MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params,
-                           new PartitionGroup(targetName,each)), dialect);
+                            new PartitionGroup(targetName, each)), dialect);
                     if (string.getDynamicParameters() != null) {
                         list.addAll(string.getDynamicParameters());
                     }
@@ -254,7 +343,14 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        return planner.getCost(relNode, mq);
+        Optional<IndexCondition> conditionOptional = getPredicateIndexCondition();
+        RelOptCost plannerCost = planner.getCost(relNode, mq);
+        double factor = 1;
+        if (conditionOptional.isPresent()) {
+            IndexCondition indexCondition = conditionOptional.get();
+            factor = indexCondition.getQueryType().factor();
+        }
+        return plannerCost.multiplyBy(factor);
     }
 
     private RelNode applyDataNode(Map<String, Partition> map, RelNode relNode) {

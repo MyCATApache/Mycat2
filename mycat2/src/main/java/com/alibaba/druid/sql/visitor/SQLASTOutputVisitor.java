@@ -6130,6 +6130,13 @@ public class SQLASTOutputVisitor extends SQLASTVisitorAdapter implements Paramet
             tablePartitionBy.accept(this);
         }
 
+
+        SQLExpr dbPartitions = x.getDbPartitions();
+        if (dbPartitions != null) {
+            print0(ucase ? " DBPARTITIONS " : " dbpartitions ");
+            dbPartitions.accept(this);
+        }
+
         SQLExpr tablePartitions = x.getTbPartitions();
         if (tablePartitions != null) {
             print0(ucase ? " TBPARTITIONS " : " tbpartitions ");

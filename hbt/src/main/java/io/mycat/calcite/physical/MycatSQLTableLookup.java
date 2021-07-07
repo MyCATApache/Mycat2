@@ -1,56 +1,47 @@
 package io.mycat.calcite.physical;
 
-import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
-import groovy.sql.Sql;
-import hu.akarnokd.rxjava3.operators.Observables;
 import io.mycat.AsyncMycatDataContextImpl;
 import io.mycat.DrdsSqlWithParams;
 import io.mycat.beans.mycat.CopyMycatRowMetaData;
-import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.*;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.calcite.rewriter.Distribution;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
 import lombok.Getter;
 import org.apache.calcite.adapter.enumerable.*;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.function.EqualityComparer;
-import org.apache.calcite.linq4j.function.Function1;
-import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.tree.*;
-import org.apache.calcite.plan.*;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.rex.*;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexShuttle;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.sql.*;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.BuiltInMethod;
-import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.RxBuiltInMethodImpl;
 import org.apache.calcite.util.Util;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
-import java.util.*;
-import java.util.function.Function;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.mycat.calcite.MycatImplementor.MYCAT_SQL_LOOKUP_IN;
@@ -91,6 +82,17 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
 
     public MycatSQLTableLookup changeTo(RelNode input) {
         return new MycatSQLTableLookup(getCluster(), input.getTraitSet(), input, right, joinType, condition, correlationIds, type);
+    }
+
+    public static MycatSQLTableLookup create(RelOptCluster cluster,
+                                             RelTraitSet traits,
+                                             RelNode input,
+                                             MycatView right,
+                                             JoinRelType joinType,
+                                             RexNode condition,
+                                             List<CorrelationId> correlationIds,
+                                             Type type){
+        return new MycatSQLTableLookup(cluster,traits,input,right,joinType,condition,correlationIds,type);
     }
 
     public MycatSQLTableLookup(RelOptCluster cluster,
