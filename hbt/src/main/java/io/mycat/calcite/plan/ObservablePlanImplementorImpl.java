@@ -15,6 +15,8 @@
 package io.mycat.calcite.plan;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
+import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
+import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import io.mycat.AsyncMycatDataContextImpl;
 import io.mycat.DrdsSqlWithParams;
 import io.mycat.MycatDataContext;
@@ -23,9 +25,12 @@ import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.api.collector.MysqlRow;
 import io.mycat.calcite.CodeExecuterContext;
+import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.physical.MycatInsertRel;
+import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.vertx.VertxExecuter;
+import io.mycat.vertx.VertxUpdateExecuter;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -36,6 +41,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -55,22 +61,23 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
     }
 
     @Override
-    public Future<Void> executeUpdate(Plan mycatUpdateRel) {
-        Future<long[]> future = VertxExecuter.runMycatUpdateRel(xaSqlConnection, context, mycatUpdateRel.getUpdatePhysical(), drdsSqlWithParams.getParams());
+    public Future<Void> executeUpdate(Plan plan) {
+        MycatUpdateRel mycatRel = (MycatUpdateRel)plan.getMycatRel();
+        Collection<VertxExecuter.EachSQL> eachSQLS = VertxUpdateExecuter.explainUpdate(drdsSqlWithParams, context);
+        Future<long[]> future = VertxExecuter.simpleUpdate(context, true, mycatRel.isGlobal(), eachSQLS);
         return future.eventually(u -> context.getTransactionSession().closeStatementState())
                 .flatMap(result -> response.sendOk(result[0], result[1]));
     }
 
     @Override
     public Future<Void> executeInsert(Plan logical) {
-        Future<long[]> future = innerExecuteInsert(logical.getInsertPhysical());
+        MycatInsertRel mycatRel = (MycatInsertRel)logical.getMycatRel();
+        Iterable<VertxExecuter.EachSQL> eachSQLS = VertxExecuter.explainInsert((SQLInsertStatement) mycatRel.getSqlStatement(), drdsSqlWithParams.getParams());
+        Future<long[]> future = VertxExecuter.simpleUpdate(context, true, mycatRel.isGlobal(), eachSQLS);
         return future.eventually(u -> context.getTransactionSession().closeStatementState())
                 .flatMap(result -> response.sendOk(result[0], result[1]));
     }
 
-    public Future<long[]> innerExecuteInsert(MycatInsertRel logical) {
-        return VertxExecuter.runMycatInsertRel(xaSqlConnection, context, logical, drdsSqlWithParams.getParams());
-    }
 
     @Override
     public Future<Void> executeQuery(Plan plan) {

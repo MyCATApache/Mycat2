@@ -832,8 +832,8 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 SQLInsertStatement statement = iterator.next();
                 DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(statement, dataContext.getDefaultSchema());
                 Plan plan = UpdateSQLHandler.getPlan(drdsSql);
-                future=  future.flatMap((l) -> VertxExecuter.runMycatInsertRel(transactionSession, dataContext,
-                    ( plan.getInsertPhysical()), drdsSql.getParams()));
+//                future=  future.flatMap((l) -> VertxExecuter.runMycatInsertRel(transactionSession, dataContext,
+//                    ( plan.getInsertPhysical()), drdsSql.getParams()));
             }
             return VertxUtil.castPromise(future.flatMap(l -> response.sendOk(l[0], l[1])));
         }

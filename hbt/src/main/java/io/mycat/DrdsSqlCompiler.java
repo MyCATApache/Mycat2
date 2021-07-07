@@ -175,7 +175,9 @@ public class DrdsSqlCompiler {
             TableHandler logicTable = Objects.requireNonNull(metadataManager.getTable(schemaName, tableName));
             switch (logicTable.getType()) {
                 case SHARDING:
-                    return compileInsert((ShardingTable) logicTable, drdsSql, optimizationContext);
+                    MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(sqlStatement,false);
+                    optimizationContext.saveAlways();
+                    return mycatUpdateRel;
                 case GLOBAL:
                     return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTable) logicTable);
                 case NORMAL:
@@ -241,90 +243,30 @@ public class DrdsSqlCompiler {
 
     @NotNull
     private MycatRel complieGlobalUpdate(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, GlobalTable logicTable) {
-        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(sqlStatement, logicTable.getSchemaName(), logicTable.getTableName(), IndexCondition.EMPTY);
+        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(sqlStatement,true);
         optimizationContext.saveAlways();
         return mycatUpdateRel;
     }
 
     @NotNull
     private MycatRel complieNormalUpdate(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, NormalTable logicTable) {
-        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(sqlStatement, logicTable.getSchemaName(), logicTable.getTableName(), IndexCondition.EMPTY);
+        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(sqlStatement);
         optimizationContext.saveAlways();
         return mycatUpdateRel;
     }
 
     private MycatRel compileDelete(TableHandler logicTable, OptimizationContext optimizationContext, DrdsSql drdsSql, SchemaPlus plus) {
-        return compileQuery(optimizationContext, plus, drdsSql);
+        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(drdsSql.getParameterizedStatement());
+        optimizationContext.saveAlways();
+        return mycatUpdateRel;
     }
 
     private MycatRel compileUpdate(TableHandler logicTable, OptimizationContext optimizationContext, DrdsSql drdsSql, SchemaPlus plus) {
-        return compileQuery(optimizationContext, plus, drdsSql);
+        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(drdsSql.getParameterizedStatement());
+        optimizationContext.saveAlways();
+        return mycatUpdateRel;
     }
 
-    private MycatRel compileInsert(ShardingTableHandler logicTable,
-                                   DrdsSql drdsSql,
-                                   OptimizationContext optimizationContext) {
-        MySqlInsertStatement mySqlInsertStatement = drdsSql.getParameterizedStatement();
-        List<SQLIdentifierExpr> columnsTmp = (List) mySqlInsertStatement.getColumns();
-        boolean autoIncrement = logicTable.isAutoIncrement();
-        int autoIncrementIndexTmp = -1;
-        ArrayList<Integer> shardingKeys = new ArrayList<>();
-        CustomRuleFunction function = logicTable.function();
-        List<SimpleColumnInfo> metaColumns;
-        if (columnsTmp.isEmpty()) {//fill columns
-            int index = 0;
-            for (SimpleColumnInfo column : metaColumns = logicTable.getColumns()) {
-                if (autoIncrement && logicTable.getAutoIncrementColumn() == column) {
-                    autoIncrementIndexTmp = index;
-                }
-                if (function.isShardingKey(column.getColumnName())) {
-                    shardingKeys.add(index);
-                }
-                mySqlInsertStatement.addColumn(new SQLIdentifierExpr(column.getColumnName()));
-                index++;
-            }
-        } else {
-            int index = 0;
-            metaColumns = new ArrayList<>();
-            for (SQLIdentifierExpr column : columnsTmp) {
-                SimpleColumnInfo simpleColumnInfo = logicTable.getColumnByName(SQLUtils.normalize(column.getName()));
-                metaColumns.add(simpleColumnInfo);
-                if (autoIncrement && logicTable.getAutoIncrementColumn() == simpleColumnInfo) {
-                    autoIncrementIndexTmp = index;
-                }
-                if (function.isShardingKey(simpleColumnInfo.getColumnName())) {
-                    shardingKeys.add(index);
-                }
-                index++;
-            }
-            if (autoIncrement && autoIncrementIndexTmp == -1) {
-                SimpleColumnInfo autoIncrementColumn = logicTable.getAutoIncrementColumn();
-                if (function.isShardingKey(autoIncrementColumn.getColumnName())) {
-                    shardingKeys.add(index);
-                }
-                metaColumns.add(autoIncrementColumn);
-                mySqlInsertStatement.addColumn(new SQLIdentifierExpr(autoIncrementColumn.getColumnName()));
-                class CountIndex extends MySqlASTVisitorAdapter {
-                    int currentIndex = -1;
-
-                    @Override
-                    public void endVisit(SQLVariantRefExpr x) {
-                        currentIndex = Math.max(x.getIndex(), currentIndex);
-                        super.endVisit(x);
-                    }
-                }
-                CountIndex countIndex = new CountIndex();
-                mySqlInsertStatement.accept(countIndex);
-            }
-        }
-        final int finalAutoIncrementIndex = autoIncrementIndexTmp;
-        MycatInsertRel mycatInsertRel = MycatInsertRel.create(finalAutoIncrementIndex,
-                shardingKeys,
-                mySqlInsertStatement.toString(),
-                logicTable.getSchemaName(), logicTable.getTableName());
-        optimizationContext.saveParameterized();
-        return mycatInsertRel;
-    }
 
     public MycatRel compileQuery(
             OptimizationContext optimizationContext,
@@ -338,16 +280,16 @@ public class DrdsSqlCompiler {
             optimizationContext.relNodeContext = relNodeContext;
         }
 
-        if (logPlan instanceof TableModify) {
-            LogicalTableModify tableModify = (LogicalTableModify) logPlan;
-            switch (tableModify.getOperation()) {
-                case DELETE:
-                case UPDATE:
-                    return planUpdate(tableModify, drdsSql, optimizationContext);
-                default:
-                    throw new UnsupportedOperationException("unsupported DML operation " + tableModify.getOperation());
-            }
-        }
+//        if (logPlan instanceof TableModify) {
+//            LogicalTableModify tableModify = (LogicalTableModify) logPlan;
+//            switch (tableModify.getOperation()) {
+//                case DELETE:
+//                case UPDATE:
+//                    return planUpdate(tableModify, drdsSql, optimizationContext);
+//                default:
+//                    throw new UnsupportedOperationException("unsupported DML operation " + tableModify.getOperation());
+//            }
+//        }
         RelDataType finalRowType = logPlan.getRowType();
         RelNode rboLogPlan = optimizeWithRBO(logPlan);
 //        if (!RelOptUtil.areRowTypesEqual(rboLogPlan.getRowType(), logPlan.getRowType(), true)) {
@@ -400,35 +342,28 @@ public class DrdsSqlCompiler {
         return new RelNodeContext(root.withRel(newRelNode), sqlToRelConverter, validator, relBuilder, catalogReader, parameterRowType);
     }
 
-    private MycatRel planUpdate(LogicalTableModify tableModify,
-                                DrdsSql drdsSql, OptimizationContext optimizationContext) {
-        MycatLogicTable mycatTable = (MycatLogicTable) tableModify.getTable().unwrap(AbstractMycatTable.class);
-        RelNode input = tableModify.getInput();
-        if (input instanceof LogicalProject) {
-            input = ((LogicalProject) input).getInput();
-        }
-        if (input instanceof Filter && ((Filter) input).getInput() instanceof LogicalTableScan) {
-            RelDataType rowType = input.getRowType();
-            RexNode condition = ((Filter) input).getCondition();
-            PredicateAnalyzer predicateAnalyzer = new PredicateAnalyzer((ShardingTable) mycatTable.getTable(), input);
-            IndexCondition indexCondition = predicateAnalyzer.translateMatch(condition);
-            MycatUpdateRel mycatUpdateRel = MycatUpdateRel.create(
-                    drdsSql.getParameterizedStatement(),
-                    mycatTable.getTable().getSchemaName(),
-                    mycatTable.getTable().getTableName(),
-                    indexCondition);
-            optimizationContext.saveParameterized();
-            return mycatUpdateRel;
-        }
-        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(
-                drdsSql.getParameterizedStatement(),
-                mycatTable.getTable().getSchemaName(),
-                mycatTable.getTable().getTableName(),
-                false,
-                IndexCondition.EMPTY);
-        optimizationContext.saveAlways();
-        return mycatUpdateRel;
-    }
+//    private MycatRel planUpdate(LogicalTableModify tableModify,
+//                                DrdsSql drdsSql, OptimizationContext optimizationContext) {
+//        MycatLogicTable mycatTable = (MycatLogicTable) tableModify.getTable().unwrap(AbstractMycatTable.class);
+//        RelNode input = tableModify.getInput();
+//        if (input instanceof LogicalProject) {
+//            input = ((LogicalProject) input).getInput();
+//        }
+//        RexNode condition;
+//        if (input instanceof Filter && ((Filter) input).getInput() instanceof LogicalTableScan) {
+//            RelDataType rowType = input.getRowType();
+//             condition = ((Filter) input).getCondition();
+//        }else {
+//            condition = MycatCalciteSupport.RexBuilder.makeLiteral(true);
+//        }
+//        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(
+//                drdsSql.getParameterizedStatement(),
+//                mycatTable.getTable().getSchemaName(),
+//                mycatTable.getTable().getTableName(),
+//                condition);
+//        optimizationContext.saveAlways();
+//        return mycatUpdateRel;
+//    }
 
 
     public MycatRel optimizeWithCBO(RelNode logPlan, Collection<RelOptRule> relOptRules) {

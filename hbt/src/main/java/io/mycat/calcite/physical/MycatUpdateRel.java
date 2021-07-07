@@ -15,6 +15,7 @@
 package io.mycat.calcite.physical;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import io.mycat.DrdsSqlCompiler;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.MycatConvention;
@@ -26,66 +27,37 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 
 @Getter
 public class MycatUpdateRel extends AbstractRelNode implements MycatRel {
-    private final MycatRouteUpdateCore mycatRouteUpdateCore;
     private static RelOptCluster cluster = DrdsSqlCompiler.newCluster();
     private static final RelDataType dmlRowType = RelOptUtil.createDmlRowType(SqlKind.INSERT, cluster.getTypeFactory());
-
-    public MycatUpdateRel(SQLStatement sqlStatement, String schemaName, String tableName, IndexCondition conditions) {
-        this(new MycatRouteUpdateCore(sqlStatement, schemaName, tableName, false, conditions));
+    private final SQLStatement sqlStatement;
+    private boolean global;
+    public MycatUpdateRel(SQLStatement sqlStatement) {
+       this(sqlStatement,false);
     }
 
-    public MycatUpdateRel(SQLStatement sqlStatement, String schemaName, String tableName, boolean global, IndexCondition conditions) {
-        this(new MycatRouteUpdateCore(sqlStatement, schemaName, tableName, global, conditions));
-    }
-
-    public MycatUpdateRel(MycatRouteUpdateCore mycatRouteUpdateCore) {
-        super(cluster, cluster.traitSetOf(MycatConvention.INSTANCE));
-        this.mycatRouteUpdateCore = mycatRouteUpdateCore;
-        this.rowType = dmlRowType;
-    }
-
-    public static MycatUpdateRel create(SQLStatement sqlStatement, String schemaName, String tableName,IndexCondition conditions) {
-        return new MycatUpdateRel(new MycatRouteUpdateCore(sqlStatement, schemaName, tableName, false, conditions));
-    }
-    public static MycatUpdateRel create(SQLStatement sqlStatement, String schemaName, String tableName, boolean global, IndexCondition conditions) {
-        return new MycatUpdateRel(new MycatRouteUpdateCore(sqlStatement, schemaName, tableName, global, conditions));
-    }
-
-    public static MycatUpdateRel create(MycatRouteUpdateCore mycatRouteUpdateCore) {
-        return new MycatUpdateRel(mycatRouteUpdateCore);
+    public MycatUpdateRel(SQLStatement sqlStatement,boolean global) {
+        super(cluster,cluster.traitSet());
+        this.sqlStatement = sqlStatement;
+        this.global = global;
     }
 
     @Override
     public ExplainWriter explain(ExplainWriter writer) {
-        return mycatRouteUpdateCore.explain(writer);
+        return null;
     }
 
     @Override
     public RelWriter explainTerms(RelWriter pw) {
-        return mycatRouteUpdateCore.explainTerms(pw);
-    }
-
-    public boolean isGlobal() {
-        return mycatRouteUpdateCore.isGlobal();
+        pw.item("sql",sqlStatement.toString());
+        return pw;
     }
 
     public SQLStatement getSqlStatement() {
-        return mycatRouteUpdateCore.getSqlStatement();
-    }
-
-    public String getSchemaName() {
-        return mycatRouteUpdateCore.getSchemaName();
-    }
-
-    public String getTableName() {
-        return mycatRouteUpdateCore.getTableName();
-    }
-
-    public IndexCondition getConditions() {
-        return mycatRouteUpdateCore.getConditions();
+        return sqlStatement;
     }
 }

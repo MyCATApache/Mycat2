@@ -13,6 +13,7 @@ import io.mycat.calcite.table.NormalTableHandler;
 import io.mycat.router.ShardingTableHandler;
 import lombok.Data;
 import org.apache.calcite.rel.RelWriter;
+import org.apache.calcite.rex.RexNode;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
@@ -25,10 +26,10 @@ public class MycatRouteUpdateCore implements Serializable {
     final String schemaName;
     final String tableName;
     final boolean global;
-    final IndexCondition conditions;
+    final RexNode conditions;
     final String sql;
 
-    public MycatRouteUpdateCore(SQLStatement sqlStatement, String schemaName, String tableName, boolean global, IndexCondition conditions) {
+    public MycatRouteUpdateCore(SQLStatement sqlStatement, String schemaName, String tableName, boolean global, RexNode conditions) {
         this.sqlStatement = sqlStatement;
         this.schemaName = schemaName;
         this.tableName = tableName;

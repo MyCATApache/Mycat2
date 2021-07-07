@@ -20,8 +20,6 @@ import io.mycat.DrdsSqlWithParams;
 import io.mycat.MycatDataContext;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.*;
-import io.mycat.calcite.executor.MycatInsertExecutor;
-import io.mycat.calcite.executor.MycatUpdateExecutor;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatSQLTableLookup;
@@ -114,16 +112,16 @@ public class PlanImpl implements Plan {
                 }
                 break;
             case UPDATE: {
-                MycatUpdateRel physical = getUpdatePhysical();
-                MycatUpdateExecutor.create(physical, dataContext, drdsSql.getParams())
-                        .explain(explainWriter);
+//                MycatUpdateRel physical = getUpdatePhysical();
+//                MycatUpdateExecutor.create(physical, dataContext, drdsSql.getParams())
+//                        .explain(explainWriter);
 
                 break;
             }
             case INSERT: {
-                MycatInsertRel physical = getInsertPhysical();
-                MycatInsertExecutor.create(dataContext, physical, drdsSql.getParams())
-                        .explain(explainWriter);
+//                MycatInsertRel physical = getInsertPhysical();
+//                MycatInsertExecutor.create(dataContext, physical, drdsSql.getParams())
+//                        .explain(explainWriter);
                 break;
             }
             default:

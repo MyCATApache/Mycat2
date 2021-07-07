@@ -14,12 +14,8 @@ import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 public class PredicateAnalyzer {
@@ -31,6 +27,7 @@ public class PredicateAnalyzer {
     public PredicateAnalyzer(ShardingTable table, RelNode relNode) {
         this(null, table.keyMetas(), relNode.getRowType().getFieldNames());
     }
+
     public PredicateAnalyzer(List<KeyMeta> keyMetas, List<String> fieldNames) {
         this(null, keyMetas, fieldNames);
     }
@@ -41,17 +38,17 @@ public class PredicateAnalyzer {
         this.fieldNames = fieldNames;
     }
 
-    public IndexCondition translateMatch(RexNode condition) {
+    public Map<QueryType, List<IndexCondition>> translateMatch(RexNode condition) {
         // does not support disjunctions
         List<RexNode> disjunctions = RelOptUtil.disjunctions(condition);
         if (disjunctions.size() == 1) {
             return translateAnd(disjunctions.get(0));
         } else {
-            return IndexCondition.EMPTY;
+            return Collections.emptyMap();
         }
     }
 
-    private IndexCondition translateAnd(RexNode condition) {
+    private Map<QueryType, List<IndexCondition>> translateAnd(RexNode condition) {
         // expand calls to SEARCH(..., Sarg()) to >, =, etc.
         final RexNode condition2 =
                 RexUtil.expandSearch(REX_BUILDER, null, condition);
@@ -65,13 +62,29 @@ public class PredicateAnalyzer {
         }
         // a collection of all possible push down conditions, see if it can
         // be pushed down, filter by forcing index name, then sort by comparator
-        Stream<IndexCondition> pushDownConditions = indexConditions.stream()
-                .filter(i->i!=null)
+
+        return indexConditions.stream()
                 .filter(IndexCondition::canPushDown)
                 .filter(indexCondition -> nonForceIndexOrMatchForceIndexName(indexCondition.getName()))
-                .sorted();
-
-        return pushDownConditions.filter(i->i!=null).findFirst().orElse(IndexCondition.EMPTY);
+                .filter(i -> i != null)
+                .sorted(Comparator.comparing(x -> x.getQueryType().priority()))
+                .collect(Collectors.groupingBy(k -> k.getQueryType(),
+                        Collectors.collectingAndThen(Collectors.toList(), indexConditions1 -> {
+                            HashMap<String, IndexCondition> conditionMap = new HashMap<>();
+                            for (IndexCondition newOne : indexConditions1) {
+                                String fieldName = newOne.getIndexColumnName();
+                                IndexCondition oldOne = conditionMap.getOrDefault(fieldName, null);
+                                if (oldOne == null) {
+                                    conditionMap.put(fieldName, newOne);
+                                    continue;
+                                } else {
+                                    if (newOne.getQueryType().compareTo(oldOne.getQueryType()) < 0) {
+                                        conditionMap.put(fieldName, newOne);
+                                    }
+                                }
+                            }
+                            return new ArrayList<>(conditionMap.values());
+                        })));
     }
 
     private IndexCondition findPushDownCondition(List<RexNode> rexNodeList, KeyMeta keyMeta) {
@@ -97,11 +110,11 @@ public class PredicateAnalyzer {
         }
 
         // create result which might have conditions to push down
-        String indexColumnNames = keyMeta.getColumnName();
+        String indexcolumnname = keyMeta.getColumnName();
         List<RexNode> pushDownRexNodeList = new ArrayList<>();
         List<RexNode> remainderRexNodeList = new ArrayList<>(rexNodeList);
         IndexCondition condition =
-                IndexCondition.create(fieldNames, keyMeta.getIndexName(), indexColumnNames);
+                IndexCondition.create(keyMeta.getIndexName(), indexcolumnname);
 
         // handle point query if possible
         condition = handlePointQuery(condition, leftMostKeyNodes,
@@ -128,18 +141,13 @@ public class PredicateAnalyzer {
         if (node.isPresent()) {
             pushDownRexNodeList.add(node.get().node);
             remainderRexNodeList.remove(node.get().node);
-            List<Object> key = createKey(Lists.newArrayList(node.get()));
             ComparisonOperator op = ComparisonOperator.parse(node.get().op);
             if (ComparisonOperator.isLowerBoundOp(opList)) {
                 return condition
-                        .withQueryType(QueryType.PK_RANGE_QUERY)
-                        .withRangeQueryLowerOp(op)
-                        .withRangeQueryLowerKey(key);
+                        .withQueryType(QueryType.PK_RANGE_QUERY);
             } else if (ComparisonOperator.isUpperBoundOp(opList)) {
                 return condition
-                        .withQueryType(QueryType.PK_RANGE_QUERY)
-                        .withRangeQueryUpperOp(op)
-                        .withRangeQueryUpperKey(key);
+                        .withQueryType(QueryType.PK_RANGE_QUERY);
             } else {
                 throw new AssertionError("comparison operation is invalid " + op);
             }
@@ -169,16 +177,14 @@ public class PredicateAnalyzer {
             if (matchNodes.size() != 1) {
                 // "=" operation does not apply on all index columns
                 return condition
-                        .withQueryType(QueryType.PK_POINT_QUERY)
-                        .withPointQueryKey(key);
+                        .withQueryType(QueryType.PK_POINT_QUERY);
             } else {
                 for (InternalRexNode n : matchNodes) {
                     pushDownRexNodeList.add(n.node);
                     remainderRexNodeList.remove(n.node);
                 }
                 return condition
-                        .withQueryType(QueryType.PK_POINT_QUERY)
-                        .withPointQueryKey(key);
+                        .withQueryType(QueryType.PK_POINT_QUERY);
             }
         }
         return condition;
@@ -289,7 +295,7 @@ public class PredicateAnalyzer {
     private Optional<InternalRexNode> translateBinary2(String op, RexNode left,
                                                        RexNode right, KeyMeta keyMeta) {
         RexNode rightLiteral;
-        if (right.isA(SqlKind.LITERAL)|| right.isA(SqlKind.DYNAMIC_PARAM))  {
+        if (right.isA(SqlKind.LITERAL) || right.isA(SqlKind.DYNAMIC_PARAM)) {
             rightLiteral = right;
         } else {
             // because MySQL's TIMESTAMP is mapped to TIMESTAMP_WITH_TIME_ZONE sql type,
