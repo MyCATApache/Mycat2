@@ -166,6 +166,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     }
 
     public Optional<IndexCondition> getPredicateIndexCondition() {
+
         if (indexCondition != null) {
             return Optional.of(indexCondition);
         }
