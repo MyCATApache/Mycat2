@@ -17,6 +17,8 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
+import io.mycat.calcite.MycatRel;
+import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.spm.*;
 import io.mycat.calcite.table.GlobalTable;
@@ -63,6 +65,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -227,7 +230,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     if ("showDataSources".equalsIgnoreCase(cmd)) {
 
                         Optional<JdbcConnectionManager> connectionManager = Optional.ofNullable(jdbcConnectionManager);
-                        Collection<JdbcDataSource> jdbcDataSources =new HashSet<>(connectionManager.map(i -> i.getDatasourceInfo()).map(i -> i.values()).orElse(Collections.emptyList()));
+                        Collection<JdbcDataSource> jdbcDataSources = new HashSet<>(connectionManager.map(i -> i.getDatasourceInfo()).map(i -> i.values()).orElse(Collections.emptyList()));
                         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
 
                         resultSetBuilder.addColumnInfo("NAME", JDBCType.VARCHAR);
@@ -474,19 +477,19 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 .addColumnInfo("PLAN_ID", JDBCType.VARCHAR)
                                 .addColumnInfo("EXTERNALIZED_PLAN", JDBCType.VARCHAR)
                                 .addColumnInfo("FIXED", JDBCType.VARCHAR)
-                                .addColumnInfo("ACCEPTED",JDBCType.VARCHAR);
+                                .addColumnInfo("ACCEPTED", JDBCType.VARCHAR);
                         for (Baseline baseline : queryPlanCache.list()) {
                             for (BaselinePlan baselinePlan : baseline.getPlanList()) {
                                 String BASELINE_ID = String.valueOf(baselinePlan.getBaselineId());
                                 String PARAMETERIZED_SQL = String.valueOf(baselinePlan.getSql());
                                 String PLAN_ID = String.valueOf(baselinePlan.getId());
-                                CodeExecuterContext attach =(CodeExecuterContext)baselinePlan.attach();
-                                String EXTERNALIZED_PLAN = new PlanImpl (attach.getMycatRel(),attach,Collections.emptyList()).dumpPlan();
-                                String FIXED =     Optional.ofNullable(baseline.getFixPlan()).filter(i->i.getId()==baselinePlan.getId())
-                                        .map(u->"true").orElse("false");
+                                CodeExecuterContext attach = (CodeExecuterContext) baselinePlan.attach();
+                                String EXTERNALIZED_PLAN = new PlanImpl(attach.getMycatRel(), attach, Collections.emptyList()).dumpPlan();
+                                String FIXED = Optional.ofNullable(baseline.getFixPlan()).filter(i -> i.getId() == baselinePlan.getId())
+                                        .map(u -> "true").orElse("false");
                                 String ACCEPTED = "true";
 
-                                builder.addObjectRowPayload(Arrays.asList(BASELINE_ID, PARAMETERIZED_SQL, PLAN_ID, EXTERNALIZED_PLAN,FIXED,ACCEPTED));
+                                builder.addObjectRowPayload(Arrays.asList(BASELINE_ID, PARAMETERIZED_SQL, PLAN_ID, EXTERNALIZED_PLAN, FIXED, ACCEPTED));
                             }
                         }
                         return response.sendResultSet(() -> builder.build());
@@ -494,10 +497,10 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     if ("baseline".equalsIgnoreCase(cmd)) {
                         Map<String, Object> map = JsonUtil.from(body, Map.class);
                         String command = Objects.requireNonNull(map.get("command")).toString().toLowerCase();
-                        long value = Long.parseLong((map.getOrDefault("value","0")).toString());
+                        long value = Long.parseLong((map.getOrDefault("value", "0")).toString());
                         QueryPlanCache queryPlanCache = MetaClusterCurrent.wrapper(QueryPlanCache.class);
-                        switch (command){
-                            case "showAllPlans":{
+                        switch (command) {
+                            case "showAllPlans": {
                                 ResultSetBuilder builder = ResultSetBuilder.create();
 
                                 builder.addColumnInfo("BASELINE_ID", JDBCType.VARCHAR)
@@ -505,62 +508,62 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                         .addColumnInfo("PLAN_ID", JDBCType.VARCHAR)
                                         .addColumnInfo("EXTERNALIZED_PLAN", JDBCType.VARCHAR)
                                         .addColumnInfo("FIXED", JDBCType.VARCHAR)
-                                        .addColumnInfo("ACCEPTED",JDBCType.VARCHAR);
+                                        .addColumnInfo("ACCEPTED", JDBCType.VARCHAR);
                                 for (Baseline baseline : queryPlanCache.list()) {
                                     for (BaselinePlan baselinePlan : baseline.getPlanList()) {
                                         String BASELINE_ID = String.valueOf(baselinePlan.getBaselineId());
                                         String PARAMETERIZED_SQL = String.valueOf(baselinePlan.getSql());
                                         String PLAN_ID = String.valueOf(baselinePlan.getId());
-                                        CodeExecuterContext attach =(CodeExecuterContext)baselinePlan.attach();
-                                        String EXTERNALIZED_PLAN = new PlanImpl (attach.getMycatRel(),attach,Collections.emptyList()).dumpPlan();
-                                        String FIXED =     Optional.ofNullable(baseline.getFixPlan()).filter(i->i.getId()==baselinePlan.getId())
-                                                .map(u->"true").orElse("false");
+                                        CodeExecuterContext attach = (CodeExecuterContext) baselinePlan.attach();
+                                        String EXTERNALIZED_PLAN = new PlanImpl(attach.getMycatRel(), attach, Collections.emptyList()).dumpPlan();
+                                        String FIXED = Optional.ofNullable(baseline.getFixPlan()).filter(i -> i.getId() == baselinePlan.getId())
+                                                .map(u -> "true").orElse("false");
                                         String ACCEPTED = "true";
 
-                                        builder.addObjectRowPayload(Arrays.asList(BASELINE_ID, PARAMETERIZED_SQL, PLAN_ID, EXTERNALIZED_PLAN,FIXED,ACCEPTED));
+                                        builder.addObjectRowPayload(Arrays.asList(BASELINE_ID, PARAMETERIZED_SQL, PLAN_ID, EXTERNALIZED_PLAN, FIXED, ACCEPTED));
                                     }
                                 }
                                 return response.sendResultSet(() -> builder.build());
                             }
-                            case "persistAllBaselines":{
+                            case "persistAllBaselines": {
                                 queryPlanCache.saveBaselines();
                                 return response.sendOk();
                             }
-                            case "loadBaseline":{
+                            case "loadBaseline": {
                                 queryPlanCache.loadBaseline(value);
                                 return response.sendOk();
                             }
-                            case "loadPlan":{
+                            case "loadPlan": {
                                 queryPlanCache.loadPlan(value);
                                 return response.sendOk();
                             }
-                            case "persistPlan":{
+                            case "persistPlan": {
                                 queryPlanCache.persistPlan(value);
                                 return response.sendOk();
                             }
-                            case "clearBaseline":{
+                            case "clearBaseline": {
                                 queryPlanCache.clearBaseline(value);
                                 return response.sendOk();
                             }
-                            case "clearPlan":{
+                            case "clearPlan": {
                                 queryPlanCache.clearPlan(value);
                                 return response.sendOk();
                             }
-                            case "deleteBaseline":{
+                            case "deleteBaseline": {
                                 queryPlanCache.deleteBaseline(value);
                                 return response.sendOk();
                             }
-                            case "deletePlan":{
+                            case "deletePlan": {
                                 queryPlanCache.deletePlan(value);
                                 return response.sendOk();
                             }
                             case "add":
-                            case "fix":{
+                            case "fix": {
                                 SQLStatement sqlStatement = null;
                                 if (ast.getHintStatements() != null && ast.getHintStatements().size() == 1) {
                                     sqlStatement = ast.getHintStatements().get(0);
                                     DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlStatement, dataContext.getDefaultSchema());
-                                    queryPlanCache.add("fix".equalsIgnoreCase(command),drdsSqlWithParams);
+                                    queryPlanCache.add("fix".equalsIgnoreCase(command), drdsSqlWithParams);
                                 }
                                 return response.sendOk();
                             }
@@ -832,8 +835,14 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 SQLInsertStatement statement = iterator.next();
                 DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(statement, dataContext.getDefaultSchema());
                 Plan plan = UpdateSQLHandler.getPlan(drdsSql);
-//                future=  future.flatMap((l) -> VertxExecuter.runMycatInsertRel(transactionSession, dataContext,
-//                    ( plan.getInsertPhysical()), drdsSql.getParams()));
+                future = future.flatMap(new Function<long[], Future<long[]>>() {
+                    @Override
+                    public Future<long[]> apply(long[] longs) {
+                        MycatInsertRel mycatRel = (MycatInsertRel) plan.getMycatRel();
+                        Iterable<VertxExecuter.EachSQL> eachSQLS = VertxExecuter.explainInsert((SQLInsertStatement) mycatRel.getSqlStatement(), drdsSql.getParams());
+                        return VertxExecuter.simpleUpdate(dataContext, true, mycatRel.isGlobal(), eachSQLS);
+                    }
+                });
             }
             return VertxUtil.castPromise(future.flatMap(l -> response.sendOk(l[0], l[1])));
         }

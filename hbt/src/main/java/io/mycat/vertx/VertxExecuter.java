@@ -44,6 +44,7 @@ import io.mycat.calcite.rewriter.ValuePredicateAnalyzer;
 import io.mycat.calcite.spm.MemPlanCache;
 import io.mycat.calcite.spm.ParamHolder;
 import io.mycat.calcite.spm.QueryPlanCache;
+import io.mycat.calcite.spm.QueryPlanner;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
@@ -52,6 +53,7 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.sqlclient.*;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.calcite.linq4j.Enumerable;
@@ -96,7 +98,7 @@ public class VertxExecuter {
             public Future<long[]> apply(Void unused) {
                 XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
                 ConcurrentHashMap<String, Future<SqlConnection>> map = new ConcurrentHashMap<>();
-                final AtomicBoolean firstRequest = new AtomicBoolean();
+                final AtomicBoolean firstRequest = new AtomicBoolean(true);
                 for (EachSQL eachSQL : eachSQLs) {
 
                     String target = context.resolveDatasourceTargetName(eachSQL.getTarget(), true);
@@ -113,7 +115,6 @@ public class VertxExecuter {
                                 sum[1] = Math.max(sum[1], longs2[1]);
                             }
                         } else if (firstRequest.compareAndSet(true, false)) {
-                            firstRequest.set(true);
                             sum[0] = longs2[0];
                             sum[1] = longs2[1];
                         }
@@ -134,6 +135,7 @@ public class VertxExecuter {
 
 
     @Getter
+    @EqualsAndHashCode
     public static class EachSQL {
         String target;
         String sql;
@@ -193,8 +195,8 @@ public class VertxExecuter {
 
                 DrdsSqlWithParams queryDrdsSqlWithParams = DrdsRunnerHelper.preParse(sqlSelectStatement, null);
 
-                QueryPlanCache planCache = MetaClusterCurrent.wrapper(MemPlanCache.class);
-                List<CodeExecuterContext> acceptedMycatRelList = planCache.getAcceptedMycatRelList(drdsSqlWithParams);
+                QueryPlanner planCache = MetaClusterCurrent.wrapper(QueryPlanner.class);
+                List<CodeExecuterContext> acceptedMycatRelList = planCache.getAcceptedMycatRelList(queryDrdsSqlWithParams);
                 CodeExecuterContext codeExecuterContext = acceptedMycatRelList.get(0);
                 MycatView mycatRel = (MycatView) codeExecuterContext.getMycatRel();
                 List<PartitionGroup> sqlMap = AsyncMycatDataContextImpl.getSqlMap(Collections.emptyMap(), mycatRel, queryDrdsSqlWithParams, drdsSqlWithParams.getHintDataNodeFilter());
@@ -272,7 +274,7 @@ public class VertxExecuter {
                         }
                     }
                     return res;
-                }finally {
+                } finally {
                     context.getTransactionSession().closeStatementState().toCompletionStage().toCompletableFuture().get(1, TimeUnit.SECONDS);
                 }
             }
@@ -308,7 +310,7 @@ public class VertxExecuter {
 
 
     @SneakyThrows
-    public static Iterable<EachSQL> explainInsert(SQLInsertStatement statement, List<Object> params) {
+    public static Iterable<EachSQL> explainInsert(SQLInsertStatement statement, List<Object> paramArg) {
         statement = statement.clone();
 
         SQLInsertStatement template = statement.clone();
@@ -325,39 +327,21 @@ public class VertxExecuter {
         SimpleColumnInfo autoIncrementColumn = table.getAutoIncrementColumn();
         boolean autoIncrement = autoIncrementColumn != null;
 
-        if (!params.isEmpty() && params.get(0) instanceof List) {
-            List<List<Object>> paramsList = (List) params;
-            for (List<Object> objects : paramsList) {
-                SQLInsertStatement.ValuesClause valuesClause = new SQLInsertStatement.ValuesClause();
-                for (Object object : objects) {
-                    valuesClause.addValue(SQLExprUtils.fromJavaObject(object));
-                }
-                statement.addValueCause(valuesClause);
-            }
-        }
-
-
-        List<SQLName> columns = new ArrayList<>(statement.getColumns().size() + 1);
-
-        columns.addAll((List) statement.getColumns());
-
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        boolean fillAutoIncrement = true;
+        boolean fillAutoIncrement = autoIncrementColumn!=null;
+        List<SQLName> columns = (List)statement.getColumns();
         if (autoIncrement) {
-            for (SQLName column : columns) {
+            for (SQLName column :columns) {
                 String columnName = SQLUtils.normalize(column.getSimpleName());
                 if (SQLUtils.nameEquals(columnName, autoIncrementColumn.getColumnName())) {
                     fillAutoIncrement = false;
                 }
             }
-            if (fillAutoIncrement) {
-                Supplier<Number> stringSupplier = table.nextSequence();
-                columns.add(new SQLIdentifierExpr(autoIncrementColumn.getColumnName()));
-                for (SQLInsertStatement.ValuesClause valuesClause : statement.getValuesList()) {
-                    valuesClause.getValues().add(SQLExprUtils.fromJavaObject(stringSupplier.get()));
-                }
-            }
+
+        }
+        if (fillAutoIncrement) {
+            columns.add(new SQLIdentifierExpr(autoIncrementColumn.getColumnName()));
         }
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -371,48 +355,34 @@ public class VertxExecuter {
 
 
         List<EachSQL> sqls = new LinkedList<>();
-        for (SQLInsertStatement.ValuesClause valuesClause : statement.getValuesList()) {
-            List<SQLExpr> values = valuesClause.getValues();
-            Map<String, List<RangeVariable>> variables = compute((List) statement.getColumns(), values, params);
 
-            Partition mPartition = table.getShardingFuntion().calculateOne((Map) variables);
+        List<List> paramsList = (!paramArg.isEmpty() && paramArg.get(0) instanceof List) ? (List) paramArg : Collections.singletonList(paramArg);
 
-            SQLInsertStatement primaryStatement = template.clone();
-            primaryStatement.getColumns().addAll(columns);
-            primaryStatement.getValuesList().add(valuesClause);
+        for (List params : paramsList) {
+            for (SQLInsertStatement.ValuesClause valuesClause : statement.getValuesList()) {
 
+                valuesClause = valuesClause.clone();
+                SQLInsertStatement primaryStatement = template.clone();
+                primaryStatement.getColumns().addAll(columns);
+                primaryStatement.getValuesList().add(valuesClause);
 
-            {
-                List<Object> newParams = new ArrayList<>();
-                primaryStatement.accept(new MySqlASTVisitorAdapter() {
-                    @Override
-                    public boolean visit(SQLVariantRefExpr x) {
-                        newParams.add(params.get(x.getIndex()));
-                        return false;
-                    }
-                });
+                List<SQLExpr> values = primaryStatement.getValues().getValues();
 
-                sqls.add(new EachSQL(mPartition.getTargetName(), primaryStatement.toString(), newParams));
-            }
-
-
-            for (ShardingTable indexTable : table.getIndexTables()) {
-                Partition sPartition = indexTable.getShardingFuntion().calculateOne((Map) values);
-
-                List<SimpleColumnInfo> otherColumns = indexTable.getColumns();
-
-                List<SQLExpr> indexColumns = new ArrayList<>(otherColumns.size());
-                for (SimpleColumnInfo otherColumn : otherColumns) {
-                    indexColumns.add(values.get(columnMap.get(otherColumn.getColumnName())));
+                if (fillAutoIncrement) {
+                    Supplier<Number> stringSupplier = table.nextSequence();
+                    values.add(SQLExprUtils.fromJavaObject(stringSupplier.get()));
                 }
-                SQLInsertStatement eachStatement = template.clone();
-                eachStatement.getColumns().clear();
-                eachStatement.getValues().getValues().clear();
 
-                eachStatement.getColumns().addAll(otherColumns.stream().map(i -> columns.get(columnMap.get(i.getColumnName()))).collect(Collectors.toList()));
-                eachStatement.addValueCause(new SQLInsertStatement.ValuesClause(
-                        otherColumns.stream().map(i -> values.get(columnMap.get(i.getColumnName()))).collect(Collectors.toList())
-                ));
+                SQLExprTableSource exprTableSource = primaryStatement.getTableSource();
+
+                Map<String, List<RangeVariable>> variables = compute(columns, values, params);
+
+                Partition mPartition = table.getShardingFuntion().calculateOne((Map) variables);
+
+                exprTableSource.setSimpleName(mPartition.getTable());
+                exprTableSource.setSchema(mPartition.getSchema());
+
+
 
                 {
                     List<Object> newParams = new ArrayList<>();
@@ -424,16 +394,54 @@ public class VertxExecuter {
                         }
                     });
 
-                    sqls.add(new EachSQL(sPartition.getTargetName(), eachStatement.toString(), newParams));
+                    sqls.add(new EachSQL(mPartition.getTargetName(), primaryStatement.toString(), newParams));
+                }
+
+
+                for (ShardingTable indexTable : table.getIndexTables()) {
+                    Partition sPartition = indexTable.getShardingFuntion().calculateOne((Map) values);
+
+                    List<SimpleColumnInfo> otherColumns = indexTable.getColumns();
+
+                    List<SQLExpr> indexColumns = new ArrayList<>(otherColumns.size());
+                    for (SimpleColumnInfo otherColumn : otherColumns) {
+                        indexColumns.add(values.get(columnMap.get(otherColumn.getColumnName())));
+                    }
+                    SQLInsertStatement eachStatement = template.clone();
+                    eachStatement.getColumns().clear();
+                    eachStatement.getValues().getValues().clear();
+
+                    eachStatement.getColumns().addAll(otherColumns.stream().map(i -> columns.get(columnMap.get(i.getColumnName()))).collect(Collectors.toList()));
+                    eachStatement.addValueCause(new SQLInsertStatement.ValuesClause(
+                            otherColumns.stream().map(i -> values.get(columnMap.get(i.getColumnName()))).collect(Collectors.toList())
+                    ));
+
+                    SQLExprTableSource eachTableSource = eachStatement.getTableSource();
+                    eachTableSource.setSimpleName(sPartition.getTable());
+                    eachTableSource.setSchema(sPartition.getSchema());
+
+                    {
+                        List<Object> newParams = new ArrayList<>();
+                        primaryStatement.accept(new MySqlASTVisitorAdapter() {
+                            @Override
+                            public boolean visit(SQLVariantRefExpr x) {
+                                newParams.add(params.get(x.getIndex()));
+                                return false;
+                            }
+                        });
+
+                        sqls.add(new EachSQL(sPartition.getTargetName(), eachStatement.toString(), newParams));
+                    }
                 }
             }
         }
+
         return sqls;
     }
 
     public static Map<String, List<RangeVariable>> compute(List<SQLName> columns,
-                                                            List<SQLExpr> values,
-                                                            List<Object> params) {
+                                                           List<SQLExpr> values,
+                                                           List<Object> params) {
         Map<String, List<RangeVariable>> variables = new HashMap<>(1);
         for (int i = 0; i < columns.size(); i++) {
             SQLExpr sqlExpr = values.get(i);

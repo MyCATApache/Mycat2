@@ -175,9 +175,9 @@ public class DrdsSqlCompiler {
             TableHandler logicTable = Objects.requireNonNull(metadataManager.getTable(schemaName, tableName));
             switch (logicTable.getType()) {
                 case SHARDING:
-                    MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(sqlStatement,false);
+                    MycatInsertRel mycatInsertRel = new MycatInsertRel(sqlStatement,false);
                     optimizationContext.saveAlways();
-                    return mycatUpdateRel;
+                    return mycatInsertRel;
                 case GLOBAL:
                     return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTable) logicTable);
                 case NORMAL:
