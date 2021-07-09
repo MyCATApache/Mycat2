@@ -114,7 +114,7 @@ public class PredicateAnalyzer {
         List<RexNode> pushDownRexNodeList = new ArrayList<>();
         List<RexNode> remainderRexNodeList = new ArrayList<>(rexNodeList);
         IndexCondition condition =
-                IndexCondition.create(keyMeta.getIndexName(), indexcolumnname);
+                IndexCondition.create(keyMeta.getIndexName(), indexcolumnname,pushDownRexNodeList,remainderRexNodeList);
 
         // handle point query if possible
         condition = handlePointQuery(condition, leftMostKeyNodes,
@@ -242,6 +242,9 @@ public class PredicateAnalyzer {
      * Internal representation of a row expression.
      */
     private static class InternalRexNode {
+        public InternalRexNode() {
+        }
+
         /**
          * Relation expression node.
          */

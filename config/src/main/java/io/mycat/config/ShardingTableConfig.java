@@ -7,7 +7,6 @@ import lombok.EqualsAndHashCode;
 
 import java.util.Map;
 
-@AllArgsConstructor
 @Data
 @Builder
 @EqualsAndHashCode
@@ -18,6 +17,17 @@ public class ShardingTableConfig {
 
     Map<String,ShardingTableConfig> shardingIndexTables;
 
+    public ShardingTableConfig(ShardingBackEndTableInfoConfig partition, ShardingFuntion function, String createTableSQL, Map<String, ShardingTableConfig> shardingIndexTables) {
+        this.partition = partition;
+        this.function = function;
+        this.createTableSQL = createTableSQL;
+        this.shardingIndexTables = shardingIndexTables;
+    }
+
     public ShardingTableConfig() {
+    }
+
+    public void setShardingIndexTables(Map<String, ShardingTableConfig> shardingIndexTables) {
+        this.shardingIndexTables = shardingIndexTables;
     }
 }

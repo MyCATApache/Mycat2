@@ -108,33 +108,33 @@ public class MycatExtraSortRule extends RelRule<MycatExtraSortRule.Config> {
         List<? extends Class<? extends AbstractRelNode>> ups = Arrays.asList(Join.class, Aggregate.class);
         List<Class<? extends RelNode>> bs = Arrays.asList(MycatView.class, RelNode.class);
         ImmutableList.Builder<RelOptRule> builder = ImmutableList.builder();
-        for (Class<? extends AbstractRelNode> up : ups) {
-            for (Class<? extends RelNode> l: bs) {
-                Class ln = l;
-                for (Class<? extends RelNode> r: bs) {
-                    Class rn = r;
-                    builder.add( Config.EMPTY
-                            .as(MycatExtraSortRule.Config.class)
-                            .withOperandFor(b0 -> b0.operand(up).inputs(b1 -> {
-                                if (ln == MycatView.class){
-                                    return b1.operand(ln).noInputs();
-                                }else {
-                                    return b1.operand(ln).anyInputs();
-                                }
-                            }, b1 -> {
-                                if (rn == MycatView.class){
-                                    return b1.operand(rn).noInputs();
-                                }else {
-                                    return b1.operand(rn).anyInputs();
-                                }
-                            }))
-                            .as(MycatExtraSortRule.Config.class)
-                            .withDescription(MycatExtraSortRule.class.getName()+up.toString()+ln.toString()+rn.toString())
-                            .toRule());
-                }
-            }
-
-        }
+//        for (Class<? extends AbstractRelNode> up : ups) {
+//            for (Class<? extends RelNode> l: bs) {
+//                Class ln = l;
+//                for (Class<? extends RelNode> r: bs) {
+//                    Class rn = r;
+//                    builder.add( Config.EMPTY
+//                            .as(MycatExtraSortRule.Config.class)
+//                            .withOperandFor(b0 -> b0.operand(up).inputs(b1 -> {
+//                                if (ln == MycatView.class){
+//                                    return b1.operand(ln).noInputs();
+//                                }else {
+//                                    return b1.operand(ln).anyInputs();
+//                                }
+//                            }, b1 -> {
+//                                if (rn == MycatView.class){
+//                                    return b1.operand(rn).noInputs();
+//                                }else {
+//                                    return b1.operand(rn).anyInputs();
+//                                }
+//                            }))
+//                            .as(MycatExtraSortRule.Config.class)
+//                            .withDescription(MycatExtraSortRule.class.getName()+up.toString()+ln.toString()+rn.toString())
+//                            .toRule());
+//                }
+//            }
+//
+//        }
         RULES = builder.build();
 
     }

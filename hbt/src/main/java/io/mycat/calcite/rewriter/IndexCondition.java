@@ -5,6 +5,7 @@ import io.mycat.util.JsonUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
+import org.apache.calcite.rex.RexNode;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
@@ -17,6 +18,8 @@ public class IndexCondition implements Comparable<IndexCondition>, Serializable 
     String indexName;
     String indexColumnName;
     QueryType queryType;
+    List<RexNode> pushDownRexNodeList;
+    List<RexNode> remainderRexNodeList;
 
     public String toJson() {
         Map<String, String> map = new HashMap<>();
@@ -26,16 +29,24 @@ public class IndexCondition implements Comparable<IndexCondition>, Serializable 
         return JsonUtil.toJson(map);
     }
 
-    public static IndexCondition EMPTY = create( null, null);
+    public static IndexCondition EMPTY = create(null, null,Collections.emptyList(),Collections.emptyList());
 
-    public IndexCondition(String indexName, String indexColumnNames) {
+    public IndexCondition(String indexName,
+                          String indexColumnNames,
+                          List<RexNode> pushDownRexNodeList,
+                          List<RexNode> remainderRexNodeList) {
         this.indexName = indexName;
         this.indexColumnName = indexColumnNames;
+        this.pushDownRexNodeList = pushDownRexNodeList;
+        this.remainderRexNodeList = remainderRexNodeList;
     }
 
 
-    public static IndexCondition create(String indexName, String indexColumnNames) {
-        return new IndexCondition(indexName, indexColumnNames);
+    public static IndexCondition create(String indexName,
+                                        String indexColumnNames,
+                                        List<RexNode> pushDownRexNodeList,
+                                        List<RexNode> remainderRexNodeList) {
+        return new IndexCondition(indexName, indexColumnNames,pushDownRexNodeList,remainderRexNodeList);
     }
 
     @Override
@@ -55,6 +66,7 @@ public class IndexCondition implements Comparable<IndexCondition>, Serializable 
         this.queryType = queryType;
         return this;
     }
+
     public QueryType getQueryType() {
         return queryType == null ? QueryType.PK_FULL_SCAN : queryType;
     }

@@ -107,7 +107,7 @@ public class MetadataManager implements MysqlVariableService {
                          ShardingTableConfig tableConfig,
                          ShardingBackEndTableInfoConfig backends,
                          String prototypeServer,
-                         List<ShardingTable> indexTables) {
+                         List<ShardingIndexTable> indexTables) {
         addShardingTable(schemaName, tableName, tableConfig, prototypeServer, getBackendTableInfos(backends), indexTables);
     }
 
@@ -265,11 +265,11 @@ public class MetadataManager implements MysqlVariableService {
                 Set<Map.Entry<String, ShardingTableConfig>> indexTables = Optional.ofNullable(tableConfigEntry.getShardingIndexTables())
                         .orElse(Collections.emptyMap()).entrySet();
 
-                List<ShardingTable> ShardingIndexTables = new ArrayList<>();
+                List<ShardingIndexTable> ShardingIndexTables = new ArrayList<>();
                 for (Map.Entry<String, ShardingTableConfig> secondTable : indexTables) {
                     String indexName = secondTable.getKey();
                     ShardingTableConfig indexTableValue = secondTable.getValue();
-                    ShardingTable shardingIndexTable = createShardingIndexTable(schemaName, indexName,
+                    ShardingIndexTable shardingIndexTable = createShardingIndexTable(schemaName, indexName,
                             indexTableValue,
                             prototype,
                             getBackendTableInfos(indexTableValue.getPartition()));
@@ -480,7 +480,7 @@ public class MetadataManager implements MysqlVariableService {
                                   ShardingTableConfig tableConfigEntry,
                                   String prototypeServer,
                                   List<Partition> backends,
-                                  List<ShardingTable> ShardingIndexTables) {
+                                  List<ShardingIndexTable> ShardingIndexTables) {
         ShardingTable shardingTable = createShardingTable(schemaName, orignalTableName, tableConfigEntry, prototypeServer, backends, ShardingIndexTables);
         addLogicTable(shardingTable);
         for (ShardingTable indexTable : shardingTable.getIndexTables()) {
@@ -489,12 +489,13 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     @SneakyThrows
-    private ShardingTable createShardingIndexTable(String schemaName,
+    private ShardingIndexTable createShardingIndexTable(String schemaName,
                                                    String indexName,
                                                    ShardingTableConfig secondTableConfig,
                                                    String prototypeServer,
                                                    List<Partition> backends) {
-        return createShardingTable(schemaName, indexName, secondTableConfig, prototypeServer, backends, Collections.emptyList());
+        ShardingTable shardingTable = createShardingTable(schemaName, indexName, secondTableConfig, prototypeServer, backends, Collections.emptyList());
+        return new ShardingIndexTable(shardingTable.getLogicTable(),shardingTable.getBackends(),shardingTable.getShardingFuntion(),null);
     }
 
     @NotNull
@@ -503,21 +504,8 @@ public class MetadataManager implements MysqlVariableService {
                                              ShardingTableConfig tableConfigEntry,
                                              String prototypeServer,
                                              List<Partition> backends,
-                                             List<ShardingTable> shardingIndexTables) throws Exception {
+                                             List<ShardingIndexTable> shardingIndexTables) throws Exception {
         ShardingFuntion function = tableConfigEntry.getFunction();
-        if (function != null) {
-            if (function.getClazz() == null) {
-                Map<String, Object> properties = function.getProperties();
-                String mappingFormat = (String) properties.get("mappingFormat");
-                if (mappingFormat == null) {
-                    mappingFormat = (String) properties.getOrDefault("mappingFormat",
-                            String.join("/", "c${targetIndex}",
-                                    schemaName + "_${dbIndex}",
-                                    orignalTableName + "_${tableIndex}"));
-//                    properties.put("mappingFormat", mappingFormat);
-                }
-            }
-        }
         //////////////////////////////////////////////
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL()).orElseGet(() -> getCreateTableSQLByJDBC(schemaName, orignalTableName, backends));
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, orignalTableName, createTableSQL, backends);

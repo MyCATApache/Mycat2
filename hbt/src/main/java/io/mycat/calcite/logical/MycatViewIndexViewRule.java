@@ -2,11 +2,15 @@ package io.mycat.calcite.logical;
 
 import com.google.common.collect.ImmutableMap;
 import io.mycat.calcite.localrel.LocalRules;
+import io.mycat.calcite.table.ShardingTable;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.rules.SubstitutionRule;
+
+import java.util.List;
 
 public class MycatViewIndexViewRule extends RelRule<MycatViewIndexViewRule.Config> {
 
@@ -20,7 +24,8 @@ public class MycatViewIndexViewRule extends RelRule<MycatViewIndexViewRule.Confi
     public void onMatch(RelOptRuleCall call) {
         MycatView mycatRel = call.rel(0);
         ImmutableMap.Builder<RelNode, RelNode> builder = ImmutableMap.builder();
-        for (RelNode relNode : mycatRel.produceIndexViews(call.builder())) {
+        List<RelNode> relNodes = mycatRel.produceIndexViews();
+        for (RelNode relNode : relNodes) {
             builder.put(relNode,mycatRel);
         }
         call.transformTo(mycatRel,builder.build());
@@ -35,9 +40,14 @@ public class MycatViewIndexViewRule extends RelRule<MycatViewIndexViewRule.Confi
         default MycatViewIndexViewRule.Config withOperandFor() {
             return withOperandSupplier(b0 ->
                     b0.operand(MycatView.class).predicate(mycatView -> {
-                        RelNode relNode = mycatView.getRelNode();
-                        if(relNode instanceof Filter){
-                            return ((Filter) relNode).getInput() instanceof TableScan;
+                        List<ShardingTable> shardingTables = mycatView.getDistribution().getShardingTables();
+                        if (!shardingTables.isEmpty()){
+                            if (!shardingTables.get(0).getIndexTables().isEmpty()){
+                                RelNode relNode = mycatView.getRelNode();
+                                if(relNode instanceof Filter){
+                                    return ((Filter) relNode).getInput() instanceof TableScan;
+                                }
+                            }
                         }
                         return false;
                     }).noInputs())

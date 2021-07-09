@@ -40,16 +40,16 @@ public class ShardingTable implements ShardingTableHandler {
     private final LogicTable logicTable;
     private CustomRuleFunction shardingFuntion;
     private List<Partition> backends;
-    public List<ShardingTable> indexTables;
+    public List<ShardingIndexTable> indexTables;
 
     public ShardingTable(LogicTable logicTable,
                          List<Partition> backends,
                          CustomRuleFunction shardingFuntion,
-                         List<ShardingTable> shardingIndexTables) {
+                         List<ShardingIndexTable> shardingIndexTables) {
         this.logicTable = logicTable;
         this.backends = (backends == null || backends.isEmpty()) ? Collections.emptyList() : backends;
         this.shardingFuntion = shardingFuntion;
-        this.indexTables = shardingIndexTables;
+        this.indexTables = shardingIndexTables.stream().map(i->i.withPrimary(ShardingTable.this)).collect(Collectors.toList());
     }
 
     @Override

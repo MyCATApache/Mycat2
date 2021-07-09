@@ -268,6 +268,11 @@ public class MycatRouterConfigOps implements AutoCloseable {
 
     public ShardingTableConfig putShardingTable(String schemaName, String tableName, ShardingTableConfig config) {
         removeTable(schemaName, tableName);
+        Map<String, ShardingTableConfig> indexTables
+                = Optional.ofNullable(config.getShardingIndexTables()).orElse(Collections.emptyMap());
+        for (Map.Entry<String, ShardingTableConfig> entry : indexTables.entrySet()) {
+            removeTable(schemaName, entry.getKey());
+        }
         this.schemas = mycatRouterConfig.getSchemas();
         List<LogicSchemaConfig> schemas = this.schemas;
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
@@ -282,19 +287,21 @@ public class MycatRouterConfigOps implements AutoCloseable {
     }
 
 
-    public ShardingTableConfig putHashTable(String schemaName, String tableName, MySqlCreateTableStatement tableStatement, Map<String, Object> infos) {
+    public ShardingTableConfig putHashTable(String schemaName,final String tableName, MySqlCreateTableStatement tableStatement, Map<String, Object> infos) {
         NameMap<SQLColumnDefinition> columnMap = NameMap.immutableCopyOf(tableStatement.getColumnDefinitions().stream()
                 .collect(Collectors.toMap(k -> SQLUtils.normalize(k.getColumnName()), v -> v)));
 
-        Map<String,ShardingTableConfig> indexTableConfigs = new HashMap<>();
+        Map<String, ShardingTableConfig> indexTableConfigs = new HashMap<>();
         for (SQLTableElement sqlTableElement : tableStatement.getTableElementList()) {
             if (sqlTableElement instanceof MySqlTableIndex) {
                 MySqlTableIndex element = (MySqlTableIndex) sqlTableElement;
                 SQLIndexDefinition indexDefinition = element.getIndexDefinition();
-                String name = SQLUtils.normalize(indexDefinition.getName().getSimpleName());
                 MySqlCreateTableStatement indexCreateTableStatement = new MySqlCreateTableStatement();
                 indexCreateTableStatement.setIfNotExiists(true);
-                indexCreateTableStatement.setTableName(tableName+"_"+name);
+
+
+                String indexTableName = tableName + "_" + SQLUtils.normalize(indexDefinition.getName().getSimpleName());
+                indexCreateTableStatement.setTableName(indexTableName);
                 indexCreateTableStatement.setSchema(schemaName);
                 for (SQLSelectOrderByItem indexColumn : indexDefinition.getColumns()) {
                     indexCreateTableStatement.addColumn(columnMap.get(SQLUtils.normalize(indexColumn.getExpr().toString())));
@@ -315,7 +322,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
                         .function(ShardingFuntion.builder().properties(autoHashProperties).build())
                         .build();
 
-                indexTableConfigs.put(name,config);
+                indexTableConfigs.put(indexTableName, config);
             }
         }
 
@@ -492,7 +499,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
         putHashTable(schemaName, tableName, createTableSql, getAutoHashProperties(createTableSql));
     }
 
-    public  static Map<String, Object>  getAutoHashProperties(MySqlCreateTableStatement createTableSql){
+    public static Map<String, Object> getAutoHashProperties(MySqlCreateTableStatement createTableSql) {
         SQLExpr dbPartitionBy = createTableSql.getDbPartitionBy();
         HashMap<String, Object> properties = new HashMap<>();
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);

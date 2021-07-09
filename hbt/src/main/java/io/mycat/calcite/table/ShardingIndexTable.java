@@ -4,7 +4,9 @@ import io.mycat.Partition;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.router.CustomRuleFunction;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class ShardingIndexTable extends ShardingTable {
     private final ShardingTable primaryTable;
@@ -12,10 +14,13 @@ public class ShardingIndexTable extends ShardingTable {
     public ShardingIndexTable(LogicTable logicTable,
                               List<Partition> backends,
                               CustomRuleFunction shardingFuntion,
-                              ShardingTable primaryTable,
-                              List<ShardingTable> shardingIndexTables) {
-        super(logicTable, backends, shardingFuntion,shardingIndexTables);
+                              ShardingTable primaryTable) {
+        super(logicTable, backends, shardingFuntion, Collections.emptyList());
         this.primaryTable = primaryTable;
+    }
+
+    public ShardingIndexTable withPrimary(ShardingTable shardingTable){
+        return new ShardingIndexTable(getLogicTable(),getBackends(),getShardingFuntion(),shardingTable);
     }
 
     public boolean hasFactColumn(int i) {
@@ -27,7 +32,7 @@ public class ShardingIndexTable extends ShardingTable {
     public int mappingIndexTableIndex(int i) {
         ShardingTable factTable = getFactTable();
         SimpleColumnInfo column = this.getColumnByName(factTable.getColumns().get(i).getColumnName());
-        return column.getId();
+        return Objects.requireNonNull(column).getId();
     }
 
     public ShardingTable getFactTable() {

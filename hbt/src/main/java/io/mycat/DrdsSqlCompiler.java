@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
 import io.mycat.calcite.localrel.LocalRules;
+import io.mycat.calcite.logical.MycatViewIndexViewRule;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatProject;
 import io.mycat.calcite.physical.MycatTopN;
@@ -89,10 +90,16 @@ public class DrdsSqlCompiler {
     private final static Logger log = LoggerFactory.getLogger(DrdsSqlCompiler.class);
     private final SchemaPlus schemas;
     private final DrdsConst config;
+    private final CalciteCatalogReader catalogReader;
 
     public DrdsSqlCompiler(DrdsConst config) {
         this.schemas = DrdsRunnerHelper.convertRoSchemaPlus(config);
         this.config = config;
+        this.catalogReader = new CalciteCatalogReader(CalciteSchema
+                .from(this.schemas),
+                ImmutableList.of(),
+                MycatCalciteSupport.TypeFactory,
+                MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig());
     }
 
     @SneakyThrows
@@ -104,11 +111,7 @@ public class DrdsSqlCompiler {
         SchemaConvertor schemaConvertor = new SchemaConvertor();
         Schema originSchema = schemaConvertor.transforSchema(statement);
         SchemaPlus plus = this.schemas;
-        CalciteCatalogReader catalogReader = new CalciteCatalogReader(CalciteSchema
-                .from(plus),
-                ImmutableList.of(),
-                MycatCalciteSupport.TypeFactory,
-                MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig());
+
         RelOptCluster cluster = newCluster();
         RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(cluster, catalogReader);
         HBTQueryConvertor hbtQueryConvertor = new HBTQueryConvertor(Collections.emptyList(), relBuilder);
@@ -175,7 +178,7 @@ public class DrdsSqlCompiler {
             TableHandler logicTable = Objects.requireNonNull(metadataManager.getTable(schemaName, tableName));
             switch (logicTable.getType()) {
                 case SHARDING:
-                    MycatInsertRel mycatInsertRel = new MycatInsertRel(sqlStatement,false);
+                    MycatInsertRel mycatInsertRel = new MycatInsertRel(sqlStatement, false);
                     optimizationContext.saveAlways();
                     return mycatInsertRel;
                 case GLOBAL:
@@ -243,7 +246,7 @@ public class DrdsSqlCompiler {
 
     @NotNull
     private MycatRel complieGlobalUpdate(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, GlobalTable logicTable) {
-        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(sqlStatement,true);
+        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(sqlStatement, true);
         optimizationContext.saveAlways();
         return mycatUpdateRel;
     }
@@ -304,8 +307,8 @@ public class DrdsSqlCompiler {
 //        rboLogPlan = rboLogPlan.accept(new ToLocalConverter());
         MycatRel mycatRel = optimizeWithCBO(rboLogPlan, Collections.emptyList());
         if (!RelOptUtil.areRowTypesEqual(mycatRel.getRowType(), finalRowType, true)) {
-            Project relNode = (Project)relNodeContext.getRelBuilder().push(mycatRel).rename(finalRowType.getFieldNames()).build();
-            mycatRel =  MycatProject.create(relNode.getInput(),relNode.getProjects(),relNode.getRowType());
+            Project relNode = (Project) relNodeContext.getRelBuilder().push(mycatRel).rename(finalRowType.getFieldNames()).build();
+            mycatRel = MycatProject.create(relNode.getInput(), relNode.getProjects(), relNode.getRowType());
         }
         return mycatRel;
     }
@@ -316,7 +319,6 @@ public class DrdsSqlCompiler {
 
     public RelNodeContext getRelRoot(
             SchemaPlus plus, DrdsSql drdsSql) {
-        CalciteCatalogReader catalogReader = DrdsRunnerHelper.newCalciteCatalogReader(plus);
         SqlValidator validator = DrdsRunnerHelper.getSqlValidator(drdsSql, catalogReader);
         RelOptCluster cluster = newCluster();
         SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(
@@ -367,9 +369,10 @@ public class DrdsSqlCompiler {
 
 
     public MycatRel optimizeWithCBO(RelNode logPlan, Collection<RelOptRule> relOptRules) {
-        if (logPlan instanceof MycatRel) {
-            return (MycatRel) logPlan;
-        } else {
+//        if (logPlan instanceof MycatRel) {
+//            return (MycatRel) logPlan;
+//        } else
+        {
             RelOptCluster cluster = logPlan.getCluster();
             RelOptPlanner planner = cluster.getPlanner();
             planner.clear();
@@ -392,7 +395,9 @@ public class DrdsSqlCompiler {
             //Sort/Project
             listBuilder.add(CoreRules.SORT_PROJECT_TRANSPOSE.config.withOperandFor(Sort.class, Project.class).toRule());
 
-            if(config.bkaJoin()){
+            //index
+            listBuilder.add(MycatViewIndexViewRule.DEFAULT_CONFIG.toRule());
+            if (config.bkaJoin()) {
                 //TABLELOOKUP
                 listBuilder.add(MycatTableLookupSemiJoinRule.INSTANCE);
                 listBuilder.add(MycatTableLookupCombineRule.INSTANCE);

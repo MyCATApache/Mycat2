@@ -112,7 +112,7 @@ public class LogicTable {
                                                     CustomRuleFunction function,
                                                     Map<String, IndexInfo> indexInfos,
                                                     String createTableSQL,
-                                                    List<ShardingTable> shardingIndexTables) {
+                                                    List<ShardingIndexTable> shardingIndexTables) {
         LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, tableName, columns, indexInfos, createTableSQL);
         return new ShardingTable(logicTable, backendTableInfos, function,shardingIndexTables);
     }
