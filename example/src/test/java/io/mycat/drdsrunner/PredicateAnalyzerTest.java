@@ -31,7 +31,7 @@ public class PredicateAnalyzerTest {
         RexLiteral rexLiteral = rexBuilder.makeLiteral(true);
         List<String> columnList = Arrays.asList("id");
         PredicateAnalyzer predicateAnalyzer2 = new PredicateAnalyzer(
-                Arrays.asList(KeyMeta.of("default", "id")),
+                Arrays.asList(KeyMeta.of("default", Arrays.asList("id"))),
                 columnList
         );
         Map<QueryType, List<IndexCondition>> map = predicateAnalyzer2.translateMatch(rexLiteral);
@@ -49,13 +49,13 @@ public class PredicateAnalyzerTest {
         ), rexBuilder.makeDynamicParam(MycatCalciteSupport.TypeFactory.createSqlType(SqlTypeName.INTEGER), 0));
         List<String> columnList = Arrays.asList("id");
         PredicateAnalyzer predicateAnalyzer2 = new PredicateAnalyzer(
-                Collections.singletonList(KeyMeta.of("default", "id")), columnList);
+                Collections.singletonList(KeyMeta.of("default", Arrays.asList("id"))), columnList);
         Map<QueryType, List<IndexCondition>> queryTypeListMap = predicateAnalyzer2.translateMatch(rexNode);
         Assert.assertEquals(1, queryTypeListMap.size());
         Map.Entry<QueryType, List<IndexCondition>> entry = queryTypeListMap.entrySet().iterator().next();
         Assert.assertEquals(QueryType.PK_POINT_QUERY, entry.getKey());
         Assert.assertEquals(1, entry.getValue().size());
-        Assert.assertEquals("id", entry.getValue().get(0).getIndexColumnName());
+        Assert.assertEquals("id", entry.getValue().get(0).getIndexColumnNames());
     }
 
     @Test
@@ -69,7 +69,7 @@ public class PredicateAnalyzerTest {
         ShardingTable table = (ShardingTable) metadataManager.getTable("db1", "sharding");
         List<String> columnList = Arrays.asList("id");
         PredicateAnalyzer predicateAnalyzer2 = new PredicateAnalyzer(
-                Arrays.asList(KeyMeta.of("default", "id")),
+                Arrays.asList(KeyMeta.of("default", Arrays.asList("id"))),
                 columnList
         );
         Map<QueryType, List<IndexCondition>> queryTypeListMap = predicateAnalyzer2.translateMatch(rexNode);
@@ -77,7 +77,7 @@ public class PredicateAnalyzerTest {
         Map.Entry<QueryType, List<IndexCondition>> entry = queryTypeListMap.entrySet().iterator().next();
         Assert.assertEquals(QueryType.PK_POINT_QUERY, entry.getKey());
         Assert.assertEquals(1, entry.getValue().size());
-        Assert.assertEquals("id", entry.getValue().get(0).getIndexColumnName());
+        Assert.assertEquals("id", entry.getValue().get(0).getIndexColumnNames());
         System.out.println();
     }
 
@@ -97,7 +97,7 @@ public class PredicateAnalyzerTest {
         RexNode rexNode = rexBuilder.makeCall(SqlStdOperatorTable.AND, leftRexNode, rightRexNode);
         List<String> columnList = Arrays.asList("id");
         PredicateAnalyzer predicateAnalyzer2 = new PredicateAnalyzer(
-                Arrays.asList(KeyMeta.of("default", "id")),
+                Arrays.asList(KeyMeta.of("default", Arrays.asList("id"))),
                 columnList
         );
         Map<QueryType, List<IndexCondition>> queryTypeListMap = predicateAnalyzer2.translateMatch(rexNode);
@@ -105,7 +105,7 @@ public class PredicateAnalyzerTest {
         Map.Entry<QueryType, List<IndexCondition>> entry = queryTypeListMap.entrySet().iterator().next();
         Assert.assertEquals(QueryType.PK_RANGE_QUERY, entry.getKey());
         Assert.assertEquals(1, entry.getValue().size());
-        Assert.assertEquals("id", entry.getValue().get(0).getIndexColumnName());
+        Assert.assertEquals("id", entry.getValue().get(0).getIndexColumnNames());
         System.out.println();
     }
 
@@ -126,7 +126,7 @@ public class PredicateAnalyzerTest {
         RexNode rexNode = rexBuilder.makeCall(SqlStdOperatorTable.OR, leftRexNode, rightRexNode);
         List<String> columnList = Arrays.asList("id");
         PredicateAnalyzer predicateAnalyzer2 = new PredicateAnalyzer(
-                Arrays.asList(KeyMeta.of("default", "id")),
+                Arrays.asList(KeyMeta.of("default", Arrays.asList("id"))),
                 columnList
         );
         MetadataManager metadataManager = DrdsTest.getMetadataManager();
@@ -150,7 +150,7 @@ public class PredicateAnalyzerTest {
         MetadataManager metadataManager = DrdsTest.getMetadataManager();
         ShardingTable table = (ShardingTable) metadataManager.getTable("db1", "sharding");
         PredicateAnalyzer predicateAnalyzer2 = new PredicateAnalyzer(
-                Arrays.asList(KeyMeta.of("default", "id")),
+                Arrays.asList(KeyMeta.of("default", Arrays.asList("id"))),
                 columnList
         );
 
@@ -168,8 +168,8 @@ public class PredicateAnalyzerTest {
         ), rexBuilder.makeDynamicParam(MycatCalciteSupport.TypeFactory.createSqlType(SqlTypeName.INTEGER), 0));
         List<String> columnList = Arrays.asList("id", "id2");
         PredicateAnalyzer predicateAnalyzer2 = new PredicateAnalyzer(Arrays.asList(
-                KeyMeta.of("shardingTable", "id"),
-                KeyMeta.of("shardingDb", "id2")),
+                KeyMeta.of("shardingTable", Arrays.asList("id")),
+                KeyMeta.of("shardingDb",  Arrays.asList("id2"))),
                 columnList);
         Map<QueryType, List<IndexCondition>> queryTypeListMap = new TreeMap<>(
                 predicateAnalyzer2.translateMatch(RexUtil.composeConjunction(rexBuilder, Arrays.asList(leftRexNode, rightRexNode)))
@@ -179,9 +179,9 @@ public class PredicateAnalyzerTest {
         Map.Entry<QueryType, List<IndexCondition>> entry = queryTypeListMap.entrySet().iterator().next();
         Assert.assertEquals(QueryType.PK_POINT_QUERY, entry.getKey());
         Assert.assertEquals(2, entry.getValue().size());
-        String indexColumnName0 = entry.getValue().get(0).getIndexColumnName();
+        String indexColumnName0 = entry.getValue().get(0).getIndexColumnNames().get(0);
         Assert.assertEquals("id2", indexColumnName0);
-        String indexColumnName1 = entry.getValue().get(1).getIndexColumnName();
+        String indexColumnName1 = entry.getValue().get(1).getIndexColumnNames().get(0);
         Assert.assertEquals("id", indexColumnName1);
         System.out.println();
 

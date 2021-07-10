@@ -64,22 +64,24 @@ public class PredicateAnalyzer {
         // be pushed down, filter by forcing index name, then sort by comparator
 
         return indexConditions.stream()
+                .filter(i -> i != null)
                 .filter(IndexCondition::canPushDown)
                 .filter(indexCondition -> nonForceIndexOrMatchForceIndexName(indexCondition.getName()))
-                .filter(i -> i != null)
                 .sorted(Comparator.comparing(x -> x.getQueryType().priority()))
                 .collect(Collectors.groupingBy(k -> k.getQueryType(),
                         Collectors.collectingAndThen(Collectors.toList(), indexConditions1 -> {
                             HashMap<String, IndexCondition> conditionMap = new HashMap<>();
                             for (IndexCondition newOne : indexConditions1) {
-                                String fieldName = newOne.getIndexColumnName();
-                                IndexCondition oldOne = conditionMap.getOrDefault(fieldName, null);
-                                if (oldOne == null) {
-                                    conditionMap.put(fieldName, newOne);
-                                    continue;
-                                } else {
-                                    if (newOne.getQueryType().compareTo(oldOne.getQueryType()) < 0) {
+                                List<String> fieldNames = newOne.getIndexColumnNames();
+                                for (String fieldName : fieldNames) {
+                                    IndexCondition oldOne = conditionMap.getOrDefault(fieldName, null);
+                                    if (oldOne == null) {
                                         conditionMap.put(fieldName, newOne);
+                                        continue;
+                                    } else {
+                                        if (newOne.getQueryType().compareTo(oldOne.getQueryType()) < 0) {
+                                            conditionMap.put(fieldName, newOne);
+                                        }
                                     }
                                 }
                             }
@@ -93,7 +95,7 @@ public class PredicateAnalyzer {
 
         // none of the conditions can be pushed down
         if (matchedRexNodeList.isEmpty()) {
-            return IndexCondition.EMPTY;
+            return null;
         }
 
         // a collection that maps ordinal in index column list
@@ -106,15 +108,15 @@ public class PredicateAnalyzer {
         // left-prefix index rule not match
         Collection<InternalRexNode> leftMostKeyNodes = new ArrayList<>(keyOrdToNodesMap.values());
         if (leftMostKeyNodes.isEmpty()) {
-            return IndexCondition.EMPTY;
+            return null;
         }
 
         // create result which might have conditions to push down
-        String indexcolumnname = keyMeta.getColumnName();
+        List<String> indexColumnnames = keyMeta.getColumnNames();
         List<RexNode> pushDownRexNodeList = new ArrayList<>();
         List<RexNode> remainderRexNodeList = new ArrayList<>(rexNodeList);
         IndexCondition condition =
-                IndexCondition.create(keyMeta.getIndexName(), indexcolumnname,pushDownRexNodeList,remainderRexNodeList);
+                IndexCondition.create(keyMeta.getIndexName(), indexColumnnames,pushDownRexNodeList,remainderRexNodeList);
 
         // handle point query if possible
         condition = handlePointQuery(condition, leftMostKeyNodes,
@@ -170,7 +172,7 @@ public class PredicateAnalyzer {
 
             List<InternalRexNode> matchNodes = Lists.newArrayList(node);
             findSubsequentMatches(matchNodes, 1, keyOrdToNodesMap, "=");
-            List<Object> key = createKey(matchNodes);
+
             pushDownRexNodeList.add(node.node);
             remainderRexNodeList.remove(node.node);
 

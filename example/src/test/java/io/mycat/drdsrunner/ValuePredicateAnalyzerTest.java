@@ -32,7 +32,7 @@ public class ValuePredicateAnalyzerTest {
         RexLiteral rexLiteral = rexBuilder.makeLiteral(true);
         List<String> columnList = Arrays.asList("id");
         ValuePredicateAnalyzer valuePredicateAnalyzer2 = new ValuePredicateAnalyzer(
-                Arrays.asList(KeyMeta.of("default", "id")),
+                Arrays.asList(KeyMeta.of("default", Arrays.asList("id"))),
                 columnList
         );
         ValueIndexCondition indexCondition = valuePredicateAnalyzer2.translateMatch(rexLiteral);
@@ -138,7 +138,7 @@ public class ValuePredicateAnalyzerTest {
             Object smallOne = rangeQueryLowerKey.get(0);
             Object bigOne = rangeQueryUpperKey.get(0);
 
-            RangeVariable rangeVariable = new RangeVariable(condition.getIndexColumnNames(), RangeVariableType.RANGE, smallOne, bigOne);
+            RangeVariable rangeVariable = new RangeVariable(condition.getIndexColumnNames().get(0), RangeVariableType.RANGE, smallOne, bigOne);
             Assert.assertEquals(new RangeVariable("id", RangeVariableType.RANGE,
                     (0)
                     , (1)).toString(), rangeVariable.toString());

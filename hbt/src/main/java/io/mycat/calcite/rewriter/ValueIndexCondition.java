@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Serializable {
     List<String> fieldNames;
     String indexName;
-    String indexColumnNames;
+    List<String>  indexColumnNames;
 
     QueryType queryType;
     ComparisonOperator rangeQueryLowerOp;
@@ -54,7 +54,7 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
 
     public static ValueIndexCondition EMPTY = create(null, null, null);
 
-    public ValueIndexCondition(List<String> fieldNames, String indexName, String indexColumnNames) {
+    public ValueIndexCondition(List<String> fieldNames, String indexName, List<String> indexColumnNames) {
         if (fieldNames != null) {
             this.fieldNames = new ArrayList<>(fieldNames);
         }
@@ -63,7 +63,7 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
     }
 
 
-    public static ValueIndexCondition create(List<String> fieldNames, String indexName, String indexColumnNames) {
+    public static ValueIndexCondition create(List<String> fieldNames, String indexName, List<String> indexColumnNames) {
         return new ValueIndexCondition(fieldNames, indexName, indexColumnNames);
     }
 
@@ -136,12 +136,13 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
         switch (condition.getQueryType()) {
             case PK_POINT_QUERY:
                 //queryByPrimaryKey
-                for (Object o1 : pointQueryKey) {
-                    RangeVariable rangeVariable = new RangeVariable(condition.getIndexColumnNames(), RangeVariableType.EQUAL, o1);
-                    Collection<RangeVariable> rangeVariables = map.computeIfAbsent(condition.getIndexColumnNames(), (k) -> new ArrayList<>());
-                    rangeVariables.add(rangeVariable);
+                for (String indexColumnName : condition.getIndexColumnNames()) {
+                    for (Object o1 : pointQueryKey) {
+                        RangeVariable rangeVariable = new RangeVariable(indexColumnName, RangeVariableType.EQUAL, o1);
+                        Collection<RangeVariable> rangeVariables = map.computeIfAbsent(indexColumnName, (k) -> new ArrayList<>());
+                        rangeVariables.add(rangeVariable);
+                    }
                 }
-
                 return customRuleFunction.calculate(map);
             case PK_RANGE_QUERY:
                 if (rangeQueryUpperOp == ComparisonOperator.LT) {
@@ -171,9 +172,11 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                     Object smallOne = rangeQueryLowerKey.get(0);
                     Object bigOne = rangeQueryUpperKey.get(rangeQueryUpperKey.size()-1);
 
-                    RangeVariable rangeVariable = new RangeVariable(condition.getIndexColumnNames(), RangeVariableType.RANGE, smallOne, bigOne);
-                    Collection<RangeVariable> rangeVariables = map.computeIfAbsent(condition.getIndexColumnNames(), (k) -> new ArrayList<>());
-                    rangeVariables.add(rangeVariable);
+                    for (String indexColumnName : condition.getIndexColumnNames()) {
+                        RangeVariable rangeVariable = new RangeVariable(indexColumnName, RangeVariableType.RANGE, smallOne, bigOne);
+                        Collection<RangeVariable> rangeVariables = map.computeIfAbsent(indexColumnName, (k) -> new ArrayList<>());
+                        rangeVariables.add(rangeVariable);
+                    }
                     return customRuleFunction.calculate(map);
                 }
 

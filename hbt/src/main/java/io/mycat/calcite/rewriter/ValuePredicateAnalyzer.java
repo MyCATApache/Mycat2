@@ -97,7 +97,7 @@ public class ValuePredicateAnalyzer {
         }
 
         // create result which might have conditions to push down
-        String indexColumnNames = keyMeta.getColumnName();
+        List<String> indexColumnNames = keyMeta.getColumnNames();
         List<RexNode> pushDownRexNodeList = new ArrayList<>();
         List<RexNode> remainderRexNodeList = new ArrayList<>(rexNodeList);
         ValueIndexCondition condition =

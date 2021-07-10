@@ -16,7 +16,7 @@ import java.util.*;
 @ToString
 public class IndexCondition implements Comparable<IndexCondition>, Serializable {
     String indexName;
-    String indexColumnName;
+    List<String> indexColumnNames;
     QueryType queryType;
     List<RexNode> pushDownRexNodeList;
     List<RexNode> remainderRexNodeList;
@@ -24,7 +24,7 @@ public class IndexCondition implements Comparable<IndexCondition>, Serializable 
     public String toJson() {
         Map<String, String> map = new HashMap<>();
         map.put("indexName", JsonUtil.toJson(indexName));
-        map.put("indexColumnNames", JsonUtil.toJson(indexColumnName));
+        map.put("indexColumnNames", JsonUtil.toJson(indexColumnNames));
         map.put("queryType", JsonUtil.toJson(queryType));
         return JsonUtil.toJson(map);
     }
@@ -32,18 +32,18 @@ public class IndexCondition implements Comparable<IndexCondition>, Serializable 
     public static IndexCondition EMPTY = create(null, null,Collections.emptyList(),Collections.emptyList());
 
     public IndexCondition(String indexName,
-                          String indexColumnNames,
+                          List<String> indexColumnNames,
                           List<RexNode> pushDownRexNodeList,
                           List<RexNode> remainderRexNodeList) {
         this.indexName = indexName;
-        this.indexColumnName = indexColumnNames;
+        this.indexColumnNames = indexColumnNames;
         this.pushDownRexNodeList = pushDownRexNodeList;
         this.remainderRexNodeList = remainderRexNodeList;
     }
 
 
     public static IndexCondition create(String indexName,
-                                        String indexColumnNames,
+                                        List<String>  indexColumnNames,
                                         List<RexNode> pushDownRexNodeList,
                                         List<RexNode> remainderRexNodeList) {
         return new IndexCondition(indexName, indexColumnNames,pushDownRexNodeList,remainderRexNodeList);
@@ -55,7 +55,7 @@ public class IndexCondition implements Comparable<IndexCondition>, Serializable 
     }
 
     public boolean canPushDown() {
-        return queryType != null;
+        return  queryType!=null;
     }
 
     public String getName() {
@@ -68,7 +68,7 @@ public class IndexCondition implements Comparable<IndexCondition>, Serializable 
     }
 
     public QueryType getQueryType() {
-        return queryType == null ? QueryType.PK_FULL_SCAN : queryType;
+        return queryType;
     }
 
 

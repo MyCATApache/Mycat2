@@ -64,8 +64,6 @@ import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.RxBuiltInMethodImpl;
-import org.apache.calcite.util.mapping.Mapping;
-import org.apache.calcite.util.mapping.Mappings;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
@@ -222,7 +220,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             }else {
                 primaryTableScan =   MycatView
                         .ofCondition(
-                                LocalTableScan.create((TableScan) relBuilder.scan(shardingTable.getSchemaName(), shardingTable.getTableName()).build()),
+                               LocalFilter.create(wholeCondition,LocalTableScan.create((TableScan) relBuilder.scan(shardingTable.getSchemaName(), shardingTable.getTableName()).build())),
                                 Distribution.of(shardingTable),
                                 wholeCondition
                         );
@@ -241,10 +239,17 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                             (TableScan) relBuilder.scan(indexTable.getSchemaName(), indexTable.getTableName()).build());
                         switch (indexCondition.getQueryType()) {
                             case PK_POINT_QUERY:
-                                String indexColumnName = indexCondition.getIndexColumnName();
+                                List<String> indexColumnNames = indexCondition.getIndexColumnNames();
                                 RexNode rexNode = indexCondition.getPushDownRexNodeList().get(0);
                                 relBuilder.push(localTableScan);
-                                RexNode pushdownCondition = relBuilder.equals(relBuilder.field(indexColumnName), rexNode);
+
+                                List<RexNode> pushDownConditions = new ArrayList<>();
+                                for (String indexColumnName : indexColumnNames) {
+                                    pushDownConditions.add( relBuilder.equals(relBuilder.field(indexColumnName), rexNode));
+
+                                }
+
+                                RexNode pushdownCondition = RexUtil.composeConjunction(relBuilder.getRexBuilder(),pushDownConditions);
                                 RelNode build = relBuilder.build();
                                 indexTableScan =   MycatView
                                         .ofCondition(LocalFilter.create(LogicalFilter.create(localTableScan,pushdownCondition),localTableScan), Distribution.of(indexTable),pushdownCondition);
