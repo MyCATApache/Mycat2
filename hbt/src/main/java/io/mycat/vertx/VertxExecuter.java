@@ -399,21 +399,39 @@ public class VertxExecuter {
 
 
                 for (ShardingTable indexTable : table.getIndexTables()) {
-                    Partition sPartition = indexTable.getShardingFuntion().calculateOne((Map) values);
+                    for (String s : indexTable.getColumns().stream().filter(i -> i.isShardingKey()).map(i -> i.getColumnName()).collect(Collectors.toList())) {
+                        variables.putIfAbsent(s,Collections.singletonList(new RangeVariable(s,RangeVariableType.EQUAL,null)));
+                    }
+
+                    Partition sPartition = indexTable.getShardingFuntion().calculateOne((Map) variables);
 
                     List<SimpleColumnInfo> otherColumns = indexTable.getColumns();
 
                     List<SQLExpr> indexColumns = new ArrayList<>(otherColumns.size());
                     for (SimpleColumnInfo otherColumn : otherColumns) {
-                        indexColumns.add(values.get(columnMap.get(otherColumn.getColumnName())));
+                        Integer integer = columnMap.get(otherColumn.getColumnName());
+                        if (integer != null){
+                            indexColumns.add(values.get(integer));
+                        }
+
                     }
                     SQLInsertStatement eachStatement = template.clone();
                     eachStatement.getColumns().clear();
-                    eachStatement.getValues().getValues().clear();
 
-                    eachStatement.getColumns().addAll(otherColumns.stream().map(i -> columns.get(columnMap.get(i.getColumnName()))).collect(Collectors.toList()));
+                    eachStatement.getColumns().addAll(otherColumns.stream().map(new Function<SimpleColumnInfo, SQLName>() {
+                        @Override
+                        public SQLName apply(SimpleColumnInfo i) {
+                            return new SQLIdentifierExpr(i.getColumnName());
+                        }
+                    }).collect(Collectors.toList()));
                     eachStatement.addValueCause(new SQLInsertStatement.ValuesClause(
-                            otherColumns.stream().map(i -> values.get(columnMap.get(i.getColumnName()))).collect(Collectors.toList())
+                            otherColumns.stream().map(i -> {
+                                Integer integer = columnMap.get(i.getColumnName());
+                                if (integer!=null){
+                                    return values.get(integer);
+                                }
+                                return new SQLNullExpr();
+                            }).collect(Collectors.toList())
                     ));
 
                     SQLExprTableSource eachTableSource = eachStatement.getTableSource();

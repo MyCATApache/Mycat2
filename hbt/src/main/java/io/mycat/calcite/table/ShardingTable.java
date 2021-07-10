@@ -169,6 +169,11 @@ public class ShardingTable implements ShardingTableHandler {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         List<Partition> partitions = (List) ImmutableList.builder().add((Partition) (new BackendTableInfo("prototype", getSchemaName(), getTableName()))).addAll(getBackends()).build();
         partitions.stream().parallel().forEach(node -> CreateTableUtils.createPhysicalTable(jdbcConnectionManager, node, getCreateTableSQL()));
+
+        for (ShardingIndexTable indexTable : getIndexTables()) {
+            indexTable.createPhysicalTables();
+        }
+
     }
 
     @Override

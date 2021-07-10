@@ -20,10 +20,7 @@ import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExprGroup;
-import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
-import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
-import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
@@ -53,6 +50,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import static io.mycat.calcite.DrdsRunnerHelper.getTypes;
 
 public class VertxUpdateExecuter {
     private static final Logger LOGGER = LoggerFactory.getLogger(VertxUpdateExecuter.class);
@@ -86,11 +85,15 @@ public class VertxUpdateExecuter {
 
     public static void setFrom(SQLStatement sqlStatement, SQLExprTableSource tableSource) {
         if (sqlStatement instanceof SQLUpdateStatement) {
-            ((SQLUpdateStatement) sqlStatement).setFrom(tableSource);
+            SQLUpdateStatement sqlStatement1 = (SQLUpdateStatement) sqlStatement;
+           // sqlStatement1.setFrom(tableSource);
+            sqlStatement1.setTableSource(tableSource);
             return;
         }
         if (sqlStatement instanceof SQLDeleteStatement) {
-            ((SQLDeleteStatement) sqlStatement).setFrom(tableSource);
+            SQLDeleteStatement sqlStatement1 = (SQLDeleteStatement) sqlStatement;
+           // sqlStatement1.setFrom(tableSource);
+            sqlStatement1.setTableSource(tableSource);
             return;
         }
         if (sqlStatement instanceof SQLInsertStatement) {
@@ -154,7 +157,9 @@ public class VertxUpdateExecuter {
                     ImmutableList<ShardingTable> shardingTables = (ImmutableList) ImmutableList.builder().add(shardingTable).addAll(shardingTable.getIndexTables()).build();
 
 
-                    Map<String, SQLExpr> columnMap = shardingTables.stream().flatMap(s -> s.getColumns().stream().filter(i -> i.isShardingKey())).map(i -> i.getColumnName())
+                    Map<String, SQLExpr> columnMap = shardingTables.stream().flatMap(s -> {
+                        return s.getColumns().stream().filter(i -> i.isShardingKey());
+                    }).map(i -> i.getColumnName())
                             .distinct().collect(Collectors.toMap(k -> k, v -> SQLUtils.toSQLExpr(v + " = ? ")));
 
                     shardingTable.getColumns().stream().filter(i -> shardingTable.getShardingFuntion().isShardingKey(i.getColumnName())).collect(Collectors.toList());
@@ -172,10 +177,14 @@ public class VertxUpdateExecuter {
                             @Override
                             public boolean visit(SQLVariantRefExpr x) {
                                 innerParams.add(params.get(x.getIndex()));
-                                innerTypes.add(typeNames.get(x.getIndex()));
+                                if(!typeNames.isEmpty()) {
+                                    innerTypes.add(typeNames.get(x.getIndex()));
+                                }
                                 return false;
                             }
                         });
+                    }else {
+
                     }
                     DrdsSqlWithParams queryDrdsSqlWithParams =
                    new DrdsSqlWithParams(sqlSelectStatement.toString(),
@@ -201,6 +210,29 @@ public class VertxUpdateExecuter {
                     if (shardingTable.getIndexTables().isEmpty()) {
                       continue;
                     }
+                    if (where==null){
+                        //delete all index tables;
+
+                        for (ShardingTable indexTable : shardingTable.getIndexTables()) {
+                            SQLStatement eachStatement = SQLUtils.parseSingleMysqlStatement(drdsSqlWithParams.getParameterizedSql());
+                            SQLExprTableSource sqlTableSource = new SQLExprTableSource();
+                            sqlTableSource.setExpr(indexTable.getTableName());
+                            sqlTableSource.setSchema(indexTable.getSchemaName());
+                            setFrom(eachStatement,sqlTableSource);
+
+                            Collection<VertxExecuter.EachSQL> eachSQLS = VertxUpdateExecuter
+                                    .explainUpdate(new DrdsSqlWithParams(eachStatement.toString(),
+                                                    Collections.emptyList(),
+                                                    false,
+                                                    Collections.emptyList(),
+                                                    Collections.emptyList(),
+                                                    Collections.emptyList()),
+                                            context);
+
+                            res.addAll(eachSQLS);
+                        }
+                        continue;
+                    }
                     AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext =
                             new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, codeExecuterContext, queryDrdsSqlWithParams);
 
@@ -221,13 +253,14 @@ public class VertxUpdateExecuter {
                         }
 
                         for (ShardingTable indexTable : shardingTable.getIndexTables()) {
-                            SQLStatement eachStatement = new SQLUpdateStatement();
-                            setFrom(eachStatement, new SQLExprTableSource());
-                            SQLExprTableSource sqlTableSource = getTableSource(eachStatement);
+                            SQLStatement eachStatement = SQLUtils.parseSingleMysqlStatement(drdsSqlWithParams.getParameterizedSql());
+                            SQLExprTableSource sqlTableSource =new SQLExprTableSource();
                             sqlTableSource.setExpr(indexTable.getTableName());
                             sqlTableSource.setSchema(indexTable.getSchemaName());
 
-                            SQLBinaryOpExprGroup sqlBinaryOpExprGroup = new SQLBinaryOpExprGroup(SQLBinaryOperator.Equality, DbType.mysql);
+                            setFrom(eachStatement,sqlTableSource);
+
+                            List<SQLExpr> sqlBinaryOpExprGroup = new ArrayList<>();
 
 
                             RelDataType rowType = codeExecuterContext.getMycatRel().getRowType();
@@ -235,14 +268,15 @@ public class VertxUpdateExecuter {
                             ArrayList<Integer> exactKeys = new ArrayList<>();
                             for (SimpleColumnInfo column : indexTable.getColumns()) {
                                 SQLExpr sqlExpr = columnMap.get(column.getColumnName());
+                                if (sqlExpr==null)continue;;
                                 sqlExpr = sqlExpr.clone();
                                 sqlBinaryOpExprGroup.add(sqlExpr);
                                 RelDataTypeField field = rowType.getField(column.getColumnName(), false, false);
                                 exactKeys.add(field.getIndex());
                             }
 
-
-                            setWhere(eachStatement,sqlBinaryOpExprGroup);
+                            String collect = sqlBinaryOpExprGroup.stream().map(i->i.toString()).collect(Collectors.joining(" and "));
+                            setWhere(eachStatement, SQLUtils.toSQLExpr(collect));
 
                             for (Object[] eachParams : list) {
                                 List<Object> newEachParams = new ArrayList<>();
@@ -250,10 +284,11 @@ public class VertxUpdateExecuter {
                                     newEachParams.add(eachParams[exactKey]);
                                 }
 
-                                Collection<VertxExecuter.EachSQL> eachSQLS = VertxUpdateExecuter.explainUpdate(new DrdsSqlWithParams(eachStatement.toString(),
+                                Collection<VertxExecuter.EachSQL> eachSQLS = VertxUpdateExecuter
+                                        .explainUpdate(new DrdsSqlWithParams(eachStatement.toString(),
                                                 newEachParams,
                                                 false,
-                                                Collections.emptyList(),
+                                                        getTypes(newEachParams),
                                                 Collections.emptyList(),
                                                 Collections.emptyList()),
                                         context);

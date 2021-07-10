@@ -22,6 +22,7 @@ import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
+import com.alibaba.druid.sql.dialect.mysql.ast.MySqlPrimaryKey;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
 import io.mycat.ConfigOps;
@@ -292,13 +293,13 @@ public class MycatRouterConfigOps implements AutoCloseable {
                 .collect(Collectors.toMap(k -> SQLUtils.normalize(k.getColumnName()), v -> v)));
 
         Map<String, ShardingTableConfig> indexTableConfigs = new HashMap<>();
+        MySqlPrimaryKey primaryKey =(MySqlPrimaryKey) tableStatement.getTableElementList().stream().filter(i -> i instanceof MySqlPrimaryKey).findFirst().orElse(null);
         for (SQLTableElement sqlTableElement : tableStatement.getTableElementList()) {
             if (sqlTableElement instanceof MySqlTableIndex) {
                 MySqlTableIndex element = (MySqlTableIndex) sqlTableElement;
                 SQLIndexDefinition indexDefinition = element.getIndexDefinition();
                 MySqlCreateTableStatement indexCreateTableStatement = new MySqlCreateTableStatement();
                 indexCreateTableStatement.setIfNotExiists(true);
-
 
                 String indexTableName = tableName + "_" + SQLUtils.normalize(indexDefinition.getName().getSimpleName());
                 indexCreateTableStatement.setTableName(indexTableName);
@@ -308,6 +309,9 @@ public class MycatRouterConfigOps implements AutoCloseable {
                 }
                 for (SQLName sqlName : indexDefinition.getCovering()) {
                     indexCreateTableStatement.addColumn(columnMap.get(SQLUtils.normalize(sqlName.toString())));
+                }
+                if(primaryKey!=null){
+                    indexCreateTableStatement.getTableElementList().add(primaryKey);
                 }
                 indexCreateTableStatement.setDbPartitionBy(indexDefinition.getDbPartitionBy());
                 indexCreateTableStatement.setTablePartitionBy(indexDefinition.getTbPartitionBy());

@@ -20,11 +20,11 @@ public class CreateGsiTest implements MycatTest {
 
     @Test
     public void createGsi() throws Exception{
-//        initShardingTable();
+        initShardingTable();
         try(Connection connection = getMySQLConnection(DB_MYCAT)){
-//           execute(connection,"CREATE UNIQUE GLOBAL INDEX `g_i_user_id` ON `db1`.`travelrecord`(`user_id`) \n" +
-//                    "    COVERING(`fee`,id) \n" +
-//                    "    dbpartition by mod_hash(`user_id`) tbpartition by mod_hash(`user_id`) dbpartitions 2 tbpartitions 2");
+           execute(connection,"CREATE UNIQUE GLOBAL INDEX `g_i_user_id` ON `db1`.`travelrecord`(`user_id`) \n" +
+                    "    COVERING(`fee`,id) \n" +
+                    "    dbpartition by mod_hash(`user_id`) tbpartition by mod_hash(`user_id`) dbpartitions 2 tbpartitions 2");
 //            boolean b = hasData(connection, "db1", "travelrecord_g_i_user_id");//test create it
 //            List<Map<String, Object>> maps = executeQuery(connection, ShowTopologyHint.create("db1", "travelrecord_g_i_user_id").toString());
 //            Assert.assertEquals("[{targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_0}, {targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_1}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_2}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_3}]",maps.toString());
@@ -34,8 +34,19 @@ public class CreateGsiTest implements MycatTest {
 //            List<Map<String, Object>> maps2 = executeQuery(connection, "select * from db1.travelrecord where user_id = 1");
 
 
-         //   String explain = explain(connection, "select * from db1.travelrecord where id = 1");
-            String explain1 = explain(connection, "select * from db1.travelrecord where user_id = 1");
+//            String explainPrimaryTable = explain(connection, "select * from db1.travelrecord where id = 1");
+//            String explainIndexScan = explain(connection, "select * from db1.travelrecord where user_id = 1");//index-scan
+     String explainOnlyIndexScan = explain(connection, "select fee from db1.travelrecord where user_id = 1");//index-scan
+deleteData(connection,"db1","travelrecord");
+            deleteData(connection,"db1","travelrecord_g_i_user_id");
+            for (int i = 1; i < 10; i++) {
+                execute(connection, "insert db1.travelrecord (id,user_id) values(" + i + "," +
+                        "" +
+                        i +
+                        ")");
+            }
+            List<Map<String, Object>> maps = executeQuery(connection, "select fee from db1.travelrecord where user_id = 1");
+
             System.out.println();
 
         }
@@ -78,7 +89,7 @@ public class CreateGsiTest implements MycatTest {
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
                 + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
-        execute(mycatConnection, "CREATE TABLE `company` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))");
+        //execute(mycatConnection, "CREATE TABLE `company` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))");
           execute(mycatConnection, "delete from db1.travelrecord");
 
         for (int i = 1; i < 10; i++) {

@@ -17,4 +17,8 @@ public class ProjectIndexMapping {
         this.factColumns = factColumns;
         this.fixProjects = fixProjects;
     }
+
+   public boolean needFactTable(){
+       return !indexColumns.containsAll(factColumns);
+    }
 }

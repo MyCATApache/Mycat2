@@ -14,16 +14,14 @@
  */
 package io.mycat.calcite.logical;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
+import com.google.common.collect.*;
 import io.mycat.DrdsSqlCompiler;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.Partition;
 import io.mycat.PartitionGroup;
 import io.mycat.calcite.*;
 import io.mycat.calcite.localrel.LocalFilter;
+import io.mycat.calcite.localrel.LocalProject;
 import io.mycat.calcite.localrel.LocalTableScan;
 import io.mycat.calcite.localrel.ToLocalConverter;
 import io.mycat.calcite.physical.*;
@@ -63,7 +61,10 @@ import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Permutation;
 import org.apache.calcite.util.RxBuiltInMethodImpl;
+import org.apache.calcite.util.mapping.IntPair;
+import org.apache.calcite.util.mapping.Mappings;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
@@ -71,6 +72,7 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 public class MycatView extends AbstractRelNode implements MycatRel {
@@ -171,6 +173,27 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                 return produceIndexViews(((TableScan) node).identity().toIntArray());
             }
         }
+        if (relNode instanceof Project) {
+            Project project = (Project) relNode;
+            RelNode node = project.getInput();
+
+            if (node instanceof Filter) {
+                node = ((Filter) node).getInput();
+            }
+            if (node instanceof TableScan) {
+                Permutation permutation = project.getPermutation();
+                Mappings.TargetMapping mapping = project.getMapping();
+                if (mapping != null) {
+                    ArrayList<Integer> intList = new ArrayList<>();
+                    for (IntPair intPair : mapping) {
+                        intList.add(intPair.source);
+                        System.out.println();
+                    }
+                    int[] ints = intList.stream().mapToInt(i -> i).toArray();
+                    return produceIndexViews(ints);
+                }
+            }
+        }
         return Collections.emptyList();
     }
 
@@ -193,16 +216,21 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         for (ShardingIndexTable indexTable : indexTables) {
             ProjectIndexMapping indexMapping = project(indexTable, projects);
             List<Integer> factColumns = indexMapping.getFactColumns();
-            boolean indexOnlyScan = factColumns.isEmpty();
+            boolean indexOnlyScan = !indexMapping.needFactTable();
             RelNode orginalRelNode = getRelNode();
             RexNode wholeCondition ;
             IndexCondition indexCondition ;
+
+            if (orginalRelNode instanceof Project){
+                orginalRelNode =  orginalRelNode.getInput(0);
+            }
             if (orginalRelNode instanceof  Filter){
                 wholeCondition = ((Filter) orginalRelNode).getCondition();
                 PredicateAnalyzer predicateAnalyzer = new PredicateAnalyzer(indexTable, orginalRelNode.getInput(0));
                 Map<QueryType, List<IndexCondition>> queryTypeListMap = predicateAnalyzer.translateMatch(condition);
                 if (queryTypeListMap.isEmpty())return Collections.emptyList();
-                List<IndexCondition> next = queryTypeListMap.values().iterator().next();
+                List<IndexCondition> next = queryTypeListMap.values().stream().filter(i->i!=null).iterator().next().stream()
+                        .filter(i->i!=null).collect(Collectors.toList());
       indexCondition = next.get(0);
 
             }else {
@@ -226,54 +254,71 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                         );
             }
 
-            if(indexCondition.getQueryType() == QueryType.PK_FULL_SCAN){
+            if(indexCondition==null||indexCondition.getQueryType() ==null||indexCondition.getQueryType() == QueryType.PK_FULL_SCAN){
                 return Collections.emptyList();
             }
 
-
-            RelNode accept = orginalRelNode.accept(new RelShuttleImpl() {
+            RelShuttleImpl relShuttle = new RelShuttleImpl() {
                 @Override
                 public RelNode visit(TableScan scan) {
                     RelNode indexTableScan = null;
+                    LocalFilter localFilter = null;
+                    RexNode pushdownCondition = null;
                     LocalTableScan localTableScan = LocalTableScan.create(
                             (TableScan) relBuilder.scan(indexTable.getSchemaName(), indexTable.getTableName()).build());
-                        switch (indexCondition.getQueryType()) {
-                            case PK_POINT_QUERY:
-                                List<String> indexColumnNames = indexCondition.getIndexColumnNames();
-                                RexNode rexNode = indexCondition.getPushDownRexNodeList().get(0);
-                                relBuilder.push(localTableScan);
+                    switch (indexCondition.getQueryType()) {
+                        case PK_POINT_QUERY:
+                            List<String> indexColumnNames = indexCondition.getIndexColumnNames();
+                            RexNode rexNode = indexCondition.getPushDownRexNodeList().get(0);
+                            relBuilder.push(localTableScan);
 
-                                List<RexNode> pushDownConditions = new ArrayList<>();
-                                for (String indexColumnName : indexColumnNames) {
-                                    pushDownConditions.add( relBuilder.equals(relBuilder.field(indexColumnName), rexNode));
+                            List<RexNode> pushDownConditions = new ArrayList<>();
+                            for (String indexColumnName : indexColumnNames) {
+                                pushDownConditions.add(relBuilder.equals(relBuilder.field(indexColumnName), rexNode));
 
-                                }
+                            }
 
-                                RexNode pushdownCondition = RexUtil.composeConjunction(relBuilder.getRexBuilder(),pushDownConditions);
-                                RelNode build = relBuilder.build();
-                                indexTableScan =   MycatView
-                                        .ofCondition(LocalFilter.create(LogicalFilter.create(localTableScan,pushdownCondition),localTableScan), Distribution.of(indexTable),pushdownCondition);
+                            pushdownCondition = RexUtil.composeConjunction(relBuilder.getRexBuilder(), pushDownConditions);
+                            RelNode build = relBuilder.build();
+                            localFilter = LocalFilter.create(LogicalFilter.create(localTableScan, pushdownCondition), localTableScan);
+                            indexTableScan = localFilter;
 
-                                break;
-                            case PK_RANGE_QUERY:
-                           throw new UnsupportedOperationException();
-                            case PK_FULL_SCAN:
+                            break;
+                        case PK_RANGE_QUERY:
+                            throw new UnsupportedOperationException();
+                        case PK_FULL_SCAN:
 
-                        }
+                    }
 
                     if (indexOnlyScan) {
+                        relBuilder.clear();
+
+                        RelDataType rowType = indexTableScan.getRowType();
+                        ArrayList<Integer> newProject = new ArrayList<>();
+                        for (int project : projects) {
+                            String name = shardingTable.getColumns().get(project).getColumnName();
+                            int index = indexTableScan.getRowType().getField(name, false, false).getIndex();
+                            newProject.add(index);
+                        }
+                        indexTableScan = MycatView
+                                .ofCondition(LocalProject.create((Project) RelOptUtil.createProject(indexTableScan,
+                                        newProject), indexTableScan),
+                                        Distribution.of(indexTable), pushdownCondition);
                         return indexTableScan;
                     } else {
+                        indexTableScan = MycatView
+                                .ofCondition(indexTableScan,
+                                        Distribution.of(indexTable), pushdownCondition);
                         RelNode leftProject = RelOptUtil.createProject(indexTableScan, indexMapping.getIndexColumns());
                         RelNode rightProject = RelOptUtil.createProject(primaryTableScan, indexMapping.getFactColumns());
 
-                        if (leftProject instanceof  Project){
+                        if (leftProject instanceof Project) {
 
 
-                            leftProject = MycatProject.create(leftProject.getInput(0),    ((Project) leftProject).getProjects(), leftProject.getRowType());
+                            leftProject = MycatProject.create(leftProject.getInput(0), ((Project) leftProject).getProjects(), leftProject.getRowType());
                         }
-                        if (rightProject instanceof  Project){
-                            rightProject = MycatProject.create(rightProject.getInput(0),    ((Project) rightProject).getProjects(), rightProject.getRowType());
+                        if (rightProject instanceof Project) {
+                            rightProject = MycatProject.create(rightProject.getInput(0), ((Project) rightProject).getProjects(), rightProject.getRowType());
                         }
 
 
@@ -295,19 +340,20 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
                         RelNode project = RelOptUtil.createProject(relNode, (list));
 
-                        if (project instanceof  Project){
-                            project = MycatProject.create(project.getInput(0),    ((Project) project).getProjects(), project.getRowType());
+                        if (project instanceof Project) {
+                            project = MycatProject.create(project.getInput(0), ((Project) project).getProjects(), project.getRowType());
                         }
 
                         return project;
                     }
                 }
-            });
-            if (accept instanceof LocalFilter){
-                accept = MycatFilter.create(((LocalFilter) accept).getInput().getTraitSet(),((LocalFilter) accept).getInput(),((LocalFilter) accept).getCondition());
-            }
+            };
+            RelNode accept = orginalRelNode.accept(relShuttle);
+//            if (accept instanceof LocalFilter&&accept.getInput(0) instanceof MycatView){
+//                accept = MycatFilter.create(((LocalFilter) accept).getInput().getTraitSet(),((LocalFilter) accept).getInput(),((LocalFilter) accept).getCondition());
+//            }
 
-            tableArrayList.add(accept);
+            tableArrayList.add(accept.getInput(0));
         }
         return (List) tableArrayList;
     }
