@@ -56,7 +56,7 @@ public class PredicateAnalyzerTest {
         PredicateAnalyzer predicateAnalyzer2 = new PredicateAnalyzer(
                 Collections.singletonList(KeyMeta.of("default", "id")), columnList);
         List<Partition> partitions = getObject(table.getShardingFuntion(), predicateAnalyzer2.translateMatch (rexNode), Arrays.asList(1));
-        Assert.assertEquals(new ArrayList<>(Arrays.asList(new IndexDataNode ("c0", "db1_0", "sharding_1",1,0,1))).toString(), partitions.toString());
+        Assert.assertEquals(new ArrayList<>(Arrays.asList(new IndexDataNode ("c1", "db1_1", "sharding_1",3,1,1))).toString(), partitions.toString());
     }
 
     @Test
