@@ -325,21 +325,11 @@ public class VertxExecuter {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         ShardingTable table = (ShardingTable) metadataManager.getTable(schemaName, tableName);
         SimpleColumnInfo autoIncrementColumn = table.getAutoIncrementColumn();
-        boolean autoIncrement = autoIncrementColumn != null;
 
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        boolean fillAutoIncrement = autoIncrementColumn!=null;
-        List<SQLName> columns = (List)statement.getColumns();
-        if (autoIncrement) {
-            for (SQLName column :columns) {
-                String columnName = SQLUtils.normalize(column.getSimpleName());
-                if (SQLUtils.nameEquals(columnName, autoIncrementColumn.getColumnName())) {
-                    fillAutoIncrement = false;
-                }
-            }
-
-        }
+        List<SQLName> columns = (List) statement.getColumns();
+        boolean fillAutoIncrement = needFillAutoIncrement(table, columns);
         if (fillAutoIncrement) {
             columns.add(new SQLIdentifierExpr(autoIncrementColumn.getColumnName()));
         }
@@ -365,7 +355,6 @@ public class VertxExecuter {
                 SQLInsertStatement primaryStatement = template.clone();
                 primaryStatement.getColumns().addAll(columns);
                 primaryStatement.getValuesList().add(valuesClause);
-
                 List<SQLExpr> values = primaryStatement.getValues().getValues();
 
                 if (fillAutoIncrement) {
@@ -373,88 +362,87 @@ public class VertxExecuter {
                     values.add(SQLExprUtils.fromJavaObject(stringSupplier.get()));
                 }
 
-                SQLExprTableSource exprTableSource = primaryStatement.getTableSource();
-
                 Map<String, List<RangeVariable>> variables = compute(columns, values, params);
-
                 Partition mPartition = table.getShardingFuntion().calculateOne((Map) variables);
 
+                SQLExprTableSource exprTableSource = primaryStatement.getTableSource();
                 exprTableSource.setSimpleName(mPartition.getTable());
                 exprTableSource.setSchema(mPartition.getSchema());
 
-
-
-                {
-                    List<Object> newParams = new ArrayList<>();
-                    primaryStatement.accept(new MySqlASTVisitorAdapter() {
-                        @Override
-                        public boolean visit(SQLVariantRefExpr x) {
-                            newParams.add(params.get(x.getIndex()));
-                            return false;
-                        }
-                    });
-
-                    sqls.add(new EachSQL(mPartition.getTargetName(), primaryStatement.toString(), newParams));
-                }
+                sqls.add(new EachSQL(mPartition.getTargetName(), primaryStatement.toString(), getNewParams(params, primaryStatement)));
 
 
                 for (ShardingTable indexTable : table.getIndexTables()) {
-                    for (String s : indexTable.getColumns().stream().filter(i -> i.isShardingKey()).map(i -> i.getColumnName()).collect(Collectors.toList())) {
-                        variables.putIfAbsent(s,Collections.singletonList(new RangeVariable(s,RangeVariableType.EQUAL,null)));
-                    }
+
+
+                  //  fillIndexTableShardingKeys(variables, indexTable);
 
                     Partition sPartition = indexTable.getShardingFuntion().calculateOne((Map) variables);
 
-                    List<SimpleColumnInfo> otherColumns = indexTable.getColumns();
-
-                    List<SQLExpr> indexColumns = new ArrayList<>(otherColumns.size());
-                    for (SimpleColumnInfo otherColumn : otherColumns) {
-                        Integer integer = columnMap.get(otherColumn.getColumnName());
-                        if (integer != null){
-                            indexColumns.add(values.get(integer));
-                        }
-
-                    }
                     SQLInsertStatement eachStatement = template.clone();
                     eachStatement.getColumns().clear();
 
-                    eachStatement.getColumns().addAll(otherColumns.stream().map(new Function<SimpleColumnInfo, SQLName>() {
-                        @Override
-                        public SQLName apply(SimpleColumnInfo i) {
-                            return new SQLIdentifierExpr(i.getColumnName());
-                        }
-                    }).collect(Collectors.toList()));
-                    eachStatement.addValueCause(new SQLInsertStatement.ValuesClause(
-                            otherColumns.stream().map(i -> {
-                                Integer integer = columnMap.get(i.getColumnName());
-                                if (integer!=null){
-                                    return values.get(integer);
-                                }
-                                return new SQLNullExpr();
-                            }).collect(Collectors.toList())
-                    ));
+                    fillIndexTableShardingKeys(columnMap, values, indexTable.getColumns(), eachStatement);
 
                     SQLExprTableSource eachTableSource = eachStatement.getTableSource();
                     eachTableSource.setSimpleName(sPartition.getTable());
                     eachTableSource.setSchema(sPartition.getSchema());
 
-                    {
-                        List<Object> newParams = new ArrayList<>();
-                        primaryStatement.accept(new MySqlASTVisitorAdapter() {
-                            @Override
-                            public boolean visit(SQLVariantRefExpr x) {
-                                newParams.add(params.get(x.getIndex()));
-                                return false;
-                            }
-                        });
-
-                        sqls.add(new EachSQL(sPartition.getTargetName(), eachStatement.toString(), newParams));
-                    }
+                    sqls.add(new EachSQL(sPartition.getTargetName(), eachStatement.toString(), getNewParams(params, primaryStatement)));
                 }
             }
         }
 
         return sqls;
+    }
+
+    private static void fillIndexTableShardingKeys(Map<String, Integer> columnMap, List<SQLExpr> values, List<SimpleColumnInfo> otherColumns, SQLInsertStatement eachStatement) {
+        eachStatement.getColumns().addAll(otherColumns.stream().map((Function<SimpleColumnInfo, SQLName>) i -> new SQLIdentifierExpr(i.getColumnName())).collect(Collectors.toList()));
+        eachStatement.addValueCause(new SQLInsertStatement.ValuesClause(
+                otherColumns.stream().map(i -> {
+                    Integer integer = columnMap.get(i.getColumnName());
+                    if (integer != null) {
+                        return values.get(integer);
+                    }
+                    return new SQLNullExpr();
+                }).collect(Collectors.toList())
+        ));
+    }
+
+    private static void fillIndexTableShardingKeys(Map<String, List<RangeVariable>> variables, ShardingTable indexTable) {
+        for (String s : indexTable.getColumns().stream()
+                .filter(i -> i.isShardingKey())
+                .filter(i -> i.isNullable())
+                .map(i -> i.getColumnName())
+                .collect(Collectors.toList())) {
+            variables.putIfAbsent(s, Collections.singletonList(new RangeVariable(s, RangeVariableType.EQUAL, null)));
+        }
+    }
+
+    @NotNull
+    private static List<Object> getNewParams(List params, SQLInsertStatement primaryStatement) {
+        List<Object> newParams = new ArrayList<>();
+        primaryStatement.accept(new MySqlASTVisitorAdapter() {
+            @Override
+            public boolean visit(SQLVariantRefExpr x) {
+                newParams.add(params.get(x.getIndex()));
+                return false;
+            }
+        });
+        return newParams;
+    }
+
+    private static boolean needFillAutoIncrement(ShardingTable table, List<SQLName> columns) {
+        SimpleColumnInfo autoIncrementColumn = table.getAutoIncrementColumn();
+        if (autoIncrementColumn != null) {
+            for (SQLName column : columns) {
+                String columnName = SQLUtils.normalize(column.getSimpleName());
+                if (SQLUtils.nameEquals(columnName, autoIncrementColumn.getColumnName())) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     public static Map<String, List<RangeVariable>> compute(List<SQLName> columns,

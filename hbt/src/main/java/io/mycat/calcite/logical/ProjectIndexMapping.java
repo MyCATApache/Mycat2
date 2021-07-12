@@ -7,15 +7,12 @@ import java.util.List;
 
 @Getter
 public class ProjectIndexMapping {
-    private List<Integer> indexColumns;
-    private List<Integer> factColumns;
-    private List<Integer> fixProjects;
-    public ProjectIndexMapping(List<Integer> indexColumns,
-                               List<Integer> factColumns,
-                               List<Integer> fixProjects) {
+    private List<String> indexColumns;
+    private List<String> factColumns;
+    public ProjectIndexMapping(List<String> indexColumns,
+                               List<String> factColumns) {
         this.indexColumns = indexColumns;
         this.factColumns = factColumns;
-        this.fixProjects = fixProjects;
     }
 
    public boolean needFactTable(){

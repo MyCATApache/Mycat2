@@ -19,26 +19,28 @@ import java.util.Map;
 public class CreateGsiTest implements MycatTest {
 
     @Test
-    public void createGsi() throws Exception{
+    public void createGsi() throws Exception {
         initShardingTable();
-        try(Connection connection = getMySQLConnection(DB_MYCAT)){
-           execute(connection,"CREATE UNIQUE GLOBAL INDEX `g_i_user_id` ON `db1`.`travelrecord`(`user_id`) \n" +
+        try (Connection connection = getMySQLConnection(DB_MYCAT)) {
+            execute(connection, "CREATE UNIQUE GLOBAL INDEX `g_i_user_id` ON `db1`.`travelrecord`(`user_id`) \n" +
                     "    COVERING(`fee`,id) \n" +
                     "    dbpartition by mod_hash(`user_id`) tbpartition by mod_hash(`user_id`) dbpartitions 2 tbpartitions 2");
-//            boolean b = hasData(connection, "db1", "travelrecord_g_i_user_id");//test create it
-//            List<Map<String, Object>> maps = executeQuery(connection, ShowTopologyHint.create("db1", "travelrecord_g_i_user_id").toString());
-//            Assert.assertEquals("[{targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_0}, {targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_1}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_2}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_3}]",maps.toString());
+            boolean b = hasData(connection, "db1", "travelrecord_g_i_user_id");//test create it
+            List<Map<String, Object>> travelrecord_g_i_user_id_topologyHint = executeQuery(connection, ShowTopologyHint.create("db1", "travelrecord_g_i_user_id").toString());
+            Assert.assertEquals("[{targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_0}, {targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_1}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_2}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_3}]", travelrecord_g_i_user_id_topologyHint.toString());
 
 
-//            List<Map<String, Object>> maps1 = executeQuery(connection, "select * from db1.travelrecord where id = 1");
-//            List<Map<String, Object>> maps2 = executeQuery(connection, "select * from db1.travelrecord where user_id = 1");
-
-
-//            String explainPrimaryTable = explain(connection, "select * from db1.travelrecord where id = 1");
-//            String explainIndexScan = explain(connection, "select * from db1.travelrecord where user_id = 1");//index-scan
-     String explainOnlyIndexScan = explain(connection, "select fee from db1.travelrecord where user_id = 1");//index-scan
-deleteData(connection,"db1","travelrecord");
-            deleteData(connection,"db1","travelrecord_g_i_user_id");
+            String explainPrimaryTable = explain(connection, "select * from db1.travelrecord where id = 1");
+            Assert.assertTrue(explainPrimaryTable.contains("Each(targetName=c0, sql=SELECT * FROM db1_0.travelrecord_1 AS `travelrecord` WHERE (`travelrecord`.`id` = ?))"));
+            String explainIndexScan = explain(connection, "select * from db1.travelrecord where user_id = 1");//index-scan
+            Assert.assertTrue(  explainIndexScan.contains("MycatProject(id=[$0], user_id=[$1], traveldate=[$3], fee=[$2], days=[$4], blob=[$5])\n" +
+                   "  MycatSQLTableLookup(condition=[=($0, $7)], joinType=[inner], type=[BACK], correlationIds=[[$cor0]], leftKeys=[[0]])\n" +
+                   "    MycatView(distribution=[[db1.travelrecord_g_i_user_id]], conditions=[=($0, ?0)])\n" +
+                   "    MycatView(distribution=[[db1.travelrecord]])"));
+            String explainOnlyIndexScan = explain(connection, "select fee from db1.travelrecord where user_id = 1");//index-scan
+            Assert.assertTrue(explainOnlyIndexScan.contains("Each(targetName=c0, sql=SELECT `travelrecord_g_i_user_id`.`fee` FROM db1_0.travelrecord_g_i_user_id_1 AS `travelrecord_g_i_user_id` WHERE (`travelrecord_g_i_user_id`.`user_id` = ?))"));
+            deleteData(connection, "db1", "travelrecord");
+            deleteData(connection, "db1", "travelrecord_g_i_user_id");
             for (int i = 1; i < 10; i++) {
                 execute(connection, "insert db1.travelrecord (id,user_id) values(" + i + "," +
                         "" +
@@ -46,10 +48,11 @@ deleteData(connection,"db1","travelrecord");
                         ")");
             }
             List<Map<String, Object>> maps = executeQuery(connection, "select fee from db1.travelrecord where user_id = 1");
-
+            Assert.assertEquals(1,maps.size());
             System.out.println();
 
         }
+
     }
 
 
@@ -90,7 +93,7 @@ deleteData(connection,"db1","travelrecord");
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
                 + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
         //execute(mycatConnection, "CREATE TABLE `company` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))");
-          execute(mycatConnection, "delete from db1.travelrecord");
+        execute(mycatConnection, "delete from db1.travelrecord");
 
         for (int i = 1; i < 10; i++) {
             execute(mycatConnection, "insert db1.travelrecord (id) values(" + i + ")");
