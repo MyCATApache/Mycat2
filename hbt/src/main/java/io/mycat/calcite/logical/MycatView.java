@@ -250,7 +250,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     }
 
     @NotNull
-    private static List<String> getProjectStringList(List<Integer> projects, RelDataType orginalRowType) {
+    public static List<String> getProjectStringList(List<Integer> projects, RelDataType orginalRowType) {
         ArrayList<String> newProject = new ArrayList<>();
         for (int project : projects) {
             String name = orginalRowType.getFieldList().get(project).getName();
@@ -259,7 +259,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         return newProject;
     }
 
-    private static MycatRel createMycatProject(RelNode indexTableScan, List<String> indexColumns) {
+    public static MycatRel createMycatProject(RelNode indexTableScan, List<String> indexColumns) {
         RelDataType rowType = indexTableScan.getRowType();
         ArrayList<Integer> ints = new ArrayList<>();
         for (String indexColumn : indexColumns) {

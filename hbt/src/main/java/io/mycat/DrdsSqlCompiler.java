@@ -401,8 +401,8 @@ public class DrdsSqlCompiler {
                 //TABLELOOKUP
                 listBuilder.add(MycatTableLookupSemiJoinRule.INSTANCE);
                 listBuilder.add(MycatTableLookupCombineRule.INSTANCE);
-//                listBuilder.add(MycatJoinTableLookupTransposeRule.LEFT_INSTANCE);
-//                listBuilder.add(MycatJoinTableLookupTransposeRule.RIGHT_INSTANCE);
+                listBuilder.add(MycatJoinTableLookupTransposeRule.LEFT_INSTANCE);
+                listBuilder.add(MycatJoinTableLookupTransposeRule.RIGHT_INSTANCE);
                 listBuilder.add(MycatValuesJoinRule.INSTANCE);
             }
 

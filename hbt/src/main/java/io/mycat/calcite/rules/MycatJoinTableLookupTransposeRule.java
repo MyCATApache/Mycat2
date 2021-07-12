@@ -1,6 +1,7 @@
 package io.mycat.calcite.rules;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatSQLTableLookup;
 import io.mycat.calcite.physical.MycatTableLookupValues;
@@ -28,14 +29,14 @@ public class MycatJoinTableLookupTransposeRule extends RelRule<MycatJoinTableLoo
     @Override
     public void onMatch(RelOptRuleCall call) {
         Join join = call.rel(0);
-        RelDataType rowType = join.getRowType();
+        RelDataType originalRowType = join.getRowType();
         RelOptCluster cluster = join.getCluster();
         RelNode outerLeft = call.rel(1);
         RelNode outerRight = call.rel(2);
 
         if (outerLeft instanceof MycatSQLTableLookup) {
             MycatSQLTableLookup mycatSQLTableLookup = (MycatSQLTableLookup) outerLeft;
-            if (mycatSQLTableLookup.getType() == MycatSQLTableLookup.Type.BACK){
+            if (mycatSQLTableLookup.getType() == MycatSQLTableLookup.Type.BACK) {
                 RelNode bottomInput = mycatSQLTableLookup.getInput();
                 MycatView indexRightView = (MycatView) mycatSQLTableLookup.getRight();
                 RelNode newInputJoin = join.copy(bottomInput.getTraitSet(), ImmutableList.of(bottomInput, outerRight));
@@ -47,13 +48,7 @@ public class MycatJoinTableLookupTransposeRule extends RelRule<MycatJoinTableLoo
                         mycatSQLTableLookup.getCondition(),
                         mycatSQLTableLookup.getCorrelationIds(),
                         mycatSQLTableLookup.getType());
-                RelDataType newRowType = newMycatSQLTableLookup.getRowType();
-                if (RelOptUtil.areRowTypesEqual(rowType,newRowType,false)){
-                    call.transformTo(newMycatSQLTableLookup);
-                }else {
-                    System.out.println();
-                }
-
+                call.transformTo(fixProject(originalRowType, newMycatSQLTableLookup));
                 return;
             }
 
@@ -62,7 +57,7 @@ public class MycatJoinTableLookupTransposeRule extends RelRule<MycatJoinTableLoo
             MycatSQLTableLookup mycatSQLTableLookup = (MycatSQLTableLookup) outerRight;
             MycatView indexRightView = (MycatView) mycatSQLTableLookup.getRight();
             RelNode newInputJoin = join.copy(outerLeft.getTraitSet(), ImmutableList.of(mycatSQLTableLookup.getInput(), indexRightView));
-            if (mycatSQLTableLookup.getType() == MycatSQLTableLookup.Type.BACK){
+            if (mycatSQLTableLookup.getType() == MycatSQLTableLookup.Type.BACK) {
                 MycatSQLTableLookup newMycatSQLTableLookup = new MycatSQLTableLookup(join.getCluster(),
                         join.getTraitSet(),
                         newInputJoin,
@@ -71,15 +66,20 @@ public class MycatJoinTableLookupTransposeRule extends RelRule<MycatJoinTableLoo
                         mycatSQLTableLookup.getCondition(),
                         mycatSQLTableLookup.getCorrelationIds(),
                         mycatSQLTableLookup.getType());
-                RelDataType newRowType = newMycatSQLTableLookup.getRowType();
-                if (RelOptUtil.areRowTypesEqual(rowType,newRowType,false)){
-                    call.transformTo(newMycatSQLTableLookup);
-                }else {
-                    System.out.println();
-                }
+                call.transformTo(fixProject(originalRowType, newMycatSQLTableLookup));
                 return;
             }
         }
+    }
+
+    private RelNode fixProject(RelDataType originalRowType, MycatSQLTableLookup newMycatSQLTableLookup) {
+        RelNode resNode;
+        if (RelOptUtil.areRowTypesEqual(originalRowType, newMycatSQLTableLookup.getRowType(), false)) {
+            resNode = newMycatSQLTableLookup;
+        } else {
+            resNode = MycatView.createMycatProject(newMycatSQLTableLookup, originalRowType.getFieldNames());
+        }
+        return resNode;
     }
 
     public interface Config extends RelRule.Config {
