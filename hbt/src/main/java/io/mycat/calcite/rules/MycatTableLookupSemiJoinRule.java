@@ -78,7 +78,7 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
 //                MycatCalciteSupport.RexBuilder));
         RexBuilder rexBuilder = MycatCalciteSupport.RexBuilder;
         RelDataTypeFactory typeFactory = cluster.getTypeFactory();
-        relBuilder.push(left);
+        relBuilder.push(right);
         List<RexNode> rightExprs = new ArrayList<>();
         {
             for (Integer rightKey : join.analyzeCondition().rightSet()) {
