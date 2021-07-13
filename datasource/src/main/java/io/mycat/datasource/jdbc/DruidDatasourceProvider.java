@@ -46,7 +46,7 @@ public class DruidDatasourceProvider implements DatasourceProvider {
         datasource.setPassword(password);
         datasource.setUsername(username);
         datasource.setUrl(url);
-        datasource.setMaxWait(TimeUnit.SECONDS.toMillis(60));
+        datasource.setMaxWait(config.getMaxConnectTimeout());
         datasource.setMaxActive(maxCon);
         datasource.setMinIdle(minCon);
         datasource.setKeepAlive(true);
