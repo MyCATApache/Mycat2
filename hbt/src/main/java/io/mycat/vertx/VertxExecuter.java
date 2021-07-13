@@ -441,8 +441,10 @@ public class VertxExecuter {
                     return false;
                 }
             }
+            return true;
+        }else {
+            return false;
         }
-        return true;
     }
 
     public static Map<String, List<RangeVariable>> compute(List<SQLName> columns,
