@@ -18,7 +18,7 @@ public class DatasourceConfig {
     private int maxCon = 1000;
     private int minCon = 1;
     private int maxRetryCount = 5;
-    private long maxConnectTimeout = 3 * 1000;
+    private long maxConnectTimeout = 30 * 1000;
     private String dbType = null;
     private String url;
     private int weight = 0;
