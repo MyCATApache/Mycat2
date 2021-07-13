@@ -5,7 +5,7 @@
 	"initSqlsGetConnection":true,
 	"instanceType":"READ_WRITE",
 	"maxCon":1000,
-	"maxConnectTimeout":3000,
+	"maxConnectTimeout":30000,
 	"maxRetryCount":5,
 	"minCon":1,
 	"name":"prototypeDs",
