@@ -641,8 +641,7 @@ public class MetadataManager implements MysqlVariableService {
                                 SQLExprTableSource sqlExprTableSource = sqlStatement1.getTableSource();
                                 if (!SQLUtils.nameEquals(sqlExprTableSource.getTableName(), tableName) ||
                                         !SQLUtils.nameEquals(sqlExprTableSource.getSchema(), (schemaName))) {
-                                    sqlExprTableSource.setSimpleName(SQLUtils.normalize(tableName));
-                                    sqlExprTableSource.setSchema(SQLUtils.normalize(schemaName));//顺序不能颠倒
+                                    MycatSQLExprTableSourceUtil.setSqlExprTableSource(schemaName,tableName,sqlExprTableSource);
                                     return sqlStatement1.toString();
                                 } else {
                                     return string;

@@ -57,23 +57,25 @@ public class MycatPreparedStatementUtil {
                                              List<MycatHint> hints,
                                              MutableBoolean complex) {
         List<SQLCommentHint> headHintsDirect = sqlStatement.getHeadHintsDirect();
-        if (headHintsDirect!=null){
+        if (headHintsDirect != null) {
             for (SQLCommentHint sqlCommentHint : headHintsDirect) {
                 hints.add(new MycatHint(sqlCommentHint.getText()));
             }
         }
 
         MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(outputParameters, sb, true) {
-           // SQLCommentHint
+            // SQLCommentHint
 //           @Override
 //           public boolean visit(SQLCommentHint x) {
 //          return true;
 //           }
             @Override
             public boolean visit(SQLExprTableSource x) {
-                if (x.getTableName()!=null){
-                    if(x.getSchema()==null){
-                        x.setSchema(defaultSchema);
+                if (x.getTableName() != null) {
+                    if (x.getSchema() == null) {
+                        if (defaultSchema != null) {
+                            x.setSchema("`" + SQLUtils.normalize(defaultSchema) + "`");
+                        }
                     }
                 }
                 return super.visit(x);
@@ -305,7 +307,7 @@ public class MycatPreparedStatementUtil {
         List<Object> outoutParams;
         if (dynamicParameters != null && !dynamicParameters.isEmpty()) {
             outoutParams = dynamicParameters.stream().map(i -> params.get(i)).collect(Collectors.toList());
-        }else {
+        } else {
             outoutParams = Collections.emptyList();
         }
         return outoutParams;

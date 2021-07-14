@@ -13,10 +13,7 @@ import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
 import io.mycat.gsi.GSIService;
-import io.mycat.util.FastSqlUtils;
-import io.mycat.util.Pair;
-import io.mycat.util.SQL;
-import io.mycat.util.UpdateSQL;
+import io.mycat.util.*;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -202,8 +199,7 @@ public class MycatUpdateExecutor {
         for (Partition partition : dataNodes) {
             SQLStatement currentStatement = FastSqlUtils.clone(orginalStatement);
             SQLExprTableSource tableSource = FastSqlUtils.getTableSource(currentStatement);
-            tableSource.setExpr(partition.getTable());
-            tableSource.setSchema(partition.getSchema());
+            MycatSQLExprTableSourceUtil.setSqlExprTableSource(partition.getSchema(),partition.getTable(),tableSource);
             SQL sql = SQL.of(currentStatement.toString(), partition, FastSqlUtils.clone(currentStatement),new ArrayList<>(parameters));
             SQL exist = sqlMap.put(sql, sql);
             if(exist != null){

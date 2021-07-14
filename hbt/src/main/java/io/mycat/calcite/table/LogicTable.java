@@ -25,6 +25,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStateme
 import io.mycat.*;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.router.CustomRuleFunction;
+import io.mycat.util.MycatSQLExprTableSourceUtil;
 import lombok.Getter;
 
 import java.util.*;
@@ -70,7 +71,7 @@ public class LogicTable {
         if (createTableAst instanceof SQLCreateViewStatement) {
             ((SQLCreateViewStatement) createTableAst).setIfNotExists(true);
             SQLExprTableSource tableSource = ((SQLCreateViewStatement) createTableAst).getTableSource();
-            tableSource.setSchema(schemaName);
+            MycatSQLExprTableSourceUtil.setSqlExprTableSource(schemaName,tableSource.getTableName(),tableSource);
         }
         this.createTableSQL = Objects.requireNonNull(SQLUtils.toMySqlString(createTableAst), this.uniqueName + " createTableSQL is not existed");
         /////////////////////////////////////////
@@ -152,8 +153,7 @@ public class LogicTable {
         }
         if (createTableAst instanceof SQLCreateViewStatement) {
             SQLExprTableSource tableSource = ((SQLCreateViewStatement) createTableAst).getTableSource();
-            tableSource.setSimpleName(tableName);
-            tableSource.setSchema(schemaName);
+            MycatSQLExprTableSourceUtil.setSqlExprTableSource(schemaName,tableSource.getTableName(),tableSource);
         }
         return createTableAst.toString();
     }

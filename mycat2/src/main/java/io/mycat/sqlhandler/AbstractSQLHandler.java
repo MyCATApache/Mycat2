@@ -24,6 +24,7 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.ClassUtil;
+import io.mycat.util.MycatSQLExprTableSourceUtil;
 import io.vertx.core.Future;
 import lombok.EqualsAndHashCode;
 import org.jetbrains.annotations.NotNull;
@@ -71,7 +72,7 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
     public void resolveSQLExprTableSource( SQLExprTableSource tableSource,MycatDataContext dataContext) {
         if (tableSource.getSchema() == null) {
             String defaultSchema = checkDefaultSchemaNotNull(dataContext);
-            tableSource.setSchema(defaultSchema);
+            MycatSQLExprTableSourceUtil.setSchema(defaultSchema,tableSource);
         }
     }
 
@@ -92,8 +93,7 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
 //    }
     public void executeOnDataNodes(SQLStatement sqlStatement, JdbcConnectionManager connectionManager, Collection<Partition> partitions, SQLExprTableSource tableSource) {
         for (Partition partition : partitions) {
-            tableSource.setSimpleName(partition.getTable());
-            tableSource.setSchema(partition.getSchema());
+            MycatSQLExprTableSourceUtil.setSqlExprTableSource(partition.getSchema(),partition.getTable(),tableSource);
             String sql = sqlStatement.toString();
             try (DefaultConnection connection = connectionManager.getConnection(partition.getTargetName())) {
                 connection.executeUpdate(sql, false);

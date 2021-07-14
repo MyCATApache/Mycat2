@@ -384,7 +384,7 @@ public class ConfigPrepareExecuter {
              xaLog.readXARecoveryLog();
         }else {
             try{
-                xaLog.readXARecoveryLog();
+               // xaLog.readXARecoveryLog();
             }catch (Throwable throwable){
                 LOGGER.warn("try readXARecoveryLog",throwable);
             }

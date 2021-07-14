@@ -12,6 +12,7 @@ import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.MycatRelDatasourceSourceInfo;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.spm.Plan;
+import io.mycat.util.MycatSQLExprTableSourceUtil;
 import io.mycat.util.NameMap;
 import io.vertx.core.Future;
 import org.apache.calcite.sql.util.SqlString;
@@ -58,8 +59,7 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
                         String table = SQLUtils.normalize(x.getTableName());
                         String s = schema+ "_" +table ;
                         Partition tableInfo = partition.get(s,false);
-                        x.setSimpleName(tableInfo.getTable());
-                        x.setSchema(tableInfo.getSchema());
+                        MycatSQLExprTableSourceUtil.setSqlExprTableSource(tableInfo.getSchema(),tableInfo.getTable(),x);
                         return false;
                     }
                 });

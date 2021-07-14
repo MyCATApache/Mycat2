@@ -21,6 +21,7 @@ import io.mycat.gsi.GSIService;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.FastSqlUtils;
+import io.mycat.util.MycatSQLExprTableSourceUtil;
 import io.mycat.util.Pair;
 import io.mycat.util.SQL;
 import lombok.Getter;
@@ -139,8 +140,7 @@ public class MycatInsertExecutor {
             Partition partition = function.calculateOne((Map) variables);
 
             SQLExprTableSource tableSource = cloneStatement.getTableSource();
-            tableSource.setExpr(partition.getTable());
-            tableSource.setSchema(partition.getSchema());
+            MycatSQLExprTableSourceUtil.setSqlExprTableSource(partition.getSchema(),partition.getTable(),tableSource);
             cloneStatement.addValueCause(valuesClause);
 
             int size = valuesClause.getValues().size();
@@ -192,8 +192,7 @@ public class MycatInsertExecutor {
             Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues(), (List) param);
             Partition partition = function.calculateOne((Map) variables);
             SQLExprTableSource tableSource = mySqlInsertStatement.getTableSource();
-            tableSource.setExpr(partition.getTable());
-            tableSource.setSchema(partition.getSchema());
+            MycatSQLExprTableSourceUtil.setSqlExprTableSource(tableSource.getSchema(),tableSource.getTableName(),tableSource);
 
             StringBuilder sb = new StringBuilder();
             List<Object> out = new ArrayList<>();
