@@ -210,7 +210,7 @@ public class ValuePredicateAnalyzerTest {
                 KeyMeta.of("shardingDb", "id2")),
                 columnList);
         ValueIndexCondition indexCondition = valuePredicateAnalyzer2.translateMatch(RexUtil.composeConjunction(rexBuilder, Arrays.asList(leftRexNode, rightRexNode)));
-        Assert.assertEquals("ValueIndexCondition(fieldNames=[id, id2], indexName=shardingTable, indexColumnNames=id, queryType=PK_POINT_QUERY, rangeQueryLowerOp=null, rangeQueryLowerKey=null, rangeQueryUpperOp=null, rangeQueryUpperKey=null, pointQueryKey=[0])", Objects.toString(indexCondition));
+        Assert.assertEquals("ValueIndexCondition(fieldNames=[id, id2], indexName=shardingTable, indexColumnNames=[id], queryType=PK_POINT_QUERY, rangeQueryLowerOp=null, rangeQueryLowerKey=null, rangeQueryUpperOp=null, rangeQueryUpperKey=null, pointQueryKey=[0])", Objects.toString(indexCondition));
 
     }
 
