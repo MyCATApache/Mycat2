@@ -192,7 +192,7 @@ public class MycatInsertExecutor {
             Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues(), (List) param);
             Partition partition = function.calculateOne((Map) variables);
             SQLExprTableSource tableSource = mySqlInsertStatement.getTableSource();
-            MycatSQLExprTableSourceUtil.setSqlExprTableSource(tableSource.getSchema(),tableSource.getTableName(),tableSource);
+            MycatSQLExprTableSourceUtil.setSqlExprTableSource(partition.getSchema(),partition.getTable(),tableSource);
 
             StringBuilder sb = new StringBuilder();
             List<Object> out = new ArrayList<>();
