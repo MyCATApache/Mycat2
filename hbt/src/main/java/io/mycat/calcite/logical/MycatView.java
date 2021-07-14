@@ -258,8 +258,10 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         }
         return newProject;
     }
-
-    public static MycatRel createMycatProject(RelNode indexTableScan, List<String> indexColumns) {
+    public static MycatRel createMycatProject(RelNode indexTableScan, List<String> indexColumns){
+        return createMycatProject(indexTableScan,indexColumns,true);
+    }
+    public static MycatRel createMycatProject(RelNode indexTableScan, List<String> indexColumns,boolean nullable) {
         RelDataType rowType = indexTableScan.getRowType();
         ArrayList<Integer> ints = new ArrayList<>();
         for (String indexColumn : indexColumns) {
@@ -268,7 +270,15 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
         RelNode project = RelOptUtil.createProject(indexTableScan, ints);
         if (project instanceof LogicalProject) {
-            return MycatProject.create(project.getInput(0), ((Project) project).getProjects(), project.getRowType());
+            List<RexNode> projects = ((Project) project).getProjects();
+//            if (nullable){
+//                RexBuilder rexBuilder = MycatCalciteSupport.RexBuilder;
+//                for (RexNode rexNode : projects) {
+//                    rexBuilder.makeNotNull(rexNode);
+//                }
+//
+//            }
+            return MycatProject.create(project.getInput(0), projects, project.getRowType());
         }
         return (MycatRel) project;
     }

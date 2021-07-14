@@ -369,9 +369,9 @@ public class DrdsSqlCompiler {
 
 
     public MycatRel optimizeWithCBO(RelNode logPlan, Collection<RelOptRule> relOptRules) {
-//        if (logPlan instanceof MycatRel) {
-//            return (MycatRel) logPlan;
-//        } else
+        if (logPlan instanceof MycatRel) {
+            return (MycatRel) logPlan;
+        } else
         {
             RelOptCluster cluster = logPlan.getCluster();
             RelOptPlanner planner = cluster.getPlanner();
@@ -379,7 +379,7 @@ public class DrdsSqlCompiler {
             MycatConvention.INSTANCE.register(planner);
             ImmutableList.Builder<RelOptRule> listBuilder = ImmutableList.builder();
             listBuilder.addAll(MycatExtraSortRule.RULES);
-            listBuilder.addAll(LocalRules.RULES);
+            listBuilder.addAll(LocalRules.CBO_RULES);
 
             //算子交换
             // Filter/Join, TopN/Join, Agg/Join, Filter/Agg, Sort/Project, Join/TableLookup
@@ -401,8 +401,8 @@ public class DrdsSqlCompiler {
                 //TABLELOOKUP
                 listBuilder.add(MycatTableLookupSemiJoinRule.INSTANCE);
                 listBuilder.add(MycatTableLookupCombineRule.INSTANCE);
-                listBuilder.add(MycatJoinTableLookupTransposeRule.LEFT_INSTANCE);
-                listBuilder.add(MycatJoinTableLookupTransposeRule.RIGHT_INSTANCE);
+//                listBuilder.add(MycatJoinTableLookupTransposeRule.LEFT_INSTANCE);
+//                listBuilder.add(MycatJoinTableLookupTransposeRule.RIGHT_INSTANCE);
                 listBuilder.add(MycatValuesJoinRule.INSTANCE);
             }
 
@@ -502,7 +502,7 @@ public class DrdsSqlCompiler {
         builder.addGroupBegin().addRuleCollection(FILTER).addGroupEnd().addMatchOrder(HepMatchOrder.BOTTOM_UP);
         builder.addGroupBegin().addRuleInstance(CoreRules.PROJECT_MERGE).addGroupEnd().addMatchOrder(HepMatchOrder.ARBITRARY);
         builder.addGroupBegin()
-                .addRuleCollection(LocalRules.RULES)
+                .addRuleCollection(LocalRules.RBO_RULES)
                 .addGroupEnd().addMatchOrder(HepMatchOrder.BOTTOM_UP);
         builder.addMatchLimit(1024);
         HepPlanner planner = new HepPlanner(builder.build());

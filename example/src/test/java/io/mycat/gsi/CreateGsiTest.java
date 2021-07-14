@@ -56,6 +56,40 @@ public class CreateGsiTest implements MycatTest {
     }
 
 
+    @Test
+    public void createGsi2() throws Exception {
+        initShardingTable();
+        try (Connection connection = getMySQLConnection(DB_MYCAT)) {
+            execute(connection, "CREATE TABLE IF NOT EXISTS db1.`travelrecord` (\n\t`id` bigint NOT NULL AUTO_INCREMENT,\n\t`user_id` varchar(100) DEFAULT NULL,\n\t`traveldate` date DEFAULT NULL,\n\t`fee` decimal(10, 0) DEFAULT NULL,\n\t`days` int DEFAULT NULL,\n\t`blob` longblob,\n\tPRIMARY KEY (`id`),\n\tKEY `id` (`id`),\n\tGLOBAL INDEX `g_i_user_id`(`user_id`) COVERING (`fee`, id) DBPARTITION BY mod_hash(`user_id`) TBPARTITION BY mod_hash(`user_id`) DBPARTITIONS 2 TBPARTITIONS 2\n) ENGINE = InnoDB CHARSET = utf8\nDBPARTITION BY mod_hash(id) DBPARTITIONS 2\nTBPARTITION BY mod_hash(id) TBPARTITIONS 2");
+            boolean b = hasData(connection, "db1", "travelrecord_g_i_user_id");//test create it
+            List<Map<String, Object>> travelrecord_g_i_user_id_topologyHint = executeQuery(connection, ShowTopologyHint.create("db1", "travelrecord_g_i_user_id").toString());
+            Assert.assertEquals("[{targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_0}, {targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_1}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_2}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_3}]", travelrecord_g_i_user_id_topologyHint.toString());
+
+
+            String explainPrimaryTable = explain(connection, "select * from db1.travelrecord where id = 1");
+            Assert.assertTrue(explainPrimaryTable.contains("Each(targetName=c0, sql=SELECT * FROM db1_0.travelrecord_1 AS `travelrecord` WHERE (`travelrecord`.`id` = ?))"));
+            String explainIndexScan = explain(connection, "select * from db1.travelrecord where user_id = 1");//index-scan
+            Assert.assertTrue(  explainIndexScan.contains("MycatProject(id=[$0], user_id=[$1], traveldate=[$3], fee=[$2], days=[$4], blob=[$5])\n" +
+                    "  MycatSQLTableLookup(condition=[=($0, $7)], joinType=[inner], type=[BACK], correlationIds=[[$cor0]], leftKeys=[[0]])\n" +
+                    "    MycatView(distribution=[[db1.travelrecord_g_i_user_id]], conditions=[=($0, ?0)])\n" +
+                    "    MycatView(distribution=[[db1.travelrecord]])"));
+            String explainOnlyIndexScan = explain(connection, "select fee from db1.travelrecord where user_id = 1");//index-scan
+            Assert.assertTrue(explainOnlyIndexScan.contains("Each(targetName=c0, sql=SELECT `travelrecord_g_i_user_id`.`fee` FROM db1_0.travelrecord_g_i_user_id_1 AS `travelrecord_g_i_user_id` WHERE (`travelrecord_g_i_user_id`.`user_id` = ?))"));
+            deleteData(connection, "db1", "travelrecord");
+            deleteData(connection, "db1", "travelrecord_g_i_user_id");
+            for (int i = 1; i < 10; i++) {
+                execute(connection, "insert db1.travelrecord (id,user_id) values(" + i + "," +
+                        "" +
+                        i +
+                        ")");
+            }
+            List<Map<String, Object>> maps = executeQuery(connection, "select fee from db1.travelrecord where user_id = 1");
+            Assert.assertEquals(1,maps.size());
+            System.out.println();
+
+        }
+
+    }
     private void initShardingTable() throws Exception {
         Connection mycatConnection = getMySQLConnection(DB_MYCAT);
         execute(mycatConnection, RESET_CONFIG);

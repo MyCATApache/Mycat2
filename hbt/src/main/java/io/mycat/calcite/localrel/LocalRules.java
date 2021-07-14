@@ -3,21 +3,18 @@ package io.mycat.calcite.localrel;
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatConvention;
-import io.mycat.calcite.logical.LocalToMycatConverterRule;
-import io.mycat.calcite.logical.LocalToMycatRelConverter;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.rewriter.SQLRBORewriter;
 import io.mycat.calcite.table.AbstractMycatTable;
+import io.mycat.calcite.table.ShardingTable;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.logical.ToLogicalConverter;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -34,10 +31,21 @@ public class LocalRules {
                             LocalValues.VALUES_FACTORY,
                             LocalTableScan.TABLE_SCAN_FACTORY));
 
-    public static final List<RelOptRule> RULES = ImmutableList.of(
+    public static final List<RelOptRule> RBO_RULES = ImmutableList.of(
             LocalRules.ToLocalTableScanRule.DEFAULT_CONFIG.toRule(),
             LocalRules.ToViewTableScanRule.DEFAULT_CONFIG.toRule(),
-            LocalRules.FilterViewRule.DEFAULT_CONFIG.toRule(),
+            LocalRules.PrimaryShardingTableFilterViewRule.DEFAULT_CONFIG.toRule(),
+            LocalRules.ProjectViewRule.DEFAULT_CONFIG.toRule(),
+            LocalRules.AggViewRule.DEFAULT_CONFIG.toRule(),
+            LocalRules.SortViewRule.DEFAULT_CONFIG.toRule(),
+            LocalRules.JoinViewRule.DEFAULT_CONFIG.toRule(),
+            LocalRules.CalcViewRule.DEFAULT_CONFIG.toRule()
+    );
+
+    public static final List<RelOptRule> CBO_RULES = ImmutableList.of(
+            LocalRules.ToLocalTableScanRule.DEFAULT_CONFIG.toRule(),
+            LocalRules.ToViewTableScanRule.DEFAULT_CONFIG.toRule(),
+            UniversalFilterViewRule.DEFAULT_CONFIG.toRule(),
             LocalRules.ProjectViewRule.DEFAULT_CONFIG.toRule(),
             LocalRules.AggViewRule.DEFAULT_CONFIG.toRule(),
             LocalRules.SortViewRule.DEFAULT_CONFIG.toRule(),
@@ -85,9 +93,9 @@ public class LocalRules {
                 .withRuleFactory(ToViewTableScanRule::new);
     }
 
-    public static class FilterViewRule extends RelRule<FilterViewRule.Config> {
+    public static class UniversalFilterViewRule extends RelRule<UniversalFilterViewRule.Config> {
 
-        public FilterViewRule(Config config) {
+        public UniversalFilterViewRule(Config config) {
             super(config);
         }
 
@@ -104,20 +112,72 @@ public class LocalRules {
             });
         }
 
-        public static final Config DEFAULT_CONFIG = Config.EMPTY.as(FilterViewRule.Config.class).withOperandFor();
+        public static final Config DEFAULT_CONFIG = Config.EMPTY.as(UniversalFilterViewRule.Config.class).withOperandFor();
 
         public interface Config extends RelRule.Config {
             @Override
-            default FilterViewRule toRule() {
-                return new FilterViewRule(this);
+            default UniversalFilterViewRule toRule() {
+                return new UniversalFilterViewRule(this);
             }
 
 
-            default FilterViewRule.Config withOperandFor() {
+            default UniversalFilterViewRule.Config withOperandFor() {
                 return withOperandSupplier(b0 ->
                         b0.operand(Filter.class).oneInput(b1 -> b1.operand(MycatView.class).noInputs()))
-                        .withDescription("FilterViewRule")
-                        .as(FilterViewRule.Config.class);
+                        .withDescription("UniversalFilterViewRule")
+                        .as(UniversalFilterViewRule.Config.class);
+            }
+        }
+    }
+
+    public static class PrimaryShardingTableFilterViewRule extends RelRule<PrimaryShardingTableFilterViewRule.Config> {
+
+        public PrimaryShardingTableFilterViewRule(Config config) {
+            super(config);
+        }
+
+        @Override
+        public void onMatch(RelOptRuleCall call) {
+            Filter filter = call.rel(0);
+            MycatView view = call.rel(1);
+            SQLRBORewriter.view(view, LocalFilter.create(filter, view)).ifPresent(new Consumer<RelNode>() {
+                @Override
+                public void accept(RelNode res) {
+                    switch (view.getDistribution().type()) {
+                        case BROADCAST:
+                        case PHY: {
+                            ToLogicalConverter toLogicalConverter = getToLogicalConverter(res);
+                            call.transformTo(res.accept(toLogicalConverter));
+                            break;
+                        }
+                        case SHARDING: {
+                            ShardingTable shardingTable = view.getDistribution().getShardingTables().get(0);
+                            if (shardingTable.getIndexTables().isEmpty()) {
+                                ToLogicalConverter toLogicalConverter = getToLogicalConverter(res);
+                                call.transformTo(res.accept(toLogicalConverter));
+                                return;
+                            }
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+
+        public static final Config DEFAULT_CONFIG = Config.EMPTY.as(PrimaryShardingTableFilterViewRule.Config.class).withOperandFor();
+
+        public interface Config extends RelRule.Config {
+            @Override
+            default PrimaryShardingTableFilterViewRule toRule() {
+                return new PrimaryShardingTableFilterViewRule(this);
+            }
+
+
+            default PrimaryShardingTableFilterViewRule.Config withOperandFor() {
+                return withOperandSupplier(b0 ->
+                        b0.operand(Filter.class).oneInput(b1 -> b1.operand(MycatView.class).noInputs()))
+                        .withDescription("PrimaryShardingTableFilterViewRule")
+                        .as(PrimaryShardingTableFilterViewRule.Config.class);
             }
         }
     }
@@ -301,10 +361,10 @@ public class LocalRules {
 
     @NotNull
     private static ToLogicalConverter getToLogicalConverter(RelNode res) {
-        ToLogicalConverter toLogicalConverter = new ToLogicalConverter(MycatCalciteSupport.relBuilderFactory.create(res.getCluster(), null)){
+        ToLogicalConverter toLogicalConverter = new ToLogicalConverter(MycatCalciteSupport.relBuilderFactory.create(res.getCluster(), null)) {
             @Override
             public RelNode visit(RelNode relNode) {
-                if (relNode instanceof MycatView){
+                if (relNode instanceof MycatView) {
                     return relNode;
                 }
                 return super.visit(relNode);

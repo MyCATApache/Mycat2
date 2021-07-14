@@ -28,7 +28,7 @@ import java.util.Optional;
 
 public class MycatViewIndexViewRule extends RelRule<MycatViewIndexViewRule.Config> {
 
-    public static final MycatViewIndexViewRule.Config DEFAULT_CONFIG = LocalRules.CalcViewRule.Config.EMPTY.as(MycatViewIndexViewRule.Config.class).withOperandFor();
+    public static final MycatViewIndexViewRule.Config DEFAULT_CONFIG = MycatViewIndexViewRule.Config.EMPTY.as(MycatViewIndexViewRule.Config.class).withOperandFor();
 
     public MycatViewIndexViewRule(MycatViewIndexViewRule.Config config) {
         super(config);

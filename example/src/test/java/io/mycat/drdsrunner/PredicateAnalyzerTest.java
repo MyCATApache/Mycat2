@@ -55,7 +55,7 @@ public class PredicateAnalyzerTest {
         Map.Entry<QueryType, List<IndexCondition>> entry = queryTypeListMap.entrySet().iterator().next();
         Assert.assertEquals(QueryType.PK_POINT_QUERY, entry.getKey());
         Assert.assertEquals(1, entry.getValue().size());
-        Assert.assertEquals("id", entry.getValue().get(0).getIndexColumnNames());
+        Assert.assertEquals("[id]", entry.getValue().get(0).getIndexColumnNames().toString());
     }
 
     @Test
@@ -77,7 +77,7 @@ public class PredicateAnalyzerTest {
         Map.Entry<QueryType, List<IndexCondition>> entry = queryTypeListMap.entrySet().iterator().next();
         Assert.assertEquals(QueryType.PK_POINT_QUERY, entry.getKey());
         Assert.assertEquals(1, entry.getValue().size());
-        Assert.assertEquals("id", entry.getValue().get(0).getIndexColumnNames());
+        Assert.assertEquals("[id]", entry.getValue().get(0).getIndexColumnNames().toString());
         System.out.println();
     }
 
@@ -105,7 +105,7 @@ public class PredicateAnalyzerTest {
         Map.Entry<QueryType, List<IndexCondition>> entry = queryTypeListMap.entrySet().iterator().next();
         Assert.assertEquals(QueryType.PK_RANGE_QUERY, entry.getKey());
         Assert.assertEquals(1, entry.getValue().size());
-        Assert.assertEquals("id", entry.getValue().get(0).getIndexColumnNames());
+        Assert.assertEquals("[id]", entry.getValue().get(0).getIndexColumnNames().toString());
         System.out.println();
     }
 

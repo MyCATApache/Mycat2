@@ -58,7 +58,7 @@ public class MycatRules {
 
     protected static final Logger LOGGER = CalciteTrace.getPlannerTracer();
 
-    static final RelFactories.ProjectFactory PROJECT_FACTORY =
+    public static final RelFactories.ProjectFactory PROJECT_FACTORY =
             (input, hints, projects, fieldNames) -> {
                 final RelOptCluster cluster = input.getCluster();
                 final RelDataType rowType =
@@ -68,7 +68,7 @@ public class MycatRules {
                         rowType);
             };
 
-    static final RelFactories.FilterFactory FILTER_FACTORY =
+    public static final RelFactories.FilterFactory FILTER_FACTORY =
             (input, condition, variablesSet) -> {
                 Preconditions.checkArgument(variablesSet.isEmpty(),
                         "MycatFilter does not allow variables");
@@ -76,7 +76,7 @@ public class MycatRules {
                         input.getTraitSet(), input, condition);
             };
 
-    static final RelFactories.JoinFactory JOIN_FACTORY =
+    public static final RelFactories.JoinFactory JOIN_FACTORY =
             (left, right, hints, condition, variablesSet, joinType, semiJoinDone) -> {
                 final RelOptCluster cluster = left.getCluster();
                 final RelTraitSet traitSet = cluster.traitSetOf(left.getConvention());
