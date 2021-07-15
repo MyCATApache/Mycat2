@@ -81,7 +81,7 @@ public class BinaryResultSetResponse extends AbstractMycatResultSetResponse {
                 value = convertString(object);
                 break;
             case TINYINT://MysqlDefs.FIELD_TYPE_TINY 1
-                value = convertToByte(object);
+                value = convertToTiny(object);
                 break;
             case SMALLINT://MysqlDefs.FIELD_TYPE_SHORT 2
                 value = convertToInt16((Number) object);
@@ -93,7 +93,7 @@ public class BinaryResultSetResponse extends AbstractMycatResultSetResponse {
                 value = convertToInt64((Number) object);
                 break;
             case BOOLEAN://MysqlDefs.FIELD_TYPE_TINY 1
-                value = convertToByte(object);
+                value = convertToTiny(object);
                 break;
             case Types.NUMERIC://MysqlDefs.FIELD_TYPE_DECIMAL n
                 value = convertToInt16((Number) object);
@@ -229,8 +229,22 @@ public class BinaryResultSetResponse extends AbstractMycatResultSetResponse {
             return ByteUtil.getBytes(0);
         } else if (object instanceof Number) {
             byte b = ((Number) object).byteValue();
-            return ByteUtil.getBytes(b);
+            return new byte[]{0};
         } else {
+            throw new UnsupportedOperationException();
+        }
+    }
+    public static byte[] convertToTiny(Object object) {
+        if (object == Boolean.TRUE) {
+            return new byte[]{1};
+        } else if (object == Boolean.FALSE) {
+            return new byte[]{0};
+        } else if (object instanceof Number) {
+            byte b = ((Number) object).byteValue();
+            return new byte[]{b};
+        } else if (object instanceof String){
+            return new byte[]{(byte) Integer.parseInt((String) object)};
+        }else {
             throw new UnsupportedOperationException();
         }
     }
