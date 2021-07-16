@@ -78,6 +78,12 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
+    public Future<Void> proxyUpdateToPrototype(String proxyUpdate) {
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        return proxyUpdate(Collections.singletonList(Objects.requireNonNull(metadataManager.getPrototype())), proxyUpdate);
+    }
+
+    @Override
     public Future<Void> proxySelectToPrototype(String statement) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         return execute(ExplainDetail.create(QUERY_MASTER, Collections.singletonList(Objects.requireNonNull(metadataManager.getPrototype())), statement, null));
