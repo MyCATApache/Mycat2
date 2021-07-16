@@ -390,7 +390,7 @@ public class VertxExecuter {
                     eachTableSource.setSimpleName(sPartition.getTable());
                     eachTableSource.setSchema(sPartition.getSchema());
 
-                    sqls.add(new EachSQL(sPartition.getTargetName(), eachStatement.toString(), getNewParams(params, primaryStatement)));
+                    sqls.add(new EachSQL(sPartition.getTargetName(), eachStatement.toString(), getNewParams(params, eachStatement)));
                 }
             }
         }

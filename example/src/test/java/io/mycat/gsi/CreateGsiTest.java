@@ -33,24 +33,79 @@ public class CreateGsiTest implements MycatTest {
             String explainPrimaryTable = explain(connection, "select * from db1.travelrecord where id = 1");
             Assert.assertTrue(explainPrimaryTable.contains("Each(targetName=c0, sql=SELECT * FROM db1_0.travelrecord_1 AS `travelrecord` WHERE (`travelrecord`.`id` = ?))"));
             String explainIndexScan = explain(connection, "select * from db1.travelrecord where user_id = 1");//index-scan
-            Assert.assertTrue(  explainIndexScan.contains("MycatProject(id=[$0], user_id=[$1], traveldate=[$3], fee=[$2], days=[$4], blob=[$5])\n" +
-                   "  MycatSQLTableLookup(condition=[=($0, $7)], joinType=[inner], type=[BACK], correlationIds=[[$cor0]], leftKeys=[[0]])\n" +
-                   "    MycatView(distribution=[[db1.travelrecord_g_i_user_id]], conditions=[=($0, ?0)])\n" +
-                   "    MycatView(distribution=[[db1.travelrecord]])"));
+            Assert.assertTrue(explainIndexScan.contains("MycatProject(id=[$0], user_id=[$1], traveldate=[$3], fee=[$2], days=[$4], blob=[$5])\n" +
+                    "  MycatSQLTableLookup(condition=[=($0, $7)], joinType=[inner], type=[BACK], correlationIds=[[$cor0]], leftKeys=[[0]])\n" +
+                    "    MycatView(distribution=[[db1.travelrecord_g_i_user_id]], conditions=[=($0, ?0)])\n" +
+                    "    MycatView(distribution=[[db1.travelrecord]])"));
             String explainOnlyIndexScan = explain(connection, "select fee from db1.travelrecord where user_id = 1");//index-scan
             Assert.assertTrue(explainOnlyIndexScan.contains("Each(targetName=c0, sql=SELECT `travelrecord_g_i_user_id`.`fee` FROM db1_0.travelrecord_g_i_user_id_1 AS `travelrecord_g_i_user_id` WHERE (`travelrecord_g_i_user_id`.`user_id` = ?))"));
+
+            String explain;
+            explain = explain(connection, "delete  from db1.travelrecord");
+            Assert.assertTrue(explain.contains("travelrecord_g_i_user_id"));
             deleteData(connection, "db1", "travelrecord");
             deleteData(connection, "db1", "travelrecord_g_i_user_id");
-            for (int i = 1; i < 10; i++) {
+
+            explain = explain(connection, "insert db1.travelrecord (id,user_id) values(1,2)");
+            Assert.assertTrue(explain.contains("travelrecord_g_i_user_id"));
+            for (int i = 0; i < 10; i++) {
                 execute(connection, "insert db1.travelrecord (id,user_id) values(" + i + "," +
                         "" +
                         i +
                         ")");
             }
             List<Map<String, Object>> maps = executeQuery(connection, "select fee from db1.travelrecord where user_id = 1");
-            Assert.assertEquals(1,maps.size());
+            Assert.assertEquals(1, maps.size());
             System.out.println();
 
+            //测试事务
+            long count0 = count(connection, "db1", "travelrecord");
+            long count1 = count(connection, "db1", "travelrecord_g_i_user_id");
+
+            Assert.assertEquals(count0, count1);
+
+            connection.setAutoCommit(false);
+            for (int i = 10; i < 20; i++) {
+                execute(connection, "insert db1.travelrecord (id,user_id) values(" + i + "," +
+                        "" +
+                        i +
+                        ")");
+            }
+            connection.rollback();
+
+            long _count0 = count(connection, "db1", "travelrecord");
+            long _count1 = count(connection, "db1", "travelrecord_g_i_user_id");
+            Assert.assertEquals(count0, _count0);
+            Assert.assertEquals(count1, _count1);
+
+            for (int i = 10; i < 20; i++) {
+                execute(connection, "insert db1.travelrecord (id,user_id) values(" + i + "," +
+                        "" +
+                        i +
+                        ")");
+            }
+            connection.setAutoCommit(true);
+            _count0 = count(connection, "db1", "travelrecord");
+            _count1 = count(connection, "db1", "travelrecord_g_i_user_id");
+            Assert.assertEquals(20, _count0);
+            Assert.assertEquals(20, _count1);
+
+            Exception exception = null;
+            try {
+                execute(connection, "insert db1.travelrecord (id,user_id,fee) values(" + 21 + "," +
+                        "" +
+                        21 +
+                        "," +
+                        "1/0" +
+                        ")");
+            } catch (Exception e) {
+                exception = e;
+            }
+            Assert.assertTrue(exception != null);
+            _count0 = count(connection, "db1", "travelrecord");
+            _count1 = count(connection, "db1", "travelrecord_g_i_user_id");
+            Assert.assertEquals(20, _count0);
+            Assert.assertEquals(20, _count1);
         }
 
     }
@@ -69,7 +124,7 @@ public class CreateGsiTest implements MycatTest {
             String explainPrimaryTable = explain(connection, "select * from db1.travelrecord where id = 1");
             Assert.assertTrue(explainPrimaryTable.contains("Each(targetName=c0, sql=SELECT * FROM db1_0.travelrecord_1 AS `travelrecord` WHERE (`travelrecord`.`id` = ?))"));
             String explainIndexScan = explain(connection, "select * from db1.travelrecord where user_id = 1");//index-scan
-            Assert.assertTrue(  explainIndexScan.contains("MycatProject(id=[$0], user_id=[$1], traveldate=[$3], fee=[$2], days=[$4], blob=[$5])\n" +
+            Assert.assertTrue(explainIndexScan.contains("MycatProject(id=[$0], user_id=[$1], traveldate=[$3], fee=[$2], days=[$4], blob=[$5])\n" +
                     "  MycatSQLTableLookup(condition=[=($0, $7)], joinType=[inner], type=[BACK], correlationIds=[[$cor0]], leftKeys=[[0]])\n" +
                     "    MycatView(distribution=[[db1.travelrecord_g_i_user_id]], conditions=[=($0, ?0)])\n" +
                     "    MycatView(distribution=[[db1.travelrecord]])"));
@@ -84,12 +139,13 @@ public class CreateGsiTest implements MycatTest {
                         ")");
             }
             List<Map<String, Object>> maps = executeQuery(connection, "select fee from db1.travelrecord where user_id = 1");
-            Assert.assertEquals(1,maps.size());
+            Assert.assertEquals(1, maps.size());
             System.out.println();
 
         }
 
     }
+
     private void initShardingTable() throws Exception {
         Connection mycatConnection = getMySQLConnection(DB_MYCAT);
         execute(mycatConnection, RESET_CONFIG);
