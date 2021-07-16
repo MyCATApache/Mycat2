@@ -38,6 +38,8 @@ public interface Response {
 
     Future<Void> proxyUpdate(List<String> targets, String proxyUpdate);
 
+    Future<Void> proxyUpdateToPrototype(String proxyUpdate);
+
     Future<Void> proxySelectToPrototype(String statement);
 
     Future<Void> sendError(String errorMessage, int errorCode);

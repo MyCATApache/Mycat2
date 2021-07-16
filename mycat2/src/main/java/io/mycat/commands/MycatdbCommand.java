@@ -134,6 +134,9 @@ public enum MycatdbCommand {
             sqlHandlers.add(new MySQLCheckHandler());
             sqlHandlers.add(new ShowStatisticHandler());
             sqlHandlers.add(new MysqlShowDatabaseStatusHandler());
+            //DDL
+            sqlHandlers.add(new SQLDropFunctionHandler());
+            sqlHandlers.add(new SQLCreateFunctionHandler());
 
             for (SQLHandler sqlHandler : sqlHandlers) {
                 Class statementClass = sqlHandler.getStatementClass();
@@ -304,6 +307,7 @@ public enum MycatdbCommand {
         }
         return false;
     }
+
     @NotNull
     private static Map<String, Object> getHintRoute(SQLStatement sqlStatement) {
         List<SQLHint> hints = new LinkedList<>();
@@ -377,6 +381,7 @@ public enum MycatdbCommand {
         }
         return Collections.emptyMap();
     }
+
     public static Future<Void> execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) {
         dataContext.putProcessStateMap(Collections.emptyMap());
         sqlStatement.setAfterSemi(false);//remove semi
@@ -393,9 +398,9 @@ public enum MycatdbCommand {
                 }
             }
             Map<String, Object> hintRoute = getHintRoute(sqlStatement);
-            if (!hintRoute.isEmpty()){
+            if (!hintRoute.isEmpty()) {
                 dataContext.putProcessStateMap(hintRoute);
-                Object targetArray =  hintRoute.getOrDefault("TARGET", null);
+                Object targetArray = hintRoute.getOrDefault("TARGET", null);
                 if (targetArray != null) {
                     String sqlText = sqlStatement.toString();
                     SQLType sqlType = SQLParserUtils.getSQLType(sqlText, DbType.mysql);
@@ -411,13 +416,13 @@ public enum MycatdbCommand {
                         default:
                             select = false;
                     }
-                    if (!(targetArray instanceof List)){
+                    if (!(targetArray instanceof List)) {
                         targetArray = Collections.singletonList(targetArray.toString());
                     }
                     if (select) {
-                        return receiver.proxySelect((List)targetArray, sqlText);
+                        return receiver.proxySelect((List) targetArray, sqlText);
                     }
-                    return receiver.proxyUpdate((List)targetArray, sqlText);
+                    return receiver.proxyUpdate((List) targetArray, sqlText);
                 }
             }
             SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);

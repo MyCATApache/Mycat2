@@ -18,7 +18,6 @@ import io.mycat.beans.mysql.MySQLVersion;
 import io.mycat.config.*;
 import io.mycat.exporter.PrometheusExporter;
 import io.mycat.gsi.GSIService;
-import io.mycat.gsi.mapdb.MapDBGSIService;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.vertx.VertxMycatServer;
@@ -121,10 +120,6 @@ public class MycatCore {
         context.put(SqlRecorderRuntime.class, SqlRecorderRuntime.INSTANCE);
 
         ////////////////////////////////////////////tmp///////////////////////////////////
-        if (enableGSI) {
-            File gsiMapDBFile = baseDirectory.resolve("gsi.db").toFile();
-            context.put(GSIService.class, new MapDBGSIService(gsiMapDBFile, null));
-        }
         MetaClusterCurrent.register(context);
 
         String mode = Optional.ofNullable(System.getProperty("mode"))

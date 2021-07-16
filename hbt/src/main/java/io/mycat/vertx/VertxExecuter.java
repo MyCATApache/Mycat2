@@ -56,6 +56,7 @@ import io.vertx.sqlclient.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import lombok.ToString;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -136,6 +137,7 @@ public class VertxExecuter {
 
     @Getter
     @EqualsAndHashCode
+    @ToString
     public static class EachSQL {
         String target;
         String sql;

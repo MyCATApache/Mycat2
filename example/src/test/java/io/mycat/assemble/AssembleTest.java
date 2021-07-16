@@ -259,7 +259,7 @@ public class AssembleTest implements MycatTest {
             Assert.assertTrue(
                     executeQuery(mycatConnection, "select LAST_INSERT_ID()").toString().contains("999999999")
             );
-            Assert.assertEquals(executeQuery(mycatConnection, "select * from db1.travelrecord").size(), 5);
+            Assert.assertEquals(5,executeQuery(mycatConnection, "select * from db1.travelrecord").size());
             execute(mycatConnection, "delete from db1.travelrecord");
             Assert.assertFalse(hasData(mycatConnection, "db1", "travelrecord"));
             execute(mycatConnection, "\n" +

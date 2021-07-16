@@ -18,17 +18,12 @@ package io.mycat.calcite;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.localrel.LocalConvention;
-import io.mycat.calcite.localrel.LocalRel;
 import io.mycat.calcite.physical.*;
-import io.mycat.calcite.rewriter.rules.MycatBiRelViewRule;
-import io.mycat.calcite.rewriter.rules.MycatBottomTableScanViewRule;
-import io.mycat.calcite.rewriter.rules.MycatSingleViewRule;
 import io.mycat.calcite.rules.*;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
-import org.apache.calcite.rel.rules.*;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlAggFunction;
@@ -37,7 +32,6 @@ import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.trace.CalciteTrace;
-import org.eclipse.collections.api.bag.primitive.ImmutableLongBag;
 import org.slf4j.Logger;
 
 import java.util.List;

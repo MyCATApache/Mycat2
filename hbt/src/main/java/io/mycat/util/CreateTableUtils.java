@@ -44,16 +44,19 @@ public class CreateTableUtils {
         if (selectorRuntime.isReplicaName(node.getTargetName())) {
             set.addAll(selectorRuntime.getReplicaMap().get(node.getTargetName()).getRawDataSourceMap().keySet());
         }
-        if (set.isEmpty()){
+        if (set.isEmpty()) {
             throw new IllegalArgumentException();
         }
         for (String s : set) {
             try (DefaultConnection connection = jdbcConnectionManager.getConnection(s)) {
-                createDatabaseIfNotExist(connection, node);
-                connection.executeUpdate(rewriteCreateTableSql(normalizeCreateTableSQLToMySQL(createSQL), node.getSchema(), node.getTable()), false);
+                if (connection.getDataSource().isMySQLType()) {
+                    createDatabaseIfNotExist(connection, node);
+                    connection.executeUpdate(rewriteCreateTableSql(normalizeCreateTableSQLToMySQL(createSQL), node.getSchema(), node.getTable()), false);
+                }
             }
         }
     }
+
     public static String normalizeCreateTableSQLToMySQL(String createTableSQL) {
         MySqlCreateTableStatement mySqlCreateTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(createTableSQL);
         mySqlCreateTableStatement.setBroadCast(false);
@@ -66,8 +69,8 @@ public class CreateTableUtils {
 
         // 删掉阿里的 全局表语法 (不使用)
         List<SQLTableElement> tableElementList = mySqlCreateTableStatement.getTableElementList();
-        if(tableElementList != null){
-            tableElementList.removeIf(e-> e instanceof MySqlTableIndex && ((MySqlTableIndex) e).isGlobal());
+        if (tableElementList != null) {
+            tableElementList.removeIf(e -> e instanceof MySqlTableIndex && ((MySqlTableIndex) e).isGlobal());
         }
         return mySqlCreateTableStatement.toString();
     }

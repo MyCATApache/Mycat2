@@ -14,25 +14,32 @@
  */
 package io.mycat.router.mycat1xfunction;
 
-import io.mycat.MycatException;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.util.StringUtil;
+import io.mycat.util.StringUtil;
+import lombok.SneakyThrows;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoField;
-import java.time.temporal.TemporalAccessor;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class PartitionByMonth extends Mycat1xSingleValueRuleFunction {
+    private String sBeginDate;
+    /**
+     * 默认格式
+     */
+    private String dateFormat = "yyyy-MM-dd";
+    /**
+     * 场景
+     */
+    private int scene = -1;
+    private String sEndDate;
+    private Calendar beginDate;
+    private Calendar endDate;
+    private int nPartition;
 
-    private int partition;
-    private Type type = Type.DEFAULT;
-    private DateTimeFormatter formatter;
-    private LocalDate beginDate;
-    private LocalDate endDate;
+    private ThreadLocal<SimpleDateFormat> formatter;
 
     @Override
     public String name() {
@@ -41,24 +48,40 @@ public class PartitionByMonth extends Mycat1xSingleValueRuleFunction {
 
     @Override
     public int calculateIndex(String columnValue) {
-        TemporalAccessor value = formatter.parse(columnValue);
-        switch (type) {
-            case DEFAULT:
-                return value.get(ChronoField.MONTH_OF_YEAR) - 1;
-            case UNLIMITED:
-                int targetPartition = ((value.get(ChronoField.YEAR) - beginDate.getYear())
-                        * 12 + value.get(ChronoField.MONTH_OF_YEAR)
-                        - beginDate.getMonthValue());
-                if (this.partition > 0) {
-                    targetPartition = reCalculatePartition(targetPartition);
-                }
-                return targetPartition;
-            default:
-                throw new MycatException("unsupport type");
+        try {
+            if (scene == 1) {
+                Calendar curTime = Calendar.getInstance();
+                curTime.setTime(formatter.get().parse(columnValue));
+                return curTime.get(Calendar.MONTH);
+            }
+            int targetPartition;
+            Calendar curTime = Calendar.getInstance();
+            curTime.setTime(formatter.get().parse(columnValue));
+            targetPartition = ((curTime.get(Calendar.YEAR) - beginDate.get(Calendar.YEAR))
+                    * 12 + curTime.get(Calendar.MONTH)
+                    - beginDate.get(Calendar.MONTH));
+
+            /**
+             * For circulatory partition, calculated value of target partition needs to be
+             * rotated to fit the partition range
+             */
+            if (nPartition > 0) {
+                targetPartition = reCalculatePartition(targetPartition);
+            }
+            // 防止越界的情况
+            if (targetPartition < 0) {
+                targetPartition = 0;
+            }
+            return targetPartition;
+
+        } catch (ParseException e) {
+            throw new IllegalArgumentException(new StringBuilder().append("columnValue:").append(columnValue)
+                    .append(" Please check if the format satisfied.").toString(), e);
         }
     }
 
     @Override
+    @SneakyThrows
     public int[] calculateIndexRange(String beginValue, String endValue) {
         return doCalculateRange(beginValue, endValue, beginDate);
     }
@@ -66,62 +89,71 @@ public class PartitionByMonth extends Mycat1xSingleValueRuleFunction {
 
     @Override
     public void init(ShardingTableHandler table, Map<String, Object> prot, Map<String, Object> ranges) {
-        String beginDateText = Objects.toString(prot.get("beginDate"));
-        String endDateText = Objects.toString(prot.get("endDate"));
-        String dateFormat = Objects.toString(prot.get("dateFormat"));
+        sBeginDate = Objects.toString(prot.get("beginDate"));
+        sEndDate = Objects.toString(prot.get("endDate"));
+        dateFormat = Objects.toString(prot.get("dateFormat"));
 
-        formatter = DateTimeFormatter.ofPattern(dateFormat);
-        LocalDate now = LocalDate.now();
-        if (StringUtil.isEmpty(beginDateText) && StringUtil.isEmpty(endDateText)) {
-            partition = 12;
-            type = Type.DEFAULT;
-            this.beginDate = now.withMonth(1);
-            this.endDate = now.withMonth(12);
-            return;
-        } else {
-            this.beginDate = LocalDate.from(formatter.parse(beginDateText));
-            if (!StringUtil.isEmpty(endDateText)) {
-                this.endDate = LocalDate.from(formatter.parse(endDateText));
-                partition = (this.endDate.getYear() - this.beginDate.getYear()) * 12
-                        + endDate.getMonthValue() - beginDate.getMonthValue() + 1;
-                if (this.partition <= 0) {
-                    throw new java.lang.IllegalArgumentException(
-                            "Incorrect time range for month partitioning!");
+        try {
+            if (io.mycat.util.StringUtil.isEmpty(sBeginDate) && StringUtil.isEmpty(sEndDate)) {
+                nPartition = 12;
+                scene = 1;
+                initFormatter();
+                beginDate = Calendar.getInstance();
+                beginDate.set(Calendar.MONTH, 0);
+                endDate = Calendar.getInstance();
+                endDate.set(Calendar.MONTH, 11);
+                return;
+            }
+            beginDate = Calendar.getInstance();
+            beginDate.setTime(new SimpleDateFormat(dateFormat)
+                    .parse(sBeginDate));
+            initFormatter();
+            if (sEndDate != null && !sEndDate.equals("")) {
+                endDate = Calendar.getInstance();
+                endDate.setTime(new SimpleDateFormat(dateFormat).parse(sEndDate));
+                nPartition = ((endDate.get(Calendar.YEAR) - beginDate.get(Calendar.YEAR)) * 12
+                        + endDate.get(Calendar.MONTH) - beginDate.get(Calendar.MONTH)) + 1;
+
+                if (nPartition <= 0) {
+                    throw new java.lang.IllegalArgumentException("Incorrect time range for month partitioning!");
                 }
             } else {
-                this.partition = -1;
+                nPartition = -1;
             }
+        } catch (ParseException e) {
+            throw new java.lang.IllegalArgumentException(e);
         }
     }
 
-    private int[] doCalculateRange(String beginValueText, String endValueText, LocalDate beginDate) {
-        int startPartition = getStartPartition(beginValueText, beginDate);
-        int endPartition = getEndPartition(endValueText, beginDate);
+    private int[] doCalculateRange(String beginValue, String endValue, Calendar beginDate) throws ParseException {
+        int startPartition, endPartition;
+        Calendar partitionTime = Calendar.getInstance();
+        SimpleDateFormat format = new SimpleDateFormat(dateFormat);
+        partitionTime.setTime(format.parse(beginValue));
+        startPartition = ((partitionTime.get(Calendar.YEAR) - beginDate.get(Calendar.YEAR))
+                * 12 + partitionTime.get(Calendar.MONTH)
+                - beginDate.get(Calendar.MONTH));
+        partitionTime.setTime(format.parse(endValue));
+        endPartition = ((partitionTime.get(Calendar.YEAR) - beginDate.get(Calendar.YEAR))
+                * 12 + partitionTime.get(Calendar.MONTH)
+                - beginDate.get(Calendar.MONTH));
+
         List<Integer> list = new ArrayList<>();
+
         while (startPartition <= endPartition) {
             Integer nodeValue = reCalculatePartition(startPartition);
+            if (nodeValue < 0) {
+                nodeValue = 0;
+            }
             if (Collections.frequency(list, nodeValue) < 1) {
                 list.add(nodeValue);
             }
             startPartition++;
         }
+        int size = list.size();
         // 当在场景1： "2015-01-01", "2014-04-03" 范围出现的时候
         // 是应该返回null 还是返回 [] ?
-        return ints(list);
-    }
-
-    private int getEndPartition(String endValueText, LocalDate beginDate) {
-        TemporalAccessor date = formatter.parse(endValueText);
-        return ((date.get(ChronoField.YEAR) - beginDate.getYear())
-                * 12 + date.get(ChronoField.MONTH_OF_YEAR)
-                - beginDate.getMonthValue());
-    }
-
-    private int getStartPartition(String beginValueText, LocalDate beginDate) {
-        TemporalAccessor date = formatter.parse(beginValueText);
-        return ((date.get(ChronoField.YEAR) - beginDate.getYear())
-                * 12 + date.get(ChronoField.MONTH_OF_YEAR)
-                - beginDate.getMonthValue());
+        return list.stream().mapToInt(i -> i).toArray();
     }
 
     /**
@@ -129,16 +161,20 @@ public class PartitionByMonth extends Mycat1xSingleValueRuleFunction {
      * partition range
      */
     private int reCalculatePartition(int targetPartition) {
+        // 没有指定end_date，不是循环使用的情况，直接返回对应的targetPartition
+        if (nPartition == -1) {
+            return targetPartition;
+        }
         /**
-         * If targetName date is previous of start time of partition setting, shift
-         * the delta range between targetName and start date to be positive value
+         * If target date is previous of start time of partition setting, shift
+         * the delta range between target and start date to be positive value
          */
         if (targetPartition < 0) {
-            targetPartition = this.partition - (-targetPartition) % this.partition;
+            targetPartition = nPartition - (-targetPartition) % nPartition;
         }
 
-        if (targetPartition >= this.partition) {
-            targetPartition = targetPartition % this.partition;
+        if (targetPartition >= nPartition) {
+            targetPartition = targetPartition % nPartition;
         }
 
         return targetPartition;
@@ -148,29 +184,42 @@ public class PartitionByMonth extends Mycat1xSingleValueRuleFunction {
         DEFAULT, UNLIMITED,
     }
 
+
+    private void initFormatter() {
+        formatter = new ThreadLocal<SimpleDateFormat>() {
+            @Override
+            protected SimpleDateFormat initialValue() {
+                return new SimpleDateFormat(dateFormat);
+            }
+        };
+    }
+
     @Override
     public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
         if (customRuleFunction == null) return false;
         if (PartitionByMonth.class.isAssignableFrom(customRuleFunction.getClass())) {
             PartitionByMonth ruleFunction = (PartitionByMonth) customRuleFunction;
 
-            int partition = ruleFunction.partition;
-            Type type = ruleFunction.type;
-            DateTimeFormatter formatter = ruleFunction.formatter;
-            LocalDate beginDate = ruleFunction.beginDate;
-            LocalDate endDate = ruleFunction.endDate;
+            int partition = ruleFunction.nPartition;
+            int scene = ruleFunction.scene;
+            Object formatter = ruleFunction.formatter;
+            Object beginDate = ruleFunction.beginDate;
+            Object endDate = ruleFunction.endDate;
+            Object sEndDate = ruleFunction.sEndDate;
 
-            return Objects.equals(this.partition, partition) &&
-                    Objects.equals(this.type, type) &&
-                    Objects.equals(this.formatter, formatter) &&
-                    Objects.equals(this.beginDate, beginDate) &&
-                    Objects.equals(this.endDate, endDate);
+            return
+                            Objects.equals(this.nPartition, partition) &&
+                            Objects.equals(this.scene, scene) &&
+                            Objects.equals(this.formatter, formatter) &&
+                            Objects.equals(this.beginDate, beginDate) &&
+                            Objects.equals(this.endDate, endDate) &&
+                                    Objects.equals(this.sEndDate, sEndDate);
         }
         return false;
     }
 
     @Override
     public String getErUniqueID() {
-        return "" + partition + type + formatter + beginDate + endDate;
+        return "" + nPartition + scene + formatter + beginDate + endDate+sEndDate;
     }
 }

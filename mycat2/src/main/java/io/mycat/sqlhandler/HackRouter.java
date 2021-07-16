@@ -22,6 +22,7 @@ import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataManager;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
+import io.mycat.util.MycatSQLExprTableSourceUtil;
 import io.mycat.util.NameMap;
 import io.mycat.util.Pair;
 
@@ -72,8 +73,7 @@ public class HackRouter {
                     if (normalTable != null) {
                         String schema = Optional.ofNullable(x.getSchema()).orElse(dataContext.getDefaultSchema());
                         if (normalTable.getSchemaName().equalsIgnoreCase(schema)) {
-                            x.setSimpleName(normalTable.getTableName());
-                            x.setSchema(normalTable.getSchemaName());
+                            MycatSQLExprTableSourceUtil.setSqlExprTableSource(normalTable.getSchemaName(),normalTable.getTableName(),x);
                             targetName[0] = normalTable.getTargetName();
                         }
                     }
