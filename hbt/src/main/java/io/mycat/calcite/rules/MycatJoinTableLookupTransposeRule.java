@@ -37,7 +37,7 @@ public class MycatJoinTableLookupTransposeRule extends RelRule<MycatJoinTableLoo
             MycatSQLTableLookup mycatSQLTableLookup = (MycatSQLTableLookup) outerLeft;
             if (mycatSQLTableLookup.getType() == MycatSQLTableLookup.Type.BACK) {
                 int fieldCount = mycatSQLTableLookup.getInput().getRowType().getFieldCount();
-                if(join.analyzeCondition().leftSet().asList().stream().allMatch(i->i<fieldCount)){//与最左表无关
+                if (join.analyzeCondition().leftSet().asList().stream().allMatch(i -> i < fieldCount)) {//与最左表无关
                     RelNode bottomInput = mycatSQLTableLookup.getInput();
                     MycatView indexRightView = (MycatView) mycatSQLTableLookup.getRight();
                     RelNode newInputJoin = join.copy(bottomInput.getTraitSet(), ImmutableList.of(bottomInput, outerRight));
@@ -49,7 +49,7 @@ public class MycatJoinTableLookupTransposeRule extends RelRule<MycatJoinTableLoo
                             mycatSQLTableLookup.getCondition(),
                             mycatSQLTableLookup.getCorrelationIds(),
                             mycatSQLTableLookup.getType());
-                    fixProject(originalRowType, newMycatSQLTableLookup, call.builder()).ifPresent(res->{
+                    fixProject(originalRowType, newMycatSQLTableLookup, call.builder()).ifPresent(res -> {
                         call.transformTo(res);
                     });
                     return;
@@ -63,7 +63,7 @@ public class MycatJoinTableLookupTransposeRule extends RelRule<MycatJoinTableLoo
             RelNode newInputJoin = join.copy(outerLeft.getTraitSet(), ImmutableList.of(mycatSQLTableLookup.getInput(), indexRightView));
             if (mycatSQLTableLookup.getType() == MycatSQLTableLookup.Type.BACK) {
                 int fieldCount = mycatSQLTableLookup.getInput().getRowType().getFieldCount();
-                if(join.analyzeCondition().rightSet().asList().stream().allMatch(i->i>fieldCount)) {//最右回表无关
+                if (join.analyzeCondition().rightSet().asList().stream().allMatch(i -> i > fieldCount)) {//最右回表无关
                     MycatSQLTableLookup newMycatSQLTableLookup = new MycatSQLTableLookup(join.getCluster(),
                             join.getTraitSet(),
                             newInputJoin,
@@ -72,7 +72,7 @@ public class MycatJoinTableLookupTransposeRule extends RelRule<MycatJoinTableLoo
                             mycatSQLTableLookup.getCondition(),
                             mycatSQLTableLookup.getCorrelationIds(),
                             mycatSQLTableLookup.getType());
-                    fixProject(originalRowType, newMycatSQLTableLookup, call.builder()).ifPresent(res->{
+                    fixProject(originalRowType, newMycatSQLTableLookup, call.builder()).ifPresent(res -> {
                         call.transformTo(res);
                     });
                     return;
@@ -84,11 +84,8 @@ public class MycatJoinTableLookupTransposeRule extends RelRule<MycatJoinTableLoo
     private Optional<RelNode> fixProject(RelDataType originalRowType, MycatSQLTableLookup newMycatSQLTableLookup, RelBuilder builder) {
         RexBuilder rexBuilder = builder.getRexBuilder();
         RelNode resNode;
-        boolean reProject = !RelOptUtil.areRowTypesEqual(originalRowType, newMycatSQLTableLookup.getRowType(), false);
-        boolean reNull = !(originalRowType.isNullable() == newMycatSQLTableLookup.getRowType().isNullable());
-        if (!reProject && !reNull) {
-            return Optional.of(newMycatSQLTableLookup);
-        }
+        boolean reProject = !RelOptUtil.areRowTypesEqual(originalRowType, newMycatSQLTableLookup.getRowType(), true);
+
         if (reProject) {
             resNode = MycatView.createMycatProject(newMycatSQLTableLookup, originalRowType.getFieldNames());
         } else {
@@ -96,11 +93,9 @@ public class MycatJoinTableLookupTransposeRule extends RelRule<MycatJoinTableLoo
         }
 
         //todo null type
-         reProject = !RelOptUtil.areRowTypesEqual(originalRowType, resNode.getRowType(), false);
-         reNull = !(originalRowType.isNullable() == resNode.getRowType().isNullable());
 
-        if (!reProject && !reNull) {
-            return Optional.of(newMycatSQLTableLookup);
+        if (resNode.toString().equalsIgnoreCase(originalRowType.toString())) {
+            return Optional.of(resNode);
         }
         return Optional.empty();
     }
