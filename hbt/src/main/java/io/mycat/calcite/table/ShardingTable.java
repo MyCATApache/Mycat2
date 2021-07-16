@@ -238,7 +238,7 @@ public class ShardingTable implements ShardingTableHandler {
         List<String> shardingKeys = this.getColumns().stream().filter(i -> i.isShardingKey()).map(i->i.getColumnName()).collect(Collectors.toList());
         List<KeyMeta> keyMetas = new ArrayList<>();
         for (int i = 0; i < shardingKeys.size(); i++) {
-            KeyMeta keyMeta = KeyMeta.of(shardingFuntion.name(), shardingKeys.get(0));
+            KeyMeta keyMeta = KeyMeta.of(shardingFuntion.name(), shardingKeys.get(i));
             keyMetas.add(keyMeta);
         }
         return keyMetas;
