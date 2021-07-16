@@ -700,6 +700,16 @@ public class SQLRBORewriter extends RelShuttleImpl {
     private static Optional<RelNode> pushDownERTable(Join join,
                                                      MycatView left,
                                                      MycatView right) {
+        switch (join.getJoinType()) {
+            case INNER:
+            case LEFT:
+            case SEMI:
+            case ANTI:
+            case RIGHT:
+                break;
+            case FULL:
+                return Optional.empty();
+        }
         JoinInfo joinInfo = join.analyzeCondition();
         if (joinInfo.isEqui()) {
             List<IntPair> pairs = joinInfo.pairs();
@@ -753,22 +763,48 @@ public class SQLRBORewriter extends RelShuttleImpl {
         Distribution rdistribution = right.getDistribution();
         Distribution.Type lType = ldistribution.type();
         Distribution.Type rType = rdistribution.type();
-        if (lType != Distribution.Type.SHARDING && rType != Distribution.Type.SHARDING) {
-            return ldistribution.join(rdistribution).map(distribution -> MycatView.ofBottom(
-                    join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
-                    distribution));
+        if (lType == Distribution.Type.SHARDING && rType == Distribution.Type.BROADCAST) {
+            switch (join.getJoinType()) {
+                case INNER:
+                case LEFT:
+                case SEMI:
+                case ANTI:
+                    break;
+                case RIGHT:
+                case FULL:
+                    return Optional.empty();
+            }
+        } else if (lType == Distribution.Type.BROADCAST && rType == Distribution.Type.SHARDING) {
+            switch (join.getJoinType()) {
+                case INNER:
+                case RIGHT:
+                    break;
+                case SEMI:
+                case ANTI:
+                case LEFT:
+                case FULL:
+                    return Optional.empty();
+            }
+        } else if (lType == Distribution.Type.PHY && rType == Distribution.Type.BROADCAST ||
+                (lType == Distribution.Type.BROADCAST && rType == Distribution.Type.PHY)) {
+            switch (join.getJoinType()) {
+                case INNER:
+                case LEFT:
+                case SEMI:
+                case ANTI:
+                case RIGHT:
+                    break;
+                case FULL:
+                    return Optional.empty();
+            }
+        } else if (lType == Distribution.Type.PHY && rType == Distribution.Type.PHY) {
+
+        } else {
+            return Optional.empty();
         }
-        if (lType == Distribution.Type.BROADCAST || rType == Distribution.Type.BROADCAST) {
-            return ldistribution.join(rdistribution).map(distribution -> MycatView.ofBottom(
-                    join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
-                    distribution));
-        }
-        if (lType == Distribution.Type.PHY && lType == rType) {
-            return ldistribution.join(rdistribution).map(distribution -> MycatView.ofBottom(
-                    join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
-                    distribution));
-        }
-        return Optional.empty();
+        return ldistribution.join(rdistribution).map(distribution -> MycatView.ofBottom(
+                join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
+                distribution));
     }
 
     public static RelNode filter(RelNode original, Filter filter) {
