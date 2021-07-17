@@ -463,7 +463,7 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     @NotNull
-    public  ShardingTable createShardingTable(String schemaName, String orignalTableName, ShardingTableConfig tableConfigEntry, String prototypeServer, List<Partition> backends) throws Exception {
+    public ShardingTable createShardingTable(String schemaName, String orignalTableName, ShardingTableConfig tableConfigEntry, String prototypeServer, List<Partition> backends) throws Exception {
         ShardingFuntion function = tableConfigEntry.getFunction();
         if (function != null) {
             if (function.getClazz() == null) {
@@ -599,7 +599,7 @@ public class MetadataManager implements MysqlVariableService {
 
     private String getCreateTableSQLByJDBC(String schemaName, String tableName, List<Partition> backends) {
         backends = new ArrayList<>(backends);
-        backends.add(new BackendTableInfo(prototype,schemaName,tableName));
+        backends.add(new BackendTableInfo(prototype, schemaName, tableName));
 
         if (backends == null || backends.isEmpty()) {
             return null;
@@ -641,7 +641,7 @@ public class MetadataManager implements MysqlVariableService {
                                 SQLExprTableSource sqlExprTableSource = sqlStatement1.getTableSource();
                                 if (!SQLUtils.nameEquals(sqlExprTableSource.getTableName(), tableName) ||
                                         !SQLUtils.nameEquals(sqlExprTableSource.getSchema(), (schemaName))) {
-                                    MycatSQLExprTableSourceUtil.setSqlExprTableSource(schemaName,tableName,sqlExprTableSource);
+                                    MycatSQLExprTableSourceUtil.setSqlExprTableSource(schemaName, tableName, sqlExprTableSource);
                                     return sqlStatement1.toString();
                                 } else {
                                     return string;
@@ -1122,6 +1122,11 @@ public class MetadataManager implements MysqlVariableService {
             }
         }
         return indexInfoMap;
+    }
+
+    public void check() {
+        this.schemaMap.values().stream().flatMap(i->i.logicTables().values().stream()).parallel()
+                .forEach(tableHandler->tableHandler.createPhysicalTables());
     }
 
 }

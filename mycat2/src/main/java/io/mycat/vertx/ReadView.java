@@ -147,7 +147,7 @@ public class ReadView implements MySQLPayloadReadView {
     public long readLong() {
         int tmp = index;
         index+=8;
-        return buffer.getLong(tmp);
+        return buffer.getLongLE(tmp);
     }
 
     @Override

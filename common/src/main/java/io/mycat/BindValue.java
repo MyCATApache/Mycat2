@@ -53,6 +53,9 @@ public class BindValue {
     public double doubleBinding;
     public Object value; /* Other value to store */
 
+    public BindValue() {
+    }
+
     public void reset() {
         this.isNull = false;
         this.isLongData = false;
