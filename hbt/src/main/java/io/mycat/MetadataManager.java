@@ -1152,4 +1152,10 @@ public class MetadataManager implements MysqlVariableService {
         return indexInfoMap;
     }
 
+    public void check() {
+        this.schemaMap.values().stream().flatMap(i->i.logicTables().values().stream()).parallel()
+                .forEach(tableHandler->tableHandler.createPhysicalTables());
+    }
+
+
 }

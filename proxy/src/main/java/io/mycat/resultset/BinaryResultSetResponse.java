@@ -63,7 +63,7 @@ public class BinaryResultSetResponse extends AbstractMycatResultSetResponse {
             int columnType = jdbcTypes[i];
             Object object = rowBaseIterator.getObject(i);
             boolean wasNull = rowBaseIterator.wasNull();
-            if (wasNull){
+            if (wasNull) {
                 rows[i] = null;
                 continue;
             }
@@ -78,7 +78,7 @@ public class BinaryResultSetResponse extends AbstractMycatResultSetResponse {
         byte[] value;
         switch (columnType) {
             case BIT://MysqlDefs.FIELD_TYPE_BIT n
-                value = convertString(object);
+                value = converBit(object);
                 break;
             case TINYINT://MysqlDefs.FIELD_TYPE_TINY 1
                 value = convertToTiny(object);
@@ -111,14 +111,14 @@ public class BinaryResultSetResponse extends AbstractMycatResultSetResponse {
             case Types.TIMESTAMP://MysqlDefs.FIELD_TYPE_TIMESTAMP t
             case Types.TIMESTAMP_WITH_TIMEZONE:
                 try {
-                    if (object instanceof Date){
+                    if (object instanceof Date) {
                         Date dateVar = (Date) object;
                         value = (ByteUtil.getBytes(dateVar, false));
-                    }else if (object instanceof LocalDateTime){
+                    } else if (object instanceof LocalDateTime) {
                         LocalDateTime localDateTime = (LocalDateTime) object;
                         value = (ByteUtil.getBytesFromTimestamp(localDateTime));
-                    }else {
-                        throw new UnsupportedOperationException("unsupported class:"+ object.getClass());
+                    } else {
+                        throw new UnsupportedOperationException("unsupported class:" + object.getClass());
                     }
                 } catch (org.joda.time.IllegalFieldValueException e1) {
                     // 当时间为 0000-00-00 00:00:00 的时候, 默认返回 1970-01-01 08:00:00.0
@@ -128,20 +128,20 @@ public class BinaryResultSetResponse extends AbstractMycatResultSetResponse {
             case Types.TIME_WITH_TIMEZONE:
             case Types.TIME://MysqlDefs.FIELD_TYPE_TIME t
                 try {
-                    if (object instanceof Date){
+                    if (object instanceof Date) {
                         Date dateVar = (Date) object;
                         value = (ByteUtil.getBytes(dateVar, true));
-                    }else if (object instanceof String){
+                    } else if (object instanceof String) {
                         String dateText = (String) object;
                         value = (ByteUtil.getBytesFromTimeString(dateText));
-                    }else if (object instanceof LocalTime){
+                    } else if (object instanceof LocalTime) {
                         LocalTime time = (LocalTime) object;
                         value = (ByteUtil.getBytesFromTime(time));
-                    }else if (object instanceof Duration){
+                    } else if (object instanceof Duration) {
                         Duration time = (Duration) object;
                         value = (ByteUtil.getBytesFromDuration(time));
-                    }else {
-                        throw new UnsupportedOperationException("unsupported class:"+ object.getClass());
+                    } else {
+                        throw new UnsupportedOperationException("unsupported class:" + object.getClass());
                     }
                 } catch (org.joda.time.IllegalFieldValueException e1) {
                     // 当时间为 0000-00-00 00:00:00 的时候, 默认返回 1970-01-01 08:00:00.0
@@ -150,10 +150,10 @@ public class BinaryResultSetResponse extends AbstractMycatResultSetResponse {
                 break;
             case Types.DATE://MysqlDefs.FIELD_TYPE_DATE t
                 try {
-                    if (object instanceof LocalDate){
+                    if (object instanceof LocalDate) {
                         LocalDate date = (LocalDate) object;
                         value = (ByteUtil.getBytesFromDate(date));
-                    }else{
+                    } else {
                         Date dateVar = (Date) object;
                         value = (ByteUtil.getBytes(dateVar, false));
                     }
@@ -182,6 +182,24 @@ public class BinaryResultSetResponse extends AbstractMycatResultSetResponse {
         return value;
     }
 
+    public static byte[] converBit(Object object) {
+        byte[] bytes;
+        if (object instanceof byte[]) {
+            bytes = (byte[]) object;
+        } else if (object instanceof Boolean) {
+            long i = (Boolean) object ? 1 : 0;
+            bytes= new byte[]{(byte) i};
+        } else if (object instanceof Number) {
+            long i = ((Number) object).longValue();
+            bytes = ByteUtil.getBytes((long)i);
+        } else {
+            bytes = object.toString().getBytes();
+        }
+        MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter(bytes.length);
+        mySQLPayloadWriter.writeLenencBytes(bytes);
+        return mySQLPayloadWriter.toByteArray();
+    }
+
     public static byte[] convertToFloat32(Number object) {
         return ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putFloat(object.floatValue()).array();
     }
@@ -194,16 +212,16 @@ public class BinaryResultSetResponse extends AbstractMycatResultSetResponse {
         byte[] bytes;
         if (object instanceof byte[]) {
             bytes = (byte[]) object;
-        }else {
+        } else {
             bytes = object.toString().getBytes();
         }
         MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter(bytes.length);
         mySQLPayloadWriter.writeLenencBytes(bytes);
-       return mySQLPayloadWriter.toByteArray();
+        return mySQLPayloadWriter.toByteArray();
     }
 
     public static byte[] convertToFloat64(Number object) {
-       return ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putDouble(object.doubleValue()).array();
+        return ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putDouble(object.doubleValue()).array();
     }
 
     public static byte[] convertToInt32(Number object) {
@@ -234,6 +252,7 @@ public class BinaryResultSetResponse extends AbstractMycatResultSetResponse {
             throw new UnsupportedOperationException();
         }
     }
+
     public static byte[] convertToTiny(Object object) {
         if (object == Boolean.TRUE) {
             return new byte[]{1};
@@ -242,9 +261,9 @@ public class BinaryResultSetResponse extends AbstractMycatResultSetResponse {
         } else if (object instanceof Number) {
             byte b = ((Number) object).byteValue();
             return new byte[]{b};
-        } else if (object instanceof String){
+        } else if (object instanceof String) {
             return new byte[]{(byte) Integer.parseInt((String) object)};
-        }else {
+        } else {
             throw new UnsupportedOperationException();
         }
     }

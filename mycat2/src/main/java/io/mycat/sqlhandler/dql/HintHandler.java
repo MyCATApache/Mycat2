@@ -1000,5 +1000,9 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
             }
             return;
         }
+        if ("repairPhysicalTable".equalsIgnoreCase(cmd)) {
+            MetaClusterCurrent.wrapper(MetadataManager.class).check();
+            return;
+        }
     }
 }
