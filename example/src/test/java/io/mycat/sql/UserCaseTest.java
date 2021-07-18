@@ -384,6 +384,7 @@ public class UserCaseTest implements MycatTest {
             Assert.assertEquals(1, maps.size());
             List<Map<String, Object>> maps2 = JdbcUtils.executeQuery(mycatConnection, "select * from `1cloud`.`1service`",Collections.emptyList());
             Assert.assertEquals(3, maps2.get(0).size());
+            Assert.assertEquals("[{b=true, tiny=1, s=2}]", maps2.toString());
             System.out.println();
         }
     }
