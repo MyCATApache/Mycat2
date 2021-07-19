@@ -58,6 +58,7 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
         }
         JoinRelType joinType = join.getJoinType();
         switch (joinType) {
+            case LEFT:
             case INNER:
             case SEMI:
                 break;
