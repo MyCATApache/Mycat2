@@ -63,6 +63,11 @@ public class CreateGsiTest implements MycatTest {
             long count1 = count(connection, "db1", "travelrecord_g_i_user_id");
 
             Assert.assertEquals(count0, count1);
+            String explain1 = explain(connection, "insert db1.travelrecord (id,user_id) values(" + 100 + "," +
+                    "" +
+                    100 +
+                    ")");
+            Assert.assertTrue(explain1.contains("travelrecord_0") && explain1.contains("travelrecord_g_i_user_id_1"));
 
             connection.setAutoCommit(false);
             for (int i = 10; i < 20; i++) {
