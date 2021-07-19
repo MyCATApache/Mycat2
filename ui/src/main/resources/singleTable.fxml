@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.SingleTableVO">
+    <children>
+        <Label layoutX="193.0" layoutY="75.0" prefHeight="23.0" prefWidth="93.0" text="单表" />
+        <Label layoutX="192.0" layoutY="119.0" prefHeight="30.0" prefWidth="93.0" text="逻辑库名" />
+        <TextField fx:id="schemaName" layoutX="255.0" layoutY="123.0" />
+        <Label layoutX="192.0" layoutY="158.0" prefHeight="30.0" prefWidth="180.0" text="逻辑表名" />
+        <TextField fx:id="tableName" layoutX="255.0" layoutY="161.0" />
+        <Label layoutX="192.0" layoutY="196.0" prefHeight="30.0" prefWidth="180.0" text="目标名" />
+        <TextField fx:id="targetName" layoutX="256.0" layoutY="199.0" />
+        <Label layoutX="192.0" layoutY="235.0" prefHeight="30.0" prefWidth="360.0" text="物理库名" />
+        <TextField fx:id="phySchemaName" layoutX="256.0" layoutY="238.0" />
+        <Label layoutX="167.0" layoutY="273.0" prefHeight="30.0" prefWidth="450.0" text="目标物理表名" />
+        <TextField fx:id="phyTableName" layoutX="256.0" layoutY="276.0" />
+    </children>
+</AnchorPane>

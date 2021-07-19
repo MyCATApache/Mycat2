@@ -12,6 +12,11 @@
     <artifactId>mycat2</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>ui</artifactId>
+            <version>1.19</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client -->
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
@@ -174,6 +179,12 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
             <version>4.1.48.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>ui</artifactId>
+            <version>1.19</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
     <build>
