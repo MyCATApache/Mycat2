@@ -7,6 +7,7 @@ import io.mycat.config.ShardingFuntion;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
 import io.mycat.hint.CreateTableHint;
+import io.mycat.router.mycat1xfunction.PartitionByFileMap;
 import io.mycat.router.mycat1xfunction.PartitionByHotDate;
 import io.mycat.router.mycat1xfunction.PartitionByRangeMod;
 import org.apache.groovy.util.Maps;
@@ -374,17 +375,89 @@ public class UserCaseTest implements MycatTest {
                     "  `service_id` INT(11) DEFAULT NULL,\n" +
                     "  `submit_time` DATETIME DEFAULT NULL\n" +
                     ") ENGINE=INNODB DEFAULT CHARSET=utf8  dbpartition BY YYYYDD(submit_time) dbpartitions 1 tbpartition BY MOD_HASH (id) tbpartitions 1;\n");
-            deleteData(mycatConnection,"`1cloud`", "`1service`");
-            deleteData(mycatConnection,"`1cloud`", "`1log`");
+            deleteData(mycatConnection, "`1cloud`", "`1service`");
+            deleteData(mycatConnection, "`1cloud`", "`1log`");
             count(mycatConnection, "`1cloud`", "`1service`");
             count(mycatConnection, "`1cloud`", "`1log`");
             execute(mycatConnection, "insert `1cloud`.`1log` (id) values (1)");
             execute(mycatConnection, "insert `1cloud`.`1service`  values (1,1,'2')");
             List<Map<String, Object>> maps = JdbcUtils.executeQuery(mycatConnection, "select * from `1cloud`.`1log` where id = ?", Arrays.asList(1L));
             Assert.assertEquals(1, maps.size());
-            List<Map<String, Object>> maps2 = JdbcUtils.executeQuery(mycatConnection, "select * from `1cloud`.`1service`",Collections.emptyList());
+            List<Map<String, Object>> maps2 = JdbcUtils.executeQuery(mycatConnection, "select * from `1cloud`.`1service`", Collections.emptyList());
             Assert.assertEquals(3, maps2.get(0).size());
             Assert.assertEquals("[{b=true, tiny=1, s=2}]", maps2.toString());
+            System.out.println();
+        }
+    }
+
+    @Test
+    public void case6() throws Exception {
+        String table = "sharding";
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT)) {
+            execute(mycatConnection, RESET_CONFIG);
+
+            execute(mycatConnection, "DROP DATABASE `1cloud`");
+
+
+            execute(mycatConnection, "CREATE DATABASE `1cloud`");
+
+
+            execute(mycatConnection, "USE `1cloud`;");
+
+            execute(
+                    mycatConnection,
+                    CreateTableHint
+                            .createSharding("1cloud", table,
+                                    "create table " + table + "(\n" +
+                                            "id int(11) NOT NULL AUTO_INCREMENT,\n" +
+                                            "user_id int(11) ,\n" +
+                                            "user_name varchar(128), \n" +
+                                            "PRIMARY KEY (`id`) \n" +
+                                            ")ENGINE=InnoDB DEFAULT CHARSET=utf8 ",
+                                    ShardingBackEndTableInfoConfig.builder()
+                                            .schemaNames("c")
+                                            .tableNames("file_$0-2")
+                                            .targetNames("prototype").build(),
+                                    ShardingFuntion.builder()
+                                            .clazz(PartitionByFileMap.class.getCanonicalName())
+                                            .properties(Maps.of(
+                                                    "defaultNode", "0",
+                                                    "type", "Integer",
+                                                    "columnName", "id"
+                                            )).ranges( Maps.of(
+                                            "130100", "0",
+                                            "130200", "1",
+                                            "130300", "2"
+                                    )).build())
+            );
+            deleteData(mycatConnection, "`1cloud`", table);
+            Assert.assertEquals(0, count(mycatConnection, "`1cloud`", table));
+            execute(mycatConnection, "insert `1cloud`." +
+                    table +
+                    " (id) values (130100)");
+            Assert.assertEquals(1, count(mycatConnection, "`1cloud`", table));
+            String zero_w = explain(mycatConnection, "insert `1cloud`." +
+                    table +
+                    " (id) values (130100)");
+            String one_w = explain(mycatConnection, "insert `1cloud`." +
+                    table +
+                    " (id) values (130200)");
+            String second_r = explain(mycatConnection, "insert `1cloud`." +
+                    table +
+                    " (id) values (130300)");
+
+            Assert.assertTrue(zero_w.contains("file_0"));
+            Assert.assertTrue(one_w.contains("file_1"));
+            Assert.assertTrue(second_r.contains("file_2"));
+
+            String zero_r = explain(mycatConnection, "select * from "+table+" where id = "+130100);
+            String one_r = explain(mycatConnection, "select * from "+table+" where id = "+130200);
+            String two_r = explain(mycatConnection, "select * from "+table+" where id = "+130300);
+
+            Assert.assertTrue(zero_r.contains("file_0"));
+            Assert.assertTrue(one_r.contains("file_1"));
+            Assert.assertTrue(two_r.contains("file_2"));
+
             System.out.println();
         }
     }
