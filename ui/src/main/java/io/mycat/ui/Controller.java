@@ -9,37 +9,24 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.JavaFXBuilderFactory;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TreeView;
+import javafx.scene.control.*;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import lombok.Data;
 
 @Data
 public class Controller {
-    @FXML
-   private TreeView schemaObjectTree;
-
-    @FXML
-    private  TextArea schemaObjectDetail;
-
+    public AnchorPane mainPane;
+    public MenuBar menu;
+    public SplitPane main;
+    public TreeView objectTree;
+    public TextArea objectText;
+    public VBox objectNav;
     public Controller() {
         System.out.println();
     }
 
-    public TreeView getSchemaObjectTree() {
-        return schemaObjectTree;
-    }
-
-    public void setSchemaObjectTree(TreeView schemaObjectTree) {
-        this.schemaObjectTree = schemaObjectTree;
-    }
-
-    public TextArea getSchemaObjectDetail() {
-        return schemaObjectDetail;
-    }
-
-    public void setSchemaObjectDetail(TextArea schemaObjectDetail) {
-        this.schemaObjectDetail = schemaObjectDetail;
-    }
 }

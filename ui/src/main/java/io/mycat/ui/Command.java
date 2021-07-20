@@ -1,8 +1,14 @@
 package io.mycat.ui;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.ToString;
+
+import java.util.Optional;
 
 @Getter
+@ToString
+@EqualsAndHashCode
 public class Command {
     SchemaObjectType type;
     String schema;
@@ -38,18 +44,18 @@ public class Command {
 
     }
 
-    public static Command parsePath(String text) {
+    public static Optional<Command> parsePath(String text) {
         String[] split = text.split("/");
         if (split.length == 4) {
             switch (split[split.length - 2].toLowerCase()) {
                 case "schemas": {
-                    return new Command(SchemaObjectType.SCHEMA, split[split.length - 1]);
+                    return Optional.of(new Command(SchemaObjectType.SCHEMA, split[split.length - 1]));
                 }
                 case "clusters": {
-                    return new Command(SchemaObjectType.CLUSTER, split[split.length - 1]);
+                    return Optional.of(new Command(SchemaObjectType.CLUSTER, split[split.length - 1]));
                 }
                 case "datasources": {
-                    return new Command(SchemaObjectType.DATASOURCE, split[split.length - 1]);
+                    return Optional.of(new Command(SchemaObjectType.DATASOURCE, split[split.length - 1]));
                 }
                 default:
                     throw new IllegalStateException("Unexpected value: " + split[split.length - 2]);
@@ -59,13 +65,13 @@ public class Command {
         if (split.length == 6) {
             switch (split[split.length - 2].toLowerCase()) {
                 case "shardingtables": {
-                    return new Command(SchemaObjectType.SHARDING_TABLES, split[split.length - 3], split[split.length - 1]);
+                    return Optional.of(new Command(SchemaObjectType.SHARDING_TABLE, split[split.length - 3], split[split.length - 1]));
                 }
                 case "globaltables": {
-                    return new Command(SchemaObjectType.GLOBAL_TABLES, split[split.length - 3], split[split.length - 1]);
+                    return Optional.of(new Command(SchemaObjectType.GLOBAL_TABLE, split[split.length - 3], split[split.length - 1]));
                 }
                 case "singletables": {
-                    return new Command(SchemaObjectType.SINGLE_TABLES, split[split.length - 3], split[split.length - 1]);
+                    return Optional.of( new Command(SchemaObjectType.SINGLE_TABLE, split[split.length - 3], split[split.length - 1]));
                 }
                 default:
                     throw new IllegalStateException("Unexpected value: " + split[split.length - 2]);
@@ -75,13 +81,13 @@ public class Command {
         if (split.length == 5) {
             switch (split[split.length - 1].toLowerCase()) {
                 case "shardingtables": {
-                    return new Command(SchemaObjectType.SHARDING_TABLES, split[split.length - 2]);
+                    return  Optional.of(new Command(SchemaObjectType.SHARDING_TABLES, split[split.length - 2]));
                 }
                 case "globaltables": {
-                    return new Command(SchemaObjectType.GLOBAL_TABLES, split[split.length - 2]);
+                    return Optional.of( new Command(SchemaObjectType.GLOBAL_TABLES, split[split.length - 2]));
                 }
                 case "singletables": {
-                    return new Command(SchemaObjectType.SINGLE_TABLES, split[split.length - 2]);
+                    return Optional.of( new Command(SchemaObjectType.SINGLE_TABLES, split[split.length - 2]));
                 }
 
                 default:
@@ -89,6 +95,6 @@ public class Command {
             }
 
         }
-        return null;
+        return Optional.empty();
     }
 }

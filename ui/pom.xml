@@ -46,5 +46,10 @@
             <version>2.11.1</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>hbt</artifactId>
+            <version>1.19</version>
+        </dependency>
     </dependencies>
 </project>

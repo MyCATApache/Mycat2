@@ -18,6 +18,7 @@ package io.mycat.calcite.table;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.*;
+import io.mycat.config.ShardingTableConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.gsi.GSIService;
@@ -32,22 +33,23 @@ import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static io.mycat.util.CreateTableUtils.normalizeCreateTableSQLToMySQL;
 import static io.mycat.util.DDLHelper.createDatabaseIfNotExist;
 
 @Getter
 public class ShardingTable implements ShardingTableHandler {
     private final LogicTable logicTable;
     private CustomRuleFunction shardingFuntion;
+    private ShardingTableConfig tableConfigConfig;
     private List<Partition> backends;
     public List<ShardingTable> indexTables;
 
     public ShardingTable(LogicTable logicTable,
                          List<Partition> backends,
-                         CustomRuleFunction shardingFuntion) {
+                         CustomRuleFunction shardingFuntion, ShardingTableConfig tableConfigEntry) {
         this.logicTable = logicTable;
         this.backends = (backends == null || backends.isEmpty()) ? Collections.emptyList() : backends;
         this.shardingFuntion = shardingFuntion;
+        this.tableConfigConfig = tableConfigEntry;
     }
 
     @Override

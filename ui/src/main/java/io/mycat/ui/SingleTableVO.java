@@ -1,17 +1,21 @@
 package io.mycat.ui;
 
 import javafx.fxml.FXML;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import lombok.Data;
 
+@Data
 public class SingleTableVO {
     @FXML
-    TextField schemaName;
+   public TextField schemaName;
     @FXML
-    TextField tableName;
+    public TextField tableName;
     @FXML
-    TextField targetName;
+    public TextField targetName;
     @FXML
-    TextField phySchemaName;
+    public TextField phySchemaName;
     @FXML
-    TextField phyTableName;
+    public TextField phyTableName;
+
 }

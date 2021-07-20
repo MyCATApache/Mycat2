@@ -3,14 +3,16 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.SingleTableVO">
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.GlobalTableConfigVO">
     <children>
         <Label layoutX="193.0" layoutY="75.0" prefHeight="23.0" prefWidth="93.0" text="全局表" />
         <Label layoutX="192.0" layoutY="119.0" prefHeight="30.0" prefWidth="93.0" text="逻辑库名" />
         <TextField fx:id="schemaName" layoutX="255.0" layoutY="123.0" />
         <Label layoutX="192.0" layoutY="158.0" prefHeight="30.0" prefWidth="180.0" text="逻辑表名" />
         <TextField fx:id="tableName" layoutX="255.0" layoutY="161.0" />
-        <Label layoutX="192.0" layoutY="196.0" prefHeight="30.0" prefWidth="180.0" text="目标名" />
-        <TextField fx:id="targetName" layoutX="256.0" layoutY="199.0" />
+
+        <Label layoutX="102.0" layoutY="185.0" prefHeight="30.0" prefWidth="180.0" text="分区" />
+        <ListView fx:id="targets" fixedCellSize="2.0" layoutX="99.0" layoutY="212.0" prefHeight="179.0" prefWidth="440.0">
+        </ListView>
     </children>
 </AnchorPane>

@@ -3,14 +3,19 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.SingleTableVO">
+<AnchorPane prefHeight="453.0" prefWidth="811.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.ShardingTableConfigVO">
     <children>
-        <Label layoutX="193.0" layoutY="75.0" prefHeight="23.0" prefWidth="93.0" text="分片表" />
-        <Label layoutX="192.0" layoutY="119.0" prefHeight="30.0" prefWidth="93.0" text="逻辑库名" />
-        <TextField fx:id="schemaName" layoutX="255.0" layoutY="123.0" />
-        <Label layoutX="192.0" layoutY="158.0" prefHeight="30.0" prefWidth="180.0" text="逻辑表名" />
-        <TextField fx:id="tableName" layoutX="255.0" layoutY="161.0" />
-        <Label layoutX="192.0" layoutY="196.0" prefHeight="30.0" prefWidth="180.0" text="目标名" />
-        <TextField fx:id="targetName" layoutX="256.0" layoutY="199.0" />
+        <Label layoutX="250.0" layoutY="14.0" prefHeight="23.0" prefWidth="93.0" text="分片表" />
+        <Label layoutX="33.0" layoutY="45.0" prefHeight="30.0" prefWidth="93.0" text="逻辑库名" />
+        <TextField fx:id="schemaName" layoutX="94.0" layoutY="49.0" />
+        <Label layoutX="275.0" layoutY="45.0" prefHeight="30.0" prefWidth="180.0" text="逻辑表名" />
+        <TextField fx:id="tableName" layoutX="343.0" layoutY="49.0" />
+        <Label layoutX="254.0" layoutY="87.0" prefHeight="23.0" prefWidth="93.0" text="算法信息" />
+         <TextArea fx:id="shardingInfo" layoutX="41.0" layoutY="116.0" prefHeight="69.0" prefWidth="532.0" />
+        <Label layoutX="254.0" layoutY="196.0" prefHeight="23.0" prefWidth="93.0" text="分区" />
+        <TableView fx:id="partitionsView" layoutX="33.0" layoutY="223.0" prefHeight="151.0" prefWidth="544.0">
+         <columnResizePolicy>
+            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+         </columnResizePolicy></TableView>
     </children>
 </AnchorPane>

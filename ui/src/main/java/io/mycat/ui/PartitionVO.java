@@ -2,12 +2,16 @@ package io.mycat.ui;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
+import lombok.Data;
 
+@Data
 public class PartitionVO {
     @FXML
-    TextField target;
+    public TextField id;
     @FXML
-    TextField schema;
+    public TextField target;
     @FXML
-    TextField table;
+    public TextField schema;
+    @FXML
+    public TextField table;
 }
