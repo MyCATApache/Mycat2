@@ -287,7 +287,10 @@ public class DrdsSqlCompiler {
             int index = 0;
             metaColumns = new ArrayList<>();
             for (SQLIdentifierExpr column : columnsTmp) {
-                SimpleColumnInfo simpleColumnInfo = logicTable.getColumnByName(SQLUtils.normalize(column.getName()));
+                SimpleColumnInfo simpleColumnInfo =
+                        Objects.requireNonNull(
+                                logicTable.getColumnByName(SQLUtils.normalize(column.getName()))
+                        ,()->"unknown column name "+column);
                 metaColumns.add(simpleColumnInfo);
                 if (autoIncrement && logicTable.getAutoIncrementColumn() == simpleColumnInfo) {
                     autoIncrementIndexTmp = index;
