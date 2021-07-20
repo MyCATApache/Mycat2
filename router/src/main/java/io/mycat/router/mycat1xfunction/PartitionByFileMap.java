@@ -14,6 +14,7 @@
  */
 package io.mycat.router.mycat1xfunction;
 
+import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.MycatException;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
@@ -21,6 +22,9 @@ import io.mycat.router.ShardingTableHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -97,10 +101,44 @@ public class PartitionByFileMap extends Mycat1xSingleValueRuleFunction {
             default:
                 throw new MycatException("unsupport type!!");
         }
-        for (Entry<String, Object> entry : range.entrySet()) {
-            Object key = transformation.apply(entry.getKey());
-            int value = Integer.parseInt(Objects.toString(entry.getValue()));
-            app2Partition.put(key, value);
+        if (prot.get("mapFile") != null && (range == null || range.isEmpty())) {
+            String mapFile = (String) prot.get("mapFile");
+            InputStream fin = this.getClass().getClassLoader()
+                    .getResourceAsStream(mapFile);
+            if (fin == null) {
+                throw new RuntimeException("can't find class resource file "
+                        + mapFile);
+            }
+            try(BufferedReader in = new BufferedReader(new InputStreamReader(fin))){
+                for (String line = null; (line = in.readLine()) != null; ) {
+                    line = line.trim();
+                    if (line.startsWith("#") || line.startsWith("//")) {
+                        continue;
+                    }
+                    int ind = line.indexOf('=');
+                    if (ind < 0) {
+                        continue;
+                    }
+                    try {
+                        String key = line.substring(0, ind).trim();
+                        int pid = Integer.parseInt(line.substring(ind + 1).trim());
+                        app2Partition.put(transformation.apply(key), pid);
+                    } catch (Exception e) {
+                        LOGGER.error("PartitionByFileMap "+line+" is wrong");
+                    }
+                }
+            }catch (Exception e){
+                throw new RuntimeException("can't find class resource file "
+                        + mapFile);
+            }finally {
+                JdbcUtils.close(fin);
+            }
+        } else {
+            for (Entry<String, Object> entry : range.entrySet()) {
+                Object key = transformation.apply(entry.getKey());
+                int value = Integer.parseInt(Objects.toString(entry.getValue()));
+                app2Partition.put(key, value);
+            }
         }
         if (defaultNode > 0) {
             app2Partition.put(DEFAULT_NODE, defaultNode);
@@ -145,6 +183,7 @@ public class PartitionByFileMap extends Mycat1xSingleValueRuleFunction {
         }
         return false;
     }
+
     @Override
     public String getErUniqueID() {
         return "" + app2Partition + type + partitionNum + defaultNode;
