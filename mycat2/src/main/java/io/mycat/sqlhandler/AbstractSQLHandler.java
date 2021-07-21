@@ -105,7 +105,7 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
                 HostInfo hostInfo = connectionUrlParser.getHosts().get(0);
                 String ip = hostInfo.getHost();
                 String port = hostInfo.getPort() + "";
-                if (set.add(ip + port)) {
+                if (set.add(ip +":" +port+":"+sql)) {
                     connection.executeUpdate(sql, false);
                 }
             }
