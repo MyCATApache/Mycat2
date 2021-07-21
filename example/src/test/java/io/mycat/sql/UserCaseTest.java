@@ -402,6 +402,7 @@ public class UserCaseTest implements MycatTest {
             execute(mycatConnection, "CREATE DATABASE `1cloud`");
 
 
+
             execute(mycatConnection, "USE `1cloud`;");
 
             execute(
@@ -424,7 +425,7 @@ public class UserCaseTest implements MycatTest {
                                                     "defaultNode", "0",
                                                     "type", "Integer",
                                                     "columnName", "id"
-                                            )).ranges( Maps.of(
+                                            )).ranges(Maps.of(
                                             "130100", "0",
                                             "130200", "1",
                                             "130300", "2"
@@ -450,9 +451,9 @@ public class UserCaseTest implements MycatTest {
             Assert.assertTrue(one_w.contains("file_1"));
             Assert.assertTrue(second_r.contains("file_2"));
 
-            String zero_r = explain(mycatConnection, "select * from "+table+" where id = "+130100);
-            String one_r = explain(mycatConnection, "select * from "+table+" where id = "+130200);
-            String two_r = explain(mycatConnection, "select * from "+table+" where id = "+130300);
+            String zero_r = explain(mycatConnection, "select * from " + table + " where id = " + 130100);
+            String one_r = explain(mycatConnection, "select * from " + table + " where id = " + 130200);
+            String two_r = explain(mycatConnection, "select * from " + table + " where id = " + 130300);
 
             Assert.assertTrue(zero_r.contains("file_0"));
             Assert.assertTrue(one_r.contains("file_1"));
@@ -460,5 +461,36 @@ public class UserCaseTest implements MycatTest {
 
             System.out.println();
         }
+    }
+
+        @Test
+        public void case7() throws Exception {
+            String table = "sharding";
+            try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT)) {
+                execute(mycatConnection, RESET_CONFIG);
+                execute(mycatConnection,
+                        CreateClusterHint.create("c0",
+                                Arrays.asList("prototypeDs"), Collections.emptyList()));
+                execute(mycatConnection, "DROP DATABASE `1cloud`");
+
+
+                execute(mycatConnection, "CREATE DATABASE `1cloud`");
+
+
+                execute(mycatConnection, "USE `1cloud`;");
+
+                execute(mycatConnection, "CREATE TABLE `1cloud`.`1log` (\n" +
+                        "  `id` BIGINT(20) DEFAULT NULL,\n" +
+                        "  `user_id` BIGINT(20) DEFAULT NULL,\n" +
+                        "  `service_id` INT(11) DEFAULT NULL,\n" +
+                        "  `submit_time` DATETIME DEFAULT NULL\n" +
+                        ") ENGINE=INNODB DEFAULT CHARSET=utf8  dbpartition BY YYYYDD(submit_time) dbpartitions 1 tbpartition BY MOD_HASH (id) tbpartitions 1;\n");
+
+
+                String sql = "select any_value(submit_time) from `1log` where submit_time between '2019-5-31' and '2019-6-21' group by DATE_FORMAT(submit_time,'%Y-%m')";
+                String explain = explain(mycatConnection,sql );
+                executeQuery(mycatConnection,sql);
+                System.out.println();
+            }
     }
 }
