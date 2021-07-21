@@ -24,6 +24,8 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
 import io.vertx.core.shareddata.Lock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -31,7 +33,7 @@ import java.util.Set;
 
 
 public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatement> {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(AlterTableSQLHandler.class);
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLAlterTableStatement> request, MycatDataContext dataContext, Response response){
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
@@ -51,7 +53,7 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
                     JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                     Set<Partition> partitions = getDataNodes(tableHandler);
                     partitions.add(new BackendTableInfo(metadataManager.getPrototype(), schema, tableName));//add Prototype
-                    executeOnDataNodes(sqlAlterTableStatement, connectionManager, partitions);
+                    executeAlterOnDataNodes(sqlAlterTableStatement, connectionManager, partitions);
                     CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(), schema, tableName, createTableStatement);
                 }
                 return response.sendOk();
@@ -64,11 +66,15 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
     }
 
 
-    public void executeOnDataNodes(SQLAlterTableStatement alterTableStatement,
-                                   JdbcConnectionManager connectionManager,
-                                   Collection<Partition> partitions) {
+    public void executeAlterOnDataNodes(SQLAlterTableStatement alterTableStatement,
+                                        JdbcConnectionManager connectionManager,
+                                        Collection<Partition> partitions) {
         SQLExprTableSource tableSource = alterTableStatement.getTableSource();
-        executeOnDataNodes(alterTableStatement, connectionManager, partitions, tableSource);
+        try {
+            executeOnDataNodes(alterTableStatement, connectionManager, partitions, tableSource);
+        }catch (Exception e){
+            LOGGER.error("execute  alter "+alterTableStatement,e);
+        }
     }
 
 }
