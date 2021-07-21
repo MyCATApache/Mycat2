@@ -53,7 +53,7 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
                     JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                     Set<Partition> partitions = getDataNodes(tableHandler);
                     partitions.add(new BackendTableInfo(metadataManager.getPrototype(), schema, tableName));//add Prototype
-                    executeAlterOnDataNodes(sqlAlterTableStatement, connectionManager, partitions);
+                    executeOnDataNodes(sqlAlterTableStatement, connectionManager, partitions);
                     CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(), schema, tableName, createTableStatement);
                 }
                 return response.sendOk();
@@ -66,15 +66,11 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
     }
 
 
-    public void executeAlterOnDataNodes(SQLAlterTableStatement alterTableStatement,
-                                        JdbcConnectionManager connectionManager,
-                                        Collection<Partition> partitions) {
+    public void executeOnDataNodes(SQLAlterTableStatement alterTableStatement,
+                                   JdbcConnectionManager connectionManager,
+                                   Collection<Partition> partitions) {
         SQLExprTableSource tableSource = alterTableStatement.getTableSource();
-        try {
-            executeOnDataNodes(alterTableStatement, connectionManager, partitions, tableSource);
-        }catch (Exception e){
-            LOGGER.error("execute  alter "+alterTableStatement,e);
-        }
+        executeOnDataNodes(alterTableStatement, connectionManager, partitions, tableSource);
     }
 
 }
