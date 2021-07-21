@@ -24,4 +24,7 @@ public interface InfoProvider {
 
     String translate(String name);
 
+    void deleteDatasource(String datasource);
+
+    void deleteLogicalSchema(String schema);
 }

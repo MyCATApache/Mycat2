@@ -10,5 +10,6 @@
         <TextField fx:id="schemaName" layoutX="255.0" layoutY="142.0" />
         <Label layoutX="192.0" layoutY="177.0" prefHeight="30.0" prefWidth="180.0" text="映射目标" />
         <TextField fx:id="defaultTargetName" layoutX="255.0" layoutY="180.0" />
+        <Button layoutX="315.0" layoutY="345.0" text="保存" />
     </children>
 </AnchorPane>

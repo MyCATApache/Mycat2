@@ -3,19 +3,28 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="453.0" prefWidth="811.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.ShardingTableConfigVO">
+<AnchorPane prefHeight="531.0" prefWidth="889.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.ShardingTableConfigVO">
     <children>
-        <Label layoutX="250.0" layoutY="14.0" prefHeight="23.0" prefWidth="93.0" text="分片表" />
-        <Label layoutX="33.0" layoutY="45.0" prefHeight="30.0" prefWidth="93.0" text="逻辑库名" />
-        <TextField fx:id="schemaName" layoutX="94.0" layoutY="49.0" />
-        <Label layoutX="275.0" layoutY="45.0" prefHeight="30.0" prefWidth="180.0" text="逻辑表名" />
-        <TextField fx:id="tableName" layoutX="343.0" layoutY="49.0" />
-        <Label layoutX="254.0" layoutY="87.0" prefHeight="23.0" prefWidth="93.0" text="算法信息" />
-         <TextArea fx:id="shardingInfo" layoutX="41.0" layoutY="116.0" prefHeight="69.0" prefWidth="532.0" />
-        <Label layoutX="254.0" layoutY="196.0" prefHeight="23.0" prefWidth="93.0" text="分区" />
-        <TableView fx:id="partitionsView" layoutX="33.0" layoutY="223.0" prefHeight="151.0" prefWidth="544.0">
+        <Label layoutX="281.0" layoutY="3.0" prefHeight="23.0" prefWidth="93.0" text="分片表" />
+        <Label layoutX="14.0" layoutY="15.0" prefHeight="30.0" prefWidth="93.0" text="逻辑库名" />
+        <TextField fx:id="schemaName" layoutX="76.0" layoutY="19.0" />
+        <Label layoutX="275.0" layoutY="15.0" prefHeight="30.0" prefWidth="180.0" text="逻辑表名" />
+        <TextField fx:id="tableName" layoutX="354.0" layoutY="19.0" />
+        <Label layoutX="17.0" layoutY="48.0" prefHeight="30.0" prefWidth="180.0" text="建表SQL" />
+        <TextArea fx:id="createTableSQL" layoutX="76.0" layoutY="45.0" prefHeight="23.0" prefWidth="532.0" />
+
+        <Label layoutX="275.0" layoutY="82.0" prefHeight="23.0" prefWidth="93.0" text="算法信息" />
+         <TextArea fx:id="shardingInfo" layoutX="76.0" layoutY="104.0" prefHeight="83.0" prefWidth="532.0" />
+
+        <Label layoutX="255.0" layoutY="194.0" prefHeight="12.0" prefWidth="93.0" text="分区循环生成" />
+        <TextArea fx:id="partitionLoop" layoutX="76.0" layoutY="209.0" prefHeight="61.0" prefWidth="532.0" />
+
+        <Label layoutX="275.0" layoutY="266.0" prefHeight="23.0" prefWidth="93.0" text="分区" />
+        <TableView fx:id="partitionsView" layoutX="76.0" layoutY="298.0" prefHeight="121.0" prefWidth="532.0">
          <columnResizePolicy>
             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
          </columnResizePolicy></TableView>
+        <Button layoutX="261.0" layoutY="486.0" onAction="#save" text="保存" />
+        <Button layoutX="734.0" layoutY="461.0" onAction="#inputPartitions" text="导入" />
     </children>
 </AnchorPane>

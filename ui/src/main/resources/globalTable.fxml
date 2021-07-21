@@ -3,7 +3,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.GlobalTableConfigVO">
+<AnchorPane prefHeight="444.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.GlobalTableConfigVO">
     <children>
         <Label layoutX="193.0" layoutY="75.0" prefHeight="23.0" prefWidth="93.0" text="全局表" />
         <Label layoutX="192.0" layoutY="119.0" prefHeight="30.0" prefWidth="93.0" text="逻辑库名" />
@@ -11,8 +11,12 @@
         <Label layoutX="192.0" layoutY="158.0" prefHeight="30.0" prefWidth="180.0" text="逻辑表名" />
         <TextField fx:id="tableName" layoutX="255.0" layoutY="161.0" />
 
-        <Label layoutX="102.0" layoutY="185.0" prefHeight="30.0" prefWidth="180.0" text="分区" />
-        <ListView fx:id="targets" fixedCellSize="2.0" layoutX="99.0" layoutY="212.0" prefHeight="179.0" prefWidth="440.0">
+        <Label layoutX="34.0" layoutY="189.0" prefHeight="30.0" prefWidth="180.0" text="建表SQL" />
+        <TextArea fx:id="createTableSQL" layoutX="90.0" layoutY="192.0" prefHeight="86.0" prefWidth="470.0" />
+
+        <Label layoutX="262.0" layoutY="297.0" prefHeight="30.0" prefWidth="180.0" text="分区" />
+        <ListView fx:id="targets" editable="true" fixedCellSize="2.0" layoutX="116.0" layoutY="338.0" prefHeight="111.0" prefWidth="440.0">
         </ListView>
+        <Button layoutX="269.0" layoutY="465.0" onAction="#save" text="保存" />
     </children>
 </AnchorPane>

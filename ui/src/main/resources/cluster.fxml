@@ -14,5 +14,6 @@
         <ListView fx:id="masterList" layoutX="78.0" layoutY="197.0" prefHeight="148.0" prefWidth="161.0" />
         <Label layoutX="416.0" layoutY="162.0" prefHeight="23.0" prefWidth="294.0" text="可读节点列表" />
         <ListView fx:id="replicaList" layoutX="416.0" layoutY="197.0" prefHeight="148.0" prefWidth="201.0" />
+        <Button layoutX="315.0" layoutY="345.0" text="保存" />
     </children>
 </AnchorPane>

@@ -1,12 +1,16 @@
 package io.mycat.ui;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataManager;
 import io.mycat.TableHandler;
 import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.config.*;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.sqlhandler.dql.HintHandler;
 import io.mycat.util.NameMap;
+import org.codehaus.janino.util.DeepCopier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -77,6 +81,28 @@ public class InfoProviderImpl implements InfoProvider {
     @Override
     public String translate(String name) {
         return map.get(name, false);
+    }
+
+    @Override
+    public void deleteDatasource(String datasource) {
+        MycatRouterConfig mycatRouterConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
+        List<DatasourceConfig> datasources = mycatRouterConfig.getDatasources();
+        for (DatasourceConfig datasourceConfig : ImmutableList.copyOf( datasources)) {
+           if(datasourceConfig.getName().equals(datasource)){
+               datasources.remove(datasourceConfig);
+           }
+        }
+    }
+
+    @Override
+    public void deleteLogicalSchema(String schema) {
+        MycatRouterConfig mycatRouterConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
+        List<LogicSchemaConfig> logicSchemaConfigs = mycatRouterConfig.getSchemas();
+        for (LogicSchemaConfig logicSchemaConfig : ImmutableList.copyOf( logicSchemaConfigs)) {
+            if(logicSchemaConfig.getSchemaName().equals(schema)){
+                logicSchemaConfigs.remove(logicSchemaConfig);
+            }
+        }
     }
 
     NameMap<String> map = NameMap.immutableCopyOf((ImmutableMap)

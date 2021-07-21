@@ -16,10 +16,13 @@ package io.mycat.sqlhandler;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.mysql.cj.conf.ConnectionUrlParser;
+import com.mysql.cj.conf.HostInfo;
 import io.mycat.*;
 import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.calcite.table.GlobalTableHandler;
 import io.mycat.calcite.table.NormalTableHandler;
+import io.mycat.config.DatasourceConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.router.ShardingTableHandler;
@@ -35,6 +38,7 @@ import java.util.*;
 public abstract class AbstractSQLHandler<Statement extends SQLStatement> implements SQLHandler<Statement> {
     private final Class statementClass;
     public final static String DDL_LOCK = "DDL_LOCK";
+
     public AbstractSQLHandler() {
         Class<?> statement = ClassUtil.findGenericType(this, AbstractSQLHandler.class, "Statement");
         Objects.requireNonNull(statement);
@@ -69,10 +73,10 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
         return statementClass;
     }
 
-    public void resolveSQLExprTableSource( SQLExprTableSource tableSource,MycatDataContext dataContext) {
+    public void resolveSQLExprTableSource(SQLExprTableSource tableSource, MycatDataContext dataContext) {
         if (tableSource.getSchema() == null) {
             String defaultSchema = checkDefaultSchemaNotNull(dataContext);
-            MycatSQLExprTableSourceUtil.setSchema(defaultSchema,tableSource);
+            MycatSQLExprTableSourceUtil.setSchema(defaultSchema, tableSource);
         }
     }
 
@@ -85,18 +89,26 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
         return defaultSchema;
     }
 
-//    public void executeOnPrototype(SQLStatement sqlStatement,
+    //    public void executeOnPrototype(SQLStatement sqlStatement,
 //                                   JdbcConnectionManager connectionManager) {
 //        try(DefaultConnection connection = connectionManager.getConnection("prototype")){
 //            connection.executeUpdate(sqlStatement.toString(),false);
 //        }
 //    }
     public void executeOnDataNodes(SQLStatement sqlStatement, JdbcConnectionManager connectionManager, Collection<Partition> partitions, SQLExprTableSource tableSource) {
+        HashSet<String> set = new HashSet<>();
         for (Partition partition : partitions) {
-            MycatSQLExprTableSourceUtil.setSqlExprTableSource(partition.getSchema(),partition.getTable(),tableSource);
+            MycatSQLExprTableSourceUtil.setSqlExprTableSource(partition.getSchema(), partition.getTable(), tableSource);
             String sql = sqlStatement.toString();
             try (DefaultConnection connection = connectionManager.getConnection(partition.getTargetName())) {
-                connection.executeUpdate(sql, false);
+                DatasourceConfig config = connection.getDataSource().getConfig();
+                ConnectionUrlParser connectionUrlParser = ConnectionUrlParser.parseConnectionString(config.getUrl());
+                HostInfo hostInfo = connectionUrlParser.getHosts().get(0);
+                String ip = hostInfo.getHost();
+                String port = hostInfo.getPort() + "";
+                if (set.add(ip + port)) {
+                    connection.executeUpdate(sql, false);
+                }
             }
         }
     }
@@ -121,7 +133,7 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
             }
             case CUSTOM:
             default:
-                throw MycatErrorCode.createMycatException(MycatErrorCode.ERR_NOT_SUPPORT,"alter custom table supported");
+                throw MycatErrorCode.createMycatException(MycatErrorCode.ERR_NOT_SUPPORT, "alter custom table supported");
         }
         return new HashSet<>(partitions);
     }

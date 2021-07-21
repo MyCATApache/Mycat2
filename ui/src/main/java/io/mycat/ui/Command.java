@@ -26,13 +26,10 @@ public class Command {
         this.type = type;
         switch (type) {
             case SCHEMA:
-                this.schema = value;
-                break;
             case SHARDING_TABLES:
-                break;
             case GLOBAL_TABLES:
-                break;
             case SINGLE_TABLES:
+                this.schema = value;
                 break;
             case CLUSTER:
                 this.cluster = value;
