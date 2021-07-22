@@ -54,7 +54,8 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
     @Override
     public Future<Void> begin() {
         if (inTranscation) {
-            return (Future.failedFuture(new IllegalArgumentException("occur Nested transaction")));
+            LOGGER.warn("local transaction occur nested transaction");
+            return Future.succeededFuture();
         }
         inTranscation = true;
         return Future.succeededFuture();

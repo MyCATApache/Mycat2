@@ -34,6 +34,7 @@ import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -125,6 +126,7 @@ public abstract class XaTestSuite {
     }
 
     @Test
+    @Disabled
     public void beginBegin(VertxTestContext testContext) {
         XaSqlConnection baseXaSqlConnection = factory.apply(mySQLManager,xaLog);
         baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
