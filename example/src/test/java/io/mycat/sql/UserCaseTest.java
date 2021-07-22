@@ -402,7 +402,6 @@ public class UserCaseTest implements MycatTest {
             execute(mycatConnection, "CREATE DATABASE `1cloud`");
 
 
-
             execute(mycatConnection, "USE `1cloud`;");
 
             execute(
@@ -463,34 +462,82 @@ public class UserCaseTest implements MycatTest {
         }
     }
 
-        @Test
-        public void case7() throws Exception {
-            String table = "sharding";
-            try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT)) {
-                execute(mycatConnection, RESET_CONFIG);
-                execute(mycatConnection,
-                        CreateClusterHint.create("c0",
-                                Arrays.asList("prototypeDs"), Collections.emptyList()));
-                execute(mycatConnection, "DROP DATABASE `1cloud`");
+    @Test
+    public void case7() throws Exception {
+        String table = "sharding";
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT)) {
+            execute(mycatConnection, RESET_CONFIG);
+            execute(mycatConnection,
+                    CreateClusterHint.create("c0",
+                            Arrays.asList("prototypeDs"), Collections.emptyList()));
+            execute(mycatConnection, "DROP DATABASE `1cloud`");
 
 
-                execute(mycatConnection, "CREATE DATABASE `1cloud`");
+            execute(mycatConnection, "CREATE DATABASE `1cloud`");
 
 
-                execute(mycatConnection, "USE `1cloud`;");
+            execute(mycatConnection, "USE `1cloud`;");
 
-                execute(mycatConnection, "CREATE TABLE `1cloud`.`1log` (\n" +
-                        "  `id` BIGINT(20) DEFAULT NULL,\n" +
-                        "  `user_id` BIGINT(20) DEFAULT NULL,\n" +
-                        "  `service_id` INT(11) DEFAULT NULL,\n" +
-                        "  `submit_time` DATETIME DEFAULT NULL\n" +
-                        ") ENGINE=INNODB DEFAULT CHARSET=utf8  dbpartition BY YYYYDD(submit_time) dbpartitions 1 tbpartition BY MOD_HASH (id) tbpartitions 1;\n");
+            execute(mycatConnection, "CREATE TABLE `1cloud`.`1log` (\n" +
+                    "  `id` BIGINT(20) DEFAULT NULL,\n" +
+                    "  `user_id` BIGINT(20) DEFAULT NULL,\n" +
+                    "  `service_id` INT(11) DEFAULT NULL,\n" +
+                    "  `submit_time` DATETIME DEFAULT NULL\n" +
+                    ") ENGINE=INNODB DEFAULT CHARSET=utf8  dbpartition BY YYYYDD(submit_time) dbpartitions 1 tbpartition BY MOD_HASH (id) tbpartitions 1;\n");
 
 
-                String sql = "select any_value(submit_time) from `1log` where submit_time between '2019-5-31' and '2019-6-21' group by DATE_FORMAT(submit_time,'%Y-%m')";
-                String explain = explain(mycatConnection,sql );
-                executeQuery(mycatConnection,sql);
-                System.out.println();
-            }
+            String sql = "select any_value(submit_time) from `1log` where submit_time between '2019-5-31' and '2019-6-21' group by DATE_FORMAT(submit_time,'%Y-%m')";
+            String explain = explain(mycatConnection, sql);
+            executeQuery(mycatConnection, sql);
+            System.out.println();
+            execute(mycatConnection, "USE `1cloud`;");
+            execute(
+                    mycatConnection,
+                    CreateTableHint
+                            .createSharding("1cloud", "stat_ad_sdk",
+                                    "CREATE TABLE stat_ad_sdk (\n" +
+                                            "ad_id int unsigned DEFAULT NULL COMMENT '广告位id',\n" +
+                                            "ad_uuid varchar(50) DEFAULT NULL COMMENT '渠道广告位id',\n" +
+                                            "ad_name varchar(500) DEFAULT NULL COMMENT '广告位名称',\n" +
+                                            "ad_type varchar(50) DEFAULT NULL COMMENT '广告位类型',\n" +
+                                            "uid int unsigned DEFAULT NULL COMMENT '开发者id',\n" +
+                                            "user_name varchar(500) DEFAULT NULL COMMENT '开发者名',\n" +
+                                            "app_id int unsigned DEFAULT NULL COMMENT '应用id',\n" +
+                                            "app_name varchar(500) DEFAULT NULL COMMENT '应用名',\n" +
+                                            "channel_id int unsigned DEFAULT NULL COMMENT '渠道id',\n" +
+                                            "date date DEFAULT NULL COMMENT '日期',\n" +
+                                            "req int unsigned NOT NULL DEFAULT '0' COMMENT '请求量',\n" +
+                                            "fill_rate varchar(20) DEFAULT NULL COMMENT '填充率',\n" +
+                                            "`show` int unsigned NOT NULL DEFAULT '0' COMMENT '展示量',\n" +
+                                            "click int unsigned NOT NULL DEFAULT '0' COMMENT '点击量',\n" +
+                                            "video_error int unsigned NOT NULL DEFAULT '0' COMMENT '视频播放错误量',\n" +
+                                            "video_not_complete int unsigned NOT NULL DEFAULT '0' COMMENT '视频未完整播放量',\n" +
+                                            "version varchar(50) DEFAULT NULL COMMENT 'sdk版本',\n" +
+                                            "UNIQUE KEY dateAdIdVer (date,ad_uuid,version) USING BTREE\n" +
+                                            ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='广告sdk日统计数据';",
+                                    ShardingBackEndTableInfoConfig.builder()
+                                            .schemaNames("c")
+                                            .tableNames("stat_ad_sdk_$0-11")
+                                            .targetNames("prototype").build(),
+                                    ShardingFuntion.builder()
+                                            .clazz(io.mycat.router.mycat1xfunction.PartitionByMonth.class.getCanonicalName())
+                                            .properties(Maps.of(
+                                                    "beginDate", "2019-01-01",
+                                                    "endDate", "2099-12-01",
+                                                    "dateFormat", "yyyy-MM-dd",
+                                                    "columnName", "date"
+                                            )).ranges(Maps.of(
+                                            "130100", "0",
+                                            "130200", "1",
+                                            "130300", "2"
+                                    )).build())
+            );
+
+            sql = "select any_value(date) from `stat_ad_sdk` where date between '2019-5-01' and '2019-05-31' group by DATE_FORMAT(date,'%Y-%m')";
+            explain = explain(mycatConnection, sql);
+            executeQuery(mycatConnection, sql);
+            System.out.println();
+
+        }
     }
 }
