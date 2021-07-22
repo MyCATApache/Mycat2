@@ -526,11 +526,7 @@ public class UserCaseTest implements MycatTest {
                                                     "endDate", "2099-12-01",
                                                     "dateFormat", "yyyy-MM-dd",
                                                     "columnName", "date"
-                                            )).ranges(Maps.of(
-                                            "130100", "0",
-                                            "130200", "1",
-                                            "130300", "2"
-                                    )).build())
+                                            )).build())
             );
 
             sql = "select any_value(date) from `stat_ad_sdk` where date between '2019-5-01' and '2019-05-31' group by DATE_FORMAT(date,'%Y-%m')";
