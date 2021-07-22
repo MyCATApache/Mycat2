@@ -32,6 +32,21 @@ public class TableHandlerMocks {
                 public String getTable() {
                     return name;
                 }
+
+                @Override
+                public Integer getDbIndex() {
+                    return null;
+                }
+
+                @Override
+                public Integer getTableIndex() {
+                    return null;
+                }
+
+                @Override
+                public Integer getIndex() {
+                    return null;
+                }
             };
             partitions.add(partition);
         }

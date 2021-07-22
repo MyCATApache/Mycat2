@@ -35,4 +35,19 @@ public class IndexDataNode extends BackendTableInfo {
                 ", tableIndex=" + tableIndex +
                 '}';
     }
+
+    @Override
+    public Integer getDbIndex() {
+        return dbIndex;
+    }
+
+    @Override
+    public Integer getTableIndex() {
+        return tableIndex;
+    }
+
+    @Override
+    public Integer getIndex() {
+        return index;
+    }
 }
