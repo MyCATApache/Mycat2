@@ -62,7 +62,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
 
     @Override
     public Future<Void> executeUpdate(Plan plan) {
-        MycatUpdateRel mycatRel = (MycatUpdateRel)plan.getMycatRel();
+        MycatUpdateRel mycatRel = (MycatUpdateRel) plan.getMycatRel();
         Collection<VertxExecuter.EachSQL> eachSQLS = VertxUpdateExecuter.explainUpdate(drdsSqlWithParams, context);
         Future<long[]> future = VertxExecuter.simpleUpdate(context, true, mycatRel.isGlobal(), eachSQLS);
         return future.eventually(u -> context.getTransactionSession().closeStatementState())
@@ -71,8 +71,9 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
 
     @Override
     public Future<Void> executeInsert(Plan logical) {
-        MycatInsertRel mycatRel = (MycatInsertRel)logical.getMycatRel();
+        MycatInsertRel mycatRel = (MycatInsertRel) logical.getMycatRel();
         Iterable<VertxExecuter.EachSQL> eachSQLS = VertxExecuter.explainInsert((SQLInsertStatement) mycatRel.getSqlStatement(), drdsSqlWithParams.getParams());
+        eachSQLS = VertxExecuter.rewriteInsertBatchedStatements(eachSQLS);
         Future<long[]> future = VertxExecuter.simpleUpdate(context, true, mycatRel.isGlobal(), eachSQLS);
         return future.eventually(u -> context.getTransactionSession().closeStatementState())
                 .flatMap(result -> response.sendOk(result[0], result[1]));
