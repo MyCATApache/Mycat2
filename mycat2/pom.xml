@@ -399,7 +399,7 @@
                                 </replacement>
                                 <replacement>
                                     <token>@mycatsite@</token>
-                                    <value>http://www.mycat.io/</value>
+                                    <value>http://www.mycat.org.cn//</value>
                                 </replacement>
                                 <replacement>
                                     <token>@qqgroup@</token>
