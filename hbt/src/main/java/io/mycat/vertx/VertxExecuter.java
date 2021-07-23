@@ -605,7 +605,7 @@ public class VertxExecuter {
 
     public static Future<long[]> wrapAsXaTransaction(MycatDataContext context, Function<Void, Future<long[]>> function) {
         TransactionSession sqlConnection = context.getTransactionSession();
-        if ((!context.isInTransaction() && context.isAutocommit()) && sqlConnection.transactionType() == TransactionType.JDBC_TRANSACTION_TYPE) {
+        if ((!context.isInTransaction() && context.isAutocommit())) {
             Future<long[]> future = sqlConnection.begin().flatMap(function);
             return future.flatMap(longs -> sqlConnection.commit().map(longs))
                     .recover(throwable -> CompositeFuture.join(Future.failedFuture(throwable), sqlConnection.rollback()).mapEmpty());
