@@ -248,7 +248,7 @@ public abstract class XaTestSuite {
             Future<SqlConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
             Future<SqlConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
 
-            CompositeFuture all = CompositeFuture.all(ds1.compose(connection -> {
+            CompositeFuture all = CompositeFuture.join(ds1.compose(connection -> {
                 Future<RowSet<Row>> future = connection.query(
                         "INSERT INTO db1.travelrecord (id)\n" +
                                 "                       VALUES\n" +
@@ -296,7 +296,7 @@ public abstract class XaTestSuite {
             Future<SqlConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
             Future<SqlConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
 
-            CompositeFuture all = CompositeFuture.all(ds1.compose(connection -> {
+            CompositeFuture all = CompositeFuture.join(ds1.compose(connection -> {
                 Future<RowSet<Row>> future = connection.query(
                         "INSERT INTO db1.travelrecord (id)\n" +
                                 "                       VALUES\n" +
@@ -347,7 +347,7 @@ public abstract class XaTestSuite {
             Future<SqlConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
             Future<SqlConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
 
-            CompositeFuture all = CompositeFuture.all(ds1.compose(connection -> {
+            CompositeFuture all = CompositeFuture.join(ds1.compose(connection -> {
                 Future<RowSet<Row>> future = connection.query(
                         "INSERT INTO db1.travelrecord (id)\n" +
                                 "                       VALUES\n" +
@@ -406,7 +406,7 @@ public abstract class XaTestSuite {
             Future<SqlConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
             Future<SqlConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
 
-            CompositeFuture all = CompositeFuture.all(ds1.compose(connection -> {
+            CompositeFuture all = CompositeFuture.join(ds1.compose(connection -> {
                 Future<RowSet<Row>> future = connection.query(
                         "INSERT INTO db1.travelrecord (id)\n" +
                                 "                       VALUES\n" +

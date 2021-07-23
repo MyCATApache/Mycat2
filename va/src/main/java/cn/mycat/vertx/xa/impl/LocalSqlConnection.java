@@ -88,7 +88,7 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
     @Override
     public Future<Void> rollback() {
         List<Future> rollback = map.values().stream().map(c -> c.query("rollback").execute()).collect(Collectors.toList());
-        return CompositeFuture.all(rollback).eventually(event -> {
+        return CompositeFuture.join(rollback).eventually(event -> {
             inTranscation = false;
             //每一个记录日志
             return Future.succeededFuture();
@@ -98,7 +98,7 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
     @Override
     public Future<Void> commit() {
         List<Future> rollback = map.values().stream().map(c -> c.query("commit").execute()).collect(Collectors.toList());
-        return CompositeFuture.all(rollback).onComplete(event -> {
+        return CompositeFuture.join(rollback).onComplete(event -> {
             inTranscation = false;
             //每一个记录日志
         }).mapEmpty().flatMap(o -> closeStatementState());
@@ -119,7 +119,7 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
 
     @Override
     public Future<Void> close() {
-        Future future = CompositeFuture.all((List) closeList);
+        Future future = CompositeFuture.join((List) closeList);
         closeList.clear();
         for (SqlConnection extraConnection : extraConnections) {
             future = future.compose(unused -> extraConnection.close());
@@ -145,7 +145,7 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
 
     @Override
     public Future<Void> closeStatementState() {
-        Future<Void> future = CompositeFuture.all((List) closeList).mapEmpty();
+        Future<Void> future = CompositeFuture.join((List) closeList).mapEmpty();
         closeList.clear();
         for (SqlConnection extraConnection : extraConnections) {
             future = future.compose(unused -> extraConnection.close());

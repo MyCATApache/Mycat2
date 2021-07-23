@@ -69,7 +69,7 @@ public class VertxExecuter {
         if (list.isEmpty()) {
             throw new AssertException();
         }
-        return CompositeFuture.all((List) list)
+        return CompositeFuture.join((List) list)
                 .map(compositeFuture -> list.stream().map(l -> l.result())
                         .reduce((longs, longs2) ->
                                 new long[]{longs[0] + longs2[0], Math.max(longs[1], longs2[1])})
@@ -99,7 +99,7 @@ public class VertxExecuter {
                     (a, b) -> b)),
                     sqlConnection.getConnection(targetMap.get(e.getKey()))));
         }
-        return CompositeFuture.all((List) res).map(new SumUpdateResult(updateRel.isGlobal(), res))
+        return CompositeFuture.join((List) res).map(new SumUpdateResult(updateRel.isGlobal(), res))
                 .onComplete(new Handler<AsyncResult<long[]>>() {
                     @Override
                     public void handle(AsyncResult<long[]> event) {

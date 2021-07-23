@@ -321,7 +321,7 @@ public class ProxyConnectionUsage {
                             params);
                 }));
             }
-            return CompositeFuture.all(resList).map(compositeFuture -> finalResMap);
+            return CompositeFuture.join(resList).map(compositeFuture -> finalResMap);
         }
     }
 

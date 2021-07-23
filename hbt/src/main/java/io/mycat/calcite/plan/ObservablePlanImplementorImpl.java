@@ -133,7 +133,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
             } catch (Throwable throwable) {
                 future = Future.failedFuture(throwable);
             }
-            CompositeFuture.all(future, context.endFuture())
+            CompositeFuture.join(future, context.endFuture())
                     .onSuccess(event -> emitter1.onComplete())
                     .onFailure(event -> emitter1.onError(event));
         });

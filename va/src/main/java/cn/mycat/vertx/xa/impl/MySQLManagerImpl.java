@@ -94,7 +94,7 @@
 //
 //    @Override
 //    public Future<Void> close() {
-//        return CompositeFuture.all(nameMap.values().stream().map(i -> i.close()).collect(Collectors.toList())).mapEmpty();
+//        return CompositeFuture.join(nameMap.values().stream().map(i -> i.close()).collect(Collectors.toList())).mapEmpty();
 //    }
 //
 //    @Override

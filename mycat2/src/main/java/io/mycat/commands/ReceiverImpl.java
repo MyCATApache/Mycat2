@@ -168,7 +168,7 @@ public class ReceiverImpl implements Response {
                     Future<SqlConnection> connectionFuture = transactionSession.getConnection(datasource);
                     updateInfoList.add(VertxExecuter.runUpdate(connectionFuture, sql));
                 }
-                CompositeFuture all = CompositeFuture.all((List) updateInfoList)
+                CompositeFuture all = CompositeFuture.join((List) updateInfoList)
                         .onSuccess(unused->dataContext.getTransactionSession().closeStatementState());
                 return all.map(u-> {
                     List<long[]> list = all.list();

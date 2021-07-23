@@ -261,7 +261,7 @@ public class MySQLDatasourcePool extends MySQLDatasource implements SessionManag
             mySQLClientSession.switchNioHandler(null);
             futures.add(checkIfNeedHeartBeat(mySQLClientSession));
         }
-        return (Future) CompositeFuture.all(futures);
+        return (Future) CompositeFuture.join(futures);
     }
 
     private Future<Void> checkIfNeedHeartBeat(MySQLClientSession session) {
@@ -345,7 +345,7 @@ public class MySQLDatasourcePool extends MySQLDatasource implements SessionManag
             for (MySQLClientSession session : allSessions) {
                 futures.add(removeSession(session, true, "pool close"));
             }
-            return (Future) CompositeFuture.all(futures);
+            return (Future) CompositeFuture.join(futures);
         });
     }
 

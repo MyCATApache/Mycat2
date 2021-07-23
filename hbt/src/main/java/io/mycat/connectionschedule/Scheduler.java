@@ -151,7 +151,7 @@
 //        for (String target : targets) {
 //            futures.add(transactionSession.getConnection(context.resolveDatasourceTargetName(target,true)));
 //        }
-//        return CompositeFuture.all(futures).map(compositeFuture -> computeTargetConnectionByFree(context, params, executerContext));
+//        return CompositeFuture.join(futures).map(compositeFuture -> computeTargetConnectionByFree(context, params, executerContext));
 //    }
 //
 //
