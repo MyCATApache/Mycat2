@@ -127,7 +127,7 @@
 //    }
 //
 //    Future closeStatementState() {
-//        return CompositeFuture.all(xAConnection.closeStatementState(),
+//        return CompositeFuture.join(xAConnection.closeStatementState(),
 //                Future.future((Handler<Promise<Void>>) event -> dataContext.getTransactionSession().closeStatementState()));
 //
 //    }

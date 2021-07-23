@@ -11,6 +11,8 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlHintStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.util.JdbcUtils;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.UnmodifiableIterator;
 import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.api.collector.RowBaseIterator;
@@ -51,6 +53,7 @@ import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
@@ -814,41 +817,44 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         for (SQLIdentifierExpr columnName : columnNames.stream().map(i -> new SQLIdentifierExpr("`" + i + "`")).collect(Collectors.toList())) {
             mySqlInsertStatement.addColumn(columnName);
         }
-        int batch = 10000;
+        int batch = 1000;
 
         Reader in = new FileReader(fileName);
         Iterable<CSVRecord> records = format.parse(in);
-        Iterable<VertxExecuter.EachSQL> eachSQLS = VertxExecuter.rewriteInsertBatchedStatements(new Iterable<VertxExecuter.EachSQL>() {
-            @NotNull
-            @Override
-            public Iterator<VertxExecuter.EachSQL> iterator() {
-                Stream<SQLInsertStatement> insertStatementStream = StreamSupport.stream(records.spliterator(), false)
-                        .parallel()
-                        .map(strings -> {
-                            SQLInsertStatement sqlInsertStatement = mySqlInsertStatement.clone();
-                            List<SQLInsertStatement.ValuesClause> valuesList = new ArrayList<>(batch);
-                            SQLInsertStatement.ValuesClause valuesClause = new SQLInsertStatement.ValuesClause();
-                            for (String string : strings) {
-                                valuesClause.addValue(new SQLCharExpr(string));
-                                valuesList.add(valuesClause);
-                            }
-                            sqlInsertStatement.getValuesList().addAll(valuesList);
-                            return sqlInsertStatement;
-                        });
-                Stream<VertxExecuter.EachSQL> eachSQLStream = insertStatementStream.parallel().flatMap(statement -> {
-                    DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(statement, dataContext.getDefaultSchema());
-                    Plan plan = UpdateSQLHandler.getPlan(drdsSql);
-                    MycatInsertRel mycatRel = (MycatInsertRel) plan.getMycatRel();
-                    Iterable<VertxExecuter.EachSQL> eachSQLS1 = VertxExecuter.explainInsert((SQLInsertStatement) mycatRel.getSqlStatement(), drdsSql.getParams());
-                    return StreamSupport.stream(eachSQLS1.spliterator(), false);
+        Stream<SQLInsertStatement> insertStatementStream = StreamSupport.stream(records.spliterator(), false)
+                .map(strings -> {
+                    SQLInsertStatement sqlInsertStatement = mySqlInsertStatement.clone();
+                    SQLInsertStatement.ValuesClause valuesClause = new SQLInsertStatement.ValuesClause();
+                    for (String string : strings) {
+                        valuesClause.addValue(new SQLCharExpr(string));
+                    }
+                    sqlInsertStatement.addValueCause(valuesClause);
+                    return sqlInsertStatement;
                 });
-                return eachSQLStream.iterator();
-            }
-        });
-        Future<long[]> future = VertxExecuter.simpleUpdate(dataContext, true, false, eachSQLS);
-        future.onComplete(event -> JdbcUtils.close(in));
-        return VertxUtil.castPromise(future.flatMap(l -> response.sendOk(l[0], l[1])));
-}
+
+        UnmodifiableIterator<List<VertxExecuter.EachSQL>> iterator = Iterators.partition(insertStatementStream.flatMap(statement -> {
+            DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(statement, dataContext.getDefaultSchema());
+            Plan plan = UpdateSQLHandler.getPlan(drdsSql);
+            MycatInsertRel mycatRel = (MycatInsertRel) plan.getMycatRel();
+            Iterable<VertxExecuter.EachSQL> eachSQLS1 = VertxExecuter.explainInsert((SQLInsertStatement) mycatRel.getSqlStatement(), drdsSql.getParams());
+            return StreamSupport.stream(eachSQLS1.spliterator(), false);
+        }).iterator(), batch);
+
+
+        Future<long[]> continution = Future.succeededFuture( new long[]{0,0});
+
+        while (iterator.hasNext()) {
+            Iterable<VertxExecuter.EachSQL> eachSQL =VertxExecuter.rewriteInsertBatchedStatements(iterator.next());
+            continution = continution.flatMap(o -> {
+                Future<long[]> future = VertxExecuter.simpleUpdate(dataContext, true, false, eachSQL);
+                return future.map(o2 -> new long[]{o[0] + o2[0], Math.max(o[1], o2[1])});
+            });
+        }
+        continution.onComplete(event -> JdbcUtils.close(in));
+        return VertxUtil.castPromise(continution.flatMap(result -> {
+            return response.sendOk(result[0], result[1]);
+        }));
+    }
 
     private Future<Void> showErGroup(Response response, MetadataManager metadataManager) {
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();

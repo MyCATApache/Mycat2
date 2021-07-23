@@ -17,6 +17,8 @@ package io.mycat.calcite.plan;
 import cn.mycat.vertx.xa.XaSqlConnection;
 import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import io.mycat.AsyncMycatDataContextImpl;
 import io.mycat.DrdsSqlWithParams;
 import io.mycat.MycatDataContext;
@@ -41,6 +43,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -72,9 +75,16 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
     @Override
     public Future<Void> executeInsert(Plan logical) {
         MycatInsertRel mycatRel = (MycatInsertRel) logical.getMycatRel();
-        Iterable<VertxExecuter.EachSQL> eachSQLS = VertxExecuter.explainInsert((SQLInsertStatement) mycatRel.getSqlStatement(), drdsSqlWithParams.getParams());
-        eachSQLS = VertxExecuter.rewriteInsertBatchedStatements(eachSQLS);
-        Future<long[]> future = VertxExecuter.simpleUpdate(context, true, mycatRel.isGlobal(), eachSQLS);
+        Iterable<VertxExecuter.EachSQL> insertSqls = VertxExecuter.explainInsert((SQLInsertStatement) mycatRel.getSqlStatement(), drdsSqlWithParams.getParams());
+        ArrayList<VertxExecuter.EachSQL> sqlList= Lists.newArrayList(insertSqls.iterator());
+        assert  !sqlList.isEmpty();
+        Iterable<VertxExecuter.EachSQL> batchSqls ;
+        if (sqlList.size()>1){
+            batchSqls = VertxExecuter.rewriteInsertBatchedStatements(sqlList);
+        }else {
+            batchSqls = insertSqls;
+        }
+        Future<long[]> future = VertxExecuter.simpleUpdate(context, true, mycatRel.isGlobal(), batchSqls);
         return future.eventually(u -> context.getTransactionSession().closeStatementState())
                 .flatMap(result -> response.sendOk(result[0], result[1]));
     }
@@ -141,7 +151,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
             } catch (Throwable throwable) {
                 future = Future.failedFuture(throwable);
             }
-            CompositeFuture.all(future, context.endFuture())
+            CompositeFuture.join(future, context.endFuture())
                     .onSuccess(event -> emitter1.onComplete())
                     .onFailure(event -> emitter1.onError(event));
         });

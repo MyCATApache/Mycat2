@@ -115,7 +115,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
     }
 
     public CompositeFuture endFuture() {
-        return CompositeFuture.all((List) ImmutableList.builder()
+        return CompositeFuture.join((List) ImmutableList.builder()
                 .addAll(transactionConnnectionMap.values())
                 .addAll(connnectionFutureCollection).build());
     }

@@ -324,7 +324,7 @@
 //
 //    public Future<Void> reset(){
 //        idleDatasourcehMap.clear();
-//        return (Future)CompositeFuture.all(allSessions.entrySet().stream()
+//        return (Future)CompositeFuture.join(allSessions.entrySet().stream()
 //                .map(c -> c.getValue().close(true, "pool close").future())
 //                .collect(Collectors.toList()));
 //    }

@@ -67,7 +67,8 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     @Override
     public Future<Void> begin() {
         if (inTranscation) {
-            return (Future.failedFuture(new IllegalArgumentException("occur Nested transaction")));
+            LOGGER.warn("xa transaction occur nested transaction,xid:"+xid);
+            return Future.succeededFuture();
         }
         inTranscation = true;
         xid = log.nextXid();
@@ -162,7 +163,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     private Future<Void> retryRollback(Function<SqlConnection, Future<Void>> function) {
         return Future.future(promise -> {
             List<Future<Void>> collect = computePrepareRollbackTargets().stream().map(c -> mySQLManager().getConnection(c).flatMap(function)).collect(Collectors.toList());
-            CompositeFuture.all((List) collect)
+            CompositeFuture.join((List) collect)
                     .onComplete(event -> {
                         log.logRollback(xid, event.succeeded());
                         if (event.failed()) {
@@ -300,7 +301,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
      */
     private Future<Void> retryCommit() {
         return Future.future((Promise<Void> promise) -> {
-            CompositeFuture all = CompositeFuture.all(computePrepareCommittedTargets().stream()
+            CompositeFuture all = CompositeFuture.join(computePrepareCommittedTargets().stream()
                     .map(s -> mySQLManager().getConnection(s)
                             .compose(c -> {
                                 return c.query(String.format(XA_COMMIT, xid))
@@ -343,14 +344,14 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
             return Future.succeededFuture();
         }
         List<Future> futures = map.values().stream().map(connectionFutureFunction).collect(Collectors.toList());
-        return CompositeFuture.all(futures).mapEmpty();
+        return CompositeFuture.join(futures).mapEmpty();
     }
 
     /**
      *
      */
     public Future<Void> close() {
-        Future<Void> allFuture = CompositeFuture.all((List) closeList).mapEmpty();
+        Future<Void> allFuture = CompositeFuture.join((List) closeList).mapEmpty();
         closeList.clear();
         if (inTranscation) {
             allFuture = rollback();
@@ -373,7 +374,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
 
     @Override
     public Future<Void> closeStatementState() {
-        Future<Void> future = CompositeFuture.all((List) closeList).mapEmpty();
+        Future<Void> future = CompositeFuture.join((List) closeList).mapEmpty();
         closeList.clear();
         return future.onComplete(event -> clearConnections().onComplete(unused -> {
             if (!inTranscation) {
@@ -396,7 +397,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
      * before clear connections,it should check not be in transaction
      */
     public Future<Void> clearConnections() {
-        Future<Void> future = CompositeFuture.all((List) closeList).mapEmpty();
+        Future<Void> future = CompositeFuture.join((List) closeList).mapEmpty();
         closeList.clear();
         for (SqlConnection extraConnection : extraConnections) {
             future = future.compose(unused -> extraConnection.close());

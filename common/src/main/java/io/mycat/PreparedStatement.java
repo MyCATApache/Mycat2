@@ -42,6 +42,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -83,10 +85,6 @@ public class PreparedStatement {
             return new SQLCharExpr((String) o);
         }
 
-        if (o instanceof BigDecimal) {
-            return new SQLDecimalExpr((BigDecimal) o);
-        }
-
         if (o instanceof Byte || o instanceof Short || o instanceof Integer || o instanceof Long || o instanceof BigInteger) {
             return new SQLIntegerExpr((Number) o);
         }
@@ -94,12 +92,19 @@ public class PreparedStatement {
         if (o instanceof Number) {
             return new SQLNumberExpr((Number) o);
         }
+        if (o instanceof LocalDate) {
+            o = java.sql.Date.valueOf((LocalDate) o);
+            return fromJavaObject(o,timeZone);
+        }
 
         if (o instanceof Date) {
             return new SQLTimestampExpr((Date) o, timeZone);
         }
 
-        throw new ParserException("not support class : " + o.getClass());
+        LOGGER.warn("not support class : {}", o.getClass());
+
+
+        return new SQLCharExpr((String) o.toString());
     }
 
     public static SQLExpr fromJavaObject(Object o) {
@@ -188,7 +193,7 @@ public class PreparedStatement {
                         }
                     }
                     SQLReplaceable parent = (SQLReplaceable) x.getParent();
-                    parent.replace(x, SQLExprUtils.fromJavaObject(o));
+                    parent.replace(x, PreparedStatement.fromJavaObject(o));
                 }
                 super.endVisit(x);
             }

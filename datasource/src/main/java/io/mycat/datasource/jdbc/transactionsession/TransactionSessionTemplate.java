@@ -140,7 +140,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
             updateConnectionMap.clear();
             dataSourceNearness.clear();
         }catch (Throwable throwable){
-            return (Future)CompositeFuture.all(voidFuture, Future.failedFuture(throwable));
+            return (Future)CompositeFuture.join(voidFuture, Future.failedFuture(throwable));
         }
         return voidFuture;
     }

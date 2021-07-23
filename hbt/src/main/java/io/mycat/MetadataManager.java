@@ -830,7 +830,7 @@ public class MetadataManager implements MysqlVariableService {
                 ///////////////////////////////修改参数//////////////////////////////
                 outValuesList = () -> StreamSupport.stream(originValuesList.spliterator(), false)
                         .peek(i -> i.getValues()
-                                .add(SQLExprUtils.fromJavaObject(stringSupplier.get())))
+                                .add(PreparedStatement.fromJavaObject(stringSupplier.get())))
                         .iterator();
             } else {
                 int index = simpleColumnInfos.indexOf(logicTable.getAutoIncrementColumn());
@@ -839,7 +839,7 @@ public class MetadataManager implements MysqlVariableService {
                             List<SQLExpr> values = i.getValues();
                             SQLExpr sqlExpr = values.get(index);
                             if (sqlExpr instanceof SQLNullExpr || sqlExpr == null) {
-                                values.set(index, SQLExprUtils.fromJavaObject(stringSupplier.get()));
+                                values.set(index, PreparedStatement.fromJavaObject(stringSupplier.get()));
                             }
                         })
                         .iterator();

@@ -24,6 +24,8 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
 import io.vertx.core.shareddata.Lock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -31,7 +33,7 @@ import java.util.Set;
 
 
 public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatement> {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(AlterTableSQLHandler.class);
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLAlterTableStatement> request, MycatDataContext dataContext, Response response){
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);

@@ -29,6 +29,7 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.visitor.MycatSQLEvalVisitorUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import io.mycat.PreparedStatement;
 import io.mycat.Process;
 import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
@@ -107,7 +108,7 @@ public class VertxExecuter {
                     map.put(target, returnConnectionFuture);
                 }
                 List<Future<SqlConnection>> futures = new ArrayList<>(map.values());
-                return CompositeFuture.all((List) futures).map(sum);
+                return CompositeFuture.join((List) futures).map(sum);
             }
         };
         if (xa) {
@@ -340,7 +341,7 @@ public class VertxExecuter {
                             @Override
                             public boolean visit(SQLVariantRefExpr x) {
                                 SQLReplaceable parent = (SQLReplaceable) x.getParent();
-                                parent.replace(x, SQLExprUtils.fromJavaObject(sqlParams.get(x.getIndex())));
+                                parent.replace(x, PreparedStatement.fromJavaObject(sqlParams.get(x.getIndex())));
                                 return false;
                             }
                         };
@@ -407,59 +408,53 @@ public class VertxExecuter {
 
         List<List> paramsList = (!paramArg.isEmpty() && paramArg.get(0) instanceof List) ? (List) paramArg : Collections.singletonList(paramArg);
 
-        return new Iterable<EachSQL>() {
-            @NotNull
-            @Override
-            public Iterator<EachSQL> iterator() {
-                return paramsList.stream().flatMap(params -> {
-                    List<EachSQL> sqls = new LinkedList<>();
-                    for (SQLInsertStatement.ValuesClause valuesClause : statement.getValuesList()) {
+        return paramsList.stream().flatMap(params -> {
+            List<EachSQL> sqls = new LinkedList<>();
+            for (SQLInsertStatement.ValuesClause valuesClause : statement.getValuesList()) {
 
-                        valuesClause = valuesClause.clone();
-                        SQLInsertStatement primaryStatement = template.clone();
-                        primaryStatement.getColumns().addAll(columns);
-                        primaryStatement.getValuesList().add(valuesClause);
-                        List<SQLExpr> values = primaryStatement.getValues().getValues();
+                valuesClause = valuesClause.clone();
+                SQLInsertStatement primaryStatement = template.clone();
+                primaryStatement.getColumns().addAll(columns);
+                primaryStatement.getValuesList().add(valuesClause);
+                List<SQLExpr> values = primaryStatement.getValues().getValues();
 
-                        if (fillAutoIncrement) {
-                            Supplier<Number> stringSupplier = table.nextSequence();
-                            values.add(SQLExprUtils.fromJavaObject(stringSupplier.get()));
-                        }
+                if (fillAutoIncrement) {
+                    Supplier<Number> stringSupplier = table.nextSequence();
+                    values.add(PreparedStatement.fromJavaObject(stringSupplier.get()));
+                }
 
-                        Map<String, List<RangeVariable>> variables = compute(columns, values, params);
-                        Partition mPartition = table.getShardingFuntion().calculateOne((Map) variables);
+                Map<String, List<RangeVariable>> variables = compute(columns, values, params);
+                Partition mPartition = table.getShardingFuntion().calculateOne((Map) variables);
 
-                        SQLExprTableSource exprTableSource = primaryStatement.getTableSource();
-                        exprTableSource.setSimpleName(mPartition.getTable());
-                        exprTableSource.setSchema(mPartition.getSchema());
+                SQLExprTableSource exprTableSource = primaryStatement.getTableSource();
+                exprTableSource.setSimpleName(mPartition.getTable());
+                exprTableSource.setSchema(mPartition.getSchema());
 
 
-                        sqls.add(new EachSQL(mPartition.getTargetName(), primaryStatement.toString(), getNewParams(params, primaryStatement)));
+                sqls.add(new EachSQL(mPartition.getTargetName(), primaryStatement.toString(), getNewParams(params, primaryStatement)));
 
 
-                        for (ShardingTable indexTable : table.getIndexTables()) {
+                for (ShardingTable indexTable : table.getIndexTables()) {
 
 
-                            //  fillIndexTableShardingKeys(variables, indexTable);
+                    //  fillIndexTableShardingKeys(variables, indexTable);
 
-                            Partition sPartition = indexTable.getShardingFuntion().calculateOne((Map) variables);
+                    Partition sPartition = indexTable.getShardingFuntion().calculateOne((Map) variables);
 
-                            SQLInsertStatement eachStatement = template.clone();
-                            eachStatement.getColumns().clear();
+                    SQLInsertStatement eachStatement = template.clone();
+                    eachStatement.getColumns().clear();
 
-                            fillIndexTableShardingKeys(columnMap, values, indexTable.getColumns(), eachStatement);
+                    fillIndexTableShardingKeys(columnMap, values, indexTable.getColumns(), eachStatement);
 
-                            SQLExprTableSource eachTableSource = eachStatement.getTableSource();
-                            eachTableSource.setSimpleName(sPartition.getTable());
-                            eachTableSource.setSchema(sPartition.getSchema());
+                    SQLExprTableSource eachTableSource = eachStatement.getTableSource();
+                    eachTableSource.setSimpleName(sPartition.getTable());
+                    eachTableSource.setSchema(sPartition.getSchema());
 
-                            sqls.add(new EachSQL(sPartition.getTargetName(), eachStatement.toString(), getNewParams(params, eachStatement)));
-                        }
-                    }
-                    return sqls.stream();
-                }).iterator();
+                    sqls.add(new EachSQL(sPartition.getTargetName(), eachStatement.toString(), getNewParams(params, eachStatement)));
+                }
             }
-        };
+            return sqls.stream();
+        }).collect(Collectors.toList());
     }
 
     private static void fillIndexTableShardingKeys(Map<String, Integer> columnMap, List<SQLExpr> values, List<SimpleColumnInfo> otherColumns, SQLInsertStatement eachStatement) {
@@ -614,7 +609,7 @@ public class VertxExecuter {
         if ((!context.isInTransaction() && context.isAutocommit()) && sqlConnection.transactionType() == TransactionType.JDBC_TRANSACTION_TYPE) {
             Future<long[]> future = sqlConnection.begin().flatMap(function);
             return future.flatMap(longs -> sqlConnection.commit().map(longs))
-                    .recover(throwable -> CompositeFuture.all(Future.failedFuture(throwable), sqlConnection.rollback()).mapEmpty());
+                    .recover(throwable -> CompositeFuture.join(Future.failedFuture(throwable), sqlConnection.rollback()).mapEmpty());
         }
         return Future.succeededFuture().flatMap(o -> function.apply(null));
     }

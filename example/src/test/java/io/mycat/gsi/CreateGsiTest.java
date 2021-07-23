@@ -1,5 +1,6 @@
 package io.mycat.gsi;
 
+import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.assemble.MycatTest;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
@@ -95,22 +96,47 @@ public class CreateGsiTest implements MycatTest {
             Assert.assertEquals(20, _count0);
             Assert.assertEquals(20, _count1);
 
-            Exception exception = null;
-            try {
-                execute(connection, "insert db1.travelrecord (id,user_id,fee) values(" + 21 + "," +
-                        "" +
-                        21 +
-                        "," +
-                        "1/0" +
-                        ")");
-            } catch (Exception e) {
-                exception = e;
-            }
-            Assert.assertTrue(exception != null);
-            _count0 = count(connection, "db1", "travelrecord");
-            _count1 = count(connection, "db1", "travelrecord_g_i_user_id");
-            Assert.assertEquals(20, _count0);
-            Assert.assertEquals(20, _count1);
+
+            testInsertException(connection, TranscationType.XA);
+            testInsertException(connection, TranscationType.PROXY);
+        }
+
+    }
+
+    enum TranscationType {
+        XA, PROXY
+    }
+
+    private void testInsertException(Connection connection, TranscationType transcationType) throws Exception {
+        String initSQL = transcationType == TranscationType.XA ? "set transaction_policy  = xa" : "set transaction_policy  = proxy";
+        long _count1;
+        long _count0;
+        JdbcUtils.execute(connection, initSQL);
+
+        connection.setAutoCommit(true);
+        _count0 = count(connection, "db1", "travelrecord");
+        _count1 = count(connection, "db1", "travelrecord_g_i_user_id");
+        Assert.assertEquals(_count0, _count1);
+        Exception exception = null;
+        try {
+            execute(connection, "insert db1.travelrecord (id,user_id,fee) values(" + 21 + "," +
+                    "" +
+                    21 +
+                    "," +
+                    "1/0" +
+                    ")");
+        } catch (Exception e) {
+            exception = e;
+        }
+        Assert.assertTrue(exception != null);
+        switch (transcationType) {
+            case XA:
+                Assert.assertEquals(_count0, count(connection, "db1", "travelrecord"));
+                Assert.assertEquals(_count1, count(connection, "db1", "travelrecord_g_i_user_id"));
+                break;
+            case PROXY:
+                Assert.assertNotEquals(count(connection, "db1", "travelrecord"), count(connection, "db1", "travelrecord_g_i_user_id"));
+                break;
         }
 
     }

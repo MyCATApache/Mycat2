@@ -122,8 +122,7 @@ public class PlanImpl implements Plan {
                 break;
             }
             case INSERT: {
-                Iterable<VertxExecuter.EachSQL> eachSQLS =
-                        VertxExecuter.rewriteInsertBatchedStatements(VertxExecuter.explainInsert(drdsSql.getParameterizedStatement(), drdsSql.getParams()));
+                Iterable<VertxExecuter.EachSQL> eachSQLS = (VertxExecuter.explainInsert(drdsSql.getParameterizedStatement(), drdsSql.getParams()));
                 for (VertxExecuter.EachSQL eachSQL : eachSQLS) {
                     list.add(eachSQL.toString());
                 }
