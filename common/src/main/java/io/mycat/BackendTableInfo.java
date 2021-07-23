@@ -56,6 +56,21 @@ public class BackendTableInfo implements Partition {
     }
 
     @Override
+    public Integer getDbIndex() {
+        return null;
+    }
+
+    @Override
+    public Integer getTableIndex() {
+        return null;
+    }
+
+    @Override
+    public Integer getIndex() {
+        return null;
+    }
+
+    @Override
     public String getTargetSchemaTable() {
         return schemaInfo.targetSchemaTable();
     }

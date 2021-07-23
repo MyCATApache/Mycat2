@@ -236,7 +236,7 @@ public class DrdsRunnerHelper {
                     ParamHolder paramHolder = ParamHolder.CURRENT_THREAD_LOCAL.get();
                     if (sqlTypeName == null) {
                         List<SqlTypeName> curTypes = paramHolder.getTypes();
-                        if (curTypes.size() > index) {
+                        if (curTypes!=null&&curTypes.size() > index) {
                             sqlTypeName = curTypes.get(index);
                         }
                     }

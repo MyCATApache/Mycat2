@@ -1,11 +1,18 @@
 package io.mycat;
 
 public interface Partition extends java.lang.Comparable<Partition> {
+
     String getTargetName();
 
     String getSchema();
 
     String getTable();
+
+    Integer getDbIndex();
+
+    Integer getTableIndex();
+
+    Integer getIndex();
 
     default String getTargetSchemaTable() {
         String schema = getSchema();

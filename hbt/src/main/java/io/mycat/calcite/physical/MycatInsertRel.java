@@ -14,6 +14,7 @@
  */
 package io.mycat.calcite.physical;
 
+import com.alibaba.druid.sql.ast.SQLStatement;
 import io.mycat.DrdsSqlCompiler;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.MycatConvention;
@@ -25,31 +26,26 @@ import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlKind;
 
-import java.util.List;
-
 @Getter
 public class MycatInsertRel extends AbstractRelNode implements MycatRel {
 
     private final static RelOptCluster cluster = DrdsSqlCompiler.newCluster();
     private final static RelDataType rowType = RelOptUtil.createDmlRowType(
             SqlKind.INSERT, cluster.getTypeFactory());
-    private final MycatRouteInsertCore mycatRouteInsertCore;
+    public final SQLStatement sqlStatement;
+    public final boolean global;
 
-
-    public static MycatInsertRel create(
-            int finalAutoIncrementIndex, List<Integer> shardingKeys,String sql, String schemaName, String tableName) {
-        return new MycatInsertRel(new MycatRouteInsertCore(finalAutoIncrementIndex,shardingKeys, sql,schemaName,tableName));
+    public static MycatInsertRel create(SQLStatement sqlStatement) {
+        return new MycatInsertRel(sqlStatement,false);
+    }
+    public static MycatInsertRel create(SQLStatement sqlStatement,boolean global) {
+        return new MycatInsertRel(sqlStatement,global);
     }
 
-    public static MycatInsertRel create(
-            MycatRouteInsertCore mycatRouteInsertCore) {
-        return new MycatInsertRel(mycatRouteInsertCore);
-    }
-
-    public MycatInsertRel(
-            MycatRouteInsertCore mycatRouteInsertCore) {
+    public MycatInsertRel(SQLStatement sqlStatement,boolean global) {
         super(cluster, cluster.traitSetOf(MycatConvention.INSTANCE));
-        this.mycatRouteInsertCore = mycatRouteInsertCore;
+        this.sqlStatement = sqlStatement;
+        this.global = global;
     }
 
 

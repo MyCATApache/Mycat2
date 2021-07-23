@@ -14,10 +14,7 @@ import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,17 +38,17 @@ public class ValuePredicateAnalyzer {
         this.fieldNames = fieldNames;
     }
 
-    public ValueIndexCondition translateMatch(RexNode condition) {
+    public Map<QueryType, List<ValueIndexCondition>>  translateMatch(RexNode condition) {
         // does not support disjunctions
         List<RexNode> disjunctions = RelOptUtil.disjunctions(condition);
         if (disjunctions.size() == 1) {
             return translateAnd(disjunctions.get(0));
         } else {
-            return ValueIndexCondition.EMPTY;
+            return Collections.emptyMap();
         }
     }
 
-    private ValueIndexCondition translateAnd(RexNode condition) {
+    private  Map<QueryType, List<ValueIndexCondition>>  translateAnd(RexNode condition) {
         // expand calls to SEARCH(..., Sarg()) to >, =, etc.
         final RexNode condition2 =
                 RexUtil.expandSearch(REX_BUILDER, null, condition);
@@ -71,7 +68,30 @@ public class ValuePredicateAnalyzer {
                 .filter(indexCondition -> nonForceIndexOrMatchForceIndexName(indexCondition.getName()))
                 .sorted();
 
-        return pushDownConditions.filter(i->i!=null).findFirst().orElse(ValueIndexCondition.EMPTY);
+        return indexConditions.stream()
+                .filter(i -> i != null)
+                .filter(ValueIndexCondition::canPushDown)
+                .filter(indexCondition -> nonForceIndexOrMatchForceIndexName(indexCondition.getName()))
+                .sorted(Comparator.comparing(x -> x.getQueryType().priority()))
+                .collect(Collectors.groupingBy(k -> k.getQueryType(),
+                        Collectors.collectingAndThen(Collectors.toList(), indexConditions1 -> {
+                            HashMap<String, ValueIndexCondition> conditionMap = new HashMap<>();
+                            for (ValueIndexCondition newOne : indexConditions1) {
+                                List<String> fieldNames = newOne.getIndexColumnNames();
+                                for (String fieldName : fieldNames) {
+                                    ValueIndexCondition oldOne = conditionMap.getOrDefault(fieldName, null);
+                                    if (oldOne == null) {
+                                        conditionMap.put(fieldName, newOne);
+                                        continue;
+                                    } else {
+                                        if (newOne.getQueryType().compareTo(oldOne.getQueryType()) < 0) {
+                                            conditionMap.put(fieldName, newOne);
+                                        }
+                                    }
+                                }
+                            }
+                            return new ArrayList<>(conditionMap.values());
+                        })));
     }
 
     private ValueIndexCondition findPushDownCondition(List<RexNode> rexNodeList, KeyMeta keyMeta) {
@@ -97,7 +117,7 @@ public class ValuePredicateAnalyzer {
         }
 
         // create result which might have conditions to push down
-        String indexColumnNames = keyMeta.getColumnName();
+        List<String> indexColumnNames = keyMeta.getColumnNames();
         List<RexNode> pushDownRexNodeList = new ArrayList<>();
         List<RexNode> remainderRexNodeList = new ArrayList<>(rexNodeList);
         ValueIndexCondition condition =

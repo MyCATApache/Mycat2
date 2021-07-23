@@ -62,16 +62,17 @@ public class LoaddataTest implements MycatTest {
             Path mycat_loaddata_example = Files.createTempFile("", "mycat_loaddata_example");
             StringBuilder sb = new StringBuilder();
             CSVPrinter printer = format.print(sb);
-            printer.printRecord(new Object[]{"1", null, null, null, null, null});
-            printer.printRecord(new Object[]{"2", null, null, null, null, null});
-            printer.printRecord(new Object[]{"3", null, null, null, null, null});
+            int size = 1050;
+            for (int i = 0; i <size; i++) {
+                printer.printRecord(new Object[]{i, null, null, null, null, null});
+            }
             Files.write(mycat_loaddata_example, sb.toString().getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
 
 
             execute(mycatConnection, LoaddataHint.create("db1", "travelrecord", mycat_loaddata_example.toString()));
 
             List<Map<String, Object>> maps = executeQuery(mycatConnection, "select * from db1.travelrecord");
-            Assert.assertEquals(3, maps.size());
+            Assert.assertEquals(1050, maps.size());
         }
     }
 

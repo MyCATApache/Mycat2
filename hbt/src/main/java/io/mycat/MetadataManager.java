@@ -102,8 +102,13 @@ public class MetadataManager implements MysqlVariableService {
         schemaMap.put(schemaName, schemaHandler);
     }
 
-    public void addTable(String schemaName, String tableName, ShardingTableConfig tableConfig, ShardingBackEndTableInfoConfig backends, String prototypeServer) {
-        addShardingTable(schemaName, tableName, tableConfig, prototypeServer, getBackendTableInfos(backends));
+    public void addTable(String schemaName,
+                         String tableName,
+                         ShardingTableConfig tableConfig,
+                         ShardingBackEndTableInfoConfig backends,
+                         String prototypeServer,
+                         List<ShardingIndexTable> indexTables) {
+        addShardingTable(schemaName, tableName, tableConfig, prototypeServer, getBackendTableInfos(backends), indexTables);
     }
 
     public void removeTable(String schemaName, String tableName) {
@@ -252,21 +257,38 @@ public class MetadataManager implements MysqlVariableService {
                         backendTableInfos
                 );
             }
-            for (Map.Entry<String, ShardingTableConfig> e : value.getShadingTables().entrySet()) {
-                String tableName = e.getKey();
+            for (Map.Entry<String, ShardingTableConfig> primaryTable : value.getShadingTables().entrySet()) {
+                String tableName = primaryTable.getKey();
+                ShardingTableConfig tableConfigEntry = primaryTable.getValue();
                 removeTable(schemaName, tableName);
-                ShardingTableConfig tableConfigEntry = e.getValue();
+
+                Set<Map.Entry<String, ShardingTableConfig>> indexTables = Optional.ofNullable(tableConfigEntry.getShardingIndexTables())
+                        .orElse(Collections.emptyMap()).entrySet();
+
+                List<ShardingIndexTable> ShardingIndexTables = new ArrayList<>();
+                for (Map.Entry<String, ShardingTableConfig> secondTable : indexTables) {
+                    String indexName = secondTable.getKey();
+                    ShardingTableConfig indexTableValue = secondTable.getValue();
+                    ShardingIndexTable shardingIndexTable = createShardingIndexTable(schemaName, indexName,
+                            indexTableValue,
+                            prototype,
+                            getBackendTableInfos(indexTableValue.getPartition()));
+                    ShardingIndexTables.add(shardingIndexTable);
+                }
+
                 addShardingTable(schemaName, tableName,
                         tableConfigEntry,
                         prototype,
-                        getBackendTableInfos(tableConfigEntry.getPartition()));
+                        getBackendTableInfos(tableConfigEntry.getPartition()),
+                        ShardingIndexTables);
             }
 
             for (Map.Entry<String, CustomTableConfig> e : value.getCustomTables().entrySet()) {
                 String tableName = e.getKey();
                 removeTable(schemaName, tableName);
                 CustomTableConfig tableConfigEntry = e.getValue();
-                addCustomTable(schemaName, tableName,
+                addCustomTable(schemaName,
+                        tableName,
                         tableConfigEntry
                 );
             }
@@ -457,34 +479,40 @@ public class MetadataManager implements MysqlVariableService {
                                   String orignalTableName,
                                   ShardingTableConfig tableConfigEntry,
                                   String prototypeServer,
-                                  List<Partition> backends) {
-        ShardingTable shardingTable = createShardingTable(schemaName, orignalTableName, tableConfigEntry, prototypeServer, backends);
+                                  List<Partition> backends,
+                                  List<ShardingIndexTable> ShardingIndexTables) {
+        ShardingTable shardingTable = createShardingTable(schemaName, orignalTableName, tableConfigEntry, prototypeServer, backends, ShardingIndexTables);
         addLogicTable(shardingTable);
+        for (ShardingTable indexTable : shardingTable.getIndexTables()) {
+            addLogicTable(indexTable);
+        }
+    }
+
+    @SneakyThrows
+    private ShardingIndexTable createShardingIndexTable(String schemaName,
+                                                   String indexName,
+                                                   ShardingTableConfig secondTableConfig,
+                                                   String prototypeServer,
+                                                   List<Partition> backends) {
+        ShardingTable shardingTable = createShardingTable(schemaName, indexName, secondTableConfig, prototypeServer, backends, Collections.emptyList());
+        return new ShardingIndexTable(shardingTable.getLogicTable(),shardingTable.getBackends(),shardingTable.getShardingFuntion(),null);
     }
 
     @NotNull
-    public ShardingTable createShardingTable(String schemaName, String orignalTableName, ShardingTableConfig tableConfigEntry, String prototypeServer, List<Partition> backends) throws Exception {
+    public ShardingTable createShardingTable(String schemaName,
+                                             String orignalTableName,
+                                             ShardingTableConfig tableConfigEntry,
+                                             String prototypeServer,
+                                             List<Partition> backends,
+                                             List<ShardingIndexTable> shardingIndexTables) throws Exception {
         ShardingFuntion function = tableConfigEntry.getFunction();
-        if (function != null) {
-            if (function.getClazz() == null) {
-                Map<String, Object> properties = function.getProperties();
-                String mappingFormat = (String) properties.get("mappingFormat");
-                if (mappingFormat == null) {
-                    mappingFormat = (String) properties.getOrDefault("mappingFormat",
-                            String.join("/", "c${targetIndex}",
-                                    schemaName + "_${dbIndex}",
-                                    orignalTableName + "_${tableIndex}"));
-//                    properties.put("mappingFormat", mappingFormat);
-                }
-            }
-        }
         //////////////////////////////////////////////
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL()).orElseGet(() -> getCreateTableSQLByJDBC(schemaName, orignalTableName, backends));
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, orignalTableName, createTableSQL, backends);
         Map<String, IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName, columns);
         //////////////////////////////////////////////
         ShardingTable shardingTable = LogicTable.createShardingTable(schemaName, orignalTableName,
-                backends, columns, null, indexInfos, createTableSQL);
+                backends, columns, null, indexInfos, createTableSQL, shardingIndexTables);
         shardingTable.setShardingFuntion(PartitionRuleFunctionManager.getRuleAlgorithm(shardingTable, tableConfigEntry.getFunction()));
         for (SimpleColumnInfo column : columns) {
             column.setShardingKey(shardingTable.function().isShardingKey(column.getColumnName()));
@@ -641,7 +669,7 @@ public class MetadataManager implements MysqlVariableService {
                                 SQLExprTableSource sqlExprTableSource = sqlStatement1.getTableSource();
                                 if (!SQLUtils.nameEquals(sqlExprTableSource.getTableName(), tableName) ||
                                         !SQLUtils.nameEquals(sqlExprTableSource.getSchema(), (schemaName))) {
-                                    MycatSQLExprTableSourceUtil.setSqlExprTableSource(schemaName, tableName, sqlExprTableSource);
+                                    MycatSQLExprTableSourceUtil.setSqlExprTableSource(schemaName,tableName,sqlExprTableSource);
                                     return sqlStatement1.toString();
                                 } else {
                                     return string;
@@ -802,7 +830,7 @@ public class MetadataManager implements MysqlVariableService {
                 ///////////////////////////////修改参数//////////////////////////////
                 outValuesList = () -> StreamSupport.stream(originValuesList.spliterator(), false)
                         .peek(i -> i.getValues()
-                                .add(SQLExprUtils.fromJavaObject(stringSupplier.get())))
+                                .add(PreparedStatement.fromJavaObject(stringSupplier.get())))
                         .iterator();
             } else {
                 int index = simpleColumnInfos.indexOf(logicTable.getAutoIncrementColumn());
@@ -811,7 +839,7 @@ public class MetadataManager implements MysqlVariableService {
                             List<SQLExpr> values = i.getValues();
                             SQLExpr sqlExpr = values.get(index);
                             if (sqlExpr instanceof SQLNullExpr || sqlExpr == null) {
-                                values.set(index, SQLExprUtils.fromJavaObject(stringSupplier.get()));
+                                values.set(index, PreparedStatement.fromJavaObject(stringSupplier.get()));
                             }
                         })
                         .iterator();
@@ -1128,5 +1156,6 @@ public class MetadataManager implements MysqlVariableService {
         this.schemaMap.values().stream().flatMap(i->i.logicTables().values().stream()).parallel()
                 .forEach(tableHandler->tableHandler.createPhysicalTables());
     }
+
 
 }

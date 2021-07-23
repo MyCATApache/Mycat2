@@ -14,20 +14,21 @@
  */
 package io.mycat.calcite.spm;
 
+import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.AsyncMycatDataContextImpl;
 import io.mycat.DrdsSqlWithParams;
 import io.mycat.MycatDataContext;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.*;
-import io.mycat.calcite.executor.MycatInsertExecutor;
-import io.mycat.calcite.executor.MycatUpdateExecutor;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatSQLTableLookup;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
+import io.mycat.vertx.VertxExecuter;
+import io.mycat.vertx.VertxUpdateExecuter;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -114,16 +115,17 @@ public class PlanImpl implements Plan {
                 }
                 break;
             case UPDATE: {
-                MycatUpdateRel physical = getUpdatePhysical();
-                MycatUpdateExecutor.create(physical, dataContext, drdsSql.getParams())
-                        .explain(explainWriter);
-
+                Collection<VertxExecuter.EachSQL> eachSQLS = VertxUpdateExecuter.explainUpdate(drdsSql, dataContext);
+                for (VertxExecuter.EachSQL eachSQL : eachSQLS) {
+                    list.add(eachSQL.toString());
+                }
                 break;
             }
             case INSERT: {
-                MycatInsertRel physical = getInsertPhysical();
-                MycatInsertExecutor.create(dataContext, physical, drdsSql.getParams())
-                        .explain(explainWriter);
+                Iterable<VertxExecuter.EachSQL> eachSQLS = (VertxExecuter.explainInsert(drdsSql.getParameterizedStatement(), drdsSql.getParams()));
+                for (VertxExecuter.EachSQL eachSQL : eachSQLS) {
+                    list.add(eachSQL.toString());
+                }
                 break;
             }
             default:

@@ -21,7 +21,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Getter
@@ -29,7 +28,7 @@ import java.util.stream.Collectors;
 public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Serializable {
     List<String> fieldNames;
     String indexName;
-    String indexColumnNames;
+    List<String> indexColumnNames;
 
     QueryType queryType;
     ComparisonOperator rangeQueryLowerOp;
@@ -54,7 +53,7 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
 
     public static ValueIndexCondition EMPTY = create(null, null, null);
 
-    public ValueIndexCondition(List<String> fieldNames, String indexName, String indexColumnNames) {
+    public ValueIndexCondition(List<String> fieldNames, String indexName, List<String> indexColumnNames) {
         if (fieldNames != null) {
             this.fieldNames = new ArrayList<>(fieldNames);
         }
@@ -63,7 +62,7 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
     }
 
 
-    public static ValueIndexCondition create(List<String> fieldNames, String indexName, String indexColumnNames) {
+    public static ValueIndexCondition create(List<String> fieldNames, String indexName, List<String> indexColumnNames) {
         return new ValueIndexCondition(fieldNames, indexName, indexColumnNames);
     }
 
@@ -112,7 +111,7 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
 
     @NotNull
     private static List<Object> normalize(List<Object> pointQueryKey) {
-       return pointQueryKey;
+        return pointQueryKey;
     }
 
     public QueryType getQueryType() {
@@ -120,81 +119,118 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
     }
 
     @NotNull
-    public static List<Partition> getObject(CustomRuleFunction customRuleFunction, ValueIndexCondition condition, List<Object> params) {
-        if (condition == null) {
+    public static List<Partition> getObject(CustomRuleFunction customRuleFunction, Map<QueryType, List<ValueIndexCondition>> conditions, List<Object> params) {
+        if (conditions == null || conditions.isEmpty()) {
             return customRuleFunction.calculate(Collections.emptyMap());
         }
-        Objects.requireNonNull(condition);
-        List<Object> pointQueryKey = resolveParam(params, condition.getPointQueryKey());
-        ComparisonOperator rangeQueryLowerOp = condition.getRangeQueryLowerOp();
-        List<Object> rangeQueryLowerKey = resolveParam(params, condition.getRangeQueryLowerKey());
-        ComparisonOperator rangeQueryUpperOp = condition.getRangeQueryUpperOp();
-        List<Object> rangeQueryUpperKey = resolveParam(params, condition.getRangeQueryUpperKey());
-
+        Objects.requireNonNull(conditions);
         Map<String, Collection<RangeVariable>> map = new HashMap<>();
-        Object o;
-        switch (condition.getQueryType()) {
-            case PK_POINT_QUERY:
-                //queryByPrimaryKey
-                for (Object o1 : pointQueryKey) {
-                    RangeVariable rangeVariable = new RangeVariable(condition.getIndexColumnNames(), RangeVariableType.EQUAL, o1);
-                    Collection<RangeVariable> rangeVariables = map.computeIfAbsent(condition.getIndexColumnNames(), (k) -> new ArrayList<>());
-                    rangeVariables.add(rangeVariable);
-                }
-
-                return customRuleFunction.calculate(map);
-            case PK_RANGE_QUERY:
-                if (rangeQueryUpperOp == ComparisonOperator.LT) {
-                    rangeQueryUpperOp = ComparisonOperator.LTE;
-                }
-                if (rangeQueryLowerOp == ComparisonOperator.GT) {
-                    rangeQueryLowerOp = ComparisonOperator.GTE;
-                }
-                if (rangeQueryUpperOp == ComparisonOperator.LTE && rangeQueryLowerOp == ComparisonOperator.GTE) {
-                    ArrayList<Object> leftValues = new ArrayList<>();
-                    for (Object o1 : rangeQueryLowerKey) {
-                        if (o1 instanceof RexNode) {
-                            o1 = MycatRexUtil.resolveParam((RexNode) o1, params);
+        List<Partition> partitions = null;
+        for (Map.Entry<QueryType, List<ValueIndexCondition>> entry : conditions.entrySet()) {
+            for (ValueIndexCondition condition : entry.getValue()) {
+                List<Object> pointQueryKey = resolveParam(params, condition.getPointQueryKey());
+                ComparisonOperator rangeQueryLowerOp = condition.getRangeQueryLowerOp();
+                List<Object> rangeQueryLowerKey = resolveParam(params, condition.getRangeQueryLowerKey());
+                ComparisonOperator rangeQueryUpperOp = condition.getRangeQueryUpperOp();
+                List<Object> rangeQueryUpperKey = resolveParam(params, condition.getRangeQueryUpperKey());
+                Object o;
+                switch (condition.getQueryType()) {
+                    case PK_POINT_QUERY: {
+                        //queryByPrimaryKey
+                        for (String indexColumnName : condition.getIndexColumnNames()) {
+                            for (Object o1 : pointQueryKey) {
+                                RangeVariable rangeVariable = new RangeVariable(indexColumnName, RangeVariableType.EQUAL, o1);
+                                Collection<RangeVariable> rangeVariables = map.computeIfAbsent(indexColumnName, (k) -> new ArrayList<>());
+                                rangeVariables.add(rangeVariable);
+                            }
                         }
-                        leftValues.add(o1);
+                        partitions = calculatePartitions(customRuleFunction, map, partitions);
+                        break;
                     }
-                    ArrayList<Object> rightValues = new ArrayList<>();
-                    for (Object o1 : rangeQueryUpperKey) {
-                        if (o1 instanceof RexNode) {
-                            o1 = MycatRexUtil.resolveParam((RexNode) o1, params);
+                    case PK_RANGE_QUERY:{
+                        if (rangeQueryUpperOp == ComparisonOperator.LT) {
+                            rangeQueryUpperOp = ComparisonOperator.LTE;
                         }
-                        rightValues.add(o1);
+                        if (rangeQueryLowerOp == ComparisonOperator.GT) {
+                            rangeQueryLowerOp = ComparisonOperator.GTE;
+                        }
+                        if (rangeQueryUpperOp == ComparisonOperator.LTE && rangeQueryLowerOp == ComparisonOperator.GTE) {
+                            ArrayList<Object> leftValues = new ArrayList<>();
+                            for (Object o1 : rangeQueryLowerKey) {
+                                if (o1 instanceof RexNode) {
+                                    o1 = MycatRexUtil.resolveParam((RexNode) o1, params);
+                                }
+                                leftValues.add(o1);
+                            }
+                            ArrayList<Object> rightValues = new ArrayList<>();
+                            for (Object o1 : rangeQueryUpperKey) {
+                                if (o1 instanceof RexNode) {
+                                    o1 = MycatRexUtil.resolveParam((RexNode) o1, params);
+                                }
+                                rightValues.add(o1);
+                            }
+                            Collections.sort((List) rangeQueryLowerKey);
+                            Collections.sort((List) rangeQueryUpperKey);
+
+                            Object smallOne = rangeQueryLowerKey.get(0);
+                            Object bigOne = rangeQueryUpperKey.get(rangeQueryUpperKey.size() - 1);
+
+                            for (String indexColumnName : condition.getIndexColumnNames()) {
+                                RangeVariable rangeVariable = new RangeVariable(indexColumnName, RangeVariableType.RANGE, smallOne, bigOne);
+                                Collection<RangeVariable> rangeVariables = map.computeIfAbsent(indexColumnName, (k) -> new ArrayList<>());
+                                rangeVariables.add(rangeVariable);
+                            }
+                            partitions = calculatePartitions(customRuleFunction, map, partitions);
+                        }
+                        break;
                     }
-                    Collections.sort((List) rangeQueryLowerKey);
-                    Collections.sort((List) rangeQueryUpperKey);
+                    case PK_FULL_SCAN:
+                        partitions = calculatePartitions(customRuleFunction, map, partitions);
+                        break;
+                    default:
 
-                    Object smallOne = rangeQueryLowerKey.get(0);
-                    Object bigOne = rangeQueryUpperKey.get(rangeQueryUpperKey.size()-1);
-
-                    RangeVariable rangeVariable = new RangeVariable(condition.getIndexColumnNames(), RangeVariableType.RANGE, smallOne, bigOne);
-                    Collection<RangeVariable> rangeVariables = map.computeIfAbsent(condition.getIndexColumnNames(), (k) -> new ArrayList<>());
-                    rangeVariables.add(rangeVariable);
-                    return customRuleFunction.calculate(map);
                 }
-
-            case PK_FULL_SCAN:
-            default:
-                return customRuleFunction.calculate(Collections.emptyMap());
+            }
         }
+        return partitions;
+    }
+
+    private static List<Partition> calculatePartitions(CustomRuleFunction customRuleFunction, Map<String, Collection<RangeVariable>> map, List<Partition> partitions) {
+        List<Partition> curPartitions = customRuleFunction.calculate(map);
+        if (partitions == null) {
+            partitions = curPartitions;
+        } else {
+            partitions = intersection(partitions, curPartitions);
+        }
+        return partitions;
+    }
+
+    public static List intersection(List list1, List list2) {
+        ArrayList result = new ArrayList();
+        Iterator iterator = list2.iterator();
+
+        while(iterator.hasNext()) {
+            Object o = iterator.next();
+            if (list1.contains(o)) {
+                result.add(o);
+            }
+        }
+
+        return result;
     }
 
 
     public static List<Object> resolveParam(List<Object> params, List<Object> pointQueryKeyArg) {
-        if (pointQueryKeyArg == null)return Collections.emptyList();
+        if (pointQueryKeyArg == null) return Collections.emptyList();
         ArrayList<Object> builder = new ArrayList<>();
         for (Object o : pointQueryKeyArg) {
-            if (o instanceof RexDynamicParam){
-                builder.add (params.get(((RexDynamicParam) o).getIndex()));
+            if (o instanceof RexDynamicParam) {
+                builder.add(params.get(((RexDynamicParam) o).getIndex()));
             }
-            if (o instanceof RexCall&&((RexCall) o).getKind()== SqlKind.CAST){
+            if (o instanceof RexCall && ((RexCall) o).getKind() == SqlKind.CAST) {
                 o = ((RexCall) o).getOperands().get(0);
             }
-            if (o instanceof RexLiteral){
+            if (o instanceof RexLiteral) {
                 RexLiteral rexLiteral = (RexLiteral) o;
                 RelDataType type = rexLiteral.getType();
                 switch (type.getSqlTypeName()) {
@@ -229,7 +265,8 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                     case BINARY:
                     case VARBINARY:
                     case NULL:
-                    case ANY: ;
+                    case ANY:
+                        ;
                     case SYMBOL:
                     case MULTISET:
                     case ARRAY:
@@ -246,9 +283,9 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                         o = rexLiteral.getValueAs(String.class);
                         break;
                 }
-                builder.add (o);
-            }else {
-                builder.add (o);
+                builder.add(o);
+            } else {
+                builder.add(o);
             }
         }
 

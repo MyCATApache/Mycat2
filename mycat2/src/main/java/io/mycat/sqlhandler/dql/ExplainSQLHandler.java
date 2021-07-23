@@ -16,6 +16,7 @@ package io.mycat.sqlhandler.dql;
 
 import com.alibaba.druid.sql.ast.SQLCommentHint;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
@@ -71,7 +72,11 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
                 }
                 DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(statement, dataContext.getDefaultSchema());
                 Plan plan;
-                if (statement instanceof SQLInsertStatement || statement instanceof SQLUpdateStatement) {
+                if (statement instanceof SQLInsertStatement
+                        ||
+                        statement instanceof SQLUpdateStatement
+                        ||
+                        statement instanceof SQLDeleteStatement) {
                     plan = UpdateSQLHandler.getPlan(drdsSqlWithParams);
                 } else {
                     plan = DrdsRunnerHelper.getPlan(drdsSqlWithParams);

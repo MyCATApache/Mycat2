@@ -19,12 +19,9 @@ package io.mycat;
 import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLCommentHint;
-import com.alibaba.druid.sql.ast.SQLDataType;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLAllColumnExpr;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MycatOutputVisitor;
 import io.mycat.calcite.MycatHint;
 import io.mycat.calcite.spm.Constraint;
 import io.mycat.calcite.spm.Plan;
@@ -32,7 +29,6 @@ import lombok.Data;
 import lombok.ToString;
 import org.apache.calcite.sql.type.SqlTypeName;
 
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -59,7 +55,7 @@ public class DrdsSql {
 //            list.add(text);
 //        }
         StringBuilder stringBuilder = new StringBuilder();
-        MySqlOutputVisitor mySqlOutputVisitor = new MySqlOutputVisitor(stringBuilder){
+        MycatOutputVisitor mySqlOutputVisitor = new MycatOutputVisitor(stringBuilder){
             @Override
             public boolean visit(SQLCommentHint x) {
                 return true;

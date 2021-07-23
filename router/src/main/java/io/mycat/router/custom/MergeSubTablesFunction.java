@@ -144,6 +144,21 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
             public String getTable() {
                 return table;
             }
+
+            @Override
+            public Integer getDbIndex() {
+                return null;
+            }
+
+            @Override
+            public Integer getTableIndex() {
+                return null;
+            }
+
+            @Override
+            public Integer getIndex() {
+                return null;
+            }
         };
     }
 
@@ -182,6 +197,21 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
             @Override
             public String getTable() {
                 return tableName;
+            }
+
+            @Override
+            public Integer getDbIndex() {
+                return null;
+            }
+
+            @Override
+            public Integer getTableIndex() {
+                return null;
+            }
+
+            @Override
+            public Integer getIndex() {
+                return null;
             }
         };
     }

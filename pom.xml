@@ -47,6 +47,14 @@
       <artifactId>org.jetbrains.annotations</artifactId>
       <version>1.2.0</version>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/org.apache.spark/spark-sql -->
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-sql_2.12</artifactId>
+      <version>3.1.2</version>
+      <scope>provided</scope>
+    </dependency>
+
 
     <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
     <dependency>

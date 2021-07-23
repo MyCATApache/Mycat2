@@ -40,14 +40,16 @@ public class ShardingTable implements ShardingTableHandler {
     private final LogicTable logicTable;
     private CustomRuleFunction shardingFuntion;
     private List<Partition> backends;
-    public List<ShardingTable> indexTables;
+    public List<ShardingIndexTable> indexTables;
 
     public ShardingTable(LogicTable logicTable,
                          List<Partition> backends,
-                         CustomRuleFunction shardingFuntion) {
+                         CustomRuleFunction shardingFuntion,
+                         List<ShardingIndexTable> shardingIndexTables) {
         this.logicTable = logicTable;
         this.backends = (backends == null || backends.isEmpty()) ? Collections.emptyList() : backends;
         this.shardingFuntion = shardingFuntion;
+        this.indexTables = shardingIndexTables.stream().map(i->i.withPrimary(ShardingTable.this)).collect(Collectors.toList());
     }
 
     @Override
@@ -167,6 +169,11 @@ public class ShardingTable implements ShardingTableHandler {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         List<Partition> partitions = (List) ImmutableList.builder().add((Partition) (new BackendTableInfo("prototype", getSchemaName(), getTableName()))).addAll(getBackends()).build();
         partitions.stream().parallel().forEach(node -> CreateTableUtils.createPhysicalTable(jdbcConnectionManager, node, getCreateTableSQL()));
+
+        for (ShardingIndexTable indexTable : getIndexTables()) {
+            indexTable.createPhysicalTables();
+        }
+
     }
 
     @Override
@@ -228,10 +235,11 @@ public class ShardingTable implements ShardingTableHandler {
     }
 
     public List<KeyMeta> keyMetas() {
-        List<SimpleColumnInfo> shardingKeys = this.getColumns().stream().filter(i -> i.isShardingKey()).collect(Collectors.toList());
+        List<String> shardingKeys = this.getColumns().stream().filter(i -> i.isShardingKey()).map(i->i.getColumnName()).collect(Collectors.toList());
         List<KeyMeta> keyMetas = new ArrayList<>();
         for (int i = 0; i < shardingKeys.size(); i++) {
-            keyMetas.add(KeyMeta.of("" + i, shardingKeys.get(i).getColumnName()));
+            KeyMeta keyMeta = KeyMeta.of(shardingFuntion.name(), shardingKeys.get(i));
+            keyMetas.add(keyMeta);
         }
         return keyMetas;
     }

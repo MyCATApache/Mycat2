@@ -16,6 +16,7 @@ import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
+import io.mycat.querycondition.QueryType;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
@@ -259,8 +260,8 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                     MycatRexExecutor.INSTANCE.reduce(rexBuilder, inputConditions, res);
                     condition = res.get(0);
                     ValuePredicateAnalyzer predicateAnalyzer = new ValuePredicateAnalyzer(shardingTable.keyMetas(), shardingTable.getColumns().stream().map(i -> i.getColumnName()).collect(Collectors.toList()));
-                    ValueIndexCondition indexCondition = predicateAnalyzer.translateMatch(condition);
-                    List<Partition> partitions = ValueIndexCondition.getObject(shardingTable.getShardingFuntion(), indexCondition, drdsSqlWithParams.getParams());
+                    Map<QueryType, List<ValueIndexCondition>> indexConditionMap = predicateAnalyzer.translateMatch(condition);
+                    List<Partition> partitions = ValueIndexCondition.getObject(shardingTable.getShardingFuntion(), indexConditionMap, drdsSqlWithParams.getParams());
                     return mapSharding(view, partitions);
                 } finally {
                     paramHolder.clear();

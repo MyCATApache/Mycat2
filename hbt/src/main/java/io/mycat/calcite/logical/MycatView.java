@@ -14,22 +14,23 @@
  */
 package io.mycat.calcite.logical;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
+import com.google.common.collect.*;
+import io.mycat.DrdsSqlCompiler;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.Partition;
 import io.mycat.PartitionGroup;
 import io.mycat.calcite.*;
+import io.mycat.calcite.localrel.LocalFilter;
+import io.mycat.calcite.localrel.LocalProject;
+import io.mycat.calcite.localrel.LocalTableScan;
 import io.mycat.calcite.localrel.ToLocalConverter;
-import io.mycat.calcite.physical.MycatMergeSort;
+import io.mycat.calcite.physical.*;
 import io.mycat.calcite.rewriter.Distribution;
-import io.mycat.calcite.table.GlobalTable;
-import io.mycat.calcite.table.MycatLogicTable;
-import io.mycat.calcite.table.MycatPhysicalTable;
-import io.mycat.calcite.table.ShardingTable;
+import io.mycat.calcite.rewriter.IndexCondition;
+import io.mycat.calcite.rewriter.PredicateAnalyzer;
+import io.mycat.calcite.table.*;
 import io.mycat.config.ServerConfig;
+import io.mycat.querycondition.QueryType;
 import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
@@ -45,21 +46,21 @@ import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.*;
-import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.Sort;
-import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.core.*;
+import org.apache.calcite.rel.logical.LogicalFilter;
+import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.util.SqlString;
-import org.apache.calcite.util.BuiltInMethod;
-import org.apache.calcite.util.Pair;
-import org.apache.calcite.util.RxBuiltInMethodImpl;
+import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.util.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
@@ -73,7 +74,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     final RelNode relNode;
     final Distribution distribution;
     final RexNode condition;
-
+    IndexCondition indexCondition = null;
 
     public MycatView(RelTraitSet relTrait, RelNode input, Distribution dataNode) {
         this(relTrait, input, dataNode, null);
@@ -88,13 +89,13 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         this.distribution = Objects.requireNonNull(dataNode);
         this.condition = conditions;
         this.rowType = input.getRowType();
-        if (input instanceof MycatRel) {
-            input = input.accept(new ToLocalConverter());
-        }
+//        if (input instanceof MycatRel) {
+//            input = input.accept(new ToLocalConverter());
+//        }
         ToLocalConverter toLocalConverter = new ToLocalConverter();
         input = input.accept(toLocalConverter);
-        if (input instanceof Project){
-            Project project = (Project)input ;
+        if (input instanceof Project) {
+            Project project = (Project) input;
             if (RexUtil.isIdentity(project.getProjects(), project.getInput().getRowType())) {
                 input = project.getInput();//ProjectRemoveRule
             }
@@ -102,6 +103,212 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         this.relNode = input;
     }
 
+    public static ProjectIndexMapping project(ShardingIndexTable shardingIndexTable, List<Integer> projects) {
+        ArrayList<String> restColumnListBuilder = new ArrayList<>();
+        ArrayList<String> indexColumnListBuilder = new ArrayList<>();
+        ShardingTable factTable = shardingIndexTable.getFactTable();
+        for (int i = 0; i < projects.size(); i++) {
+            Integer index = projects.get(i);
+            Objects.requireNonNull(index);
+            String columnName = factTable.getColumns().get(index).getColumnName();
+            boolean covering = shardingIndexTable.getColumnByName(columnName) != null;
+            if (covering) {
+                indexColumnListBuilder.add(columnName);
+            } else {
+                restColumnListBuilder.add(columnName);
+            }
+        }
+        List<String> indexEqualKeys = (List) ImmutableList.builder().addAll(shardingIndexTable.getLogicTable().getShardingKeys())
+                .add(shardingIndexTable.getFactTable().getPrimaryKey().getColumnName()).build();
+        for (String shardingKey : indexEqualKeys) {
+            if (!restColumnListBuilder.contains(shardingKey)) {
+                restColumnListBuilder.add(shardingKey);
+            }
+            if (!indexColumnListBuilder.contains(shardingKey)) {
+                indexColumnListBuilder.add(shardingKey);
+            }
+        }
+        List<String> indexColumnList = indexColumnListBuilder;
+        List<String> restColumnList = restColumnListBuilder;
+
+        return new ProjectIndexMapping(indexColumnListBuilder, restColumnListBuilder);
+    }
+
+
+    public static List<RelNode> produceIndexViews(TableScan tableScan, final RexNode wholeCondition, List<Integer> projects, RelDataType orginalRowType) {
+        DrdsSqlCompiler drdsSqlCompiler = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
+        RelOptCluster cluster = tableScan.getCluster();
+        RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(cluster, drdsSqlCompiler.getCatalogReader());
+        ShardingTable shardingTable = (ShardingTable) tableScan.getTable().unwrap(MycatLogicTable.class).getTable();
+        List<ShardingIndexTable> indexTables = shardingTable.getIndexTables();
+        String[] shardingKeys = shardingTable.getLogicTable().getShardingKeys().toArray(new String[]{});
+        ArrayList<RelNode> tableArrayList = new ArrayList<>(indexTables.size());
+        MycatView primaryTableScan;
+        for (ShardingIndexTable indexTable : indexTables) {
+            ProjectIndexMapping indexMapping = project(indexTable, projects);
+            boolean indexOnlyScan = !indexMapping.needFactTable();
+            final IndexCondition indexCondition;
+
+            if (wholeCondition != null) {
+                PredicateAnalyzer predicateAnalyzer = new PredicateAnalyzer(indexTable.keyMetas(), shardingTable.getColumns().stream().map(i -> i.getColumnName()).collect(Collectors.toList()));
+                Map<QueryType, List<IndexCondition>> queryTypeListMap = predicateAnalyzer.translateMatch(wholeCondition);
+                if (queryTypeListMap.isEmpty()) return Collections.emptyList();
+                List<IndexCondition> next = queryTypeListMap.values().stream().filter(i -> i != null).iterator().next().stream()
+                        .filter(i -> i != null).collect(Collectors.toList());
+                indexCondition = next.get(0);
+                primaryTableScan = MycatView
+                        .ofCondition(
+                                LocalFilter.create(wholeCondition, LocalTableScan.create((TableScan) relBuilder.scan(shardingTable.getSchemaName(), shardingTable.getTableName()).build())),
+                                Distribution.of(shardingTable),
+                                wholeCondition
+                        );
+            } else {
+                continue;
+            }
+
+            RelNode indexTableView = null;
+            LocalFilter localFilter = null;
+            RexNode pushdownCondition = null;
+            LocalTableScan localTableScan = LocalTableScan.create(
+                    (TableScan) relBuilder.scan(indexTable.getSchemaName(), indexTable.getTableName()).build());
+            switch (indexCondition.getQueryType()) {
+                case PK_POINT_QUERY:
+                    List<String> indexColumnNames = indexCondition.getIndexColumnNames();
+                    RexNode rexNode = indexCondition.getPushDownRexNodeList().get(0);
+                    relBuilder.push(localTableScan);
+
+                    List<RexNode> pushDownConditions = new ArrayList<>();
+                    for (String indexColumnName : indexColumnNames) {
+                        pushDownConditions.add(relBuilder.equals(relBuilder.field(indexColumnName), rexNode));
+
+                    }
+
+                    pushdownCondition = RexUtil.composeConjunction(relBuilder.getRexBuilder(), pushDownConditions);
+                    RelNode build = relBuilder.build();
+                    localFilter = LocalFilter.create(LogicalFilter.create(localTableScan, pushdownCondition), localTableScan);
+                    indexTableView = localFilter;
+
+                    break;
+                case PK_RANGE_QUERY:
+                case PK_FULL_SCAN:
+                    continue;
+            }
+
+            if (indexOnlyScan) {
+                List<Integer> newProject = getProjectIntList(projects, tableScan.deriveRowType(), indexTableView.getRowType());
+                MycatView view = MycatView
+                        .ofCondition(LocalProject.create((Project) RelOptUtil.createProject(indexTableView,
+                                newProject), indexTableView),
+                                Distribution.of(indexTable), pushdownCondition);
+                tableArrayList.add(view);
+                continue;
+            } else {
+                indexTableView = MycatView
+                        .ofCondition(indexTableView,
+                                Distribution.of(indexTable), pushdownCondition);
+                RelNode leftProject = createMycatProject(indexTableView, indexMapping.getIndexColumns());
+                RelNode rightProject = createMycatProject(primaryTableScan, indexMapping.getFactColumns());
+
+
+                Join relNode = (Join) relBuilder
+
+                        .push(leftProject)
+                        .push(rightProject)
+
+                        //依赖TableLookupJoin优化
+                        .join(JoinRelType.INNER, shardingKeys).build();
+
+                relNode = MycatHashJoin.create(relNode.getTraitSet(), ImmutableList.of(), leftProject, rightProject, relNode.getCondition(), relNode.getJoinType());
+
+                MycatRel mycatProject = createMycatProject(relNode, getProjectStringList(projects, tableScan.getRowType()));
+
+                if (!RelOptUtil.areRowTypesEqual(orginalRowType,mycatProject.getRowType(),false)){
+                    System.out.println();
+                }
+                tableArrayList.add(mycatProject);
+                continue;
+            }
+        }
+        return (List) tableArrayList;
+    }
+
+    @NotNull
+    private static List<Integer> getProjectIntList(List<Integer> projects, RelDataType orginalRowType, RelDataType indexTableScanRowType) {
+        ArrayList<Integer> newProject = new ArrayList<>();
+        for (int project : projects) {
+            String name = orginalRowType.getFieldList().get(project).getName();
+            RelDataTypeField field = indexTableScanRowType.getField(name, false, false);
+            if (field == null) {
+                System.out.println();
+            } else {
+                int index = field.getIndex();
+                newProject.add(index);
+            }
+
+        }
+        return newProject;
+    }
+
+    @NotNull
+    public static List<String> getProjectStringList(List<Integer> projects, RelDataType orginalRowType) {
+        ArrayList<String> newProject = new ArrayList<>();
+        for (int project : projects) {
+            String name = orginalRowType.getFieldList().get(project).getName();
+            newProject.add(name);
+        }
+        return newProject;
+    }
+    public static MycatRel createMycatProject(RelNode indexTableScan, List<String> indexColumns){
+        return createMycatProject(indexTableScan,indexColumns,true);
+    }
+    public static MycatRel createMycatProject(RelNode indexTableScan, List<String> indexColumns,boolean nullable) {
+        RelDataType rowType = indexTableScan.getRowType();
+        ArrayList<Integer> ints = new ArrayList<>();
+        for (String indexColumn : indexColumns) {
+            ints.add(rowType.getField(indexColumn, false, false).getIndex());
+        }
+
+        RelNode project = RelOptUtil.createProject(indexTableScan, ints);
+        if (project instanceof LogicalProject) {
+            List<RexNode> projects = ((Project) project).getProjects();
+//            if (nullable){
+//                RexBuilder rexBuilder = MycatCalciteSupport.RexBuilder;
+//                for (RexNode rexNode : projects) {
+//                    rexBuilder.makeNotNull(rexNode);
+//                }
+//
+//            }
+            return MycatProject.create(project.getInput(0), projects, project.getRowType());
+        }
+        return (MycatRel) project;
+    }
+
+    public Optional<IndexCondition> getPredicateIndexCondition() {
+
+        if (indexCondition != null) {
+            return Optional.of(indexCondition);
+        }
+        if (this.distribution.getShardingTables().isEmpty() || condition == null) {
+            return Optional.empty();
+        }
+        ShardingTable shardingTable = this.distribution.getShardingTables().get(0);
+        PredicateAnalyzer predicateAnalyzer = new PredicateAnalyzer(shardingTable.keyMetas(), shardingTable.getLogicTable().getFieldNames());
+        Map<QueryType, List<IndexCondition>> queryTypeListMap = predicateAnalyzer.translateMatch(condition);
+        Collection<List<IndexCondition>> values = queryTypeListMap.values();
+        if (values.isEmpty()) {
+            return Optional.empty();
+        }
+        return values.stream().flatMap(i -> i.stream()).findFirst();
+    }
+
+    public boolean isBetter(MycatView otherView) {
+        Optional<IndexCondition> leftPredicateIndexCondition = getPredicateIndexCondition();
+        Optional<IndexCondition> rightPredicateIndexCondition = otherView.getPredicateIndexCondition();
+        if (leftPredicateIndexCondition.isPresent() && rightPredicateIndexCondition.isPresent()) {
+            return leftPredicateIndexCondition.get().compareTo(rightPredicateIndexCondition.get()) > 0;
+        }
+        return false;
+    }
 
     public static MycatView ofCondition(RelNode input,
                                         Distribution dataNodeInfo,
@@ -132,6 +339,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             }
             return super.visitChildren(rel);
         }
+
     }
 
 
@@ -152,7 +360,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         return MycatCalciteSupport.INSTANCE.convertToSqlTemplate(relNode, dialect, update);
     }
 
-    public  ImmutableMultimap<String, SqlString> apply(
+    public ImmutableMultimap<String, SqlString> apply(
             SqlNode sqlTemplateArg,
             List<PartitionGroup> dataNodes, List<Object> params) {
         SqlNode sqlTemplate = sqlTemplateArg;
@@ -195,7 +403,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                 List<Integer> list = new ArrayList<>();
                 for (Map<String, Partition> each : eachList) {
                     string = MycatCalciteSupport.toSqlString(MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params,
-                           new PartitionGroup(targetName,each)), dialect);
+                            new PartitionGroup(targetName, each)), dialect);
                     if (string.getDynamicParameters() != null) {
                         list.addAll(string.getDynamicParameters());
                     }
@@ -254,7 +462,18 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        return planner.getCost(relNode, mq);
+        Optional<IndexCondition> conditionOptional = getPredicateIndexCondition();
+        RelOptCost plannerCost = planner.getCost(relNode, mq);
+        double factor = 1;
+        if (conditionOptional.isPresent()) {
+            IndexCondition indexCondition = conditionOptional.get();
+            factor = indexCondition.getQueryType().factor();
+            if (distribution.getShardingTables().get(0).getTableName().equals("travelrecord_g_i_user_id")) {
+                return planner.getCostFactory().makeZeroCost();
+            }
+        }
+
+        return plannerCost.multiplyBy(factor);
     }
 
     private RelNode applyDataNode(Map<String, Partition> map, RelNode relNode) {
