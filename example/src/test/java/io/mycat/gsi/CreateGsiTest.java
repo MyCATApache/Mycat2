@@ -129,15 +129,15 @@ public class CreateGsiTest implements MycatTest {
             exception = e;
         }
         Assert.assertTrue(exception != null);
-        switch (transcationType) {
-            case XA:
+//        switch (transcationType) {
+//            case XA:
                 Assert.assertEquals(_count0, count(connection, "db1", "travelrecord"));
                 Assert.assertEquals(_count1, count(connection, "db1", "travelrecord_g_i_user_id"));
-                break;
-            case PROXY:
-                Assert.assertNotEquals(count(connection, "db1", "travelrecord"), count(connection, "db1", "travelrecord_g_i_user_id"));
-                break;
-        }
+//                break;
+//            case PROXY:
+//                Assert.assertNotEquals(count(connection, "db1", "travelrecord"), count(connection, "db1", "travelrecord_g_i_user_id"));
+//                break;
+//        }
 
     }
 
