@@ -67,7 +67,8 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     @Override
     public Future<Void> begin() {
         if (inTranscation) {
-            return (Future.failedFuture(new IllegalArgumentException("occur Nested transaction")));
+            LOGGER.warn("xa transaction occur nested transaction,xid:"+xid);
+            return Future.succeededFuture();
         }
         inTranscation = true;
         xid = log.nextXid();

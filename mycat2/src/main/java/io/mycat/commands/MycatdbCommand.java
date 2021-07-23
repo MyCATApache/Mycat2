@@ -188,7 +188,7 @@ public enum MycatdbCommand {
         } catch (Throwable e) {
             Response response = responseFactory.apply(1);
             if (isNavicatClientStatusQuery(text)) {
-                return response.sendOk();
+                return response.proxySelectToPrototype(text);
             }
             return Future.failedFuture(e);
         }
@@ -303,6 +303,9 @@ public enum MycatdbCommand {
         if (Objects.equals(
                 "SELECT STATE AS `状态`, ROUND(SUM(DURATION),7) AS `期间`, CONCAT(ROUND(SUM(DURATION)/*100,3), '%') AS `百分比` FROM INFORMATION_SCHEMA.PROFILING WHERE QUERY_ID= GROUP BY STATE ORDER BY SEQ",
                 text)) {
+            return true;
+        }
+        if (Objects.equals("SHOW /*!50002 GLOBAL */ STATUS",text)){
             return true;
         }
         return false;
