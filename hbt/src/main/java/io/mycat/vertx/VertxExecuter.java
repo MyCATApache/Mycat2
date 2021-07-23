@@ -75,6 +75,13 @@ public class VertxExecuter {
                 .map(r -> new long[]{r.rowCount(), Optional.ofNullable(r.property(MySQLClient.LAST_INSERTED_ID)).orElse(0L)}));
     }
 
+    public static Future<long[]> simpleUpdate(MycatDataContext context, boolean xa, boolean onlyFirstSum, Collection<EachSQL> eachSQLs) {
+        if (xa && (eachSQLs.size() > 1)) {
+            return simpleUpdate(context, xa, onlyFirstSum, (Iterable<EachSQL>) eachSQLs);
+        }
+        return simpleUpdate(context, false, onlyFirstSum, (Iterable<EachSQL>) eachSQLs);
+    }
+
     public static Future<long[]> simpleUpdate(MycatDataContext context, boolean xa, boolean onlyFirstSum, Iterable<EachSQL> eachSQLs) {
         Function<Void, Future<long[]>> function = new Function<Void, Future<long[]>>() {
             final long[] sum = new long[]{0, 0};
@@ -117,7 +124,6 @@ public class VertxExecuter {
             return Future.succeededFuture().flatMap(o -> function.apply(null));
         }
     }
-
 
     @Getter
     @EqualsAndHashCode
@@ -294,86 +300,79 @@ public class VertxExecuter {
         }
     }
 
-    public static Iterable<EachSQL> rewriteInsertBatchedStatements(Iterable<EachSQL> eachSQLs) {
+    public static List<EachSQL> rewriteInsertBatchedStatements(Iterable<EachSQL> eachSQLs) {
         return rewriteInsertBatchedStatements(eachSQLs, 1000);
     }
 
-    public static Iterable<EachSQL> rewriteInsertBatchedStatements(Iterable<EachSQL> eachSQLs, int batchSize) {
+    public static List<EachSQL> rewriteInsertBatchedStatements(Iterable<EachSQL> eachSQLs, int batchSize) {
+        @Data
+        @AllArgsConstructor
+        @EqualsAndHashCode
+        class key {
+            String target;
+            String sql;
+        }
 
-        return new Iterable<EachSQL>() {
-            @NotNull
-            @Override
-            public Iterator<EachSQL> iterator() {
-                @Data
-                @AllArgsConstructor
-                @EqualsAndHashCode
-                class key {
-                    String target;
-                    String sql;
-                }
+        Map<key, SQLInsertStatement> map = new ConcurrentHashMap<>();
+        final Function<Map.Entry<key, SQLInsertStatement>, EachSQL> finalFunction = i -> {
+            key key = i.getKey();
+            SQLInsertStatement value = i.getValue();
+            return new EachSQL(key.getTarget(), value.toString(), Collections.emptyList());
+        };
+        LinkedList<EachSQL> res = new LinkedList<>();
+        for (EachSQL eachSQL : eachSQLs) {
 
-                Map<key, SQLInsertStatement> map = new ConcurrentHashMap<>();
-                final Function<Map.Entry<key, SQLInsertStatement>, EachSQL> finalFunction = i -> {
-                    key key = i.getKey();
-                    SQLInsertStatement value = i.getValue();
-                    return new EachSQL(key.getTarget(), value.toString(), Collections.emptyList());
+            String target = eachSQL.getTarget();
+            String sql = eachSQL.getSql();
+            SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+            List<Object> sqlParams = eachSQL.getParams();
+
+            if (sqlStatement instanceof SQLInsertStatement) {
+                SQLInsertStatement insertStatement = (SQLInsertStatement) sqlStatement;
+
+
+                key key = new key(target, sql);
+
+                final SQLInsertStatement nowInsertStatement = map.computeIfAbsent(key, key1 -> {
+                    SQLInsertStatement clone = insertStatement.clone();
+                    clone.getValuesList().clear();
+                    return clone;
+                });
+                MySqlASTVisitorAdapter mySqlASTVisitorAdapter = new MySqlASTVisitorAdapter() {
+                    @Override
+                    public boolean visit(SQLVariantRefExpr x) {
+                        SQLReplaceable parent = (SQLReplaceable) x.getParent();
+                        parent.replace(x, PreparedStatement.fromJavaObject(sqlParams.get(x.getIndex())));
+                        return false;
+                    }
                 };
-                LinkedList<EachSQL> res = new LinkedList<>();
-                for (EachSQL eachSQL : eachSQLs) {
-
-                    String target = eachSQL.getTarget();
-                    String sql = eachSQL.getSql();
-                    SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-                    List<Object> sqlParams = eachSQL.getParams();
-
-                    if (sqlStatement instanceof SQLInsertStatement) {
-                        SQLInsertStatement insertStatement = (SQLInsertStatement) sqlStatement;
 
 
-                        key key = new key(target, sql);
+                List<EachSQL> list = new LinkedList<>();
+                for (SQLInsertStatement.ValuesClause valuesClause : insertStatement.getValuesList()) {
+                    valuesClause = valuesClause.clone();
+                    nowInsertStatement.addValueCause(valuesClause);
+                    valuesClause.accept(mySqlASTVisitorAdapter);
 
-                        final SQLInsertStatement nowInsertStatement = map.computeIfAbsent(key, key1 -> {
-                            SQLInsertStatement clone = insertStatement.clone();
-                            clone.getValuesList().clear();
-                            return clone;
-                        });
-                        MySqlASTVisitorAdapter mySqlASTVisitorAdapter = new MySqlASTVisitorAdapter() {
-                            @Override
-                            public boolean visit(SQLVariantRefExpr x) {
-                                SQLReplaceable parent = (SQLReplaceable) x.getParent();
-                                parent.replace(x, PreparedStatement.fromJavaObject(sqlParams.get(x.getIndex())));
-                                return false;
-                            }
-                        };
-
-
-                        List<EachSQL> list = new LinkedList<>();
-                        for (SQLInsertStatement.ValuesClause valuesClause : insertStatement.getValuesList()) {
-                            valuesClause = valuesClause.clone();
-                            nowInsertStatement.addValueCause(valuesClause);
-                            valuesClause.accept(mySqlASTVisitorAdapter);
-
-                            if (nowInsertStatement.getValuesList().size() >= batchSize) {
-                                EachSQL e = finalFunction.apply(new AbstractMap.SimpleEntry(key, nowInsertStatement.clone()));
-                                list.add(e);
-                                nowInsertStatement.getValuesList().clear();
-                            } else {
-                                continue;
-                            }
-                        }
-                        res.addAll(list);
+                    if (nowInsertStatement.getValuesList().size() >= batchSize) {
+                        EachSQL e = finalFunction.apply(new AbstractMap.SimpleEntry(key, nowInsertStatement.clone()));
+                        list.add(e);
+                        nowInsertStatement.getValuesList().clear();
                     } else {
-                        res.add(eachSQL);
+                        continue;
                     }
                 }
-                res.addAll(map.entrySet().stream().map(finalFunction).collect(Collectors.toList()));
-                return res.iterator();
+                res.addAll(list);
+            } else {
+                res.add(eachSQL);
             }
-        };
+        }
+        res.addAll(map.entrySet().stream().map(finalFunction).collect(Collectors.toList()));
+        return res;
     }
 
     @SneakyThrows
-    public static Iterable<EachSQL> explainInsert(SQLInsertStatement statementArg, List<Object> paramArg) {
+    public static List<EachSQL> explainInsert(SQLInsertStatement statementArg, List<Object> paramArg) {
         final SQLInsertStatement statement = statementArg.clone();
 
         SQLInsertStatement template = statement.clone();

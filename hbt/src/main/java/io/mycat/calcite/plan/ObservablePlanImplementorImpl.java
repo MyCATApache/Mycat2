@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -75,16 +76,14 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
     @Override
     public Future<Void> executeInsert(Plan logical) {
         MycatInsertRel mycatRel = (MycatInsertRel) logical.getMycatRel();
-        Iterable<VertxExecuter.EachSQL> insertSqls = VertxExecuter.explainInsert((SQLInsertStatement) mycatRel.getSqlStatement(), drdsSqlWithParams.getParams());
-        ArrayList<VertxExecuter.EachSQL> sqlList= Lists.newArrayList(insertSqls.iterator());
-        assert  !sqlList.isEmpty();
-        Iterable<VertxExecuter.EachSQL> batchSqls ;
-        if (sqlList.size()>1){
-            batchSqls = VertxExecuter.rewriteInsertBatchedStatements(sqlList);
-        }else {
-            batchSqls = insertSqls;
+        List<VertxExecuter.EachSQL> insertSqls = VertxExecuter.explainInsert((SQLInsertStatement) mycatRel.getSqlStatement(), drdsSqlWithParams.getParams());
+        assert !insertSqls.isEmpty();
+        Future<long[]> future;
+        if (insertSqls.size() > 1) {
+            future = VertxExecuter.simpleUpdate(context, true, mycatRel.isGlobal(), VertxExecuter.rewriteInsertBatchedStatements(insertSqls));
+        } else {
+            future = VertxExecuter.simpleUpdate(context, false, mycatRel.isGlobal(), insertSqls);
         }
-        Future<long[]> future = VertxExecuter.simpleUpdate(context, true, mycatRel.isGlobal(), batchSqls);
         return future.eventually(u -> context.getTransactionSession().closeStatementState())
                 .flatMap(result -> response.sendOk(result[0], result[1]));
     }
