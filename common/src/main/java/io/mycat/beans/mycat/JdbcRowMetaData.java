@@ -20,8 +20,6 @@ import lombok.SneakyThrows;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
-import static java.sql.DatabaseMetaData.columnNullable;
-
 /**
  * @author Junwen Chen
  **/
@@ -65,7 +63,8 @@ public class JdbcRowMetaData implements MycatRowMetaData {
     @Override
     public boolean isNullable(int column) {
         try {
-            return resultSetMetaData.isNullable(column+1) == columnNullable;
+            int nullable = resultSetMetaData.isNullable(column + 1);
+            return  nullable== ResultSetMetaData.columnNullable||nullable == ResultSetMetaData.columnNullableUnknown;
         } catch (SQLException e) {
             throw new MycatException(toMessage(e));
         }
