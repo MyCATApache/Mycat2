@@ -536,4 +536,63 @@ public class UserCaseTest implements MycatTest {
 
         }
     }
+
+    @Test
+    public void case8() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+             Connection mysqlConnection = getMySQLConnection(DB1)) {
+            execute(mycatConnection, RESET_CONFIG);
+
+            execute(mycatConnection, "DROP DATABASE db1");
+
+
+            execute(mycatConnection, "CREATE DATABASE db1");
+            execute(mycatConnection, "use db1");
+            execute(mycatConnection, "CREATE TABLE `sys_menu` (\n" +
+                    "  `menu_id` bigint(20) NOT NULL AUTO_INCREMENT,\n" +
+                    "  `menu_name` varchar(50) NOT NULL ,\n" +
+                    "  `parent_id` bigint(20) DEFAULT '0' ,\n" +
+                    "  `order_num` int(4) DEFAULT '0',\n" +
+                    "  `path` varchar(200) DEFAULT '' ,\n" +
+                    "  `component` varchar(255) DEFAULT NULL ,\n" +
+                    "  `is_frame` int(1) DEFAULT '1' ,\n" +
+                    "  `is_cache` int(1) DEFAULT '0',\n" +
+                    "  `menu_type` varchar(1) DEFAULT '' ,\n" +
+                    "  `visible` varchar(1) DEFAULT '0',\n" +
+                    "  `status` varchar(1) DEFAULT '0' ,\n" +
+                    "  `perms` varchar(100) DEFAULT NULL ,\n" +
+                    "  `icon` varchar(100) DEFAULT '#' ,\n" +
+                    "  `create_by` varchar(64) DEFAULT '' ,\n" +
+                    "  `create_time` datetime DEFAULT NULL ,\n" +
+                    "  `update_by` varchar(64) DEFAULT '',\n" +
+                    "  `update_time` datetime DEFAULT NULL,\n" +
+                    "  `remark` varchar(500) DEFAULT '',\n" +
+                    "  PRIMARY KEY (`menu_id`)\n" +
+                    ") ENGINE=InnoDB AUTO_INCREMENT=1080 DEFAULT CHARSET=utf8 ;");
+            deleteData(mycatConnection, "db1", "sys_menu");
+            execute(mycatConnection, "INSERT INTO `sys_menu` VALUES ('1', '系统管理', '0', '6', 'common', null, '1', '0', 'M', '0', '0', '', 'build', 'admin', '2021-04-15 12:06:30', 'admin', null, '系统管理目录');");
+            String sql = "select * from db1.sys_menu";
+
+            Statement mycatStatement = mycatConnection.createStatement();
+            ResultSet mycatresultSet = mycatStatement.executeQuery(sql);
+            ResultSetMetaData mycatmetaData = mycatresultSet.getMetaData();
+
+            Statement mysqlstatement = mysqlConnection.createStatement();
+            ResultSet mysqlresultSet = mysqlstatement.executeQuery(sql);
+            ResultSetMetaData mysqlmetaData = mysqlresultSet.getMetaData();
+
+            Assert.assertEquals(mysqlmetaData.getColumnCount(), mycatmetaData.getColumnCount());
+            for (int i = 1; i <= mysqlmetaData.getColumnCount(); i++) {
+                int mysqlcolumnType = mysqlmetaData.getColumnType(i);
+                int mysqlNullable = mysqlmetaData.isNullable(i);
+                int mycatcolumnType = mycatmetaData.getColumnType(i);
+                int mycatNullable = mycatmetaData.isNullable(i);
+                Assert.assertEquals(mysqlcolumnType, mycatcolumnType);
+                Assert.assertEquals(mysqlNullable, mycatNullable);
+            }
+            System.out.println();
+        }
+    }
+
+
 }

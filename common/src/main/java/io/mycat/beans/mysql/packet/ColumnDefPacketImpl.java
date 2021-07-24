@@ -21,7 +21,6 @@ import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.util.StringUtil;
 
 import java.sql.JDBCType;
-import java.sql.ResultSetMetaData;
 import java.util.Arrays;
 
 /**
@@ -49,20 +48,20 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
     public ColumnDefPacketImpl() {
     }
 
-    public ColumnDefPacketImpl(final ResultSetMetaData resultSetMetaData, int columnIndex) {
-        try {
-            this.columnSchema = resultSetMetaData.getSchemaName(columnIndex).getBytes();
-            this.columnName = resultSetMetaData.getColumnLabel(columnIndex).getBytes();
-            this.columnOrgName = resultSetMetaData.getColumnName(columnIndex).getBytes();
-            this.columnNextLength = 0xC;
-            this.columnLength = 256;
-            this.columnType = MySQLFieldsType.fromJdbcType(resultSetMetaData.getColumnType(columnIndex));
-            this.columnDecimals = (byte) resultSetMetaData.getScale(columnIndex);
-            this.columnCharsetSet = 0x21;
-        } catch (Exception e) {
-            throw new MycatException(e);
-        }
-    }
+//    public ColumnDefPacketImpl(final ResultSetMetaData resultSetMetaData, int columnIndex) {
+//        try {
+//            this.columnSchema = resultSetMetaData.getSchemaName(columnIndex).getBytes();
+//            this.columnName = resultSetMetaData.getColumnLabel(columnIndex).getBytes();
+//            this.columnOrgName = resultSetMetaData.getColumnName(columnIndex).getBytes();
+//            this.columnNextLength = 0xC;
+//            this.columnLength = 256;
+//            this.columnType = MySQLFieldsType.fromJdbcType(resultSetMetaData.getColumnType(columnIndex));
+//            this.columnDecimals = (byte) resultSetMetaData.getScale(columnIndex);
+//            this.columnCharsetSet = 0x21;
+//        } catch (Exception e) {
+//            throw new MycatException(e);
+//        }
+//    }
 
     public ColumnDefPacketImpl(final MycatRowMetaData resultSetMetaData, int columnIndex) {
         try {
@@ -70,6 +69,7 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
             if (StringUtil.isEmpty(schemaName)) {
                 schemaName = "";//mysql workbench 该字段不能为长度0
             }
+            int jdbcColumnType = resultSetMetaData.getColumnType(columnIndex);
             this.columnSchema =  new byte[]{};
             String columnName = resultSetMetaData.getColumnName(columnIndex);
             this.columnName = getBytes(columnName);
@@ -77,9 +77,19 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
             this.columnOrgTable = new byte[]{};
             this.columnTable = new byte[]{};
             this.columnNextLength = 0xC;
-            this.columnType = MySQLFieldsType.fromJdbcType(resultSetMetaData.getColumnType(columnIndex));
+            this.columnType = MySQLFieldsType.fromJdbcType(jdbcColumnType);
             this.columnLength = resultSetMetaData.getColumnType(columnIndex)== JDBCType.BIT.getVendorTypeNumber()?1  : columnName.length();
             this.columnDecimals = (byte) resultSetMetaData.getScale(columnIndex);
+            if (!resultSetMetaData.isNullable(columnIndex)){
+                this.columnFlags |= MySQLFieldsType.NOT_NULL_FLAG;
+            }
+            if (jdbcColumnType ==JDBCType.BINARY.getVendorTypeNumber()){
+                this.columnFlags |= MySQLFieldsType.BINARY_FLAG;
+            }else   if (jdbcColumnType ==JDBCType.TIMESTAMP.getVendorTypeNumber()){
+                this.columnFlags |= MySQLFieldsType.TIMESTAMP_FLAG;
+            }else   if (jdbcColumnType ==JDBCType.DECIMAL.getVendorTypeNumber()){
+
+            }
             this.columnCharsetSet = 0x21;
         } catch (Exception e) {
             throw new MycatException(e);
