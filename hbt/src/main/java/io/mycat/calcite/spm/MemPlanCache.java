@@ -85,15 +85,14 @@ public class MemPlanCache implements QueryPlanCache {
         CodeExecuterContext codeExecuterContext = getCodeExecuterContext(baseline,newBaselinePlan);
         if (persist) {
             BaselinePlan newBaselinePlan1 = newBaselinePlan;
-            //persistor.savePlan(newBaselinePlan1, fix);
+            persistor.savePlan(newBaselinePlan1, fix);
         }
         baseline.getPlanList().add(newBaselinePlan);
         if (fix) {
             baseline.setFixPlan(newBaselinePlan);
         }
         Constraint constraint = baseline.getConstraint();
-        boolean b = map.containsKey(constraint);
-        //map.put(constraint, baseline);
+        map.put(constraint, baseline);
         return new PlanResultSet(newBaselinePlan.getBaselineId(), true, codeExecuterContext);
     }
 
@@ -218,7 +217,7 @@ public class MemPlanCache implements QueryPlanCache {
         persistor.loadBaseline(value).ifPresent(new Consumer<Baseline>() {
             @Override
             public void accept(Baseline baseline) {
-               // map.put(baseline.getConstraint(), baseline);
+                map.put(baseline.getConstraint(), baseline);
             }
         });
     }

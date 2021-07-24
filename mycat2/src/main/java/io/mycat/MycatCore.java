@@ -71,11 +71,9 @@ public class MycatCore {
             Class.forName("io.mycat.datasource.jdbc.datasource.JdbcConnectionManager", initialize, classLoader);
             Class.forName("org.apache.calcite.sql.SqlUtil", initialize, classLoader);
             Class.forName("org.apache.calcite.plan.RelOptUtil", initialize, classLoader);
-            Class.forName("org.apache.calcite.plan.RelOptUtil", initialize, classLoader);
             Class.forName("org.apache.calcite.mycat.MycatBuiltInMethod", initialize, classLoader);
             Class.forName("com.alibaba.druid.sql.SQLUtils", initialize, classLoader);
-            Class.forName("com.alibaba.druid.sql.SQLUtils", initialize, classLoader);
-
+            Class.forName("com.alibaba.druid.sql.parser.SQLExprParser", initialize, classLoader);
         } catch (ClassNotFoundException e) {
             throw new Error("init error. " + e.toString());
         }

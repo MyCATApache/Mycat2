@@ -25,7 +25,7 @@ public class CreateGsiTest implements MycatTest {
         try (Connection connection = getMySQLConnection(DB_MYCAT)) {
             execute(connection, "CREATE UNIQUE GLOBAL INDEX `g_i_user_id` ON `db1`.`travelrecord`(`user_id`) \n" +
                     "    COVERING(`fee`,id) \n" +
-                    "    dbpartition by mod_hash(`user_id`) tbpartition by mod_hash(`user_id`) dbpartitions 2 tbpartitions 2");
+                    "    dbpartition by mod_hash(`user_id`) tbpartition by mod_hash(`user_id`)  tbpartitions 2");
             boolean b = hasData(connection, "db1", "travelrecord_g_i_user_id");//test create it
             List<Map<String, Object>> travelrecord_g_i_user_id_topologyHint = executeQuery(connection, ShowTopologyHint.create("db1", "travelrecord_g_i_user_id").toString());
             Assert.assertEquals("[{targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_0}, {targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_1}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_2}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_3}]", travelrecord_g_i_user_id_topologyHint.toString());
@@ -135,7 +135,7 @@ public class CreateGsiTest implements MycatTest {
                 Assert.assertEquals(_count1, count(connection, "db1", "travelrecord_g_i_user_id"));
                 break;
             case PROXY:
-                Assert.assertNotEquals(count(connection, "db1", "travelrecord"), count(connection, "db1", "travelrecord_g_i_user_id"));
+                Assert.assertEquals(count(connection, "db1", "travelrecord"), count(connection, "db1", "travelrecord_g_i_user_id"));
                 break;
         }
 
@@ -146,7 +146,7 @@ public class CreateGsiTest implements MycatTest {
     public void createGsi2() throws Exception {
         initShardingTable();
         try (Connection connection = getMySQLConnection(DB_MYCAT)) {
-            execute(connection, "CREATE TABLE IF NOT EXISTS db1.`travelrecord` (\n\t`id` bigint NOT NULL AUTO_INCREMENT,\n\t`user_id` varchar(100) DEFAULT NULL,\n\t`traveldate` date DEFAULT NULL,\n\t`fee` decimal(10, 0) DEFAULT NULL,\n\t`days` int DEFAULT NULL,\n\t`blob` longblob,\n\tPRIMARY KEY (`id`),\n\tKEY `id` (`id`),\n\tGLOBAL INDEX `g_i_user_id`(`user_id`) COVERING (`fee`, id) DBPARTITION BY mod_hash(`user_id`) TBPARTITION BY mod_hash(`user_id`) DBPARTITIONS 2 TBPARTITIONS 2\n) ENGINE = InnoDB CHARSET = utf8\nDBPARTITION BY mod_hash(id) DBPARTITIONS 2\nTBPARTITION BY mod_hash(id) TBPARTITIONS 2");
+            execute(connection, "CREATE TABLE IF NOT EXISTS db1.`travelrecord` (\n\t`id` bigint NOT NULL AUTO_INCREMENT,\n\t`user_id` varchar(100) DEFAULT NULL,\n\t`traveldate` date DEFAULT NULL,\n\t`fee` decimal(10, 0) DEFAULT NULL,\n\t`days` int DEFAULT NULL,\n\t`blob` longblob,\n\tPRIMARY KEY (`id`),\n\tKEY `id` (`id`),\n\tGLOBAL INDEX `g_i_user_id`(`user_id`) COVERING (`fee`, id) DBPARTITION BY mod_hash(`user_id`) TBPARTITION BY mod_hash(`user_id`)  TBPARTITIONS 2\n) ENGINE = InnoDB CHARSET = utf8\nDBPARTITION BY mod_hash(id) DBPARTITIONS 2\nTBPARTITION BY mod_hash(id) TBPARTITIONS 2");
             boolean b = hasData(connection, "db1", "travelrecord_g_i_user_id");//test create it
             List<Map<String, Object>> travelrecord_g_i_user_id_topologyHint = executeQuery(connection, ShowTopologyHint.create("db1", "travelrecord_g_i_user_id").toString());
             Assert.assertEquals("[{targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_0}, {targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_1}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_2}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_3}]", travelrecord_g_i_user_id_topologyHint.toString());
