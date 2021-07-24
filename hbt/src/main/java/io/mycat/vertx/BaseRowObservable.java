@@ -396,7 +396,7 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                 ColumnDefinition columnDefinition = (ColumnDefinition) columnDescriptor;
                 String schemaName = columnDefinition.schema();
                 String tableName = columnDefinition.orgTable();
-                String columnName  = columnDefinition.orgName();
+                String columnName  = columnDefinition.name();
                 int columnType = columnDefinition.type().jdbcType.getVendorTypeNumber();
                 int precision = 0;
                 int scale = 0;
