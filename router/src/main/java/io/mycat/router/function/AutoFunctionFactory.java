@@ -1026,7 +1026,7 @@ public class AutoFunctionFactory {
 
     public static int singleRightShift(int num, int shift, String o) {
         if (o == null) o = "null";
-        return Math.abs((hashCode(o) >> shift) % num);
+        return (int) Math.abs((Long.parseLong(o) >> shift) % num);
     }
 
     public static int singleRightShift(int num, int shift, Number o) {
