@@ -140,7 +140,7 @@ public class ValuePredicateAnalyzerTest {
                 Arrays.asList(KeyMeta.of("default", "id")),
                 columnList
         );
-        Object o =ValueIndexCondition. getObject(table.getShardingFuntion(), valuePredicateAnalyzer2.translateMatch(rexNode), Arrays.asList());
+        Object o = ValueIndexCondition.getObject(table.getShardingFuntion(), valuePredicateAnalyzer2.translateMatch(rexNode), Arrays.asList());
         Assert.assertEquals("[{targetName='c0', schemaName='db1_0', tableName='sharding_0', index=0, dbIndex=0, tableIndex=0}, {targetName='c0', schemaName='db1_0', tableName='sharding_1', index=1, dbIndex=0, tableIndex=1}, {targetName='c1', schemaName='db1_1', tableName='sharding_0', index=2, dbIndex=1, tableIndex=0}, {targetName='c1', schemaName='db1_1', tableName='sharding_1', index=3, dbIndex=1, tableIndex=1}]", Objects.toString(o));
 
     }
@@ -165,5 +165,114 @@ public class ValuePredicateAnalyzerTest {
 
     }
 
+    @Test
+    public void testMultiOrEquals2() {
+        DrdsTest.getDrds();
+        List<RexNode> orList = new LinkedList<>();
+        for (int i = 0; i < 2; i++) {
+            RexNode rexNode = rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, rexBuilder.makeInputRef(
+                    MycatCalciteSupport.TypeFactory.createSqlType(SqlTypeName.INTEGER),
+                    0
+            ), rexBuilder.makeLiteral(i, MycatCalciteSupport.TypeFactory.createSqlType(SqlTypeName.INTEGER), true));
+            orList.add(rexNode);
+        }
+        RexNode rexNode = rexBuilder.makeCall(SqlStdOperatorTable.OR, orList);
 
+        List<String> columnList = Arrays.asList("id");
+        ValuePredicateAnalyzer valuePredicateAnalyzer2 = new ValuePredicateAnalyzer(Arrays.asList(
+                KeyMeta.of("seqSharding", "id")),
+                columnList);
+        Map<QueryType, List<ValueIndexCondition>> indexCondition = valuePredicateAnalyzer2.translateMatch(rexNode);
+      Assert.assertEquals("{PK_POINT_QUERY=[ValueIndexCondition(fieldNames=[id], indexName=seqSharding, indexColumnNames=[id], queryType=PK_POINT_QUERY, rangeQueryLowerOp=null, rangeQueryLowerKey=null, rangeQueryUpperOp=null, rangeQueryUpperKey=null, pointQueryKey=[0, 1])]}", Objects.toString(indexCondition));
+        MetadataManager metadataManager = DrdsTest.getMetadataManager();
+        ShardingTable table = (ShardingTable) metadataManager.getTable("db1", "seqSharding");
+        List o = ValueIndexCondition.getObject(table.getShardingFuntion(), valuePredicateAnalyzer2.translateMatch(rexNode), Arrays.asList());
+        o.sort(Comparator.comparing(c->c.toString()));
+        Assert.assertEquals(2,o.size());
+        Assert.assertEquals( "[{targetName='c0', schemaName='db1_0', tableName='sharding_0', index=0, dbIndex=0, tableIndex=0}, {targetName='c0', schemaName='db1_0', tableName='sharding_1', index=1, dbIndex=0, tableIndex=1}]",Objects.toString(o));
+        System.out.println();
+    }
+    @Test
+    public void testMultiOrEquals3() {
+        DrdsTest.getDrds();
+        List<RexNode> orList = new LinkedList<>();
+        for (int i = 0; i < 3; i++) {
+            RexNode rexNode = rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, rexBuilder.makeInputRef(
+                    MycatCalciteSupport.TypeFactory.createSqlType(SqlTypeName.INTEGER),
+                    0
+            ), rexBuilder.makeLiteral(i, MycatCalciteSupport.TypeFactory.createSqlType(SqlTypeName.INTEGER), true));
+            orList.add(rexNode);
+        }
+        RexNode rexNode = rexBuilder.makeCall(SqlStdOperatorTable.OR, orList);
+
+        List<String> columnList = Arrays.asList("id");
+        ValuePredicateAnalyzer valuePredicateAnalyzer2 = new ValuePredicateAnalyzer(Arrays.asList(
+                KeyMeta.of("seqSharding", "id")),
+                columnList);
+        Map<QueryType, List<ValueIndexCondition>> indexCondition = valuePredicateAnalyzer2.translateMatch(rexNode);
+        Assert.assertEquals("{PK_POINT_QUERY=[ValueIndexCondition(fieldNames=[id], indexName=seqSharding, indexColumnNames=[id], queryType=PK_POINT_QUERY, rangeQueryLowerOp=null, rangeQueryLowerKey=null, rangeQueryUpperOp=null, rangeQueryUpperKey=null, pointQueryKey=[0, 1, 2])]}", Objects.toString(indexCondition));
+        MetadataManager metadataManager = DrdsTest.getMetadataManager();
+        ShardingTable table = (ShardingTable) metadataManager.getTable("db1", "seqSharding");
+        List o = ValueIndexCondition.getObject(table.getShardingFuntion(), valuePredicateAnalyzer2.translateMatch(rexNode), Arrays.asList());
+        o.sort(Comparator.comparing(c->c.toString()));
+        Assert.assertEquals(3,o.size());
+        Assert.assertEquals( "[{targetName='c0', schemaName='db1_0', tableName='sharding_0', index=0, dbIndex=0, tableIndex=0}, {targetName='c0', schemaName='db1_0', tableName='sharding_1', index=1, dbIndex=0, tableIndex=1}, {targetName='c1', schemaName='db1_1', tableName='sharding_2', index=2, dbIndex=1, tableIndex=0}]",Objects.toString(o));
+        System.out.println();
+    }
+    @Test
+    public void testMultiOrEquals4() {
+        DrdsTest.getDrds();
+         int count = 4;
+        List<RexNode> orList = new LinkedList<>();
+        for (int i = 0; i < count; i++) {
+            RexNode rexNode = rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, rexBuilder.makeInputRef(
+                    MycatCalciteSupport.TypeFactory.createSqlType(SqlTypeName.INTEGER),
+                    0
+            ), rexBuilder.makeLiteral(i, MycatCalciteSupport.TypeFactory.createSqlType(SqlTypeName.INTEGER), true));
+            orList.add(rexNode);
+        }
+        RexNode rexNode = rexBuilder.makeCall(SqlStdOperatorTable.OR, orList);
+
+        List<String> columnList = Arrays.asList("id");
+        ValuePredicateAnalyzer valuePredicateAnalyzer2 = new ValuePredicateAnalyzer(Arrays.asList(
+                KeyMeta.of("seqSharding", "id")),
+                columnList);
+        Map<QueryType, List<ValueIndexCondition>> indexCondition = valuePredicateAnalyzer2.translateMatch(rexNode);
+        Assert.assertEquals("{PK_POINT_QUERY=[ValueIndexCondition(fieldNames=[id], indexName=seqSharding, indexColumnNames=[id], queryType=PK_POINT_QUERY, rangeQueryLowerOp=null, rangeQueryLowerKey=null, rangeQueryUpperOp=null, rangeQueryUpperKey=null, pointQueryKey=[0, 1, 2, 3])]}", Objects.toString(indexCondition));
+        MetadataManager metadataManager = DrdsTest.getMetadataManager();
+        ShardingTable table = (ShardingTable) metadataManager.getTable("db1", "seqSharding");
+        List o = ValueIndexCondition.getObject(table.getShardingFuntion(), valuePredicateAnalyzer2.translateMatch(rexNode), Arrays.asList());
+        o.sort(Comparator.comparing(c->c.toString()));
+        Assert.assertEquals(count,o.size());
+        Assert.assertEquals( "[{targetName='c0', schemaName='db1_0', tableName='sharding_0', index=0, dbIndex=0, tableIndex=0}, {targetName='c0', schemaName='db1_0', tableName='sharding_1', index=1, dbIndex=0, tableIndex=1}, {targetName='c1', schemaName='db1_1', tableName='sharding_2', index=2, dbIndex=1, tableIndex=0}, {targetName='c1', schemaName='db1_1', tableName='sharding_3', index=3, dbIndex=1, tableIndex=1}]",Objects.toString(o));
+        System.out.println();
+    }
+    @Test
+    public void testMultiOrEquals5() {
+        DrdsTest.getDrds();
+        int count = 5;
+        List<RexNode> orList = new LinkedList<>();
+        for (int i = 0; i < count; i++) {
+            RexNode rexNode = rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, rexBuilder.makeInputRef(
+                    MycatCalciteSupport.TypeFactory.createSqlType(SqlTypeName.INTEGER),
+                    0
+            ), rexBuilder.makeLiteral(i, MycatCalciteSupport.TypeFactory.createSqlType(SqlTypeName.INTEGER), true));
+            orList.add(rexNode);
+        }
+        RexNode rexNode = rexBuilder.makeCall(SqlStdOperatorTable.OR, orList);
+
+        List<String> columnList = Arrays.asList("id");
+        ValuePredicateAnalyzer valuePredicateAnalyzer2 = new ValuePredicateAnalyzer(Arrays.asList(
+                KeyMeta.of("seqSharding", "id")),
+                columnList);
+        Map<QueryType, List<ValueIndexCondition>> indexCondition = valuePredicateAnalyzer2.translateMatch(rexNode);
+        Assert.assertEquals("{PK_POINT_QUERY=[ValueIndexCondition(fieldNames=[id], indexName=seqSharding, indexColumnNames=[id], queryType=PK_POINT_QUERY, rangeQueryLowerOp=null, rangeQueryLowerKey=null, rangeQueryUpperOp=null, rangeQueryUpperKey=null, pointQueryKey=[0, 1, 2, 3, 4])]}", Objects.toString(indexCondition));
+        MetadataManager metadataManager = DrdsTest.getMetadataManager();
+        ShardingTable table = (ShardingTable) metadataManager.getTable("db1", "seqSharding");
+        List o = ValueIndexCondition.getObject(table.getShardingFuntion(), valuePredicateAnalyzer2.translateMatch(rexNode), Arrays.asList());
+        o.sort(Comparator.comparing(c->c.toString()));
+        Assert.assertEquals(4,o.size());
+        Assert.assertEquals( "[{targetName='c0', schemaName='db1_0', tableName='sharding_0', index=0, dbIndex=0, tableIndex=0}, {targetName='c0', schemaName='db1_0', tableName='sharding_1', index=1, dbIndex=0, tableIndex=1}, {targetName='c1', schemaName='db1_1', tableName='sharding_2', index=2, dbIndex=1, tableIndex=0}, {targetName='c1', schemaName='db1_1', tableName='sharding_3', index=3, dbIndex=1, tableIndex=1}]",Objects.toString(o));
+        System.out.println();
+    }
 }

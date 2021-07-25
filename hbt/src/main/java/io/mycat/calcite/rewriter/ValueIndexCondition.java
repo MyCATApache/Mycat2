@@ -124,8 +124,8 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
             return customRuleFunction.calculate(Collections.emptyMap());
         }
         Objects.requireNonNull(conditions);
-        Map<String, Collection<RangeVariable>> map = new HashMap<>();
-        List<Partition> partitions = null;
+
+        List<Partition> partitions = customRuleFunction.calculate(Collections.emptyMap());
         for (Map.Entry<QueryType, List<ValueIndexCondition>> entry : conditions.entrySet()) {
             for (ValueIndexCondition condition : entry.getValue()) {
                 List<Object> pointQueryKey = resolveParam(params, condition.getPointQueryKey());
@@ -133,21 +133,36 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                 List<Object> rangeQueryLowerKey = resolveParam(params, condition.getRangeQueryLowerKey());
                 ComparisonOperator rangeQueryUpperOp = condition.getRangeQueryUpperOp();
                 List<Object> rangeQueryUpperKey = resolveParam(params, condition.getRangeQueryUpperKey());
-                Object o;
                 switch (condition.getQueryType()) {
                     case PK_POINT_QUERY: {
                         //queryByPrimaryKey
-                        for (String indexColumnName : condition.getIndexColumnNames()) {
+                        Map<String, Collection<RangeVariable>> map = new HashMap<>();
+
+                        if (pointQueryKey.size() > 1) {
+                            List<Partition> curPartitions = new LinkedList<>();
                             for (Object o1 : pointQueryKey) {
+                                String indexColumnName = condition.getIndexColumnNames().get(0);
                                 RangeVariable rangeVariable = new RangeVariable(indexColumnName, RangeVariableType.EQUAL, o1);
                                 Collection<RangeVariable> rangeVariables = map.computeIfAbsent(indexColumnName, (k) -> new ArrayList<>());
+                                rangeVariables.clear();
                                 rangeVariables.add(rangeVariable);
+
+                                List<Partition> calculate = customRuleFunction.calculate(map);
+                                curPartitions.addAll(calculate);
                             }
+                            partitions = calculatePartitions(curPartitions, partitions);
+                        } else {
+                            Object o = pointQueryKey.get(0);
+                            String indexColumnName = condition.getIndexColumnNames().get(0);
+                            RangeVariable rangeVariable = new RangeVariable(indexColumnName, RangeVariableType.EQUAL, o);
+                            Collection<RangeVariable> rangeVariables = map.computeIfAbsent(indexColumnName, (k) -> new ArrayList<>());
+                            rangeVariables.add(rangeVariable);
+                            partitions = calculatePartitions(customRuleFunction, map, partitions);
                         }
-                        partitions = calculatePartitions(customRuleFunction, map, partitions);
                         break;
                     }
-                    case PK_RANGE_QUERY:{
+                    case PK_RANGE_QUERY: {
+                        Map<String, Collection<RangeVariable>> map = new HashMap<>();
                         if (rangeQueryUpperOp == ComparisonOperator.LT) {
                             rangeQueryUpperOp = ComparisonOperator.LTE;
                         }
@@ -185,7 +200,6 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                         break;
                     }
                     case PK_FULL_SCAN:
-                        partitions = calculatePartitions(customRuleFunction, map, partitions);
                         break;
                     default:
 
@@ -197,6 +211,10 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
 
     private static List<Partition> calculatePartitions(CustomRuleFunction customRuleFunction, Map<String, Collection<RangeVariable>> map, List<Partition> partitions) {
         List<Partition> curPartitions = customRuleFunction.calculate(map);
+        return calculatePartitions(partitions, curPartitions);
+    }
+
+    private static List<Partition> calculatePartitions(List<Partition> partitions, List<Partition> curPartitions) {
         if (partitions == null) {
             partitions = curPartitions;
         } else {
@@ -206,10 +224,13 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
     }
 
     public static List intersection(List list1, List list2) {
+        Objects.requireNonNull(list1);
+        Objects.requireNonNull(list2);
+
         ArrayList result = new ArrayList();
         Iterator iterator = list2.iterator();
 
-        while(iterator.hasNext()) {
+        while (iterator.hasNext()) {
             Object o = iterator.next();
             if (list1.contains(o)) {
                 result.add(o);
