@@ -51,7 +51,7 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
         MetadataManager metadataManager = getMetadataManager(mainSharding);
         ShardingTable tableHandler = (ShardingTable) metadataManager.getTable("db1", "sharding");
         CustomRuleFunction shardingFuntion = tableHandler.getShardingFuntion();
-        List<Partition> calculate = shardingFuntion.calculate(Collections.singletonMap("id", Collections.singleton(new RangeVariable("id", RangeVariableType.EQUAL, 15))));
+        List<Partition> calculate = shardingFuntion.calculate(Collections.singletonMap("id", (new RangeVariable("id", RangeVariableType.EQUAL, 15))));
         String s = calculate.toString();
         Assert.assertTrue(s.contains("[{targetName='c0', schemaName='db1_1', tableName='sharding_3', index=7, dbIndex=1, tableIndex=3}]"));
 
@@ -88,7 +88,7 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
         MetadataManager metadataManager = getMetadataManager(mainSharding);
         ShardingTable tableHandler = (ShardingTable) metadataManager.getTable("db1", "sharding");
         CustomRuleFunction shardingFuntion = tableHandler.getShardingFuntion();
-        List<Partition> calculate = shardingFuntion.calculate(Collections.singletonMap("id", Collections.singleton(new RangeVariable("id", RangeVariableType.EQUAL, 15))));
+        List<Partition> calculate = shardingFuntion.calculate(Collections.singletonMap("id", (new RangeVariable("id", RangeVariableType.EQUAL, 15))));
         String s = calculate.toString();
         Assert.assertTrue(s.contains("[{targetName='c0', schemaName='db1_1', tableName='sharding_7', index=7, dbIndex=1, tableIndex=3}]"));
 
@@ -150,7 +150,7 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
         MetadataManager metadataManager = getMetadataManager(mainSharding);
         ShardingTable tableHandler = (ShardingTable) metadataManager.getTable("db1", "sharding");
         CustomRuleFunction shardingFuntion = tableHandler.getShardingFuntion();
-        List<Partition> calculate = shardingFuntion.calculate(Collections.singletonMap("id", Collections.singleton(new RangeVariable("id", RangeVariableType.EQUAL, 15))));
+        List<Partition> calculate = shardingFuntion.calculate(Collections.singletonMap("id",(new RangeVariable("id", RangeVariableType.EQUAL, 15))));
         Assert.assertEquals(1, calculate.size());
         Assert.assertEquals(2, shardingFuntion.calculate(Collections.emptyMap()).size());
         System.out.println();
@@ -181,20 +181,20 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
         MetadataManager metadataManager = getMetadataManager(mainSharding);
         ShardingTable tableHandler = (ShardingTable) metadataManager.getTable("db1", "sharding");
         CustomRuleFunction shardingFuntion = tableHandler.getShardingFuntion();
-        ImmutableMap<String, Collection<RangeVariable>> map = ImmutableMap.of("id", Collections.singletonList(new RangeVariable("id", RangeVariableType.EQUAL, 15)),
-                "user_id", Collections.singletonList(new RangeVariable("user_id", RangeVariableType.EQUAL, 2))
+        ImmutableMap<String, RangeVariable> map = ImmutableMap.of("id", new RangeVariable("id", RangeVariableType.EQUAL, 15),
+                "user_id", (new RangeVariable("user_id", RangeVariableType.EQUAL, 2))
         );
         List<Partition> insertRoute = shardingFuntion.calculate(
                 map);
         Assert.assertEquals(1, insertRoute.size());
 
         List<Partition> firstColumn = shardingFuntion.calculate(
-                ImmutableMap.of("id", Collections.singletonList(new RangeVariable("id", RangeVariableType.EQUAL, 15))));
+                ImmutableMap.of("id",(new RangeVariable("id", RangeVariableType.EQUAL, 15))));
 
         Assert.assertTrue(firstColumn.containsAll(insertRoute));
 
         List<Partition> secondColumn = shardingFuntion.calculate(
-                ImmutableMap.of("user_id", Collections.singletonList(new RangeVariable("user_id", RangeVariableType.EQUAL, 2))));
+                ImmutableMap.of("user_id",(new RangeVariable("user_id", RangeVariableType.EQUAL, 2))));
 
 
         Assert.assertTrue(secondColumn.containsAll(insertRoute));

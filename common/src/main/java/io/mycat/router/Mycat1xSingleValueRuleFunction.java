@@ -88,9 +88,9 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
     }
 
     @Override
-    public List<Partition> calculate(Map<String, Collection<RangeVariable>> values) {
+    public List<Partition> calculate(Map<String, RangeVariable> values) {
         ArrayList<Partition> res = new ArrayList<>();
-        for (RangeVariable rangeVariable : values.values().stream().flatMap(i -> i.stream()).collect(Collectors.toList())) {
+        for (RangeVariable rangeVariable : values.values()) {
             //匹配字段名
             if (getColumnName().equalsIgnoreCase(rangeVariable.getColumnName())) {
                 ///////////////////////////////////////////////////////////////

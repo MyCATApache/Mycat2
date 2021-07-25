@@ -33,9 +33,9 @@ public abstract class CustomRuleFunction {
 
     public abstract String name();
 
-    public abstract List<Partition> calculate(Map<String, Collection<RangeVariable>> values);
+    public abstract List<Partition> calculate(Map<String, RangeVariable> values);
 
-    public Partition calculateOne(Map<String, Collection<RangeVariable>> values) {
+    public Partition calculateOne(Map<String, RangeVariable> values) {
         List<Partition> partitions = calculate(values);
         if (partitions.isEmpty()) {
             throw new IllegalArgumentException("路由计算返回结果个数为0");

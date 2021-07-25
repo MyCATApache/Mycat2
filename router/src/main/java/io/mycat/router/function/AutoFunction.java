@@ -26,7 +26,7 @@ import java.text.MessageFormat;
 import java.util.*;
 import java.util.function.ToIntFunction;
 
-public  abstract class AutoFunction extends CustomRuleFunction {
+public abstract class AutoFunction extends CustomRuleFunction {
     String name;
     int dbNum;
     int tableNum;
@@ -56,7 +56,7 @@ public  abstract class AutoFunction extends CustomRuleFunction {
         this.finalTableFunction = finalTableFunction;
 
         this.name = MessageFormat.format("dbNum:{0} tableNum:{1} dbMethod:{2} tableMethod:{3} storeNum:{4}",
-                dbNum, tableNum, extractKey(dbMethod), extractKey(tableMethod),storeNum);
+                dbNum, tableNum, extractKey(dbMethod), extractKey(tableMethod), storeNum);
     }
 
     private static String extractKey(SQLMethodInvokeExpr method) {
@@ -102,79 +102,69 @@ public  abstract class AutoFunction extends CustomRuleFunction {
     }
 
     @Override
-    public List<Partition> calculate(Map<String, Collection<RangeVariable>> values) {
+    public List<Partition> calculate(Map<String, RangeVariable> values) {
         boolean getDbIndex = false;
         int dIndex = 0;
 
         boolean getTIndex = false;
         int tIndex = 0;
 
-        Set<Map.Entry<String, Collection<RangeVariable>>> entries = values.entrySet();
-        for (Map.Entry<String, Collection<RangeVariable>> e : entries) {
+        Set<Map.Entry<String, RangeVariable>> entries = values.entrySet();
+        for (Map.Entry<String, RangeVariable> e : entries) {
+            RangeVariable rangeVariable = e.getValue();
             for (String dbShardingKey : dbKeys) {
                 if (SQLUtils.nameEquals(dbShardingKey, e.getKey())) {
-                    Collection<RangeVariable> rangeVariables = e.getValue();
-                    if (rangeVariables.size() != 1) {
-                        break;
-                    }
-                    if (rangeVariables != null && !rangeVariables.isEmpty()) {
-                        for (RangeVariable rangeVariable : rangeVariables) {
-                            switch (rangeVariable.getOperator()) {
-                                case EQUAL:
-                                    Object value = rangeVariable.getValue();
-                                    dIndex = finalDbFunction.applyAsInt(value);
-                                    getDbIndex = true;
-                                    if (dIndex < 0) {
-                                        finalDbFunction.applyAsInt(value);
-                                        throw new IllegalArgumentException();
-                                    }
-                                    break;
-                                case RANGE:
-                                default:
-                                    continue;
+                    switch (rangeVariable.getOperator()) {
+                        case EQUAL:
+                            Object value = rangeVariable.getValue();
+                            dIndex = finalDbFunction.applyAsInt(value);
+                            getDbIndex = true;
+                            if (dIndex < 0) {
+                                finalDbFunction.applyAsInt(value);
+                                throw new IllegalArgumentException();
                             }
-                        }
+                            break;
+                        case RANGE:
+                        default:
+                            continue;
                     }
                 }
             }
             for (String tableShardingKey : tableKeys) {
                 if (SQLUtils.nameEquals(tableShardingKey, e.getKey())) {
-                    Collection<RangeVariable> rangeVariables = e.getValue();
-                    if (rangeVariables.size() != 1) {
-                        break;
-                    }
-                    if (rangeVariables != null && !rangeVariables.isEmpty()) {
-                        for (RangeVariable rangeVariable : rangeVariables) {
-                            switch (rangeVariable.getOperator()) {
-                                case EQUAL:
-                                    Object value = rangeVariable.getValue();
-                                    tIndex = finalTableFunction.applyAsInt(value);
-                                    getTIndex = true;
-                                    break;
-                                case RANGE:
-                                default:
-                                    continue;
-                            }
-                        }
+                    switch (rangeVariable.getOperator()) {
+                        case EQUAL:
+                            Object value = rangeVariable.getValue();
+                            tIndex = finalTableFunction.applyAsInt(value);
+                            getTIndex = true;
+                            break;
+                        case RANGE:
+                        default:
+                            continue;
                     }
                 }
             }
         }
-        if (getDbIndex&&getTIndex){
-            return (List)scanOnlyDbTableIndex(dIndex,tIndex);
+        if (getDbIndex && getTIndex) {
+            return (List) scanOnlyDbTableIndex(dIndex, tIndex);
         }
-        if (getTIndex){
-            return (List)scanOnlyTableIndex(tIndex);
+        if (getTIndex) {
+            return (List) scanOnlyTableIndex(tIndex);
         }
-        if (getDbIndex){
-            return (List)scanOnlyDbIndex(dIndex);
+        if (getDbIndex) {
+            return (List) scanOnlyDbIndex(dIndex);
         }
-        return (List)scanAll();
+        return (List) scanAll();
     }
+
     public abstract List<IndexDataNode> scanAll();
+
     public abstract List<IndexDataNode> scanOnlyTableIndex(int index);
+
     public abstract List<IndexDataNode> scanOnlyDbIndex(int index);
-    public abstract List<IndexDataNode> scanOnlyDbTableIndex(int dbIndex,int tableIndex);
+
+    public abstract List<IndexDataNode> scanOnlyDbTableIndex(int dbIndex, int tableIndex);
+
     @Override
     protected void init(ShardingTableHandler tableHandler, Map<String, Object> properties, Map<String, Object> ranges) {
 

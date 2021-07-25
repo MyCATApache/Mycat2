@@ -507,10 +507,10 @@ public class VertxExecuter {
         }
     }
 
-    public static Map<String, List<RangeVariable>> compute(List<SQLName> columns,
+    public static Map<String,RangeVariable> compute(List<SQLName> columns,
                                                            List<SQLExpr> values,
                                                            List<Object> params) {
-        Map<String, List<RangeVariable>> variables = new HashMap<>(1);
+        Map<String, RangeVariable> variables = new HashMap<>(1);
         for (int i = 0; i < columns.size(); i++) {
             SQLExpr sqlExpr = values.get(i);
             Object o = null;
@@ -540,8 +540,7 @@ public class VertxExecuter {
                 }
             }
             String columnName = SQLUtils.normalize(columns.get(i).getSimpleName());
-            List<RangeVariable> rangeVariables = variables.computeIfAbsent(columnName, s -> new ArrayList<>(1));
-            rangeVariables.add(new RangeVariable(columnName, RangeVariableType.EQUAL, o));
+            variables.put(columnName,new RangeVariable(columnName, RangeVariableType.EQUAL, o));
         }
         return variables;
     }
