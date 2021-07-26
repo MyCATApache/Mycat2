@@ -74,6 +74,7 @@ public class MycatCore {
             Class.forName("org.apache.calcite.mycat.MycatBuiltInMethod", initialize, classLoader);
             Class.forName("com.alibaba.druid.sql.SQLUtils", initialize, classLoader);
             Class.forName("com.alibaba.druid.sql.parser.SQLExprParser", initialize, classLoader);
+            Class.forName("com.alibaba.druid.sql.visitor.SQLASTOutputVisitor", initialize, classLoader);
         } catch (ClassNotFoundException e) {
             throw new Error("init error. " + e.toString());
         }
