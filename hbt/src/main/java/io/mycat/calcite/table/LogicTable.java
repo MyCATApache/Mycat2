@@ -23,6 +23,9 @@ import com.alibaba.druid.sql.ast.statement.SQLCreateViewStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.*;
+import io.mycat.config.GlobalTableConfig;
+import io.mycat.config.NormalTableConfig;
+import io.mycat.config.ShardingTableConfig;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.util.MycatSQLExprTableSourceUtil;
@@ -91,9 +94,10 @@ public class LogicTable {
                                                  LoadBalanceStrategy loadBalance,
                                                  List<SimpleColumnInfo> columns,
                                                  Map<String, IndexInfo> indexInfos,
-                                                 String createTableSQL) {
+                                                 String createTableSQL,
+                                                 GlobalTableConfig tableConfigEntry) {
         LogicTable logicTable = new LogicTable(LogicTableType.GLOBAL, schemaName, tableName, columns, indexInfos, createTableSQL);
-        return new GlobalTable(logicTable, backendTableInfos);
+        return new GlobalTable(logicTable, backendTableInfos,tableConfigEntry);
     }
 
     public static TableHandler createNormalTable(String schemaName,
@@ -101,9 +105,10 @@ public class LogicTable {
                                                  Partition partition,
                                                  List<SimpleColumnInfo> columns,
                                                  Map<String, IndexInfo> indexInfos,
-                                                 String createTableSQL) {
+                                                 String createTableSQL,
+                                                 NormalTableConfig tableConfigEntry) {
         LogicTable logicTable = new LogicTable(LogicTableType.NORMAL, schemaName, tableName, columns, indexInfos, createTableSQL);
-        return new NormalTable(logicTable, partition);
+        return new NormalTable(logicTable, partition,tableConfigEntry);
     }
 
     public static ShardingTable createShardingTable(String schemaName,
@@ -113,9 +118,10 @@ public class LogicTable {
                                                     CustomRuleFunction function,
                                                     Map<String, IndexInfo> indexInfos,
                                                     String createTableSQL,
-                                                    List<ShardingIndexTable> shardingIndexTables) {
+                                                    List<ShardingIndexTable> shardingIndexTables,
+                                                    ShardingTableConfig tableConfigEntry) {
         LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, tableName, columns, indexInfos, createTableSQL);
-        return new ShardingTable(logicTable, backendTableInfos, function,shardingIndexTables);
+        return new ShardingTable(logicTable, backendTableInfos, function,shardingIndexTables,tableConfigEntry);
     }
 
     public SimpleColumnInfo getColumnByName(String name) {

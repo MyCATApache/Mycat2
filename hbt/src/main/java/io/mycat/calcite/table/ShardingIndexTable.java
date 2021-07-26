@@ -17,7 +17,7 @@ public class ShardingIndexTable extends ShardingTable {
                               List<Partition> backends,
                               CustomRuleFunction shardingFuntion,
                               ShardingTable primaryTable) {
-        super(logicTable, backends, shardingFuntion, Collections.emptyList());
+        super(logicTable, backends, shardingFuntion, Collections.emptyList(), null);
         this.indexName = indexName;
         this.primaryTable = primaryTable;
     }

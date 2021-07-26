@@ -419,7 +419,7 @@ public class MetadataManager implements MysqlVariableService {
         if (createTableSQL != null) {
             List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, partitions);
             Map<String, IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName, columns);
-            addLogicTable(LogicTable.createNormalTable(schemaName, tableName, partitions.get(0), columns, indexInfos, createTableSQL));
+            addLogicTable(LogicTable.createNormalTable(schemaName, tableName, partitions.get(0), columns, indexInfos, createTableSQL,tableConfigEntry));
             return true;
         }
         return false;
@@ -441,7 +441,7 @@ public class MetadataManager implements MysqlVariableService {
 
         LoadBalanceStrategy loadBalance = loadBalanceManager.getLoadBalanceByBalanceName(tableConfigEntry.getBalance());
 
-        addLogicTable(LogicTable.createGlobalTable(schemaName, tableName, backendTableInfos, loadBalance, columns, indexInfos, createTableSQL));
+        addLogicTable(LogicTable.createGlobalTable(schemaName, tableName, backendTableInfos, loadBalance, columns, indexInfos, createTableSQL,tableConfigEntry));
     }
 
 
@@ -513,7 +513,7 @@ public class MetadataManager implements MysqlVariableService {
         Map<String, IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName, columns);
         //////////////////////////////////////////////
         ShardingTable shardingTable = LogicTable.createShardingTable(schemaName, orignalTableName,
-                backends, columns, null, indexInfos, createTableSQL, shardingIndexTables);
+                backends, columns, null, indexInfos, createTableSQL, shardingIndexTables,tableConfigEntry);
         shardingTable.setShardingFuntion(PartitionRuleFunctionManager.getRuleAlgorithm(shardingTable, tableConfigEntry.getFunction()));
         for (SimpleColumnInfo column : columns) {
             column.setShardingKey(shardingTable.function().isShardingKey(column.getColumnName()));
