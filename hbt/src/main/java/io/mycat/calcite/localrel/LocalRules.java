@@ -1,6 +1,7 @@
 package io.mycat.calcite.localrel;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.HintTools;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatConvention;
 import io.mycat.calcite.logical.MycatView;
@@ -11,6 +12,7 @@ import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.*;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.logical.ToLogicalConverter;
 import org.apache.calcite.tools.RelBuilder;
@@ -156,6 +158,22 @@ public class LocalRules {
                                 ToLogicalConverter toLogicalConverter = getToLogicalConverter(res);
                                 call.transformTo(res.accept(toLogicalConverter));
                                 return;
+                            } else {
+                                RelNode relNode = view.getRelNode();
+                                if (relNode instanceof TableScan) {
+                                    TableScan tableScan = (TableScan) relNode;
+                                    RelHint lastIndexHint = HintTools.getLastIndexHint(tableScan.getHints());
+                                    if (lastIndexHint != null) {
+                                        String indexName = lastIndexHint.listOptions.get(0);
+                                        List<RelNode> relNodes = MycatView.produceIndexViews(tableScan, filter.getCondition(), tableScan.identity(), view.getRowType(),
+                                                indexName);
+                                        if (!relNodes.isEmpty()) {
+                                            call.transformTo(relNodes.get(0));
+                                        }
+                                        return;
+                                    }
+                                }
+
                             }
                             break;
                         }

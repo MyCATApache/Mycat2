@@ -99,6 +99,15 @@ public class CreateGsiTest implements MycatTest {
 
             testInsertException(connection, TranscationType.XA);
             testInsertException(connection, TranscationType.PROXY);
+
+            //测试索引注解
+            String sql = "SELECT * FROM db1.travelrecord FORCE INDEX(g_i_user_id) WHERE user_id =1 ";
+            String e = explain(connection, sql);
+            Assert.assertTrue(e.contains("travelrecord_g_i_user_id"));
+            List<Map<String, Object>> maps1 = executeQuery(connection, sql);
+            Assert.assertEquals("[{id=1, user_id=1, traveldate=null, fee=null, days=null, blob=null}]",maps1.toString());
+            Assert.assertEquals("[{id=1, user_id=1, traveldate=null, fee=null, days=null, blob=null}]",
+                    executeQuery(connection, "SELECT * FROM db1.travelrecord WHERE user_id =1 ").toString());
         }
 
     }

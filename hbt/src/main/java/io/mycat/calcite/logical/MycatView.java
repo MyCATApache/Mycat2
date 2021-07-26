@@ -14,7 +14,10 @@
  */
 package io.mycat.calcite.logical;
 
-import com.google.common.collect.*;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import io.mycat.DrdsSqlCompiler;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.Partition;
@@ -24,7 +27,9 @@ import io.mycat.calcite.localrel.LocalFilter;
 import io.mycat.calcite.localrel.LocalProject;
 import io.mycat.calcite.localrel.LocalTableScan;
 import io.mycat.calcite.localrel.ToLocalConverter;
-import io.mycat.calcite.physical.*;
+import io.mycat.calcite.physical.MycatHashJoin;
+import io.mycat.calcite.physical.MycatMergeSort;
+import io.mycat.calcite.physical.MycatProject;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.IndexCondition;
 import io.mycat.calcite.rewriter.PredicateAnalyzer;
@@ -60,7 +65,9 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.util.*;
+import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.RxBuiltInMethodImpl;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
@@ -134,8 +141,18 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         return new ProjectIndexMapping(indexColumnListBuilder, restColumnListBuilder);
     }
 
-
-    public static List<RelNode> produceIndexViews(TableScan tableScan, final RexNode wholeCondition, List<Integer> projects, RelDataType orginalRowType) {
+    public static List<RelNode> produceIndexViews(
+            TableScan tableScan,
+            final RexNode wholeCondition,
+            List<Integer> projects,
+            RelDataType orginalRowType){
+        return produceIndexViews(tableScan,wholeCondition,projects,orginalRowType,null);
+    }
+    public static List<RelNode> produceIndexViews(
+            TableScan tableScan,
+            final RexNode wholeCondition,
+            List<Integer> projects,
+            RelDataType orginalRowType, String indexName) {
         DrdsSqlCompiler drdsSqlCompiler = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
         RelOptCluster cluster = tableScan.getCluster();
         RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(cluster, drdsSqlCompiler.getCatalogReader());
@@ -145,6 +162,9 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         ArrayList<RelNode> tableArrayList = new ArrayList<>(indexTables.size());
         MycatView primaryTableScan;
         for (ShardingIndexTable indexTable : indexTables) {
+            if(indexName!=null&&!indexName.equalsIgnoreCase(indexTable.getIndexName())){
+                continue;
+            }
             ProjectIndexMapping indexMapping = project(indexTable, projects);
             boolean indexOnlyScan = !indexMapping.needFactTable();
             final IndexCondition indexCondition;

@@ -3,24 +3,27 @@ package io.mycat.calcite.table;
 import io.mycat.Partition;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.router.CustomRuleFunction;
+import lombok.Getter;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+@Getter
 public class ShardingIndexTable extends ShardingTable {
     private final ShardingTable primaryTable;
-
-    public ShardingIndexTable(LogicTable logicTable,
+    private final  String indexName;
+    public ShardingIndexTable(String indexName,LogicTable logicTable,
                               List<Partition> backends,
                               CustomRuleFunction shardingFuntion,
                               ShardingTable primaryTable) {
         super(logicTable, backends, shardingFuntion, Collections.emptyList());
+        this.indexName = indexName;
         this.primaryTable = primaryTable;
     }
 
     public ShardingIndexTable withPrimary(ShardingTable shardingTable){
-        return new ShardingIndexTable(getLogicTable(),getBackends(),getShardingFuntion(),shardingTable);
+        return new ShardingIndexTable(getIndexName(),getLogicTable(),getBackends(),getShardingFuntion(),shardingTable);
     }
 
     public boolean hasFactColumn(int i) {

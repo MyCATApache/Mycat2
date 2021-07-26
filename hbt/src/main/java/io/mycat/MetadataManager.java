@@ -265,22 +265,23 @@ public class MetadataManager implements MysqlVariableService {
                 Set<Map.Entry<String, ShardingTableConfig>> indexTables = Optional.ofNullable(tableConfigEntry.getShardingIndexTables())
                         .orElse(Collections.emptyMap()).entrySet();
 
-                List<ShardingIndexTable> ShardingIndexTables = new ArrayList<>();
+                List<ShardingIndexTable> shardingIndexTables = new ArrayList<>();
                 for (Map.Entry<String, ShardingTableConfig> secondTable : indexTables) {
-                    String indexName = secondTable.getKey();
+                    String indexTableName = secondTable.getKey();
+                    String indexName = indexTableName.replace(tableName + "_", "");
                     ShardingTableConfig indexTableValue = secondTable.getValue();
-                    ShardingIndexTable shardingIndexTable = createShardingIndexTable(schemaName, indexName,
+                    ShardingIndexTable shardingIndexTable = createShardingIndexTable(schemaName,indexName, indexTableName,
                             indexTableValue,
                             prototype,
                             getBackendTableInfos(indexTableValue.getPartition()));
-                    ShardingIndexTables.add(shardingIndexTable);
+                    shardingIndexTables.add(shardingIndexTable);
                 }
 
                 addShardingTable(schemaName, tableName,
                         tableConfigEntry,
                         prototype,
                         getBackendTableInfos(tableConfigEntry.getPartition()),
-                        ShardingIndexTables);
+                        shardingIndexTables);
             }
 
             for (Map.Entry<String, CustomTableConfig> e : value.getCustomTables().entrySet()) {
@@ -489,13 +490,13 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     @SneakyThrows
-    private ShardingIndexTable createShardingIndexTable(String schemaName,
-                                                   String indexName,
-                                                   ShardingTableConfig secondTableConfig,
-                                                   String prototypeServer,
-                                                   List<Partition> backends) {
-        ShardingTable shardingTable = createShardingTable(schemaName, indexName, secondTableConfig, prototypeServer, backends, Collections.emptyList());
-        return new ShardingIndexTable(shardingTable.getLogicTable(),shardingTable.getBackends(),shardingTable.getShardingFuntion(),null);
+    private ShardingIndexTable createShardingIndexTable( String schemaName,String indexName,
+                                                        String indexTableName,
+                                                        ShardingTableConfig secondTableConfig,
+                                                        String prototypeServer,
+                                                        List<Partition> backends) {
+        ShardingTable shardingTable = createShardingTable(schemaName, indexTableName, secondTableConfig, prototypeServer, backends, Collections.emptyList());
+        return new ShardingIndexTable(indexName,shardingTable.getLogicTable(),shardingTable.getBackends(),shardingTable.getShardingFuntion(),null);
     }
 
     @NotNull
