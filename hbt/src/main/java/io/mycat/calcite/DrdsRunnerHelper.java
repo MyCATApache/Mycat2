@@ -84,7 +84,7 @@ public class DrdsRunnerHelper {
                         }
                     } else if (selectItem.getExpr() instanceof SQLIdentifierExpr) {
                         columnNodes.add(SQLUtils.normalize(((SQLIdentifierExpr) selectItem.getExpr()).getName()));
-                    } else {
+                    }else {
                         StringBuilder sbText = new StringBuilder();
                         selectItem.output(sbText);
                         columnNodes.add(sbText.toString().replaceAll(" ", ""));

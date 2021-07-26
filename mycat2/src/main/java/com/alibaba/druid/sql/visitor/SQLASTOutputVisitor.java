@@ -2955,7 +2955,30 @@ public class SQLASTOutputVisitor extends SQLASTVisitorAdapter implements Paramet
         int index = x.getIndex();
 
         if (index < 0 || inputParameters == null || index >= inputParameters.size()) {
-            print0(x.getName());
+
+            if (x.isGlobal()) {
+                print0("@@global.");
+            }else if(x.isSession()){
+                print0("@@session.");
+            }
+
+            String varName = x.getName();
+            for (int i = 0; i < varName.length(); ++i) {
+                char ch = varName.charAt(i);
+                if (ch == '\'') {
+                    if (varName.startsWith("@@") && i == 2) {
+                        print(ch);
+                    } else if (varName.startsWith("@") && i == 1) {
+                        print(ch);
+                    } else if (i != 0 && i != varName.length() - 1) {
+                        print0("\\'");
+                    } else {
+                        print(ch);
+                    }
+                } else {
+                    print(ch);
+                }
+            }
             return false;
         }
 
