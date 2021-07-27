@@ -14,6 +14,7 @@
  */
 package io.mycat.beans.mysql.packet;
 
+import com.mysql.cj.CharsetMapping;
 import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mysql.MySQLFieldInfo;
@@ -83,14 +84,24 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
             if (!resultSetMetaData.isNullable(columnIndex)){
                 this.columnFlags |= MySQLFieldsType.NOT_NULL_FLAG;
             }
-            if (jdbcColumnType ==JDBCType.BINARY.getVendorTypeNumber()){
-                this.columnFlags |= MySQLFieldsType.BINARY_FLAG;
-            }else   if (jdbcColumnType ==JDBCType.TIMESTAMP.getVendorTypeNumber()){
-                this.columnFlags |= MySQLFieldsType.TIMESTAMP_FLAG;
-            }else   if (jdbcColumnType ==JDBCType.DECIMAL.getVendorTypeNumber()){
-
-            }
             this.columnCharsetSet = 0x21;
+            switch (JDBCType.valueOf(jdbcColumnType)) {
+                case BINARY:
+                case VARBINARY:
+                case LONGVARBINARY:
+                case BLOB:
+                case CLOB:{
+                    this.columnFlags |= MySQLFieldsType.BLOB_FLAG;
+                    this.columnFlags |= MySQLFieldsType.BINARY_FLAG;
+                    this.columnCharsetSet|=  CharsetMapping.MYSQL_COLLATION_INDEX_binary;
+                    break;
+                }
+                case TIMESTAMP:{
+                    this.columnFlags |= MySQLFieldsType.TIMESTAMP_FLAG;
+                    break;
+                }
+            }
+
         } catch (Exception e) {
             throw new MycatException(e);
         }

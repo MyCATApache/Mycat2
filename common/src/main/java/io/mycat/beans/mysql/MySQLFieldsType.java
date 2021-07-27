@@ -93,11 +93,11 @@ public class MySQLFieldsType {
         initPut(Types.DATE, FIELD_TYPE_DATE);
         initPut(Types.TIME, FIELD_TYPE_TIME);
         initPut(Types.TIMESTAMP, FIELD_TYPE_TIMESTAMP);
-        initPut(Types.BINARY, FIELD_TYPE_VARCHAR);
-        initPut(Types.VARBINARY, FIELD_TYPE_VARCHAR);
-        initPut(Types.LONGVARBINARY, FIELD_TYPE_VARCHAR);
+        initPut(Types.BINARY, FIELD_TYPE_LONG_BLOB);
+        initPut(Types.VARBINARY, FIELD_TYPE_LONG_BLOB);
+        initPut(Types.LONGVARBINARY, FIELD_TYPE_LONG_BLOB);
         initPut(Types.NULL, FIELD_TYPE_NULL);
-        initPut(Types.BLOB, FIELD_TYPE_BLOB);
+        initPut(Types.BLOB, FIELD_TYPE_LONG_BLOB);
         initPut(Types.OTHER, FIELD_TYPE_VARCHAR);
         initPut(Types.BOOLEAN, FIELD_TYPE_TINY);
     }

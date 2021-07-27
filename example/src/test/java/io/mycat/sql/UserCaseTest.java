@@ -10,11 +10,13 @@ import io.mycat.hint.CreateTableHint;
 import io.mycat.router.mycat1xfunction.PartitionByFileMap;
 import io.mycat.router.mycat1xfunction.PartitionByHotDate;
 import io.mycat.router.mycat1xfunction.PartitionByRangeMod;
+import io.mycat.util.ByteUtil;
 import org.apache.groovy.util.Maps;
 import org.junit.Assert;
 import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.sql.Date;
 import java.util.*;
@@ -594,5 +596,106 @@ public class UserCaseTest implements MycatTest {
         }
     }
 
+    @Test
+    public void case9() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
+
+
+            execute(mycatConnection, RESET_CONFIG);
+
+            execute(mycatConnection, "DROP DATABASE db1");
+
+
+            execute(mycatConnection, "CREATE DATABASE db1");
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds0",
+                            DB1));
+
+            execute(mycatConnection,
+                    CreateClusterHint.create("c0",
+                            Arrays.asList("ds0"), Collections.emptyList()));
+
+
+
+            testBlob(mycatConnection,  "CREATE TABLE db1.`travelrecord` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY,\n" +
+                    "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int(11) DEFAULT NULL,\n" +
+                    "  `blob` longblob DEFAULT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n" +
+                    "tbpartition by mod_hash(id) tbpartitions 1;");
+            testBlob(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY,\n" +
+                    "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int(11) DEFAULT NULL,\n" +
+                    "  `blob` longblob DEFAULT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n" +
+                    "");
+        }
+    }
+    @Test
+    public void case10() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT)) {
+
+
+            execute(mycatConnection, RESET_CONFIG);
+
+            execute(mycatConnection, "DROP DATABASE db1");
+
+
+            execute(mycatConnection, "CREATE DATABASE db1");
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds0",
+                            DB1));
+
+            execute(mycatConnection,
+                    CreateClusterHint.create("c0",
+                            Arrays.asList("ds0"), Collections.emptyList()));
+
+
+
+            testBlob(mycatConnection,  "CREATE TABLE db1.`travelrecord` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY,\n" +
+                    "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int(11) DEFAULT NULL,\n" +
+                    "  `blob` longblob DEFAULT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n" +
+                    "tbpartition by mod_hash(id) tbpartitions 1;");
+            testBlob(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY,\n" +
+                    "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int(11) DEFAULT NULL,\n" +
+                    "  `blob` longblob DEFAULT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n" +
+                    "");
+        }
+    }
+
+    private void testBlob(Connection mycatConnection, String createTableSQL) throws Exception {
+        execute(mycatConnection, createTableSQL);
+
+        deleteData(mycatConnection,"db1","travelrecord");
+
+        String text = "一二三四五六七八";
+        byte[] testData = ByteUtil.getBytes(text,"UTF8");
+        JdbcUtils.execute(mycatConnection," INSERT INTO `db1`.`travelrecord` (`id`, `blob`) VALUES ('1', ?)",Arrays.asList(testData));
+        Statement statement = mycatConnection.createStatement();
+        ResultSet resultSet = statement.executeQuery("select `blob` from `db1`.`travelrecord` where id = 1");
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        boolean next = resultSet.next();
+        Object bytes = resultSet.getObject(1);
+        Assert.assertEquals(text, new String((byte[])bytes, StandardCharsets.UTF_8));
+        System.out.println();
+    }
 
 }

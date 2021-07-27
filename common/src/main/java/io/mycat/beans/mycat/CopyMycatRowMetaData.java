@@ -69,47 +69,47 @@ public class CopyMycatRowMetaData implements MycatRowMetaData, Serializable {
 
     @Override
     public boolean isCaseSensitive(int column) {
-        return columns[column].isCaseSensitive(column);
+        return columns[column].isCaseSensitive();
     }
 
     @Override
     public boolean isSigned(int column) {
-        return columns[column].isSigned(column);
+        return columns[column].isSigned();
     }
 
     @Override
     public int getColumnDisplaySize(int column) {
-        return columns[column].getColumnDisplaySize(column);
+        return columns[column].getColumnDisplaySize();
     }
 
     @Override
     public String getColumnName(int column) {
-        return columns[column].getColumnName(column);
+        return columns[column].getColumnName();
     }
 
     @Override
     public String getSchemaName(int column) {
-        return columns[column].getSchemaName(column);
+        return columns[column].getSchemaName();
     }
 
     @Override
     public int getPrecision(int column) {
-        return columns[column].getPrecision(column);
+        return columns[column].getPrecision();
     }
 
     @Override
     public int getScale(int column) {
-        return columns[column].getScale(column);
+        return columns[column].getScale();
     }
 
     @Override
     public String getTableName(int column) {
-        return columns[column].getTableName(column);
+        return columns[column].getTableName();
     }
 
     @Override
     public int getColumnType(int column) {
-        return columns[column].getColumnType(column);
+        return columns[column].getColumnType();
     }
 
     @Override
@@ -172,39 +172,39 @@ public class CopyMycatRowMetaData implements MycatRowMetaData, Serializable {
             return autoIncrement;
         }
 
-        public boolean isCaseSensitive(int column) {
+        public boolean isCaseSensitive() {
             return caseSensitive;
         }
 
-        public boolean isSigned(int column) {
+        public boolean isSigned() {
             return signed;
         }
 
-        public int getColumnDisplaySize(int column) {
+        public int getColumnDisplaySize() {
             return columnDisplaySize;
         }
 
-        public String getColumnName(int column) {
+        public String getColumnName() {
             return columnName;
         }
 
-        public String getSchemaName(int column) {
+        public String getSchemaName() {
             return schemaName;
         }
 
-        public int getPrecision(int column) {
+        public int getPrecision() {
             return precision;
         }
 
-        public int getScale(int column) {
+        public int getScale() {
             return scale;
         }
 
-        public String getTableName(int column) {
+        public String getTableName() {
             return tableName;
         }
 
-        public int getColumnType(int column) {
+        public int getColumnType() {
             return columnType;
         }
 

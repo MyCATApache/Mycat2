@@ -34,9 +34,11 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.parser.ParserException;
+import io.mycat.util.HexFormatUtil;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.util.control.Exception;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -99,6 +101,14 @@ public class PreparedStatement {
 
         if (o instanceof Date) {
             return new SQLTimestampExpr((Date) o, timeZone);
+        }
+        if (o instanceof byte[]) {
+            String s = HexFormatUtil.bytesToHexString((byte[]) o);
+            return new SQLHexExpr(s);
+        }
+        if (o instanceof Byte) {
+            String s = HexFormatUtil.bytesToHexString(new byte[]{(Byte)o});
+            return new SQLHexExpr(s);
         }
 
         LOGGER.warn("not support class : {}", o.getClass());
