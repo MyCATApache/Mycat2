@@ -681,6 +681,45 @@ public class UserCaseTest implements MycatTest {
         }
     }
 
+    @Test
+    public void case11() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT)) {
+
+
+            execute(mycatConnection, RESET_CONFIG);
+
+            execute(mycatConnection, "DROP DATABASE db1");
+
+
+            execute(mycatConnection, "CREATE DATABASE db1");
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds0",
+                            DB1));
+
+            execute(mycatConnection,
+                    CreateClusterHint.create("c0",
+                            Arrays.asList("ds0"), Collections.emptyList()));
+
+
+
+            testBlob(mycatConnection,  "CREATE TABLE db1.`travelrecord` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY,\n" +
+                    "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int(11) DEFAULT NULL,\n" +
+                    "  `blob` longblob DEFAULT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n" +
+                    "tbpartition by mod_hash(id) tbpartitions 1;");
+            String explain = explain(mycatConnection, "select count(*) from db1.travelrecord");
+            Assert.assertTrue(explain.contains("MycatHashAggregate(group=[{}], count(*)=[$SUM0($0)])\n" +
+                    "  MycatView(distribution=[[db1.travelrecord]])\n" +
+                    "Each(targetName=c0, sql=SELECT COUNT(*) AS `count(*)` FROM db1_0.travelrecord_0 AS `travelrecord`)"));
+            System.out.println();
+        }
+    }
+
     private void testBlob(Connection mycatConnection, String createTableSQL) throws Exception {
         execute(mycatConnection, createTableSQL);
 
