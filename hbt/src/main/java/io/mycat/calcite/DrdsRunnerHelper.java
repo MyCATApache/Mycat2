@@ -158,6 +158,10 @@ public class DrdsRunnerHelper {
                         sqlTypeName = SqlTypeName.BINARY;
                         break;
                     }
+                    if (Byte.class == aClass) {
+                        sqlTypeName = SqlTypeName.BINARY;
+                        break;
+                    }
                 }
                 list.add(Objects.requireNonNull(sqlTypeName, () -> "unknown type :" + param.getClass()));
             }
