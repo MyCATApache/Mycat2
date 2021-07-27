@@ -19,6 +19,7 @@ import io.mycat.LogicTableType;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatConvention;
+import io.mycat.calcite.localrel.MycatAggregateUnionTransposeRule;
 import io.mycat.calcite.localrel.LocalRules;
 import io.mycat.calcite.localrel.LocalSort;
 import io.mycat.calcite.logical.MycatView;
@@ -35,7 +36,6 @@ import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
@@ -531,7 +531,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             }
             HepProgramBuilder hepProgram = new HepProgramBuilder();
             hepProgram.addMatchLimit(512);
-            hepProgram.addRuleInstance(CoreRules.AGGREGATE_UNION_TRANSPOSE);
+            hepProgram.addRuleInstance(MycatAggregateUnionTransposeRule.Config.DEFAULT.toRule());
             HepPlanner planner = new HepPlanner(hepProgram.build());
             planner.setRoot(input);
             RelNode bestExp = planner.findBestExp();
