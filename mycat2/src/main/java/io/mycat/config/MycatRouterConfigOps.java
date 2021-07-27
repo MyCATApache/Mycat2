@@ -28,6 +28,8 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
 import io.mycat.ConfigOps;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataManager;
+import io.mycat.TableHandler;
+import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.util.NameMap;
 import org.jetbrains.annotations.NotNull;
 
@@ -137,7 +139,9 @@ public class MycatRouterConfigOps implements AutoCloseable {
 
 
     public void putNormalTable(String schemaName, String tableName, MySqlCreateTableStatement sqlString) {
-        String defaultTarget = "prototype";
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        SchemaHandler schemaHandler = metadataManager.getSchemaMap().get(schemaName);
+        String defaultTarget = Optional.ofNullable(schemaHandler.defaultTargetName()).orElse(metadataManager.getPrototype());
         putNormalTable(schemaName, tableName, sqlString, defaultTarget);
     }
 
