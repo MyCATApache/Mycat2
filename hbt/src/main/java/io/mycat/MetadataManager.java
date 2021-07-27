@@ -405,7 +405,7 @@ public class MetadataManager implements MysqlVariableService {
         addLogicTable(customTableHandler);
     }
 
-    private boolean addNormalTable(String schemaName,
+    public boolean addNormalTable(String schemaName,
                                    String tableName,
                                    NormalTableConfig tableConfigEntry,
                                    String prototypeServer) {
@@ -425,7 +425,7 @@ public class MetadataManager implements MysqlVariableService {
         return false;
     }
 
-    private void addGlobalTable(String schemaName,
+    public void addGlobalTable(String schemaName,
                                 String orignalTableName,
                                 GlobalTableConfig tableConfigEntry,
                                 String prototypeServer,
@@ -476,7 +476,7 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     @SneakyThrows
-    private void addShardingTable(String schemaName,
+    public void addShardingTable(String schemaName,
                                   String orignalTableName,
                                   ShardingTableConfig tableConfigEntry,
                                   String prototypeServer,
@@ -490,7 +490,7 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     @SneakyThrows
-    private ShardingIndexTable createShardingIndexTable( String schemaName,String indexName,
+    public ShardingIndexTable createShardingIndexTable( String schemaName,String indexName,
                                                         String indexTableName,
                                                         ShardingTableConfig secondTableConfig,
                                                         String prototypeServer,
