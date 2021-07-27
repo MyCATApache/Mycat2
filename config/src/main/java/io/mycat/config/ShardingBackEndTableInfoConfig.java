@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.util.List;
+
 @AllArgsConstructor
 @Data
 @Builder
@@ -13,6 +15,8 @@ public class ShardingBackEndTableInfoConfig {
     private String targetNames;
     private String schemaNames;
     private String tableNames;
+
+    private List<List> data;
 
     public ShardingBackEndTableInfoConfig() {
     }

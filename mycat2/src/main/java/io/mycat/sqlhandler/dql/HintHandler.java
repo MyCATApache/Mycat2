@@ -1,6 +1,5 @@
 package io.mycat.sqlhandler.dql;
 
-import cn.mycat.vertx.xa.XaSqlConnection;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLCommentHint;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -10,7 +9,6 @@ import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlHintStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.util.JdbcUtils;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.UnmodifiableIterator;
 import io.mycat.*;
@@ -20,9 +18,7 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
-import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.physical.MycatInsertRel;
-import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.spm.*;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
@@ -52,10 +48,7 @@ import io.mycat.util.NameMap;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.core.Observable;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -71,7 +64,6 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -79,6 +71,9 @@ import java.util.stream.StreamSupport;
 import static io.mycat.calcite.plan.ObservablePlanImplementorImpl.getMysqlPayloadObjectObservable;
 
 public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
+
+    public static final HintHandler INSTANCE = new HintHandler();
+
     @Override
     protected Future<Void> onExecute(SQLRequest<MySqlHintStatement> request, MycatDataContext dataContext, Response response) {
         MySqlHintStatement ast = request.getAst();
@@ -577,7 +572,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 throw new UnsupportedOperationException();
                         }
                     }
-                    mycatDmlHandler(cmd, body, ast);
+                    mycatDmlHandler(cmd, body);
                     return response.sendOk();
                 }
             }
@@ -841,10 +836,10 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         }).iterator(), batch);
 
 
-        Future<long[]> continution = Future.succeededFuture( new long[]{0,0});
+        Future<long[]> continution = Future.succeededFuture(new long[]{0, 0});
 
         while (iterator.hasNext()) {
-            Iterable<VertxExecuter.EachSQL> eachSQL =VertxExecuter.rewriteInsertBatchedStatements(iterator.next());
+            Iterable<VertxExecuter.EachSQL> eachSQL = VertxExecuter.rewriteInsertBatchedStatements(iterator.next());
             continution = continution.flatMap(o -> {
                 Future<long[]> future = VertxExecuter.simpleUpdate(dataContext, true, false, eachSQL);
                 return future.map(o2 -> new long[]{o[0] + o2[0], Math.max(o[1], o2[1])});
@@ -926,7 +921,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         return resultSetBuilder.build();
     }
 
-    public static void mycatDmlHandler(String cmd, String body, MySqlHintStatement ast) throws Exception {
+    public static void mycatDmlHandler(String cmd, String body) throws Exception {
         if ("createTable".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 CreateTableConfig createTableConfig = JsonUtil.from(body, CreateTableConfig.class);

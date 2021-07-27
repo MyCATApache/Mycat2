@@ -47,6 +47,7 @@ import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.querycondition.*;
 import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.function.IndexDataNode;
 import io.mycat.router.mycat1xfunction.PartitionRuleFunctionManager;
 import io.mycat.util.*;
 import lombok.EqualsAndHashCode;
@@ -270,7 +271,7 @@ public class MetadataManager implements MysqlVariableService {
                     String indexTableName = secondTable.getKey();
                     String indexName = indexTableName.replace(tableName + "_", "");
                     ShardingTableConfig indexTableValue = secondTable.getValue();
-                    ShardingIndexTable shardingIndexTable = createShardingIndexTable(schemaName,indexName, indexTableName,
+                    ShardingIndexTable shardingIndexTable = createShardingIndexTable(schemaName, indexName, indexTableName,
                             indexTableValue,
                             prototype,
                             getBackendTableInfos(indexTableValue.getPartition()));
@@ -406,9 +407,9 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     public boolean addNormalTable(String schemaName,
-                                   String tableName,
-                                   NormalTableConfig tableConfigEntry,
-                                   String prototypeServer) {
+                                  String tableName,
+                                  NormalTableConfig tableConfigEntry,
+                                  String prototypeServer) {
         //////////////////////////////////////////////
         NormalBackEndTableInfoConfig dataNode = tableConfigEntry.getLocality();
         List<Partition> partitions = ImmutableList.of(new BackendTableInfo(dataNode.getTargetName(),
@@ -419,17 +420,17 @@ public class MetadataManager implements MysqlVariableService {
         if (createTableSQL != null) {
             List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, partitions);
             Map<String, IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName, columns);
-            addLogicTable(LogicTable.createNormalTable(schemaName, tableName, partitions.get(0), columns, indexInfos, createTableSQL,tableConfigEntry));
+            addLogicTable(LogicTable.createNormalTable(schemaName, tableName, partitions.get(0), columns, indexInfos, createTableSQL, tableConfigEntry));
             return true;
         }
         return false;
     }
 
     public void addGlobalTable(String schemaName,
-                                String orignalTableName,
-                                GlobalTableConfig tableConfigEntry,
-                                String prototypeServer,
-                                List<Partition> backendTableInfos) {
+                               String orignalTableName,
+                               GlobalTableConfig tableConfigEntry,
+                               String prototypeServer,
+                               List<Partition> backendTableInfos) {
         //////////////////////////////////////////////
         final String tableName = orignalTableName;
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL())
@@ -441,7 +442,7 @@ public class MetadataManager implements MysqlVariableService {
 
         LoadBalanceStrategy loadBalance = loadBalanceManager.getLoadBalanceByBalanceName(tableConfigEntry.getBalance());
 
-        addLogicTable(LogicTable.createGlobalTable(schemaName, tableName, backendTableInfos, loadBalance, columns, indexInfos, createTableSQL,tableConfigEntry));
+        addLogicTable(LogicTable.createGlobalTable(schemaName, tableName, backendTableInfos, loadBalance, columns, indexInfos, createTableSQL, tableConfigEntry));
     }
 
 
@@ -449,21 +450,48 @@ public class MetadataManager implements MysqlVariableService {
         if (stringListEntry == null) {
             return Collections.emptyList();
         }
-
-        String schemaNames = stringListEntry.getSchemaNames();
-        String tableNames = stringListEntry.getTableNames();
-        String targetNames = stringListEntry.getTargetNames();
-
-        String[] targets = SplitUtil.split(targetNames, ',', '$', '-');
-        String[] schemas = SplitUtil.split(schemaNames, ',', '$', '-');
-        String[] tables = SplitUtil.split(tableNames, ',', '$', '-');
-
+        List<List> data = stringListEntry.getData();
         ImmutableList.Builder<BackendTableInfo> builder = ImmutableList.builder();
-        for (String target : targets) {
-            for (String schema : schemas) {
-                for (String table : tables) {
-                    SchemaInfo schemaInfo = new SchemaInfo(schema, table);
-                    builder.add(new BackendTableInfo(target, schemaInfo));
+        if (data == null) {
+            for (List datum : data) {
+                if (datum.size() == 6){
+                    String target = Objects.toString(datum.get(0));
+                    String schema = Objects.toString(datum.get(1));
+                    String table = Objects.toString(datum.get(2));
+                    int dbIndex = Integer.parseInt(Objects.toString(datum.get(3)));
+                    int tableIndex = Integer.parseInt( Objects.toString(datum.get(4)));
+                    int index = Integer.parseInt( Objects.toString(datum.get(5)));
+
+                    BackendTableInfo indexBackendTableInfo = new IndexDataNode(target, schema, table, dbIndex, tableIndex, index);
+                    builder.add(indexBackendTableInfo);
+                }else if (datum.size() == 3){
+                    String target = Objects.toString(datum.get(0));
+                    String schema = Objects.toString(datum.get(1));
+                    String table = Objects.toString(datum.get(2));
+
+                    builder.add( new BackendTableInfo(target,schema,table));
+                }else{
+                    throw new UnsupportedOperationException("format must be " +
+                            "target,schema,table" +" or "+
+                            "target,schema,table,dbIndex,tableIndex,index");
+                }
+            }
+        } else {
+            String schemaNames = stringListEntry.getSchemaNames();
+            String tableNames = stringListEntry.getTableNames();
+            String targetNames = stringListEntry.getTargetNames();
+
+            String[] targets = SplitUtil.split(targetNames, ',', '$', '-');
+            String[] schemas = SplitUtil.split(schemaNames, ',', '$', '-');
+            String[] tables = SplitUtil.split(tableNames, ',', '$', '-');
+
+
+            for (String target : targets) {
+                for (String schema : schemas) {
+                    for (String table : tables) {
+                        SchemaInfo schemaInfo = new SchemaInfo(schema, table);
+                        builder.add(new BackendTableInfo(target, schemaInfo));
+                    }
                 }
             }
         }
@@ -477,11 +505,11 @@ public class MetadataManager implements MysqlVariableService {
 
     @SneakyThrows
     public void addShardingTable(String schemaName,
-                                  String orignalTableName,
-                                  ShardingTableConfig tableConfigEntry,
-                                  String prototypeServer,
-                                  List<Partition> backends,
-                                  List<ShardingIndexTable> ShardingIndexTables) {
+                                 String orignalTableName,
+                                 ShardingTableConfig tableConfigEntry,
+                                 String prototypeServer,
+                                 List<Partition> backends,
+                                 List<ShardingIndexTable> ShardingIndexTables) {
         ShardingTable shardingTable = createShardingTable(schemaName, orignalTableName, tableConfigEntry, prototypeServer, backends, ShardingIndexTables);
         addLogicTable(shardingTable);
         for (ShardingTable indexTable : shardingTable.getIndexTables()) {
@@ -490,13 +518,13 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     @SneakyThrows
-    public ShardingIndexTable createShardingIndexTable( String schemaName,String indexName,
-                                                        String indexTableName,
-                                                        ShardingTableConfig secondTableConfig,
-                                                        String prototypeServer,
-                                                        List<Partition> backends) {
+    public ShardingIndexTable createShardingIndexTable(String schemaName, String indexName,
+                                                       String indexTableName,
+                                                       ShardingTableConfig secondTableConfig,
+                                                       String prototypeServer,
+                                                       List<Partition> backends) {
         ShardingTable shardingTable = createShardingTable(schemaName, indexTableName, secondTableConfig, prototypeServer, backends, Collections.emptyList());
-        return new ShardingIndexTable(indexName,shardingTable.getLogicTable(),shardingTable.getBackends(),shardingTable.getShardingFuntion(),null);
+        return new ShardingIndexTable(indexName, shardingTable.getLogicTable(), shardingTable.getBackends(), shardingTable.getShardingFuntion(), null);
     }
 
     @NotNull
@@ -513,7 +541,7 @@ public class MetadataManager implements MysqlVariableService {
         Map<String, IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName, columns);
         //////////////////////////////////////////////
         ShardingTable shardingTable = LogicTable.createShardingTable(schemaName, orignalTableName,
-                backends, columns, null, indexInfos, createTableSQL, shardingIndexTables,tableConfigEntry);
+                backends, columns, null, indexInfos, createTableSQL, shardingIndexTables, tableConfigEntry);
         shardingTable.setShardingFuntion(PartitionRuleFunctionManager.getRuleAlgorithm(shardingTable, tableConfigEntry.getFunction()));
         for (SimpleColumnInfo column : columns) {
             column.setShardingKey(shardingTable.function().isShardingKey(column.getColumnName()));
@@ -670,7 +698,7 @@ public class MetadataManager implements MysqlVariableService {
                                 SQLExprTableSource sqlExprTableSource = sqlStatement1.getTableSource();
                                 if (!SQLUtils.nameEquals(sqlExprTableSource.getTableName(), tableName) ||
                                         !SQLUtils.nameEquals(sqlExprTableSource.getSchema(), (schemaName))) {
-                                    MycatSQLExprTableSourceUtil.setSqlExprTableSource(schemaName,tableName,sqlExprTableSource);
+                                    MycatSQLExprTableSourceUtil.setSqlExprTableSource(schemaName, tableName, sqlExprTableSource);
                                     return sqlStatement1.toString();
                                 } else {
                                     return string;
@@ -945,8 +973,8 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     public void check() {
-        this.schemaMap.values().stream().flatMap(i->i.logicTables().values().stream()).parallel()
-                .forEach(tableHandler->tableHandler.createPhysicalTables());
+        this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream()).parallel()
+                .forEach(tableHandler -> tableHandler.createPhysicalTables());
     }
 
 
