@@ -93,7 +93,7 @@ public class XaLogImpl implements XaLog {
                                     });
                         });
             }).collect(Collectors.toList());
-            CompositeFuture.all(data).onComplete(new Handler<AsyncResult<CompositeFuture>>() {
+            CompositeFuture.join(data).onComplete(new Handler<AsyncResult<CompositeFuture>>() {
                 @Override
                 public void handle(AsyncResult<CompositeFuture> event) {
                     ArrayList<ImmutableParticipantLog> participantLogs = new ArrayList<>();
@@ -132,7 +132,7 @@ public class XaLogImpl implements XaLog {
                                             log(entry.getXid(), participant.getTarget(), State.XA_COMMITED);
                                             checkState(entry.getXid(), true, State.XA_COMMITED);
                                         } catch (Exception e) {
-                                            return CompositeFuture.all(closeFuture, Future.failedFuture(e));
+                                            return CompositeFuture.join(closeFuture, Future.failedFuture(e));
                                         }
                                         return closeFuture;
                                     }));
@@ -141,7 +141,7 @@ public class XaLogImpl implements XaLog {
                 list.add(Future.succeededFuture());
             }
         }
-        CompositeFuture.all(list).onComplete(unused -> {
+        CompositeFuture.join(list).onComplete(unused -> {
             try {
                 logCommit(entry.getXid(), unused.succeeded());
             } catch (Exception e) {
@@ -169,7 +169,7 @@ public class XaLogImpl implements XaLog {
                                             log(entry.getXid(), participant.getTarget(), State.XA_ROLLBACKED);
                                             checkState(entry.getXid(), true, State.XA_ROLLBACKED);
                                         } catch (Exception e) {
-                                            return CompositeFuture.all(closeFuture, Future.failedFuture(e));
+                                            return CompositeFuture.join(closeFuture, Future.failedFuture(e));
                                         }
                                         return closeFuture;
                                     }));
@@ -177,7 +177,7 @@ public class XaLogImpl implements XaLog {
             } else {
                 list.add(Future.succeededFuture());
             }
-            CompositeFuture.all(list).onComplete(unused -> {
+            CompositeFuture.join(list).onComplete(unused -> {
                 try {
                     logRollback(entry.getXid(), unused.succeeded());
                     res.tryComplete();

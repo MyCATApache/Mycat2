@@ -42,7 +42,7 @@ public class MycatGlobalValueFunction extends MycatSqlDefinedFunction {
     @Override
     public Expression implement(RexToLixTranslator translator, RexCall call, RexImpTable.NullAs nullAs) {
         List<Expression> argValueList = translator.translateList(call.getOperands(), nullAs);
-        return Expressions.call(DataContext.ROOT,"getGlobalValue"
+        return Expressions.call(DataContext.ROOT,"getGlobalVariable"
                 ,argValueList.get(0));
     }
 }

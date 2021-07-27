@@ -267,18 +267,6 @@ public class MycatPreparedStatementUtil {
         return preparedStatement;
     }
 
-    public static String apply(String parameterizedSql, List<Object> parameters) {
-        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(parameterizedSql);
-        sqlStatement.accept(new MySqlASTVisitorAdapter() {
-            @Override
-            public void endVisit(SQLVariantRefExpr x) {
-                SQLReplaceable parent = (SQLReplaceable) x.getParent();
-                parent.replace(x, SQLExprUtils.fromJavaObject(parameters.get(x.getIndex())));
-            }
-        });
-        return sqlStatement.toString();
-    }
-
     @SneakyThrows
     public static RowBaseIterator executeQuery(Connection mycatConnection,
                                                MycatConnection connection,

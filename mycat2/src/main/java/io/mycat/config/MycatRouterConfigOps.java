@@ -14,12 +14,21 @@
  */
 package io.mycat.config;
 
+import com.alibaba.druid.sql.MycatSQLUtils;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLIndexDefinition;
+import com.alibaba.druid.sql.ast.SQLName;
+import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
+import com.alibaba.druid.sql.ast.statement.SQLTableElement;
+import com.alibaba.druid.sql.dialect.mysql.ast.MySqlPrimaryKey;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
 import io.mycat.ConfigOps;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataManager;
+import io.mycat.util.NameMap;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -260,6 +269,11 @@ public class MycatRouterConfigOps implements AutoCloseable {
 
     public ShardingTableConfig putShardingTable(String schemaName, String tableName, ShardingTableConfig config) {
         removeTable(schemaName, tableName);
+        Map<String, ShardingTableConfig> indexTables
+                = Optional.ofNullable(config.getShardingIndexTables()).orElse(Collections.emptyMap());
+        for (Map.Entry<String, ShardingTableConfig> entry : indexTables.entrySet()) {
+            removeTable(schemaName, entry.getKey());
+        }
         this.schemas = mycatRouterConfig.getSchemas();
         List<LogicSchemaConfig> schemas = this.schemas;
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
@@ -274,11 +288,53 @@ public class MycatRouterConfigOps implements AutoCloseable {
     }
 
 
-    public ShardingTableConfig putHashTable(String schemaName, String tableName, MySqlCreateTableStatement tableStatement, Map<String, Object> infos) {
+    public ShardingTableConfig putHashTable(String schemaName,final String tableName, MySqlCreateTableStatement tableStatement, Map<String, Object> infos) {
+        NameMap<SQLColumnDefinition> columnMap = NameMap.immutableCopyOf(tableStatement.getColumnDefinitions().stream()
+                .collect(Collectors.toMap(k -> SQLUtils.normalize(k.getColumnName()), v -> v)));
+
+        Map<String, ShardingTableConfig> indexTableConfigs = new HashMap<>();
+        MySqlPrimaryKey primaryKey =(MySqlPrimaryKey) tableStatement.getTableElementList().stream().filter(i -> i instanceof MySqlPrimaryKey).findFirst().orElse(null);
+        for (SQLTableElement sqlTableElement : tableStatement.getTableElementList()) {
+            if (sqlTableElement instanceof MySqlTableIndex) {
+                MySqlTableIndex element = (MySqlTableIndex) sqlTableElement;
+                SQLIndexDefinition indexDefinition = element.getIndexDefinition();
+                MySqlCreateTableStatement indexCreateTableStatement = new MySqlCreateTableStatement();
+                indexCreateTableStatement.setIfNotExiists(true);
+
+                String indexTableName = tableName + "_" + SQLUtils.normalize(indexDefinition.getName().getSimpleName());
+                indexCreateTableStatement.setTableName(indexTableName);
+                indexCreateTableStatement.setSchema(schemaName);
+                for (SQLSelectOrderByItem indexColumn : indexDefinition.getColumns()) {
+                    indexCreateTableStatement.addColumn(columnMap.get(SQLUtils.normalize(indexColumn.getExpr().toString())));
+                }
+                for (SQLName sqlName : indexDefinition.getCovering()) {
+                    indexCreateTableStatement.addColumn(columnMap.get(SQLUtils.normalize(sqlName.toString())));
+                }
+                if(primaryKey!=null){
+                    indexCreateTableStatement.getTableElementList().add(primaryKey);
+                }
+                indexCreateTableStatement.setDbPartitionBy(indexDefinition.getDbPartitionBy());
+                indexCreateTableStatement.setTablePartitionBy(indexDefinition.getTbPartitionBy());
+
+                indexCreateTableStatement.setDbPartitions(indexCreateTableStatement.getDbPartitions());
+                indexCreateTableStatement.setTablePartitions(indexDefinition.getTbPartitions());
+                Map<String, Object> autoHashProperties = getAutoHashProperties(indexCreateTableStatement);
+
+                ShardingTableConfig.ShardingTableConfigBuilder builder = ShardingTableConfig.builder();
+                ShardingTableConfig config = builder
+                        .createTableSQL(MycatSQLUtils.toString(indexCreateTableStatement))
+                        .function(ShardingFuntion.builder().properties(autoHashProperties).build())
+                        .build();
+
+                indexTableConfigs.put(indexTableName, config);
+            }
+        }
+
         ShardingTableConfig.ShardingTableConfigBuilder builder = ShardingTableConfig.builder();
         ShardingTableConfig config = builder
-                .createTableSQL(tableStatement.toString())
+                .createTableSQL(MycatSQLUtils.toString(tableStatement))
                 .function(ShardingFuntion.builder().properties((Map) infos).build())
+                .shardingIndexTables(indexTableConfigs)
                 .build();
         return putShardingTable(schemaName, tableName, config);
     }
@@ -444,6 +500,10 @@ public class MycatRouterConfigOps implements AutoCloseable {
     }
 
     public void putHashTable(String schemaName, String tableName, MySqlCreateTableStatement createTableSql) {
+        putHashTable(schemaName, tableName, createTableSql, getAutoHashProperties(createTableSql));
+    }
+
+    public static Map<String, Object> getAutoHashProperties(MySqlCreateTableStatement createTableSql) {
         SQLExpr dbPartitionBy = createTableSql.getDbPartitionBy();
         HashMap<String, Object> properties = new HashMap<>();
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
@@ -462,8 +522,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
             properties.put("tableNum", Objects.toString(tablePartitions));
             properties.put("tableMethod", Objects.toString(tablePartitionBy));
         }
-
-        putHashTable(schemaName, tableName, createTableSql, properties);
+        return properties;
     }
 
     public void reset() {

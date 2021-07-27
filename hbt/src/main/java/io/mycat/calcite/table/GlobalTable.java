@@ -18,28 +18,28 @@ package io.mycat.calcite.table;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.*;
+import io.mycat.config.GlobalTableConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.util.DDLHelper;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
 import static io.mycat.util.CreateTableUtils.createPhysicalTable;
-import static io.mycat.util.CreateTableUtils.normalizeCreateTableSQLToMySQL;
-import static org.apache.calcite.schema.impl.ReflectiveFunctionBase.builder;
 
 public class GlobalTable implements GlobalTableHandler {
     private final LogicTable logicTable;
     private final List<Partition> backendTableInfos;
+    private GlobalTableConfig tableConfig;
 
 
     public GlobalTable(LogicTable logicTable,
-                       List<Partition> backendTableInfos) {
+                       List<Partition> backendTableInfos,
+                       GlobalTableConfig tableConfigEntry) {
         this.logicTable = logicTable;
         this.backendTableInfos = backendTableInfos;
+        this.tableConfig = tableConfigEntry;
     }
 
 //    @Override
@@ -163,5 +163,9 @@ public class GlobalTable implements GlobalTableHandler {
     @Override
     public List<Partition> getGlobalDataNode() {
         return backendTableInfos;
+    }
+
+    public GlobalTableConfig getTableConfig() {
+        return tableConfig;
     }
 }

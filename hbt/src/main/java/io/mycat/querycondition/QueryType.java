@@ -20,31 +20,43 @@ package io.mycat.querycondition;
  * Query type of a push down condition in InnoDB data source.
  */
 public enum QueryType {
-  /** Primary key point query. */
-  PK_POINT_QUERY(0),
-  /** Secondary key point query. */
-  /** Primary key range query with lower and upper bound. */
-  PK_RANGE_QUERY(2),
+    /**
+     * Primary key point query.
+     */
+    PK_POINT_QUERY(0, 0.1),
+    /** Secondary key point query. */
+    /**
+     * Primary key range query with lower and upper bound.
+     */
+    PK_RANGE_QUERY(2, 0.5),
 
-  /** Scanning table fully with primary key. */
-  PK_FULL_SCAN(4),
-  ;
+    /**
+     * Scanning table fully with primary key.
+     */
+    PK_FULL_SCAN(4, 1),
+    ;
 
-  private final int priority;
+    private final int priority;
+    private final double factor;
 
-  public static QueryType getPointQuery() {
-    return PK_POINT_QUERY;
-  }
+    public static QueryType getPointQuery() {
+        return PK_POINT_QUERY;
+    }
 
-  public static QueryType getRangeQuery() {
-    return  PK_RANGE_QUERY;
-  }
+    public static QueryType getRangeQuery() {
+        return PK_RANGE_QUERY;
+    }
 
-  QueryType(int priority) {
-    this.priority = priority;
-  }
+    QueryType(int priority, double factor) {
+        this.priority = priority;
+        this.factor = factor;
+    }
 
- public int priority() {
-    return priority;
-  }
+    public int priority() {
+        return priority;
+    }
+
+    public double factor() {
+        return factor;
+    }
 }

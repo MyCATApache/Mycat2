@@ -8,6 +8,7 @@ import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import groovy.lang.IntRange;
+import io.mycat.PreparedStatement;
 import io.mycat.assemble.MycatTest;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
@@ -82,12 +83,12 @@ public abstract class TableJPATemplateTest implements MycatTest {
                 this.sql = sqlStatement.toString();
                 break;
             case SHARDING:
-                sqlStatement.setTablePartitions(SQLExprUtils.fromJavaObject(2));
+                sqlStatement.setTablePartitions(PreparedStatement.fromJavaObject(2));
                 sqlStatement.setTablePartitionBy(
                         new SQLMethodInvokeExpr("hash",
                                 null, new SQLIdentifierExpr("id"))
                 );
-                sqlStatement.setDbPartitions(SQLExprUtils.fromJavaObject(2));
+                sqlStatement.setDbPartitions(PreparedStatement.fromJavaObject(2));
                 sqlStatement.setDbPartitionBy(
                         new SQLMethodInvokeExpr("hash",
                                 null, new SQLIdentifierExpr("id"))

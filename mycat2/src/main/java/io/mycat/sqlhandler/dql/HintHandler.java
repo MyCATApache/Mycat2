@@ -9,7 +9,10 @@ import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlHintStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.alibaba.druid.util.JdbcUtils;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.UnmodifiableIterator;
 import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.api.collector.RowBaseIterator;
@@ -17,6 +20,8 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
+import io.mycat.calcite.MycatRel;
+import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.spm.*;
 import io.mycat.calcite.table.GlobalTable;
@@ -47,7 +52,10 @@ import io.mycat.util.NameMap;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.core.Observable;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -63,6 +71,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -227,7 +236,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     if ("showDataSources".equalsIgnoreCase(cmd)) {
 
                         Optional<JdbcConnectionManager> connectionManager = Optional.ofNullable(jdbcConnectionManager);
-                        Collection<JdbcDataSource> jdbcDataSources =new HashSet<>(connectionManager.map(i -> i.getDatasourceInfo()).map(i -> i.values()).orElse(Collections.emptyList()));
+                        Collection<JdbcDataSource> jdbcDataSources = new HashSet<>(connectionManager.map(i -> i.getDatasourceInfo()).map(i -> i.values()).orElse(Collections.emptyList()));
                         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
 
                         resultSetBuilder.addColumnInfo("NAME", JDBCType.VARCHAR);
@@ -474,19 +483,19 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 .addColumnInfo("PLAN_ID", JDBCType.VARCHAR)
                                 .addColumnInfo("EXTERNALIZED_PLAN", JDBCType.VARCHAR)
                                 .addColumnInfo("FIXED", JDBCType.VARCHAR)
-                                .addColumnInfo("ACCEPTED",JDBCType.VARCHAR);
+                                .addColumnInfo("ACCEPTED", JDBCType.VARCHAR);
                         for (Baseline baseline : queryPlanCache.list()) {
                             for (BaselinePlan baselinePlan : baseline.getPlanList()) {
                                 String BASELINE_ID = String.valueOf(baselinePlan.getBaselineId());
                                 String PARAMETERIZED_SQL = String.valueOf(baselinePlan.getSql());
                                 String PLAN_ID = String.valueOf(baselinePlan.getId());
-                                CodeExecuterContext attach =(CodeExecuterContext)baselinePlan.attach();
-                                String EXTERNALIZED_PLAN = new PlanImpl (attach.getMycatRel(),attach,Collections.emptyList()).dumpPlan();
-                                String FIXED =     Optional.ofNullable(baseline.getFixPlan()).filter(i->i.getId()==baselinePlan.getId())
-                                        .map(u->"true").orElse("false");
+                                CodeExecuterContext attach = (CodeExecuterContext) baselinePlan.attach();
+                                String EXTERNALIZED_PLAN = new PlanImpl(attach.getMycatRel(), attach, Collections.emptyList()).dumpPlan();
+                                String FIXED = Optional.ofNullable(baseline.getFixPlan()).filter(i -> i.getId() == baselinePlan.getId())
+                                        .map(u -> "true").orElse("false");
                                 String ACCEPTED = "true";
 
-                                builder.addObjectRowPayload(Arrays.asList(BASELINE_ID, PARAMETERIZED_SQL, PLAN_ID, EXTERNALIZED_PLAN,FIXED,ACCEPTED));
+                                builder.addObjectRowPayload(Arrays.asList(BASELINE_ID, PARAMETERIZED_SQL, PLAN_ID, EXTERNALIZED_PLAN, FIXED, ACCEPTED));
                             }
                         }
                         return response.sendResultSet(() -> builder.build());
@@ -494,10 +503,10 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     if ("baseline".equalsIgnoreCase(cmd)) {
                         Map<String, Object> map = JsonUtil.from(body, Map.class);
                         String command = Objects.requireNonNull(map.get("command")).toString().toLowerCase();
-                        long value = Long.parseLong((map.getOrDefault("value","0")).toString());
+                        long value = Long.parseLong((map.getOrDefault("value", "0")).toString());
                         QueryPlanCache queryPlanCache = MetaClusterCurrent.wrapper(QueryPlanCache.class);
-                        switch (command){
-                            case "showAllPlans":{
+                        switch (command) {
+                            case "showAllPlans": {
                                 ResultSetBuilder builder = ResultSetBuilder.create();
 
                                 builder.addColumnInfo("BASELINE_ID", JDBCType.VARCHAR)
@@ -505,62 +514,62 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                         .addColumnInfo("PLAN_ID", JDBCType.VARCHAR)
                                         .addColumnInfo("EXTERNALIZED_PLAN", JDBCType.VARCHAR)
                                         .addColumnInfo("FIXED", JDBCType.VARCHAR)
-                                        .addColumnInfo("ACCEPTED",JDBCType.VARCHAR);
+                                        .addColumnInfo("ACCEPTED", JDBCType.VARCHAR);
                                 for (Baseline baseline : queryPlanCache.list()) {
                                     for (BaselinePlan baselinePlan : baseline.getPlanList()) {
                                         String BASELINE_ID = String.valueOf(baselinePlan.getBaselineId());
                                         String PARAMETERIZED_SQL = String.valueOf(baselinePlan.getSql());
                                         String PLAN_ID = String.valueOf(baselinePlan.getId());
-                                        CodeExecuterContext attach =(CodeExecuterContext)baselinePlan.attach();
-                                        String EXTERNALIZED_PLAN = new PlanImpl (attach.getMycatRel(),attach,Collections.emptyList()).dumpPlan();
-                                        String FIXED =     Optional.ofNullable(baseline.getFixPlan()).filter(i->i.getId()==baselinePlan.getId())
-                                                .map(u->"true").orElse("false");
+                                        CodeExecuterContext attach = (CodeExecuterContext) baselinePlan.attach();
+                                        String EXTERNALIZED_PLAN = new PlanImpl(attach.getMycatRel(), attach, Collections.emptyList()).dumpPlan();
+                                        String FIXED = Optional.ofNullable(baseline.getFixPlan()).filter(i -> i.getId() == baselinePlan.getId())
+                                                .map(u -> "true").orElse("false");
                                         String ACCEPTED = "true";
 
-                                        builder.addObjectRowPayload(Arrays.asList(BASELINE_ID, PARAMETERIZED_SQL, PLAN_ID, EXTERNALIZED_PLAN,FIXED,ACCEPTED));
+                                        builder.addObjectRowPayload(Arrays.asList(BASELINE_ID, PARAMETERIZED_SQL, PLAN_ID, EXTERNALIZED_PLAN, FIXED, ACCEPTED));
                                     }
                                 }
                                 return response.sendResultSet(() -> builder.build());
                             }
-                            case "persistAllBaselines":{
+                            case "persistAllBaselines": {
                                 queryPlanCache.saveBaselines();
                                 return response.sendOk();
                             }
-                            case "loadBaseline":{
+                            case "loadBaseline": {
                                 queryPlanCache.loadBaseline(value);
                                 return response.sendOk();
                             }
-                            case "loadPlan":{
+                            case "loadPlan": {
                                 queryPlanCache.loadPlan(value);
                                 return response.sendOk();
                             }
-                            case "persistPlan":{
+                            case "persistPlan": {
                                 queryPlanCache.persistPlan(value);
                                 return response.sendOk();
                             }
-                            case "clearBaseline":{
+                            case "clearBaseline": {
                                 queryPlanCache.clearBaseline(value);
                                 return response.sendOk();
                             }
-                            case "clearPlan":{
+                            case "clearPlan": {
                                 queryPlanCache.clearPlan(value);
                                 return response.sendOk();
                             }
-                            case "deleteBaseline":{
+                            case "deleteBaseline": {
                                 queryPlanCache.deleteBaseline(value);
                                 return response.sendOk();
                             }
-                            case "deletePlan":{
+                            case "deletePlan": {
                                 queryPlanCache.deletePlan(value);
                                 return response.sendOk();
                             }
                             case "add":
-                            case "fix":{
+                            case "fix": {
                                 SQLStatement sqlStatement = null;
                                 if (ast.getHintStatements() != null && ast.getHintStatements().size() == 1) {
                                     sqlStatement = ast.getHintStatements().get(0);
                                     DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlStatement, dataContext.getDefaultSchema());
-                                    queryPlanCache.add("fix".equalsIgnoreCase(command),drdsSqlWithParams);
+                                    queryPlanCache.add("fix".equalsIgnoreCase(command), drdsSqlWithParams);
                                 }
                                 return response.sendOk();
                             }
@@ -809,34 +818,42 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
             mySqlInsertStatement.addColumn(columnName);
         }
         int batch = 1000;
-        try (Reader in = new FileReader(fileName)) {
-            Iterable<CSVRecord> records = format.parse(in);
-            Iterator<SQLInsertStatement> iterator = StreamSupport.stream(Iterables.partition(records, batch).spliterator(), false)
-                    .map(mrecord -> {
-                        SQLInsertStatement sqlInsertStatement = mySqlInsertStatement.clone();
-                        List<SQLInsertStatement.ValuesClause> valuesList = new ArrayList<>(batch);
-                        for (CSVRecord strings : mrecord) {
-                            SQLInsertStatement.ValuesClause valuesClause = new SQLInsertStatement.ValuesClause();
-                            for (String string : strings) {
-                                valuesClause.addValue(new SQLCharExpr(string));
-                            }
-                            valuesList.add(valuesClause);
-                        }
-                        sqlInsertStatement.getValuesList().addAll(valuesList);
-                        return sqlInsertStatement;
-                    }).iterator();
-            DrdsSqlCompiler drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
-            XaSqlConnection transactionSession = (XaSqlConnection) dataContext.getTransactionSession();
-            Future<long[]> future = Future.succeededFuture(new long[]{0, 0});
-            while (iterator.hasNext()) {
-                SQLInsertStatement statement = iterator.next();
-                DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(statement, dataContext.getDefaultSchema());
-                Plan plan = UpdateSQLHandler.getPlan(drdsSql);
-                future=  future.flatMap((l) -> VertxExecuter.runMycatInsertRel(transactionSession, dataContext,
-                    ( plan.getInsertPhysical()), drdsSql.getParams()));
-            }
-            return VertxUtil.castPromise(future.flatMap(l -> response.sendOk(l[0], l[1])));
+
+        Reader in = new FileReader(fileName);
+        Iterable<CSVRecord> records = format.parse(in);
+        Stream<SQLInsertStatement> insertStatementStream = StreamSupport.stream(records.spliterator(), false)
+                .map(strings -> {
+                    SQLInsertStatement sqlInsertStatement = mySqlInsertStatement.clone();
+                    SQLInsertStatement.ValuesClause valuesClause = new SQLInsertStatement.ValuesClause();
+                    for (String string : strings) {
+                        valuesClause.addValue(new SQLCharExpr(string));
+                    }
+                    sqlInsertStatement.addValueCause(valuesClause);
+                    return sqlInsertStatement;
+                });
+
+        UnmodifiableIterator<List<VertxExecuter.EachSQL>> iterator = Iterators.partition(insertStatementStream.flatMap(statement -> {
+            DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(statement, dataContext.getDefaultSchema());
+            Plan plan = UpdateSQLHandler.getPlan(drdsSql);
+            MycatInsertRel mycatRel = (MycatInsertRel) plan.getMycatRel();
+            Iterable<VertxExecuter.EachSQL> eachSQLS1 = VertxExecuter.explainInsert((SQLInsertStatement) mycatRel.getSqlStatement(), drdsSql.getParams());
+            return StreamSupport.stream(eachSQLS1.spliterator(), false);
+        }).iterator(), batch);
+
+
+        Future<long[]> continution = Future.succeededFuture( new long[]{0,0});
+
+        while (iterator.hasNext()) {
+            Iterable<VertxExecuter.EachSQL> eachSQL =VertxExecuter.rewriteInsertBatchedStatements(iterator.next());
+            continution = continution.flatMap(o -> {
+                Future<long[]> future = VertxExecuter.simpleUpdate(dataContext, true, false, eachSQL);
+                return future.map(o2 -> new long[]{o[0] + o2[0], Math.max(o[1], o2[1])});
+            });
         }
+        continution.onComplete(event -> JdbcUtils.close(in));
+        return VertxUtil.castPromise(continution.flatMap(result -> {
+            return response.sendOk(result[0], result[1]);
+        }));
     }
 
     private Future<Void> showErGroup(Response response, MetadataManager metadataManager) {

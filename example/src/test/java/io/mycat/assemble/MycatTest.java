@@ -49,9 +49,10 @@ public interface MycatTest {
                 dataSource.setUrl(url);
                 dataSource.setUsername(username);
                 dataSource.setPassword(password);
-//                dataSource.setLoginTimeout(30);
-//                dataSource.setCheckExecuteTime(true);
-//                dataSource.setQueryTimeout(30);
+
+                dataSource.setLoginTimeout(100);
+                dataSource.setCheckExecuteTime(true);
+                dataSource.setQueryTimeout(100);
                 dataSource.setMaxWait(TimeUnit.SECONDS.toMillis(10));
                 return dataSource;
             }

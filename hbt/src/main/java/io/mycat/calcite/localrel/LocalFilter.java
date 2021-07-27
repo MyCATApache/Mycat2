@@ -26,6 +26,10 @@ public class LocalFilter  extends Filter implements LocalRel {
     public static LocalFilter create(Filter filter, RelNode input) {
         return new LocalFilter(filter.getCluster(), filter.getTraitSet(), input, filter.getCondition());
     }
+    public static LocalFilter create(RexNode condition,RelNode input) {
+        return new LocalFilter(input.getCluster(), input.getTraitSet(), input, condition);
+    }
+
 
     @Override
     public LocalFilter copy(RelTraitSet traitSet, RelNode input, RexNode condition) {

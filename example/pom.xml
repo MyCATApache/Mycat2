@@ -5,13 +5,18 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.19</version>
+        <version>1.20</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>example</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.2</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-test-autoconfigure -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -58,13 +63,13 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>router</artifactId>
-            <version>1.19</version>
+            <version>1.20</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>mycat2</artifactId>
-            <version>1.19</version>
+            <version>1.20</version>
         </dependency>
         <dependency>
             <groupId>com.github.stephenc.jcip</groupId>

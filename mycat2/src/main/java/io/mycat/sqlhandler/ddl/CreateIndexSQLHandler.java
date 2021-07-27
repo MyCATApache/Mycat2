@@ -14,15 +14,13 @@
  */
 package io.mycat.sqlhandler.ddl;
 
+import com.alibaba.druid.sql.MycatSQLUtils;
 import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLIndexDefinition;
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
-import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.ast.statement.SQLCreateIndexStatement;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
-import com.google.common.collect.ImmutableList;
 import io.mycat.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
@@ -32,7 +30,7 @@ import io.vertx.core.shareddata.Lock;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 
@@ -78,12 +76,20 @@ public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStat
         String schemaName = SQLUtils.normalize(table.getSchema());
 
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        TableHandler tableHandler = metadataManager.getTable(schemaName, tableName);
+        TableHandler tableHandler = Objects.requireNonNull(metadataManager.getTable(schemaName, tableName));
         MySqlCreateTableStatement createTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(tableHandler.getCreateTableSQL());
         MySqlTableIndex mySqlTableIndex = new MySqlTableIndex();
         indexDefinition.cloneTo(mySqlTableIndex.getIndexDefinition());
-        createTableStatement.getTableElementList().add(mySqlTableIndex);
 
+        //移除同名的索引
+        createTableStatement.getTableElementList().removeAll(createTableStatement.getTableElementList().stream().filter(i -> {
+            if (i instanceof MySqlTableIndex) {
+                return mySqlTableIndex.getName().equals(((MySqlTableIndex) i).getIndexDefinition().getName());
+            }
+            return false;
+        }).collect(Collectors.toList()));
+        createTableStatement.getTableElementList().add(mySqlTableIndex);
+        String s = MycatSQLUtils.toString(createTableStatement);
         CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(), schemaName, tableName, createTableStatement);
     }
 

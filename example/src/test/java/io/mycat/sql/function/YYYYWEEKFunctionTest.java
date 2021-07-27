@@ -49,7 +49,7 @@ public class YYYYWEEKFunctionTest extends AutoFunctionFactoryTest{
         CustomRuleFunction shardingFuntion = tableHandler.getShardingFuntion();
         List<Partition> calculate = shardingFuntion
                 .calculate(Collections.singletonMap("traveldate",
-                        Collections.singleton(new RangeVariable("traveldate", RangeVariableType.EQUAL,
+              (new RangeVariable("traveldate", RangeVariableType.EQUAL,
                                 LocalDate.of(2020,6,5)))));
         String s = calculate.toString();
         Assert.assertTrue(s.contains("[{targetName='c0', schemaName='db1_1', tableName='sharding_15', index=15, dbIndex=1, tableIndex=1}]"));

@@ -15,4 +15,5 @@ public final class LogicSchemaConfig {
     Map<String, GlobalTableConfig> globalTables = new HashMap<>();
     Map<String, NormalTableConfig> normalTables = new HashMap<>();
     Map<String, CustomTableConfig> customTables = new HashMap<>();
+    Map<String, ViewConfig> views = new HashMap<>();
 }

@@ -77,7 +77,7 @@ public class ShardingJoinTest extends DrdsTest {
     @Test
     public void testSelectNormal() throws Exception {
         Explain explain = parse("select * from db1.normal");
-        Assert.assertEquals("[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=addressname}]",
+        Assert.assertEquals("[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=addressname}]",
                 explain.getColumnInfo());
         Assert.assertEquals("MycatView(distribution=[[db1.normal]]) ", explain.dumpPlan());
 //        Assert.assertEquals(
@@ -88,7 +88,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectNormalNormal() throws Exception {
         Explain explain = parse("select * from db1.normal s join db1.normal2 e on s.id = e.id");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=addressname}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=addressname0}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=addressname}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=addressname0}]",
                 explain.getColumnInfo());
         Assert.assertEquals("MycatView(distribution=[[db1.normal, db1.normal2]]) ", explain.dumpPlan());
 //        Assert.assertEquals("[SpecificSql(relNode=MycatView(distribution=[normalTables=db1.normal,db1.normal2]) , parameterizedSql=SELECT *  FROM db1.normal      INNER JOIN db1.normal2 ON (`normal`.`id` = `normal2`.`id`), sqls=[Each(targetName=prototype, sql=SELECT * FROM db1.normal     INNER JOIN db1.normal2 ON (`normal`.`id` = `normal2`.`id`))])]",
@@ -98,7 +98,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectNormalOtherNormal() throws Exception {
         Explain explain = parse("select * from db1.normal s join db1.normal3 e on s.id = e.id");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=addressname}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=addressname0}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=addressname}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=addressname0}]",
                 explain.getColumnInfo());
         Assert.assertEquals("MycatHashJoin(condition=[=($0, $2)], joinType=[inner])   MycatView(distribution=[[db1.normal]])   MycatView(distribution=[[db1.normal3]]) ", explain.dumpPlan());
 //        Assert.assertEquals("[SpecificSql(relNode=MycatView(distribution=[normalTables=db1.normal,db1.normal2]) , parameterizedSql=SELECT *  FROM db1.normal      INNER JOIN db1.normal2 ON (`normal`.`id` = `normal2`.`id`), sqls=[Each(targetName=prototype, sql=SELECT * FROM db1.normal     INNER JOIN db1.normal2 ON (`normal`.`id` = `normal2`.`id`))])]",
@@ -109,7 +109,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectNormalGlobal() throws Exception {
         Explain explain = parse("select * from db1.normal s join db1.global e on s.id = e.id");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=addressname}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=addressname}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}]",
                 explain.getColumnInfo());
         Assert.assertEquals("MycatView(distribution=[[db1.global, db1.normal]]) ", explain.dumpPlan());
 //        Assert.assertEquals("[SpecificSql(relNode=MycatView(distribution=[normalTables=db1.normal,globalTables=db1.global]) , parameterizedSql=SELECT *  FROM db1.normal      INNER JOIN db1.global ON (`normal`.`id` = `global`.`id`), sqls=[Each(targetName=prototype, sql=SELECT * FROM db1.normal     INNER JOIN db1.global ON (`normal`.`id` = `global`.`id`))])]",
@@ -119,7 +119,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectNormalSharding() throws Exception {
         Explain explain = parse("select * from db1.normal s join db1.sharding e on s.id = e.id");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=addressname}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=addressname}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}]",
                 explain.getColumnInfo());
         Assert.assertTrue(explain.dumpPlan().contains("MycatView(distribution=[[db1.sharding]])"));
 //        Assert.assertEquals(
@@ -130,7 +130,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectSharding() throws Exception {
         Explain explain = parse("select * from db1.sharding");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}]",
                 explain.getColumnInfo());
         Assert.assertEquals("MycatView(distribution=[[db1.sharding]]) ", explain.dumpPlan());
 //        Assert.assertEquals(
@@ -142,7 +142,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectShardingWhere() throws Exception {
         Explain explain = parse("select * from db1.sharding where id = 1");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}]",
                 explain.getColumnInfo());
         Assert.assertEquals("MycatView(distribution=[[db1.sharding]], conditions=[=($0, CAST(?0):BIGINT NOT NULL)]) ", explain.dumpPlan());
 //        Assert.assertEquals(
@@ -154,7 +154,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectShardingSelf() throws Exception {
         Explain explain = parse("select * from db1.sharding s join db1.sharding e on s.id = e.id");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
                 explain.getColumnInfo());
         Assert.assertEquals("MycatView(distribution=[[db1.sharding, db1.sharding]]) ", explain.dumpPlan());
 //        Assert.assertEquals("[SpecificSql(relNode=MycatView(distribution=[shardingTables=db1.sharding,db1.sharding]) , parameterizedSql=SELECT *  FROM db1.sharding      INNER JOIN db1.sharding AS `sharding0` ON (`sharding`.`id` = `sharding0`.`id`), sqls=[Each(targetName=c0, sql=(SELECT *     FROM db1_0.sharding_0         INNER JOIN db1_0.sharding_0 AS `sharding_00` ON (`sharding_0`.`id` = `sharding_00`.`id`)     UNION ALL     SELECT *     FROM db1_0.sharding_1         INNER JOIN db1_0.sharding_1 AS `sharding_10` ON (`sharding_1`.`id` = `sharding_10`.`id`))), Each(targetName=c1, sql=(SELECT *     FROM db1_1.sharding_0         INNER JOIN db1_1.sharding_0 AS `sharding_00` ON (`sharding_0`.`id` = `sharding_00`.`id`)     UNION ALL     SELECT *     FROM db1_1.sharding_1         INNER JOIN db1_1.sharding_1 AS `sharding_10` ON (`sharding_1`.`id` = `sharding_10`.`id`)))])]",
@@ -164,7 +164,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectShardingSharding() throws Exception {
         Explain explain = parse("select * from db1.sharding s join db1.other_sharding e on s.id = e.id");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
                 explain.getColumnInfo());
         Assert.assertEquals("MycatHashJoin(condition=[=($0, $6)], joinType=[inner])   MycatView(distribution=[[db1.sharding]])   MycatView(distribution=[[db1.other_sharding]]) ", explain.dumpPlan());
 //        Assert.assertEquals("[SpecificSql(relNode=MycatView(distribution=[shardingTables=db1.sharding]) , parameterizedSql=SELECT *  FROM db1.sharding, sqls=[Each(targetName=c0, sql=(SELECT *     FROM db1_0.sharding_0     UNION ALL     SELECT *     FROM db1_0.sharding_1)), Each(targetName=c1, sql=(SELECT *     FROM db1_1.sharding_0     UNION ALL     SELECT *     FROM db1_1.sharding_1))]), SpecificSql(relNode=MycatView(distribution=[shardingTables=db1.other_sharding]) , parameterizedSql=SELECT *  FROM db1.other_sharding, sqls=[Each(targetName=c0, sql=(SELECT *     FROM db1_0.other_sharding_0     UNION ALL     SELECT *     FROM db1_0.other_sharding_1)), Each(targetName=c1, sql=(SELECT *     FROM db1_1.other_sharding_0     UNION ALL     SELECT *     FROM db1_1.other_sharding_1))])]",
@@ -174,7 +174,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectShardingNormal() throws Exception {
         Explain explain = parse("select * from db1.sharding s join db1.normal e on s.id = e.id");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=addressname}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=addressname}]",
                 explain.getColumnInfo());
         Assert.assertEquals("MycatHashJoin(condition=[=($0, $6)], joinType=[inner])   MycatView(distribution=[[db1.sharding]])   MycatView(distribution=[[db1.normal]]) ", explain.dumpPlan());
 //        Assert.assertEquals("[SpecificSql(relNode=MycatView(distribution=[shardingTables=db1.sharding]) , parameterizedSql=SELECT *  FROM db1.sharding, sqls=[Each(targetName=c0, sql=(SELECT *     FROM db1_0.sharding_0     UNION ALL     SELECT *     FROM db1_0.sharding_1)), Each(targetName=c1, sql=(SELECT *     FROM db1_1.sharding_0     UNION ALL     SELECT *     FROM db1_1.sharding_1))]), SpecificSql(relNode=MycatView(distribution=[normalTables=db1.normal]) , parameterizedSql=SELECT *  FROM db1.normal, sqls=[Each(targetName=prototype, sql=SELECT * FROM db1.normal)])]",
@@ -185,7 +185,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectShardingGlobal() throws Exception {
         Explain explain = parse("select * from db1.sharding s join db1.global e on s.id = e.id");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}]",
                 explain.getColumnInfo());
         Assert.assertEquals("MycatView(distribution=[[db1.global, db1.sharding]]) ", explain.dumpPlan());
 //        Assert.assertEquals(
@@ -197,7 +197,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectShardingERWhere() throws Exception {
         Explain explain = parse("select * from db1.sharding s join db1.er e on s.id = e.id where s.id = 1");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
                 explain.getColumnInfo());
         Assert.assertEquals("MycatView(distribution=[[db1.er, db1.sharding]], conditions=[=($0, CAST(?0):BIGINT NOT NULL)]) ", explain.dumpPlan());
         System.out.println(explain.specificSql());
@@ -209,7 +209,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectShardingER() throws Exception {
         Explain explain = parse("select * from db1.sharding s join db1.er e on s.id = e.id");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
                 explain.getColumnInfo());
         Assert.assertEquals("MycatView(distribution=[[db1.er, db1.sharding]]) ", explain.dumpPlan());
         System.out.println(explain.specificSql());
@@ -223,7 +223,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectShardingERGlobal() throws Exception {
         Explain explain = parse("select * from db1.sharding s join db1.er e on s.id = e.id join  db1.global g on  e.id = g.id");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}, {columnType=BIGINT, nullable=true, columnName=id1}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}, {columnType=BIGINT, nullable=false, columnName=id1}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}]",
                 explain.getColumnInfo());
         Assert.assertTrue(explain.dumpPlan().contains("MycatView(distribution=[[db1.er, db1.global, db1.sharding]]) "));
         System.out.println(explain.specificSql());
@@ -235,7 +235,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectShardingGlobalER() throws Exception {
         Explain explain = parse("select * from db1.sharding s join db1.global g  on s.id = g.id join  db1.er e  on  e.id = s.id");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}, {columnType=BIGINT, nullable=true, columnName=id1}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}, {columnType=BIGINT, nullable=false, columnName=id1}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
                 explain.getColumnInfo());
         Assert.assertTrue( explain.dumpPlan().contains("MycatView(distribution=[[db1.er, db1.global, db1.sharding]]) "));
         System.out.println(explain.specificSql());
@@ -247,7 +247,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectShardingGlobalER2() throws Exception {
         Explain explain = parse("select * from db1.sharding s join db1.global g  on s.id = g.id join  db1.er e  on  e.id = g.id");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}, {columnType=BIGINT, nullable=true, columnName=id1}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}, {columnType=BIGINT, nullable=false, columnName=id1}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
                 explain.getColumnInfo());
         Assert.assertTrue(explain.dumpPlan().contains("MycatView(distribution=[[db1.er, db1.global, db1.sharding]]) "));
         System.out.println(explain.specificSql());
@@ -256,7 +256,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectShardingGlobalBadColumn() throws Exception {
         Explain explain = parse("select t2.id from db1.sharding t2 join db1.normal t1 on t2.id = t1.id join db1.er l2 on t2.id = l2.id;");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}]",
                 explain.getColumnInfo());
         System.out.println(explain.dumpPlan());
         System.out.println(explain.specificSql());
@@ -265,7 +265,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectGlobalShardingBadColumn() throws Exception {
         Explain explain = parse("select * from  db1.global g  join  db1.sharding s on s.id = g.id join  db1.er e  on  e.id = g.id");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=true, columnName=id1}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id1}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
                 explain.getColumnInfo());
         Assert.assertTrue( explain.dumpPlan().contains("MycatView(distribution=[[db1.er, db1.global, db1.sharding]]) "));
         System.out.println(explain.specificSql());
@@ -291,7 +291,7 @@ public class ShardingJoinTest extends DrdsTest {
         }
         Assert.assertTrue(
                 explainColumnSet.contains(
-                        "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}]")
+                        "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}]")
         );
 
         Assert.assertEquals("MycatView(distribution=[[db1.global]]) ",explain.dumpPlan());
@@ -304,7 +304,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectGlobalNormal() throws Exception {
         Explain explain = parse("select * from db1.global s join db1.normal e on s.id = e.id");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=addressname}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=addressname}]",
                 explain.getColumnInfo());
         Assert.assertEquals("MycatView(distribution=[[db1.global, db1.normal]]) ", explain.dumpPlan());
 //        Assert.assertEquals(
@@ -317,7 +317,7 @@ public class ShardingJoinTest extends DrdsTest {
     public void testSelectGlobalSharding() throws Exception {
         Explain explain = parse("select * from db1.global s join db1.sharding e on s.id = e.id");
         Assert.assertEquals(
-                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}]",
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}]",
                 explain.getColumnInfo());
         Assert.assertEquals("MycatView(distribution=[[db1.global, db1.sharding]]) ", explain.dumpPlan());
 //        Assert.assertEquals(

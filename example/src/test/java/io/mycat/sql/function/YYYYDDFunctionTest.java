@@ -49,7 +49,7 @@ public class YYYYDDFunctionTest extends AutoFunctionFactoryTest{
         CustomRuleFunction shardingFuntion = tableHandler.getShardingFuntion();
         List<Partition> calculate = shardingFuntion
                 .calculate(Collections.singletonMap("traveldate",
-                        Collections.singleton(new RangeVariable("traveldate", RangeVariableType.EQUAL,
+                 (new RangeVariable("traveldate", RangeVariableType.EQUAL,
                                 LocalDate.of(2020,6,5)))));
         String s = calculate.toString();
         Assert.assertTrue(s.contains("[{targetName='c0', schemaName='db1_5', tableName='sharding_533', index=533, dbIndex=5, tableIndex=73}]"));
@@ -85,7 +85,7 @@ public class YYYYDDFunctionTest extends AutoFunctionFactoryTest{
         CustomRuleFunction shardingFuntion = tableHandler.getShardingFuntion();
         List<Partition> calculate = shardingFuntion
                 .calculate(Collections.singletonMap("traveldate",
-                        Collections.singleton(new RangeVariable("traveldate", RangeVariableType.EQUAL,
+                      (new RangeVariable("traveldate", RangeVariableType.EQUAL,
                                 LocalDate.of(2020,6,5)))));
         String s = calculate.toString();
         Assert.assertTrue(s.contains("[{targetName='c0', schemaName='db1_157', tableName='sharding_0', index=314, dbIndex=157, tableIndex=0}, {targetName='c0', schemaName='db1_157', tableName='sharding_1', index=315, dbIndex=157, tableIndex=1}]"));

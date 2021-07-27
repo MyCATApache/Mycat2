@@ -4,7 +4,9 @@ import io.mycat.assemble.MycatTest;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
@@ -15,7 +17,8 @@ import java.util.Map;
 import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
 
-
+@Disabled
+@Ignore
 public abstract class DefaultBackendConnectionTest implements MycatTest {
     @Test
     public void testPrototypeNoTranscationSelect() throws Exception {

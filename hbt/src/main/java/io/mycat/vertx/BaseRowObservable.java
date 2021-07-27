@@ -392,8 +392,26 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
     public static MycatRowMetaData toColumnMetaData(List<ColumnDescriptor> event) {
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
         for (ColumnDescriptor columnDescriptor : event) {
-            resultSetBuilder.addColumnInfo(columnDescriptor.name(),
-                    columnDescriptor.jdbcType());
+            if (columnDescriptor instanceof ColumnDefinition){
+                ColumnDefinition columnDefinition = (ColumnDefinition) columnDescriptor;
+                String schemaName = columnDefinition.schema();
+                String tableName = columnDefinition.orgTable();
+                String columnName  = columnDefinition.name();
+                int columnType = columnDefinition.type().jdbcType.getVendorTypeNumber();
+                int precision = 0;
+                int scale = 0;
+                String columnLabel = columnDefinition.name();
+                boolean isAutoIncrement = false;
+                boolean isCaseSensitive = false;
+                boolean isNullable = (columnDefinition.flags()& ColumnDefinition.ColumnDefinitionFlags.NOT_NULL_FLAG) == 0;
+                boolean isSigned = true;
+                int displaySize = (int)columnDefinition.columnLength();
+                resultSetBuilder.addColumnInfo(schemaName,tableName,columnName,columnType,precision,scale,columnLabel,isAutoIncrement,isCaseSensitive,isNullable,
+                        isSigned,displaySize);
+            }else {
+                resultSetBuilder.addColumnInfo(columnDescriptor.name(),
+                        columnDescriptor.jdbcType());
+            }
         }
         RowBaseIterator build = resultSetBuilder.build();
         return build.getMetaData();

@@ -111,13 +111,13 @@ public class MySQLPacketUtil {
         return generateColumnDefPayload("", "", "", name, name, type, 0, 0, charsetIndex, 192, charset);
     }
 
-    public static final byte[] generateColumnDefPayload(ResultSetMetaData metaData, int columnIndex) {
-        try (MySQLPayloadWriter writer = new MySQLPayloadWriter(128)) {
-            ColumnDefPacketImpl columnDefPacket = new ColumnDefPacketImpl(metaData, columnIndex);
-            columnDefPacket.writePayload(writer);
-            return writer.toByteArray();
-        }
-    }
+//    public static final byte[] generateColumnDefPayload(ResultSetMetaData metaData, int columnIndex) {
+//        try (MySQLPayloadWriter writer = new MySQLPayloadWriter(128)) {
+//            ColumnDefPacketImpl columnDefPacket = new ColumnDefPacketImpl(metaData, columnIndex);
+//            columnDefPacket.writePayload(writer);
+//            return writer.toByteArray();
+//        }
+//    }
 
     public static final Iterable<byte[]> generateAllColumnDefPayload(MycatRowMetaData metaData) {
         List<byte[]> list = new ArrayList<>(metaData.getColumnCount());

@@ -64,7 +64,7 @@ public class AutoFunctionFactory {
 
         Integer storeNum = Optional.ofNullable(properties.get("storeNum"))
                 .map(i -> Integer.parseInt(i.toString()))
-                .filter(n->n>0)
+                .filter(n -> n > 0)
                 .orElseThrow(() -> new IllegalArgumentException("can not get storeNum"));
         Integer storeDbNum = Optional.ofNullable(properties.get("storeDbNum"))
                 .map(i -> Integer.parseInt(i.toString())).orElse(dbNum * tableNum / storeNum);
@@ -82,11 +82,11 @@ public class AutoFunctionFactory {
         ToIntFunction<Object> dbFunction = (o) -> 0;
         Set<String> tableShardingKeys = new HashSet<>();
 
-        String mappingFormat = (String) properties.computeIfAbsent("mappingFormat",(unused)->
+        String mappingFormat = (String) properties.computeIfAbsent("mappingFormat", (unused) ->
                 String.join(sep, "c${targetIndex}",
                         tableHandler.getSchemaName() + "_${dbIndex}",
-                        tableHandler.getTableName() +( (!supportFlattenMapping(tableMethod, dbMethod))?"_${tableIndex}":"_${index}")));
-       final boolean flattenMapping = mappingFormat.contains("${index}");
+                        tableHandler.getTableName() + ((!supportFlattenMapping(tableMethod, dbMethod)) ? "_${tableIndex}" : "_${index}")));
+        final boolean flattenMapping = mappingFormat.contains("${index}");
 
         if (dbMethod != null) {
             int num = dbNum;
@@ -336,40 +336,40 @@ public class AutoFunctionFactory {
             String needMethodName = SQLUtils.normalize(dbMethod.getMethodName().toUpperCase());
 
             String tableShardingKey = Objects.requireNonNull(getShardingKey(tableMethod));
-                    SimpleColumnInfo tableColumn = tableHandler.getColumnByName(tableShardingKey);
-                    int total = dbNum * tableNum;
-                    if (SQLUtils.nameEquals("MOD_HASH", needMethodName)) {
-                        ToIntFunction<Object> core = specilizeSingleModHash(total, tableColumn);
-                        tableFunction = core;
-                        dbFunction = value -> core.applyAsInt(value) / tableNum;
-                    } else if (SQLUtils.nameEquals("UNI_HASH", needMethodName)) {
-                        ToIntFunction<Object> core = specilizeSingleModHash(dbNum, tableColumn);
-                        dbFunction = core;
-                        tableFunction = value -> {
-                            int coreIndex = core.applyAsInt(value);
-                            return coreIndex * tableNum + coreIndex % tableNum;
-                        };
-                    } else if (SQLUtils.nameEquals("RIGHT_SHIFT", needMethodName)) {
-                        int shift = Integer.parseInt(getShardingKey(dbMethod, 1));
-                        ToIntFunction<Object> core = specilizeSingleRightShift(dbNum, shift, tableColumn);
-                        dbFunction = core;
-                        tableFunction = value -> {
-                            int coreIndex = core.applyAsInt(value);
-                            return coreIndex * tableNum + coreIndex % tableNum;
-                        };
-                    } else if (SQLUtils.nameEquals("YYYYMM", needMethodName)) {
-                        ToIntFunction<Object> core = specilizeyyyymm(total, tableColumn);
-                        tableFunction = core;
-                        dbFunction = value -> core.applyAsInt(value) / tableNum;
-                    } else if (SQLUtils.nameEquals("YYYYDD", needMethodName)) {
-                        ToIntFunction<Object> core = specilizeyyyydd(total, tableColumn);
-                        tableFunction = core;
-                        dbFunction = value -> core.applyAsInt(value) / tableNum;
-                    } else if (SQLUtils.nameEquals("YYYYWEEK", needMethodName)) {
-                        ToIntFunction<Object> core = specilizeyyyyWeek(total, tableColumn);
-                        tableFunction = core;
-                        dbFunction = value -> core.applyAsInt(value) / tableNum;
-                    }
+            SimpleColumnInfo tableColumn = tableHandler.getColumnByName(tableShardingKey);
+            int total = dbNum * tableNum;
+            if (SQLUtils.nameEquals("MOD_HASH", needMethodName)) {
+                ToIntFunction<Object> core = specilizeSingleModHash(total, tableColumn);
+                tableFunction = core;
+                dbFunction = value -> core.applyAsInt(value) / tableNum;
+            } else if (SQLUtils.nameEquals("UNI_HASH", needMethodName)) {
+                ToIntFunction<Object> core = specilizeSingleModHash(dbNum, tableColumn);
+                dbFunction = core;
+                tableFunction = value -> {
+                    int coreIndex = core.applyAsInt(value);
+                    return coreIndex * tableNum + coreIndex % tableNum;
+                };
+            } else if (SQLUtils.nameEquals("RIGHT_SHIFT", needMethodName)) {
+                int shift = Integer.parseInt(getShardingKey(dbMethod, 1));
+                ToIntFunction<Object> core = specilizeSingleRightShift(dbNum, shift, tableColumn);
+                dbFunction = core;
+                tableFunction = value -> {
+                    int coreIndex = core.applyAsInt(value);
+                    return coreIndex * tableNum + coreIndex % tableNum;
+                };
+            } else if (SQLUtils.nameEquals("YYYYMM", needMethodName)) {
+                ToIntFunction<Object> core = specilizeyyyymm(total, tableColumn);
+                tableFunction = core;
+                dbFunction = value -> core.applyAsInt(value) / tableNum;
+            } else if (SQLUtils.nameEquals("YYYYDD", needMethodName)) {
+                ToIntFunction<Object> core = specilizeyyyydd(total, tableColumn);
+                tableFunction = core;
+                dbFunction = value -> core.applyAsInt(value) / tableNum;
+            } else if (SQLUtils.nameEquals("YYYYWEEK", needMethodName)) {
+                ToIntFunction<Object> core = specilizeyyyyWeek(total, tableColumn);
+                tableFunction = core;
+                dbFunction = value -> core.applyAsInt(value) / tableNum;
+            }
         }
         final boolean finalFlattenMapping = flattenMapping;
         final ToIntFunction<Object> finalDbFunction = dbFunction;
@@ -467,7 +467,7 @@ public class AutoFunctionFactory {
             if ((dbMethod.equals(tableMethod))) {
                 String needMethodName = SQLUtils.normalize(dbMethod.getMethodName().toUpperCase());
                 if (FLATTEN_MAPPING.contains(needMethodName)) {
-                    return   true;
+                    return true;
                 }
             }
         }
@@ -859,7 +859,7 @@ public class AutoFunctionFactory {
         } else {
             throw new UnsupportedOperationException();
         }
-        return (int) (Math.abs((mm)) % num);
+        return (int) Math.abs(mm % num);
     }
 
     public static int dd(int num, Object o) {
@@ -877,7 +877,7 @@ public class AutoFunctionFactory {
         } else {
             throw new UnsupportedOperationException();
         }
-        return (int) (Math.abs(day) % num);
+        return (int) Math.abs(day % num);
     }
 
     public static int mmdd(int num, Object o) {
@@ -895,7 +895,7 @@ public class AutoFunctionFactory {
         } else {
             throw new UnsupportedOperationException();
         }
-        return (int) Math.abs((day)) % num;
+        return (int) Math.abs(day % num);
     }
 
     public static int strHash(int num, int startIndex, int endIndex, int valType, int randSeed, Object value) {
@@ -905,7 +905,7 @@ public class AutoFunctionFactory {
             return hashCode(s, randSeed) % num;
         }
         if (valType == 1) {
-            return (int) (Math.abs(Long.parseLong(s)) % num);
+            return (int) Math.abs((Long.parseLong(s)) % num);
         }
         throw new UnsupportedOperationException();
     }
@@ -928,7 +928,7 @@ public class AutoFunctionFactory {
         } else {
             throw new UnsupportedOperationException();
         }
-        return (int) (Math.abs((YYYY * 54 + WEEK)) % num);
+        return (int) Math.abs((YYYY * 54 + WEEK) % num);
     }
 
     public static int week(int num, Object o) {
@@ -946,7 +946,7 @@ public class AutoFunctionFactory {
         } else {
             throw new UnsupportedOperationException();
         }
-        return (int) (Math.abs((day)) % num);
+        return (int) Math.abs(day % num);
     }
 
     public static int yyyydd(int num, Object o) {
@@ -990,7 +990,7 @@ public class AutoFunctionFactory {
         if (YYYY == null && MM == null) {
             throw new UnsupportedOperationException();
         }
-        return Math.abs((YYYY * 12 + MM)) % num;
+        return Math.abs((YYYY * 12 + MM) % num);
     }
 
     public static int singleRangeHash(int num, int n, Object o) {
@@ -1006,7 +1006,7 @@ public class AutoFunctionFactory {
 
     public static int singleRangeHash(int num, int n, String o) {
         if (o == null) o = "null";
-        return Math.abs(hashCode(o.substring(n))) % num;
+        return Math.abs(hashCode(o.substring(n)) % num);
     }
 
     public static int singleRangeHash(int num, Number o) {
@@ -1026,11 +1026,11 @@ public class AutoFunctionFactory {
 
     public static int singleRightShift(int num, int shift, String o) {
         if (o == null) o = "null";
-        return Math.abs((hashCode(o) >> shift)) % num;
+        return (int) Math.abs((Long.parseLong(o) >> shift) % num);
     }
 
     public static int singleRightShift(int num, int shift, Number o) {
-        return (int) (Math.abs((o.longValue() >> shift)) % num);
+        return (int) Math.abs((o.longValue() >> shift) % num);
     }
 
     public static int singleModHash(int num, Object o) {
@@ -1052,21 +1052,21 @@ public class AutoFunctionFactory {
         if (o == null) {
             o = 0;
         }
-        return (int) (Math.abs(o.longValue()) % num);
+        return (int) Math.abs(o.longValue() % num);
     }
 
     public static int singleDivHash(int num, Number o) {
         if (o == null) {
             o = 0;
         }
-        return (int) (Math.abs(o.longValue()) / num);
+        return (int) Math.abs(o.longValue() / num);
     }
 
     public static int singleDivHash(int num, String o) {
         if (o == null) {
             o = "null";
         }
-        return (int) (Math.abs(hashCode(o)) / num);
+        return (int) Math.abs(hashCode(o) / num);
     }
 
     public static int singleDivHash(int num, Object o) {
@@ -1091,7 +1091,7 @@ public class AutoFunctionFactory {
 
     public static int singleRemainderHash(int num, String o) {
         if (o == null) o = "null";
-        return hashCode(o) % num;
+        return Math.abs(hashCode(o) % num);
     }
 
     public static int singleRemainderHash(int num, Number o) {
@@ -1099,8 +1099,7 @@ public class AutoFunctionFactory {
             o = 1;
         }
         long l = o.longValue();
-        long l1 = Math.abs(l) % num;
-        return (int) l1;
+        return (int) Math.abs(l % num);
     }
 
     @Nullable
@@ -1130,7 +1129,7 @@ public class AutoFunctionFactory {
         for (int i = 0; i < value.length(); i++) {
             h = randSeed * h + value.charAt(i);
         }
-        return Math.abs(h);
+        return h;
     }
 
     public static String mySubstring(int startIndex,

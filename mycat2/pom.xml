@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.19</version>
+        <version>1.20</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <packaging>jar</packaging>
@@ -59,14 +59,14 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>proxy</artifactId>
-            <version>1.19</version>
+            <version>1.20</version>
             <exclusions>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-            <version>1.19</version>
+            <version>1.20</version>
             <exclusions>
                 <exclusion>
                     <artifactId>log4j</artifactId>
@@ -85,7 +85,7 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>datasource</artifactId>
-            <version>1.19</version>
+            <version>1.20</version>
             <exclusions>
                 <exclusion>
                     <artifactId>slf4j-api</artifactId>
@@ -115,7 +115,7 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>hbt</artifactId>
-            <version>1.19</version>
+            <version>1.20</version>
             <exclusions>
                 <exclusion>
                     <artifactId>commons-logging</artifactId>
@@ -162,7 +162,7 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>va</artifactId>
-            <version>1.19</version>
+            <version>1.20</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/io.vertx/vertx-core -->
         <dependency>
@@ -174,6 +174,12 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
             <version>4.1.48.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>assistant</artifactId>
+            <version>1.20</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
     <build>
@@ -399,7 +405,7 @@
                                 </replacement>
                                 <replacement>
                                     <token>@mycatsite@</token>
-                                    <value>http://www.mycat.org.cn//</value>
+                                    <value>http://mycat.org.cn/</value>
                                 </replacement>
                                 <replacement>
                                     <token>@qqgroup@</token>

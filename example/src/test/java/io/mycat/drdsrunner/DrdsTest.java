@@ -169,6 +169,30 @@ public abstract class DrdsTest implements MycatTest {
 
                 }
 
+                {
+                    ShardingTableConfig seqMainSharding = new ShardingTableConfig();
+                    seqMainSharding.setCreateTableSQL("CREATE TABLE db1.`seqSharding` (\n" +
+                            "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                            "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                            "  `traveldate` date DEFAULT NULL,\n" +
+                            "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                            "  `days` int DEFAULT NULL,\n" +
+                            "  `blob` longblob,\n" +
+                            "  PRIMARY KEY (`id`),\n" +
+                            "  KEY `id` (`id`)\n" +
+                            ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
+                            + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
+                    seqMainSharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
+                            "\t\t\t\t\t\"dbNum\":\"2\",\n" +
+                            "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${index}\",\n" +
+                            "\t\t\t\t\t\"tableNum\":\"2\",\n" +
+                            "\t\t\t\t\t\"tableMethod\":\"hash(id)\",\n" +
+                            "\t\t\t\t\t\"storeNum\":2,\n" +
+                            "\t\t\t\t\t\"dbMethod\":\"hash(id)\"\n" +
+                            "\t\t\t\t}", Map.class)).build());
+                    logicSchemaConfig.getShadingTables().put("seqSharding", seqMainSharding);
+                }
+
 
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("ds0", DB1));
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("ds1", DB2));

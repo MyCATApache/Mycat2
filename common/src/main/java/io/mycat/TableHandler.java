@@ -30,10 +30,10 @@ public interface TableHandler {
 
     String getCreateTableSQL();
 
-    default List<SimpleColumnInfo> getPrimaryKeyList(){
+    default SimpleColumnInfo getPrimaryKey(){
         return getColumns().stream()
                 .filter(SimpleColumnInfo::isPrimaryKey)
-                .collect(Collectors.toList());
+                .findFirst().orElse(null);
     }
 
     List<SimpleColumnInfo> getColumns();

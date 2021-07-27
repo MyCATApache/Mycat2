@@ -92,7 +92,6 @@ public class MemPlanCache implements QueryPlanCache {
             baseline.setFixPlan(newBaselinePlan);
         }
         Constraint constraint = baseline.getConstraint();
-        boolean b = map.containsKey(constraint);
         map.put(constraint, baseline);
         return new PlanResultSet(newBaselinePlan.getBaselineId(), true, codeExecuterContext);
     }

@@ -46,9 +46,9 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
     }
 
     @Override
-    public List<Partition> calculate(Map<String, Collection<RangeVariable>> values) {
+    public List<Partition> calculate(Map<String,RangeVariable> values) {
         ArrayList<Partition> res = new ArrayList<>();
-        for (RangeVariable rangeVariable : values.values().stream().flatMap(i -> i.stream()).collect(Collectors.toList())) {
+        for (RangeVariable rangeVariable : values.values()) {
             //匹配字段名
             if (getColumnName().equalsIgnoreCase(rangeVariable.getColumnName())) {
                 ///////////////////////////////////////////////////////////////
@@ -144,6 +144,21 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
             public String getTable() {
                 return table;
             }
+
+            @Override
+            public Integer getDbIndex() {
+                return null;
+            }
+
+            @Override
+            public Integer getTableIndex() {
+                return null;
+            }
+
+            @Override
+            public Integer getIndex() {
+                return null;
+            }
         };
     }
 
@@ -182,6 +197,21 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
             @Override
             public String getTable() {
                 return tableName;
+            }
+
+            @Override
+            public Integer getDbIndex() {
+                return null;
+            }
+
+            @Override
+            public Integer getTableIndex() {
+                return null;
+            }
+
+            @Override
+            public Integer getIndex() {
+                return null;
             }
         };
     }

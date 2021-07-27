@@ -402,7 +402,6 @@ public class UserCaseTest implements MycatTest {
             execute(mycatConnection, "CREATE DATABASE `1cloud`");
 
 
-
             execute(mycatConnection, "USE `1cloud`;");
 
             execute(
@@ -463,34 +462,137 @@ public class UserCaseTest implements MycatTest {
         }
     }
 
-        @Test
-        public void case7() throws Exception {
-            String table = "sharding";
-            try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT)) {
-                execute(mycatConnection, RESET_CONFIG);
-                execute(mycatConnection,
-                        CreateClusterHint.create("c0",
-                                Arrays.asList("prototypeDs"), Collections.emptyList()));
-                execute(mycatConnection, "DROP DATABASE `1cloud`");
+    @Test
+    public void case7() throws Exception {
+        String table = "sharding";
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT)) {
+            execute(mycatConnection, RESET_CONFIG);
+            execute(mycatConnection,
+                    CreateClusterHint.create("c0",
+                            Arrays.asList("prototypeDs"), Collections.emptyList()));
+            execute(mycatConnection, "DROP DATABASE `1cloud`");
 
 
-                execute(mycatConnection, "CREATE DATABASE `1cloud`");
+            execute(mycatConnection, "CREATE DATABASE `1cloud`");
 
 
-                execute(mycatConnection, "USE `1cloud`;");
+            execute(mycatConnection, "USE `1cloud`;");
 
-                execute(mycatConnection, "CREATE TABLE `1cloud`.`1log` (\n" +
-                        "  `id` BIGINT(20) DEFAULT NULL,\n" +
-                        "  `user_id` BIGINT(20) DEFAULT NULL,\n" +
-                        "  `service_id` INT(11) DEFAULT NULL,\n" +
-                        "  `submit_time` DATETIME DEFAULT NULL\n" +
-                        ") ENGINE=INNODB DEFAULT CHARSET=utf8  dbpartition BY YYYYDD(submit_time) dbpartitions 1 tbpartition BY MOD_HASH (id) tbpartitions 1;\n");
+            execute(mycatConnection, "CREATE TABLE `1cloud`.`1log` (\n" +
+                    "  `id` BIGINT(20) DEFAULT NULL,\n" +
+                    "  `user_id` BIGINT(20) DEFAULT NULL,\n" +
+                    "  `service_id` INT(11) DEFAULT NULL,\n" +
+                    "  `submit_time` DATETIME DEFAULT NULL\n" +
+                    ") ENGINE=INNODB DEFAULT CHARSET=utf8  dbpartition BY YYYYDD(submit_time) dbpartitions 1 tbpartition BY MOD_HASH (id) tbpartitions 1;\n");
 
 
-                String sql = "select any_value(submit_time) from `1log` where submit_time between '2019-5-31' and '2019-6-21' group by DATE_FORMAT(submit_time,'%Y-%m')";
-                String explain = explain(mycatConnection,sql );
-                executeQuery(mycatConnection,sql);
-                System.out.println();
-            }
+            String sql = "select any_value(submit_time) from `1log` where submit_time between '2019-5-31' and '2019-6-21' group by DATE_FORMAT(submit_time,'%Y-%m')";
+            String explain = explain(mycatConnection, sql);
+            executeQuery(mycatConnection, sql);
+            System.out.println();
+            execute(mycatConnection, "USE `1cloud`;");
+            execute(
+                    mycatConnection,
+                    CreateTableHint
+                            .createSharding("1cloud", "stat_ad_sdk",
+                                    "CREATE TABLE stat_ad_sdk (\n" +
+                                            "ad_id int unsigned DEFAULT NULL COMMENT '广告位id',\n" +
+                                            "ad_uuid varchar(50) DEFAULT NULL COMMENT '渠道广告位id',\n" +
+                                            "ad_name varchar(500) DEFAULT NULL COMMENT '广告位名称',\n" +
+                                            "ad_type varchar(50) DEFAULT NULL COMMENT '广告位类型',\n" +
+                                            "uid int unsigned DEFAULT NULL COMMENT '开发者id',\n" +
+                                            "user_name varchar(500) DEFAULT NULL COMMENT '开发者名',\n" +
+                                            "app_id int unsigned DEFAULT NULL COMMENT '应用id',\n" +
+                                            "app_name varchar(500) DEFAULT NULL COMMENT '应用名',\n" +
+                                            "channel_id int unsigned DEFAULT NULL COMMENT '渠道id',\n" +
+                                            "date date DEFAULT NULL COMMENT '日期',\n" +
+                                            "req int unsigned NOT NULL DEFAULT '0' COMMENT '请求量',\n" +
+                                            "fill_rate varchar(20) DEFAULT NULL COMMENT '填充率',\n" +
+                                            "`show` int unsigned NOT NULL DEFAULT '0' COMMENT '展示量',\n" +
+                                            "click int unsigned NOT NULL DEFAULT '0' COMMENT '点击量',\n" +
+                                            "video_error int unsigned NOT NULL DEFAULT '0' COMMENT '视频播放错误量',\n" +
+                                            "video_not_complete int unsigned NOT NULL DEFAULT '0' COMMENT '视频未完整播放量',\n" +
+                                            "version varchar(50) DEFAULT NULL COMMENT 'sdk版本',\n" +
+                                            "UNIQUE KEY dateAdIdVer (date,ad_uuid,version) USING BTREE\n" +
+                                            ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='广告sdk日统计数据';",
+                                    ShardingBackEndTableInfoConfig.builder()
+                                            .schemaNames("c")
+                                            .tableNames("stat_ad_sdk_$0-11")
+                                            .targetNames("prototype").build(),
+                                    ShardingFuntion.builder()
+                                            .clazz(io.mycat.router.mycat1xfunction.PartitionByMonth.class.getCanonicalName())
+                                            .properties(Maps.of(
+                                                    "beginDate", "2019-01-01",
+                                                    "endDate", "2099-12-01",
+                                                    "dateFormat", "yyyy-MM-dd",
+                                                    "columnName", "date"
+                                            )).build())
+            );
+
+            sql = "select any_value(date) from `stat_ad_sdk` where date between '2019-5-01' and '2019-05-31' group by DATE_FORMAT(date,'%Y-%m')";
+            explain = explain(mycatConnection, sql);
+            executeQuery(mycatConnection, sql);
+            System.out.println();
+
+        }
     }
+
+    @Test
+    public void case8() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+             Connection mysqlConnection = getMySQLConnection(DB1)) {
+            execute(mycatConnection, RESET_CONFIG);
+
+            execute(mycatConnection, "DROP DATABASE db1");
+
+
+            execute(mycatConnection, "CREATE DATABASE db1");
+            execute(mycatConnection, "use db1");
+            execute(mycatConnection, "CREATE TABLE `sys_menu` (\n" +
+                    "  `menu_id` bigint(20) NOT NULL AUTO_INCREMENT,\n" +
+                    "  `menu_name` varchar(50) NOT NULL ,\n" +
+                    "  `parent_id` bigint(20) DEFAULT '0' ,\n" +
+                    "  `order_num` int(4) DEFAULT '0',\n" +
+                    "  `path` varchar(200) DEFAULT '' ,\n" +
+                    "  `component` varchar(255) DEFAULT NULL ,\n" +
+                    "  `is_frame` int(1) DEFAULT '1' ,\n" +
+                    "  `is_cache` int(1) DEFAULT '0',\n" +
+                    "  `menu_type` varchar(1) DEFAULT '' ,\n" +
+                    "  `visible` varchar(1) DEFAULT '0',\n" +
+                    "  `status` varchar(1) DEFAULT '0' ,\n" +
+                    "  `perms` varchar(100) DEFAULT NULL ,\n" +
+                    "  `icon` varchar(100) DEFAULT '#' ,\n" +
+                    "  `create_by` varchar(64) DEFAULT '' ,\n" +
+                    "  `create_time` datetime DEFAULT NULL ,\n" +
+                    "  `update_by` varchar(64) DEFAULT '',\n" +
+                    "  `update_time` datetime DEFAULT NULL,\n" +
+                    "  `remark` varchar(500) DEFAULT '',\n" +
+                    "  PRIMARY KEY (`menu_id`)\n" +
+                    ") ENGINE=InnoDB AUTO_INCREMENT=1080 DEFAULT CHARSET=utf8 ;");
+            deleteData(mycatConnection, "db1", "sys_menu");
+            execute(mycatConnection, "INSERT INTO `sys_menu` VALUES ('1', '系统管理', '0', '6', 'common', null, '1', '0', 'M', '0', '0', '', 'build', 'admin', '2021-04-15 12:06:30', 'admin', null, '系统管理目录');");
+            String sql = "select * from db1.sys_menu";
+
+            Statement mycatStatement = mycatConnection.createStatement();
+            ResultSet mycatresultSet = mycatStatement.executeQuery(sql);
+            ResultSetMetaData mycatmetaData = mycatresultSet.getMetaData();
+
+            Statement mysqlstatement = mysqlConnection.createStatement();
+            ResultSet mysqlresultSet = mysqlstatement.executeQuery(sql);
+            ResultSetMetaData mysqlmetaData = mysqlresultSet.getMetaData();
+
+            Assert.assertEquals(mysqlmetaData.getColumnCount(), mycatmetaData.getColumnCount());
+            for (int i = 1; i <= mysqlmetaData.getColumnCount(); i++) {
+                int mysqlcolumnType = mysqlmetaData.getColumnType(i);
+                int mysqlNullable = mysqlmetaData.isNullable(i);
+                int mycatcolumnType = mycatmetaData.getColumnType(i);
+                int mycatNullable = mycatmetaData.isNullable(i);
+                Assert.assertEquals(mysqlcolumnType, mycatcolumnType);
+                Assert.assertEquals(mysqlNullable, mycatNullable);
+            }
+            System.out.println();
+        }
+    }
+
+
 }

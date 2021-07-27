@@ -34,6 +34,7 @@ import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -125,6 +126,7 @@ public abstract class XaTestSuite {
     }
 
     @Test
+    @Disabled
     public void beginBegin(VertxTestContext testContext) {
         XaSqlConnection baseXaSqlConnection = factory.apply(mySQLManager,xaLog);
         baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
@@ -248,7 +250,7 @@ public abstract class XaTestSuite {
             Future<SqlConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
             Future<SqlConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
 
-            CompositeFuture all = CompositeFuture.all(ds1.compose(connection -> {
+            CompositeFuture all = CompositeFuture.join(ds1.compose(connection -> {
                 Future<RowSet<Row>> future = connection.query(
                         "INSERT INTO db1.travelrecord (id)\n" +
                                 "                       VALUES\n" +
@@ -296,7 +298,7 @@ public abstract class XaTestSuite {
             Future<SqlConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
             Future<SqlConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
 
-            CompositeFuture all = CompositeFuture.all(ds1.compose(connection -> {
+            CompositeFuture all = CompositeFuture.join(ds1.compose(connection -> {
                 Future<RowSet<Row>> future = connection.query(
                         "INSERT INTO db1.travelrecord (id)\n" +
                                 "                       VALUES\n" +
@@ -347,7 +349,7 @@ public abstract class XaTestSuite {
             Future<SqlConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
             Future<SqlConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
 
-            CompositeFuture all = CompositeFuture.all(ds1.compose(connection -> {
+            CompositeFuture all = CompositeFuture.join(ds1.compose(connection -> {
                 Future<RowSet<Row>> future = connection.query(
                         "INSERT INTO db1.travelrecord (id)\n" +
                                 "                       VALUES\n" +
@@ -406,7 +408,7 @@ public abstract class XaTestSuite {
             Future<SqlConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
             Future<SqlConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
 
-            CompositeFuture all = CompositeFuture.all(ds1.compose(connection -> {
+            CompositeFuture all = CompositeFuture.join(ds1.compose(connection -> {
                 Future<RowSet<Row>> future = connection.query(
                         "INSERT INTO db1.travelrecord (id)\n" +
                                 "                       VALUES\n" +

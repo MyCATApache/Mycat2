@@ -126,7 +126,18 @@ public class HintTools {
             }
         }).findFirst().orElse(null);
     }
-
+    public static RelHint getLastIndexHint(List<RelHint> hints) {
+        if (hints == null) return null;
+        return hints.stream().filter(relHint -> {
+            switch (relHint.hintName.toLowerCase()) {
+                case "index": {
+                    return true;
+                }
+                default:
+                    return false;
+            }
+        }).findFirst().orElse(null);
+    }
     /**
      * Creates mock hint strategies with given builder.
      *

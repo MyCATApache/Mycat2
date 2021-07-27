@@ -19,6 +19,7 @@ import io.mycat.LogicTableType;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatConvention;
+import io.mycat.calcite.localrel.MycatAggregateUnionTransposeRule;
 import io.mycat.calcite.localrel.LocalRules;
 import io.mycat.calcite.localrel.LocalSort;
 import io.mycat.calcite.logical.MycatView;
@@ -35,7 +36,6 @@ import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
@@ -531,7 +531,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             }
             HepProgramBuilder hepProgram = new HepProgramBuilder();
             hepProgram.addMatchLimit(512);
-            hepProgram.addRuleInstance(CoreRules.AGGREGATE_UNION_TRANSPOSE);
+            hepProgram.addRuleInstance(MycatAggregateUnionTransposeRule.Config.DEFAULT.toRule());
             HepPlanner planner = new HepPlanner(hepProgram.build());
             planner.setRoot(input);
             RelNode bestExp = planner.findBestExp();
@@ -700,6 +700,16 @@ public class SQLRBORewriter extends RelShuttleImpl {
     private static Optional<RelNode> pushDownERTable(Join join,
                                                      MycatView left,
                                                      MycatView right) {
+        switch (join.getJoinType()) {
+            case INNER:
+            case LEFT:
+            case SEMI:
+            case ANTI:
+            case RIGHT:
+                break;
+            case FULL:
+                return Optional.empty();
+        }
         JoinInfo joinInfo = join.analyzeCondition();
         if (joinInfo.isEqui()) {
             List<IntPair> pairs = joinInfo.pairs();
@@ -753,22 +763,48 @@ public class SQLRBORewriter extends RelShuttleImpl {
         Distribution rdistribution = right.getDistribution();
         Distribution.Type lType = ldistribution.type();
         Distribution.Type rType = rdistribution.type();
-        if (lType != Distribution.Type.SHARDING && rType != Distribution.Type.SHARDING) {
-            return ldistribution.join(rdistribution).map(distribution -> MycatView.ofBottom(
-                    join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
-                    distribution));
+        if (lType == Distribution.Type.SHARDING && rType == Distribution.Type.BROADCAST) {
+            switch (join.getJoinType()) {
+                case INNER:
+                case LEFT:
+                case SEMI:
+                case ANTI:
+                    break;
+                case RIGHT:
+                case FULL:
+                    return Optional.empty();
+            }
+        } else if (lType == Distribution.Type.BROADCAST && rType == Distribution.Type.SHARDING) {
+            switch (join.getJoinType()) {
+                case INNER:
+                case RIGHT:
+                    break;
+                case SEMI:
+                case ANTI:
+                case LEFT:
+                case FULL:
+                    return Optional.empty();
+            }
+        } else if (lType == Distribution.Type.PHY && rType == Distribution.Type.BROADCAST ||
+                (lType == Distribution.Type.BROADCAST && rType == Distribution.Type.PHY)) {
+            switch (join.getJoinType()) {
+                case INNER:
+                case LEFT:
+                case SEMI:
+                case ANTI:
+                case RIGHT:
+                    break;
+                case FULL:
+                    return Optional.empty();
+            }
+        } else if (lType == Distribution.Type.PHY && rType == Distribution.Type.PHY) {
+
+        } else {
+            return Optional.empty();
         }
-        if (lType == Distribution.Type.BROADCAST || rType == Distribution.Type.BROADCAST) {
-            return ldistribution.join(rdistribution).map(distribution -> MycatView.ofBottom(
-                    join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
-                    distribution));
-        }
-        if (lType == Distribution.Type.PHY && lType == rType) {
-            return ldistribution.join(rdistribution).map(distribution -> MycatView.ofBottom(
-                    join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
-                    distribution));
-        }
-        return Optional.empty();
+        return ldistribution.join(rdistribution).map(distribution -> MycatView.ofBottom(
+                join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
+                distribution));
     }
 
     public static RelNode filter(RelNode original, Filter filter) {

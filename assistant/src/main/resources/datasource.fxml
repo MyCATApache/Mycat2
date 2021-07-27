@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.DatasourceVO">
+    <children>
+        <Label layoutX="192.0" layoutY="96.0" text="数据源" />
+        <Label layoutX="192.0" layoutY="121.0" text="数据源名称" />
+        <TextField fx:id="name" layoutX="296.0" layoutY="117.0" prefWidth="161.0" />
+        <Label layoutX="192.0" layoutY="152.0" text="数据源类型" />
+        <TextField fx:id="type" layoutX="296.0" layoutY="148.0" prefWidth="161.0" />
+        <Label layoutX="192.0" layoutY="181.0" text="数据库类型" />
+        <TextField fx:id="dbType" layoutX="296.0" layoutY="177.0" prefWidth="161.0" />
+        <Label layoutX="192.0" layoutY="215.0" text="url连接字符串" />
+        <TextField fx:id="url" layoutX="296.0" layoutY="211.0" prefWidth="161.0" />
+        <Label layoutX="192.0" layoutY="244.0" text="用户名" />
+        <TextField fx:id="user" layoutX="296.0" layoutY="240.0" prefWidth="161.0" />
+        <Label layoutX="192.0" layoutY="270.0" text="密码" />
+        <PasswordField layoutX="296.0" layoutY="266.0" />
+        <Button layoutX="315.0" layoutY="345.0" text="保存" />
+    </children>
+</AnchorPane>

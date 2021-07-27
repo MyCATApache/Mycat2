@@ -17,11 +17,10 @@
 package io.mycat.calcite.table;
 
 import io.mycat.*;
+import io.mycat.config.NormalTableConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.util.DDLHelper;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -33,9 +32,11 @@ import static io.mycat.util.CreateTableUtils.normalizeCreateTableSQLToMySQL;
 
 public class NormalTable implements NormalTableHandler {
     private final GlobalTable table;
+    private NormalTableConfig tableConfig;
 
-    public NormalTable(LogicTable logicTable, Partition backendTable) {
-        this.table = new GlobalTable(logicTable, Collections.singletonList(backendTable));
+    public NormalTable(LogicTable logicTable, Partition backendTable, NormalTableConfig tableConfigEntry) {
+        this.tableConfig = tableConfigEntry;
+        this.table = new GlobalTable(logicTable, Collections.singletonList(backendTable), null);
     }
 
     @Override
@@ -129,5 +130,9 @@ public class NormalTable implements NormalTableHandler {
 //                connection.executeUpdate(String.format(dropTemplate,node.getSchema(),node.getTable()), false);
 //            }
 //        }
+    }
+
+    public NormalTableConfig getTableConfig() {
+        return tableConfig;
     }
 }

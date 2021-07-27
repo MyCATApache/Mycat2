@@ -84,7 +84,7 @@ public class DrdsRunnerHelper {
                         }
                     } else if (selectItem.getExpr() instanceof SQLIdentifierExpr) {
                         columnNodes.add(SQLUtils.normalize(((SQLIdentifierExpr) selectItem.getExpr()).getName()));
-                    } else {
+                    }else {
                         StringBuilder sbText = new StringBuilder();
                         selectItem.output(sbText);
                         columnNodes.add(sbText.toString().replaceAll(" ", ""));
@@ -155,6 +155,10 @@ public class DrdsRunnerHelper {
                         break;
                     }
                     if (byte[].class == aClass) {
+                        sqlTypeName = SqlTypeName.BINARY;
+                        break;
+                    }
+                    if (Byte.class == aClass) {
                         sqlTypeName = SqlTypeName.BINARY;
                         break;
                     }
@@ -236,7 +240,7 @@ public class DrdsRunnerHelper {
                     ParamHolder paramHolder = ParamHolder.CURRENT_THREAD_LOCAL.get();
                     if (sqlTypeName == null) {
                         List<SqlTypeName> curTypes = paramHolder.getTypes();
-                        if (curTypes.size() > index) {
+                        if (curTypes!=null&&curTypes.size() > index) {
                             sqlTypeName = curTypes.get(index);
                         }
                     }

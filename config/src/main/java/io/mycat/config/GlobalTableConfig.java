@@ -1,9 +1,6 @@
 package io.mycat.config;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +9,7 @@ import java.util.List;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode
+@Builder
 public class GlobalTableConfig {
     String createTableSQL;
     String balance;

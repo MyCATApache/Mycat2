@@ -61,7 +61,7 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
 
             }
         }
-        CompositeFuture.all((List) futureList).toCompletionStage().toCompletableFuture().get(1, TimeUnit.MINUTES);
+        CompositeFuture.join((List) futureList).toCompletionStage().toCompletableFuture().get(1, TimeUnit.MINUTES);
         for (Future<MycatDatasourcePool> future : futureList) {
             MycatDatasourcePool datasourcePool = future.result();
             hashMap.put(datasourcePool.getTargetName(), datasourcePool);
