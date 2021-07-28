@@ -972,8 +972,10 @@ public class MetadataManager implements MysqlVariableService {
         return indexInfoMap;
     }
 
-    public void check() {
-        this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream()).parallel()
+    public void createPhysicalTables() {
+        this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream())
+                .filter(i->i.getType()  == LogicTableType.SHARDING || i.getType()  == LogicTableType.GLOBAL)
+                .parallel()
                 .forEach(tableHandler -> tableHandler.createPhysicalTables());
     }
 
