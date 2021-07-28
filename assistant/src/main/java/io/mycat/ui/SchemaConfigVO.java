@@ -6,11 +6,16 @@ import lombok.Data;
 
 
 @Data
-public class SchemaConfigVO {
+public class SchemaConfigVO implements VO{
     @FXML
     TextField schemaName;
     @FXML
     TextField defaultTargetName;
+
+    @Override
+    public String toJsonConfig() {
+        return null;
+    }
 //    String
 //    public static SchemaConfigVO from(LogicSchemaConfig config){
 //        SchemaConfigVO schemaConfigVO = new SchemaConfigVO();

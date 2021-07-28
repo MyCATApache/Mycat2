@@ -7,7 +7,7 @@ import javafx.scene.control.TextField;
 import lombok.Data;
 
 @Data
-public class SingleTableVO {
+public class SingleTableVO implements VO{
     @FXML
     public TextField schemaName;
     @FXML
@@ -33,5 +33,10 @@ public class SingleTableVO {
 
         String sql = this.getCreateTableSQL().getText();
         controller.save(schemaName,tableName,sql,targetName,phySchemaName,phyTableName);
+    }
+
+    @Override
+    public String toJsonConfig() {
+        return null;
     }
 }

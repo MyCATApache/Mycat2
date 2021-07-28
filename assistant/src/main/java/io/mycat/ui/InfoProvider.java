@@ -27,4 +27,8 @@ public interface InfoProvider {
     void deleteDatasource(String datasource);
 
     void deleteLogicalSchema(String schema);
+
+    void saveCluster(ClusterConfig config);
+
+    void saveDatasource(DatasourceConfig config);
 }
