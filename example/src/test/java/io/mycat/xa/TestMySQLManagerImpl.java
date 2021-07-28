@@ -18,9 +18,10 @@ package io.mycat.xa;
 import cn.mycat.vertx.xa.SimpleConfig;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.commands.AbstractMySQLManagerImpl;
-import io.mycat.commands.MycatDatasourcePool;
+import io.mycat.config.DatasourceConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.replica.InstanceType;
 import io.vertx.core.Future;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
@@ -32,17 +33,14 @@ import io.vertx.sqlclient.SqlConnection;
 import lombok.SneakyThrows;
 
 import java.sql.Connection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MySQLManagerImpl extends AbstractMySQLManagerImpl {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MySQLManagerImpl.class);
+public class TestMySQLManagerImpl extends AbstractMySQLManagerImpl {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestMySQLManagerImpl.class);
     private final ConcurrentHashMap<String, MySQLPool> nameMap = new ConcurrentHashMap<>();
 
-    public MySQLManagerImpl(List<SimpleConfig> configList) {
+    public TestMySQLManagerImpl(List<SimpleConfig> configList) {
         Objects.requireNonNull(configList);
         for (SimpleConfig simpleConfig : configList) {
             String name = simpleConfig.getName();
@@ -77,14 +75,20 @@ public class MySQLManagerImpl extends AbstractMySQLManagerImpl {
 
     @Override
     @SneakyThrows
-    public Map<String, java.sql.Connection> getConnectionMap() {
+    public Map<String, java.sql.Connection> getWriteableConnectionMap() {
         ConcurrentHashMap.KeySetView<String, MySQLPool> strings = nameMap.keySet();
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         Map<String, JdbcDataSource> datasourceInfo = jdbcConnectionManager.getDatasourceInfo();
         HashMap<String, Connection> map = new HashMap<>();
         for (String string : strings) {
-            Connection connection = datasourceInfo.get(string).getDataSource().getConnection();
-            map.put(string, connection);
+            JdbcDataSource jdbcDataSource = datasourceInfo.get(string);
+            DatasourceConfig config = jdbcDataSource.getConfig();
+            if (jdbcDataSource.isMySQLType()) {
+                if (InstanceType.valueOf(Optional.ofNullable(config.getInstanceType()).orElse("READ_WRITE").toUpperCase()).isWriteType()) {
+                    Connection connection = jdbcDataSource.getDataSource().getConnection();
+                    map.put(string, connection);
+                }
+            }
         }
         return map;
     }

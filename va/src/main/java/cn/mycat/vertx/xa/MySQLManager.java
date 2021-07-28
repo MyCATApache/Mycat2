@@ -32,7 +32,7 @@ public interface MySQLManager {
 
     Future<SqlConnection> getConnection(String targetName);
     int  getSessionCount(String targetName);
-    Map<String, java.sql.Connection> getConnectionMap();
+    Map<String, java.sql.Connection> getWriteableConnectionMap();
 
     Future<Void> close();
 

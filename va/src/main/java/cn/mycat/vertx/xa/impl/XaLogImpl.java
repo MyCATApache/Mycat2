@@ -18,13 +18,11 @@ package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.*;
 import com.alibaba.druid.util.JdbcUtils;
-import io.mycat.MetaClusterCurrent;
 import io.vertx.core.*;
 import io.vertx.core.impl.ConcurrentHashSet;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowIterator;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
 import lombok.SneakyThrows;
@@ -34,10 +32,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -191,7 +186,7 @@ public class XaLogImpl implements XaLog {
 
     @SneakyThrows
     public void readXARecoveryLog() {
-        Map<String, Connection> connectionMap = mySQLManager.getConnectionMap();
+        Map<String, Connection> connectionMap = mySQLManager.getWriteableConnectionMap();
         readXARecoveryLog(connectionMap);
     }
 
