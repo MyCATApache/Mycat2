@@ -49,7 +49,7 @@ public class BindValueUtil {
                 bv.intBinding = (int) mm.readFixInt(4);
                 break;
             case MysqlDefs.FIELD_TYPE_LONGLONG:
-                bv.longBinding = mm.readLong();
+                bv.longBinding = mm.readFixInt(8);
                 break;
             case MysqlDefs.FIELD_TYPE_FLOAT:
                 bv.floatBinding = mm.readFloat();

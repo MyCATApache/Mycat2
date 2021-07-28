@@ -135,47 +135,47 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             }
             session.writeBytes(MySQLPacketUtil.generatePrepareOk(info), false);
             if (info.getPrepareOkParametersCount() > 0 && info.getPrepareOkColumnsCount() == 0) {
-                for (int i = 0; i < info.getPrepareOkParametersCount(); i++) {
+                for (int i = 0; i < info.getPrepareOkParametersCount()-1; i++) {
                     session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params, i), false);
                 }
                 if (deprecateEOF) {
                     session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params,
-                            info.getPrepareOkParametersCount()), true);
+                            info.getPrepareOkParametersCount()-1), true);
                 } else {
                     session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params,
-                            info.getPrepareOkParametersCount()), false);
+                            info.getPrepareOkParametersCount()-1), false);
                     session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
                             session.getServerStatusValue()), true);
                 }
                 return Future.succeededFuture();
             } else if (info.getPrepareOkParametersCount() == 0 && info.getPrepareOkColumnsCount() > 0) {
-                for (int i = 0; i < info.getPrepareOkColumnsCount() ; i++) {
+                for (int i = 0; i < info.getPrepareOkColumnsCount()-1 ; i++) {
                     session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields, i), false);
                 }
                 if (deprecateEOF) {
                     session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields,
-                            info.getPrepareOkColumnsCount()), true);
+                            info.getPrepareOkColumnsCount()-1), true);
                 } else {
                     session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields,
-                            info.getPrepareOkColumnsCount()), false);
+                            info.getPrepareOkColumnsCount()-1), false);
                     session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
                             session.getServerStatusValue()), true);
                 }
                 return Future.succeededFuture();
             } else {
-                for (int i = 0; i < info.getPrepareOkParametersCount(); i++) {
+                for (int i = 0; i < info.getPrepareOkParametersCount()-1; i++) {
                     session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params, i), false);
                 }
                 session.writeColumnEndPacket(false);
-                for (int i = 0; i < info.getPrepareOkColumnsCount(); i++) {
+                for (int i = 0; i < info.getPrepareOkColumnsCount()-1; i++) {
                     session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields, i), false);
                 }
                 if (deprecateEOF) {
                     session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields,
-                            info.getPrepareOkColumnsCount()), true);
+                            info.getPrepareOkColumnsCount()-1), true);
                 } else {
                     session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields,
-                            info.getPrepareOkColumnsCount()), false);
+                            info.getPrepareOkColumnsCount()-1), false);
                     session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
                             session.getServerStatusValue()), true);
                 }
