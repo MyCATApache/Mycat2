@@ -2,6 +2,7 @@ package io.mycat.sql;
 
 import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.assemble.MycatTest;
+import io.mycat.config.DatasourceConfig;
 import io.mycat.config.ShardingBackEndTableInfoConfig;
 import io.mycat.config.ShardingFuntion;
 import io.mycat.hint.CreateClusterHint;
@@ -617,8 +618,7 @@ public class UserCaseTest implements MycatTest {
                             Arrays.asList("ds0"), Collections.emptyList()));
 
 
-
-            testBlob(mycatConnection,  "CREATE TABLE db1.`travelrecord` (\n" +
+            testBlob(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
                     "  `id` bigint(20) NOT NULL KEY,\n" +
                     "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
                     "  `traveldate` datetime(6) DEFAULT NULL,\n" +
@@ -638,6 +638,7 @@ public class UserCaseTest implements MycatTest {
                     "");
         }
     }
+
     @Test
     public void case10() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT)) {
@@ -659,8 +660,7 @@ public class UserCaseTest implements MycatTest {
                             Arrays.asList("ds0"), Collections.emptyList()));
 
 
-
-            testBlob(mycatConnection,  "CREATE TABLE db1.`travelrecord` (\n" +
+            testBlob(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
                     "  `id` bigint(20) NOT NULL KEY,\n" +
                     "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
                     "  `traveldate` datetime(6) DEFAULT NULL,\n" +
@@ -702,8 +702,7 @@ public class UserCaseTest implements MycatTest {
                             Arrays.asList("ds0"), Collections.emptyList()));
 
 
-
-            testBlob(mycatConnection,  "CREATE TABLE db1.`travelrecord` (\n" +
+            testBlob(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
                     "  `id` bigint(20) NOT NULL KEY,\n" +
                     "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
                     "  `traveldate` datetime(6) DEFAULT NULL,\n" +
@@ -720,20 +719,92 @@ public class UserCaseTest implements MycatTest {
         }
     }
 
+    /**
+     * 测试数据源更新
+     * @throws Exception
+     */
+    @Test
+    public void case12() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+             Connection mysql2 = getMySQLConnection(DB2);
+        ) {
+            execute(mycatConnection, RESET_CONFIG);
+
+            DatasourceConfig ds0 = new DatasourceConfig();
+            ds0.setName("ds0");
+            ds0.setUrl(DB1);
+            ds0.setPassword(CreateDataSourceHint.PASSWORD);
+            ds0.setUser(CreateDataSourceHint.USER_NAME);
+            ds0.setInstanceType("READ_WRITE");
+
+            DatasourceConfig ds1 = new DatasourceConfig();
+            ds1.setName("ds1");
+            ds1.setUrl(DB2);
+            ds1.setPassword(CreateDataSourceHint.PASSWORD);
+            ds1.setUser(CreateDataSourceHint.USER_NAME);
+            ds1.setInstanceType("READ_WRITE");
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create(ds0));
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create(ds1));
+
+            execute(mycatConnection,
+                    CreateClusterHint.create("prototype",
+                            Arrays.asList("ds0"), Arrays.asList("ds1")));
+
+            execute(mycatConnection, "CREATE DATABASE IF NOT EXISTS db1");
+            execute(mycatConnection, "CREATE TABLE IF NOT EXISTS db1.`tbl`(\n" +
+                    "   `id` INT UNSIGNED AUTO_INCREMENT," +
+                    "   PRIMARY KEY ( `id` )\n" +
+                    ")ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+
+
+            ds0.setInstanceType("WRITE");
+            ds1.setInstanceType("READ");
+
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create(ds0));
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create(ds1));
+
+
+            execute(mycatConnection,
+                    CreateClusterHint.create("prototype",
+                            Arrays.asList("ds0"), Arrays.asList("ds1")));
+            deleteData(mysql2,"db1","tbl");
+            execute(mysql2, "INSERT INTO db1.tbl \n" +
+                    "(id)\n" +
+                    "VALUES\n" +
+                    " (1);");
+
+            long now = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(1);
+
+            while (System.currentTimeMillis() > now) {
+                if (!hasData(mycatConnection, "db1", "tbl")) {
+                    Assert.fail();
+                }
+            }
+        }
+    }
+
     private void testBlob(Connection mycatConnection, String createTableSQL) throws Exception {
         execute(mycatConnection, createTableSQL);
 
-        deleteData(mycatConnection,"db1","travelrecord");
+        deleteData(mycatConnection, "db1", "travelrecord");
 
         String text = "一二三四五六七八";
-        byte[] testData = ByteUtil.getBytes(text,"UTF8");
-        JdbcUtils.execute(mycatConnection," INSERT INTO `db1`.`travelrecord` (`id`, `blob`) VALUES ('1', ?)",Arrays.asList(testData));
+        byte[] testData = ByteUtil.getBytes(text, "UTF8");
+        JdbcUtils.execute(mycatConnection, " INSERT INTO `db1`.`travelrecord` (`id`, `blob`) VALUES ('1', ?)", Arrays.asList(testData));
         Statement statement = mycatConnection.createStatement();
         ResultSet resultSet = statement.executeQuery("select `blob` from `db1`.`travelrecord` where id = 1");
         ResultSetMetaData metaData = resultSet.getMetaData();
         boolean next = resultSet.next();
         Object bytes = resultSet.getObject(1);
-        Assert.assertEquals(text, new String((byte[])bytes, StandardCharsets.UTF_8));
+        Assert.assertEquals(text, new String((byte[]) bytes, StandardCharsets.UTF_8));
         System.out.println();
     }
 
