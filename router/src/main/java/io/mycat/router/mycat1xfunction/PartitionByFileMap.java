@@ -100,6 +100,7 @@ public class PartitionByFileMap extends Mycat1xSingleValueRuleFunction {
                 break;
             case "BigInteger":
                 transformation = BigInteger::new;
+                break;
             case "BigDecimal":
                 transformation = BigDecimal::new;
                 break;
