@@ -1,5 +1,6 @@
 package io.mycat.sqlhandler.dql;
 
+import cn.mycat.vertx.xa.XaLog;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLCommentHint;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -1005,6 +1006,11 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         }
         if ("repairPhysicalTable".equalsIgnoreCase(cmd)) {
             MetaClusterCurrent.wrapper(MetadataManager.class).createPhysicalTables();
+            return;
+        }
+        if ("readXARecoveryLog".equalsIgnoreCase(cmd)) {
+            XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
+            xaLog.readXARecoveryLog();
             return;
         }
     }

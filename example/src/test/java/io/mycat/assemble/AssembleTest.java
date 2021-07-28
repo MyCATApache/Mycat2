@@ -5,6 +5,7 @@ import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
 import lombok.SneakyThrows;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
@@ -20,6 +21,16 @@ import java.util.function.Consumer;
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
 public class AssembleTest implements MycatTest {
+    boolean init = false;
+    @Before
+    public void before() throws Exception {
+        if (!init) {
+            try (Connection connection = getMySQLConnection(DB_MYCAT)) {
+                JdbcUtils.execute(connection, "/*+ mycat:readXARecoveryLog{} */;");
+            }
+            init = true;
+        }
+    }
 
     @Test
     public void testTranscationFail2() throws Exception {
