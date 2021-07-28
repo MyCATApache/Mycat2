@@ -33,7 +33,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 @Data
-public class ShardingTableConfigVO {
+public class ShardingTableConfigVO implements VO{
 
     @FXML
     public TextField schemaName;
@@ -123,5 +123,10 @@ public class ShardingTableConfigVO {
         }catch (Exception e){
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public String toJsonConfig() {
+        return null;
     }
 }

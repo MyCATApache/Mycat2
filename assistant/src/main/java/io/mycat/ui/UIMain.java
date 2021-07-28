@@ -19,12 +19,9 @@ import java.util.Optional;
 
 public class UIMain extends Application {
 
-    private static InfoProvider infoProvider;
+    public static InfoProvider infoProvider;
 
     public static InfoProvider getInfoProvider() {
-        if (infoProvider==null){
-            infoProvider = new InfoProviderImpl();
-        }
         return infoProvider;
     }
 

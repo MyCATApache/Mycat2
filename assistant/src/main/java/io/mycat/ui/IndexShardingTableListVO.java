@@ -15,7 +15,7 @@ import javafx.stage.Stage;
 import lombok.Data;
 
 @Data
-public class IndexShardingTableListVO {
+public class IndexShardingTableListVO implements VO{
     public Label schemaName;
     public Label tableName;
     public ListView indexTableList;
@@ -55,5 +55,10 @@ public class IndexShardingTableListVO {
 
     public void setController(Controller controller) {
         this.controller = controller;
+    }
+
+    @Override
+    public String toJsonConfig() {
+        return null;
     }
 }

@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-public class GlobalTableConfigVO {
+public class GlobalTableConfigVO implements VO{
     @FXML
    public TextField schemaName;
     @FXML
@@ -33,5 +33,10 @@ public class GlobalTableConfigVO {
             targets.add(item);
         }
         controller.save(schemaName,tableName,sql,targets);
+    }
+
+    @Override
+    public String toJsonConfig() {
+        return null;
     }
 }

@@ -452,7 +452,7 @@ public class MetadataManager implements MysqlVariableService {
         }
         List<List> data = stringListEntry.getData();
         ImmutableList.Builder<BackendTableInfo> builder = ImmutableList.builder();
-        if (data == null) {
+        if (data != null) {
             for (List datum : data) {
                 if (datum.size() == 6){
                     String target = Objects.toString(datum.get(0));

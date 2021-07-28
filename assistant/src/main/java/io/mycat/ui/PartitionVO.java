@@ -5,7 +5,7 @@ import javafx.scene.control.TextField;
 import lombok.Data;
 
 @Data
-public class PartitionVO {
+public class PartitionVO implements VO{
     @FXML
     public TextField id;
     @FXML
@@ -14,4 +14,9 @@ public class PartitionVO {
     public TextField schema;
     @FXML
     public TextField table;
+
+    @Override
+    public String toJsonConfig() {
+        return null;
+    }
 }
