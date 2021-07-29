@@ -68,32 +68,16 @@ public class BindValueUtil {
             case MysqlDefs.FIELD_TYPE_VAR_STRING:
             case MysqlDefs.FIELD_TYPE_STRING:
             case MysqlDefs.FIELD_TYPE_VARCHAR:
-                bv.value = mm.readLenencString();
-                break;
             case MysqlDefs.FIELD_TYPE_DECIMAL:
             case MysqlDefs.FIELD_TYPE_NEW_DECIMAL:
-                bv.value = mm.readBigDecimal();
-                if (bv.value == null) {
-                    bv.isNull = true;
-                }
-                break;
             case MysqlDefs.FIELD_TYPE_BLOB:
+            default:
                 byte[] vv = mm.readLenencBytes();
                 if (vv == null) {
                     bv.isNull = true;
                 } else {
-                    //vv.length >= 0
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    try {
-                        out.write(vv);
-                    } catch (IOException e) {
-                        throw new IllegalArgumentException("bindValue error,unsupported type:" + bv.type);
-                    }
-                    bv.value = out;
+                    bv.value = vv;
                 }
-                break;
-            default:
-                throw new IllegalArgumentException("bindValue error,unsupported type:" + bv.type);
         }
         bv.isSet = true;
     }

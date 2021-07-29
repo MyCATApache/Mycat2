@@ -10,20 +10,20 @@ import io.mycat.hint.CreateDataSourceHint;
 import io.mycat.hint.CreateTableHint;
 import io.mycat.router.mycat1xfunction.PartitionByFileMap;
 import io.mycat.router.mycat1xfunction.PartitionByHotDate;
-import io.mycat.router.mycat1xfunction.PartitionByRangeMod;
 import io.mycat.util.ByteUtil;
 import org.apache.groovy.util.Maps;
 import org.junit.Assert;
 import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
-import java.sql.Date;
-import java.util.*;
-
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 
 @NotThreadSafe
@@ -788,6 +788,25 @@ public class UserCaseTest implements MycatTest {
                     Assert.fail();
                 }
             }
+        }
+    }
+    /**
+     * 测试数据源更新
+     * @throws Exception
+     */
+    @Test
+    public void case13() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
+            deleteData(mycatConnection,"mysql","testblob");
+            byte[] data = ByteBuffer.allocate(8).putLong(Long.MAX_VALUE).array();
+            JdbcUtils.execute(mycatConnection, "INSERT INTO mysql.testblob \n" +
+                    "(id,data)\n" +
+                    "VALUES\n" +
+                    " (1,?);",Arrays.asList(data));
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(mycatConnection, "select * from mysql.testblob where id = 1", Collections.emptyList());
+            byte[] data1 = (byte[])maps.get(0).get("data");
+            Assert.assertTrue(Arrays.equals(data,data1));
+            System.out.println();
         }
     }
 
