@@ -779,9 +779,9 @@ public class MetadataManager implements MysqlVariableService {
         String targetName;
 
         public SimpleRoute(String schemaName, String tableName, String targetName) {
-            this.schemaName = schemaName;
-            this.tableName = tableName;
-            this.targetName = targetName;
+            this.schemaName = Objects.requireNonNull(schemaName);
+            this.tableName = Objects.requireNonNull(tableName);
+            this.targetName = Objects.requireNonNull(targetName);
         }
     }
 
