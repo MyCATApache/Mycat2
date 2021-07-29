@@ -798,12 +798,12 @@ public class UserCaseTest implements MycatTest {
     @Test
     public void case13() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
-            deleteData(mycatConnection,"mysql","testblob");
-            byte[] data = ByteBuffer.allocate(8).putLong(Long.MAX_VALUE).array();
             JdbcUtils.execute(mycatConnection,"CREATE TABLE `testblob` (\n" +
                     "  `id` bigint(20) DEFAULT NULL,\n" +
                     "  `data` blob\n" +
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            deleteData(mycatConnection,"mysql","testblob");
+            byte[] data = ByteBuffer.allocate(8).putLong(Long.MAX_VALUE).array();
             JdbcUtils.execute(mycatConnection, "INSERT INTO mysql.testblob \n" +
                     "(id,data)\n" +
                     "VALUES\n" +
