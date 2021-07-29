@@ -54,16 +54,16 @@ public class CreateTableUtils {
         if (set.isEmpty()) {
             throw new IllegalArgumentException();
         }
-        for (String s : set) {
-            try (DefaultConnection connection = jdbcConnectionManager.getConnection(s)) {
-                if (connection.getDataSource().isMySQLType()) {
-                    normalizeCreateTableSQLToMySQL(createSQL).ifPresent(sql -> {
+        normalizeCreateTableSQLToMySQL(createSQL).ifPresent(sql -> {
+            for (String s : set) {
+                try (DefaultConnection connection = jdbcConnectionManager.getConnection(s)) {
+                    if (connection.getDataSource().isMySQLType()) {
                         createDatabaseIfNotExist(connection, node);
                         connection.executeUpdate(rewriteCreateTableSql(sql, node.getSchema(), node.getTable()), false);
-                    });
+                    }
                 }
             }
-        }
+        });
     }
 
     public static Optional<String> normalizeCreateTableSQLToMySQL(String createTableSQL) {
@@ -74,7 +74,7 @@ public class CreateTableUtils {
         } catch (Throwable t) {
             throwable = t;
         }
-        LOGGER.error("",throwable);
+        LOGGER.error("", throwable);
         for (int i = length - 1; 0 < i; i--) {
             try {
                 return innerNormalizeCreateTableSQLToMySQL(createTableSQL.substring(0, i));
