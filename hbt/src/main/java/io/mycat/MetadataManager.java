@@ -815,7 +815,7 @@ public class MetadataManager implements MysqlVariableService {
                                 throw new IllegalArgumentException("unsupported table type:" + tableHandler.getType());
                             }
                             tables.put(tableHandler.getTableName(),
-                                    new SimpleRoute(tableName.getKey(), tableName.getValue(), partition.getTargetName()));
+                                    new SimpleRoute(partition.getSchema(), partition.getTable(), partition.getTargetName()));
                             if (targets.add(partition.getTargetName())) {
                                 if (targets.size() > 1) {
                                     return false;
