@@ -27,6 +27,8 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.replica.ReplicaSelectorManager;
 import jdk.nashorn.internal.runtime.options.Option;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.List;
@@ -37,6 +39,8 @@ import static io.mycat.util.DDLHelper.createDatabaseIfNotExist;
 import static io.mycat.calcite.table.LogicTable.rewriteCreateTableSql;
 
 public class CreateTableUtils {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CreateTableUtils.class);
 
     public static void createPhysicalTable(JdbcConnectionManager jdbcConnectionManager, Partition node, String createSQL) {
         ReplicaSelectorManager selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
@@ -70,6 +74,7 @@ public class CreateTableUtils {
         } catch (Throwable t) {
             throwable = t;
         }
+        LOGGER.error("",throwable);
         for (int i = length - 1; 0 < i; i--) {
             try {
                 return innerNormalizeCreateTableSQLToMySQL(createTableSQL.substring(0, i));
