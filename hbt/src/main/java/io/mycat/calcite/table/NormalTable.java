@@ -111,12 +111,13 @@ public class NormalTable implements NormalTableHandler {
 
     @Override
     public void createPhysicalTables() {
-        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        Stream.of(new BackendTableInfo("prototype", getSchemaName(), getTableName()), getDataNode())
-                .parallel()
-                .forEach(node -> normalizeCreateTableSQLToMySQL(NormalTable.this.getCreateTableSQL()).ifPresent(sql -> {
-                    createPhysicalTable(jdbcConnectionManager, node, sql);
-                }));
+        normalizeCreateTableSQLToMySQL(NormalTable.this.getCreateTableSQL()).ifPresent(sql -> {
+            JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+            Stream.of(new BackendTableInfo("prototype", getSchemaName(), getTableName()), getDataNode())
+                    .parallel()
+                    .forEach(node ->
+                            createPhysicalTable(jdbcConnectionManager, node, sql));
+        });
     }
 
 

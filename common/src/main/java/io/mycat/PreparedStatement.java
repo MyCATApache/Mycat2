@@ -188,7 +188,7 @@ public class PreparedStatement {
             throw new AssertionError();
         }
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(this.statement.toString());
-
+        boolean primitiveArg = !(sqlStatement instanceof SQLSelectStatement);
         sqlStatement.accept(new MySqlASTVisitorAdapter() {
             int index;
 
@@ -199,7 +199,7 @@ public class PreparedStatement {
                     if (index < bindValues.length) {
                         io.mycat.BindValue value = bindValues[index++];
                         if (!value.isNull) {
-                            o = value.getJavaObject();
+                            o = value.getJavaObject(primitiveArg);
                         }
                     }
                     SQLReplaceable parent = (SQLReplaceable) x.getParent();
