@@ -798,6 +798,7 @@ public class UserCaseTest implements MycatTest {
     @Test
     public void case13() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
+            execute(mycatConnection, RESET_CONFIG);
             JdbcUtils.execute(mycatConnection,"CREATE TABLE `testblob` (\n" +
                     "  `id` bigint(20) DEFAULT NULL,\n" +
                     "  `data` blob\n" +
