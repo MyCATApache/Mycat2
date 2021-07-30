@@ -36,10 +36,12 @@ public class IndexShardingTableVO implements VO{
 
     @FXML
     public TextArea createTableSQL;
+
     private ShardingTableConfigVO shardingTableConfigVO;
+    private Stage stage;
 
     public void inputPartitions(ActionEvent actionEvent) {
-
+        ShardingTableConfigVO.inputPartitions(getPartitionsView());
     }
 
     public ShardingTableConfig toShardingTableConfig(){
@@ -78,6 +80,8 @@ public class IndexShardingTableVO implements VO{
             shardingTableConfigVO.getIndexTables().add(this);
         }catch (Exception e){
             e.printStackTrace();
+        }finally {
+            this.stage.close();
         }
     }
 
@@ -88,9 +92,19 @@ public class IndexShardingTableVO implements VO{
     public void setController(Controller controller) {
         this.controller = controller;
     }
-
+    public void setShardingTableConfigVO(ShardingTableConfigVO shardingTableConfigVO) {
+        this.shardingTableConfigVO = shardingTableConfigVO;
+    }
     @Override
     public String toJsonConfig() {
         return Json.encodePrettily( toShardingTableConfig());
+    }
+
+    public void setStage(Stage stage) {
+        this.stage = stage;
+    }
+
+    public void close(ActionEvent actionEvent) {
+        this.stage.close();
     }
 }

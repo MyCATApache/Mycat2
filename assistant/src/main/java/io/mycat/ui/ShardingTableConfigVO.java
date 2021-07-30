@@ -1,27 +1,28 @@
 package io.mycat.ui;
 
-import io.mycat.BackendTableInfo;
-import io.mycat.LogicTableType;
-import io.mycat.MetadataManager;
-import io.mycat.Partition;
+import io.mycat.*;
 import io.mycat.calcite.table.ShardingIndexTable;
 import io.mycat.calcite.table.ShardingTable;
 import io.mycat.config.ShardingBackEndTableInfoConfig;
 import io.mycat.config.ShardingFuntion;
 import io.mycat.config.ShardingTableConfig;
 import io.vertx.core.json.Json;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import lombok.Data;
+import org.apache.calcite.avatica.Meta;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -55,7 +56,16 @@ public class ShardingTableConfigVO implements VO {
 
     @FXML
     public TextArea createTableSQL;
+    @FXML
+    public ListView indexTableList;
+
     private ShardingTable shardingTable;
+
+    private String selectIndex;
+
+    public ShardingTableConfigVO() {
+
+    }
 
     public void save() {
         System.out.println();
@@ -63,6 +73,16 @@ public class ShardingTableConfigVO implements VO {
         String tableName = this.tableName.getText();
         ShardingTableConfig shardingTableConfig = getShardingTableConfig();
         controller.save(schemaName, tableName, shardingTableConfig);
+
+        flash();
+    }
+
+    public void flash() {
+        String schemaName = this.schemaName.getText();
+        String tableName = this.tableName.getText();
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        TableHandler table = metadataManager.getTable(schemaName, tableName);
+        setShardingTable((ShardingTable) table);
     }
 
     @NotNull
@@ -93,8 +113,7 @@ public class ShardingTableConfigVO implements VO {
         shardingTableConfig.setPartition(ShardingBackEndTableInfoConfig.builder().data(partitions).build());
         return shardingTableConfig;
     }
-
-    public void inputPartitions(ActionEvent actionEvent) {
+    public  static void inputPartitions(TableView<PartitionEntry> view) {
         try {
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("请选择分区csv文件");
@@ -108,45 +127,37 @@ public class ShardingTableConfigVO implements VO {
                 for (CSVRecord csvRecord : parser) {
                     partitions.add(new BackendTableInfo(csvRecord.get(size - 3), csvRecord.get(size - 2), csvRecord.get(size - 1)));
                 }
-                initPartitionsView(partitions, this.partitionsView);
+                initPartitionsView(partitions, view);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
-    public void indexTableList(ActionEvent actionEvent) {
-//        try {
-//            FXMLLoader loader = UIMain.loader("/indexShardingTableList.fxml");
-//            Parent parent = loader.load();
-//            IndexShardingTableVO controller = loader.getController();
-//            controller.setController(getController());
-//            String schemaName = getSchemaName().getText();
-//            String tableName = getTableName().getText();
-//
-//            controller.getSchemaName().setText(schemaName);
-//            controller.getTableName().setText(tableName);
-//
-//            ObservableList<String> items = controller.getIndexTableList().getItems();
-//            items.clear();
-//            this.getController().getInfoProvider().getTableConfigByName(schemaName,tableName)
-//                    .ifPresent(c->{
-//                        if(c.getType() == LogicTableType.SHARDING){
-//                            ShardingTable shardingTable = (ShardingTable) c;
-//                            for (ShardingIndexTable indexTable : shardingTable.getIndexTables()) {
-//                                items.add(indexTable.getIndexName());
-//                            }
-//
-//                        }
-//                    });
-//            Stage stage = new Stage();
-//            Scene scene = new Scene(parent, 400, 200);
-//            stage.setScene(scene);
-//            stage.show();
-//        }catch (Exception e){
-//            e.printStackTrace();
-//        }
+    public void inputPartitions(ActionEvent actionEvent) {
+        inputPartitions(getPartitionsView());
     }
+
+    public void flashIndexTableList(){
+        indexTables = null;
+        if (indexTables==null){
+            for (ShardingIndexTable indexTable : shardingTable.getIndexTables()) {
+                ShardingTableConfig tableConfig = indexTable.getTableConfig();
+
+                IndexShardingTableVO indexShardingTableVO = new IndexShardingTableVO();
+                indexShardingTableVO.getSchemaName().setText(indexTable.getSchemaName());
+                indexShardingTableVO.getTableName().setText(indexTable.getTableName());
+                indexShardingTableVO.getIndexName().setText(indexTable.getIndexName());
+                indexShardingTableVO.getShardingInfo().setText(Json.encodePrettily(tableConfig.getFunction()));
+                initPartitionsView(MetadataManager.getBackendTableInfos(tableConfig.getPartition()), this.partitionsView);
+            }
+
+        }
+        for (IndexShardingTableVO indexTable : indexTables) {
+            indexTableList.getItems().add(indexTable.getIndexName());
+        }
+
+    }
+
 
     @Override
     public String toJsonConfig() {
@@ -180,6 +191,37 @@ public class ShardingTableConfigVO implements VO {
             indexTables.add(indexShardingTableVO);
         }
 
+        flashIndexTableList();
 
+        indexTableList.getSelectionModel().selectedItemProperty().addListener((ChangeListener<String>) (observableValue, s, t1) -> selectIndex = t1);
+    }
+
+    public void deleteIndexTable(ActionEvent actionEvent) {
+        String schemaName = shardingTable.getSchemaName();
+        String tableName = shardingTable.getTableName();
+        for (IndexShardingTableVO indexTable : indexTables) {
+            if(indexTable.getIndexName().getText().equals(selectIndex)){
+                controller.getInfoProvider().deleteIndexTable(schemaName,tableName,selectIndex);
+            }
+        }
+
+    }
+
+    public void addIndexTable(ActionEvent actionEvent) {
+        try {
+            FXMLLoader loader = UIMain.loader("/indexShardingTable.fxml");
+            Parent parent = loader.load();
+            IndexShardingTableVO controller = loader.getController();
+            controller.setController(this.controller);
+            controller.setShardingTableConfigVO(this);
+
+            Stage stage = new Stage();
+            stage.setScene(new Scene(parent,600,400));
+            controller.setStage(stage);
+            stage.showAndWait();
+            flash();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

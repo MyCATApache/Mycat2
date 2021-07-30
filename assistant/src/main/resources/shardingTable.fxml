@@ -21,8 +21,10 @@
          <columnResizePolicy>
             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
          </columnResizePolicy></TableView>
-        <Button layoutX="261.0" layoutY="486.0" onAction="#save" text="保存" />
-        <Button layoutX="197.0" layoutY="354.0" onAction="#inputPartitions" text="导入" />
-        <Button layoutX="275.0" layoutY="354.0" onAction="#indexTableList"  text="查看全局二级索引表" />
+        <Button layoutX="288.0" layoutY="487.0" onAction="#save" text="保存" />
+        <Button layoutX="568.0" layoutY="199.0" onAction="#inputPartitions" text="导入" />
+        <ListView fx:id="indexTableList" layoutX="76.0" layoutY="366.0" prefHeight="121.0" prefWidth="453.0" />
+        <Button layoutX="532.0" layoutY="378.0" onAction="#addIndexTable" text="添加索引表" />
+        <Button layoutX="532.0" layoutY="415.0" onAction="#deleteIndexTable" text="删除索引表" />
     </children>
 </AnchorPane>

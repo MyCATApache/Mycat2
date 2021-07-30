@@ -31,4 +31,6 @@ public interface InfoProvider {
     void saveCluster(ClusterConfig config);
 
     void saveDatasource(DatasourceConfig config);
+
+    void deleteIndexTable(String schemaName, String tableName, String selectIndex);
 }
