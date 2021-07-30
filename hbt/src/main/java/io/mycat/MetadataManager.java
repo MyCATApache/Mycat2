@@ -446,7 +446,7 @@ public class MetadataManager implements MysqlVariableService {
     }
 
 
-    private List<Partition> getBackendTableInfos(ShardingBackEndTableInfoConfig stringListEntry) {
+    public static List<Partition> getBackendTableInfos(ShardingBackEndTableInfoConfig stringListEntry) {
         if (stringListEntry == null) {
             return Collections.emptyList();
         }
