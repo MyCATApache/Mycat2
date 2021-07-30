@@ -5,9 +5,10 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
 import lombok.Data;
+import org.jetbrains.annotations.NotNull;
 
 @Data
-public class DatasourceVO implements VO{
+public class DatasourceVO implements VO {
     @FXML
     public TextField name;
     @FXML
@@ -22,6 +23,11 @@ public class DatasourceVO implements VO{
     public Controller controller;
 
     public void save(ActionEvent actionEvent) {
+        controller.saveDatasource(getDatasourceConfig());
+    }
+
+    @NotNull
+    private DatasourceConfig getDatasourceConfig() {
         String name = getName().getText();
         String type = getType().getText();
         String user = getUser().getText();
@@ -34,9 +40,9 @@ public class DatasourceVO implements VO{
         datasourceConfig.setUser(user);
         datasourceConfig.setUrl(url);
         datasourceConfig.setDbType(dbType);
-
-        controller.saveDatasource(datasourceConfig);
+        return datasourceConfig;
     }
+
     @Override
     public String toJsonConfig() {
         return null;

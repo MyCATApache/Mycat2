@@ -155,17 +155,10 @@ public class Controller {
 
                     ShardingTableConfigVO shardingTableConfigVO = loader.getController();
                     shardingTableConfigVO.setController(this);
-                    shardingTableConfigVO.getSchemaName().setText(c.getSchemaName());
-                    shardingTableConfigVO.getTableName().setText(c.getTableName());
+                    shardingTableConfigVO.setShardingTable(shardingTable);
 
-                    ShardingTableConfig shardingTableConfig = shardingTable.getTableConfig();
-                    shardingTableConfigVO.getShardingInfo().setText(Json.encodePrettily(shardingTableConfig.getFunction()));
-                    shardingTableConfigVO.getCreateTableSQL().setText(shardingTable.getCreateTableSQL());
-
-                    TableView partitionsView = shardingTableConfigVO.getPartitionsView();
-                    initPartitionsView(shardingTable.getBackends(), partitionsView);
                     objectNav.getChildren().add(parent);
-                    objectText.setText(Json.encodePrettily(shardingTableConfig));
+                    objectText.setText(shardingTableConfigVO.toJsonConfig());
                     break;
                 }
                 case GLOBAL: {
@@ -175,32 +168,10 @@ public class Controller {
 
                     GlobalTableConfigVO controller = loader.getController();
                     controller.setController(this);
-                    controller.getSchemaName().setText(c.getSchemaName());
-                    controller.getTableName().setText(c.getTableName());
+                    controller.setGlobalTable(globalTable);
 
-                    ListView tableView = controller.getTargets();
-
-                    tableView.setCellFactory(TextFieldListCell.forListView());
-                    tableView.setEditable(true);
-
-                    GlobalTableConfig globalTableConfig = new GlobalTableConfig();
-                    globalTableConfig.setCreateTableSQL(globalTable.getCreateTableSQL());
-                    List<GlobalBackEndTableInfoConfig> globalBackEndTableInfoConfigs = new ArrayList<>();
-                    for (Partition partition : globalTable.getGlobalDataNode()) {
-                        GlobalBackEndTableInfoConfig globalBackEndTableInfoConfig = new GlobalBackEndTableInfoConfig();
-                        globalBackEndTableInfoConfig.setTargetName(partition.getTargetName());
-                        globalBackEndTableInfoConfigs.add(globalBackEndTableInfoConfig);
-                    }
-                    globalTableConfig.setBroadcast(globalBackEndTableInfoConfigs);
-
-                    for (GlobalBackEndTableInfoConfig globalBackEndTableInfoConfig : globalTableConfig.getBroadcast()) {
-                        String targetName = globalBackEndTableInfoConfig.getTargetName();
-                        tableView.getItems().add(targetName);
-                    }
                     objectNav.getChildren().add(parent);
-                    objectText.setText(Json.encodePrettily(globalTableConfig));
-
-
+                    objectText.setText(Json.encodePrettily(globalTable.getTableConfig()));
                     break;
                 }
                 case NORMAL: {
@@ -396,10 +367,9 @@ public class Controller {
         }
     }
 
-    public void save(String schemaName, String tableName, String createSQL, ShardingFuntion shardingFuntion, List<Partition> partitions) {
+    public void save(String schemaName, String tableName, ShardingTableConfig config) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        metadataManager.addShardingTable(schemaName, tableName, ShardingTableConfig.builder()
-                .createTableSQL(createSQL).function(shardingFuntion).build(), metadataManager.getPrototype(), partitions, Collections.emptyList());
+        metadataManager.addShardingTable(schemaName, tableName, config, metadataManager.getPrototype(),  MetadataManager.getBackendTableInfos(config.getPartition()), Collections.emptyList());
         flashSchemas();
     }
 
@@ -407,32 +377,33 @@ public class Controller {
         this.infoProvider = infoProvider;
     }
 
-    public void save(String schemaName, String tableName, String sql, String targetName, String phySchemaName, String phyTableName) {
+    public void save(String schemaName, String tableName, NormalTableConfig config) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        metadataManager.addNormalTable(schemaName, tableName, NormalTableConfig.create(phySchemaName, phyTableName, sql, targetName), metadataManager.getPrototype());
+        metadataManager.addNormalTable(schemaName, tableName, config, metadataManager.getPrototype());
         flashSchemas();
     }
 
-    public void save(String schemaName, String tableName, String sql, List<String> targets) {
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        List<Partition> list = new ArrayList<>();
-        List<GlobalBackEndTableInfoConfig> configList = new ArrayList<>();
-        for (String target : targets) {
-            list.add(new BackendTableInfo(target, schemaName, tableName));
-            configList.add(GlobalBackEndTableInfoConfig.builder().targetName(target).build());
-        }
-
-        metadataManager.addGlobalTable(schemaName, tableName, GlobalTableConfig.builder().createTableSQL(sql).broadcast(configList).build(), metadataManager.getPrototype(), list);
-        flashSchemas();
-    }
     @SneakyThrows
     public void saveDatasource(DatasourceConfig config) {
         infoProvider.saveDatasource(config);
 
     }
+
     @SneakyThrows
     public void saveCluster(ClusterConfig config) {
         infoProvider.saveCluster(config);
     }
 
+    public void save(String schemaName, String tableName, GlobalTableConfig globalTableConfig) {
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        List<Partition> list = new ArrayList<>();
+        List<GlobalBackEndTableInfoConfig> configList = globalTableConfig.getBroadcast();
+
+        for (GlobalBackEndTableInfoConfig target : configList) {
+            list.add(new BackendTableInfo(target.getTargetName(), schemaName, tableName));
+        }
+
+        metadataManager.addGlobalTable(schemaName, tableName, globalTableConfig, metadataManager.getPrototype(), list);
+        flashSchemas();
+    }
 }

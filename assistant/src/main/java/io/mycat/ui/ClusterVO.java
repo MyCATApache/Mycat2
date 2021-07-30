@@ -5,6 +5,7 @@ import javafx.event.ActionEvent;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import lombok.Data;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +23,11 @@ public class ClusterVO implements VO{
         return null;
     }
     public void save(ActionEvent actionEvent) {
+        controller.saveCluster(getClusterConfig());
+    }
+
+    @NotNull
+    public ClusterConfig getClusterConfig() {
         String name = this.getName().getText();
         String replicaType = (getType().getText().toUpperCase());
         List<String> masterList = new ArrayList<>(this.masterList.getItems());
@@ -31,7 +37,7 @@ public class ClusterVO implements VO{
         clusterConfig.setClusterType(replicaType);
         clusterConfig.setMasters(masterList);
         clusterConfig.setReplicas(replicaList);
-        controller.saveCluster(clusterConfig);
+        return clusterConfig;
     }
 
     public void setController(Controller controller) {

@@ -1,5 +1,7 @@
 package io.mycat.ui;
 
+import io.mycat.config.NormalBackEndTableInfoConfig;
+import io.mycat.config.NormalTableConfig;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextArea;
@@ -32,7 +34,15 @@ public class SingleTableVO implements VO{
         String phyTableName = this.getPhyTableName().getText();
 
         String sql = this.getCreateTableSQL().getText();
-        controller.save(schemaName,tableName,sql,targetName,phySchemaName,phyTableName);
+
+        NormalTableConfig normalTableConfig = new NormalTableConfig();
+        normalTableConfig.setCreateTableSQL(sql);
+        normalTableConfig.setLocality(NormalBackEndTableInfoConfig.builder()
+                .targetName(targetName)
+                .schemaName(phySchemaName)
+                .tableName(phyTableName).build());
+
+        controller.save(schemaName,tableName,normalTableConfig);
     }
 
     @Override
