@@ -14,6 +14,11 @@ Development objectives:TableLookupJoin(BKAJOIN)
 [doc](https://www.yuque.com/books/share/6606b3b6-3365-4187-94c4-e51116894695)
 
 
+[![Stargazers over time](https://starchart.cc/MyCATApache/Mycat2.svg)](https://starchart.cc/MyCATApache/Mycat2)
+      
+
+
+
 
 ## Framework
 
