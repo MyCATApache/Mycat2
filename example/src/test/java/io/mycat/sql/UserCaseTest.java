@@ -3,10 +3,13 @@ package io.mycat.sql;
 import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.assemble.MycatTest;
 import io.mycat.config.DatasourceConfig;
+import io.mycat.config.NormalTableConfig;
 import io.mycat.config.ShardingBackEndTableInfoConfig;
 import io.mycat.config.ShardingFuntion;
+import io.mycat.hbt.SchemaConvertor;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
+import io.mycat.hint.CreateSchemaHint;
 import io.mycat.hint.CreateTableHint;
 import io.mycat.router.mycat1xfunction.PartitionByFileMap;
 import io.mycat.router.mycat1xfunction.PartitionByHotDate;
@@ -722,6 +725,7 @@ public class UserCaseTest implements MycatTest {
 
     /**
      * 测试数据源更新
+     *
      * @throws Exception
      */
     @Test
@@ -776,7 +780,7 @@ public class UserCaseTest implements MycatTest {
             execute(mycatConnection,
                     CreateClusterHint.create("prototype",
                             Arrays.asList("ds0"), Arrays.asList("ds1")));
-            deleteData(mysql2,"db1","tbl");
+            deleteData(mysql2, "db1", "tbl");
             execute(mysql2, "INSERT INTO db1.tbl \n" +
                     "(id)\n" +
                     "VALUES\n" +
@@ -791,27 +795,47 @@ public class UserCaseTest implements MycatTest {
             }
         }
     }
+
     /**
-     * 测试数据源更新
+     *
+     *CreateTableHint targetname
      * @throws Exception
      */
     @Test
     public void case13() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
             execute(mycatConnection, RESET_CONFIG);
-            JdbcUtils.execute(mycatConnection,"CREATE TABLE `testblob` (\n" +
+            JdbcUtils.execute(mycatConnection,CreateDataSourceHint.create("ds0",DB2));
+            JdbcUtils.execute(mycatConnection, CreateSchemaHint.create("mysql",
+                    "prototype"));
+            JdbcUtils.execute(mycatConnection, CreateTableHint.createNormal("mysql",
+                    "testblob","CREATE TABLE `testblob` (\n" +
+                    "  `id` bigint(20) DEFAULT NULL,\n" +
+                    "  `data` blob\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4","ds0"));
+
+            String explain = explain(mycatConnection, "select * from mysql.testblob");
+            Assert.assertTrue(explain.contains("ds0"));
+        }
+    }
+
+    @Test
+    public void case14() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
+            execute(mycatConnection, RESET_CONFIG);
+            JdbcUtils.execute(mycatConnection, "CREATE TABLE mysql.`testblob` (\n" +
                     "  `id` bigint(20) DEFAULT NULL,\n" +
                     "  `data` blob\n" +
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-            deleteData(mycatConnection,"mysql","testblob");
+            deleteData(mycatConnection, "mysql", "testblob");
             byte[] data = ByteBuffer.allocate(8).putLong(Long.MAX_VALUE).array();
             JdbcUtils.execute(mycatConnection, "INSERT INTO mysql.testblob \n" +
                     "(id,data)\n" +
                     "VALUES\n" +
-                    " (1,?);",Arrays.asList(data));
+                    " (1,?);", Arrays.asList(data));
             List<Map<String, Object>> maps = JdbcUtils.executeQuery(mycatConnection, "select * from mysql.testblob where id = 1", Collections.emptyList());
-            byte[] data1 = (byte[])maps.get(0).get("data");
-            Assert.assertTrue(Arrays.equals(data,data1));
+            byte[] data1 = (byte[]) maps.get(0).get("data");
+            Assert.assertTrue(Arrays.equals(data, data1));
             System.out.println();
         }
     }
