@@ -7,6 +7,7 @@ import io.mycat.config.DatasourceConfig;
 import io.mycat.config.LogicSchemaConfig;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface InfoProvider {
@@ -33,4 +34,6 @@ public interface InfoProvider {
     void saveDatasource(DatasourceConfig config);
 
     void deleteIndexTable(String schemaName, String tableName, String selectIndex);
+
+    List<Map<String, Object>> query(String sql);
 }

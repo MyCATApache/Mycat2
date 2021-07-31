@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.LocalConnectionVO">
+    <Label layoutX="82.0" layoutY="21.0" prefHeight="119.0" prefWidth="304.0" text="名称" />
+    <TextField fx:id="name" layoutX="180.0" layoutY="72.0" prefHeight="23.0" prefWidth="323.0" />
+    <Label layoutX="82.0" layoutY="72.0" prefHeight="83.0" prefWidth="122.0" text="配置路径" />
+    <TextField fx:id="filePath" layoutX="180.0" layoutY="102.0" prefHeight="23.0" prefWidth="323.0" />
+    <Button fx:id="connect" layoutX="260.0" layoutY="293.0" text="连接" />
+</AnchorPane>

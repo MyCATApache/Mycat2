@@ -36,8 +36,6 @@ import static io.mycat.LogicTableType.SHARDING;
 
 @Data
 public class Controller {
-    public AnchorPane mainPane;
-    public MenuBar menu;
     public SplitPane main;
     public TreeView objectTree;
     public TextArea objectText;
@@ -49,31 +47,18 @@ public class Controller {
     }
 
     public void flashRoot() {
-        Menu helpMenu = new Menu("帮助");
-        MenuItem aboutMenu = new MenuItem("关于");
-        aboutMenu.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                final Stage dialog = new Stage();
-                dialog.initModality(Modality.APPLICATION_MODAL);
-                VBox dialogVbox = new VBox(20);
-                dialogVbox.getChildren().add(new TextField("github:https://github.com/MyCATApache/Mycat2 "));
-                dialogVbox.getChildren().add(new Label("author:chenjunwen"));
-                Scene dialogScene = new Scene(dialogVbox,300,200);
-                dialog.setScene(dialogScene);
-                dialog.setTitle("关于");
-                dialog.showAndWait();
-            }
-        });
-        helpMenu.getItems().addAll(aboutMenu);
-
-        menu.getMenus().add(helpMenu);
 
         TreeItemCellFactory treeItemCellFactory = new TreeItemCellFactory(this);
+        objectTree.setPrefWidth(120);
+        objectTree.setMaxWidth(300);
         objectTree.setShowRoot(false);
         objectTree.setCellFactory(treeItemCellFactory);
         TreeItem<String> rootViewNode = getRootViewNode(infoProvider);
         objectTree.setRoot(rootViewNode);
+        objectNav.setPrefWidth(120);
+        objectNav.getChildren().clear();
+        TextArea emptyLabel = new TextArea("请选择对象");
+        objectNav.getChildren().add(emptyLabel);
     }
 
     public void flashSchemas() {
