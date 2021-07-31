@@ -26,14 +26,6 @@ Development objectives:TableLookupJoin(BKAJOIN)
 
 Currently, only mycat2 is supported on java8, and will be supported in other versions later.
 
-## Core team
-
-[junwen12221](https://github.com/junwen12221)
-
-[wangzihaogithub](https://github.com/wangzihaogithub)
-
-[zwyqz](https://github.com/zwyqz)
-
 
 
 ## License
