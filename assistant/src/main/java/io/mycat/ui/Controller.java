@@ -8,15 +8,19 @@ import io.mycat.calcite.table.ShardingTable;
 import io.mycat.config.*;
 import io.vertx.core.json.Json;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldListCell;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import lombok.Data;
 import lombok.SneakyThrows;
 
@@ -26,6 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static com.sun.org.apache.xalan.internal.xsltc.compiler.util.Type.Text;
 import static io.mycat.LogicTableType.GLOBAL;
 import static io.mycat.LogicTableType.SHARDING;
 
@@ -44,6 +49,26 @@ public class Controller {
     }
 
     public void flashRoot() {
+        Menu helpMenu = new Menu("帮助");
+        MenuItem aboutMenu = new MenuItem("关于");
+        aboutMenu.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                final Stage dialog = new Stage();
+                dialog.initModality(Modality.APPLICATION_MODAL);
+                VBox dialogVbox = new VBox(20);
+                dialogVbox.getChildren().add(new TextField("github:https://github.com/MyCATApache/Mycat2 "));
+                dialogVbox.getChildren().add(new Label("author:chenjunwen"));
+                Scene dialogScene = new Scene(dialogVbox,300,200);
+                dialog.setScene(dialogScene);
+                dialog.setTitle("关于");
+                dialog.showAndWait();
+            }
+        });
+        helpMenu.getItems().addAll(aboutMenu);
+
+        menu.getMenus().add(helpMenu);
+
         TreeItemCellFactory treeItemCellFactory = new TreeItemCellFactory(this);
         objectTree.setShowRoot(false);
         objectTree.setCellFactory(treeItemCellFactory);
