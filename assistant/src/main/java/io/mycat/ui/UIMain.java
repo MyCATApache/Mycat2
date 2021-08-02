@@ -40,7 +40,7 @@ public class UIMain extends Application {
         controller.flashRoot();
         controller.getTabPane().prefWidthProperty().bind(controller.getMainPane().widthProperty());//菜单自适应
 //        controller.getTabPane().prefHeightProperty().bind(controller.getMainPane().heightProperty());//菜单自适应
-        Scene scene = new Scene(root, 300, 275);
+        Scene scene = new Scene(root, 800, 600);
         primaryStage.setScene(scene);
         primaryStage.show();
     }

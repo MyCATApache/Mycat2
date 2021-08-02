@@ -13,8 +13,8 @@
       <AnchorPane fx:id="mainPane">
         <VBox layoutY="25.0">
             <HBox />
-            <TabPane fx:id="tabPane">
-      </TabPane>
+            <TabPane fx:id="tabPane" prefHeight ="600">
+      </TabPane >
             <HBox fx:id="runMenu" layoutX="0" layoutY="0" maxWidth="Infinity" minHeight="25">
       </HBox>
       <SplitPane dividerPositions="0.5">

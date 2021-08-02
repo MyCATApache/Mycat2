@@ -6,6 +6,8 @@ import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.LogicSchemaConfig;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,5 +37,5 @@ public interface InfoProvider {
 
     void deleteIndexTable(String schemaName, String tableName, String selectIndex);
 
-    List<Map<String, Object>> query(String sql);
+    Connection createConnection();
 }

@@ -1,6 +1,15 @@
 package io.mycat.ui;
 
+import com.alibaba.druid.DbType;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
+import com.alibaba.druid.sql.parser.SQLParserUtils;
+import com.alibaba.druid.sql.parser.SQLType;
+import com.alibaba.druid.util.JdbcUtils;
 import com.google.common.collect.ImmutableMap;
+import io.mycat.beans.mycat.JdbcRowBaseIterator;
+import io.mycat.util.DumpUtil;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
@@ -13,11 +22,13 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import lombok.Data;
+import tech.tablesaw.api.Table;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.Statement;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Data
@@ -154,7 +165,7 @@ public class MainPaneVO {
                 final Stage dialog = new Stage();
                 dialog.initModality(Modality.APPLICATION_MODAL);
                 VBox dialogVbox = new VBox(20);
-                dialogVbox.getChildren().add(new TextField("github:https://github.com/MyCATApache/Mycat2 "));
+                dialogVbox.getChildren().add(new TextField("https://github.com/MyCATApache/Mycat2 "));
                 dialogVbox.getChildren().add(new Label("author:chenjunwen"));
                 Scene dialogScene = new Scene(dialogVbox, 300, 200);
                 dialog.setScene(dialogScene);
@@ -176,14 +187,54 @@ public class MainPaneVO {
         runBotton.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
+                output.clear();
+                explain.clear();
+
+                LineOuter outputText = new LineOuter(output);
+                LineOuter explainText = new LineOuter(explain);
+
                 Tab s = selectTab.get();
+
                 if (s != null) {
                     String text = s.getText();
                     Controller controller = tabObjectMap.get(text);
                     InfoProvider infoProvider = controller.getInfoProvider();
                     String sql = inputSql.getText();
-                    List<Map<String, Object>> map = infoProvider.query(sql);
-                    output.setText(map.toString());
+                    List<SQLStatement> sqlStatements = SQLUtils.parseStatements(sql, DbType.mysql);
+                    Connection connection = infoProvider.createConnection();
+                    for (SQLStatement sqlStatement : sqlStatements) {
+                        SQLType sqlType = SQLParserUtils.getSQLType(sqlStatement.toString(), DbType.mysql);
+                        boolean select;
+                        switch (sqlType) {
+                            case SELECT:
+                            case EXPLAIN:
+                            case SHOW:
+                            case DESC:
+                            case UNKNOWN:
+                                select = true;
+                                break;
+                            default:
+                                select = false;
+                        }
+
+                            try(Statement statement = connection.createStatement();){
+                                if (select) {
+                                    ResultSet resultSet = statement.executeQuery(sql);
+                                    outputText.appendLine(Table.read().db(resultSet).print());
+                                }else {
+                                    boolean affectRow = statement.execute(sqlStatement.toString());
+                                    outputText.appendLine("affectRow:"+affectRow);
+                                }
+                                MySqlExplainStatement mySqlExplainStatement = new MySqlExplainStatement();
+                                mySqlExplainStatement.setStatement(sqlStatement.clone());
+                                ResultSet resultSet = statement.executeQuery(mySqlExplainStatement.toString());
+                                explainText.appendLine(Table.read().db(resultSet).print(200));
+                            }catch (Exception e){
+                                outputText.appendLine(e.getLocalizedMessage());
+                                e.printStackTrace();
+                            }
+                    }
+
                 }
             }
         });
