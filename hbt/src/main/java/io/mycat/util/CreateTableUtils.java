@@ -25,6 +25,7 @@ import io.mycat.Partition;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.replica.InstanceType;
 import io.mycat.replica.ReplicaSelectorManager;
 import jdk.nashorn.internal.runtime.options.Option;
 import org.slf4j.Logger;
@@ -57,7 +58,7 @@ public class CreateTableUtils {
         normalizeCreateTableSQLToMySQL(createSQL).ifPresent(sql -> {
             for (String s : set) {
                 try (DefaultConnection connection = jdbcConnectionManager.getConnection(s)) {
-                    if (connection.getDataSource().isMySQLType()) {
+                    if (InstanceType.valueOf(connection.getDataSource().getConfig().getInstanceType()).isWriteType()) {
                         createDatabaseIfNotExist(connection, node);
                         connection.executeUpdate(rewriteCreateTableSql(sql, node.getSchema(), node.getTable()), false);
                     }
