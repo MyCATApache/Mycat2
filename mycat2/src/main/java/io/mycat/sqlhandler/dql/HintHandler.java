@@ -496,6 +496,14 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         }
                         return response.sendResultSet(() -> builder.build());
                     }
+                    if ("showConfigText".equalsIgnoreCase(cmd)) {
+                        MycatRouterConfig mycatRouterConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
+                        String text = JsonUtil.toJson(mycatRouterConfig);
+                        ResultSetBuilder builder = ResultSetBuilder.create();
+                        builder.addColumnInfo("CONFIG_TEXT", JDBCType.VARCHAR);
+                        builder.addObjectRowPayload(Arrays.asList(text));
+                        return response.sendResultSet(builder.build());
+                    }
                     if ("baseline".equalsIgnoreCase(cmd)) {
                         Map<String, Object> map = JsonUtil.from(body, Map.class);
                         String command = Objects.requireNonNull(map.get("command")).toString().toLowerCase();
