@@ -28,7 +28,6 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
 import io.mycat.ConfigOps;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataManager;
-import io.mycat.TableHandler;
 import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.util.NameMap;
 import org.jetbrains.annotations.NotNull;
@@ -241,7 +240,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
         first.ifPresent(logicSchemaConfig -> {
             logicSchemaConfig.getNormalTables().remove(tableName);
             logicSchemaConfig.getGlobalTables().remove(tableName);
-            logicSchemaConfig.getShadingTables().remove(tableName);
+            logicSchemaConfig.getShardingTables().remove(tableName);
             logicSchemaConfig.getCustomTables().remove(tableName);
         });
         updateType = UpdateType.DROP_TABLE;
@@ -282,7 +281,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
         List<LogicSchemaConfig> schemas = this.schemas;
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
         first.ifPresent(logicSchemaConfig -> {
-            Map<String, ShardingTableConfig> shadingTables = logicSchemaConfig.getShadingTables();
+            Map<String, ShardingTableConfig> shadingTables = logicSchemaConfig.getShardingTables();
             shadingTables.put(tableName, config);
         });
         updateType = UpdateType.CREATE_TABLE;

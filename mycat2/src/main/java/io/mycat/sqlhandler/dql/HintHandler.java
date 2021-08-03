@@ -638,7 +638,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     .map(i -> {
                         switch (TYPE) {
                             case SHARDING:
-                                return i.getShadingTables();
+                                return i.getShardingTables();
                             case GLOBAL:
                                 return i.getGlobalTables();
                             case NORMAL:

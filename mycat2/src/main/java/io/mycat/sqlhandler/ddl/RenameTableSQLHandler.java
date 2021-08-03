@@ -76,7 +76,7 @@ public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableSt
                             .map(logicSchemaConfig -> {
                                 NormalTableConfig normalTableConfig = logicSchemaConfig.getNormalTables().get(tableHandler.getTableName());
                                 GlobalTableConfig globalTableConfig = logicSchemaConfig.getGlobalTables().get(tableHandler.getTableName());
-                                ShardingTableConfig shardingTableConfig = logicSchemaConfig.getShadingTables().get(tableHandler.getTableName());
+                                ShardingTableConfig shardingTableConfig = logicSchemaConfig.getShardingTables().get(tableHandler.getTableName());
                                 CustomTableConfig customTableConfig = logicSchemaConfig.getCustomTables().get(tableHandler.getTableName());
                                 if (normalTableConfig != null) {
                                     return normalTableConfig;

@@ -1,18 +1,11 @@
 package io.mycat.sql.function;
 
-import com.google.common.collect.ImmutableMap;
 import io.mycat.*;
 import io.mycat.assemble.MycatTest;
-import io.mycat.calcite.table.ShardingTable;
 import io.mycat.config.*;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
-import io.mycat.router.CustomRuleFunction;
-import io.mycat.router.ShardingTableHandler;
-import io.mycat.util.JsonUtil;
 import lombok.SneakyThrows;
-import org.junit.Assert;
-import org.junit.Test;
 
 import java.util.*;
 
@@ -49,7 +42,7 @@ public class AutoFunctionFactoryTest implements MycatTest {
 //                        "\t\t\t\t\t\"storeNum\":2,\n" +
 //                        "\t\t\t\t\t\"dbMethod\":\"hash(id)\"\n" +
 //                        "\t\t\t\t}", Map.class)).build());
-        logicSchemaConfig.getShadingTables().put("sharding", shardingTableConfig);
+        logicSchemaConfig.getShardingTables().put("sharding", shardingTableConfig);
 
         mycatRouterConfig.getClusters().add(CreateClusterHint.createConfig("c0", Arrays.asList("ds0"), Collections.emptyList()));
         mycatRouterConfig.getClusters().add(CreateClusterHint.createConfig("c1", Arrays.asList("ds1"), Collections.emptyList()));

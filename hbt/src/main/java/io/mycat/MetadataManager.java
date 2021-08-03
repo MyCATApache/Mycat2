@@ -14,7 +14,6 @@
  */
 package io.mycat;
 
-import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLDataType;
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -23,14 +22,9 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.SQLCreateViewStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
-import com.alibaba.druid.sql.parser.SQLParserUtils;
-import com.alibaba.druid.sql.parser.SQLStatementParser;
-import com.alibaba.druid.sql.repository.SchemaObject;
 import com.google.common.collect.ImmutableList;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.JdbcRowMetaData;
@@ -44,9 +38,7 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.plug.sequence.SequenceGenerator;
-import io.mycat.querycondition.*;
 import io.mycat.replica.ReplicaSelectorManager;
-import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.function.IndexDataNode;
 import io.mycat.router.mycat1xfunction.PartitionRuleFunctionManager;
 import io.mycat.util.*;
@@ -63,10 +55,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * @author Junwen Chen
@@ -258,7 +248,7 @@ public class MetadataManager implements MysqlVariableService {
                         backendTableInfos
                 );
             }
-            for (Map.Entry<String, ShardingTableConfig> primaryTable : value.getShadingTables().entrySet()) {
+            for (Map.Entry<String, ShardingTableConfig> primaryTable : value.getShardingTables().entrySet()) {
                 String tableName = primaryTable.getKey();
                 ShardingTableConfig tableConfigEntry = primaryTable.getValue();
                 removeTable(schemaName, tableName);
