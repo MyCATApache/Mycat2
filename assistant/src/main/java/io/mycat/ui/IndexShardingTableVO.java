@@ -22,7 +22,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Data
-public class IndexShardingTableVO implements VO{
+public class IndexShardingTableVO implements VO {
     public Label schemaName;
     public Label tableName;
     public TextField indexName;
@@ -40,12 +40,14 @@ public class IndexShardingTableVO implements VO{
     private ShardingTableConfigVO shardingTableConfigVO;
     private Stage stage;
 
+    ShardingTableConfig shardingTableConfig = new ShardingTableConfig();
+
     public void inputPartitions(ActionEvent actionEvent) {
         ShardingTableConfigVO.inputPartitions(getPartitionsView());
     }
 
-    public ShardingTableConfig toShardingTableConfig(){
-        ShardingTableConfig shardingTableConfig = new ShardingTableConfig();
+    public ShardingTableConfig toShardingTableConfig() {
+
         shardingTableConfig.setShardingIndexTables(Collections.emptyMap());
 
 
@@ -62,7 +64,7 @@ public class IndexShardingTableVO implements VO{
             Integer dbIndex = partition.getDbIndex();
             Integer tableIndex = partition.getTableIndex();
             Integer index = partition.getIndex();
-            partitions.add(Arrays.asList(targetName,schema,table,dbIndex,tableIndex,index));
+            partitions.add(Arrays.asList(targetName, schema, table, dbIndex, tableIndex, index));
         }
 
         ShardingFuntion shardingFuntion = Json.decodeValue(shardingInfoText, ShardingFuntion.class);
@@ -78,26 +80,42 @@ public class IndexShardingTableVO implements VO{
     public void add(ActionEvent actionEvent) {
         try {
             shardingTableConfigVO.getIndexTables().add(this);
-        }catch (Exception e){
+            setShardingTableConfigVO(shardingTableConfigVO);
+        } catch (Exception e) {
             e.printStackTrace();
-        }finally {
+        } finally {
             this.stage.close();
         }
     }
 
     public void delete(ActionEvent actionEvent) {
-        shardingTableConfigVO.getIndexTables().remove(this);
+        try {
+            shardingTableConfigVO.getIndexTables().remove(this);
+            setShardingTableConfigVO(shardingTableConfigVO);
+        }
+        catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                this.stage.close();
+            }
     }
 
     public void setController(Controller controller) {
         this.controller = controller;
     }
+
     public void setShardingTableConfigVO(ShardingTableConfigVO shardingTableConfigVO) {
         this.shardingTableConfigVO = shardingTableConfigVO;
     }
+
     @Override
     public String toJsonConfig() {
-        return Json.encodePrettily( toShardingTableConfig());
+        return Json.encodePrettily(toShardingTableConfig());
+    }
+
+    @Override
+    public void from(String text) {
+        throw new UnsupportedOperationException();
     }
 
     public void setStage(Stage stage) {

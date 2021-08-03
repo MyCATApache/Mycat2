@@ -19,4 +19,9 @@ public class PartitionVO implements VO{
     public String toJsonConfig() {
         return null;
     }
+
+    @Override
+    public void from(String text) {
+
+    }
 }

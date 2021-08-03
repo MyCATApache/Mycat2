@@ -1,6 +1,7 @@
 package io.mycat.ui;
 
 import io.mycat.config.ClusterConfig;
+import io.vertx.core.json.Json;
 import javafx.event.ActionEvent;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
@@ -8,7 +9,9 @@ import lombok.Data;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Data
 public class ClusterVO implements VO{
@@ -18,10 +21,31 @@ public class ClusterVO implements VO{
     public ListView<String>  replicaList;
     public Controller controller;
 
+    ClusterConfig clusterConfig = new ClusterConfig();
+
+    public void setClusterConfig(ClusterConfig clusterConfig) {
+        this.clusterConfig = clusterConfig;
+
+        this.getName().setText(clusterConfig.getName());
+        this.getType().setText(clusterConfig.getClusterType());
+
+        this.getMasterList().getItems().clear();
+        this.getReplicaList().getItems().clear();
+
+        this.getMasterList().getItems().addAll(Optional.ofNullable(clusterConfig.getMasters()).orElse(Collections.emptyList()));
+        this.getReplicaList().getItems().addAll(Optional.ofNullable(clusterConfig.getReplicas()).orElse(Collections.emptyList()));
+    }
+
     @Override
     public String toJsonConfig() {
-        return null;
+        return Json.encodePrettily(getClusterConfig());
     }
+
+    @Override
+    public void from(String text) {
+        setClusterConfig(Json.decodeValue(text,clusterConfig.getClass()));
+    }
+
     public void save(ActionEvent actionEvent) {
         controller.saveCluster(getClusterConfig());
     }
@@ -32,7 +56,6 @@ public class ClusterVO implements VO{
         String replicaType = (getType().getText().toUpperCase());
         List<String> masterList = new ArrayList<>(this.masterList.getItems());
         List<String> replicaList = new ArrayList<>(this.replicaList.getItems());
-        ClusterConfig clusterConfig = new ClusterConfig();
         clusterConfig.setName(name);
         clusterConfig.setClusterType(replicaType);
         clusterConfig.setMasters(masterList);

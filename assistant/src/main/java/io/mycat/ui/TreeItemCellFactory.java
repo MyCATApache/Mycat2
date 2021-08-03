@@ -80,25 +80,25 @@ public class TreeItemCellFactory implements Callback<TreeView<String>, TreeCell<
                                     contextMenu.getItems().add(item1);
                                     break;
                                 }
-                                case SHARDING_TABLES:{
+                                case SHARDING_TABLES: {
                                     MenuItem item1 = new MenuItem("新建分片表");
                                     item1.setOnAction(event1 -> controller.addShardingTable(schema));
                                     contextMenu.getItems().add(item1);
                                     break;
                                 }
-                                case GLOBAL_TABLES:{
+                                case GLOBAL_TABLES: {
                                     MenuItem item1 = new MenuItem("新建全局表");
                                     item1.setOnAction(event1 -> controller.addGlobalTableConfig(schema));
                                     contextMenu.getItems().add(item1);
                                     break;
                                 }
-                                case SINGLE_TABLES:{
+                                case SINGLE_TABLES: {
                                     MenuItem item1 = new MenuItem("新建单表");
                                     item1.setOnAction(event1 -> controller.addNormalTableConfig(schema));
                                     contextMenu.getItems().add(item1);
                                     break;
                                 }
-                                case SHARDING_TABLE:{
+                                case SHARDING_TABLE: {
                                     MenuItem item1 = new MenuItem("删除分片表配置");
                                     item1.setOnAction(event1 -> {
                                         boolean doAction = display("删除分片表", "确认删除分片表配置");
@@ -114,7 +114,7 @@ public class TreeItemCellFactory implements Callback<TreeView<String>, TreeCell<
                                     contextMenu.getItems().add(item2);
                                     break;
                                 }
-                                case GLOBAL_TABLE:{
+                                case GLOBAL_TABLE: {
                                     MenuItem item1 = new MenuItem("删除全局表配置");
                                     item1.setOnAction(event1 -> {
                                         boolean doAction = display("删除全局表配置", "确认删除全局表配置");
@@ -126,7 +126,7 @@ public class TreeItemCellFactory implements Callback<TreeView<String>, TreeCell<
                                     contextMenu.getItems().add(item1);
                                     break;
                                 }
-                                case SINGLE_TABLE:{
+                                case SINGLE_TABLE: {
                                     MenuItem item1 = new MenuItem("删除单表配置");
                                     item1.setOnAction(event1 -> {
                                         boolean doAction = display("删除单表配置", "确认删除单表配置");
@@ -138,7 +138,7 @@ public class TreeItemCellFactory implements Callback<TreeView<String>, TreeCell<
                                     contextMenu.getItems().add(item1);
                                     break;
                                 }
-                                case CLUSTER:{
+                                case CLUSTER: {
                                     MenuItem item1 = new MenuItem("删除");
                                     item1.setOnAction(event1 -> {
                                         boolean doAction = display("删除集群", "确认删除集群");
@@ -179,7 +179,7 @@ public class TreeItemCellFactory implements Callback<TreeView<String>, TreeCell<
                 Command command = commandOptional.get();
                 switch (command.getType()) {
                     case SCHEMA:
-                        Optional<LogicSchemaConfig> logicSchemaConfigOptional =        controller.getInfoProvider().getSchemaConfigByName(command.getSchema());
+                        Optional<LogicSchemaConfig> logicSchemaConfigOptional = controller.getInfoProvider().getSchemaConfigByName(command.getSchema());
                         logicSchemaConfigOptional.ifPresent(r -> controller.edit(r));
                         break;
                     case SHARDING_TABLE:
@@ -188,15 +188,15 @@ public class TreeItemCellFactory implements Callback<TreeView<String>, TreeCell<
                         if (command.getSchema() == null || command.getTable() == null) {
                             return;
                         }
-                        Optional<TableHandler> config =        controller.getInfoProvider().getTableConfigByName(command.getSchema(), command.getTable());
+                        Optional<TableHandler> config = controller.getInfoProvider().getTableConfigByName(command.getSchema(), command.getTable());
                         config.ifPresent(c -> controller.edit(c));
                         break;
                     case CLUSTER:
-                        Optional<ClusterConfig> clusterConfigOptional =        controller.getInfoProvider().getClusterConfigByPath(command.getCluster());
+                        Optional<ClusterConfig> clusterConfigOptional = controller.getInfoProvider().getClusterConfigByPath(command.getCluster());
                         clusterConfigOptional.ifPresent(c -> controller.edit(c));
                         break;
                     case DATASOURCE:
-                        Optional<DatasourceConfig> datasourceConfigOptional =        controller.getInfoProvider().getDatasourceConfigByPath(command.getDatasource());
+                        Optional<DatasourceConfig> datasourceConfigOptional = controller.getInfoProvider().getDatasourceConfigByPath(command.getDatasource());
                         datasourceConfigOptional.ifPresent(c -> controller.edit(c));
                         break;
                 }

@@ -15,16 +15,28 @@ public class SchemaConfigVO implements VO{
     @FXML
     TextField defaultTargetName;
 
+    LogicSchemaConfig logicSchemaConfig;
+
+    public void setLogicSchemaConfig(LogicSchemaConfig logicSchemaConfig) {
+        this.logicSchemaConfig = logicSchemaConfig;
+        this.getSchemaName().setText(logicSchemaConfig.getSchemaName());
+        this.getDefaultTargetName().setText(logicSchemaConfig.getTargetName());
+    }
+
     @Override
     public String toJsonConfig() {
         return Json.encodePrettily(getLogicSchemaConfig());
+    }
+
+    @Override
+    public void from(String text) {
+        setLogicSchemaConfig(Json.decodeValue(text, logicSchemaConfig.getClass()));
     }
 
     @NotNull
     private LogicSchemaConfig getLogicSchemaConfig() {
         String schemaName = getSchemaName().getText();
         String targetName = getDefaultTargetName().getText();
-        LogicSchemaConfig logicSchemaConfig = new LogicSchemaConfig();
         logicSchemaConfig.setSchemaName(schemaName);
         logicSchemaConfig.setTargetName(targetName);
         return logicSchemaConfig;

@@ -11,7 +11,7 @@
             fx:controller="io.mycat.ui.Controller"
             prefHeight="400.0" prefWidth="600.0">
     <SplitPane fx:id="main" dividerPositions="0.5, 0.5">
-        <VBox minWidth="100" maxWidth="300">
+        <VBox minWidth="100" maxWidth="500">
             <Label text="对象树" />
             <TreeView fx:id="objectTree" />
         </VBox>

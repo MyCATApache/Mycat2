@@ -30,13 +30,26 @@ public class GlobalTableConfigVO implements VO {
 
     public Controller controller;
 
-    public GlobalTable globalTable;
+    GlobalTableConfig globalTableConfig = new GlobalTableConfig();
+
+    public void setGlobalTableConfig(GlobalTableConfig globalTableConfig) {
+        this.globalTableConfig = globalTableConfig;
+
+        ListView<String> targets = getTargets();
+        targets.getItems().clear();
+
+        for (GlobalBackEndTableInfoConfig globalBackEndTableInfoConfig : globalTableConfig.getBroadcast()) {
+            targets.getItems().add(globalBackEndTableInfoConfig.getTargetName());
+        }
+        getCreateTableSQL().setText(globalTableConfig.getCreateTableSQL());
+
+    }
 
     public void save(ActionEvent actionEvent) {
         String schemaName = getSchemaName().getText();
         String tableName = getTableName().getText();
 
-        controller.save(schemaName, tableName,  getGlobalTableConfig());
+        controller.save(schemaName, tableName, getGlobalTableConfig());
     }
 
     @NotNull
@@ -47,8 +60,6 @@ public class GlobalTableConfigVO implements VO {
         for (String item : getTargets().getItems()) {
             globalBackEndTableInfoConfigs.add(GlobalBackEndTableInfoConfig.builder().targetName(item).build());
         }
-
-        GlobalTableConfig globalTableConfig = new GlobalTableConfig();
         globalTableConfig.setCreateTableSQL(sql);
         globalTableConfig.setBroadcast(globalBackEndTableInfoConfigs);
         return globalTableConfig;
@@ -59,8 +70,14 @@ public class GlobalTableConfigVO implements VO {
         return Json.encodePrettily(getGlobalTableConfig());
     }
 
+    @Override
+    public void from(String text) {
+        setGlobalTableConfig(Json.decodeValue(text, globalTableConfig.getClass()));
+
+    }
+
     public void setGlobalTable(GlobalTable globalTable) {
-        this.globalTable = globalTable;
+
 
         getSchemaName().setText(globalTable.getSchemaName());
         getTableName().setText(globalTable.getTableName());
