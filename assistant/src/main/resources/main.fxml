@@ -4,16 +4,27 @@
 <?import javafx.scene.layout.*?>
 
 
+<?import com.sun.javafx.scene.control.skin.SplitPaneSkin.Content?>
 <BorderPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.MainPaneVO">
     <top>
         <MenuBar fx:id="menu" maxWidth="Infinity" minHeight="25">
         </MenuBar>
+
     </top>
    <center>
       <AnchorPane fx:id="mainPane">
-        <VBox layoutY="25.0">
-            <HBox />
+        <VBox >
+            <HBox >
+                <Button fx:id="flashRootButton" text="刷新"></Button>
+            </HBox>
             <TabPane fx:id="tabPane" prefHeight ="600">
+               <Tab text="欢迎页">
+                   <content>
+                     <TextArea text="">
+
+                     </TextArea>
+                   </content>
+               </Tab>
       </TabPane >
             <HBox fx:id="runMenu" layoutX="0" layoutY="0" maxWidth="Infinity" minHeight="25">
       </HBox>

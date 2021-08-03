@@ -6,13 +6,13 @@
 <AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.NewConnectionVO">
     <Label layoutX="82.0" layoutY="21.0" prefHeight="119.0" prefWidth="304.0" text="名称" />
     <TextField fx:id="name" layoutX="180.0" layoutY="72.0" prefHeight="23.0" prefWidth="323.0" />
-    <Label layoutX="82.0" layoutY="72.0" prefHeight="83.0" prefWidth="122.0" text="网络地址" />
-    <TextField fx:id="ip" layoutX="180.0" layoutY="102.0" prefHeight="23.0" prefWidth="323.0" />
-    <Label layoutX="82.0" layoutY="132.0" text="端口" />
-    <TextField fx:id="port" layoutX="180.0" layoutY="128.0" prefHeight="23.0" prefWidth="323.0" />
+    <Label layoutX="82.0" layoutY="72.0" prefHeight="83.0" prefWidth="122.0" text="URL" />
+    <TextArea fx:id="url"
+              text="jdbc:mysql://localhost:8066/mysql?characterEncoding=utf8&amp;useSSL=false&amp;serverTimezone=Asia/Shanghai&amp;allowPublicKeyRetrieval=true"
+              layoutX="180.0" layoutY="102.0" prefHeight="23.0" prefWidth="323.0" />
     <Label layoutX="82.0" layoutY="163.0" text="用户名" />
-    <TextField fx:id="user" layoutX="180.0" layoutY="159.0" prefHeight="23.0" prefWidth="323.0" />
+    <TextField fx:id="user" text="root" layoutX="180.0" layoutY="159.0" prefHeight="23.0" prefWidth="323.0" />
     <Label layoutX="82.0" layoutY="193.0" prefHeight="15.0" prefWidth="167.0" text="密码" />
-    <PasswordField fx:id="password" layoutX="180.0" layoutY="189.0" prefHeight="23.0" prefWidth="323.0" />
+    <PasswordField fx:id="password" text="123456" layoutX="180.0" layoutY="189.0" prefHeight="23.0" prefWidth="323.0" />
     <Button fx:id="connect" layoutX="260.0" layoutY="293.0" text="连接" />
 </AnchorPane>

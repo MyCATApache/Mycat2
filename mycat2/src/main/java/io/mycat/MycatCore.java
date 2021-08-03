@@ -16,15 +16,12 @@ package io.mycat;
 
 import io.mycat.beans.mysql.MySQLVersion;
 import io.mycat.config.*;
-import io.mycat.exporter.PrometheusExporter;
-import io.mycat.gsi.GSIService;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
+import io.mycat.ui.*;
 import io.mycat.vertx.VertxMycatServer;
 import io.mycat.vertxmycat.MycatVertxMetricsFactory;
 import io.vertx.core.*;
-import io.vertx.core.impl.VertxImpl;
-import io.vertx.core.spi.metrics.VertxMetrics;
 import lombok.SneakyThrows;
 import org.apache.calcite.util.RxBuiltInMethod;
 import org.apache.curator.framework.CuratorFramework;
@@ -34,7 +31,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.URISyntaxException;
@@ -43,7 +39,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -212,20 +210,46 @@ public class MycatCore {
         throw new UnsupportedOperationException("unsupport server type:" + type);
     }
 
-    public void start() throws Exception {
+    public void startServer() throws Exception {
         metadataStorageManager.start();
-        mycatServer.start();
+       if (Boolean.getBoolean("ui")){
+           UIMain.infoProviderFactory = new InfoProviderFactory() {
+               @Override
+               public InfoProvider create(InfoProviderType type, Map<String,String> args) {
+                   switch (type) {
+                       case LOCAL:
+                           return new LocalInfoProvider();
+                       case TCP:
+                           return  new TcpInfoProvider(args.get("url"),args.get("user"),args.get("password"));
+                       default:
+                           throw new IllegalStateException("Unexpected value: " + type);
+                   }
 
-        new PrometheusExporter().run();
+               };
+           };
+
+           new Thread(()->{
+               System.out.println("UI Thread:"+Thread.currentThread());
+               UIMain.main(null);
+           }).start();
+       }
+       mycatServer.start();
     }
 
     public static void main(String[] args) throws Exception {
         if (args != null) {
-            Arrays.stream(args).filter(i -> i.startsWith("-D") || i.startsWith("-d"))
-                    .map(i -> i.substring(2).split("=")).forEach(n -> {
-                System.setProperty(n[0], n[1]);
-            });
+            for (String i : args) {
+                if (i.startsWith("-D") || i.startsWith("-d")) {
+                    i = i.substring(2);
+                    if (i.contains("=")){
+                        String[] n = i.substring(2).split("=");
+                        System.setProperty(n[0], n[1]);
+                    }else {
+                        System.setProperty(i,Boolean.TRUE.toString());
+                    }
+                }
+            }
         }
-        new MycatCore().start();
+        new MycatCore().startServer();
     }
 }

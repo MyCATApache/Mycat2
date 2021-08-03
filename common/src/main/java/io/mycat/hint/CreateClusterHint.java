@@ -42,10 +42,10 @@ public class CreateClusterHint extends HintBuilder {
         return clusterConfig;
     }
 
-    public static CreateClusterHint create(ClusterConfig clusterConfig) {
+    public static String create(ClusterConfig clusterConfig) {
         CreateClusterHint createClusterHint = new CreateClusterHint();
         createClusterHint.setConfig(clusterConfig);
-        return createClusterHint;
+        return createClusterHint.build();
     }
 
     public void setConfig(ClusterConfig config) {

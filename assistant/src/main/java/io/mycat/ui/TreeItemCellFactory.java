@@ -1,5 +1,6 @@
 package io.mycat.ui;
 
+import io.mycat.LogicTableType;
 import io.mycat.TableHandler;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
@@ -184,13 +185,34 @@ public class TreeItemCellFactory implements Callback<TreeView<String>, TreeCell<
                         break;
                     case SHARDING_TABLE:
                     case GLOBAL_TABLE:
-                    case SINGLE_TABLE:
+                    case SINGLE_TABLE: {
                         if (command.getSchema() == null || command.getTable() == null) {
                             return;
                         }
-                        Optional<TableHandler> config = controller.getInfoProvider().getTableConfigByName(command.getSchema(), command.getTable());
-                        config.ifPresent(c -> controller.edit(c));
+                        LogicTableType logicTableType ;
+                        String schemaName =command.getSchema();
+                        String tableName = command.getTable();
+
+                        switch (command.getType()) {
+                            case GLOBAL_TABLE:
+                                logicTableType = LogicTableType.GLOBAL;
+                                break;
+                            case SINGLE_TABLE:
+                                logicTableType = LogicTableType.NORMAL;
+                                break;
+                            case SHARDING_TABLE:
+                                logicTableType = LogicTableType.SHARDING;
+                                break;
+                            default:
+                                throw new IllegalArgumentException();
+                        }
+
+                        Optional<Object> config = controller.getInfoProvider().getTableConfigByName(command.getSchema(), command.getTable());
+                        config.ifPresent(c -> controller.edit(logicTableType,schemaName,tableName,c));
+
+
                         break;
+                    }
                     case CLUSTER:
                         Optional<ClusterConfig> clusterConfigOptional = controller.getInfoProvider().getClusterConfigByPath(command.getCluster());
                         clusterConfigOptional.ifPresent(c -> controller.edit(c));

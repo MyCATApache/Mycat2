@@ -1,18 +1,18 @@
 package io.mycat.ui;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.JavaFXBuilderFactory;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,11 +36,10 @@ public class UIMain extends Application {
         Parent root = fxmlLoader.load();
         io.mycat.ui.MainPaneVO controller = fxmlLoader.getController();
         controller.getMenu().prefWidthProperty().bind(controller.getMainPane().widthProperty());//菜单自适应
-
-        controller.flashRoot();
+        controller.init();
         controller.getTabPane().prefWidthProperty().bind(controller.getMainPane().widthProperty());//菜单自适应
 //        controller.getTabPane().prefHeightProperty().bind(controller.getMainPane().heightProperty());//菜单自适应
-        Scene scene = new Scene(root, 800, 600);
+        Scene scene = new Scene(root, 800, 800);
         primaryStage.setScene(scene);
         primaryStage.show();
     }

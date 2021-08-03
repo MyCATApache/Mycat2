@@ -6,10 +6,6 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLType;
-import com.alibaba.druid.util.JdbcUtils;
-import com.google.common.collect.ImmutableMap;
-import io.mycat.beans.mycat.JdbcRowBaseIterator;
-import io.mycat.util.DumpUtil;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
@@ -26,7 +22,6 @@ import tech.tablesaw.api.Table;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,9 +36,10 @@ public class MainPaneVO {
     public TextArea explain;
     public TextArea output;
     public Label statusMessage;
+    public Button flashRootButton;
     public Map<String, Controller> tabObjectMap = new HashMap<>();
 
-    public void flashRoot() {
+    public void init() {
 
         Menu fileMenu = new Menu("文件");
         MenuItem newConnection = new MenuItem("新连接");
@@ -68,16 +64,13 @@ public class MainPaneVO {
 
                             try {
                                 String name = CheckUtil.isEmpty(newConnectionVO.getName().getText(), "name 不能为空");
-                                String ip = CheckUtil.isEmpty(newConnectionVO.getIp().getText(), "ip 不能为空");
-                                String port = CheckUtil.isEmpty(newConnectionVO.getPort().getText(), "port 不能为空");
+                                String url = CheckUtil.isEmpty(newConnectionVO.getUrl().getText(), "url 不能为空");
                                 String user = CheckUtil.isEmpty(newConnectionVO.getUser().getText(), "user 不能为空");
                                 String password = CheckUtil.isEmpty(newConnectionVO.getPassword().getText(), "password 不能为空");
-                                ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
-                                builder.put("ip", ip);
-                                builder.put("port", port);
-                                builder.put("user", user);
-                                builder.put("password", password);
-                                ImmutableMap<String, Object> map = builder.build();
+                                HashMap<String, String> map = new HashMap<>();
+                                map.put("url", url);
+                                map.put("user", user);
+                                map.put("password", password);
 
                                 FXMLLoader loader = UIMain.loader("/mainpane.fxml");
                                 Parent parent = loader.load();
@@ -90,6 +83,8 @@ public class MainPaneVO {
 
                                 Tab tab = new Tab(name, parent);
                                 tabPane.getTabs().add(tab);
+                                SingleSelectionModel selectionModel = tabPane.getSelectionModel();
+                                selectionModel.select(tab);
                                 dialog.close();
                             } catch (Exception e) {
                                 popAlter(e);
@@ -125,10 +120,9 @@ public class MainPaneVO {
                         public void handle(ActionEvent event) {
                             try {
                                 String name = CheckUtil.isEmpty(newConnectionVO.getName().getText(), "name 不能为空");
-                                String filePath = CheckUtil.isEmpty(newConnectionVO.getFilePath().getText(), "filePath不能为空");
-                                ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
-                                builder.put("filePath", filePath);
-                                ImmutableMap<String, Object> map = builder.build();
+//                                String filePath = CheckUtil.isEmpty(newConnectionVO.getFilePath().getText(), "filePath不能为空");
+                                HashMap<String, String> map = new HashMap<>();
+//                                map.put("filePath", filePath);
 
                                 FXMLLoader loader = UIMain.loader("/mainpane.fxml");
                                 Parent parent = loader.load();
@@ -141,6 +135,8 @@ public class MainPaneVO {
                                 tabObjectMap.put(name, controller);
                                 Tab tab = new Tab(name, parent);
                                 tabPane.getTabs().add(tab);
+                                SingleSelectionModel selectionModel = tabPane.getSelectionModel();
+                                selectionModel.select(tab);
                                 dialog.close();
                             } catch (Exception e) {
                                 popAlter(e);
@@ -217,29 +213,34 @@ public class MainPaneVO {
                                 select = false;
                         }
 
-                            try(Statement statement = connection.createStatement();){
-                                if (select) {
-                                    ResultSet resultSet = statement.executeQuery(sql);
-                                    outputText.appendLine(Table.read().db(resultSet).print());
-                                }else {
-                                    boolean affectRow = statement.execute(sqlStatement.toString());
-                                    outputText.appendLine("affectRow:"+affectRow);
-                                }
-                                MySqlExplainStatement mySqlExplainStatement = new MySqlExplainStatement();
-                                mySqlExplainStatement.setStatement(sqlStatement.clone());
-                                ResultSet resultSet = statement.executeQuery(mySqlExplainStatement.toString());
-                                explainText.appendLine(Table.read().db(resultSet).print(200));
-                            }catch (Exception e){
-                                outputText.appendLine(e.getLocalizedMessage());
-                                e.printStackTrace();
+                        try (Statement statement = connection.createStatement();) {
+                            if (select) {
+                                ResultSet resultSet = statement.executeQuery(sql);
+                                outputText.appendLine(Table.read().db(resultSet).print());
+                            } else {
+                                boolean affectRow = statement.execute(sqlStatement.toString());
+                                outputText.appendLine("affectRow:" + affectRow);
                             }
+                            MySqlExplainStatement mySqlExplainStatement = new MySqlExplainStatement();
+                            mySqlExplainStatement.setStatement(sqlStatement.clone());
+                            ResultSet resultSet = statement.executeQuery(mySqlExplainStatement.toString());
+                            explainText.appendLine(Table.read().db(resultSet).print(200));
+                        } catch (Exception e) {
+                            outputText.appendLine(e.getLocalizedMessage());
+                            e.printStackTrace();
+                        }
                     }
 
                 }
             }
         });
         runMenu.getChildren().addAll(runBotton);
-
+        flashRootButton.setOnAction(event -> {
+            Controller controller = tabObjectMap.get(selectTab.get().getText());
+            if (controller != null) {
+                controller.flashRoot();
+            }
+        });
 
     }
 

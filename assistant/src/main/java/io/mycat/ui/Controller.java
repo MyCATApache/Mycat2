@@ -1,42 +1,23 @@
 package io.mycat.ui;
 
 import io.mycat.*;
-import io.mycat.calcite.table.GlobalTable;
-import io.mycat.calcite.table.NormalTable;
-import io.mycat.calcite.table.SchemaHandler;
-import io.mycat.calcite.table.ShardingTable;
 import io.mycat.config.*;
-import io.vertx.core.json.Json;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
-import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.event.EventType;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldListCell;
 import javafx.scene.control.cell.TextFieldTableCell;
-import javafx.scene.input.InputEvent;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
 import lombok.Data;
 import lombok.SneakyThrows;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import static com.sun.org.apache.xalan.internal.xsltc.compiler.util.Type.Text;
-import static io.mycat.LogicTableType.GLOBAL;
-import static io.mycat.LogicTableType.SHARDING;
+import java.util.*;
 
 @Data
 public class Controller {
@@ -47,7 +28,7 @@ public class Controller {
     private InfoProvider infoProvider;
     private VO currentVO;
 
-    private EventHandler<KeyEvent> navToText = event -> {
+    private EventHandler navToText = event -> {
         if (currentVO != null) {
             try {
                 objectText.setText(currentVO.toJsonConfig());
@@ -57,7 +38,7 @@ public class Controller {
 
         }
     };
-    private EventHandler<KeyEvent> textToNax = event -> {
+    private EventHandler textToNax = event -> {
         if (currentVO != null) {
             try {
                 currentVO.from(objectText.getText());
@@ -87,8 +68,9 @@ public class Controller {
         TextArea emptyLabel = new TextArea("请选择对象");
         objectNav.getChildren().add(emptyLabel);
 
-        objectNav.removeEventHandler(KeyEvent.ANY, navToText);
-        objectNav.addEventHandler(KeyEvent.ANY, navToText);
+        objectNav.removeEventHandler(EventType.ROOT, navToText);
+        objectNav.addEventHandler(EventType.ROOT, navToText);
+
         objectNav.removeEventHandler(KeyEvent.ANY, textToNax);
         objectText.addEventHandler(KeyEvent.ANY, textToNax);
     }
@@ -106,33 +88,27 @@ public class Controller {
     }
 
     private void flashSchemas(InfoProvider infoProvider, TreeItem child) {
-        for (SchemaHandler schema : infoProvider.schemas()) {
+        for (LogicSchemaConfig schema : infoProvider.schemas()) {
 
-            TreeItem<String> schemaItem = new TreeItem(schema.getName());
+            TreeItem<String> schemaItem = new TreeItem(schema.getSchemaName());
             child.getChildren().add(schemaItem);
-            TreeItem<String> shardingTablesItem = new TreeItem("shardingTables");
-            TreeItem<String> globalTablesItem = new TreeItem("globalTables");
-            TreeItem<String> singleTablesItem = new TreeItem("singleTables");
+            TreeItem<String> shardingTablesItem = new TreeItem("shardingtables");
+            TreeItem<String> globalTablesItem = new TreeItem("globaltables");
+            TreeItem<String> singleTablesItem = new TreeItem("singletables");
 
             schemaItem.getChildren().add(shardingTablesItem);
             schemaItem.getChildren().add(globalTablesItem);
             schemaItem.getChildren().add(singleTablesItem);
 
-            for (TableHandler tableHandler : schema.logicTables().values()) {
-                String s = tableHandler.getTableName();
-                switch (tableHandler.getType()) {
-                    case SHARDING:
-                        shardingTablesItem.getChildren().add(new TreeItem(s));
-                        break;
-                    case GLOBAL:
-                        globalTablesItem.getChildren().add(new TreeItem(s));
-                        break;
-                    case NORMAL:
-                        singleTablesItem.getChildren().add(new TreeItem(s));
-                        break;
-                    case CUSTOM:
-                        break;
-                }
+
+            for (Map.Entry<String, NormalTableConfig> e : schema.getNormalTables().entrySet()) {
+                singleTablesItem.getChildren().add(new TreeItem(e.getKey()));
+            }
+            for (Map.Entry<String, GlobalTableConfig> e : schema.getGlobalTables().entrySet()) {
+                globalTablesItem.getChildren().add(new TreeItem(e.getKey()));
+            }
+            for (Map.Entry<String, ShardingTableConfig> e : schema.getShardingTables().entrySet()) {
+                shardingTablesItem.getChildren().add(new TreeItem(e.getKey()));
             }
         }
     }
@@ -178,45 +154,42 @@ public class Controller {
         }
     }
 
-    public void edit(TableHandler c) {
+    public void edit(LogicTableType logicTableType,String schemaName,String tableName,Object config) {
         try {
-            switch (c.getType()) {
+            switch (logicTableType) {
                 case SHARDING: {
-                    ShardingTable shardingTable = (ShardingTable) c;
                     FXMLLoader loader = UIMain.loader("/shardingTable.fxml");
                     Parent parent = loader.load();
 
                     ShardingTableConfigVO shardingTableConfigVO = loader.getController();
                     shardingTableConfigVO.setController(this);
-                    shardingTableConfigVO.getSchemaName().setText(shardingTable.getSchemaName());
-                    shardingTableConfigVO.getTableName().setText(shardingTable.getTableName());
-                    shardingTableConfigVO.setShardingTableConfig(JsonUtil.clone(shardingTable.getTableConfig()));
+                    shardingTableConfigVO.getSchemaName().setText(schemaName);
+                    shardingTableConfigVO.getTableName().setText(tableName);
+                    shardingTableConfigVO.setShardingTableConfig((ShardingTableConfig) JsonUtil.clone(config));
 
                     setCurrentObject(parent, shardingTableConfigVO);
                     break;
                 }
                 case GLOBAL: {
-                    GlobalTable globalTable = (GlobalTable) c;
                     FXMLLoader loader = UIMain.loader("/globalTable.fxml");
                     Parent parent = loader.load();
 
                     GlobalTableConfigVO globalTableConfigVO = loader.getController();
                     globalTableConfigVO.setController(this);
-                    globalTableConfigVO.setGlobalTableConfig(JsonUtil.clone(globalTable.getTableConfig()));
+                    globalTableConfigVO.setGlobalTableConfig((GlobalTableConfig) JsonUtil.clone(config));
 
                     setCurrentObject(parent, globalTableConfigVO);
                     break;
                 }
                 case NORMAL: {
-                    NormalTable normalTable = (NormalTable) c;
                     FXMLLoader loader = UIMain.loader("/singleTable.fxml");
                     Parent parent = loader.load();
 
                     SingleTableVO singleTableVO = loader.getController();
                     singleTableVO.setController(this);
-                    singleTableVO.getSchemaName().setText(normalTable.getSchemaName());
-                    singleTableVO.getTableName().setText(normalTable.getTableName());
-                    singleTableVO.setNormalTableConfig(JsonUtil.clone(normalTable.getTableConfig()));
+                    singleTableVO.getSchemaName().setText(schemaName);
+                    singleTableVO.getTableName().setText(tableName);
+                    singleTableVO.setNormalTableConfig((NormalTableConfig)JsonUtil.clone(config));
                     setCurrentObject(parent, singleTableVO);
                     break;
                 }

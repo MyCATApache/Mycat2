@@ -13,14 +13,16 @@ import java.util.Map;
 import java.util.Optional;
 
 public interface InfoProvider {
-    List<SchemaHandler> schemas();
+    List<LogicSchemaConfig> schemas();
 
     List<ClusterConfig> clusters();
 
     List<DatasourceConfig> datasources();
 
-    public Optional<LogicSchemaConfig> getSchemaConfigByName(String schemaName) ;
-    public Optional<TableHandler> getTableConfigByName(String schemaName, String tableName) ;
+    public Optional<LogicSchemaConfig> getSchemaConfigByName(String schemaName);
+
+    public Optional<Object> getTableConfigByName(String schemaName, String tableName);
+
     Optional<DatasourceConfig> getDatasourceConfigByPath(String name);
 
     Optional<ClusterConfig> getClusterConfigByPath(String name);
@@ -34,8 +36,6 @@ public interface InfoProvider {
     void saveCluster(ClusterConfig config);
 
     void saveDatasource(DatasourceConfig config);
-
-    void deleteIndexTable(String schemaName, String tableName, String selectIndex);
 
     Connection createConnection();
 }
