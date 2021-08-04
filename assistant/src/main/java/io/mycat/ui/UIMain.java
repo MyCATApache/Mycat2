@@ -12,14 +12,17 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import lombok.Getter;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@Getter
 public class UIMain extends Application {
 
     public static InfoProviderFactory infoProviderFactory;
+    private Scene scene;
 
     public static InfoProviderFactory getInfoProviderFactory() {
         return infoProviderFactory;
@@ -27,7 +30,20 @@ public class UIMain extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-
+        if (infoProviderFactory == null) {
+            infoProviderFactory = new InfoProviderFactory() {
+                @Override
+                public InfoProvider create(InfoProviderType type, Map<String, String> args) {
+                    switch (type) {
+                        case LOCAL:
+                            throw new UnsupportedOperationException("不支持本地模式");
+                        case TCP:
+                            return new TcpInfoProvider(args);
+                    }
+                    return null;
+                }
+            };
+        }
         primaryStage.setTitle("Mycat2 UI");
 
         FXMLLoader fxmlLoader = new FXMLLoader();
@@ -39,7 +55,7 @@ public class UIMain extends Application {
         controller.init();
         controller.getTabPane().prefWidthProperty().bind(controller.getMainPane().widthProperty());//菜单自适应
 //        controller.getTabPane().prefHeightProperty().bind(controller.getMainPane().heightProperty());//菜单自适应
-        Scene scene = new Scene(root, 800, 800);
+        this. scene = SceneUtil.createScene(root, 800, 800);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -83,15 +99,23 @@ public class UIMain extends Application {
         }
     }
 
-    public static String getPath(TreeItem<String> item) {
+    public static String getPath(TreeItem<ObjectItem> item) {
         StringBuilder pathBuilder = new StringBuilder();
         for (; item != null; item = item.getParent()) {
-            pathBuilder.insert(0, item.getValue());
+            ObjectItem value = item.getValue();
+            pathBuilder.insert(0,value.getText());
             pathBuilder.insert(0, "/");
         }
         return pathBuilder.toString();
     }
-
+    public static String getTextPath(TreeItem<String> item) {
+        StringBuilder pathBuilder = new StringBuilder();
+        for (; item != null; item = item.getParent()) {
+            pathBuilder.insert(0,item.getValue());
+            pathBuilder.insert(0, "");
+        }
+        return pathBuilder.toString();
+    }
     public static TreeItem<String> getSchemaViewNode(String name, Map<String, List<String>> map) {
         TreeItem<String> rootItem = new TreeItem<>(name);
         for (Map.Entry<String, List<String>> entry : map.entrySet()) {
@@ -123,7 +147,6 @@ public class UIMain extends Application {
         }
         return rootItem;
     }
-
 
 
     public static void main(String[] args) {

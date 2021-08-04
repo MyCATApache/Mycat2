@@ -146,6 +146,15 @@ public class LocalInfoProvider implements InfoProvider {
 
     }
 
+    @Override
+    @SneakyThrows
+    public void saveSingleTable(String schemaName, String tableName, NormalTableConfig config) {
+        try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+            ops.putNormalTable(schemaName,tableName,config);
+            ops.commit();
+        }
+    }
+
     NameMap<String> map = NameMap.immutableCopyOf((ImmutableMap)
             ImmutableMap.builder()
                     .put("schemaName", "库名")

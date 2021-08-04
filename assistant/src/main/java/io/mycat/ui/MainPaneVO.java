@@ -42,22 +42,24 @@ public class MainPaneVO {
     public void init() {
 
         Menu fileMenu = new Menu("文件");
+        fileMenu.setId("file");
         MenuItem newConnection = new MenuItem("新连接");
+        newConnection.setId("newTCPConnection");
         newConnection.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 try {
                     final Stage dialog = new Stage();
 
-
                     FXMLLoader loader = UIMain.loader("/newConnection.fxml");
                     Parent parent = loader.load();
 
                     NewConnectionVO newConnectionVO = loader.getController();
 
-                    Scene dialogScene = new Scene(parent, 600, 500);
+                    Scene dialogScene = SceneUtil.createScene(parent, 600, 500);
                     dialog.setScene(dialogScene);
                     dialog.setTitle("新连接");
+                    newConnectionVO.getConnect().setId("connect");
                     newConnectionVO.getConnect().setOnAction(new EventHandler<ActionEvent>() {
                         @Override
                         public void handle(ActionEvent event) {
@@ -82,6 +84,7 @@ public class MainPaneVO {
                                 controller.getMain().prefHeightProperty().bind(tabPane.heightProperty());//菜单自适应
 
                                 Tab tab = new Tab(name, parent);
+                                tabObjectMap.put(name,controller);
                                 tabPane.getTabs().add(tab);
                                 SingleSelectionModel selectionModel = tabPane.getSelectionModel();
                                 selectionModel.select(tab);
@@ -94,6 +97,7 @@ public class MainPaneVO {
                         }
                     });
                     dialog.showAndWait();
+                    SceneUtil.close(dialogScene);
                 } catch (Exception exception) {
                     exception.printStackTrace();
                 }
@@ -112,9 +116,10 @@ public class MainPaneVO {
 
                     LocalConnectionVO newConnectionVO = loader.getController();
 
-                    Scene dialogScene = new Scene(parent, 600, 500);
+                    Scene dialogScene = SceneUtil.createScene(parent, 600, 500);
                     dialog.setScene(dialogScene);
                     dialog.setTitle("本地连接");
+                    newConnectionVO.getConnect().setId("connect");
                     newConnectionVO.getConnect().setOnAction(new EventHandler<ActionEvent>() {
                         @Override
                         public void handle(ActionEvent event) {
@@ -146,6 +151,7 @@ public class MainPaneVO {
                         }
                     });
                     dialog.showAndWait();
+                    SceneUtil.close(dialogScene);
                 } catch (Exception exception) {
                     exception.printStackTrace();
                 }
@@ -163,10 +169,11 @@ public class MainPaneVO {
                 VBox dialogVbox = new VBox(20);
                 dialogVbox.getChildren().add(new TextField("https://github.com/MyCATApache/Mycat2 "));
                 dialogVbox.getChildren().add(new Label("author:chenjunwen"));
-                Scene dialogScene = new Scene(dialogVbox, 300, 200);
+                Scene dialogScene = SceneUtil.createScene(dialogVbox, 300, 200);
                 dialog.setScene(dialogScene);
                 dialog.setTitle("关于");
                 dialog.showAndWait();
+                SceneUtil.close(dialogScene);
             }
         });
         helpMenu.getItems().addAll(aboutMenu);
@@ -236,10 +243,11 @@ public class MainPaneVO {
         });
         runMenu.getChildren().addAll(runBotton);
         flashRootButton.setOnAction(event -> {
-            Controller controller = tabObjectMap.get(selectTab.get().getText());
-            if (controller != null) {
-                controller.flashRoot();
-            }
+            Optional.ofNullable(selectTab.get()).map(tab -> tab.getText()).map(text -> {
+                return tabObjectMap.get(text);
+            }).ifPresent(controller -> {
+                controller.flashSchemas();
+            });
         });
 
     }
@@ -248,7 +256,9 @@ public class MainPaneVO {
         Stage stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.setTitle("警告");
-        stage.setScene(new Scene(new Label(e.getLocalizedMessage()), 200, 100));
+        Scene scene = SceneUtil.createScene(new Label(e.getLocalizedMessage()), 200, 100);
+        stage.setScene(scene);
         stage.showAndWait();
+        SceneUtil.close(scene);
     }
 }

@@ -5,6 +5,7 @@ import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.LogicSchemaConfig;
+import io.mycat.config.NormalTableConfig;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -38,4 +39,6 @@ public interface InfoProvider {
     void saveDatasource(DatasourceConfig config);
 
     Connection createConnection();
+
+    void saveSingleTable(String schemaName, String tableName, NormalTableConfig config);
 }

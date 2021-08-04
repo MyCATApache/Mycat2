@@ -1,5 +1,6 @@
 package io.mycat.ui;
 
+import com.sun.javafx.scene.SceneUtils;
 import io.mycat.*;
 import io.mycat.calcite.table.ShardingIndexTable;
 import io.mycat.calcite.table.ShardingTable;
@@ -237,9 +238,11 @@ public class ShardingTableConfigVO implements VO {
             controller.setShardingTableConfigVO(this);
 
             Stage stage = new Stage();
-            stage.setScene(new Scene(parent, 600, 400));
+            Scene scene = SceneUtil.createScene(parent, 600, 400);
+            stage.setScene(scene);
             controller.setStage(stage);
             stage.showAndWait();
+            SceneUtil.close(scene);
             flash();
         } catch (Exception e) {
             e.printStackTrace();

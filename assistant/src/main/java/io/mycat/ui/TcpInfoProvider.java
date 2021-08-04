@@ -2,10 +2,7 @@ package io.mycat.ui;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.util.JdbcUtils;
-import io.mycat.config.ClusterConfig;
-import io.mycat.config.DatasourceConfig;
-import io.mycat.config.LogicSchemaConfig;
-import io.mycat.config.MycatRouterConfig;
+import io.mycat.config.*;
 import io.mycat.hint.*;
 import io.vertx.core.json.Json;
 import lombok.SneakyThrows;
@@ -34,6 +31,10 @@ public class TcpInfoProvider implements InfoProvider {
         druidDataSource.setUrl(url);
         druidDataSource.setUsername(user);
         druidDataSource.setPassword(password);
+    }
+
+    public TcpInfoProvider(Map<String, String> args) {
+        this(args.get("url"),args.get("user"),args.get("password"));
     }
 
 //     <T> T write(Supplier<T> runnable){
@@ -130,5 +131,11 @@ public class TcpInfoProvider implements InfoProvider {
     @SneakyThrows
     public Connection createConnection() {
         return this.druidDataSource.getConnection();
+    }
+
+    @Override
+    @SneakyThrows
+    public void saveSingleTable(String schemaName, String tableName, NormalTableConfig config) {
+        JdbcUtils.execute(this.druidDataSource, CreateTableHint.createNormal(schemaName,tableName,config));
     }
 }

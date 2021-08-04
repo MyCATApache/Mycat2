@@ -220,7 +220,7 @@ public class MycatCore {
                        case LOCAL:
                            return new LocalInfoProvider();
                        case TCP:
-                           return  new TcpInfoProvider(args.get("url"),args.get("user"),args.get("password"));
+                           return  new TcpInfoProvider(args);
                        default:
                            throw new IllegalStateException("Unexpected value: " + type);
                    }

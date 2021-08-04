@@ -61,7 +61,7 @@ public class Controller {
         objectTree.setMaxWidth(300);
         objectTree.setShowRoot(false);
         objectTree.setCellFactory(treeItemCellFactory);
-        TreeItem<String> rootViewNode = getRootViewNode(infoProvider);
+        TreeItem<ObjectItem> rootViewNode = getRootViewNode(infoProvider);
         objectTree.setRoot(rootViewNode);
         objectNav.setPrefWidth(120);
         objectNav.getChildren().clear();
@@ -76,9 +76,9 @@ public class Controller {
     }
 
     public void flashSchemas() {
-        ObservableList<TreeItem> children = objectTree.getRoot().getChildren();
-        for (TreeItem child : children) {
-            if (child.getValue().equals("schemas")) {
+        ObservableList<TreeItem<ObjectItem>> children = objectTree.getRoot().getChildren();
+        for (TreeItem<ObjectItem> child : children) {
+            if (child.getValue().getText().equals("schemas")) {
                 child.getChildren().clear();
                 flashSchemas(infoProvider, child);
                 return;
@@ -90,26 +90,30 @@ public class Controller {
     private void flashSchemas(InfoProvider infoProvider, TreeItem child) {
         for (LogicSchemaConfig schema : infoProvider.schemas()) {
 
-            TreeItem<String> schemaItem = new TreeItem(schema.getSchemaName());
+            String schemaName = schema.getSchemaName();
+            TreeItem<ObjectItem> schemaItem = new TreeItem(ObjectItem.ofSchema(schemaName));
             child.getChildren().add(schemaItem);
-            TreeItem<String> shardingTablesItem = new TreeItem("shardingtables");
-            TreeItem<String> globalTablesItem = new TreeItem("globaltables");
-            TreeItem<String> singleTablesItem = new TreeItem("singletables");
+
+
+
+            TreeItem<ObjectItem> shardingTablesItem = new TreeItem( ObjectItem.ofShardingTables(schemaName));
+            TreeItem<ObjectItem> globalTablesItem = new TreeItem( ObjectItem.ofGlobalTables(schemaName));
+            TreeItem<ObjectItem> singleTablesItem = new TreeItem( ObjectItem.ofSingleTables(schemaName));
 
             schemaItem.getChildren().add(shardingTablesItem);
             schemaItem.getChildren().add(globalTablesItem);
             schemaItem.getChildren().add(singleTablesItem);
 
-
             for (Map.Entry<String, NormalTableConfig> e : schema.getNormalTables().entrySet()) {
-                singleTablesItem.getChildren().add(new TreeItem(e.getKey()));
+                singleTablesItem.getChildren().add(new TreeItem(ObjectItem.ofSingleTable(schemaName,e.getKey())));
             }
             for (Map.Entry<String, GlobalTableConfig> e : schema.getGlobalTables().entrySet()) {
-                globalTablesItem.getChildren().add(new TreeItem(e.getKey()));
+                globalTablesItem.getChildren().add(new TreeItem(ObjectItem.ofGlobalTable(schemaName,e.getKey())));
             }
             for (Map.Entry<String, ShardingTableConfig> e : schema.getShardingTables().entrySet()) {
-                shardingTablesItem.getChildren().add(new TreeItem(e.getKey()));
+                shardingTablesItem.getChildren().add(new TreeItem(ObjectItem.ofShardingTable(schemaName,e.getKey())));
             }
+            System.out.println();
         }
     }
 
@@ -154,7 +158,7 @@ public class Controller {
         }
     }
 
-    public void edit(LogicTableType logicTableType,String schemaName,String tableName,Object config) {
+    public void edit(LogicTableType logicTableType, String schemaName, String tableName, Object config) {
         try {
             switch (logicTableType) {
                 case SHARDING: {
@@ -189,7 +193,7 @@ public class Controller {
                     singleTableVO.setController(this);
                     singleTableVO.getSchemaName().setText(schemaName);
                     singleTableVO.getTableName().setText(tableName);
-                    singleTableVO.setNormalTableConfig((NormalTableConfig)JsonUtil.clone(config));
+                    singleTableVO.setNormalTableConfig((NormalTableConfig) JsonUtil.clone(config));
                     setCurrentObject(parent, singleTableVO);
                     break;
                 }
@@ -292,7 +296,7 @@ public class Controller {
                 new PropertyValueFactory<Partition, String>("globalIndex")
         );
 
-        partitionsView.getColumns().addAll(firstCol, secondCol, thirdCol,fourthCol,fifthCol,sixCol);
+        partitionsView.getColumns().addAll(firstCol, secondCol, thirdCol, fourthCol, fifthCol, sixCol);
 
     }
 
@@ -309,13 +313,13 @@ public class Controller {
         }
     }
 
-    public TreeItem<String> getRootViewNode(InfoProvider infoProvider) {
-        TreeItem<String> rootItem = new TreeItem("root");
+    public TreeItem<ObjectItem> getRootViewNode(InfoProvider infoProvider) {
+        TreeItem<ObjectItem> rootItem = new TreeItem(ObjectItem.builder().id("root").text("root").object("root").build());
 
 
-        TreeItem<String> schemaItems = new TreeItem<>("schemas");
-        TreeItem<String> clusterItems = new TreeItem<>("clusters");
-        TreeItem<String> datasourceItems = new TreeItem<>("datasources");
+        TreeItem<ObjectItem> schemaItems = new TreeItem<>(ObjectItem.builder().id("schemas").text("schemas").object("schemas").build());
+        TreeItem<ObjectItem> clusterItems = new TreeItem<>(ObjectItem.builder().id("clusters").text("clusters").object("clusters").build());
+        TreeItem<ObjectItem> datasourceItems = new TreeItem<>(ObjectItem.builder().id("datasources").text("datasources").object("datasources").build());
 
         rootItem.getChildren().add(schemaItems);
         rootItem.getChildren().add(clusterItems);
@@ -324,11 +328,13 @@ public class Controller {
         flashSchemas(infoProvider, schemaItems);
 
         for (ClusterConfig cluster : infoProvider.clusters()) {
-            clusterItems.getChildren().add(new TreeItem(cluster.getName()));
+            String name = cluster.getName();
+            clusterItems.getChildren().add(new TreeItem(ObjectItem.builder().id(name).text(name).object(name).build()));
         }
 
         for (DatasourceConfig datasourceConfig : infoProvider.datasources()) {
-            datasourceItems.getChildren().add(new TreeItem(datasourceConfig.getName()));
+            String name = datasourceConfig.getName();
+            datasourceItems.getChildren().add(new TreeItem(ObjectItem.builder().id(name).text(name).object(name).build()));
         }
 
         return rootItem;
@@ -372,6 +378,7 @@ public class Controller {
             FXMLLoader loader = UIMain.loader("/singleTable.fxml");
             Parent parent = loader.load();
             SingleTableVO singleTableVO = loader.getController();
+            singleTableVO.setController(this);
             singleTableVO.getSchemaName().setText(schema);
 
             NormalTableConfig normalTableConfig = new NormalTableConfig();
@@ -393,9 +400,9 @@ public class Controller {
     }
 
     public void save(String schemaName, String tableName, NormalTableConfig config) {
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        metadataManager.addNormalTable(schemaName, tableName, config, metadataManager.getPrototype());
+        infoProvider.saveSingleTable(schemaName,tableName,config);
         flashSchemas();
+
     }
 
     @SneakyThrows

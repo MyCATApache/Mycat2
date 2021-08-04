@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.mycat.ui.UIMain.getPath;
 
-public class TreeItemCellFactory implements Callback<TreeView<String>, TreeCell<String>> {
+public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeCell<ObjectItem>> {
     VBox formCell;
     TextArea jsonTextArea;
     private Controller controller;
@@ -34,17 +34,18 @@ public class TreeItemCellFactory implements Callback<TreeView<String>, TreeCell<
     }
 
     @Override
-    public TreeCell<String> call(TreeView<String> tree) {
-        TreeCell<String> cell = new SchemaObjectCell();
+    public TreeCell<ObjectItem> call(TreeView<ObjectItem> tree) {
+        TreeCell<ObjectItem> cell = new SchemaObjectCell();
         cell.setOnMouseClicked(event -> {
+            cell.setId(cell.getTreeItem().getValue().getId());
             Optional<Command> commandOptional = Command.parsePath(getPath(cell.getTreeItem()));
             if (event != null) {
                 if (event.getButton() == MouseButton.SECONDARY) {
                     ContextMenu contextMenu = new ContextMenu();
-                    TreeItem<String> treeItem = cell.getTreeItem();
+                    TreeItem<ObjectItem> treeItem = cell.getTreeItem();
                     if (!treeItem.isLeaf() && treeItem.getParent() == tree.getRoot()) {
-                        String value = treeItem.getValue();
-                        switch (value) {
+                        ObjectItem value = treeItem.getValue();
+                        switch (value.getText()) {
                             case "schemas": {
                                 MenuItem item1 = new MenuItem("新建逻辑库");
                                 item1.setOnAction(event1 -> controller.edit(new LogicSchemaConfig()));
@@ -95,6 +96,7 @@ public class TreeItemCellFactory implements Callback<TreeView<String>, TreeCell<
                                 }
                                 case SINGLE_TABLES: {
                                     MenuItem item1 = new MenuItem("新建单表");
+                                    item1.setId("addSingleTable");
                                     item1.setOnAction(event1 -> controller.addNormalTableConfig(schema));
                                     contextMenu.getItems().add(item1);
                                     break;
@@ -256,10 +258,11 @@ public class TreeItemCellFactory implements Callback<TreeView<String>, TreeCell<
         vBox.getChildren().add(hBox);
         vBox.setAlignment(Pos.CENTER);
 
-        Scene scene = new Scene(vBox, 400, 200);
+        Scene scene = SceneUtil.createScene(vBox, 400, 200);
         stage.setScene(scene);
         stage.setTitle(title);
         stage.showAndWait();
+        SceneUtil.close(scene);
 
         return flag.get();
     }
@@ -288,10 +291,11 @@ public class TreeItemCellFactory implements Callback<TreeView<String>, TreeCell<
         vBox.getChildren().add(node);
         vBox.setAlignment(Pos.CENTER);
 
-        Scene scene = new Scene(vBox, 400, 400);
+        Scene scene = SceneUtil.createScene(vBox, 400, 400);
         stage.setScene(scene);
         stage.setTitle(title);
         stage.showAndWait();
+        SceneUtil.close(scene);
 
         return flag.get();
     }
