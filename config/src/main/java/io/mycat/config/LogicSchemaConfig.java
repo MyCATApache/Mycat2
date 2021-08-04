@@ -11,7 +11,7 @@ import java.util.Map;
 public final class LogicSchemaConfig {
     String schemaName;
     String targetName;
-    Map<String, ShardingTableConfig> shadingTables = new HashMap<>();
+    Map<String, ShardingTableConfig> shardingTables = new HashMap<>();
     Map<String, GlobalTableConfig> globalTables = new HashMap<>();
     Map<String, NormalTableConfig> normalTables = new HashMap<>();
     Map<String, CustomTableConfig> customTables = new HashMap<>();

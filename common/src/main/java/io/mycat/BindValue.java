@@ -74,8 +74,31 @@ public class BindValue {
         this.value = null;
     }
 
-    public Object getJavaObject() {
+    public Object getJavaObject(boolean primitive) {
+        if (isNull){
+            return null;
+        }
+        if (primitive) {
+            byte[] o;
+            if (value instanceof ByteArrayOutputStream) {
+                o = ((ByteArrayOutputStream) value).toByteArray();
+            }
+            if (value instanceof String) {
+                o = ((String) value).getBytes();
+            }
+            if (value instanceof byte[]) {
+                o = (byte[]) value;
+                return o;
+            }
+        }
+        return getJavaObject();
+    }
+
+    private Object getJavaObject() {
         // 非空情况, 根据字段类型获取值
+        if (isNull){
+            return null;
+        }
         switch (type & 0xff) {
             case MysqlDefs.FIELD_TYPE_TINY:
                 return byteBinding;
@@ -92,25 +115,21 @@ public class BindValue {
             case MysqlDefs.FIELD_TYPE_VAR_STRING:
             case MysqlDefs.FIELD_TYPE_STRING:
             case MysqlDefs.FIELD_TYPE_VARCHAR:
-                return value;
+            case MysqlDefs.FIELD_TYPE_DECIMAL:
+            case MysqlDefs.FIELD_TYPE_NEW_DECIMAL:
             case MysqlDefs.FIELD_TYPE_TINY_BLOB:
             case MysqlDefs.FIELD_TYPE_BLOB:
             case MysqlDefs.FIELD_TYPE_MEDIUM_BLOB:
             case MysqlDefs.FIELD_TYPE_LONG_BLOB:
-                byte[] bytes = null;
-                if (value instanceof byte[]) {
-                    bytes = (byte[]) value;
-                }
-                if (value instanceof ByteArrayOutputStream) {
-                    bytes = ((ByteArrayOutputStream) value).toByteArray();
-                }
-                if (value instanceof String) {
-                    bytes = ((String) value).getBytes();
-                }
-                if (bytes == null) {
-                    throw new UnsupportedOperationException();
-                }
-                return "X'" + HexFormatUtil.bytesToHexString(bytes) + "'";
+                /**
+                 *           case MysqlType.FIELD_TYPE_VAR_STRING:
+                 *                     case MysqlType.FIELD_TYPE_STRING:
+                 *                     case MysqlType.FIELD_TYPE_VARCHAR:
+                 *                     case MysqlType.FIELD_TYPE_DECIMAL:
+                 *                     case MysqlType.FIELD_TYPE_NEWDECIMAL:
+                 *
+                 */
+                return new String((byte[]) value);
             case MysqlDefs.FIELD_TYPE_TIME:
             case MysqlDefs.FIELD_TYPE_DATE:
             case MysqlDefs.FIELD_TYPE_DATETIME:

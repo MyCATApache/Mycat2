@@ -17,7 +17,7 @@
         <Label layoutX="192.0" layoutY="244.0" text="用户名" />
         <TextField fx:id="user" layoutX="296.0" layoutY="240.0" prefWidth="161.0" />
         <Label layoutX="192.0" layoutY="270.0" text="密码" />
-        <PasswordField layoutX="296.0" layoutY="266.0" />
+        <PasswordField fx:id="password" layoutX="296.0" layoutY="266.0" />
         <Button layoutX="315.0" layoutY="345.0" text="保存" />
     </children>
 </AnchorPane>

@@ -88,7 +88,7 @@ public enum MycatdbCommand {
             sqlHandlers.add(new RollbackSQLHandler());
             sqlHandlers.add(new SetTransactionSQLHandler());
             sqlHandlers.add(new StartTransactionSQLHandler());
-            sqlHandlers.add(new HintHandler());
+            sqlHandlers.add(HintHandler.INSTANCE);
             sqlHandlers.add(new UseSQLHandler());
             sqlHandlers.add(new LoadDataInFileSQLHandler());
 

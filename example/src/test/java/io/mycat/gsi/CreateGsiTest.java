@@ -6,6 +6,8 @@ import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
 import io.mycat.hint.ShowTopologyHint;
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
@@ -18,6 +20,17 @@ import java.util.Map;
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
 public class CreateGsiTest implements MycatTest {
+    boolean init = false;
+
+    @Before
+    public void before() throws Exception {
+        if (!init) {
+            try (Connection connection = getMySQLConnection(DB_MYCAT)) {
+                JdbcUtils.execute(connection, "/*+ mycat:readXARecoveryLog{} */;");
+            }
+            init = true;
+        }
+    }
 
     @Test
     public void createGsi() throws Exception {
@@ -105,7 +118,7 @@ public class CreateGsiTest implements MycatTest {
             String e = explain(connection, sql);
             Assert.assertTrue(e.contains("travelrecord_g_i_user_id"));
             List<Map<String, Object>> maps1 = executeQuery(connection, sql);
-            Assert.assertEquals("[{id=1, user_id=1, traveldate=null, fee=null, days=null, blob=null}]",maps1.toString());
+            Assert.assertEquals("[{id=1, user_id=1, traveldate=null, fee=null, days=null, blob=null}]", maps1.toString());
             Assert.assertEquals("[{id=1, user_id=1, traveldate=null, fee=null, days=null, blob=null}]",
                     executeQuery(connection, "SELECT * FROM db1.travelrecord WHERE user_id =1 ").toString());
         }

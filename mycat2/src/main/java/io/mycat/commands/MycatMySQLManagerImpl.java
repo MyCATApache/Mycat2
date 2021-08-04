@@ -23,6 +23,7 @@ import io.mycat.config.MycatRouterConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.replica.InstanceType;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.sqlclient.SqlConnection;
@@ -83,13 +84,22 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
 
     @Override
     @SneakyThrows
-    public Map<String, java.sql.Connection> getConnectionMap() {
+    public Map<String, java.sql.Connection> getWriteableConnectionMap() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         Map<String, JdbcDataSource> datasourceInfo = jdbcConnectionManager.getDatasourceInfo();
         HashMap<String, Connection> map = new HashMap<>();
         for (String string : datasourceInfo.keySet()) {
-            Connection connection = datasourceInfo.get(string).getDataSource().getConnection();
-            map.put(string, connection);
+            ///////////////////////////////////////
+            JdbcDataSource jdbcDataSource = datasourceInfo.get(string);
+            DatasourceConfig config = jdbcDataSource.getConfig();
+            if (jdbcDataSource.isMySQLType()) {
+                if (Optional.ofNullable(config.getInstanceType()).map(i -> InstanceType.valueOf(i.toUpperCase()))
+                                .orElse(InstanceType.READ_WRITE)
+                                .isWriteType()) {
+                    Connection connection = jdbcDataSource.getDataSource().getConnection();
+                    map.put(string, connection);
+                }
+            }
         }
         return map;
     }

@@ -27,6 +27,7 @@ import io.mycat.util.NameMap;
 import io.mycat.util.Pair;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -71,16 +72,16 @@ public class HackRouter {
                     tableName = SQLUtils.normalize(tableName);
                     MetadataManager.SimpleRoute normalTable = singleTables.get(tableName);
                     if (normalTable != null) {
-                        String schema = Optional.ofNullable(x.getSchema()).orElse(dataContext.getDefaultSchema());
+                        String schema = SQLUtils.normalize(Optional.ofNullable(x.getSchema()).orElse(dataContext.getDefaultSchema()));
                         if (normalTable.getSchemaName().equalsIgnoreCase(schema)) {
                             MycatSQLExprTableSourceUtil.setSqlExprTableSource(normalTable.getSchemaName(),normalTable.getTableName(),x);
-                            targetName[0] = normalTable.getTargetName();
+                            targetName[0] = Objects.requireNonNull(normalTable.getTargetName());
                         }
                     }
                 }
                 return super.visit(x);
             }
         });
-        return Pair.of(targetName[0], selectStatement.toString());
+        return Pair.of(Objects.requireNonNull(targetName[0]), selectStatement.toString());
     }
 }

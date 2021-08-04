@@ -66,7 +66,7 @@ public class DDLHintTest implements MycatTest {
 
     @Test
     public void testCreateTable() throws Exception {
-            try (Connection mycat = getMySQLConnection(DB_MYCAT);) {
+        try (Connection mycat = getMySQLConnection(DB_MYCAT);) {
             execute(mycat, RESET_CONFIG);
             String db = "testSchema";
             execute(mycat, "drop database " + db);
@@ -177,6 +177,39 @@ public class DDLHintTest implements MycatTest {
             execute(mycat, "drop database " + schemaName);
             List<Map<String, Object>> shouldNotContainsTestAddSchema = executeQuery(mycat, "show databases");
             Assert.assertFalse(shouldNotContainsTestAddSchema.toString().contains(schemaName));
+
+        }
+    }
+
+
+    @Test
+    public void testAddSchema2() throws Exception {
+        try (Connection mycat = getMySQLConnection(DB_MYCAT);
+             Connection mysql = getMySQLConnection(DB1);
+        ) {
+            execute(mycat, RESET_CONFIG);
+
+
+            execute(mycat, CreateDataSourceHint
+                    .create("ds0",
+                            DB1));
+
+            String schemaName = "test_add_Schema";
+            String tableName = "test_table";
+            execute(mysql, "create database  if not exists " + schemaName);
+
+            execute(mycat, CreateSchemaHint.create(schemaName, "ds0"));
+
+            execute(mycat, "use " + schemaName);
+            execute(mycat, "create table if not exists " +
+                    schemaName +
+                    "." +
+                    tableName +
+                    " (id bigint) ");
+
+            List<Map<String, Object>> res = executeQuery(mycat, ShowTopologyHint.create(schemaName, tableName));
+            Assert.assertEquals("[{targetName=ds0, schemaName=test_add_Schema, tableName=test_table}]",res.toString());
+            System.out.println();
 
         }
     }

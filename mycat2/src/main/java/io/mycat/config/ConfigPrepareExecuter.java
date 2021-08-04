@@ -19,6 +19,7 @@ import cn.mycat.vertx.xa.XaLog;
 import cn.mycat.vertx.xa.impl.LocalXaMemoryRepositoryImpl;
 import cn.mycat.vertx.xa.impl.XaLogImpl;
 import io.mycat.*;
+import io.mycat.beans.mycat.TransactionType;
 import io.mycat.calcite.spm.*;
 import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.commands.MycatMySQLManagerImpl;
@@ -380,8 +381,12 @@ public class ConfigPrepareExecuter {
         boolean allMatchMySQL = curConfig.getDatasources().stream().allMatch(s -> "mysql".equalsIgnoreCase(s.getDbType()));
         XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
         if (allMatchMySQL){
-            LOGGER.info("readXARecoveryLog start");
-             xaLog.readXARecoveryLog();
+            authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
+            boolean hasXA = authenticator.allUsers().stream().anyMatch(u -> TransactionType.parse(u.getTransactionType()) == TransactionType.JDBC_TRANSACTION_TYPE);
+            if (hasXA) {
+                LOGGER.info("readXARecoveryLog start");
+                xaLog.readXARecoveryLog();
+            }
         }else {
             try{
                // xaLog.readXARecoveryLog();

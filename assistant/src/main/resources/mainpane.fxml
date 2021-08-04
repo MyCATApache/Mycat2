@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="io.mycat.ui.Controller"
+            prefHeight="400.0" prefWidth="600.0">
+    <SplitPane fx:id="main" dividerPositions="0.5, 0.5">
+        <VBox minWidth="100" maxWidth="500">
+            <Label text="对象树" />
+            <TreeView fx:id="objectTree" />
+        </VBox>
+        <VBox>
+            <Label text="对象" />
+            <VBox fx:id="objectNav" />
+        </VBox>
+        <VBox>
+            <Label text="文本" />
+            <TextArea fx:id="objectText"> </TextArea>
+        </VBox>
+    </SplitPane>
+</AnchorPane>

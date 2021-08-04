@@ -156,7 +156,7 @@ public class ByteUtil {
     }
 
     public static byte[] getBytes(String data) {
-        return getBytes(data, "GBK");
+        return getBytes(data, "UTF8");
     }
 
     public static short getShort(byte[] bytes) {

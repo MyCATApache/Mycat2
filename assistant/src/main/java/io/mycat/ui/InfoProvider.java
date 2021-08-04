@@ -6,7 +6,10 @@ import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.LogicSchemaConfig;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface InfoProvider {
@@ -27,4 +30,12 @@ public interface InfoProvider {
     void deleteDatasource(String datasource);
 
     void deleteLogicalSchema(String schema);
+
+    void saveCluster(ClusterConfig config);
+
+    void saveDatasource(DatasourceConfig config);
+
+    void deleteIndexTable(String schemaName, String tableName, String selectIndex);
+
+    Connection createConnection();
 }

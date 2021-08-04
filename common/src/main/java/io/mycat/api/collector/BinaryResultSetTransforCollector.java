@@ -240,14 +240,14 @@ public class BinaryResultSetTransforCollector implements ResultSetTransfor {
     @Override
     public void collectLong(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
                             int startIndex) {
-        long lenencInt = mySQLPacket.readLong();
+        long lenencInt = mySQLPacket.readLenencInt();
         collector.addValue(columnIndex, lenencInt, false);
     }
 
     @Override
     public void collectLongLong(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
                                 int startIndex) {
-        long lenencInt = mySQLPacket.readLong();
+        long lenencInt = mySQLPacket.readLenencInt();
         collector.addValue(columnIndex, lenencInt, false);
     }
 

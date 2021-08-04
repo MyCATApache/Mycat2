@@ -104,7 +104,7 @@ public abstract class DrdsTest implements MycatTest {
                         "\t\t\t\t\t\"storeNum\":2,\n" +
                         "\t\t\t\t\t\"dbMethod\":\"hash(id)\"\n" +
                         "\t\t\t\t}", Map.class)).build());
-                logicSchemaConfig.getShadingTables().put("sharding", mainSharding);
+                logicSchemaConfig.getShardingTables().put("sharding", mainSharding);
 
                 ShardingTableConfig er = new ShardingTableConfig();
                 er.setCreateTableSQL("CREATE TABLE db1.`er` (\n" +
@@ -126,7 +126,7 @@ public abstract class DrdsTest implements MycatTest {
                         "\t\t\t\t\t\"storeNum\":2,\n" +
                         "\t\t\t\t\t\"dbMethod\":\"hash(id)\"\n" +
                         "\t\t\t\t}", Map.class)).build());
-                logicSchemaConfig.getShadingTables().put("er", er);
+                logicSchemaConfig.getShardingTables().put("er", er);
 
                 ShardingTableConfig other_sharding = new ShardingTableConfig();
                 other_sharding.setCreateTableSQL("CREATE TABLE db1.`other_sharding` (\n" +
@@ -148,7 +148,7 @@ public abstract class DrdsTest implements MycatTest {
                         "\t\t\t\t\t\"storeNum\":2,\n" +
                         "\t\t\t\t\t\"dbMethod\":\"hash(id)\"\n" +
                         "\t\t\t\t}", Map.class)).build());
-                logicSchemaConfig.getShadingTables().put("other_sharding", other_sharding);
+                logicSchemaConfig.getShardingTables().put("other_sharding", other_sharding);
 
                 mycatRouterConfig.getClusters().add(CreateClusterHint.createConfig("c0", Arrays.asList("ds0"), Collections.emptyList()));
                 mycatRouterConfig.getClusters().add(CreateClusterHint.createConfig("c1", Arrays.asList("ds1"), Collections.emptyList()));
@@ -190,7 +190,7 @@ public abstract class DrdsTest implements MycatTest {
                             "\t\t\t\t\t\"storeNum\":2,\n" +
                             "\t\t\t\t\t\"dbMethod\":\"hash(id)\"\n" +
                             "\t\t\t\t}", Map.class)).build());
-                    logicSchemaConfig.getShadingTables().put("seqSharding", seqMainSharding);
+                    logicSchemaConfig.getShardingTables().put("seqSharding", seqMainSharding);
                 }
 
 

@@ -8,16 +8,25 @@ import io.mycat.calcite.table.ShardingTable;
 import io.mycat.config.*;
 import io.vertx.core.json.Json;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.event.EventHandler;
+import javafx.event.EventType;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldListCell;
 import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.input.InputEvent;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import lombok.Data;
+import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,29 +34,63 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static com.sun.org.apache.xalan.internal.xsltc.compiler.util.Type.Text;
 import static io.mycat.LogicTableType.GLOBAL;
 import static io.mycat.LogicTableType.SHARDING;
 
 @Data
 public class Controller {
-    public AnchorPane mainPane;
-    public MenuBar menu;
     public SplitPane main;
     public TreeView objectTree;
     public TextArea objectText;
     public VBox objectNav;
     private InfoProvider infoProvider;
+    private VO currentVO;
+
+    private EventHandler<KeyEvent> navToText = event -> {
+        if (currentVO != null) {
+            try {
+                objectText.setText(currentVO.toJsonConfig());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }
+    };
+    private EventHandler<KeyEvent> textToNax = event -> {
+        if (currentVO != null) {
+            try {
+                currentVO.from(objectText.getText());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+    };
+
 
     public Controller() {
         System.out.println();
     }
 
     public void flashRoot() {
+
         TreeItemCellFactory treeItemCellFactory = new TreeItemCellFactory(this);
+        objectTree.setPrefWidth(120);
+        objectTree.setMaxWidth(300);
         objectTree.setShowRoot(false);
         objectTree.setCellFactory(treeItemCellFactory);
         TreeItem<String> rootViewNode = getRootViewNode(infoProvider);
         objectTree.setRoot(rootViewNode);
+        objectNav.setPrefWidth(120);
+        objectNav.getChildren().clear();
+        TextArea emptyLabel = new TextArea("请选择对象");
+        objectNav.getChildren().add(emptyLabel);
+
+        objectNav.removeEventHandler(KeyEvent.ANY, navToText);
+        objectNav.addEventHandler(KeyEvent.ANY, navToText);
+        objectNav.removeEventHandler(KeyEvent.ANY, textToNax);
+        objectText.addEventHandler(KeyEvent.ANY, textToNax);
     }
 
     public void flashSchemas() {
@@ -108,40 +151,34 @@ public class Controller {
 
     }
 
-    public void edit(DatasourceConfig c){
+    public void edit(DatasourceConfig c) {
         try {
-        FXMLLoader loader = UIMain.loader("/datasource.fxml");
-        Parent parent = loader.load();
-
-        DatasourceVO controller = loader.getController();
-        controller.getName().setText(c.getName());
-        controller.getUrl().setText(c.getUrl());
-        controller.getDbType().setText(c.getDbType());
-        controller.getType().setText(c.getType());
-        objectNav.getChildren().add(parent);
-        objectText.setText(Json.encodePrettily(c));
-        }catch (Exception e){
+            FXMLLoader loader = UIMain.loader("/datasource.fxml");
+            Parent parent = loader.load();
+            DatasourceVO datasourceVO = loader.getController();
+            datasourceVO.setController(this);
+            datasourceVO.setDatasourceConfig(c);
+            setCurrentObject(parent, datasourceVO);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void edit(ClusterConfig c){
+    public void edit(ClusterConfig c) {
         try {
-        FXMLLoader loader = UIMain.loader("/cluster.fxml");
-        Parent parent = loader.load();
+            FXMLLoader loader = UIMain.loader("/cluster.fxml");
+            Parent parent = loader.load();
 
-        ClusterVO controller = loader.getController();
-        controller.getName().setText(c.getName());
-        controller.getType().setText(c.getClusterType());
-        controller.getMasterList().getItems().addAll(Optional.ofNullable(c.getMasters()).orElse(Collections.emptyList()));
-        controller.getReplicaList().getItems().addAll(Optional.ofNullable(c.getReplicas()).orElse(Collections.emptyList()));
-        objectNav.getChildren().add(parent);
-        objectText.setText(Json.encodePrettily(c));
-        }catch (Exception e){
+            ClusterVO clusterVO = loader.getController();
+            clusterVO.setController(this);
+            clusterVO.setClusterConfig(c);
+            setCurrentObject(parent, clusterVO);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    public void edit(TableHandler c){
+
+    public void edit(TableHandler c) {
         try {
             switch (c.getType()) {
                 case SHARDING: {
@@ -151,17 +188,11 @@ public class Controller {
 
                     ShardingTableConfigVO shardingTableConfigVO = loader.getController();
                     shardingTableConfigVO.setController(this);
-                    shardingTableConfigVO.getSchemaName().setText(c.getSchemaName());
-                    shardingTableConfigVO.getTableName().setText(c.getTableName());
+                    shardingTableConfigVO.getSchemaName().setText(shardingTable.getSchemaName());
+                    shardingTableConfigVO.getTableName().setText(shardingTable.getTableName());
+                    shardingTableConfigVO.setShardingTableConfig(JsonUtil.clone(shardingTable.getTableConfig()));
 
-                    ShardingTableConfig shardingTableConfig = shardingTable.getTableConfig();
-                    shardingTableConfigVO.getShardingInfo().setText(Json.encodePrettily(shardingTableConfig.getFunction()));
-                    shardingTableConfigVO.getCreateTableSQL().setText(shardingTable.getCreateTableSQL());
-
-                    TableView partitionsView = shardingTableConfigVO.getPartitionsView();
-                    initPartitionsView(shardingTable.getBackends(), partitionsView);
-                    objectNav.getChildren().add(parent);
-                    objectText.setText(Json.encodePrettily(shardingTableConfig));
+                    setCurrentObject(parent, shardingTableConfigVO);
                     break;
                 }
                 case GLOBAL: {
@@ -169,34 +200,11 @@ public class Controller {
                     FXMLLoader loader = UIMain.loader("/globalTable.fxml");
                     Parent parent = loader.load();
 
-                    GlobalTableConfigVO controller = loader.getController();
-                    controller.setController(this);
-                    controller.getSchemaName().setText(c.getSchemaName());
-                    controller.getTableName().setText(c.getTableName());
+                    GlobalTableConfigVO globalTableConfigVO = loader.getController();
+                    globalTableConfigVO.setController(this);
+                    globalTableConfigVO.setGlobalTableConfig(JsonUtil.clone(globalTable.getTableConfig()));
 
-                    ListView tableView = controller.getTargets();
-
-                    tableView.setCellFactory(TextFieldListCell.forListView());
-                    tableView.setEditable(true);
-
-                    GlobalTableConfig globalTableConfig = new GlobalTableConfig();
-                    globalTableConfig.setCreateTableSQL(globalTable.getCreateTableSQL());
-                    List<GlobalBackEndTableInfoConfig> globalBackEndTableInfoConfigs = new ArrayList<>();
-                    for (Partition partition : globalTable.getGlobalDataNode()) {
-                        GlobalBackEndTableInfoConfig globalBackEndTableInfoConfig = new GlobalBackEndTableInfoConfig();
-                        globalBackEndTableInfoConfig.setTargetName(partition.getTargetName());
-                        globalBackEndTableInfoConfigs.add(globalBackEndTableInfoConfig);
-                    }
-                    globalTableConfig.setBroadcast(globalBackEndTableInfoConfigs);
-
-                    for (GlobalBackEndTableInfoConfig globalBackEndTableInfoConfig : globalTableConfig.getBroadcast()) {
-                        String targetName = globalBackEndTableInfoConfig.getTargetName();
-                        tableView.getItems().add(targetName);
-                    }
-                    objectNav.getChildren().add(parent);
-                    objectText.setText(Json.encodePrettily(globalTableConfig));
-
-
+                    setCurrentObject(parent, globalTableConfigVO);
                     break;
                 }
                 case NORMAL: {
@@ -204,40 +212,29 @@ public class Controller {
                     FXMLLoader loader = UIMain.loader("/singleTable.fxml");
                     Parent parent = loader.load();
 
-                    SingleTableVO controller = loader.getController();
-                    controller.setController(this);
-
-                    controller.getSchemaName().setText(c.getSchemaName());
-                    controller.getTableName().setText(c.getTableName());
-
-                    Partition dataNode = normalTable.getDataNode();
-
-                    controller.getTargetName().setText(dataNode.getTargetName());
-                    controller.getPhySchemaName().setText(dataNode.getSchema());
-                    controller.getPhyTableName().setText(dataNode.getTable());
-                    controller.getCreateTableSQL().setText(normalTable.getCreateTableSQL());
-
-                    NormalTableConfig normalTableConfig = new NormalTableConfig();
-                    normalTableConfig.setCreateTableSQL(normalTable.getCreateTableSQL());
-                    normalTableConfig.setLocality(NormalBackEndTableInfoConfig.builder()
-                            .targetName(dataNode.getTargetName())
-                            .schemaName(dataNode.getSchema())
-                            .tableName(dataNode.getTable())
-                            .build());
-                    objectNav.getChildren().add(parent);
-                    objectText.setText(Json.encodePrettily(normalTableConfig));
-
+                    SingleTableVO singleTableVO = loader.getController();
+                    singleTableVO.setController(this);
+                    singleTableVO.getSchemaName().setText(normalTable.getSchemaName());
+                    singleTableVO.getTableName().setText(normalTable.getTableName());
+                    singleTableVO.setNormalTableConfig(JsonUtil.clone(normalTable.getTableConfig()));
+                    setCurrentObject(parent, singleTableVO);
                     break;
                 }
                 case CUSTOM:
                     break;
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public static void initPartitionsView(List<Partition>  partitions,TableView partitionsView) {
+    private void setCurrentObject(Parent parent, VO vo) {
+        objectNav.getChildren().add(parent);
+        objectText.setText(vo.toJsonConfig());
+        currentVO = vo;
+    }
+
+    public static void initPartitionsView(List<Partition> partitions, TableView partitionsView) {
         partitionsView.getColumns().clear();
         partitionsView.getItems().clear();
 
@@ -246,7 +243,7 @@ public class Controller {
 
         int index = 0;
         for (Partition backend : partitions) {
-            partitionsView.getItems().add(PartitionEntry.of(index++,backend));
+            partitionsView.getItems().add(PartitionEntry.of(index++, backend));
         }
 
         TableColumn firstCol = new TableColumn("目标");
@@ -254,35 +251,8 @@ public class Controller {
         firstCol.setCellFactory(TextFieldTableCell.forTableColumn());
         firstCol.setOnEditCommit(
                 (EventHandler<TableColumn.CellEditEvent<PartitionEntry, String>>) t -> t.getTableView().getItems().get(
-                        t. getTablePosition().getRow()).setTarget(t.getNewValue())
+                        t.getTablePosition().getRow()).setTarget(t.getNewValue())
         );
-        firstCol.setOnEditStart(new EventHandler<TableColumn.CellEditEvent>() {
-            @Override
-            public void handle(TableColumn.CellEditEvent event) {
-                System.out.println();
-            }
-        });
-
-        TableColumn secondCol = new TableColumn("物理分库");
-        secondCol.setEditable(true);
-        secondCol.setCellFactory(TextFieldTableCell.forTableColumn());
-        secondCol.setOnEditCommit(
-                (EventHandler<TableColumn.CellEditEvent<PartitionEntry, String>>) t -> t.getTableView().getItems().get(
-                        t. getTablePosition().getRow()).setSchema(t.getNewValue())
-        );
-
-        TableColumn thirdCol = new TableColumn("物理分表");
-        thirdCol.setEditable(true);
-        thirdCol.setCellFactory(TextFieldTableCell.forTableColumn());
-        thirdCol.setOnEditCommit(
-                (EventHandler<TableColumn.CellEditEvent<PartitionEntry, String>>) t -> t.getTableView().getItems().get(
-                        t. getTablePosition().getRow()).setTable(t.getNewValue())
-        );
-
-        secondCol.setEditable(true);
-        thirdCol.setEditable(true);
-
-
         firstCol.setOnEditStart(new EventHandler<TableColumn.CellEditEvent>() {
             @Override
             public void handle(TableColumn.CellEditEvent event) {
@@ -292,14 +262,64 @@ public class Controller {
         firstCol.setCellValueFactory(
                 new PropertyValueFactory<Partition, String>("target")
         );
+
+        TableColumn secondCol = new TableColumn("物理分库");
+        secondCol.setEditable(true);
+        secondCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        secondCol.setOnEditCommit(
+                (EventHandler<TableColumn.CellEditEvent<PartitionEntry, String>>) t -> t.getTableView().getItems().get(
+                        t.getTablePosition().getRow()).setSchema(t.getNewValue())
+        );
         secondCol.setCellValueFactory(
                 new PropertyValueFactory<Partition, String>("schema")
+        );
+
+        TableColumn thirdCol = new TableColumn("物理分表");
+        thirdCol.setEditable(true);
+        thirdCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        thirdCol.setOnEditCommit(
+                (EventHandler<TableColumn.CellEditEvent<PartitionEntry, String>>) t -> t.getTableView().getItems().get(
+                        t.getTablePosition().getRow()).setTable(t.getNewValue())
         );
         thirdCol.setCellValueFactory(
                 new PropertyValueFactory<Partition, String>("table")
         );
 
-        partitionsView.getColumns().addAll(firstCol, secondCol, thirdCol);
+
+        TableColumn fourthCol = new TableColumn("物理分库下标");
+        fourthCol.setEditable(true);
+        fourthCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        fourthCol.setOnEditCommit(
+                (EventHandler<TableColumn.CellEditEvent<PartitionEntry, String>>) t -> t.getTableView().getItems().get(
+                        t.getTablePosition().getRow()).setDbIndex(Integer.parseInt(t.getNewValue()))
+        );
+        thirdCol.setCellValueFactory(
+                new PropertyValueFactory<Partition, String>("dbIndex")
+        );
+
+        TableColumn fifthCol = new TableColumn("物理分表下标");
+        fifthCol.setEditable(true);
+        fifthCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        fifthCol.setOnEditCommit(
+                (EventHandler<TableColumn.CellEditEvent<PartitionEntry, String>>) t -> t.getTableView().getItems().get(
+                        t.getTablePosition().getRow()).setTableIndex(Integer.parseInt(t.getNewValue()))
+        );
+        fifthCol.setCellValueFactory(
+                new PropertyValueFactory<Partition, String>("tableIndex")
+        );
+
+        TableColumn sixCol = new TableColumn("总物理分表下标");
+        sixCol.setEditable(true);
+        sixCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        sixCol.setOnEditCommit(
+                (EventHandler<TableColumn.CellEditEvent<PartitionEntry, String>>) t -> t.getTableView().getItems().get(
+                        t.getTablePosition().getRow()).setGlobalIndex(Integer.parseInt(t.getNewValue()))
+        );
+        fifthCol.setCellValueFactory(
+                new PropertyValueFactory<Partition, String>("globalIndex")
+        );
+
+        partitionsView.getColumns().addAll(firstCol, secondCol, thirdCol,fourthCol,fifthCol,sixCol);
 
     }
 
@@ -309,10 +329,8 @@ public class Controller {
         try {
             parent = loader.load();
             SchemaConfigVO schemaConfigVO = loader.getController();
-            schemaConfigVO.getSchemaName().setText(r.getSchemaName());
-            schemaConfigVO.getDefaultTargetName().setText(r.getTargetName());
-            objectNav.getChildren().add(parent);
-            objectText.setText(Json.encodePrettily(r));
+            schemaConfigVO.setLogicSchemaConfig(r);
+            setCurrentObject(parent, schemaConfigVO);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -355,9 +373,9 @@ public class Controller {
             ShardingTableConfigVO controller = loader.getController();
             controller.setController(this);
             controller.getSchemaName().setText(schema);
-            objectNav.getChildren().add(parent);
-            objectText.setText(Json.encodePrettily(new ShardingTableConfig()));
-        }catch (Exception e){
+            controller.setShardingTableConfig(new ShardingTableConfig());
+            setCurrentObject(parent, controller);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -370,9 +388,8 @@ public class Controller {
             controller.getSchemaName().setText(schema);
             controller.getTargets().setCellFactory(TextFieldListCell.forListView());
             controller.getTargets().setEditable(true);
-            objectNav.getChildren().add(parent);
-            objectText.setText(Json.encodePrettily(new GlobalTableConfig()));
-        }catch (Exception e){
+            setCurrentObject(parent, controller);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -381,21 +398,20 @@ public class Controller {
         try {
             FXMLLoader loader = UIMain.loader("/singleTable.fxml");
             Parent parent = loader.load();
-            SingleTableVO controller = loader.getController();
-            controller.getSchemaName().setText(schema);
+            SingleTableVO singleTableVO = loader.getController();
+            singleTableVO.getSchemaName().setText(schema);
 
             NormalTableConfig normalTableConfig = new NormalTableConfig();
-            objectNav.getChildren().add(parent);
-            objectText.setText(Json.encodePrettily(normalTableConfig));
-        }catch (Exception e){
+            singleTableVO.setNormalTableConfig(normalTableConfig);
+            setCurrentObject(parent, singleTableVO);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void save(String schemaName, String tableName, String createSQL, ShardingFuntion shardingFuntion, List<Partition> partitions) {
+    public void save(String schemaName, String tableName, ShardingTableConfig config) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        metadataManager.addShardingTable(schemaName,tableName,ShardingTableConfig.builder()
-                .createTableSQL(createSQL).function(shardingFuntion).build(), metadataManager.getPrototype(),partitions, Collections.emptyList());
+        metadataManager.addShardingTable(schemaName, tableName, config, metadataManager.getPrototype(), MetadataManager.getBackendTableInfos(config.getPartition()), Collections.emptyList());
         flashSchemas();
     }
 
@@ -403,22 +419,33 @@ public class Controller {
         this.infoProvider = infoProvider;
     }
 
-    public void save(String schemaName, String tableName, String sql, String targetName, String phySchemaName, String phyTableName) {
+    public void save(String schemaName, String tableName, NormalTableConfig config) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        metadataManager.addNormalTable(schemaName,tableName,NormalTableConfig.create(phySchemaName,phyTableName,sql,targetName),metadataManager.getPrototype());
+        metadataManager.addNormalTable(schemaName, tableName, config, metadataManager.getPrototype());
         flashSchemas();
     }
 
-    public void save(String schemaName, String tableName, String sql, List<String> targets) {
+    @SneakyThrows
+    public void saveDatasource(DatasourceConfig config) {
+        infoProvider.saveDatasource(config);
+
+    }
+
+    @SneakyThrows
+    public void saveCluster(ClusterConfig config) {
+        infoProvider.saveCluster(config);
+    }
+
+    public void save(String schemaName, String tableName, GlobalTableConfig globalTableConfig) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         List<Partition> list = new ArrayList<>();
-        List<GlobalBackEndTableInfoConfig> configList = new ArrayList<>();
-        for (String target : targets) {
-            list.add( new BackendTableInfo(target, schemaName, tableName));
-            configList.add(GlobalBackEndTableInfoConfig.builder().targetName(target).build());
+        List<GlobalBackEndTableInfoConfig> configList = globalTableConfig.getBroadcast();
+
+        for (GlobalBackEndTableInfoConfig target : configList) {
+            list.add(new BackendTableInfo(target.getTargetName(), schemaName, tableName));
         }
 
-        metadataManager.addGlobalTable(schemaName,tableName,GlobalTableConfig.builder().createTableSQL(sql).broadcast(configList).build(),metadataManager.getPrototype(),list);
+        metadataManager.addGlobalTable(schemaName, tableName, globalTableConfig, metadataManager.getPrototype(), list);
         flashSchemas();
     }
 }

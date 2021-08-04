@@ -17,6 +17,19 @@
     </properties>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/tech.tablesaw/tablesaw-core -->
+        <dependency>
+            <groupId>tech.tablesaw</groupId>
+            <artifactId>tablesaw-core</artifactId>
+            <version>0.38.3</version>
+        </dependency>
+
+        <!-- hibernate validator-->
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>5.2.0.Final</version>
+        </dependency>
         <dependency>
             <groupId>com.jfoenix</groupId>
             <artifactId>jfoenix</artifactId>
