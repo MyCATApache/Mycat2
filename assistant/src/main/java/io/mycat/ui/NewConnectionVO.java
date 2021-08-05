@@ -3,6 +3,7 @@ package io.mycat.ui;
 import javafx.event.ActionEvent;
 import javafx.scene.control.Button;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import lombok.Data;
 
@@ -10,8 +11,7 @@ import lombok.Data;
 public class NewConnectionVO {
 
     public TextField name;
-    public TextField ip;
-    public TextField port;
+    public TextArea url;
     public TextField user;
     public PasswordField password;
     public Controller controller;

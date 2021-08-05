@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode
 public class NormalTableConfig {
     String createTableSQL;
-    NormalBackEndTableInfoConfig locality;
+    NormalBackEndTableInfoConfig locality = new NormalBackEndTableInfoConfig();
 
     public static NormalTableConfig create(String schemaName,
                                            String tableName,

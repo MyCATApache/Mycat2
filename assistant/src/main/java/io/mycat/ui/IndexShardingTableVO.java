@@ -7,6 +7,7 @@ import io.mycat.calcite.table.ShardingTable;
 import io.mycat.config.ShardingBackEndTableInfoConfig;
 import io.mycat.config.ShardingFuntion;
 import io.mycat.config.ShardingTableConfig;
+import io.mycat.util.StringUtil;
 import io.vertx.core.json.Json;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -17,6 +18,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
 import lombok.Data;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -66,8 +68,13 @@ public class IndexShardingTableVO implements VO {
             Integer index = partition.getIndex();
             partitions.add(Arrays.asList(targetName, schema, table, dbIndex, tableIndex, index));
         }
+        ShardingFuntion shardingFuntion;
+        if (!StringUtil.isEmpty(shardingInfoText)){
+            shardingFuntion   = Json.decodeValue(shardingInfoText, ShardingFuntion.class);
+        }else {
+            shardingFuntion = new ShardingFuntion();
+        }
 
-        ShardingFuntion shardingFuntion = Json.decodeValue(shardingInfoText, ShardingFuntion.class);
 
         shardingTableConfig.setCreateTableSQL(sql);
         shardingTableConfig.setFunction(shardingFuntion);
@@ -79,8 +86,9 @@ public class IndexShardingTableVO implements VO {
 
     public void add(ActionEvent actionEvent) {
         try {
-            shardingTableConfigVO.getIndexTables().add(this);
-            setShardingTableConfigVO(shardingTableConfigVO);
+            Map<String, ShardingTableConfig> indexTables = shardingTableConfigVO.getShardingTableConfig().getShardingIndexTables();
+            indexTables.put(getIndexTableName(),toShardingTableConfig());
+            shardingTableConfigVO.flash();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -88,17 +96,11 @@ public class IndexShardingTableVO implements VO {
         }
     }
 
-    public void delete(ActionEvent actionEvent) {
-        try {
-            shardingTableConfigVO.getIndexTables().remove(this);
-            setShardingTableConfigVO(shardingTableConfigVO);
-        }
-        catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                this.stage.close();
-            }
+    @NotNull
+    public String getIndexTableName() {
+        return this.getTableName().getText() + "_" + getIndexName().getText();
     }
+
 
     public void setController(Controller controller) {
         this.controller = controller;

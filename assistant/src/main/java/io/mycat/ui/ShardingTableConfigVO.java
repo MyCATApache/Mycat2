@@ -1,5 +1,6 @@
 package io.mycat.ui;
 
+import com.sun.javafx.scene.SceneUtils;
 import io.mycat.*;
 import io.mycat.calcite.table.ShardingIndexTable;
 import io.mycat.calcite.table.ShardingTable;
@@ -52,8 +53,6 @@ public class ShardingTableConfigVO implements VO {
 
     public Controller controller;
 
-    public List<IndexShardingTableVO> indexTables;
-
     @FXML
     public TextArea createTableSQL;
     @FXML
@@ -70,26 +69,7 @@ public class ShardingTableConfigVO implements VO {
 
     public void setShardingTableConfig(ShardingTableConfig shardingTableConfig) {
         this.shardingTableConfig = shardingTableConfig;
-
-        this.getShardingInfo().setText(Json.encodePrettily(shardingTableConfig.getFunction()));
-        this.getCreateTableSQL().setText(shardingTableConfig.getCreateTableSQL());
-
-        TableView partitionsView = this.getPartitionsView();
-        initPartitionsView(MetadataManager.getBackendTableInfos(shardingTableConfig.getPartition()), partitionsView);
-
-        indexTables = new ArrayList<>();
-        for (Map.Entry<String, ShardingTableConfig> e : shardingTableConfig.getShardingIndexTables().entrySet()) {
-            ShardingTableConfig indexTable = e.getValue();
-            IndexShardingTableVO indexShardingTableVO = new IndexShardingTableVO();
-            indexShardingTableVO.getSchemaName().setText(getSchemaName().getText());
-            indexShardingTableVO.getTableName().setText(e.getKey());
-            indexShardingTableVO.getIndexName().setText(e.getKey().replace(getTableName().getText(), ""));
-            indexShardingTableVO.getCreateTableSQL().setText(indexTable.getCreateTableSQL());
-
-            TableView subPartitionsView = indexShardingTableVO.getPartitionsView();
-            initPartitionsView(MetadataManager.getBackendTableInfos(indexTable.getPartition()), subPartitionsView);
-            indexTables.add(indexShardingTableVO);
-        }
+        flash();
     }
 
     public void save() {
@@ -98,20 +78,33 @@ public class ShardingTableConfigVO implements VO {
         String tableName = this.tableName.getText();
         ShardingTableConfig shardingTableConfig = getShardingTableConfig();
         controller.save(schemaName, tableName, shardingTableConfig);
-
-        flash();
     }
 
     public void flash() {
-        String schemaName = this.schemaName.getText();
-        String tableName = this.tableName.getText();
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        TableHandler table = metadataManager.getTable(schemaName, tableName);
-        setShardingTableConfig(((ShardingTable)table).getTableConfig());
+        this.getShardingInfo().setText(Json.encodePrettily(shardingTableConfig.getFunction()));
+        this.getCreateTableSQL().setText(shardingTableConfig.getCreateTableSQL());
+
+        TableView partitionsView = this.getPartitionsView();
+        initPartitionsView(MetadataManager.getBackendTableInfos(shardingTableConfig.getPartition()), partitionsView);
+
+        indexTableList.getItems().clear();
+        for (Map.Entry<String, ShardingTableConfig> e : shardingTableConfig.getShardingIndexTables().entrySet()) {
+//            ShardingTableConfig indexTable = e.getValue();
+            indexTableList.getItems().add(e.getKey().replace(getTableName().getText()+"_", ""));
+//            IndexShardingTableVO indexShardingTableVO = new IndexShardingTableVO();
+//            indexShardingTableVO.getSchemaName().setText(getSchemaName().getText());
+//            indexShardingTableVO.getTableName().setText(e.getKey());
+//            indexShardingTableVO.getIndexName().setText(e.getKey().replace(getTableName().getText(), ""));
+//            indexShardingTableVO.getCreateTableSQL().setText(indexTable.getCreateTableSQL());
+//
+//            TableView subPartitionsView = indexShardingTableVO.getPartitionsView();
+//            initPartitionsView(MetadataManager.getBackendTableInfos(indexTable.getPartition()), subPartitionsView);
+//            indexTables.add(indexShardingTableVO);
+        }
     }
 
     @NotNull
-    private ShardingTableConfig getShardingTableConfig() {
+    public ShardingTableConfig getShardingTableConfig() {
         String sql = this.createTableSQL.getText();
 
         String shardingInfoText = this.shardingInfo.getText();
@@ -130,11 +123,8 @@ public class ShardingTableConfigVO implements VO {
 
         ShardingFuntion shardingFuntion = Json.decodeValue(shardingInfoText, ShardingFuntion.class);
 
-        ShardingTableConfig shardingTableConfig = new ShardingTableConfig();
         shardingTableConfig.setCreateTableSQL(sql);
         shardingTableConfig.setFunction(shardingFuntion);
-        Map<String, ShardingTableConfig> indexTableListMap = indexTables.stream().collect(Collectors.toMap(k -> k.getIndexName().getText(), v -> v.toShardingTableConfig()));
-        shardingTableConfig.setShardingIndexTables(indexTableListMap);
         shardingTableConfig.setPartition(ShardingBackEndTableInfoConfig.builder().data(partitions).build());
         return shardingTableConfig;
     }
@@ -232,11 +222,8 @@ public class ShardingTableConfigVO implements VO {
     public void deleteIndexTable(ActionEvent actionEvent) {
         String schemaName = getSchemaName().getText();
         String tableName = getTableName().getText();
-        for (IndexShardingTableVO indexTable : indexTables) {
-            if (indexTable.getIndexName().getText().equals(selectIndex)) {
-                controller.getInfoProvider().deleteIndexTable(schemaName, tableName, selectIndex);
-            }
-        }
+        shardingTableConfig.getShardingIndexTables().remove(tableName + "_" + indexTableList.getSelectionModel().getSelectedItem());
+        flash();
 
     }
 
@@ -246,17 +233,22 @@ public class ShardingTableConfigVO implements VO {
             Parent parent = loader.load();
             IndexShardingTableVO controller = loader.getController();
             controller.setController(this.controller);
+            controller.getSchemaName().setText(getSchemaName().getText());
+            controller.getTableName().setText(getTableName().getText());
             controller.setShardingTableConfigVO(this);
 
             Stage stage = new Stage();
-            stage.setScene(new Scene(parent, 600, 400));
+            Scene scene = SceneUtil.createScene(parent, 600, 400);
+            stage.setScene(scene);
             controller.setStage(stage);
             stage.showAndWait();
+            SceneUtil.close(scene);
             flash();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
     @Override
     public void from(String text) {
         setShardingTableConfig(Json.decodeValue(text, shardingTableConfig.getClass()));

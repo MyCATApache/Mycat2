@@ -466,7 +466,7 @@ public class MetadataManager implements MysqlVariableService {
                             "target,schema,table,dbIndex,tableIndex,index");
                 }
             }
-        } else {
+        } else if (stringListEntry.getSchemaNames()!=null){
             String schemaNames = stringListEntry.getSchemaNames();
             String tableNames = stringListEntry.getTableNames();
             String targetNames = stringListEntry.getTargetNames();

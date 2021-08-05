@@ -19,6 +19,6 @@
         <TextField fx:id="phySchemaName" layoutX="256.0" layoutY="326.0" />
         <Label layoutX="167.0" layoutY="361.0" prefHeight="30.0" prefWidth="450.0" text="目标物理表名" />
         <TextField fx:id="phyTableName" layoutX="256.0" layoutY="364.0" />
-        <Button layoutX="269.0" layoutY="465.0" onAction="#save" text="保存" />
+        <Button fx:id="saveSingleTable" layoutX="269.0" layoutY="465.0" onAction="#save" text="保存" />
     </children>
 </AnchorPane>

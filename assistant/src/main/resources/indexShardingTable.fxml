@@ -7,9 +7,11 @@
     <children>
         <Label layoutX="281.0" layoutY="3.0" prefHeight="23.0" prefWidth="93.0" text="分片表" />
         <Label layoutX="14.0" layoutY="15.0" prefHeight="30.0" prefWidth="93.0" text="逻辑库名" />
-        <Label fx:id="schemaName" layoutX="76.0" layoutY="19.0" />
-        <Label layoutX="275.0" layoutY="15.0" prefHeight="30.0" prefWidth="180.0" text="逻辑索引名" />
-        <TextField fx:id="indexName" layoutX="354.0" layoutY="19.0" />
+        <Label fx:id="schemaName" layoutX="64.0" layoutY="23.0" prefHeight="15.0" prefWidth="93.0" />
+        <Label layoutX="173.0" layoutY="16.0" prefHeight="30.0" prefWidth="155.0" text="逻辑表名" />
+        <Label fx:id="tableName" layoutX="225.0" layoutY="24.0" prefHeight="15.0" prefWidth="118.0" />
+        <Label layoutX="374.0" layoutY="16.0" prefHeight="30.0" prefWidth="180.0" text="逻辑索引名" />
+        <TextField fx:id="indexName" layoutX="445.0" layoutY="19.0" prefHeight="23.0" prefWidth="118.0" />
         <Label layoutX="17.0" layoutY="48.0" prefHeight="30.0" prefWidth="180.0" text="建表SQL" />
         <TextArea fx:id="createTableSQL" layoutX="76.0" layoutY="45.0" prefHeight="23.0" prefWidth="532.0" />
 
