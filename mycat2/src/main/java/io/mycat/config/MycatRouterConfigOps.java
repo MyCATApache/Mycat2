@@ -233,7 +233,9 @@ public class MycatRouterConfigOps implements AutoCloseable {
     }
 
 
-    public void removeTable(String schemaName, String tableName) {
+    public void removeTable(String schemaNameArg, String tableNameArg) {
+        schemaName = SQLUtils.normalize(schemaNameArg);
+        tableName = SQLUtils.normalize(tableNameArg);
         this.schemas = mycatRouterConfig.getSchemas();
         List<LogicSchemaConfig> schemas = this.schemas;
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
@@ -396,7 +398,13 @@ public class MycatRouterConfigOps implements AutoCloseable {
 
     public void removeDatasource(String datasourceName) {
         this.datasources = mycatRouterConfig.getDatasources();
-        Optional<DatasourceConfig> first = datasources.stream().filter(i -> datasourceName.equals(i.getName())).findFirst();
+        Optional<DatasourceConfig> first = Optional.empty();
+        for (DatasourceConfig i : datasources) {
+            if (datasourceName.equals(i.getName())) {
+                first = Optional.of(i);
+                break;
+            }
+        }
         first.ifPresent(datasources::remove);
         updateType = UpdateType.FULL;
     }

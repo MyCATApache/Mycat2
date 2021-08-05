@@ -2,12 +2,17 @@ package io.mycat.ui;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.util.JdbcUtils;
+import io.mycat.BackendTableInfo;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.MetadataManager;
+import io.mycat.Partition;
 import io.mycat.config.*;
 import io.mycat.hint.*;
 import io.vertx.core.json.Json;
 import lombok.SneakyThrows;
 
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,7 +39,7 @@ public class TcpInfoProvider implements InfoProvider {
     }
 
     public TcpInfoProvider(Map<String, String> args) {
-        this(args.get("url"),args.get("user"),args.get("password"));
+        this(args.get("url"), args.get("user"), args.get("password"));
     }
 
 //     <T> T write(Supplier<T> runnable){
@@ -136,6 +141,24 @@ public class TcpInfoProvider implements InfoProvider {
     @Override
     @SneakyThrows
     public void saveSingleTable(String schemaName, String tableName, NormalTableConfig config) {
-        JdbcUtils.execute(this.druidDataSource, CreateTableHint.createNormal(schemaName,tableName,config));
+        JdbcUtils.execute(this.druidDataSource, CreateTableHint.createNormal(schemaName, tableName, config));
+    }
+
+    @Override
+    @SneakyThrows
+    public void deleteSingleTable(String schema, String table) {
+        JdbcUtils.execute(this.druidDataSource, DropTableHint.create(schema, table));
+    }
+
+    @Override
+    @SneakyThrows
+    public void saveGlobalTable(String schemaName, String tableName, GlobalTableConfig globalTableConfig) {
+        JdbcUtils.execute(this.druidDataSource, CreateTableHint.createGlobal(schemaName, tableName, globalTableConfig));
+    }
+
+    @Override
+    @SneakyThrows
+    public void deleteGlobalTable(String schema, String table) {
+        JdbcUtils.execute(this.druidDataSource, DropTableHint.create(schema, table));
     }
 }

@@ -155,6 +155,28 @@ public class LocalInfoProvider implements InfoProvider {
         }
     }
 
+    @Override
+    @SneakyThrows
+    public void deleteSingleTable(String schema, String table) {
+        try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+            ops.removeTable(schema,table);
+            ops.commit();
+        }
+    }
+
+    @Override
+    public void saveGlobalTable(String schemaName, String tableName, GlobalTableConfig globalTableConfig) {
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        List<Partition> list = new ArrayList<>();
+        List<GlobalBackEndTableInfoConfig> configList = globalTableConfig.getBroadcast();
+
+        for (GlobalBackEndTableInfoConfig target : configList) {
+            list.add(new BackendTableInfo(target.getTargetName(), schemaName, tableName));
+        }
+
+        metadataManager.addGlobalTable(schemaName, tableName, globalTableConfig, metadataManager.getPrototype(), list);
+    }
+
     NameMap<String> map = NameMap.immutableCopyOf((ImmutableMap)
             ImmutableMap.builder()
                     .put("schemaName", "库名")

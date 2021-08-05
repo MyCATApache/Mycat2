@@ -2,6 +2,7 @@ package io.mycat.config;
 
 
 import com.mysql.cj.conf.ConnectionUrlParser;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -19,7 +20,7 @@ public class DatasourceConfig {
     private int minCon = 1;
     private int maxRetryCount = 5;
     private long maxConnectTimeout = 30 * 1000;
-    private String dbType = null;
+    private String dbType = "mysql";
     private String url;
     private int weight = 0;
     private List<String> initSqls;
@@ -29,6 +30,9 @@ public class DatasourceConfig {
     private String jdbcDriverClass;//保留属性
     private String type = DatasourceType.JDBC.name();
     private int queryTimeout = 30;
+
+    public DatasourceConfig() {
+    }
 
     public static String getDbTypeRaw(String rawUrl) {
         if (rawUrl == null) {
@@ -153,7 +157,7 @@ public class DatasourceConfig {
     }
 
     public void setUrl(String url) {
-        if ("mysql".equalsIgnoreCase(getDbType())) {
+        if ("mysql".equalsIgnoreCase(getDbType())&&url!=null) {
             ConnectionUrlParser connectionUrlParser = ConnectionUrlParser.parseConnectionString(url);
             Map<String, String> properties = new HashMap<>(connectionUrlParser.getProperties());
             if (!properties.containsKey("useUnicode")) {

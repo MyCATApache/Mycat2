@@ -1,7 +1,6 @@
 package io.mycat.ui;
 
 import io.mycat.LogicTableType;
-import io.mycat.TableHandler;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.LogicSchemaConfig;
@@ -37,29 +36,34 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
     public TreeCell<ObjectItem> call(TreeView<ObjectItem> tree) {
         TreeCell<ObjectItem> cell = new SchemaObjectCell();
         cell.setOnMouseClicked(event -> {
-            cell.setId(cell.getTreeItem().getValue().getId());
             Optional<Command> commandOptional = Command.parsePath(getPath(cell.getTreeItem()));
             if (event != null) {
                 if (event.getButton() == MouseButton.SECONDARY) {
                     ContextMenu contextMenu = new ContextMenu();
                     TreeItem<ObjectItem> treeItem = cell.getTreeItem();
+                    if(treeItem == null){
+                        return;
+                    }
                     if (!treeItem.isLeaf() && treeItem.getParent() == tree.getRoot()) {
                         ObjectItem value = treeItem.getValue();
                         switch (value.getText()) {
                             case "schemas": {
                                 MenuItem item1 = new MenuItem("新建逻辑库");
+                                item1.setId("addSchema");
                                 item1.setOnAction(event1 -> controller.edit(new LogicSchemaConfig()));
                                 contextMenu.getItems().add(item1);
                                 break;
                             }
                             case "datasources": {
                                 MenuItem item1 = new MenuItem("新建数据源");
+                                item1.setId("addDatasource");
                                 item1.setOnAction(event1 -> controller.edit(new DatasourceConfig()));
                                 contextMenu.getItems().add(item1);
                                 break;
                             }
                             case "clusters": {
                                 MenuItem item1 = new MenuItem("新建集群");
+                                item1.setId("addCluster");
                                 item1.setOnAction(event1 -> controller.edit(new ClusterConfig()));
                                 contextMenu.getItems().add(item1);
                                 break;
@@ -90,6 +94,7 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                                 }
                                 case GLOBAL_TABLES: {
                                     MenuItem item1 = new MenuItem("新建全局表");
+                                    item1.setId("addGlobalTable");
                                     item1.setOnAction(event1 -> controller.addGlobalTableConfig(schema));
                                     contextMenu.getItems().add(item1);
                                     break;
@@ -107,7 +112,7 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                                         boolean doAction = display("删除分片表", "确认删除分片表配置");
                                         if (doAction) {
                                             controller.getInfoProvider().deleteDatasource(command.getDatasource());
-                                            controller.flashDataSource();
+                                            controller.flashSchemas();
                                         }
                                     });
                                     MenuItem item2 = new MenuItem("新建索引表");
@@ -119,11 +124,12 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                                 }
                                 case GLOBAL_TABLE: {
                                     MenuItem item1 = new MenuItem("删除全局表配置");
+                                    item1.setId("deleteGlobalTable");
                                     item1.setOnAction(event1 -> {
                                         boolean doAction = display("删除全局表配置", "确认删除全局表配置");
                                         if (doAction) {
-                                            controller.getInfoProvider().deleteDatasource(command.getDatasource());
-                                            controller.flashDataSource();
+                                            controller.getInfoProvider().deleteGlobalTable(command.getSchema(),command.getTable());
+                                            controller.flashSchemas();
                                         }
                                     });
                                     contextMenu.getItems().add(item1);
@@ -131,11 +137,12 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                                 }
                                 case SINGLE_TABLE: {
                                     MenuItem item1 = new MenuItem("删除单表配置");
+                                    item1.setId("deleteSingleTable");
                                     item1.setOnAction(event1 -> {
                                         boolean doAction = display("删除单表配置", "确认删除单表配置");
                                         if (doAction) {
-                                            controller.getInfoProvider().deleteDatasource(command.getDatasource());
-                                            controller.flashDataSource();
+                                            controller.getInfoProvider().deleteSingleTable(command.getSchema(),command.getTable());
+                                            controller.flashSchemas();
                                         }
                                     });
                                     contextMenu.getItems().add(item1);
@@ -143,11 +150,12 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                                 }
                                 case CLUSTER: {
                                     MenuItem item1 = new MenuItem("删除");
+                                    item1.setId("deleteCluster");
                                     item1.setOnAction(event1 -> {
                                         boolean doAction = display("删除集群", "确认删除集群");
                                         if (doAction) {
                                             controller.getInfoProvider().deleteDatasource(command.getDatasource());
-                                            controller.flashDataSource();
+                                            controller.flashClusterAndDataSource();
                                         }
                                     });
                                     contextMenu.getItems().add(item1);
@@ -155,11 +163,12 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                                 }
                                 case DATASOURCE: {
                                     MenuItem item1 = new MenuItem("删除");
+                                    item1.setId("deleteDatasource");
                                     item1.setOnAction(event1 -> {
                                         boolean doAction = display("删除数据源", "确认删除数据源");
                                         if (doAction) {
                                             controller.getInfoProvider().deleteDatasource(command.getDatasource());
-                                            controller.flashDataSource();
+                                            controller.flashClusterAndDataSource();
                                         }
                                     });
                                     contextMenu.getItems().add(item1);
@@ -236,21 +245,20 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
         Label label = new Label();
         label.setText(msg);
         Button btn1 = new Button("确认");
+        btn1.setId("enter");
         Button btn2 = new Button("取消");
+        btn2.setId("cancel");
         AtomicBoolean flag = new AtomicBoolean();
         btn1.setOnMouseClicked(event -> {
             flag.set(true);
-            System.out.println("你点击了是");
             stage.close();
         });
         btn2.setOnMouseClicked(event -> {
             flag.set(false);
-            System.out.println("你点击了否");
             stage.close();
         });
         HBox hBox = new HBox();
         hBox.getChildren().addAll(btn1, btn2);
-        //设置居中
         hBox.setAlignment(Pos.CENTER);
 
         VBox vBox = new VBox();
@@ -277,12 +285,10 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
         AtomicBoolean flag = new AtomicBoolean();
         btn1.setOnMouseClicked(event -> {
             flag.set(true);
-            System.out.println("你点击了是");
             stage.close();
         });
         btn2.setOnMouseClicked(event -> {
             flag.set(false);
-            System.out.println("你点击了否");
             stage.close();
         });
 

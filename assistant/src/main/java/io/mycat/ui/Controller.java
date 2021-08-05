@@ -28,7 +28,9 @@ public class Controller {
     private InfoProvider infoProvider;
     private VO currentVO;
 
-    private EventHandler navToText = event -> {
+   public static Controller INSTANCE;
+
+    public EventHandler navToText = event -> {
         if (currentVO != null) {
             try {
                 objectText.setText(currentVO.toJsonConfig());
@@ -38,7 +40,7 @@ public class Controller {
 
         }
     };
-    private EventHandler textToNax = event -> {
+    public EventHandler textToNax = event -> {
         if (currentVO != null) {
             try {
                 currentVO.from(objectText.getText());
@@ -52,6 +54,7 @@ public class Controller {
 
     public Controller() {
         System.out.println();
+        INSTANCE = this;
     }
 
     public void flashRoot() {
@@ -71,7 +74,7 @@ public class Controller {
         objectNav.removeEventHandler(EventType.ROOT, navToText);
         objectNav.addEventHandler(EventType.ROOT, navToText);
 
-        objectNav.removeEventHandler(KeyEvent.ANY, textToNax);
+        objectText.removeEventHandler(KeyEvent.ANY, textToNax);
         objectText.addEventHandler(KeyEvent.ANY, textToNax);
     }
 
@@ -117,13 +120,22 @@ public class Controller {
         }
     }
 
-    public void flashDataSource() {
-        ObservableList<TreeItem> children = objectTree.getRoot().getChildren();
-        for (TreeItem child : children) {
-            if (child.getValue().equals("datasources")) {
+    public void flashClusterAndDataSource() {
+        ObservableList<TreeItem<ObjectItem>> children = objectTree.getRoot().getChildren();
+        for (TreeItem<ObjectItem> child : children) {
+            if (child.getValue().getText().equals("datasources")) {
                 child.getChildren().clear();
                 for (DatasourceConfig datasourceConfig : infoProvider.datasources()) {
-                    child.getChildren().add(new TreeItem(datasourceConfig.getName()));
+                    String name = datasourceConfig.getName();
+                    child.getChildren().add(new TreeItem(ObjectItem.builder().id(name).text(name).object(name).build()));
+                }
+                return;
+            }
+            if (child.getValue().getText().equals("clusters")) {
+                child.getChildren().clear();
+                for (ClusterConfig clusterConfig : infoProvider.clusters()) {
+                    String name = clusterConfig.getName();
+                    child.getChildren().add(new TreeItem(ObjectItem.builder().id(name).text(name).object(name).build()));
                 }
                 return;
             }
@@ -179,6 +191,8 @@ public class Controller {
                     Parent parent = loader.load();
 
                     GlobalTableConfigVO globalTableConfigVO = loader.getController();
+                    globalTableConfigVO.getSchemaName().setText(schemaName);
+                    globalTableConfigVO.getTableName().setText(tableName);
                     globalTableConfigVO.setController(this);
                     globalTableConfigVO.setGlobalTableConfig((GlobalTableConfig) JsonUtil.clone(config));
 
@@ -206,9 +220,10 @@ public class Controller {
     }
 
     private void setCurrentObject(Parent parent, VO vo) {
+        Objects.requireNonNull(vo);
         objectNav.getChildren().add(parent);
         objectText.setText(vo.toJsonConfig());
-        currentVO = vo;
+        currentVO = Objects.requireNonNull(vo);
     }
 
     public static void initPartitionsView(List<Partition> partitions, TableView partitionsView) {
@@ -364,8 +379,8 @@ public class Controller {
             FXMLLoader loader = UIMain.loader("/globalTable.fxml");
             Parent parent = loader.load();
             GlobalTableConfigVO controller = loader.getController();
+            controller.setController(this);
             controller.getSchemaName().setText(schema);
-            controller.getTargets().setCellFactory(TextFieldListCell.forListView());
             controller.getTargets().setEditable(true);
             setCurrentObject(parent, controller);
         } catch (Exception e) {
@@ -417,15 +432,7 @@ public class Controller {
     }
 
     public void save(String schemaName, String tableName, GlobalTableConfig globalTableConfig) {
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        List<Partition> list = new ArrayList<>();
-        List<GlobalBackEndTableInfoConfig> configList = globalTableConfig.getBroadcast();
-
-        for (GlobalBackEndTableInfoConfig target : configList) {
-            list.add(new BackendTableInfo(target.getTargetName(), schemaName, tableName));
-        }
-
-        metadataManager.addGlobalTable(schemaName, tableName, globalTableConfig, metadataManager.getPrototype(), list);
+        infoProvider.saveGlobalTable(schemaName,tableName,globalTableConfig);
         flashSchemas();
     }
 }

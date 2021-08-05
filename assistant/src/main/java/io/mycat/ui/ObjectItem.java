@@ -45,7 +45,12 @@ public class ObjectItem {
         bottomSchema.getChildren().add(bottomNode);
 
 
-        String path = UIMain.getTextPath(bottomNode);
+        TreeItem tableItem = new TreeItem(table);
+
+        bottomNode.getChildren().add(tableItem);
+
+        String path = UIMain.getTextPath(tableItem);
+
         return ObjectItem.builder().id(path).text(schema).object(table).build();
     }
 
@@ -71,8 +76,13 @@ public class ObjectItem {
 
         TreeItem bottomNode = new TreeItem("globaltables");
         bottomSchema.getChildren().add(bottomNode);
-        String path = UIMain.getTextPath(bottomNode);
-        return ObjectItem.builder().id(path).text(schema).object(table).build();
+
+        TreeItem tableItem = new TreeItem(table);
+
+        bottomNode.getChildren().add(tableItem);
+
+        String path = UIMain.getTextPath(tableItem);
+        return ObjectItem.builder().id(path).text(table).object(table).build();
     }
 
     public static ObjectItem ofSingleTables(String schema) {
@@ -112,10 +122,15 @@ public class ObjectItem {
         TreeItem datasources = new TreeItem("datasources");
         root.getChildren().add(datasources);
 
-        TreeItem datasourceItem = new TreeItem("datasource");
-        datasources.getChildren().add(datasourceItem);
+        TreeItem datasourcesItem = new TreeItem("datasource");
+        datasources.getChildren().add(datasourcesItem);
+
+        TreeItem datasourceItem = new TreeItem(datasource);
+
+        datasourceItem.getChildren().add(datasourceItem);
 
         String path = UIMain.getTextPath(datasourceItem);
+        ;
         return ObjectItem.builder().id(path).text(datasource).object(datasource).build();
     }
 
