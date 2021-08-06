@@ -2,7 +2,7 @@ package io.mycat.ui;
 
 import io.mycat.*;
 import io.mycat.config.ShardingBackEndTableInfoConfig;
-import io.mycat.config.ShardingFuntion;
+import io.mycat.config.ShardingFunction;
 import io.mycat.config.ShardingTableConfig;
 import io.mycat.util.StringUtil;
 import io.vertx.core.json.Json;
@@ -121,7 +121,7 @@ public class ShardingTableConfigVO implements VO {
             partitions.add(Arrays.asList(targetName, schema, table, dbIndex, tableIndex, index));
         }
 
-        ShardingFuntion shardingFuntion = Json.decodeValue(shardingInfoText, ShardingFuntion.class);
+        ShardingFunction shardingFuntion = Json.decodeValue(shardingInfoText, ShardingFunction.class);
 
         shardingTableConfig.setCreateTableSQL(sql);
         shardingTableConfig.setFunction(shardingFuntion);

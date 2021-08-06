@@ -2,7 +2,7 @@ package io.mycat.assemble;
 
 import io.mycat.config.GlobalBackEndTableInfoConfig;
 import io.mycat.config.ShardingBackEndTableInfoConfig;
-import io.mycat.config.ShardingFuntion;
+import io.mycat.config.ShardingFunction;
 import io.mycat.hint.*;
 import io.mycat.router.mycat1xfunction.PartitionConstant;
 import org.apache.groovy.util.Maps;
@@ -55,7 +55,7 @@ public class DDLHintTest implements MycatTest {
                                             .schemaNames(db)
                                             .tableNames("sharding")
                                             .targetNames("prototype").build(),
-                                    ShardingFuntion.builder().clazz(PartitionConstant.class.getCanonicalName())
+                                    ShardingFunction.builder().clazz(PartitionConstant.class.getCanonicalName())
                                             .properties(Maps.of("defaultNode", "0", "columnName", "id")).build())
             );
 
@@ -95,7 +95,7 @@ public class DDLHintTest implements MycatTest {
                                             .schemaNames(db)
                                             .tableNames("sharding")
                                             .targetNames("prototype").build(),
-                                    ShardingFuntion.builder().clazz(PartitionConstant.class.getCanonicalName())
+                                    ShardingFunction.builder().clazz(PartitionConstant.class.getCanonicalName())
                                             .properties(Maps.of("defaultNode", "0", "columnName", "id")).build())
             );
             hasData(mycat, db, "sharding");

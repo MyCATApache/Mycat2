@@ -5,7 +5,7 @@ import io.mycat.MetadataManager;
 import io.mycat.RangeVariable;
 import io.mycat.RangeVariableType;
 import io.mycat.calcite.table.ShardingTable;
-import io.mycat.config.ShardingFuntion;
+import io.mycat.config.ShardingFunction;
 import io.mycat.config.ShardingTableConfig;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.util.JsonUtil;
@@ -36,7 +36,7 @@ public class YYYYWEEKFunctionTest extends AutoFunctionFactoryTest{
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
                 + " dbpartition by YYYYWEEK(traveldate) tbpartition by YYYYWEEK(traveldate) tbpartitions 3 dbpartitions 8;");
-        mainSharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
+        mainSharding.setFunction(ShardingFunction.builder().properties(JsonUtil.from("{\n" +
                 "\t\t\t\t\t\"dbNum\":\"8\",\n" +
                 "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${index}\",\n" +
                 "\t\t\t\t\t\"tableNum\":\"14\",\n" +

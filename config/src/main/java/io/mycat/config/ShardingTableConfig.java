@@ -1,6 +1,5 @@
 package io.mycat.config;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -13,12 +12,12 @@ import java.util.Map;
 @EqualsAndHashCode
 public class ShardingTableConfig {
     ShardingBackEndTableInfoConfig partition = new ShardingBackEndTableInfoConfig();
-    ShardingFuntion function = new ShardingFuntion();
+    ShardingFunction function = new ShardingFunction();
     String createTableSQL;
 
     Map<String,ShardingTableConfig> shardingIndexTables = new HashMap<>();
 
-    public ShardingTableConfig(ShardingBackEndTableInfoConfig partition, ShardingFuntion function, String createTableSQL, Map<String, ShardingTableConfig> shardingIndexTables) {
+    public ShardingTableConfig(ShardingBackEndTableInfoConfig partition, ShardingFunction function, String createTableSQL, Map<String, ShardingTableConfig> shardingIndexTables) {
         this.partition = partition;
         this.function = function;
         this.createTableSQL = createTableSQL;

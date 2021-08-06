@@ -5,7 +5,7 @@ import io.mycat.assemble.MycatTest;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.NormalTableConfig;
 import io.mycat.config.ShardingBackEndTableInfoConfig;
-import io.mycat.config.ShardingFuntion;
+import io.mycat.config.ShardingFunction;
 import io.mycat.hbt.SchemaConvertor;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
@@ -318,7 +318,7 @@ public class UserCaseTest implements MycatTest {
                                             .schemaNames(db)
                                             .tableNames("sharding_0,sharding_1")
                                             .targetNames("c0").build(),
-                                    ShardingFuntion.builder()
+                                    ShardingFunction.builder()
                                             .clazz(PartitionByHotDate.class.getCanonicalName())
                                             .properties(Maps.of(
                                                     "dateFormat", "yyyy-MM-dd",
@@ -425,7 +425,7 @@ public class UserCaseTest implements MycatTest {
                                             .schemaNames("c")
                                             .tableNames("file_$0-2")
                                             .targetNames("prototype").build(),
-                                    ShardingFuntion.builder()
+                                    ShardingFunction.builder()
                                             .clazz(PartitionByFileMap.class.getCanonicalName())
                                             .properties(Maps.of(
                                                     "defaultNode", "0",
@@ -526,7 +526,7 @@ public class UserCaseTest implements MycatTest {
                                             .schemaNames("c")
                                             .tableNames("stat_ad_sdk_$0-11")
                                             .targetNames("prototype").build(),
-                                    ShardingFuntion.builder()
+                                    ShardingFunction.builder()
                                             .clazz(io.mycat.router.mycat1xfunction.PartitionByMonth.class.getCanonicalName())
                                             .properties(Maps.of(
                                                     "beginDate", "2019-01-01",

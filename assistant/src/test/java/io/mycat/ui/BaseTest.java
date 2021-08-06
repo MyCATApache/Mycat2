@@ -4,13 +4,11 @@ import au.com.bytecode.opencsv.CSVWriter;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.GlobalBackEndTableInfoConfig;
 import io.mycat.config.GlobalTableConfig;
-import io.mycat.config.ShardingFuntion;
+import io.mycat.config.ShardingFunction;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateSchemaHint;
 import io.mycat.router.mycat1xfunction.PartitionByRangeMod;
 import io.vertx.core.json.Json;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -21,7 +19,6 @@ import org.junit.Assert;
 import org.testfx.api.FxRobot;
 import org.testfx.framework.junit.ApplicationTest;
 import org.testfx.robot.Motion;
-import tech.tablesaw.io.csv.CsvWriter;
 
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
@@ -614,7 +611,7 @@ public class BaseTest extends ApplicationTest {
                             ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
                 });
                 robot.interrupt();
-                String functionConfig = Json.encodePrettily(ShardingFuntion.builder()
+                String functionConfig = Json.encodePrettily(ShardingFunction.builder()
                         .clazz(PartitionByRangeMod.class.getCanonicalName())
                         .properties(Maps.of(
                                 "defaultNode", -1,
@@ -686,7 +683,7 @@ public class BaseTest extends ApplicationTest {
         });
         robot.interrupt();
         robot.interrupt();
-        String functionConfig = Json.encodePrettily(ShardingFuntion.builder()
+        String functionConfig = Json.encodePrettily(ShardingFunction.builder()
                 .clazz(PartitionByRangeMod.class.getCanonicalName())
                 .properties(Maps.of(
                         "defaultNode", -1,

@@ -35,7 +35,7 @@ public class CreateTableHint extends HintBuilder {
             String tableName,
             String createTableSql,
             ShardingBackEndTableInfoConfig dataNodes,
-            ShardingFuntion shardingFuntion
+            ShardingFunction shardingFuntion
     ) {
         return createSharding(schemaName, tableName,
                 ShardingTableConfig.builder()

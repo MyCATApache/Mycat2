@@ -524,7 +524,7 @@ public class MetadataManager implements MysqlVariableService {
                                              String prototypeServer,
                                              List<Partition> backends,
                                              List<ShardingIndexTable> shardingIndexTables) throws Exception {
-        ShardingFuntion function = tableConfigEntry.getFunction();
+        ShardingFunction function = tableConfigEntry.getFunction();
         //////////////////////////////////////////////
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL()).orElseGet(() -> getCreateTableSQLByJDBC(schemaName, orignalTableName, backends));
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, orignalTableName, createTableSQL, backends);

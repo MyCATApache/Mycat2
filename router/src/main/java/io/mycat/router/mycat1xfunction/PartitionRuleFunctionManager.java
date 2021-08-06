@@ -14,7 +14,7 @@
  */
 package io.mycat.router.mycat1xfunction;
 
-import io.mycat.config.ShardingFuntion;
+import io.mycat.config.ShardingFunction;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.function.AutoFunctionFactory;
@@ -37,7 +37,7 @@ public enum PartitionRuleFunctionManager {
     }
 
     public static CustomRuleFunction getRuleAlgorithm(ShardingTableHandler tableHandler,
-                                                      ShardingFuntion funtion)
+                                                      ShardingFunction funtion)
             throws Exception {
         boolean auto = funtion.getName() == null && funtion.getClazz() == null;
         if (!auto) {

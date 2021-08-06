@@ -6,14 +6,13 @@ import io.mycat.MetadataManager;
 import io.mycat.RangeVariable;
 import io.mycat.RangeVariableType;
 import io.mycat.calcite.table.ShardingTable;
-import io.mycat.config.ShardingFuntion;
+import io.mycat.config.ShardingFunction;
 import io.mycat.config.ShardingTableConfig;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.util.JsonUtil;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +39,7 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
                 + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 4;");
-        mainSharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
+        mainSharding.setFunction(ShardingFunction.builder().properties(JsonUtil.from("{\n" +
                 "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                 "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${tableIndex}\",\n" +
                 "\t\t\t\t\t\"tableNum\":\"4\",\n" +
@@ -77,7 +76,7 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
                 + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 4;");
-        mainSharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
+        mainSharding.setFunction(ShardingFunction.builder().properties(JsonUtil.from("{\n" +
                 "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                 "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${index}\",\n" +
                 "\t\t\t\t\t\"tableNum\":\"4\",\n" +
@@ -112,7 +111,7 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
                 + " dbpartition by mod_hash(id);");
-        mainSharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
+        mainSharding.setFunction(ShardingFunction.builder().properties(JsonUtil.from("{\n" +
                 "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                 "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${tableIndex}\",\n" +
                 "\t\t\t\t\t\"storeNum\":1,\n" +
@@ -141,7 +140,7 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
                 + " tbpartition by mod_hash(id) tbpartitions 2;");
-        mainSharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
+        mainSharding.setFunction(ShardingFunction.builder().properties(JsonUtil.from("{\n" +
                 "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${tableIndex}\",\n" +
                 "\t\t\t\t\t\"tableNum\":\"2\",\n" +
                 "\t\t\t\t\t\"tableMethod\":\"hash(id)\",\n" +
@@ -170,7 +169,7 @@ public class HashFunctionTest extends AutoFunctionFactoryTest{
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
                 + " dbpartition by mod_hash(id) tbpartition by mod_hash(user_id) tbpartitions 2 dbpartitions 4;");
-        mainSharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
+        mainSharding.setFunction(ShardingFunction.builder().properties(JsonUtil.from("{\n" +
                 "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                 "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${tableIndex}\",\n" +
                 "\t\t\t\t\t\"tableNum\":\"4\",\n" +

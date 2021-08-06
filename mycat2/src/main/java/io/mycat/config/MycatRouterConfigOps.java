@@ -260,7 +260,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
         ShardingTableConfig.ShardingTableConfigBuilder builder = ShardingTableConfig.builder();
         ShardingTableConfig config = builder
                 .createTableSQL(tableStatement.toString())
-                .function(ShardingFuntion.builder().name(name).clazz(aClass).properties((Map) properties).ranges((Map) ranges).build())
+                .function(ShardingFunction.builder().name(name).clazz(aClass).properties((Map) properties).ranges((Map) ranges).build())
                 .partition(Optional.ofNullable(dataNodes).map(i -> ShardingBackEndTableInfoConfig
                         .builder()
                         .schemaNames(dataNodes.get("schemaNames"))
@@ -328,7 +328,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
                 ShardingTableConfig.ShardingTableConfigBuilder builder = ShardingTableConfig.builder();
                 ShardingTableConfig config = builder
                         .createTableSQL(MycatSQLUtils.toString(indexCreateTableStatement))
-                        .function(ShardingFuntion.builder().properties(autoHashProperties).build())
+                        .function(ShardingFunction.builder().properties(autoHashProperties).build())
                         .build();
 
                 indexTableConfigs.put(indexTableName, config);
@@ -338,7 +338,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
         ShardingTableConfig.ShardingTableConfigBuilder builder = ShardingTableConfig.builder();
         ShardingTableConfig config = builder
                 .createTableSQL(MycatSQLUtils.toString(tableStatement))
-                .function(ShardingFuntion.builder().properties((Map) infos).build())
+                .function(ShardingFunction.builder().properties((Map) infos).build())
                 .shardingIndexTables(indexTableConfigs)
                 .build();
         return putShardingTable(schemaName, tableName, config);
