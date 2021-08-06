@@ -3,7 +3,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="531.0" prefWidth="1000" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.IndexShardingTableVO">
+<AnchorPane prefHeight="531.0" prefWidth="700" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.IndexShardingTableVO">
     <children>
         <Label layoutX="281.0" layoutY="3.0" prefHeight="23.0" prefWidth="93.0" text="分片表" />
         <Label layoutX="14.0" layoutY="15.0" prefHeight="30.0" prefWidth="93.0" text="逻辑库名" />

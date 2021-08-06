@@ -260,7 +260,7 @@ public class ShardingTableConfigVO implements VO {
             currentIndexShardingTableController.setShardingTableConfigVO(this);
 
             Stage stage = new Stage();
-            Scene scene = SceneUtil.createScene(parent, 600, 400);
+            Scene scene = SceneUtil.createScene(()->new Scene(parent));
             stage.setScene(scene);
             currentIndexShardingTableController.setStage(stage);
             stage.showAndWait();
