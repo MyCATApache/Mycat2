@@ -10,6 +10,7 @@ import io.mycat.*;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.MycatRelDatasourceSourceInfo;
+import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.util.MycatSQLExprTableSourceUtil;
@@ -40,7 +41,7 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
                         .apply(codeExecuterContext.getRelContext().get(mycatView.getDigest()).getSqlTemplate(), partitions, drdsSqlWithParams.getParams());
                 Map.Entry<String, SqlString> kv = sqlMap.entries().stream().iterator().next();
                 SqlString sqlString = kv.getValue();
-                ExplainDetail explainDetail = new ExplainDetail(ExecuteType.QUERY, Collections.singletonList(kv.getKey()), sqlString.getSql(), null, drdsSqlWithParams.getParams());
+                ExplainDetail explainDetail = new ExplainDetail(ExecuteType.QUERY, Collections.singletonList(kv.getKey()), sqlString.getSql(), null,   MycatPreparedStatementUtil.extractParams(drdsSqlWithParams.getParams(),sqlString.getDynamicParameters()));
                 return response.execute(explainDetail);
             }
         }
