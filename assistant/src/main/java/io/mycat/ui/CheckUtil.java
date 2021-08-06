@@ -1,7 +1,6 @@
 package io.mycat.ui;
 
 
-import com.sun.xml.internal.messaging.saaj.packaging.mime.MessagingException;
 import org.apache.commons.lang3.StringUtils;
 
 public class CheckUtil {

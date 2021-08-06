@@ -18,10 +18,12 @@ import io.mycat.beans.mysql.MySQLVersion;
 import io.mycat.config.*;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
-import io.mycat.ui.*;
 import io.mycat.vertx.VertxMycatServer;
 import io.mycat.vertxmycat.MycatVertxMetricsFactory;
-import io.vertx.core.*;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 import lombok.SneakyThrows;
 import org.apache.calcite.util.RxBuiltInMethod;
 import org.apache.curator.framework.CuratorFramework;
@@ -37,11 +39,8 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -212,28 +211,7 @@ public class MycatCore {
 
     public void startServer() throws Exception {
         metadataStorageManager.start();
-       if (Boolean.getBoolean("ui")){
-           UIMain.infoProviderFactory = new InfoProviderFactory() {
-               @Override
-               public InfoProvider create(InfoProviderType type, Map<String,String> args) {
-                   switch (type) {
-                       case LOCAL:
-                           return new LocalInfoProvider();
-                       case TCP:
-                           return  new TcpInfoProvider(args);
-                       default:
-                           throw new IllegalStateException("Unexpected value: " + type);
-                   }
-
-               };
-           };
-
-           new Thread(()->{
-               System.out.println("UI Thread:"+Thread.currentThread());
-               UIMain.main(null);
-           }).start();
-       }
-       mycatServer.start();
+        mycatServer.start();
     }
 
     public static void main(String[] args) throws Exception {
@@ -241,11 +219,11 @@ public class MycatCore {
             for (String i : args) {
                 if (i.startsWith("-D") || i.startsWith("-d")) {
                     i = i.substring(2);
-                    if (i.contains("=")){
+                    if (i.contains("=")) {
                         String[] n = i.substring(2).split("=");
                         System.setProperty(n[0], n[1]);
-                    }else {
-                        System.setProperty(i,Boolean.TRUE.toString());
+                    } else {
+                        System.setProperty(i, Boolean.TRUE.toString());
                     }
                 }
             }
