@@ -51,7 +51,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         super(dataContext, context, drdsSqlWithParams);
     }
 
-    Future<SqlConnection> getConnection(String key) {
+    synchronized Future<SqlConnection>  getConnection(String key) {
         XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
         if (context.isInTransaction()) {
             return transactionConnnectionMap
@@ -63,7 +63,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         return connection;
     }
 
-    void recycleConnection(String key, Future<SqlConnection> connectionFuture) {
+    synchronized void recycleConnection(String key, Future<SqlConnection> connectionFuture) {
         XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
         if (context.isInTransaction()) {
             transactionConnnectionMap.put(key, connectionFuture);
@@ -71,7 +71,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         }
         connectionFuture = connectionFuture.flatMap(c -> c.close().mapEmpty());
         transactionSession.addCloseFuture(connectionFuture.mapEmpty());
-        connnectionFutureCollection.add(connectionFuture);
+        connnectionFutureCollection.add(Objects.requireNonNull(connectionFuture));
     }
 
     @NotNull
@@ -115,7 +115,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         return observables;
     }
 
-    public CompositeFuture endFuture() {
+    public synchronized CompositeFuture endFuture() {
         return CompositeFuture.join((List) ImmutableList.builder()
                 .addAll(transactionConnnectionMap.values())
                 .addAll(connnectionFutureCollection).build());
