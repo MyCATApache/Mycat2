@@ -156,15 +156,6 @@ public class LocalInfoProvider implements InfoProvider {
     }
 
     @Override
-    @SneakyThrows
-    public void deleteSingleTable(String schema, String table) {
-        try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
-            ops.removeTable(schema,table);
-            ops.commit();
-        }
-    }
-
-    @Override
     public void saveGlobalTable(String schemaName, String tableName, GlobalTableConfig globalTableConfig) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         List<Partition> list = new ArrayList<>();
@@ -175,6 +166,42 @@ public class LocalInfoProvider implements InfoProvider {
         }
 
         metadataManager.addGlobalTable(schemaName, tableName, globalTableConfig, metadataManager.getPrototype(), list);
+    }
+
+    @Override
+    @SneakyThrows
+    public void deleteCluster(String cluster) {
+        try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+            ops.removeReplica(cluster);
+            ops.commit();
+        }
+    }
+
+    @Override
+    @SneakyThrows
+    public void saveSchema(LogicSchemaConfig logicSchemaConfig) {
+        try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+            ops.putSchema(logicSchemaConfig);
+            ops.commit();
+        }
+    }
+
+    @Override
+    @SneakyThrows
+    public void deleteTable(String schema, String table) {
+        try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+            ops.removeTable(schema,table);
+            ops.commit();
+        }
+    }
+
+    @Override
+    @SneakyThrows
+    public void saveShardingTable(String schemaName, String tableName, ShardingTableConfig config) {
+        try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+            ops.putShardingTable(schemaName,tableName,config);
+            ops.commit();
+        }
     }
 
     NameMap<String> map = NameMap.immutableCopyOf((ImmutableMap)

@@ -16,6 +16,7 @@ package io.mycat.hint;
 
 import io.mycat.config.LogicSchemaConfig;
 import io.mycat.util.JsonUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.text.MessageFormat;
 
@@ -32,12 +33,17 @@ public class CreateSchemaHint extends HintBuilder {
             String schemaName,
             String targetName
     ) {
+        CreateSchemaHint createSchemaHint = new CreateSchemaHint();
+        createSchemaHint.setLogicSchemaConfig(createConfig(schemaName, targetName));
+        return createSchemaHint.build();
+    }
+
+    @NotNull
+    public static LogicSchemaConfig createConfig(String schemaName, String targetName) {
         LogicSchemaConfig schemaConfig = new LogicSchemaConfig();
         schemaConfig.setTargetName(targetName);
         schemaConfig.setSchemaName(schemaName);
-        CreateSchemaHint createSchemaHint = new CreateSchemaHint();
-        createSchemaHint.setLogicSchemaConfig(schemaConfig);
-        return createSchemaHint.build();
+        return schemaConfig;
     }
 
     public static String create(

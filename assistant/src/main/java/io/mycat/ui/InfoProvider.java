@@ -39,9 +39,13 @@ public interface InfoProvider {
 
     void saveSingleTable(String schemaName, String tableName, NormalTableConfig config);
 
-    void deleteSingleTable(String schema, String table);
-
     void saveGlobalTable(String schemaName, String tableName, GlobalTableConfig globalTableConfig);
 
-    void deleteGlobalTable(String schema, String table);
+    void deleteCluster(String cluster);
+
+    void saveSchema(LogicSchemaConfig logicSchemaConfig);
+
+    void deleteTable(String schema, String table);
+
+    void saveShardingTable(String schemaName, String tableName, ShardingTableConfig config);
 }

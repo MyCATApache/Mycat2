@@ -1,15 +1,16 @@
 package io.mycat.ui;
 
 import io.mycat.BackendTableInfo;
+import io.mycat.IndexBackendTableInfo;
 import io.mycat.Partition;
 import lombok.Data;
 
 
 @Data
 public class PartitionEntry {
-    public int globalIndex;
-    public int dbIndex;
-    public int tableIndex;
+    public String globalIndex;
+    public String dbIndex;
+    public String tableIndex;
     public String target;
     public String schema;
     public String table;
@@ -23,9 +24,9 @@ public class PartitionEntry {
              String table
     ){
         PartitionEntry partitionEntry = new PartitionEntry();
-        partitionEntry.setGlobalIndex(index);
-        partitionEntry.setDbIndex(dbIndex);
-        partitionEntry.setTableIndex(tableIndex);
+        partitionEntry.setGlobalIndex(String.valueOf(index));
+        partitionEntry.setDbIndex(String.valueOf(dbIndex));
+        partitionEntry.setTableIndex(String.valueOf(tableIndex));
         partitionEntry.setSchema(schema);
         partitionEntry.setTable(table);
         partitionEntry.setTarget(target);
@@ -39,6 +40,9 @@ public class PartitionEntry {
     }
 
     public Partition toPartition(){
-        return new BackendTableInfo(getTarget(),getSchema(),getTable());
+        return new IndexBackendTableInfo(getTarget(),getSchema(),getTable(),
+                Integer.parseInt(getDbIndex()),
+                Integer.parseInt(  getTableIndex()),
+                Integer.parseInt(getGlobalIndex()));
     }
 }

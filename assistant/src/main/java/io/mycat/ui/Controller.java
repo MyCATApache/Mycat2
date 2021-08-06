@@ -28,7 +28,7 @@ public class Controller {
     private InfoProvider infoProvider;
     private VO currentVO;
 
-   public static Controller INSTANCE;
+    public static Controller INSTANCE;
 
     public EventHandler navToText = event -> {
         if (currentVO != null) {
@@ -98,23 +98,22 @@ public class Controller {
             child.getChildren().add(schemaItem);
 
 
-
-            TreeItem<ObjectItem> shardingTablesItem = new TreeItem( ObjectItem.ofShardingTables(schemaName));
-            TreeItem<ObjectItem> globalTablesItem = new TreeItem( ObjectItem.ofGlobalTables(schemaName));
-            TreeItem<ObjectItem> singleTablesItem = new TreeItem( ObjectItem.ofSingleTables(schemaName));
+            TreeItem<ObjectItem> shardingTablesItem = new TreeItem(ObjectItem.ofShardingTables(schemaName));
+            TreeItem<ObjectItem> globalTablesItem = new TreeItem(ObjectItem.ofGlobalTables(schemaName));
+            TreeItem<ObjectItem> singleTablesItem = new TreeItem(ObjectItem.ofSingleTables(schemaName));
 
             schemaItem.getChildren().add(shardingTablesItem);
             schemaItem.getChildren().add(globalTablesItem);
             schemaItem.getChildren().add(singleTablesItem);
 
             for (Map.Entry<String, NormalTableConfig> e : schema.getNormalTables().entrySet()) {
-                singleTablesItem.getChildren().add(new TreeItem(ObjectItem.ofSingleTable(schemaName,e.getKey())));
+                singleTablesItem.getChildren().add(new TreeItem(ObjectItem.ofSingleTable(schemaName, e.getKey())));
             }
             for (Map.Entry<String, GlobalTableConfig> e : schema.getGlobalTables().entrySet()) {
-                globalTablesItem.getChildren().add(new TreeItem(ObjectItem.ofGlobalTable(schemaName,e.getKey())));
+                globalTablesItem.getChildren().add(new TreeItem(ObjectItem.ofGlobalTable(schemaName, e.getKey())));
             }
             for (Map.Entry<String, ShardingTableConfig> e : schema.getShardingTables().entrySet()) {
-                shardingTablesItem.getChildren().add(new TreeItem(ObjectItem.ofShardingTable(schemaName,e.getKey())));
+                shardingTablesItem.getChildren().add(new TreeItem(ObjectItem.ofShardingTable(schemaName, e.getKey())));
             }
             System.out.println();
         }
@@ -127,17 +126,17 @@ public class Controller {
                 child.getChildren().clear();
                 for (DatasourceConfig datasourceConfig : infoProvider.datasources()) {
                     String name = datasourceConfig.getName();
-                    child.getChildren().add(new TreeItem(ObjectItem.builder().id(name).text(name).object(name).build()));
+                    child.getChildren().add(new TreeItem(ObjectItem.ofDatasource(name)));
                 }
-                return;
+                continue;
             }
             if (child.getValue().getText().equals("clusters")) {
                 child.getChildren().clear();
                 for (ClusterConfig clusterConfig : infoProvider.clusters()) {
                     String name = clusterConfig.getName();
-                    child.getChildren().add(new TreeItem(ObjectItem.builder().id(name).text(name).object(name).build()));
+                    child.getChildren().add(new TreeItem(ObjectItem.ofCluster(name)));
                 }
-                return;
+                continue;
             }
         }
 
@@ -233,10 +232,6 @@ public class Controller {
         partitionsView.setEditable(true);
         partitionsView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
-        int index = 0;
-        for (Partition backend : partitions) {
-            partitionsView.getItems().add(PartitionEntry.of(index++, backend));
-        }
 
         TableColumn firstCol = new TableColumn("目标");
         firstCol.setEditable(true);
@@ -245,12 +240,6 @@ public class Controller {
                 (EventHandler<TableColumn.CellEditEvent<PartitionEntry, String>>) t -> t.getTableView().getItems().get(
                         t.getTablePosition().getRow()).setTarget(t.getNewValue())
         );
-        firstCol.setOnEditStart(new EventHandler<TableColumn.CellEditEvent>() {
-            @Override
-            public void handle(TableColumn.CellEditEvent event) {
-                System.out.println();
-            }
-        });
         firstCol.setCellValueFactory(
                 new PropertyValueFactory<Partition, String>("target")
         );
@@ -283,10 +272,10 @@ public class Controller {
         fourthCol.setCellFactory(TextFieldTableCell.forTableColumn());
         fourthCol.setOnEditCommit(
                 (EventHandler<TableColumn.CellEditEvent<PartitionEntry, String>>) t -> t.getTableView().getItems().get(
-                        t.getTablePosition().getRow()).setDbIndex(Integer.parseInt(t.getNewValue()))
+                        t.getTablePosition().getRow()).setDbIndex((t.getNewValue()))
         );
-        thirdCol.setCellValueFactory(
-                new PropertyValueFactory<Partition, String>("dbIndex")
+        fourthCol.setCellValueFactory(
+                new PropertyValueFactory<PartitionEntry, String>("dbIndex")
         );
 
         TableColumn fifthCol = new TableColumn("物理分表下标");
@@ -294,10 +283,10 @@ public class Controller {
         fifthCol.setCellFactory(TextFieldTableCell.forTableColumn());
         fifthCol.setOnEditCommit(
                 (EventHandler<TableColumn.CellEditEvent<PartitionEntry, String>>) t -> t.getTableView().getItems().get(
-                        t.getTablePosition().getRow()).setTableIndex(Integer.parseInt(t.getNewValue()))
+                        t.getTablePosition().getRow()).setTableIndex((t.getNewValue()))
         );
         fifthCol.setCellValueFactory(
-                new PropertyValueFactory<Partition, String>("tableIndex")
+                new PropertyValueFactory<PartitionEntry, Integer>("tableIndex")
         );
 
         TableColumn sixCol = new TableColumn("总物理分表下标");
@@ -305,14 +294,19 @@ public class Controller {
         sixCol.setCellFactory(TextFieldTableCell.forTableColumn());
         sixCol.setOnEditCommit(
                 (EventHandler<TableColumn.CellEditEvent<PartitionEntry, String>>) t -> t.getTableView().getItems().get(
-                        t.getTablePosition().getRow()).setGlobalIndex(Integer.parseInt(t.getNewValue()))
+                        t.getTablePosition().getRow()).setGlobalIndex((t.getNewValue()))
         );
-        fifthCol.setCellValueFactory(
-                new PropertyValueFactory<Partition, String>("globalIndex")
+        sixCol.setCellValueFactory(
+                new PropertyValueFactory<PartitionEntry, Integer>("globalIndex")
         );
 
         partitionsView.getColumns().addAll(firstCol, secondCol, thirdCol, fourthCol, fifthCol, sixCol);
 
+        for (Partition backend : partitions) {
+            partitionsView.getItems().add(PartitionEntry.of(backend.getIndex(),backend.getDbIndex(),backend.getTableIndex(),backend.getTargetName(),backend.getSchema(),backend.getTable()));
+        }
+
+        partitionsView.refresh();
     }
 
     public void edit(LogicSchemaConfig r) {
@@ -321,6 +315,7 @@ public class Controller {
         try {
             parent = loader.load();
             SchemaConfigVO schemaConfigVO = loader.getController();
+            schemaConfigVO.setController(this);
             schemaConfigVO.setLogicSchemaConfig(r);
             setCurrentObject(parent, schemaConfigVO);
         } catch (IOException e) {
@@ -344,12 +339,12 @@ public class Controller {
 
         for (ClusterConfig cluster : infoProvider.clusters()) {
             String name = cluster.getName();
-            clusterItems.getChildren().add(new TreeItem(ObjectItem.builder().id(name).text(name).object(name).build()));
+            clusterItems.getChildren().add(new TreeItem(ObjectItem.ofCluster(name)));
         }
 
         for (DatasourceConfig datasourceConfig : infoProvider.datasources()) {
             String name = datasourceConfig.getName();
-            datasourceItems.getChildren().add(new TreeItem(ObjectItem.builder().id(name).text(name).object(name).build()));
+            datasourceItems.getChildren().add(new TreeItem(ObjectItem.ofDatasource(name)));
         }
 
         return rootItem;
@@ -405,8 +400,7 @@ public class Controller {
     }
 
     public void save(String schemaName, String tableName, ShardingTableConfig config) {
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        metadataManager.addShardingTable(schemaName, tableName, config, metadataManager.getPrototype(), MetadataManager.getBackendTableInfos(config.getPartition()), Collections.emptyList());
+        infoProvider.saveShardingTable(schemaName, tableName, config);
         flashSchemas();
     }
 
@@ -415,7 +409,7 @@ public class Controller {
     }
 
     public void save(String schemaName, String tableName, NormalTableConfig config) {
-        infoProvider.saveSingleTable(schemaName,tableName,config);
+        infoProvider.saveSingleTable(schemaName, tableName, config);
         flashSchemas();
 
     }
@@ -432,7 +426,12 @@ public class Controller {
     }
 
     public void save(String schemaName, String tableName, GlobalTableConfig globalTableConfig) {
-        infoProvider.saveGlobalTable(schemaName,tableName,globalTableConfig);
+        infoProvider.saveGlobalTable(schemaName, tableName, globalTableConfig);
+        flashSchemas();
+    }
+
+    public void saveSchema(LogicSchemaConfig logicSchemaConfig) {
+        infoProvider.saveSchema(logicSchemaConfig);
         flashSchemas();
     }
 }

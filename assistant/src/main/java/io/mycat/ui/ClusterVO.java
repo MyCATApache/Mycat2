@@ -48,6 +48,7 @@ public class ClusterVO implements VO{
 
     public void save(ActionEvent actionEvent) {
         controller.saveCluster(getClusterConfig());
+        controller.flashClusterAndDataSource();
     }
 
     @NotNull

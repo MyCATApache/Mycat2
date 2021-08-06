@@ -76,6 +76,7 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                             switch (command.getType()) {
                                 case SCHEMA: {
                                     MenuItem item1 = new MenuItem("删除逻辑库配置");
+                                    item1.setId("deleteSchema");
                                     item1.setOnAction(event1 -> {
                                         boolean doAction = display("删除逻辑库配置", "确认删除逻辑库配置");
                                         if (doAction) {
@@ -88,6 +89,7 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                                 }
                                 case SHARDING_TABLES: {
                                     MenuItem item1 = new MenuItem("新建分片表");
+                                    item1.setId("addShardingTable");
                                     item1.setOnAction(event1 -> controller.addShardingTable(schema));
                                     contextMenu.getItems().add(item1);
                                     break;
@@ -108,18 +110,15 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                                 }
                                 case SHARDING_TABLE: {
                                     MenuItem item1 = new MenuItem("删除分片表配置");
+                                    item1.setId("deleteShardingTable");
                                     item1.setOnAction(event1 -> {
                                         boolean doAction = display("删除分片表", "确认删除分片表配置");
                                         if (doAction) {
-                                            controller.getInfoProvider().deleteDatasource(command.getDatasource());
+                                            controller.getInfoProvider().deleteTable(schema,command.getTable());
                                             controller.flashSchemas();
                                         }
                                     });
-                                    MenuItem item2 = new MenuItem("新建索引表");
-                                    item1.setOnAction(event1 -> controller.addGlobalTableConfig(schema));
-
                                     contextMenu.getItems().add(item1);
-                                    contextMenu.getItems().add(item2);
                                     break;
                                 }
                                 case GLOBAL_TABLE: {
@@ -128,7 +127,7 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                                     item1.setOnAction(event1 -> {
                                         boolean doAction = display("删除全局表配置", "确认删除全局表配置");
                                         if (doAction) {
-                                            controller.getInfoProvider().deleteGlobalTable(command.getSchema(),command.getTable());
+                                            controller.getInfoProvider().deleteTable(command.getSchema(),command.getTable());
                                             controller.flashSchemas();
                                         }
                                     });
@@ -141,7 +140,7 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                                     item1.setOnAction(event1 -> {
                                         boolean doAction = display("删除单表配置", "确认删除单表配置");
                                         if (doAction) {
-                                            controller.getInfoProvider().deleteSingleTable(command.getSchema(),command.getTable());
+                                            controller.getInfoProvider().deleteTable(command.getSchema(),command.getTable());
                                             controller.flashSchemas();
                                         }
                                     });
@@ -154,7 +153,7 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                                     item1.setOnAction(event1 -> {
                                         boolean doAction = display("删除集群", "确认删除集群");
                                         if (doAction) {
-                                            controller.getInfoProvider().deleteDatasource(command.getDatasource());
+                                            controller.getInfoProvider().deleteCluster(command.getCluster());
                                             controller.flashClusterAndDataSource();
                                         }
                                     });

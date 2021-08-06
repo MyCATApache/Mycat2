@@ -3,28 +3,27 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="531.0" prefWidth="889.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.IndexShardingTableVO">
+<AnchorPane prefHeight="531.0" prefWidth="1000" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.IndexShardingTableVO">
     <children>
         <Label layoutX="281.0" layoutY="3.0" prefHeight="23.0" prefWidth="93.0" text="分片表" />
         <Label layoutX="14.0" layoutY="15.0" prefHeight="30.0" prefWidth="93.0" text="逻辑库名" />
-        <Label fx:id="schemaName" layoutX="64.0" layoutY="23.0" prefHeight="15.0" prefWidth="93.0" />
+        <Label fx:id="logicalSchemaName" layoutX="64.0" layoutY="23.0" prefHeight="15.0" prefWidth="93.0" />
         <Label layoutX="173.0" layoutY="16.0" prefHeight="30.0" prefWidth="155.0" text="逻辑表名" />
-        <Label fx:id="tableName" layoutX="225.0" layoutY="24.0" prefHeight="15.0" prefWidth="118.0" />
+        <Label fx:id="logicalTableName" layoutX="225.0" layoutY="24.0" prefHeight="15.0" prefWidth="118.0" />
         <Label layoutX="374.0" layoutY="16.0" prefHeight="30.0" prefWidth="180.0" text="逻辑索引名" />
         <TextField fx:id="indexName" layoutX="445.0" layoutY="19.0" prefHeight="23.0" prefWidth="118.0" />
         <Label layoutX="17.0" layoutY="48.0" prefHeight="30.0" prefWidth="180.0" text="建表SQL" />
-        <TextArea fx:id="createTableSQL" layoutX="76.0" layoutY="45.0" prefHeight="23.0" prefWidth="532.0" />
+        <TextArea fx:id="indexCreateTableSQL" layoutX="76.0" layoutY="45.0" prefHeight="23.0" prefWidth="532.0" />
 
         <Label layoutX="275.0" layoutY="82.0" prefHeight="23.0" prefWidth="93.0" text="算法信息" />
-         <TextArea fx:id="shardingInfo" layoutX="76.0" layoutY="104.0" prefHeight="83.0" prefWidth="532.0" />
+         <TextArea fx:id="indexShardingInfo" layoutX="76.0" layoutY="104.0" prefHeight="83.0" prefWidth="532.0" />
 
         <Label layoutX="275.0" layoutY="199.0" prefHeight="23.0" prefWidth="93.0" text="分区" />
-        <TableView fx:id="partitionsView" layoutX="76.0" layoutY="222.0" prefHeight="121.0" prefWidth="532.0">
+        <TableView fx:id="indexPartitionsView" layoutX="76.0" layoutY="222.0" prefHeight="121.0" prefWidth="532.0">
          <columnResizePolicy>
             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
          </columnResizePolicy></TableView>
-        <Button layoutX="197.0" layoutY="354.0" onAction="#inputPartitions" text="导入" />
-        <Button layoutX="197.0" layoutY="354.0" onAction="#add" text="添加" />
-        <Button layoutX="322.0" layoutY="354.0" onAction="#close" text="关闭" />
+        <Button fx:id="inputIndexTablePartitionButton" layoutX="568.0" layoutY="199.0" onAction="#inputIndexPartitions" prefHeight="23.0" prefWidth="40.0" text="导入" />
+        <Button fx:id="saveIndexTable" layoutX="264.0" layoutY="352.0" onAction="#add" text="添加" />
     </children>
 </AnchorPane>

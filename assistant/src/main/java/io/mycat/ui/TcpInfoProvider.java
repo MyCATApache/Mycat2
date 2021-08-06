@@ -2,17 +2,12 @@ package io.mycat.ui;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.util.JdbcUtils;
-import io.mycat.BackendTableInfo;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.MetadataManager;
-import io.mycat.Partition;
 import io.mycat.config.*;
 import io.mycat.hint.*;
 import io.vertx.core.json.Json;
 import lombok.SneakyThrows;
 
 import java.sql.Connection;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -146,19 +141,31 @@ public class TcpInfoProvider implements InfoProvider {
 
     @Override
     @SneakyThrows
-    public void deleteSingleTable(String schema, String table) {
-        JdbcUtils.execute(this.druidDataSource, DropTableHint.create(schema, table));
-    }
-
-    @Override
-    @SneakyThrows
     public void saveGlobalTable(String schemaName, String tableName, GlobalTableConfig globalTableConfig) {
         JdbcUtils.execute(this.druidDataSource, CreateTableHint.createGlobal(schemaName, tableName, globalTableConfig));
     }
 
     @Override
     @SneakyThrows
-    public void deleteGlobalTable(String schema, String table) {
-        JdbcUtils.execute(this.druidDataSource, DropTableHint.create(schema, table));
+    public void deleteCluster(String cluster) {
+        JdbcUtils.execute(this.druidDataSource, DropClusterHint.create(cluster));
+    }
+
+    @Override
+    @SneakyThrows
+    public void saveSchema(LogicSchemaConfig logicSchemaConfig) {
+        JdbcUtils.execute(this.druidDataSource, CreateSchemaHint.create(logicSchemaConfig));
+    }
+
+    @Override
+    @SneakyThrows
+    public void deleteTable(String schema, String table) {
+        JdbcUtils.execute(this.druidDataSource, DropTableHint.create(schema,table));
+    }
+
+    @Override
+    @SneakyThrows
+    public void saveShardingTable(String schemaName, String tableName, ShardingTableConfig config) {
+        JdbcUtils.execute(this.druidDataSource, CreateTableHint.createSharding(schemaName,tableName,config));
     }
 }

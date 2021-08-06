@@ -27,6 +27,7 @@
                </Tab>
       </TabPane >
             <HBox fx:id="runMenu" layoutX="0" layoutY="0" maxWidth="Infinity" minHeight="25">
+                <Button fx:id="runButton" text="执行"/>
       </HBox>
       <SplitPane dividerPositions="0.5">
           <VBox>

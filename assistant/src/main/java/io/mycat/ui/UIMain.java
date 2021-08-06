@@ -55,7 +55,7 @@ public class UIMain extends Application {
         controller.init();
         controller.getTabPane().prefWidthProperty().bind(controller.getMainPane().widthProperty());//菜单自适应
 //        controller.getTabPane().prefHeightProperty().bind(controller.getMainPane().heightProperty());//菜单自适应
-        this. scene = SceneUtil.createScene(root, 800, 800);
+        this. scene = SceneUtil.createScene(root, 1000, 800);
         primaryStage.setScene(scene);
         primaryStage.show();
     }

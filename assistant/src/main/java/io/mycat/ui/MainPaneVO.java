@@ -37,6 +37,7 @@ public class MainPaneVO {
     public TextArea output;
     public Label statusMessage;
     public Button flashRootButton;
+    public   Button runButton;
     public Map<String, Controller> tabObjectMap = new HashMap<>();
 
     public void init() {
@@ -180,14 +181,12 @@ public class MainPaneVO {
 
         menu.getMenus().addAll(fileMenu, helpMenu);
 
-        Button runBotton = new Button("执行");
-
         AtomicReference<Tab> selectTab = new AtomicReference<>();
         tabPane.getSelectionModel().selectedItemProperty().addListener((obs, ov, nv) -> {
             selectTab.set(nv);
         });
 
-        runBotton.setOnAction(new EventHandler<ActionEvent>() {
+        runButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 output.clear();
@@ -241,7 +240,6 @@ public class MainPaneVO {
                 }
             }
         });
-        runMenu.getChildren().addAll(runBotton);
         flashRootButton.setOnAction(event -> {
             Optional.ofNullable(selectTab.get()).map(tab -> tab.getText()).map(text -> {
                 return tabObjectMap.get(text);

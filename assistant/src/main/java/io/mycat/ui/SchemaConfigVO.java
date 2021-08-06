@@ -2,6 +2,7 @@ package io.mycat.ui;
 
 import io.mycat.config.LogicSchemaConfig;
 import io.vertx.core.json.Json;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
 import lombok.Data;
@@ -16,6 +17,8 @@ public class SchemaConfigVO implements VO{
     TextField defaultTargetName;
 
     LogicSchemaConfig logicSchemaConfig;
+
+    Controller controller;
 
     public void setLogicSchemaConfig(LogicSchemaConfig logicSchemaConfig) {
         this.logicSchemaConfig = logicSchemaConfig;
@@ -40,6 +43,10 @@ public class SchemaConfigVO implements VO{
         logicSchemaConfig.setSchemaName(schemaName);
         logicSchemaConfig.setTargetName(targetName);
         return logicSchemaConfig;
+    }
+
+    public void save(ActionEvent actionEvent) {
+        controller.saveSchema(getLogicSchemaConfig());
     }
 //    String
 //    public static SchemaConfigVO from(LogicSchemaConfig config){
