@@ -9,15 +9,21 @@ import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateSchemaHint;
 import io.mycat.router.mycat1xfunction.PartitionByRangeMod;
 import io.vertx.core.json.Json;
+import javafx.application.Platform;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
 import lombok.SneakyThrows;
 import org.apache.groovy.util.Maps;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.testfx.api.FxRobot;
+import org.testfx.api.FxRobotInterface;
 import org.testfx.framework.junit.ApplicationTest;
 import org.testfx.robot.Motion;
 import org.testfx.util.WaitForAsyncUtils;
@@ -39,10 +45,12 @@ public class BaseTest extends ApplicationTest {
 
     private UIMain uiMain;
     private Stage stage;
+
     @BeforeClass
     public static void config() throws Exception {
         System.getProperties().put("testfx.robot", "glass");
     }
+
     /**
      * Will be called with {@code @Before} semantics, i. e. before each test method.
      */
@@ -480,7 +488,7 @@ public class BaseTest extends ApplicationTest {
         Set<Scene> sceneSet = SceneUtil.sceneSet;
         testTcpConnectionLogin();
         interrupt();
-        lookupNode("#flashRootButton").ifPresent(c->clickOn(c));
+        lookupNode("#flashRootButton").ifPresent(c -> clickOn(c));
         robot.interrupt();
         System.out.println(sceneSet);
     }
@@ -547,12 +555,13 @@ public class BaseTest extends ApplicationTest {
     }
 
     @org.junit.Test
+    @SneakyThrows
     public void testTcpConnectionLogin() {
         String name = "t";
         Set<Scene> sceneSet = SceneUtil.sceneSet;
         clickOn("#file");
         clickOn("#newTCPConnection");
-        lookupTextNode("#name").get().setText(name);
+        lookupTextNode("#newConnectionName").get().setText(name);
         lookupTextNode("#url").ifPresent(text -> {
             text.setText("jdbc:mysql://localhost:8066/mysql?characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true");
         });
@@ -569,14 +578,36 @@ public class BaseTest extends ApplicationTest {
             Assert.assertTrue(present);
             System.out.println();
         });
+        Thread.sleep(1000);
+    }
+
+
+    public void clickOn(Node node) {
+        if (node instanceof Button) {
+            Platform.runLater(new Runnable() {
+                @Override
+                public void run() {
+                    EventHandler<ActionEvent> onAction = ((Button) node).getOnAction();
+                    if (onAction!=null){
+                        onAction.handle(null);
+                    }else {
+                        EventHandler<? super MouseEvent> onMouseClicked = ((Button) node).getOnMouseClicked();
+                        onMouseClicked.handle(null);
+                       // System.out.println("no action:"+node);
+                    }
+
+                }
+            });
+        }
+        try {
+            super.clickOn(node);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     @Override
     public FxRobot interrupt() {
-        for (int i = 0; i < 8; i++) {
-            WaitForAsyncUtils.waitForFxEvents();
-
-        }
         return super.interrupt();
     }
 
@@ -646,7 +677,7 @@ public class BaseTest extends ApplicationTest {
                 csvWriter.close();
 
                 Files.write(tempFile, stringWriter.getBuffer().toString().getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
-                ShardingTableConfigVO currentVO =(ShardingTableConfigVO) Controller.INSTANCE.getCurrentVO();
+                ShardingTableConfigVO currentVO = (ShardingTableConfigVO) Controller.INSTANCE.getCurrentVO();
                 currentVO.testFile = tempFile.toFile();
                 clickOn("#inputPartitionButton");
                 robot.interrupt();
@@ -675,7 +706,7 @@ public class BaseTest extends ApplicationTest {
         Assert.assertEquals("address", lookupTextNode("#tableName").get().getText());
         Assert.assertTrue(lookupTextNode("#createTableSQL").get().getText().contains("addressname"));
         Assert.assertTrue(!lookupTextNode("#shardingInfo").get().getText().isEmpty());
-        Assert.assertTrue(!lookupNode("#partitionsView").map(i-> (TableView)i).get().getItems().isEmpty());
+        Assert.assertTrue(!lookupNode("#partitionsView").map(i -> (TableView) i).get().getItems().isEmpty());
 
 
         //test index table
@@ -716,7 +747,7 @@ public class BaseTest extends ApplicationTest {
         csvWriter.close();
 
         Files.write(tempFile, stringWriter.getBuffer().toString().getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
-        ShardingTableConfigVO currentVO =(ShardingTableConfigVO) Controller.INSTANCE.getCurrentVO();
+        ShardingTableConfigVO currentVO = (ShardingTableConfigVO) Controller.INSTANCE.getCurrentVO();
         currentVO.getCurrentIndexShardingTableController().testFile = tempFile.toFile();
 
         clickOn("#inputIndexTablePartitionButton");
@@ -739,7 +770,7 @@ public class BaseTest extends ApplicationTest {
             robot.interrupt();
         });
 
-        node = lookupNode(ObjectItem.ofShardingTable("mycat","address").getId());
+        node = lookupNode(ObjectItem.ofShardingTable("mycat", "address").getId());
         Assert.assertTrue(node.isPresent());
         node.ifPresent(c -> {
             clickOn(c);
@@ -751,7 +782,7 @@ public class BaseTest extends ApplicationTest {
         Assert.assertTrue(lookupTextNode("#createTableSQL").get().getText().contains("addressname"));
 
 
-        ShardingTableConfigVO shardingTableConfigVO = (ShardingTableConfigVO)Controller.INSTANCE.getCurrentVO();
+        ShardingTableConfigVO shardingTableConfigVO = (ShardingTableConfigVO) Controller.INSTANCE.getCurrentVO();
         Object o = shardingTableConfigVO.getIndexTableList().getItems().get(0);
         shardingTableConfigVO.getIndexTableList().getSelectionModel().select(o);
         clickOn("#deleteIndexTable");

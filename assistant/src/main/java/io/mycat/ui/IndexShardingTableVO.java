@@ -84,8 +84,10 @@ public class IndexShardingTableVO implements VO {
 
     public void add(ActionEvent actionEvent) {
         try {
+            Objects.requireNonNull(getLogicalSchemaName().getText(),"schemaName must not be null");
+            Objects.requireNonNull(getLogicalTableName().getText(),"tableName must not be null");
             Map<String, ShardingTableConfig> indexTables = shardingTableConfigVO.getShardingTableConfig().getShardingIndexTables();
-            indexTables.put(getIndexTableName(),toShardingTableConfig());
+            indexTables.put(getIndexTableName(),validate(toShardingTableConfig()));
             shardingTableConfigVO.flash();
         } catch (Exception e) {
             e.printStackTrace();

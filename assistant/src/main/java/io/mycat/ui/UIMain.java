@@ -1,6 +1,10 @@
 package io.mycat.ui;
 
+import com.sun.glass.events.WindowEvent;
 import javafx.application.Application;
+import javafx.event.Event;
+import javafx.event.EventHandler;
+import javafx.event.EventType;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.JavaFXBuilderFactory;
 import javafx.scene.Parent;

@@ -10,6 +10,8 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import lombok.Data;
 
+import java.util.Objects;
+
 @Data
 public class SingleTableVO implements VO{
     @FXML
@@ -59,20 +61,10 @@ public class SingleTableVO implements VO{
         String schemaName = this.getSchemaName().getText();
         String tableName = this.getTableName().getText();
 
-        String targetName = this.getTargetName().getText();
-        String phySchemaName = this.getPhySchemaName().getText();
-        String phyTableName = this.getPhyTableName().getText();
+        Objects.requireNonNull(schemaName,"schemaName must not be null");
+        Objects.requireNonNull(tableName,"tableName must not be null");
 
-        String sql = this.getCreateTableSQL().getText();
-
-        NormalTableConfig normalTableConfig = new NormalTableConfig();
-        normalTableConfig.setCreateTableSQL(sql);
-        normalTableConfig.setLocality(NormalBackEndTableInfoConfig.builder()
-                .targetName(targetName)
-                .schemaName(phySchemaName)
-                .tableName(phyTableName).build());
-
-        controller.save(schemaName,tableName,normalTableConfig);
+        controller.save(schemaName,tableName,validate(getNormalTableConfig()));
     }
 
     @Override

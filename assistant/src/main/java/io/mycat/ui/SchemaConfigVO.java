@@ -46,7 +46,7 @@ public class SchemaConfigVO implements VO{
     }
 
     public void save(ActionEvent actionEvent) {
-        controller.saveSchema(getLogicSchemaConfig());
+        controller.saveSchema(validate(getLogicSchemaConfig()));
     }
 //    String
 //    public static SchemaConfigVO from(LogicSchemaConfig config){

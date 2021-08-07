@@ -41,7 +41,7 @@ public class DatasourceVO implements VO {
     }
 
     public void save(ActionEvent actionEvent) {
-        controller.saveDatasource(getDatasourceConfig());
+        controller.saveDatasource(validate(getDatasourceConfig()));
         controller.flashClusterAndDataSource();
     }
 

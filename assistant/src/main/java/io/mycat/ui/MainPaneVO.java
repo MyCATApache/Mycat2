@@ -18,7 +18,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import lombok.Data;
-import org.testfx.util.WaitForAsyncUtils;
 import tech.tablesaw.api.Table;
 
 import java.sql.Connection;
@@ -67,8 +66,7 @@ public class MainPaneVO {
                         public void handle(ActionEvent event) {
 
                             try {
-
-                                String name = CheckUtil.isEmpty(newConnectionVO.getName().getText(), "name 不能为空");
+                                String name = CheckUtil.isEmpty(newConnectionVO.getNewConnectionName().getText(), "name 不能为空");
                                 String url = CheckUtil.isEmpty(newConnectionVO.getUrl().getText(), "url 不能为空");
                                 String user = CheckUtil.isEmpty(newConnectionVO.getUser().getText(), "user 不能为空");
                                 String password = CheckUtil.isEmpty(newConnectionVO.getPassword().getText(), "password 不能为空");
@@ -127,7 +125,7 @@ public class MainPaneVO {
                         @Override
                         public void handle(ActionEvent event) {
                             try {
-                                String name = CheckUtil.isEmpty(newConnectionVO.getName().getText(), "name 不能为空");
+                                String name = CheckUtil.isEmpty(newConnectionVO.getLocalConnectionName().getText(), "name 不能为空");
 //                                String filePath = CheckUtil.isEmpty(newConnectionVO.getFilePath().getText(), "filePath不能为空");
                                 HashMap<String, String> map = new HashMap<>();
 //                                map.put("filePath", filePath);
@@ -163,7 +161,9 @@ public class MainPaneVO {
         fileMenu.getItems().addAll(newConnection, newTestConnection);
 
         Menu helpMenu = new Menu("帮助");
+        helpMenu.setId("help");
         MenuItem aboutMenu = new MenuItem("关于");
+        aboutMenu.setId("about");
         aboutMenu.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
@@ -172,6 +172,10 @@ public class MainPaneVO {
                 VBox dialogVbox = new VBox(20);
                 dialogVbox.getChildren().add(new TextField("https://github.com/MyCATApache/Mycat2 "));
                 dialogVbox.getChildren().add(new Label("author:chenjunwen"));
+                Button button = new Button("关闭");
+                button.setId("closeAbout");
+                button.setOnAction(event1 -> dialog.close());
+                dialogVbox.getChildren().add(button);
                 Scene dialogScene = SceneUtil.createScene(dialogVbox, 300, 200);
                 dialog.setScene(dialogScene);
                 dialog.setTitle("关于");

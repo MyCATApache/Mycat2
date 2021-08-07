@@ -72,11 +72,12 @@ public class ShardingTableConfigVO implements VO {
     }
 
     public void save() {
-        System.out.println();
         String schemaName = this.schemaName.getText();
         String tableName = this.tableName.getText();
+        Objects.requireNonNull(schemaName,"schemaName must not be null");
+        Objects.requireNonNull(tableName,"tableName must not be null");
         ShardingTableConfig shardingTableConfig = getShardingTableConfig();
-        controller.save(schemaName, tableName, shardingTableConfig);
+        controller.save(schemaName, tableName, validate(shardingTableConfig));
         controller.flashSchemas();
     }
 

@@ -13,12 +13,17 @@ import java.util.List;
 @Data
 @EqualsAndHashCode
 public class ClusterConfig {
+    @javax.validation.constraints.NotNull
     private String clusterType = "MASTER_SLAVE";
+    @javax.validation.constraints.NotNull
     private String switchType = "SWITCH";
+    @javax.validation.constraints.NotNull
     private String readBalanceType = "BALANCE_ALL";
+    @javax.validation.constraints.NotNull
     private String name;
     private String readBalanceName;
     private String writeBalanceName;
+    @javax.validation.constraints.NotNull
     private List<String> masters;
     private List<String> replicas;
     private HeartbeatConfig heartbeat = HeartbeatConfig.builder()

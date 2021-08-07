@@ -43,10 +43,10 @@ public class GlobalTableConfigVO implements VO {
     }
 
     public void save(ActionEvent actionEvent) {
-        String schemaName = Objects.requireNonNull(getSchemaName().getText());
-        String tableName = Objects.requireNonNull(getTableName().getText());
+        String schemaName = Objects.requireNonNull(getSchemaName().getText(),"schemaName must not be null");
+        String tableName = Objects.requireNonNull(getTableName().getText(),"tableName must not be null");
 
-        controller.save(schemaName, tableName, getGlobalTableConfig());
+        controller.save(schemaName, tableName, validate(getGlobalTableConfig()));
         setGlobalTableConfig(getGlobalTableConfig());
     }
 

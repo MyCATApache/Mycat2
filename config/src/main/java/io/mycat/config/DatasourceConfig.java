@@ -13,14 +13,18 @@ import java.util.stream.Collectors;
 @Data
 @EqualsAndHashCode
 public class DatasourceConfig {
+    @javax.validation.constraints.NotNull
     private String name;
+    @javax.validation.constraints.NotNull
     private String user;
     private String password;
     private int maxCon = 1000;
     private int minCon = 1;
     private int maxRetryCount = 5;
     private long maxConnectTimeout = 30 * 1000;
+    @javax.validation.constraints.NotNull
     private String dbType = "mysql";
+    @javax.validation.constraints.NotNull
     private String url;
     private int weight = 0;
     private List<String> initSqls;
@@ -28,6 +32,7 @@ public class DatasourceConfig {
     private String instanceType = "READ_WRITE";
     private long idleTimeout = TimeUnit.SECONDS.toMillis(60);
     private String jdbcDriverClass;//保留属性
+    @javax.validation.constraints.NotNull
     private String type = DatasourceType.JDBC.name();
     private int queryTimeout = 30;
 
@@ -157,7 +162,7 @@ public class DatasourceConfig {
     }
 
     public void setUrl(String url) {
-        if ("mysql".equalsIgnoreCase(getDbType())&&url!=null) {
+        if ("mysql".equalsIgnoreCase(getDbType()) && url != null) {
             ConnectionUrlParser connectionUrlParser = ConnectionUrlParser.parseConnectionString(url);
             Map<String, String> properties = new HashMap<>(connectionUrlParser.getProperties());
             if (!properties.containsKey("useUnicode")) {
@@ -169,7 +174,7 @@ public class DatasourceConfig {
             if (!properties.containsKey("serverTimezone")) {
                 TimeZone timeZone = TimeZone.getDefault();
                 timeZone.getID();
-                properties.put("serverTimezone","Asia/Shanghai");
+                properties.put("serverTimezone", "Asia/Shanghai");
             }
 //            if (!properties.containsKey("useSSL")) {
 //                properties.put("useSSL", "false");

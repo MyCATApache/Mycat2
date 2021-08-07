@@ -8,7 +8,7 @@ import lombok.Data;
 
 @Data
 public class LocalConnectionVO {
-    public TextField name;
+    public TextField localConnectionName;
     public TextField filePath;
     public Button connect;
     private Controller controller;
