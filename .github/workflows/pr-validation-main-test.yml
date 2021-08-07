@@ -31,8 +31,8 @@ jobs:
           mysql root password: 123456
       - name: test
         run: |
-          mvn -B package -Dmaven.test.skip=true
+          mvn -B package -Dmaven.test.skip=true -pl !assistant
           java -jar mycat2/target/mycat2-1.20-jar-with-dependencies.jar &
           sleep 10s
-          mvn test -o
+          mvn test -pl example,!assistant
 
