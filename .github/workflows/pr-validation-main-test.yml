@@ -34,5 +34,5 @@ jobs:
           mvn -B package -Dmaven.test.skip=true -pl !assistant
           java -jar mycat2/target/mycat2-1.20-jar-with-dependencies.jar &
           sleep 10s
-          mvn test -pl example
+          mvn test -pl example -am
 
