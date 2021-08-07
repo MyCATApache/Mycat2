@@ -20,6 +20,7 @@
       <module>example</module>
       <module>statistic</module>
       <module>va</module>
+    <module>assistant</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>
