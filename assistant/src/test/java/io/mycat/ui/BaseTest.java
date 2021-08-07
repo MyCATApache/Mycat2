@@ -40,6 +40,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -107,7 +108,28 @@ public class BaseTest extends ApplicationTest {
             JdbcUtils.execute(mySQLConnection,CreateSchemaHint.create("mycat"));
         };
     }
+    @org.junit.Test
+    @SneakyThrows
+    public void testwhole() {
+        testCreateCluster();
 
+        testCreateSingleTable();
+
+        testCreateGlobalTable();
+
+        testCreateDatasource();
+
+        testCreateCluster();
+
+        testExecuteSQL();
+
+        testFlashButton();
+
+        testCreateSchema();
+
+        testCreateShardingTable();
+    
+    }
     @org.junit.Test
     public void testCreateSingleTable() {
         FxRobot robot = this;
@@ -605,10 +627,11 @@ public class BaseTest extends ApplicationTest {
         System.out.println(sceneSet);
     }
 
+    AtomicInteger IDS = new AtomicInteger(0);
     @org.junit.Test
     @SneakyThrows
     public void testTcpConnectionLogin() {
-        String name = "t";
+        String name = "t"+IDS.getAndIncrement();
         Set<Scene> sceneSet = SceneUtil.sceneSet;
         clickOn("#file");
         clickOn("#newTCPConnection");
