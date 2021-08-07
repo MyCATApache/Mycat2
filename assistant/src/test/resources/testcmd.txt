@@ -1,0 +1,9 @@
+mvn test -pl assistant -Dtest=io.mycat.ui.BaseTest#testCreateCluster
+mvn test -pl assistant -Dtest=io.mycat.ui.BaseTest#testCreateSingleTable
+mvn test -pl assistant -Dtest=io.mycat.ui.BaseTest#testCreateGlobalTable
+mvn test -pl assistant -Dtest=io.mycat.ui.BaseTest#testCreateDatasource
+mvn test -pl assistant -Dtest=io.mycat.ui.BaseTest#testCreateCluster
+mvn test -pl assistant -Dtest=io.mycat.ui.BaseTest#testExecuteSQL
+mvn test -pl assistant -Dtest=io.mycat.ui.BaseTest#testFlashButton
+mvn test -pl assistant -Dtest=io.mycat.ui.BaseTest#testCreateSchema
+mvn test -pl assistant -Dtest=io.mycat.ui.BaseTest#testCreateShardingTable

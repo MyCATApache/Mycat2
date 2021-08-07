@@ -205,6 +205,11 @@ public class LocalInfoProvider implements InfoProvider {
         }
     }
 
+    @Override
+    public void close() {
+
+    }
+
     NameMap<String> map = NameMap.immutableCopyOf((ImmutableMap)
             ImmutableMap.builder()
                     .put("schemaName", "库名")

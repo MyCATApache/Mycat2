@@ -35,7 +35,7 @@ public class Controller {
             try {
                 objectText.setText(currentVO.toJsonConfig());
             } catch (Exception e) {
-                e.printStackTrace();
+                MainPaneVO.popAlter(e);
             }
 
         }
@@ -45,7 +45,7 @@ public class Controller {
             try {
                 currentVO.from(objectText.getText());
             } catch (Exception e) {
-                e.printStackTrace();
+                MainPaneVO.popAlter(e);
             }
         }
 
@@ -151,7 +151,7 @@ public class Controller {
             datasourceVO.setDatasourceConfig(c);
             setCurrentObject(parent, datasourceVO);
         } catch (Exception e) {
-            e.printStackTrace();
+            MainPaneVO.popAlter(e);
         }
     }
 
@@ -165,7 +165,7 @@ public class Controller {
             clusterVO.setClusterConfig(c);
             setCurrentObject(parent, clusterVO);
         } catch (Exception e) {
-            e.printStackTrace();
+            MainPaneVO.popAlter(e);
         }
     }
 
@@ -214,7 +214,7 @@ public class Controller {
                     break;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            MainPaneVO.popAlter(e);
         }
     }
 
@@ -319,7 +319,7 @@ public class Controller {
             schemaConfigVO.setLogicSchemaConfig(r);
             setCurrentObject(parent, schemaConfigVO);
         } catch (IOException e) {
-            e.printStackTrace();
+            MainPaneVO.popAlter(e);
         }
     }
 
@@ -365,7 +365,7 @@ public class Controller {
             controller.setShardingTableConfig(new ShardingTableConfig());
             setCurrentObject(parent, controller);
         } catch (Exception e) {
-            e.printStackTrace();
+            MainPaneVO.popAlter(e);
         }
     }
 
@@ -379,7 +379,7 @@ public class Controller {
             controller.getTargets().setEditable(true);
             setCurrentObject(parent, controller);
         } catch (Exception e) {
-            e.printStackTrace();
+            MainPaneVO.popAlter(e);
         }
     }
 
@@ -395,7 +395,7 @@ public class Controller {
             singleTableVO.setNormalTableConfig(normalTableConfig);
             setCurrentObject(parent, singleTableVO);
         } catch (Exception e) {
-            e.printStackTrace();
+            MainPaneVO.popAlter(e);
         }
     }
 

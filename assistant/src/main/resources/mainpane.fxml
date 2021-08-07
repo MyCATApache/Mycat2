@@ -10,18 +10,18 @@
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="io.mycat.ui.Controller"
             prefHeight="400.0" prefWidth="1000.0">
-    <SplitPane fx:id="main" dividerPositions="0.5, 0.5">
-        <VBox minWidth="100" maxWidth="500">
+    <SplitPane fx:id="main" dividerPositions="0.0, 0.0" >
+        <VBox >
             <Label text="对象树" />
-            <TreeView fx:id="objectTree" />
+            <TreeView fx:id="objectTree" minWidth="100"  maxWidth="600" minHeight="600"/>
         </VBox>
         <VBox>
             <Label text="对象" />
-            <VBox fx:id="objectNav" />
+            <VBox fx:id="objectNav" minWidth="600" minHeight="600"/>
         </VBox>
         <VBox>
             <Label text="文本" />
-            <TextArea fx:id="objectText"> </TextArea>
+            <TextArea fx:id="objectText" minHeight="600" > </TextArea>
         </VBox>
     </SplitPane>
 </AnchorPane>

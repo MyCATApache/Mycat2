@@ -48,4 +48,6 @@ public interface InfoProvider {
     void deleteTable(String schema, String table);
 
     void saveShardingTable(String schemaName, String tableName, ShardingTableConfig config);
+
+   void close();
 }

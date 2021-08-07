@@ -168,4 +168,9 @@ public class TcpInfoProvider implements InfoProvider {
     public void saveShardingTable(String schemaName, String tableName, ShardingTableConfig config) {
         JdbcUtils.execute(this.druidDataSource, CreateTableHint.createSharding(schemaName,tableName,config));
     }
+
+    @Override
+    public void close() {
+        this.druidDataSource.close();
+    }
 }

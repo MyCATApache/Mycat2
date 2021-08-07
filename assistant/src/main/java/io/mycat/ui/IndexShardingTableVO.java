@@ -90,7 +90,7 @@ public class IndexShardingTableVO implements VO {
             indexTables.put(getIndexTableName(),validate(toShardingTableConfig()));
             shardingTableConfigVO.flash();
         } catch (Exception e) {
-            e.printStackTrace();
+            MainPaneVO.popAlter(e);
         } finally {
             this.stage.close();
         }

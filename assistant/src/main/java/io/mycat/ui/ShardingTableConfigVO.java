@@ -145,7 +145,7 @@ public class ShardingTableConfigVO implements VO {
 
             inputPartitions(view, file);
         } catch (Exception e) {
-            e.printStackTrace();
+            MainPaneVO.popAlter(e);
         }
     }
 
@@ -268,7 +268,7 @@ public class ShardingTableConfigVO implements VO {
             SceneUtil.close(scene);
             flash();
         } catch (Exception e) {
-            e.printStackTrace();
+            MainPaneVO.popAlter(e);
         }
     }
 

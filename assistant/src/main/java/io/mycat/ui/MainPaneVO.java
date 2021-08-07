@@ -7,6 +7,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLType;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -92,7 +93,6 @@ public class MainPaneVO {
                                 dialog.close();
                             } catch (Exception e) {
                                 popAlter(e);
-                                e.printStackTrace();
                             }
 
                         }
@@ -100,7 +100,7 @@ public class MainPaneVO {
                     dialog.showAndWait();
                     SceneUtil.close(dialogScene);
                 } catch (Exception exception) {
-                    exception.printStackTrace();
+                    MainPaneVO.popAlter(exception);
                 }
             }
         });
@@ -140,13 +140,18 @@ public class MainPaneVO {
                                 controller.getMain().prefHeightProperty().bind(tabPane.heightProperty());//菜单自适应
                                 tabObjectMap.put(name, controller);
                                 Tab tab = new Tab(name, parent);
+                                tab.setOnClosed(new EventHandler<Event>() {
+                                    @Override
+                                    public void handle(Event event) {
+                                        controller.getInfoProvider().close();
+                                    }
+                                });
                                 tabPane.getTabs().add(tab);
                                 SingleSelectionModel selectionModel = tabPane.getSelectionModel();
                                 selectionModel.select(tab);
                                 dialog.close();
                             } catch (Exception e) {
                                 popAlter(e);
-                                e.printStackTrace();
                             }
 
                         }
@@ -154,7 +159,7 @@ public class MainPaneVO {
                     dialog.showAndWait();
                     SceneUtil.close(dialogScene);
                 } catch (Exception exception) {
-                    exception.printStackTrace();
+                    MainPaneVO.popAlter(exception);
                 }
             }
         });
@@ -239,7 +244,7 @@ public class MainPaneVO {
                             explainText.appendLine(Table.read().db(resultSet).print(200));
                         } catch (Exception e) {
                             outputText.appendLine(e.getLocalizedMessage());
-                            e.printStackTrace();
+                            MainPaneVO.popAlter(e);
                         }
                     }
 
@@ -256,7 +261,8 @@ public class MainPaneVO {
 
     }
 
-    private void popAlter(Exception e) {
+    public static void popAlter(Exception e) {
+        e.printStackTrace();
         Stage stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.setTitle("警告");

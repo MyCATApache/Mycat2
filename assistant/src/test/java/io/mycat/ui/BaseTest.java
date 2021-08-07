@@ -1,42 +1,47 @@
 package io.mycat.ui;
 
 import au.com.bytecode.opencsv.CSVWriter;
+import com.alibaba.druid.pool.DruidDataSource;
+import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.GlobalBackEndTableInfoConfig;
 import io.mycat.config.GlobalTableConfig;
 import io.mycat.config.ShardingFunction;
 import io.mycat.hint.CreateClusterHint;
+import io.mycat.hint.CreateDataSourceHint;
 import io.mycat.hint.CreateSchemaHint;
 import io.mycat.router.mycat1xfunction.PartitionByRangeMod;
+import io.mycat.util.JsonUtil;
 import io.vertx.core.json.Json;
-import javafx.application.Platform;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.control.TabPane;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextInputControl;
 import javafx.stage.Stage;
 import lombok.SneakyThrows;
 import org.apache.groovy.util.Maps;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.testfx.api.FxRobot;
-import org.testfx.api.FxRobotInterface;
 import org.testfx.framework.junit.ApplicationTest;
 import org.testfx.robot.Motion;
-import org.testfx.util.WaitForAsyncUtils;
 
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.sql.Connection;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static io.mycat.ui.SceneUtil.lookupNode;
 import static io.mycat.ui.SceneUtil.lookupTextNode;
@@ -45,6 +50,40 @@ public class BaseTest extends ApplicationTest {
 
     private UIMain uiMain;
     private Stage stage;
+
+    String DB_MYCAT = System.getProperty("db_mycat", "jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true");
+    String DB1 = System.getProperty("db1", "jdbc:mysql://localhost:3306/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true");
+    String DB2 = System.getProperty("db2", "jdbc:mysql://localhost:3307/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true");
+    String DB_MYCAT_PSTMT = System.getProperty("db_mycat", "jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useServerPrepStmts=true");
+
+    String RESET_CONFIG = "/*+ mycat:resetConfig{} */";
+
+    Map<String, DruidDataSource> dsMap = new ConcurrentHashMap<>();
+
+
+     Connection getMySQLConnection(String url) throws Exception {
+        return dsMap.computeIfAbsent(url, new Function<String, DruidDataSource>() {
+            @Override
+            @SneakyThrows
+            public DruidDataSource apply(String url) {
+                Map<String, String> urlParameters = JsonUtil.urlSplit(url);
+                String username = urlParameters.getOrDefault("username", "root");
+                String password = urlParameters.getOrDefault("password", "123456");
+
+                DruidDataSource dataSource = new DruidDataSource();
+                dataSource.setUrl(url);
+                dataSource.setUsername(username);
+                dataSource.setPassword(password);
+
+                dataSource.setLoginTimeout(100);
+                dataSource.setCheckExecuteTime(true);
+                dataSource.setQueryTimeout(100);
+                dataSource.setMaxWait(TimeUnit.SECONDS.toMillis(10));
+                return dataSource;
+            }
+        }).getConnection();
+
+    }
 
     @BeforeClass
     public static void config() throws Exception {
@@ -60,6 +99,13 @@ public class BaseTest extends ApplicationTest {
         this.stage = stage;
         uiMain = new UIMain();
         uiMain.start(stage);
+
+        ;
+
+        try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT)){
+            JdbcUtils.execute(mySQLConnection,RESET_CONFIG);
+            JdbcUtils.execute(mySQLConnection,CreateSchemaHint.create("mycat"));
+        };
     }
 
     @org.junit.Test
@@ -194,7 +240,12 @@ public class BaseTest extends ApplicationTest {
     }
 
     @org.junit.Test
+    @SneakyThrows
     public void testCreateGlobalTable() {
+
+        try ( Connection  mySQLConnection = getMySQLConnection(DB_MYCAT);){
+            JdbcUtils.execute(mySQLConnection, CreateDataSourceHint.create("ds1",DB2));
+        }
         FxRobot robot = this;
         Set<Scene> sceneSet = SceneUtil.sceneSet;
         testTcpConnectionLogin();
@@ -268,7 +319,7 @@ public class BaseTest extends ApplicationTest {
         Assert.assertTrue(lookupTextNode("#createTableSQL").get().getText().contains("addressname"));
 
         lookupTextNode("#targets").ifPresent(c -> {
-            c.setText("prototype,prototype");
+            c.setText("prototypeDs,ds1");
         });
         robot.interrupt();
         lookupNode("#saveGlobalTable").ifPresent(c -> {
@@ -298,7 +349,7 @@ public class BaseTest extends ApplicationTest {
         Assert.assertTrue(lookupTextNode("#createTableSQL").get().getText().contains("addressname"));
         lookupNode("targets").ifPresent(c -> {
             String text = ((TextArea) c).getText();
-            Assert.assertEquals("prototype,prototype", text);
+            Assert.assertEquals("prototypeDs,ds1", text);
             System.out.println();
         });
 
@@ -578,33 +629,32 @@ public class BaseTest extends ApplicationTest {
             Assert.assertTrue(present);
             System.out.println();
         });
-        Thread.sleep(1000);
     }
 
 
-    public void clickOn(Node node) {
-        if (node instanceof Button) {
-            Platform.runLater(new Runnable() {
-                @Override
-                public void run() {
-                    EventHandler<ActionEvent> onAction = ((Button) node).getOnAction();
-                    if (onAction!=null){
-                        onAction.handle(null);
-                    }else {
-                        EventHandler<? super MouseEvent> onMouseClicked = ((Button) node).getOnMouseClicked();
-                        onMouseClicked.handle(null);
-                       // System.out.println("no action:"+node);
-                    }
-
-                }
-            });
-        }
-        try {
-            super.clickOn(node);
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-    }
+//    public void clickOn(Node node) {
+//        if (node instanceof Button) {
+//            Platform.runLater(new Runnable() {
+//                @Override
+//                public void run() {
+//                    EventHandler<ActionEvent> onAction = ((Button) node).getOnAction();
+//                    if (onAction!=null){
+//                        onAction.handle(null);
+//                    }else {
+//                        EventHandler<? super MouseEvent> onMouseClicked = ((Button) node).getOnMouseClicked();
+//                        onMouseClicked.handle(null);
+//                       // System.out.println("no action:"+node);
+//                    }
+//
+//                }
+//            });
+//        }
+//        try {
+//            super.clickOn(node);
+//        }catch (Exception e){
+//            e.printStackTrace();
+//        }
+//    }
 
     @Override
     public FxRobot interrupt() {
