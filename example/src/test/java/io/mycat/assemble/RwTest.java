@@ -3,7 +3,7 @@ package io.mycat.assemble;
 import io.mycat.config.GlobalBackEndTableInfoConfig;
 import io.mycat.config.NormalTableConfig;
 import io.mycat.config.ShardingBackEndTableInfoConfig;
-import io.mycat.config.ShardingFuntion;
+import io.mycat.config.ShardingFunction;
 import io.mycat.hint.*;
 import io.mycat.router.mycat1xfunction.PartitionByRangeMod;
 import org.apache.groovy.util.Maps;
@@ -109,7 +109,7 @@ public class RwTest implements MycatTest {
                                             .schemaNames(db)
                                             .tableNames(tableName)
                                             .targetNames("dw0,dw1").build(),
-                                    ShardingFuntion.builder()
+                                    ShardingFunction.builder()
                                             .clazz(PartitionByRangeMod.class.getCanonicalName())
                                             .properties(Maps.of(
                                                     "defaultNode", -1,

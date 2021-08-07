@@ -1,51 +1,49 @@
 package io.mycat.ui;
 
-import io.mycat.LogicTableType;
 import io.mycat.Partition;
-import io.mycat.calcite.table.ShardingIndexTable;
-import io.mycat.calcite.table.ShardingTable;
 import io.mycat.config.ShardingBackEndTableInfoConfig;
-import io.mycat.config.ShardingFuntion;
+import io.mycat.config.ShardingFunction;
 import io.mycat.config.ShardingTableConfig;
 import io.mycat.util.StringUtil;
 import io.vertx.core.json.Json;
-import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
 import lombok.Data;
+import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Data
 public class IndexShardingTableVO implements VO {
-    public Label schemaName;
-    public Label tableName;
+    public Label logicalSchemaName;
+    public Label logicalTableName;
     public TextField indexName;
     public Controller controller;
 
     @FXML
-    public TextArea shardingInfo;
+    public TextArea indexShardingInfo;
 
     @FXML
-    public TableView<PartitionEntry> partitionsView;
+    public TableView<PartitionEntry> indexPartitionsView;
 
     @FXML
-    public TextArea createTableSQL;
+    public TextArea indexCreateTableSQL;
+    public Button inputIndexTablePartitionButton;
 
     private ShardingTableConfigVO shardingTableConfigVO;
     private Stage stage;
 
     ShardingTableConfig shardingTableConfig = new ShardingTableConfig();
 
-    public void inputPartitions(ActionEvent actionEvent) {
-        ShardingTableConfigVO.inputPartitions(getPartitionsView());
+    File testFile;
+
+    @SneakyThrows
+    public void inputIndexPartitions(ActionEvent actionEvent) {
+        ShardingTableConfigVO.inputPartitionsWithTestFile(getIndexPartitionsView(),testFile);
     }
 
     public ShardingTableConfig toShardingTableConfig() {
@@ -53,12 +51,12 @@ public class IndexShardingTableVO implements VO {
         shardingTableConfig.setShardingIndexTables(Collections.emptyMap());
 
 
-        String sql = this.createTableSQL.getText();
+        String sql = this.indexCreateTableSQL.getText();
 
-        String shardingInfoText = this.shardingInfo.getText();
+        String shardingInfoText = this.indexShardingInfo.getText();
 
         List<List> partitions = new ArrayList<>();
-        for (PartitionEntry item : partitionsView.getItems()) {
+        for (PartitionEntry item : indexPartitionsView.getItems()) {
             Partition partition = item.toPartition();
             String targetName = partition.getTargetName();
             String schema = partition.getSchema();
@@ -68,11 +66,11 @@ public class IndexShardingTableVO implements VO {
             Integer index = partition.getIndex();
             partitions.add(Arrays.asList(targetName, schema, table, dbIndex, tableIndex, index));
         }
-        ShardingFuntion shardingFuntion;
+        ShardingFunction shardingFuntion;
         if (!StringUtil.isEmpty(shardingInfoText)){
-            shardingFuntion   = Json.decodeValue(shardingInfoText, ShardingFuntion.class);
+            shardingFuntion   = Json.decodeValue(shardingInfoText, ShardingFunction.class);
         }else {
-            shardingFuntion = new ShardingFuntion();
+            shardingFuntion = new ShardingFunction();
         }
 
 
@@ -86,11 +84,13 @@ public class IndexShardingTableVO implements VO {
 
     public void add(ActionEvent actionEvent) {
         try {
+            Objects.requireNonNull(getLogicalSchemaName().getText(),"schemaName must not be null");
+            Objects.requireNonNull(getLogicalTableName().getText(),"tableName must not be null");
             Map<String, ShardingTableConfig> indexTables = shardingTableConfigVO.getShardingTableConfig().getShardingIndexTables();
-            indexTables.put(getIndexTableName(),toShardingTableConfig());
+            indexTables.put(getIndexTableName(),validate(toShardingTableConfig()));
             shardingTableConfigVO.flash();
         } catch (Exception e) {
-            e.printStackTrace();
+            MainPaneVO.popAlter(e);
         } finally {
             this.stage.close();
         }
@@ -98,7 +98,7 @@ public class IndexShardingTableVO implements VO {
 
     @NotNull
     public String getIndexTableName() {
-        return this.getTableName().getText() + "_" + getIndexName().getText();
+        return this.getLogicalTableName().getText()+ "_" + getIndexName().getText();
     }
 
 

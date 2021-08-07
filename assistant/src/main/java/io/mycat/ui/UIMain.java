@@ -1,6 +1,10 @@
 package io.mycat.ui;
 
+import com.sun.glass.events.WindowEvent;
 import javafx.application.Application;
+import javafx.event.Event;
+import javafx.event.EventHandler;
+import javafx.event.EventType;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.JavaFXBuilderFactory;
 import javafx.scene.Parent;
@@ -55,8 +59,13 @@ public class UIMain extends Application {
         controller.init();
         controller.getTabPane().prefWidthProperty().bind(controller.getMainPane().widthProperty());//菜单自适应
 //        controller.getTabPane().prefHeightProperty().bind(controller.getMainPane().heightProperty());//菜单自适应
-        this. scene = SceneUtil.createScene(root, 800, 800);
+        this. scene = SceneUtil.createScene(()-> {
+            Scene scene = new Scene(root);
+
+            return scene;
+        });
         primaryStage.setScene(scene);
+//        primaryStage.setMaximized(true);
         primaryStage.show();
     }
 

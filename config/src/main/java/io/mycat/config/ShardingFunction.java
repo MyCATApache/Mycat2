@@ -10,12 +10,12 @@ import java.util.Map;
 @Data
 @Builder
 @AllArgsConstructor
-public class ShardingFuntion {
+public class ShardingFunction {
     String name;
     String clazz;
     Map<String, Object> properties = new HashMap<>();
     Map<String, Object> ranges = new HashMap<>();
 
-    public ShardingFuntion() {
+    public ShardingFunction() {
     }
 }

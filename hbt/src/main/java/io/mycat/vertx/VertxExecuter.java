@@ -646,7 +646,9 @@ public class VertxExecuter {
             // 连接到达
             connectionFuture.onSuccess(connection -> {
                 // 预编译到达
-                Process.getCurrentProcess().trace(connection).prepare(sql)
+                Objects.requireNonNull(sql);
+                Objects.requireNonNull(connection);
+                Objects.requireNonNull(Process.getCurrentProcess()).trace(connection).prepare(sql)
                         .onSuccess(preparedStatement -> {
                             // 查询结果到达
                             PreparedQuery<RowSet<Row>> query = preparedStatement.query();

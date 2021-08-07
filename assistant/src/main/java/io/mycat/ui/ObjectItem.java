@@ -45,8 +45,13 @@ public class ObjectItem {
         bottomSchema.getChildren().add(bottomNode);
 
 
-        String path = UIMain.getTextPath(bottomNode);
-        return ObjectItem.builder().id(path).text(schema).object(table).build();
+        TreeItem tableItem = new TreeItem(table);
+
+        bottomNode.getChildren().add(tableItem);
+
+        String path = UIMain.getTextPath(tableItem);
+
+        return ObjectItem.builder().id(path).text(table).object(table).build();
     }
 
     public static ObjectItem ofGlobalTables(String schema) {
@@ -71,8 +76,13 @@ public class ObjectItem {
 
         TreeItem bottomNode = new TreeItem("globaltables");
         bottomSchema.getChildren().add(bottomNode);
-        String path = UIMain.getTextPath(bottomNode);
-        return ObjectItem.builder().id(path).text(schema).object(table).build();
+
+        TreeItem tableItem = new TreeItem(table);
+
+        bottomNode.getChildren().add(tableItem);
+
+        String path = UIMain.getTextPath(tableItem);
+        return ObjectItem.builder().id(path).text(table).object(table).build();
     }
 
     public static ObjectItem ofSingleTables(String schema) {
@@ -112,7 +122,8 @@ public class ObjectItem {
         TreeItem datasources = new TreeItem("datasources");
         root.getChildren().add(datasources);
 
-        TreeItem datasourceItem = new TreeItem("datasource");
+        TreeItem datasourceItem = new TreeItem(datasource);
+
         datasources.getChildren().add(datasourceItem);
 
         String path = UIMain.getTextPath(datasourceItem);
@@ -121,11 +132,11 @@ public class ObjectItem {
 
     public static ObjectItem ofCluster(String cluster) {
         TreeItem root = new TreeItem("root");
-        TreeItem datasources = new TreeItem("clusters");
-        root.getChildren().add(datasources);
+        TreeItem clusterNode = new TreeItem("clusters");
+        root.getChildren().add(clusterNode);
 
-        TreeItem clusterItem = new TreeItem("cluster");
-        datasources.getChildren().add(clusterItem);
+        TreeItem clusterItem = new TreeItem(cluster);
+        clusterNode.getChildren().add(clusterItem);
 
         String path = UIMain.getTextPath(clusterItem);
         return ObjectItem.builder().id(path).text(cluster).object(cluster).build();

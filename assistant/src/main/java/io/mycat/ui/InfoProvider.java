@@ -2,10 +2,7 @@ package io.mycat.ui;
 
 import io.mycat.TableHandler;
 import io.mycat.calcite.table.SchemaHandler;
-import io.mycat.config.ClusterConfig;
-import io.mycat.config.DatasourceConfig;
-import io.mycat.config.LogicSchemaConfig;
-import io.mycat.config.NormalTableConfig;
+import io.mycat.config.*;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -41,4 +38,16 @@ public interface InfoProvider {
     Connection createConnection();
 
     void saveSingleTable(String schemaName, String tableName, NormalTableConfig config);
+
+    void saveGlobalTable(String schemaName, String tableName, GlobalTableConfig globalTableConfig);
+
+    void deleteCluster(String cluster);
+
+    void saveSchema(LogicSchemaConfig logicSchemaConfig);
+
+    void deleteTable(String schema, String table);
+
+    void saveShardingTable(String schemaName, String tableName, ShardingTableConfig config);
+
+   void close();
 }

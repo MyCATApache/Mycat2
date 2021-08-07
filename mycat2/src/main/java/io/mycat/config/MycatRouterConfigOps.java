@@ -233,7 +233,9 @@ public class MycatRouterConfigOps implements AutoCloseable {
     }
 
 
-    public void removeTable(String schemaName, String tableName) {
+    public void removeTable(String schemaNameArg, String tableNameArg) {
+        schemaName = SQLUtils.normalize(schemaNameArg);
+        tableName = SQLUtils.normalize(tableNameArg);
         this.schemas = mycatRouterConfig.getSchemas();
         List<LogicSchemaConfig> schemas = this.schemas;
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
@@ -258,7 +260,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
         ShardingTableConfig.ShardingTableConfigBuilder builder = ShardingTableConfig.builder();
         ShardingTableConfig config = builder
                 .createTableSQL(tableStatement.toString())
-                .function(ShardingFuntion.builder().name(name).clazz(aClass).properties((Map) properties).ranges((Map) ranges).build())
+                .function(ShardingFunction.builder().name(name).clazz(aClass).properties((Map) properties).ranges((Map) ranges).build())
                 .partition(Optional.ofNullable(dataNodes).map(i -> ShardingBackEndTableInfoConfig
                         .builder()
                         .schemaNames(dataNodes.get("schemaNames"))
@@ -326,7 +328,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
                 ShardingTableConfig.ShardingTableConfigBuilder builder = ShardingTableConfig.builder();
                 ShardingTableConfig config = builder
                         .createTableSQL(MycatSQLUtils.toString(indexCreateTableStatement))
-                        .function(ShardingFuntion.builder().properties(autoHashProperties).build())
+                        .function(ShardingFunction.builder().properties(autoHashProperties).build())
                         .build();
 
                 indexTableConfigs.put(indexTableName, config);
@@ -336,7 +338,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
         ShardingTableConfig.ShardingTableConfigBuilder builder = ShardingTableConfig.builder();
         ShardingTableConfig config = builder
                 .createTableSQL(MycatSQLUtils.toString(tableStatement))
-                .function(ShardingFuntion.builder().properties((Map) infos).build())
+                .function(ShardingFunction.builder().properties((Map) infos).build())
                 .shardingIndexTables(indexTableConfigs)
                 .build();
         return putShardingTable(schemaName, tableName, config);
@@ -396,7 +398,13 @@ public class MycatRouterConfigOps implements AutoCloseable {
 
     public void removeDatasource(String datasourceName) {
         this.datasources = mycatRouterConfig.getDatasources();
-        Optional<DatasourceConfig> first = datasources.stream().filter(i -> datasourceName.equals(i.getName())).findFirst();
+        Optional<DatasourceConfig> first = Optional.empty();
+        for (DatasourceConfig i : datasources) {
+            if (datasourceName.equals(i.getName())) {
+                first = Optional.of(i);
+                break;
+            }
+        }
         first.ifPresent(datasources::remove);
         updateType = UpdateType.FULL;
     }

@@ -10,8 +10,11 @@ import lombok.EqualsAndHashCode;
 @Builder
 @EqualsAndHashCode
 public class NormalBackEndTableInfoConfig {
+    @javax.validation.constraints.NotNull
     private String targetName;
+    @javax.validation.constraints.NotNull
     private String schemaName;
+    @javax.validation.constraints.NotNull
     private String tableName;
 
     public NormalBackEndTableInfoConfig() {

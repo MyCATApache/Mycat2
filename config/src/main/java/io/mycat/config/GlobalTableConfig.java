@@ -13,5 +13,6 @@ import java.util.List;
 public class GlobalTableConfig {
     String createTableSQL;
     String balance;
+    @javax.validation.constraints.NotNull
     List<GlobalBackEndTableInfoConfig> broadcast = new ArrayList<>();
 }

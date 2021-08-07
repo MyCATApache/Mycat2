@@ -5,7 +5,7 @@
 
 <AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.NewConnectionVO">
     <Label layoutX="82.0" layoutY="21.0" prefHeight="119.0" prefWidth="304.0" text="名称" />
-    <TextField fx:id="name" layoutX="180.0" layoutY="72.0" prefHeight="23.0" prefWidth="323.0" />
+    <TextField fx:id="newConnectionName" layoutX="180.0" layoutY="72.0" prefHeight="23.0" prefWidth="323.0" text="con1"/>
     <Label layoutX="82.0" layoutY="72.0" prefHeight="83.0" prefWidth="122.0" text="URL" />
     <TextArea fx:id="url"
               text="jdbc:mysql://localhost:8066/mysql?characterEncoding=utf8&amp;useSSL=false&amp;serverTimezone=Asia/Shanghai&amp;allowPublicKeyRetrieval=true"

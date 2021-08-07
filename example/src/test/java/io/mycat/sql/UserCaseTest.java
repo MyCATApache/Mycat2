@@ -2,10 +2,7 @@ package io.mycat.sql;
 
 import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.assemble.MycatTest;
-import io.mycat.config.DatasourceConfig;
-import io.mycat.config.NormalTableConfig;
-import io.mycat.config.ShardingBackEndTableInfoConfig;
-import io.mycat.config.ShardingFuntion;
+import io.mycat.config.*;
 import io.mycat.hbt.SchemaConvertor;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
@@ -14,6 +11,7 @@ import io.mycat.hint.CreateTableHint;
 import io.mycat.router.mycat1xfunction.PartitionByFileMap;
 import io.mycat.router.mycat1xfunction.PartitionByHotDate;
 import io.mycat.util.ByteUtil;
+import io.vertx.core.json.Json;
 import org.apache.groovy.util.Maps;
 import org.junit.Assert;
 import org.junit.Test;
@@ -318,7 +316,7 @@ public class UserCaseTest implements MycatTest {
                                             .schemaNames(db)
                                             .tableNames("sharding_0,sharding_1")
                                             .targetNames("c0").build(),
-                                    ShardingFuntion.builder()
+                                    ShardingFunction.builder()
                                             .clazz(PartitionByHotDate.class.getCanonicalName())
                                             .properties(Maps.of(
                                                     "dateFormat", "yyyy-MM-dd",
@@ -425,7 +423,7 @@ public class UserCaseTest implements MycatTest {
                                             .schemaNames("c")
                                             .tableNames("file_$0-2")
                                             .targetNames("prototype").build(),
-                                    ShardingFuntion.builder()
+                                    ShardingFunction.builder()
                                             .clazz(PartitionByFileMap.class.getCanonicalName())
                                             .properties(Maps.of(
                                                     "defaultNode", "0",
@@ -526,7 +524,7 @@ public class UserCaseTest implements MycatTest {
                                             .schemaNames("c")
                                             .tableNames("stat_ad_sdk_$0-11")
                                             .targetNames("prototype").build(),
-                                    ShardingFuntion.builder()
+                                    ShardingFunction.builder()
                                             .clazz(io.mycat.router.mycat1xfunction.PartitionByMonth.class.getCanonicalName())
                                             .properties(Maps.of(
                                                     "beginDate", "2019-01-01",
@@ -857,6 +855,83 @@ public class UserCaseTest implements MycatTest {
         Object bytes = resultSet.getObject(1);
         Assert.assertEquals(text, new String((byte[]) bytes, StandardCharsets.UTF_8));
         System.out.println();
+    }
+
+
+    @Test
+    public void case564() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
+
+            execute(mycatConnection, RESET_CONFIG);
+            JdbcUtils.execute(mycatConnection, CreateSchemaHint.create("mysql",
+                    "prototype"));
+            ShardingTableConfig shardingTableConfig = Json.decodeValue("{\n" +
+                    "\t\t\t\"createTableSQL\":\"CREATE TABLE mysql.`cm_component_value` (`C_ID` varchar(32) NOT NULL,`C_REF_ID` varchar(32) DEFAULT NULL,`C_ORG_ID` bigint(20) DEFAULT NULL,`C_PATROL_ID` varchar(32) DEFAULT NULL,`C_CAMERA_ID` varchar(32) DEFAULT NULL,`C_DISTINGUISH_TYPE_ID` varchar(32) DEFAULT NULL ,`C_VALUE` varchar(64) DEFAULT NULL ,`C_STATE` varchar(32) DEFAULT '0' ,`C_TV_IMAGE_PATH` varchar(128) DEFAULT NULL ,`C_JSON_VALUE` varchar(512) DEFAULT NULL ,`C_IR_HOT_IMAGE_PATH` varchar(128) DEFAULT NULL ,`C_IR_VIDEO_IMAGE_PATH` varchar(128) DEFAULT NULL,`D_CREATE_TIME` datetime DEFAULT NULL ,`C_FAULT_LEVEL` varchar(32) DEFAULT 'UNKNOW',`C_COMPONENT_ID` varchar(32) NOT NULL ,`C_CONTENT` varchar(255) DEFAULT NULL ,`C_ERROR` varchar(32) DEFAULT NULL ,`C_PENDING_STATE` varchar(32) DEFAULT NULL ,`C_VALUE_SHOW` varchar(64) DEFAULT NULL ,`C_FILE_PATH` varchar(256) DEFAULT NULL ,`C_FTP_PATH` varchar(256) DEFAULT NULL ,`C_FILE_NAME_PATH` varchar(256) DEFAULT NULL,`FAULT_CONTENT` varchar(256) DEFAULT NULL ,`REVIEW_STATE` varchar(32) DEFAULT NULL ,`RECOGN_STATE` varchar(32) DEFAULT NULL ,`REVIEW_VALUE` varchar(32) DEFAULT NULL ,`CHECK_LEVEL` varchar(32) DEFAULT NULL ,`CHECK_TYPE` varchar(32) DEFAULT NULL ,`REVIEW_TIME` datetime DEFAULT NULL ,`PARAMETER_JSON` text ,`ALARM_NUM` varchar(8) DEFAULT NULL,`C_IS_UPLOAD` varchar(1) DEFAULT NULL,`C_VALUE_JSON` varchar(1024) DEFAULT NULL,`C_ORDER_ID` varchar(32) DEFAULT NULL,`D_UPLOAD_TIME` datetime DEFAULT NULL,PRIMARY KEY (`C_ID`),UNIQUE KEY `unique_index` (`c_ref_id`,`c_org_id`) USING BTREE,KEY `FK_cm_component_value_id` (`c_patrol_id`),KEY `FK_cm_com_value_distinguish_type_id` (`c_distinguish_type_id`),KEY `cm_component_value_ibfk_1` (`c_camera_id`),KEY `fk_0` (`c_patrol_id`),KEY `fk_1` (`c_org_id`),KEY `fk_2` (`c_camera_id`),KEY `fk_3` (`d_create_time`,`c_fault_level`,`c_state`,`c_org_id`),KEY `fk_4` (`c_patrol_id`,`c_state`),KEY `fk_5` (`c_patrol_id`,`c_state`,`c_fault_level`),KEY `fk_6` (`c_org_id`,`c_state`,`c_fault_level`),KEY `fk_8` (`c_org_id`,`c_component_id`),KEY `fk_9` (`c_org_id`,`d_create_time`),KEY `fk_10` (`d_create_time`,`c_fault_level`,`c_state`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;\",\n" +
+                    "\t\t\t\"function\":{\n" +
+                    "\t\t\t\t\"clazz\":\"io.mycat.router.mycat1xfunction.PartitionByMonth\",\n" +
+                    "\t\t\t\t\"properties\":{\n" +
+                    "\t\t\t\t\t\"beginDate\":\"2021-01-01 00:00:00\",\n" +
+                    "\t\t\t\t\t\"endDate\":\"\",\n" +
+                    "\t\t\t\t\t\"dateFormat\":\"yyyy-MM-dd hh:mm:ss\",\n" +
+                    "\t\t\t\t\t\"columnName\":\"D_CREATE_TIME\"\n" +
+                    "\t\t\t\t},\n" +
+                    "\t\t\t\t\"ranges\":{}\n" +
+                    "\t\t\t},\n" +
+                    "\t\t\t\"partition\":{\n" +
+                    "\t\t\t\t\"schemaNames\":\"yh\",\n" +
+                    "\t\t\t\t\"tableNames\":\"cm_component_value_2021$01-12\",\n" +
+                    "\t\t\t\t\"targetNames\":\"prototype\"\n" +
+                    "\t\t\t}\n" +
+                    "\t\t}\n", ShardingTableConfig.class);
+            JdbcUtils.execute(mycatConnection,CreateTableHint.createSharding("mysql","cm_component_value",shardingTableConfig));
+            JdbcUtils.execute(mycatConnection,"use mysql");
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(mycatConnection, "SELECT\n" +
+                    "componentv0_.c_id AS c_id1_3_,\n" +
+                    "componentv0_.alarm_num AS alarm_nu2_3_,\n" +
+                    "componentv0_.c_camera_id AS c_camer32_3_,\n" +
+                    "componentv0_.check_level AS check_le3_3_,\n" +
+                    "componentv0_.check_type AS check_ty4_3_,\n" +
+                    "componentv0_.c_component_id AS c_compo33_3_,\n" +
+                    "componentv0_.c_content AS c_conten5_3_,\n" +
+                    "componentv0_.d_create_time AS d_create6_3_,\n" +
+                    "componentv0_.c_distinguish_type_id AS c_distin7_3_,\n" +
+                    "componentv0_.c_error AS c_error8_3_,\n" +
+                    "componentv0_.fault_content AS fault_co9_3_,\n" +
+                    "componentv0_.c_fault_level AS c_fault10_3_,\n" +
+                    "componentv0_.c_file_name_path AS c_file_11_3_,\n" +
+                    "componentv0_.c_file_path AS c_file_12_3_,\n" +
+                    "componentv0_.c_ftp_path AS c_ftp_p13_3_,\n" +
+                    "componentv0_.c_ir_hot_image_path AS c_ir_ho14_3_,\n" +
+                    "componentv0_.c_ir_video_image_path AS c_ir_vi15_3_,\n" +
+                    "componentv0_.c_is_upload AS c_is_up16_3_,\n" +
+                    "componentv0_.c_json_value AS c_json_17_3_,\n" +
+                    "componentv0_.c_order_id AS c_order18_3_,\n" +
+                    "componentv0_.c_org_id AS c_org_i34_3_,\n" +
+                    "componentv0_.parameter_json AS paramet19_3_,\n" +
+                    "componentv0_.c_patrol_id AS c_patro35_3_,\n" +
+                    "componentv0_.c_pending_state AS c_pendi20_3_,\n" +
+                    "componentv0_.recogn_state AS recogn_21_3_,\n" +
+                    "componentv0_.c_ref_id AS c_ref_i22_3_,\n" +
+                    "componentv0_.review_state AS review_23_3_,\n" +
+                    "componentv0_.review_time AS review_24_3_,\n" +
+                    "componentv0_.review_value AS review_25_3_,\n" +
+                    "componentv0_.c_state AS c_state26_3_,\n" +
+                    "componentv0_.c_tv_image_path AS c_tv_im27_3_,\n" +
+                    "componentv0_.d_upload_time AS d_uploa28_3_,\n" +
+                    "componentv0_.c_value AS c_value29_3_,\n" +
+                    "componentv0_.c_value_json AS c_value30_3_,\n" +
+                    "componentv0_.c_value_show AS c_value31_3_\n" +
+                    "FROM\n" +
+                    "cm_component_value componentv0_\n" +
+                    "WHERE\n" +
+                    "componentv0_.c_component_id = 'ff80808179e57c5a0179e61ccfc70c16'\n" +
+                    "AND componentv0_.d_create_time >'2021-08-04 00:00:00'\n" +
+                    "and componentv0_.d_create_time <'2021-08-05 23:59:59'\n" +
+                    "ORDER BY\n" +
+                    "componentv0_.d_create_time DESC\n" +
+                    "LIMIT 1,100", Collections.emptyList());
+            System.out.println();
+        }
     }
 
 }

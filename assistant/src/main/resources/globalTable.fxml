@@ -15,8 +15,8 @@
         <TextArea fx:id="createTableSQL" layoutX="90.0" layoutY="192.0" prefHeight="86.0" prefWidth="470.0" />
 
         <Label layoutX="262.0" layoutY="297.0" prefHeight="30.0" prefWidth="180.0" text="分区" />
-        <ListView fx:id="targets" editable="true" fixedCellSize="2.0" layoutX="116.0" layoutY="338.0" prefHeight="111.0" prefWidth="440.0">
-        </ListView>
-        <Button layoutX="269.0" layoutY="465.0" onAction="#save" text="保存" />
+        <TextArea fx:id="targets" editable="true"  layoutX="116.0" layoutY="338.0" prefHeight="111.0" prefWidth="440.0" >
+        </TextArea>
+        <Button fx:id="saveGlobalTable" layoutX="269.0" layoutY="465.0" onAction="#save" text="保存" />
     </children>
 </AnchorPane>

@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableSet;
 import groovy.text.SimpleTemplateEngine;
 import groovy.text.Template;
 import io.mycat.SimpleColumnInfo;
-import io.mycat.config.ShardingFuntion;
+import io.mycat.config.ShardingFunction;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.SplitUtil;
@@ -55,7 +55,7 @@ public class AutoFunctionFactory {
 
     @SneakyThrows
     public static final CustomRuleFunction
-    getTableFunction(ShardingTableHandler tableHandler, ShardingFuntion config) {
+    getTableFunction(ShardingTableHandler tableHandler, ShardingFunction config) {
 
         Map<String, Object> properties = config.getProperties();
 

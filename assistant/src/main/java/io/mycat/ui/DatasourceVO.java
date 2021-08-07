@@ -36,11 +36,13 @@ public class DatasourceVO implements VO {
         this.getUrl().setText(datasourceConfig.getUrl());
         this.getDbType().setText(datasourceConfig.getDbType());
         this.getType().setText(datasourceConfig.getType());
+        this.getUser().setText(datasourceConfig.getUser());
         this.getPassword().setText(datasourceConfig.getPassword());
     }
 
     public void save(ActionEvent actionEvent) {
-        controller.saveDatasource(getDatasourceConfig());
+        controller.saveDatasource(validate(getDatasourceConfig()));
+        controller.flashClusterAndDataSource();
     }
 
     @NotNull

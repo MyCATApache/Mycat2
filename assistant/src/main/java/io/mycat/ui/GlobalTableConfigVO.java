@@ -16,6 +16,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Data
 public class GlobalTableConfigVO implements VO {
@@ -24,7 +26,7 @@ public class GlobalTableConfigVO implements VO {
     @FXML
     public TextField tableName;
     @FXML
-    public ListView<String> targets;
+    public TextArea targets;
     @FXML
     public TextArea createTableSQL;
 
@@ -35,21 +37,17 @@ public class GlobalTableConfigVO implements VO {
     public void setGlobalTableConfig(GlobalTableConfig globalTableConfig) {
         this.globalTableConfig = globalTableConfig;
 
-        ListView<String> targets = getTargets();
-        targets.getItems().clear();
-
-        for (GlobalBackEndTableInfoConfig globalBackEndTableInfoConfig : globalTableConfig.getBroadcast()) {
-            targets.getItems().add(globalBackEndTableInfoConfig.getTargetName());
-        }
+        getTargets().setText(globalTableConfig.getBroadcast().stream().map(i -> i.getTargetName()).collect(Collectors.joining(",")));
         getCreateTableSQL().setText(globalTableConfig.getCreateTableSQL());
 
     }
 
     public void save(ActionEvent actionEvent) {
-        String schemaName = getSchemaName().getText();
-        String tableName = getTableName().getText();
+        String schemaName = Objects.requireNonNull(getSchemaName().getText(),"schemaName must not be null");
+        String tableName = Objects.requireNonNull(getTableName().getText(),"tableName must not be null");
 
-        controller.save(schemaName, tableName, getGlobalTableConfig());
+        controller.save(schemaName, tableName, validate(getGlobalTableConfig()));
+        setGlobalTableConfig(getGlobalTableConfig());
     }
 
     @NotNull
@@ -57,7 +55,7 @@ public class GlobalTableConfigVO implements VO {
         String sql = getCreateTableSQL().getText();
 
         List<GlobalBackEndTableInfoConfig> globalBackEndTableInfoConfigs = new ArrayList<>();
-        for (String item : getTargets().getItems()) {
+        for (String item : getTargets().getText().split(",")) {
             globalBackEndTableInfoConfigs.add(GlobalBackEndTableInfoConfig.builder().targetName(item).build());
         }
         globalTableConfig.setCreateTableSQL(sql);
@@ -76,22 +74,4 @@ public class GlobalTableConfigVO implements VO {
 
     }
 
-    public void setGlobalTable(GlobalTable globalTable) {
-
-
-        getSchemaName().setText(globalTable.getSchemaName());
-        getTableName().setText(globalTable.getTableName());
-
-        ListView tableView = this.getTargets();
-
-        tableView.setCellFactory(TextFieldListCell.forListView());
-        tableView.setEditable(true);
-
-        GlobalTableConfig globalTableConfig = globalTable.getTableConfig();
-
-        for (GlobalBackEndTableInfoConfig globalBackEndTableInfoConfig : globalTableConfig.getBroadcast()) {
-            String targetName = globalBackEndTableInfoConfig.getTargetName();
-            tableView.getItems().add(targetName);
-        }
-    }
 }

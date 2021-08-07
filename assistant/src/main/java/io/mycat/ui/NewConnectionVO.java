@@ -10,7 +10,7 @@ import lombok.Data;
 @Data
 public class NewConnectionVO {
 
-    public TextField name;
+    public TextField newConnectionName;
     public TextArea url;
     public TextField user;
     public PasswordField password;

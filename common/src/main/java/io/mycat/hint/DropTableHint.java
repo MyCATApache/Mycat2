@@ -14,43 +14,30 @@
  */
 package io.mycat.hint;
 
-import io.mycat.config.DatasourceConfig;
 import io.mycat.util.JsonUtil;
-import org.jetbrains.annotations.NotNull;
 
 import java.text.MessageFormat;
+import java.util.Map;
+import java.util.Objects;
 
-public class DropDataSourceHint extends HintBuilder {
-    private DatasourceConfig config;
+public class DropTableHint extends HintBuilder {
+    public static String create(String schemaName,String tableName) {
 
-    public static String create(String name) {
-        DropDataSourceHint dropDataSourceHint = createConfig(name);
-        return dropDataSourceHint.build();
-    }
-
-    @NotNull
-    public static DropDataSourceHint createConfig(String name) {
-        DropDataSourceHint dropDataSourceHint = new DropDataSourceHint();
-        DatasourceConfig datasourceConfig = new DatasourceConfig();
-        dropDataSourceHint.setDatasourceConfig(datasourceConfig);
-        datasourceConfig.setName(name);
-        return dropDataSourceHint;
-    }
-
-    public void setDatasourceConfig(DatasourceConfig config) {
-        this.config = config;
+        DropTableHint dropTableHint = new DropTableHint();
+        dropTableHint.map.put("schemaName", Objects.requireNonNull(schemaName));
+        dropTableHint.map.put("tableName",Objects.requireNonNull(tableName));
+        return dropTableHint.build();
     }
 
     @Override
     public String getCmd() {
-        return "dropDataSource";
+        return "dropTable";
     }
 
     @Override
     public String build() {
         return MessageFormat.format("/*+ mycat:{0}{1} */;",
                 getCmd(),
-                JsonUtil.toJson(config));
+                JsonUtil.toJson(map));
     }
-
 }

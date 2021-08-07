@@ -1,6 +1,7 @@
 package io.mycat.ui;
 
 import io.mycat.config.ClusterConfig;
+import io.mycat.util.StringUtil;
 import io.vertx.core.json.Json;
 import javafx.event.ActionEvent;
 import javafx.scene.control.ListView;
@@ -8,10 +9,9 @@ import javafx.scene.control.TextField;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import javax.validation.ConstraintViolation;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Data
 public class ClusterVO implements VO{
@@ -47,8 +47,11 @@ public class ClusterVO implements VO{
     }
 
     public void save(ActionEvent actionEvent) {
-        controller.saveCluster(getClusterConfig());
+        controller.saveCluster(validate(getClusterConfig()));
+        controller.flashClusterAndDataSource();
     }
+
+
 
     @NotNull
     public ClusterConfig getClusterConfig() {

@@ -96,7 +96,7 @@ public abstract class DrdsTest implements MycatTest {
                         "  KEY `id` (`id`)\n" +
                         ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
                         + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
-                mainSharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
+                mainSharding.setFunction(ShardingFunction.builder().properties(JsonUtil.from("{\n" +
                         "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                         "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${tableIndex}\",\n" +
                         "\t\t\t\t\t\"tableNum\":\"2\",\n" +
@@ -118,7 +118,7 @@ public abstract class DrdsTest implements MycatTest {
                         "  KEY `id` (`id`)\n" +
                         ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
                         + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
-                er.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
+                er.setFunction(ShardingFunction.builder().properties(JsonUtil.from("{\n" +
                         "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                         "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/er_${tableIndex}\",\n" +
                         "\t\t\t\t\t\"tableNum\":\"2\",\n" +
@@ -140,7 +140,7 @@ public abstract class DrdsTest implements MycatTest {
                         "  KEY `id` (`id`)\n" +
                         ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
                         + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
-                other_sharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
+                other_sharding.setFunction(ShardingFunction.builder().properties(JsonUtil.from("{\n" +
                         "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                         "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/other_sharding_${tableIndex}\",\n" +
                         "\t\t\t\t\t\"tableNum\":\"2\",\n" +
@@ -182,7 +182,7 @@ public abstract class DrdsTest implements MycatTest {
                             "  KEY `id` (`id`)\n" +
                             ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
                             + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
-                    seqMainSharding.setFunction(ShardingFuntion.builder().properties(JsonUtil.from("{\n" +
+                    seqMainSharding.setFunction(ShardingFunction.builder().properties(JsonUtil.from("{\n" +
                             "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                             "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${index}\",\n" +
                             "\t\t\t\t\t\"tableNum\":\"2\",\n" +

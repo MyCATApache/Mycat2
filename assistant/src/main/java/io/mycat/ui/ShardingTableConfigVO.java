@@ -1,16 +1,11 @@
 package io.mycat.ui;
 
-import com.sun.javafx.scene.SceneUtils;
 import io.mycat.*;
-import io.mycat.calcite.table.ShardingIndexTable;
-import io.mycat.calcite.table.ShardingTable;
 import io.mycat.config.ShardingBackEndTableInfoConfig;
-import io.mycat.config.ShardingFuntion;
+import io.mycat.config.ShardingFunction;
 import io.mycat.config.ShardingTableConfig;
+import io.mycat.util.StringUtil;
 import io.vertx.core.json.Json;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -23,16 +18,16 @@ import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import lombok.Data;
-import org.apache.calcite.avatica.Meta;
+import lombok.SneakyThrows;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static io.mycat.ui.Controller.initPartitionsView;
 
@@ -63,6 +58,10 @@ public class ShardingTableConfigVO implements VO {
 
     public ShardingTableConfig shardingTableConfig;
 
+    public File testFile;
+
+    public  IndexShardingTableVO currentIndexShardingTableController;
+
     public ShardingTableConfigVO() {
 
     }
@@ -73,11 +72,13 @@ public class ShardingTableConfigVO implements VO {
     }
 
     public void save() {
-        System.out.println();
         String schemaName = this.schemaName.getText();
         String tableName = this.tableName.getText();
+        Objects.requireNonNull(schemaName,"schemaName must not be null");
+        Objects.requireNonNull(tableName,"tableName must not be null");
         ShardingTableConfig shardingTableConfig = getShardingTableConfig();
-        controller.save(schemaName, tableName, shardingTableConfig);
+        controller.save(schemaName, tableName, validate(shardingTableConfig));
+        controller.flashSchemas();
     }
 
     public void flash() {
@@ -90,7 +91,7 @@ public class ShardingTableConfigVO implements VO {
         indexTableList.getItems().clear();
         for (Map.Entry<String, ShardingTableConfig> e : shardingTableConfig.getShardingIndexTables().entrySet()) {
 //            ShardingTableConfig indexTable = e.getValue();
-            indexTableList.getItems().add(e.getKey().replace(getTableName().getText()+"_", ""));
+            indexTableList.getItems().add(e.getKey().replace(getTableName().getText() + "_", ""));
 //            IndexShardingTableVO indexShardingTableVO = new IndexShardingTableVO();
 //            indexShardingTableVO.getSchemaName().setText(getSchemaName().getText());
 //            indexShardingTableVO.getTableName().setText(e.getKey());
@@ -121,7 +122,7 @@ public class ShardingTableConfigVO implements VO {
             partitions.add(Arrays.asList(targetName, schema, table, dbIndex, tableIndex, index));
         }
 
-        ShardingFuntion shardingFuntion = Json.decodeValue(shardingInfoText, ShardingFuntion.class);
+        ShardingFunction shardingFuntion = Json.decodeValue(shardingInfoText, ShardingFunction.class);
 
         shardingTableConfig.setCreateTableSQL(sql);
         shardingTableConfig.setFunction(shardingFuntion);
@@ -129,35 +130,57 @@ public class ShardingTableConfigVO implements VO {
         return shardingTableConfig;
     }
 
-    public static void inputPartitions(TableView<PartitionEntry> view) {
+    public static void inputPartitionsWithTestFile(TableView<PartitionEntry> view, File testFile) {
         try {
-            FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("请选择分区csv文件");
-            Stage stage = new Stage();
-            File file = fileChooser.showOpenDialog(stage);
-
-            List<Partition> partitions = new LinkedList<>();
-            try (CSVParser parser = CSVParser.parse(file, StandardCharsets.UTF_8, CSVFormat.RFC4180);) {
-                List<String> headerNames = parser.getHeaderNames();
-                int size = 6;
-                for (CSVRecord csvRecord : parser) {
-                    partitions.add(new IndexBackendTableInfo(
-                            csvRecord.get(size - 6),
-                            csvRecord.get(size - 5),
-                            csvRecord.get(size - 4),
-                            Integer.parseInt(csvRecord.get(size - 3)),
-                            Integer.parseInt(csvRecord.get(size - 2)),
-                            Integer.parseInt(csvRecord.get(size - 1))));
-                }
-                initPartitionsView(partitions, view);
+            File file;
+            if (testFile == null) {
+                FileChooser fileChooser = new FileChooser();
+                fileChooser.setTitle("请选择分区csv文件");
+                Stage stage = new Stage();
+                file = fileChooser.showOpenDialog(stage);
+            } else {
+                file = testFile;
+                testFile = null;
             }
+
+            inputPartitions(view, file);
         } catch (Exception e) {
-            e.printStackTrace();
+            MainPaneVO.popAlter(e);
         }
     }
 
+    public void inputPartitions(File file) throws IOException {
+        inputPartitions(getPartitionsView(), file);
+    }
+
+    private static void inputPartitions(TableView<PartitionEntry> view, File file) throws IOException {
+        List<Partition> partitions = new LinkedList<>();
+        try (CSVParser parser = CSVParser.parse(file, StandardCharsets.UTF_8, CSVFormat.RFC4180);) {
+            List<String> headerNames = parser.getHeaderNames();
+            int size = 6;
+            for (CSVRecord csvRecord : parser) {
+                partitions.add(new IndexBackendTableInfo(
+                        csvRecord.get(size - 6),
+                        csvRecord.get(size - 5),
+                        csvRecord.get(size - 4),
+                        parseInt(csvRecord.get(size - 3)),
+                        parseInt(csvRecord.get(size - 2)),
+                        parseInt(csvRecord.get(size - 1))));
+            }
+            initPartitionsView(partitions, view);
+        }
+    }
+
+    static int parseInt(String text) {
+        if (StringUtil.isEmpty(text)) {
+            return 0;
+        }
+        return Integer.parseInt(text);
+    }
+
+    @SneakyThrows
     public void inputPartitions(ActionEvent actionEvent) {
-        inputPartitions(getPartitionsView());
+        inputPartitionsWithTestFile(getPartitionsView(), testFile);
     }
 
 //    public void flashIndexTableList() {
@@ -231,21 +254,21 @@ public class ShardingTableConfigVO implements VO {
         try {
             FXMLLoader loader = UIMain.loader("/indexShardingTable.fxml");
             Parent parent = loader.load();
-            IndexShardingTableVO controller = loader.getController();
-            controller.setController(this.controller);
-            controller.getSchemaName().setText(getSchemaName().getText());
-            controller.getTableName().setText(getTableName().getText());
-            controller.setShardingTableConfigVO(this);
+            this. currentIndexShardingTableController = loader.getController();
+            currentIndexShardingTableController.setController(this.controller);
+            currentIndexShardingTableController.getLogicalSchemaName().setText(getSchemaName().getText());
+            currentIndexShardingTableController.getLogicalTableName().setText(Objects.requireNonNull(getTableName().getText()));
+            currentIndexShardingTableController.setShardingTableConfigVO(this);
 
             Stage stage = new Stage();
-            Scene scene = SceneUtil.createScene(parent, 600, 400);
+            Scene scene = SceneUtil.createScene(()->new Scene(parent));
             stage.setScene(scene);
-            controller.setStage(stage);
+            currentIndexShardingTableController.setStage(stage);
             stage.showAndWait();
             SceneUtil.close(scene);
             flash();
         } catch (Exception e) {
-            e.printStackTrace();
+            MainPaneVO.popAlter(e);
         }
     }
 

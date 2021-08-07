@@ -10,6 +10,7 @@ import lombok.EqualsAndHashCode;
 @Builder
 @EqualsAndHashCode
 public class GlobalBackEndTableInfoConfig {
+    @javax.validation.constraints.NotNull
     private String targetName;
 
     public GlobalBackEndTableInfoConfig() {

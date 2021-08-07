@@ -7,6 +7,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLType;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -37,6 +38,7 @@ public class MainPaneVO {
     public TextArea output;
     public Label statusMessage;
     public Button flashRootButton;
+    public   Button runButton;
     public Map<String, Controller> tabObjectMap = new HashMap<>();
 
     public void init() {
@@ -65,7 +67,7 @@ public class MainPaneVO {
                         public void handle(ActionEvent event) {
 
                             try {
-                                String name = CheckUtil.isEmpty(newConnectionVO.getName().getText(), "name 不能为空");
+                                String name = CheckUtil.isEmpty(newConnectionVO.getNewConnectionName().getText(), "name 不能为空");
                                 String url = CheckUtil.isEmpty(newConnectionVO.getUrl().getText(), "url 不能为空");
                                 String user = CheckUtil.isEmpty(newConnectionVO.getUser().getText(), "user 不能为空");
                                 String password = CheckUtil.isEmpty(newConnectionVO.getPassword().getText(), "password 不能为空");
@@ -91,7 +93,6 @@ public class MainPaneVO {
                                 dialog.close();
                             } catch (Exception e) {
                                 popAlter(e);
-                                e.printStackTrace();
                             }
 
                         }
@@ -99,7 +100,7 @@ public class MainPaneVO {
                     dialog.showAndWait();
                     SceneUtil.close(dialogScene);
                 } catch (Exception exception) {
-                    exception.printStackTrace();
+                    MainPaneVO.popAlter(exception);
                 }
             }
         });
@@ -124,7 +125,7 @@ public class MainPaneVO {
                         @Override
                         public void handle(ActionEvent event) {
                             try {
-                                String name = CheckUtil.isEmpty(newConnectionVO.getName().getText(), "name 不能为空");
+                                String name = CheckUtil.isEmpty(newConnectionVO.getLocalConnectionName().getText(), "name 不能为空");
 //                                String filePath = CheckUtil.isEmpty(newConnectionVO.getFilePath().getText(), "filePath不能为空");
                                 HashMap<String, String> map = new HashMap<>();
 //                                map.put("filePath", filePath);
@@ -139,13 +140,18 @@ public class MainPaneVO {
                                 controller.getMain().prefHeightProperty().bind(tabPane.heightProperty());//菜单自适应
                                 tabObjectMap.put(name, controller);
                                 Tab tab = new Tab(name, parent);
+                                tab.setOnClosed(new EventHandler<Event>() {
+                                    @Override
+                                    public void handle(Event event) {
+                                        controller.getInfoProvider().close();
+                                    }
+                                });
                                 tabPane.getTabs().add(tab);
                                 SingleSelectionModel selectionModel = tabPane.getSelectionModel();
                                 selectionModel.select(tab);
                                 dialog.close();
                             } catch (Exception e) {
                                 popAlter(e);
-                                e.printStackTrace();
                             }
 
                         }
@@ -153,14 +159,16 @@ public class MainPaneVO {
                     dialog.showAndWait();
                     SceneUtil.close(dialogScene);
                 } catch (Exception exception) {
-                    exception.printStackTrace();
+                    MainPaneVO.popAlter(exception);
                 }
             }
         });
         fileMenu.getItems().addAll(newConnection, newTestConnection);
 
         Menu helpMenu = new Menu("帮助");
+        helpMenu.setId("help");
         MenuItem aboutMenu = new MenuItem("关于");
+        aboutMenu.setId("about");
         aboutMenu.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
@@ -169,6 +177,10 @@ public class MainPaneVO {
                 VBox dialogVbox = new VBox(20);
                 dialogVbox.getChildren().add(new TextField("https://github.com/MyCATApache/Mycat2 "));
                 dialogVbox.getChildren().add(new Label("author:chenjunwen"));
+                Button button = new Button("关闭");
+                button.setId("closeAbout");
+                button.setOnAction(event1 -> dialog.close());
+                dialogVbox.getChildren().add(button);
                 Scene dialogScene = SceneUtil.createScene(dialogVbox, 300, 200);
                 dialog.setScene(dialogScene);
                 dialog.setTitle("关于");
@@ -180,14 +192,12 @@ public class MainPaneVO {
 
         menu.getMenus().addAll(fileMenu, helpMenu);
 
-        Button runBotton = new Button("执行");
-
         AtomicReference<Tab> selectTab = new AtomicReference<>();
         tabPane.getSelectionModel().selectedItemProperty().addListener((obs, ov, nv) -> {
             selectTab.set(nv);
         });
 
-        runBotton.setOnAction(new EventHandler<ActionEvent>() {
+        runButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 output.clear();
@@ -234,14 +244,13 @@ public class MainPaneVO {
                             explainText.appendLine(Table.read().db(resultSet).print(200));
                         } catch (Exception e) {
                             outputText.appendLine(e.getLocalizedMessage());
-                            e.printStackTrace();
+                            MainPaneVO.popAlter(e);
                         }
                     }
 
                 }
             }
         });
-        runMenu.getChildren().addAll(runBotton);
         flashRootButton.setOnAction(event -> {
             Optional.ofNullable(selectTab.get()).map(tab -> tab.getText()).map(text -> {
                 return tabObjectMap.get(text);
@@ -252,7 +261,8 @@ public class MainPaneVO {
 
     }
 
-    private void popAlter(Exception e) {
+    public static void popAlter(Exception e) {
+        e.printStackTrace();
         Stage stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.setTitle("警告");

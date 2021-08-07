@@ -22,6 +22,7 @@ import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
@@ -50,7 +51,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         super(dataContext, context, drdsSqlWithParams);
     }
 
-    Future<SqlConnection> getConnection(String key) {
+    synchronized Future<SqlConnection>  getConnection(String key) {
         XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
         if (context.isInTransaction()) {
             return transactionConnnectionMap
@@ -62,7 +63,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         return connection;
     }
 
-    void recycleConnection(String key, Future<SqlConnection> connectionFuture) {
+    synchronized void recycleConnection(String key, Future<SqlConnection> connectionFuture) {
         XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
         if (context.isInTransaction()) {
             transactionConnnectionMap.put(key, connectionFuture);
@@ -70,7 +71,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         }
         connectionFuture = connectionFuture.flatMap(c -> c.close().mapEmpty());
         transactionSession.addCloseFuture(connectionFuture.mapEmpty());
-        connnectionFutureCollection.add(connectionFuture);
+        connnectionFutureCollection.add(Objects.requireNonNull(connectionFuture));
     }
 
     @NotNull
@@ -114,7 +115,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         return observables;
     }
 
-    public CompositeFuture endFuture() {
+    public synchronized CompositeFuture endFuture() {
         return CompositeFuture.join((List) ImmutableList.builder()
                 .addAll(transactionConnnectionMap.values())
                 .addAll(connnectionFutureCollection).build());
@@ -181,7 +182,8 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
 
         @Override
         public Observable<Object[]> getObservable(String node, Function1 function1, Comparator comparator, int offset, int fetch) {
-            List<Observable<Object[]>> observableList = getObservableList(node);
+            List<Observable<Object[]>> observableList = getObservableList(node).stream().map(i -> i.subscribeOn(Schedulers.computation())).collect(Collectors.toList());
+
             Iterable<Flowable<Object[]>> collect = observableList.stream().map(s -> Flowable.fromObservable(s, BackpressureStrategy.BUFFER)).collect(Collectors.toList());
             Flowable<Object[]> flowable = Flowables.orderedMerge(collect, (o1, o2) -> {
                 Object left = function1.apply(o1);
@@ -202,7 +204,8 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
 
     @Override
     public Observable<Object[]> getObservable(String node) {
-        return Observable.merge(getObservableList(node));
+        return Observable.concatEager(getObservableList(node).stream().map(i -> i.subscribeOn(Schedulers.computation())).collect(Collectors.toList()));
+
     }
 
     public static List<PartitionGroup> getSqlMap(Map<RexNode, RexNode> constantMap,
@@ -310,7 +313,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                 List<Partition> partitions = stringListEntry.getValue();
                 if (partitions.size() > index) {
                     map.put(stringListEntry.getKey(), partitions.get(index));
-                }else {
+                } else {
                     break;
                 }
             }

@@ -12,7 +12,7 @@ import java.util.List;
 @Data
 public class SharingFuntionRootConfig {
 
-    List<ShardingFuntion> functions = new ArrayList<>();
+    List<ShardingFunction> functions = new ArrayList<>();
 
 
 }
