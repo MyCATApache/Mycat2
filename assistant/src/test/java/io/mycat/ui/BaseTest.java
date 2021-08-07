@@ -16,9 +16,11 @@ import javafx.stage.Stage;
 import lombok.SneakyThrows;
 import org.apache.groovy.util.Maps;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.testfx.api.FxRobot;
 import org.testfx.framework.junit.ApplicationTest;
 import org.testfx.robot.Motion;
+import org.testfx.util.WaitForAsyncUtils;
 
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
@@ -37,7 +39,10 @@ public class BaseTest extends ApplicationTest {
 
     private UIMain uiMain;
     private Stage stage;
-
+    @BeforeClass
+    public static void config() throws Exception {
+        System.getProperties().put("testfx.robot", "glass");
+    }
     /**
      * Will be called with {@code @Before} semantics, i. e. before each test method.
      */
@@ -51,7 +56,7 @@ public class BaseTest extends ApplicationTest {
 
     @org.junit.Test
     public void testCreateSingleTable() {
-        FxRobot robot = new FxRobot();
+        FxRobot robot = this;
         Set<Scene> sceneSet = SceneUtil.sceneSet;
         testTcpConnectionLogin();
         lookupNode("#objectTree").ifPresent(new Consumer<Node>() {
@@ -182,7 +187,7 @@ public class BaseTest extends ApplicationTest {
 
     @org.junit.Test
     public void testCreateGlobalTable() {
-        FxRobot robot = new FxRobot();
+        FxRobot robot = this;
         Set<Scene> sceneSet = SceneUtil.sceneSet;
         testTcpConnectionLogin();
         lookupNode("#objectTree").ifPresent(new Consumer<Node>() {
@@ -324,7 +329,7 @@ public class BaseTest extends ApplicationTest {
 
     @org.junit.Test
     public void testCreateDatasource() {
-        FxRobot robot = new FxRobot();
+        FxRobot robot = this;
         Set<Scene> sceneSet = SceneUtil.sceneSet;
         testTcpConnectionLogin();
         lookupNode("#objectTree").ifPresent(new Consumer<Node>() {
@@ -335,6 +340,7 @@ public class BaseTest extends ApplicationTest {
                     schemaObjectCell.getTreeItem().setExpanded(true);
                     robot.interrupt();
                 });
+                robot.interrupt();
                 rightClickOn(lookupNode("#datasources").get());
                 robot.moveTo("#addDatasource", Motion.DEFAULT);
                 robot.clickOn("#addDatasource");
@@ -393,7 +399,7 @@ public class BaseTest extends ApplicationTest {
 
     @org.junit.Test
     public void testCreateCluster() {
-        FxRobot robot = new FxRobot();
+        FxRobot robot = this;
         Set<Scene> sceneSet = SceneUtil.sceneSet;
         testTcpConnectionLogin();
         lookupNode("#objectTree").ifPresent(new Consumer<Node>() {
@@ -454,7 +460,7 @@ public class BaseTest extends ApplicationTest {
 
     @org.junit.Test
     public void testExecuteSQL() {
-        FxRobot robot = new FxRobot();
+        FxRobot robot = this;
         Set<Scene> sceneSet = SceneUtil.sceneSet;
         testTcpConnectionLogin();
         lookupTextNode("#inputSql").ifPresent(c -> c.setText("select 1"));
@@ -470,18 +476,18 @@ public class BaseTest extends ApplicationTest {
 
     @org.junit.Test
     public void testFlashButton() {
-        FxRobot robot = new FxRobot();
+        FxRobot robot = this;
         Set<Scene> sceneSet = SceneUtil.sceneSet;
         testTcpConnectionLogin();
-
-        clickOn(lookupNode("#flashRootButton").get());
+        interrupt();
+        lookupNode("#flashRootButton").ifPresent(c->clickOn(c));
         robot.interrupt();
         System.out.println(sceneSet);
     }
 
     @org.junit.Test
     public void testCreateSchema() {
-        FxRobot robot = new FxRobot();
+        FxRobot robot = this;
         Set<Scene> sceneSet = SceneUtil.sceneSet;
         testTcpConnectionLogin();
         lookupNode("#objectTree").ifPresent(new Consumer<Node>() {
@@ -546,10 +552,7 @@ public class BaseTest extends ApplicationTest {
         Set<Scene> sceneSet = SceneUtil.sceneSet;
         clickOn("#file");
         clickOn("#newTCPConnection");
-        lookupTextNode("#name").ifPresent(c -> c.setText(name));
-        lookupTextNode("#newTCPConnection").ifPresent(text -> {
-            text.setText("n");
-        });
+        lookupTextNode("#name").get().setText(name);
         lookupTextNode("#url").ifPresent(text -> {
             text.setText("jdbc:mysql://localhost:8066/mysql?characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true");
         });
@@ -568,11 +571,19 @@ public class BaseTest extends ApplicationTest {
         });
     }
 
+    @Override
+    public FxRobot interrupt() {
+        for (int i = 0; i < 8; i++) {
+            WaitForAsyncUtils.waitForFxEvents();
+
+        }
+        return super.interrupt();
+    }
 
     @org.junit.Test
     @SneakyThrows
     public void testCreateShardingTable() {
-        FxRobot robot = new FxRobot();
+        FxRobot robot = this;
         Set<Scene> sceneSet = SceneUtil.sceneSet;
         testTcpConnectionLogin();
         lookupNode("#objectTree").ifPresent(new Consumer<Node>() {

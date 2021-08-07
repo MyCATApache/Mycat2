@@ -18,6 +18,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import lombok.Data;
+import org.testfx.util.WaitForAsyncUtils;
 import tech.tablesaw.api.Table;
 
 import java.sql.Connection;
@@ -66,6 +67,7 @@ public class MainPaneVO {
                         public void handle(ActionEvent event) {
 
                             try {
+
                                 String name = CheckUtil.isEmpty(newConnectionVO.getName().getText(), "name 不能为空");
                                 String url = CheckUtil.isEmpty(newConnectionVO.getUrl().getText(), "url 不能为空");
                                 String user = CheckUtil.isEmpty(newConnectionVO.getUser().getText(), "user 不能为空");
