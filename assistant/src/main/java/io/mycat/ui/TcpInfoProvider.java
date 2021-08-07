@@ -11,6 +11,7 @@ import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TcpInfoProvider implements InfoProvider {
@@ -31,6 +32,7 @@ public class TcpInfoProvider implements InfoProvider {
         druidDataSource.setUrl(url);
         druidDataSource.setUsername(user);
         druidDataSource.setPassword(password);
+        druidDataSource.setTimeBetweenConnectErrorMillis(TimeUnit.SECONDS.toMillis(3));
     }
 
     public TcpInfoProvider(Map<String, String> args) {
