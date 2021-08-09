@@ -102,6 +102,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
         } else {
             schemas.add(schemaConfig = new LogicSchemaConfig());
             schemaConfig.setSchemaName(schemaName);
+            schemaConfig.setTargetName(targetName);
         }
         updateType = UpdateType.ROUTER;
     }

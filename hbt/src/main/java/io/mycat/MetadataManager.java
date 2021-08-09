@@ -203,7 +203,7 @@ public class MetadataManager implements MysqlVariableService {
         for (Map.Entry<String, LogicSchemaConfig> entry : schemaConfigMap.entrySet()) {
             String orignalSchemaName = entry.getKey();
             LogicSchemaConfig value = entry.getValue();
-            String targetName = value.getTargetName();
+            String targetName = Optional.ofNullable(value.getTargetName()).orElse(getPrototype());
             final String schemaName = orignalSchemaName;
             addSchema(schemaName, targetName);
             if (targetName != null) {
