@@ -11,10 +11,11 @@ import java.util.Map;
 @EqualsAndHashCode
 public class MycatServerConfig {
     LoadBalance loadBalance = new LoadBalance();
-    ServerConfig server = new io.mycat.config.ServerConfig ();
+    ServerConfig server = new io.mycat.config.ServerConfig();
     String mode = "local";
     String datasourceProvider = null;
     Map<String, Object> properties = new HashMap<>();
+    MonitorConfig monitor = new MonitorConfig();
 
     public static void main(String[] args) {
         MycatServerConfig mycatServerConfig = new MycatServerConfig();
