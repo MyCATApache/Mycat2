@@ -130,8 +130,8 @@ public class AutoFunctionFactory {
                         tableHandler.getColumnByName(shardingKey2)
                 );
 
-                if (column1.getType() == column2.getType()) {
-                    throw new IllegalArgumentException();
+                if (!column1.getType().equals(column2.getType())) {
+                    throw new IllegalArgumentException(column1+" and "+column2+" type is different");
                 }
                 int n;
                 if (methodInvokeExpr.getArguments().size() > 2) {

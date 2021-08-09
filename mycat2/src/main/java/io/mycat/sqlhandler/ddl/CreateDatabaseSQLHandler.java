@@ -44,12 +44,13 @@ public class CreateDatabaseSQLHandler extends AbstractSQLHandler<SQLCreateDataba
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
         Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
        return lockFuture.flatMap(lock -> {
+           MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
            SQLCreateDatabaseStatement ast = request.getAst();
            boolean ifNotExists = ast.isIfNotExists();
            String tableName = SQLUtils.normalize(ast.getName().getSimpleName());
            Map<String, Object> attributes = ast.getAttributes();
            String json = (String) attributes.get(SqlHints.AFTER_COMMENT);
-           String targetName = JsonUtil.fromMap(json, "targetName").orElse(null);
+           String targetName = JsonUtil.fromMap(json, "targetName").orElse(metadataManager.getPrototype());
            try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                ops.addSchema(tableName, targetName);
                ops.commit();
