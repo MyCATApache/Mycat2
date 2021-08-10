@@ -55,6 +55,14 @@ public class LocalRules {
             LocalRules.CalcViewRule.DEFAULT_CONFIG.toRule()
     );
 
+    public static RelNode normalize(RelNode relNode){
+//        ToLogicalConverter toLogicalConverter = getToLogicalConverter(relNode);
+//        RelNode res = relNode.accept(toLogicalConverter);
+//        RelOptCluster cluster = res.getCluster();
+//        return cluster.getPlanner().changeTraits(res, cluster.traitSetOf(Convention.NONE));
+        return relNode;
+    }
+
     public static class ToLocalTableScanRule extends ConverterRule {
 
 
@@ -108,8 +116,7 @@ public class LocalRules {
             SQLRBORewriter.view(view, LocalFilter.create(filter, view)).ifPresent(new Consumer<RelNode>() {
                 @Override
                 public void accept(RelNode res) {
-                    ToLogicalConverter toLogicalConverter = getToLogicalConverter(res);
-                    call.transformTo(res.accept(toLogicalConverter));
+                    call.transformTo(normalize(res));
                 }
             });
         }
@@ -148,15 +155,13 @@ public class LocalRules {
                     switch (view.getDistribution().type()) {
                         case BROADCAST:
                         case PHY: {
-                            ToLogicalConverter toLogicalConverter = getToLogicalConverter(res);
-                            call.transformTo(res.accept(toLogicalConverter));
+                            call.transformTo(normalize(res));
                             break;
                         }
                         case SHARDING: {
                             ShardingTable shardingTable = view.getDistribution().getShardingTables().get(0);
                             if (shardingTable.getIndexTables().isEmpty()) {
-                                ToLogicalConverter toLogicalConverter = getToLogicalConverter(res);
-                                call.transformTo(res.accept(toLogicalConverter));
+                                call.transformTo(normalize(res));
                                 return;
                             } else {
                                 RelNode relNode = view.getRelNode();
@@ -168,7 +173,7 @@ public class LocalRules {
                                         List<RelNode> relNodes = MycatView.produceIndexViews(tableScan, filter.getCondition(), tableScan.identity(), view.getRowType(),
                                                 indexName);
                                         if (!relNodes.isEmpty()) {
-                                            call.transformTo(relNodes.get(0));
+                                            call.transformTo(normalize(relNodes.get(0)));
                                         }
                                         return;
                                     }
@@ -213,8 +218,7 @@ public class LocalRules {
             Project project = call.rel(0);
             MycatView view = call.rel(1);
             SQLRBORewriter.view(view, LocalProject.create(project, view)).ifPresent(res -> {
-                ToLogicalConverter toLogicalConverter = getToLogicalConverter(res);
-                call.transformTo(res.accept(toLogicalConverter));
+                call.transformTo(normalize(res));
             });
         }
 
@@ -250,8 +254,7 @@ public class LocalRules {
             SQLRBORewriter.bottomJoin(left, right, LocalJoin.create(join, left, right)).ifPresent(new Consumer<RelNode>() {
                 @Override
                 public void accept(RelNode rel) {
-                    ToLogicalConverter toLogicalConverter = getToLogicalConverter(rel);
-                    call.transformTo(rel.accept(toLogicalConverter));
+                    call.transformTo(normalize(rel));
                 }
             });
         }
@@ -286,8 +289,7 @@ public class LocalRules {
             SQLRBORewriter.aggregate(input, LocalAggregate.create(aggregate, input)).ifPresent(new Consumer<RelNode>() {
                 @Override
                 public void accept(RelNode res) {
-                    ToLogicalConverter toLogicalConverter = getToLogicalConverter(res);
-                    call.transformTo(res.accept(toLogicalConverter));
+                    call.transformTo(normalize(res));
                 }
             });
         }
@@ -323,8 +325,7 @@ public class LocalRules {
             SQLRBORewriter.sort(input, LocalSort.create(sort, input)).ifPresent(new Consumer<RelNode>() {
                 @Override
                 public void accept(RelNode res) {
-                    ToLogicalConverter toLogicalConverter = getToLogicalConverter(res);
-                    call.transformTo(res.accept(toLogicalConverter));
+                    call.transformTo(normalize(res));
                 }
             });
         }
@@ -357,8 +358,7 @@ public class LocalRules {
             Calc calc = call.rel(0);
             MycatView input = call.rel(1);
             SQLRBORewriter.view(input, LocalCalc.create(calc, input)).ifPresent(res -> {
-                ToLogicalConverter toLogicalConverter = getToLogicalConverter(res);
-                call.transformTo(res.accept(toLogicalConverter));
+                call.transformTo(normalize(res));
             });
         }
 
