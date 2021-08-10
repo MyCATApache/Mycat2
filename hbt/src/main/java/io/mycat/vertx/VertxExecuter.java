@@ -391,6 +391,13 @@ public class VertxExecuter {
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         List<SQLName> columns = (List) statement.getColumns();
+        if (columns.isEmpty()){
+            if(statement.getValues().getValues().size() == table.getColumns().size()){
+                for (SimpleColumnInfo column : table.getColumns()) {
+                    statement.addColumn(new SQLIdentifierExpr("`"+column.getColumnName()+"`"));
+                }
+            }
+        }
         boolean fillAutoIncrement = needFillAutoIncrement(table, columns);
         if (fillAutoIncrement) {
             columns.add(new SQLIdentifierExpr(autoIncrementColumn.getColumnName()));

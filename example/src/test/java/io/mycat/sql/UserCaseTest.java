@@ -795,22 +795,22 @@ public class UserCaseTest implements MycatTest {
     }
 
     /**
+     * CreateTableHint targetname
      *
-     *CreateTableHint targetname
      * @throws Exception
      */
     @Test
     public void case13() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
             execute(mycatConnection, RESET_CONFIG);
-            JdbcUtils.execute(mycatConnection,CreateDataSourceHint.create("ds0",DB2));
+            JdbcUtils.execute(mycatConnection, CreateDataSourceHint.create("ds0", DB2));
             JdbcUtils.execute(mycatConnection, CreateSchemaHint.create("mysql",
                     "prototype"));
             JdbcUtils.execute(mycatConnection, CreateTableHint.createNormal("mysql",
-                    "testblob","CREATE TABLE `testblob` (\n" +
-                    "  `id` bigint(20) DEFAULT NULL,\n" +
-                    "  `data` blob\n" +
-                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4","ds0"));
+                    "testblob", "CREATE TABLE `testblob` (\n" +
+                            "  `id` bigint(20) DEFAULT NULL,\n" +
+                            "  `data` blob\n" +
+                            ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", "ds0"));
 
             String explain = explain(mycatConnection, "select * from mysql.testblob");
             Assert.assertTrue(explain.contains("ds0"));
@@ -883,8 +883,8 @@ public class UserCaseTest implements MycatTest {
                     "\t\t\t\t\"targetNames\":\"prototype\"\n" +
                     "\t\t\t}\n" +
                     "\t\t}\n", ShardingTableConfig.class);
-            JdbcUtils.execute(mycatConnection,CreateTableHint.createSharding("mysql","cm_component_value",shardingTableConfig));
-            JdbcUtils.execute(mycatConnection,"use mysql");
+            JdbcUtils.execute(mycatConnection, CreateTableHint.createSharding("mysql", "cm_component_value", shardingTableConfig));
+            JdbcUtils.execute(mycatConnection, "use mysql");
             List<Map<String, Object>> maps = JdbcUtils.executeQuery(mycatConnection, "SELECT\n" +
                     "componentv0_.c_id AS c_id1_3_,\n" +
                     "componentv0_.alarm_num AS alarm_nu2_3_,\n" +
@@ -934,4 +934,34 @@ public class UserCaseTest implements MycatTest {
         }
     }
 
+    @Test
+    public void case565() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
+
+            execute(mycatConnection, RESET_CONFIG);
+            execute(mycatConnection, "  CREATE DATABASE db1;");
+            execute(mycatConnection, " /*+ mycat:createTable{\n" +
+                    "  \"schemaName\":\"db1\",\n" +
+                    "  \"shadingTable\":{\n" +
+                    "    \"createTableSQL\":\"CREATE TABLE db1.`sharding` (\\n  `id` bigint NOT NULL AUTO_INCREMENT,\\n  `user_id` varchar(100) DEFAULT NULL,\\n  `create_time` date DEFAULT NULL,\\n  `fee` decimal(10,0) DEFAULT NULL,\\n  `days` int DEFAULT NULL,\\n  `blob` longblob,\\n  PRIMARY KEY (`id`),\\n  KEY `id` (`id`)\\n) ENGINE=InnoDB  DEFAULT CHARSET=utf8\",\n" +
+                    "    \"function\":{\n" +
+                    "      \"clazz\":\"io.mycat.router.mycat1xfunction.PartitionByHotDate\",\n" +
+                    "      \"properties\":{\n" +
+                    "        \"dateFormat\":\"yyyy-MM-dd\",\n" +
+                    "        \"lastTime\":30,\n" +
+                    "        \"partionDay\":30,\n" +
+                    "        \"columnName\":\"create_time\"\n" +
+                    "      }\n" +
+                    "    },\n" +
+                    "    \"partition\":{\n" +
+                    "      \"schemaNames\":\"db1\",\n" +
+                    "      \"tableNames\":\"sharding_$0-2\",\n" +
+                    "      \"targetNames\":\"prototype\"\n" +
+                    "    }\n" +
+                    "  },\n" +
+                    "  \"tableName\":\"sharding\"\n" +
+                    "} */;");
+            execute(mycatConnection, "           INSERT INTO db1.sharding VALUES (null, 'test1', '2021-08-09', 2, 3, NULL);");
+        }
+    }
 }

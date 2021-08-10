@@ -50,7 +50,7 @@ public class CreateDatabaseSQLHandler extends AbstractSQLHandler<SQLCreateDataba
            String tableName = SQLUtils.normalize(ast.getName().getSimpleName());
            Map<String, Object> attributes = ast.getAttributes();
            String json = (String) attributes.get(SqlHints.AFTER_COMMENT);
-           String targetName = JsonUtil.fromMap(json, "targetName").orElse(metadataManager.getPrototype());
+           String targetName = JsonUtil.fromMap(json, "targetName").orElse(null);
            try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                ops.addSchema(tableName, targetName);
                ops.commit();
