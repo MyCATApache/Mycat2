@@ -110,6 +110,9 @@ public class CreateGsiTest implements MycatTest {
             Assert.assertEquals(20, _count1);
 
             List<Map<String, Object>> maps2 = executeQuery(connection, "select count(1) from db1.travelrecord where user_id = 1");
+            List<Map<String, Object>> maps3 = executeQuery(connection, "select t.id from db1.travelrecord t  LEFT JOIN db1.company c on t.user_id  = c.id limit 10");
+            Assert.assertEquals(1, maps2.size());
+            Assert.assertEquals(10, maps3.size());
 
 
             testInsertException(connection, TranscationType.XA);
