@@ -284,7 +284,8 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
                     RexNode rexNode = operands.get(1);
                     RexCall rexCall = (RexCall) rexNode;
                     LinkedList<RexNode> accept = MycatTableLookupValues.apply(true, argsList, rexCall.getOperands());
-                    return MycatCalciteSupport.RexBuilder.makeIn(operands.get(0), accept);
+                    RexNode rexNode1 = MycatCalciteSupport.RexBuilder.makeIn(operands.get(0), accept);
+                    return RexUtil.expandSearch(MycatCalciteSupport.RexBuilder,null,rexNode1);
                 }
                 return call;
             }

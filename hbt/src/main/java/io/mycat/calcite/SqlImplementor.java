@@ -38,9 +38,6 @@ import org.apache.calcite.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.util.SqlVisitor;
-import org.apache.calcite.sql.validate.SqlValidator;
-import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.*;
 
@@ -627,6 +624,9 @@ public abstract class SqlImplementor {
         public SqlNode toSql(RexProgram program, RexNode rex) {
             final RexSubQuery subQuery;
             final SqlNode sqlSubQuery;
+            if (rex.getKind() == SqlKind.SEARCH) {
+                rex = RexUtil.expandSearch(MycatCalciteSupport.RexBuilder, program, rex);
+            }
             switch (rex.getKind()) {
                 case LOCAL_REF:
                     final int index = ((RexLocalRef) rex).getIndex();
@@ -684,7 +684,15 @@ public abstract class SqlImplementor {
                         final Enum symbol = (Enum) literal.getValue();
                         return SqlLiteral.createSymbol(symbol, POS);
                     }
-                    switch (literal.getTypeName().getFamily()) {
+                    if (literal.getTypeName() == SqlTypeName.ROW) {
+                        List<RexNode> list = (List) literal.getValue();
+                        ImmutableList.Builder<SqlNode> builder = ImmutableList.builder();
+                        for (RexNode o : list) {
+                            builder.add(toSql(program, o));
+                        }
+                        return SqlStdOperatorTable.ROW.createCall(SqlParserPos.ZERO, builder.build());
+                    }
+                    switch (Objects.requireNonNull(Objects.requireNonNull(Objects.requireNonNull(literal).getTypeName()).getFamily())) {
                         case CHARACTER:
                             return SqlLiteral.createCharString((String) literal.getValue2(), POS);
                         case NUMERIC:
@@ -714,8 +722,8 @@ public abstract class SqlImplementor {
                                     literal.getValueAs(TimestampString.class),
                                     literal.getType().getPrecision(), POS);
                         case BINARY:
-                          ByteString value = (ByteString) literal.getValue();
-                          return SqlLiteral.createBinaryString(value.getBytes(),POS);
+                            ByteString value = (ByteString) literal.getValue();
+                            return SqlLiteral.createBinaryString(value.getBytes(), POS);
                         case ANY:
                         case NULL:
                             switch (literal.getTypeName()) {
@@ -808,8 +816,8 @@ public abstract class SqlImplementor {
                     if (rex instanceof RexOver) {
                         return toSql(program, (RexOver) rex);
                     }
-                    if(rex instanceof RexCorrelVariable){
-                        SqlNode sqlNode = new SqlIdentifier(rex.toString(),SqlParserPos.ZERO);
+                    if (rex instanceof RexCorrelVariable) {
+                        SqlNode sqlNode = new SqlIdentifier(rex.toString(), SqlParserPos.ZERO);
                         return sqlNode;
                     }
 
@@ -838,7 +846,7 @@ public abstract class SqlImplementor {
                             } else {
                                 if (call.getOperands().size() == 1) {
                                     RexNode rexNode = call.getOperands().get(0);
-                                    if(rexNode.getType().getSqlTypeName().getFamily() == call.getType().getSqlTypeName().getFamily()){
+                                    if (rexNode.getType().getSqlTypeName().getFamily() == call.getType().getSqlTypeName().getFamily()) {
                                         return nodeList.get(0);
                                     }
                                     if (rexNode instanceof RexDynamicParam) {
@@ -1110,7 +1118,7 @@ public abstract class SqlImplementor {
             }
             //Each(targetName=c0, sql=SELECT * FROM db1_0.travelrecord_0 WHERE (`id` = ?) ORDER BY (`id` IS NULL), `id`)
 //            if (!added) {
-                orderByList.add(toSql(field));
+            orderByList.add(toSql(field));
 //            }
         }
 
