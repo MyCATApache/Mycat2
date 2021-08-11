@@ -168,24 +168,27 @@ public class SqlCastFunction extends SqlFunction {
             int leftPrec,
             int rightPrec) {
         assert call.operandCount() == 2;
-        final SqlWriter.Frame frame = writer.startFunCall(getName());
-        call.operand(0).unparse(writer, 0, 0);
-        writer.sep("AS");
-        if (call.operand(1) instanceof SqlIntervalQualifier) {
-            writer.sep("INTERVAL");
-        }
 
-        SqlNode operand = call.operand(1);
-        if (operand instanceof SqlDataTypeSpec) {
-            SqlDataTypeSpec operand1 = (SqlDataTypeSpec) operand;
-            SqlIdentifier typeName = operand1.getTypeName();
-            operand = convertTypeToSpec(SqlTypeName.valueOf(Util.last(typeName.names)));
-            operand.unparse(writer, 0, 0);
-            writer.endFunCall(frame);
-            return;
-        }
-        operand.unparse(writer, 0, 0);
-        writer.endFunCall(frame);
+        call.operand(0).unparse(writer, 0, 0);
+
+//        final SqlWriter.Frame frame = writer.startFunCall(getName());
+//        call.operand(0).unparse(writer, 0, 0);
+//        writer.sep("AS");
+//        if (call.operand(1) instanceof SqlIntervalQualifier) {
+//            writer.sep("INTERVAL");
+//        }
+//
+//        SqlNode operand = call.operand(1);
+//        if (operand instanceof SqlDataTypeSpec) {
+//            SqlDataTypeSpec operand1 = (SqlDataTypeSpec) operand;
+//            SqlIdentifier typeName = operand1.getTypeName();
+//            operand = convertTypeToSpec(SqlTypeName.valueOf(Util.last(typeName.names)));
+//            operand.unparse(writer, 0, 0);
+//            writer.endFunCall(frame);
+//            return;
+//        }
+//        operand.unparse(writer, 0, 0);
+//        writer.endFunCall(frame);
     }
 
     @Override

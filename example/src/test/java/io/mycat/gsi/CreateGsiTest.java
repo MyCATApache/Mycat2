@@ -209,6 +209,47 @@ public class CreateGsiTest implements MycatTest {
 
     }
 
+
+    @Test
+    public void createGsi3() throws Exception {
+        Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+        execute(mycatConnection, RESET_CONFIG);
+
+        execute(mycatConnection, "DROP DATABASE db2");
+
+
+        execute(mycatConnection, "CREATE DATABASE db2");
+
+        execute(mycatConnection, CreateDataSourceHint
+                .create("ds0",
+                        DB1));
+        execute(mycatConnection, CreateDataSourceHint
+                .create("ds1",
+                        DB2));
+
+        execute(mycatConnection,
+                CreateClusterHint.create("c0",
+                        Arrays.asList("ds0"), Collections.emptyList()));
+        execute(mycatConnection,
+                CreateClusterHint.create("c1",
+                        Arrays.asList("ds1"), Collections.emptyList()));
+
+        execute(mycatConnection, "USE `db2`;");
+
+        execute(mycatConnection,"CREATE TABLE db2.normal (\n\t`id` bigint(20) NOT NULL AUTO_INCREMENT,\n\t`user_id` varchar(100) DEFAULT NULL,\n\t`traveldate` date DEFAULT NULL,\n\t`fee` decimal(10, 0) DEFAULT NULL,\n\t`days` int(11) DEFAULT NULL,\n\t`blob` longblob,\n\tPRIMARY KEY (`id`),\n\tKEY `id` (`id`)\n) ENGINE = InnoDB AUTO_INCREMENT = 1129569 CHARSET = utf8 ");
+        execute(mycatConnection,"CREATE TABLE IF NOT EXISTS db2.`fp` (\n\t`id` bigint NOT NULL AUTO_INCREMENT,\n\t`user_id` varchar(100) DEFAULT NULL,\n\t`traveldate` date DEFAULT NULL,\n\t`fee` decimal(10, 0) DEFAULT NULL,\n\t`days` int DEFAULT NULL,\n\t`blob` longblob,\n\tPRIMARY KEY (`id`),\n\tKEY `id` (`id`),\n\tGLOBAL INDEX `g_i_user_id`(`user_id`) COVERING (`fee`, id) DBPARTITION BY mod_hash(`user_id`) TBPARTITION BY mod_hash(`user_id`) DBPARTITIONS 2 TBPARTITIONS 2\n) ENGINE = InnoDB CHARSET = utf8\nDBPARTITION BY mod_hash(id) DBPARTITIONS 2\nTBPARTITION BY mod_hash(id) TBPARTITIONS 2");
+       deleteData(mycatConnection,"db2","fp");
+        execute(mycatConnection,"INSERT INTO `db2`.`fp` (`id`, `user_id`) VALUES ('1', '1'); ");
+        List<Map<String, Object>> maps = executeQuery(mycatConnection, "\n" +
+                " SELECT a.id\n" +
+                "FROM db2.fp a\n" +
+                "\tLEFT JOIN db2.normal b ON a.user_id = b.user_id\n" +
+                "WHERE a.user_id = 1\n" +
+                "LIMIT 10\n");
+        Assert.assertEquals(1,maps.size());
+    }
+
+
     private void initShardingTable() throws Exception {
         Connection mycatConnection = getMySQLConnection(DB_MYCAT);
         execute(mycatConnection, RESET_CONFIG);
