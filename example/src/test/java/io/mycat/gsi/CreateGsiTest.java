@@ -114,6 +114,11 @@ public class CreateGsiTest implements MycatTest {
             Assert.assertEquals(1, maps2.size());
             Assert.assertEquals(10, maps3.size());
 
+            List<Map<String, Object>> maps4 = executeQuery(connection, "select t.id from db1.travelrecord t  LEFT JOIN db1.company c on t.user_id  = c.id where t.user_id = 1 limit 10");
+            Assert.assertEquals(1, maps4.size());
+
+            List<Map<String, Object>> maps5 = executeQuery(connection, "select t.id from db1.travelrecord t  LEFT JOIN db1.company2 c on t.user_id  = c.id  where t.user_id = 1  limit 10");
+            Assert.assertEquals(1, maps5.size());
 
             testInsertException(connection, TranscationType.XA);
             testInsertException(connection, TranscationType.PROXY);
@@ -248,6 +253,7 @@ public class CreateGsiTest implements MycatTest {
         }
 
         execute(mycatConnection, "CREATE TABLE if not exists db1.`company` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`)) broadcast");
+        execute(mycatConnection, "CREATE TABLE if not exists db1.`company2` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))");
 
 
         mycatConnection.close();
