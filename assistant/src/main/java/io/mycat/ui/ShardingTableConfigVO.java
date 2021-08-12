@@ -142,7 +142,9 @@ public class ShardingTableConfigVO implements VO {
                 file = testFile;
                 testFile = null;
             }
-
+            if(file==null){
+                return;
+            }
             inputPartitions(view, file);
         } catch (Exception e) {
             MainPaneVO.popAlter(e);
