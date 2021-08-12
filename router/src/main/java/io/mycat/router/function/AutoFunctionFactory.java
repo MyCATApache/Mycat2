@@ -55,9 +55,9 @@ public class AutoFunctionFactory {
 
     @SneakyThrows
     public static final CustomRuleFunction
-    getTableFunction(ShardingTableHandler tableHandler, ShardingFunction config) {
+    getTableFunction(ShardingTableHandler tableHandler, ShardingFunction shardingFunction) {
 
-        Map<String, Object> properties = config.getProperties();
+        Map<String, Object> properties = shardingFunction.getProperties();
 
         int dbNum = Integer.parseInt(properties.getOrDefault("dbNum", 1).toString());
         int tableNum = Integer.parseInt(properties.getOrDefault("tableNum", 1).toString());
