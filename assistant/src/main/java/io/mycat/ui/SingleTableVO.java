@@ -58,13 +58,17 @@ public class SingleTableVO implements VO{
     }
 
     public void save(ActionEvent actionEvent) {
-        String schemaName = this.getSchemaName().getText();
-        String tableName = this.getTableName().getText();
+        try {
+            String schemaName = this.getSchemaName().getText();
+            String tableName = this.getTableName().getText();
 
-        Objects.requireNonNull(schemaName,"schemaName must not be null");
-        Objects.requireNonNull(tableName,"tableName must not be null");
+            Objects.requireNonNull(schemaName, "schemaName must not be null");
+            Objects.requireNonNull(tableName, "tableName must not be null");
 
-        controller.save(schemaName,tableName,validate(getNormalTableConfig()));
+            controller.save(schemaName, tableName, validate(getNormalTableConfig()));
+        }catch (Exception e){
+            MainPaneVO.popAlter(e);
+        }
     }
 
     @Override
