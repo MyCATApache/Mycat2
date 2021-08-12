@@ -1,5 +1,7 @@
 package io.mycat.ui;
 
+import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
+
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
@@ -13,14 +15,18 @@ public interface VO {
 
     void from(String text);
 
-    ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+    ValidatorFactory factory = Validation.byDefaultProvider()
+            .configure()
+            .messageInterpolator(new ParameterMessageInterpolator())
+            .buildValidatorFactory();
 
-   default Validator getValidator(){
-      return factory.getValidator();
+    default Validator getValidator() {
+        return factory.getValidator();
     }
-    default <T>  T validate(T t) {
+
+    default <T> T validate(T t) {
         Set<ConstraintViolation<T>> validate = getValidator().validate(t);
-        if (!validate.isEmpty()){
+        if (!validate.isEmpty()) {
             throw new IllegalArgumentException(validate.stream().map(i -> i.getMessage()).collect(Collectors.joining("\n")));
         }
         return t;

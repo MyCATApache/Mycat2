@@ -110,7 +110,7 @@ public class BaseTest extends ApplicationTest {
     }
     @org.junit.Test
     @SneakyThrows
-    public void testwhole() {
+    public void testWhole() {
         testCreateCluster();
 
         testCreateSingleTable();

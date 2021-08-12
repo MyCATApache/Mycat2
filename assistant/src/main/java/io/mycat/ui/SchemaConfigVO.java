@@ -8,6 +8,8 @@ import javafx.scene.control.TextField;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
 
+import static io.mycat.ui.MainPaneVO.popAlter;
+
 
 @Data
 public class SchemaConfigVO implements VO{
@@ -46,7 +48,11 @@ public class SchemaConfigVO implements VO{
     }
 
     public void save(ActionEvent actionEvent) {
-        controller.saveSchema(validate(getLogicSchemaConfig()));
+        try {
+            controller.saveSchema(validate(getLogicSchemaConfig()));
+        }catch (Exception e){
+            popAlter(e);
+        }
     }
 //    String
 //    public static SchemaConfigVO from(LogicSchemaConfig config){

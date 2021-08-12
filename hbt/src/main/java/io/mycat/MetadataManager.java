@@ -366,6 +366,9 @@ public class MetadataManager implements MysqlVariableService {
             while (tableIterator.next()) {
                 tables.add(tableIterator.getString(0));
             }
+        }catch (Exception e){
+            LOGGER.error("",e);
+            return Collections.emptyMap();
         }
         Map<String, NormalTableConfig> res = new ConcurrentHashMap<>();
         tables.stream().filter(tableFilter).parallel().forEach(tableName -> {
