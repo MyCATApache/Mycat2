@@ -13,18 +13,31 @@ import io.vertx.core.spi.metrics.VertxMetrics;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 
 public interface IOExecutor {
 
     public <T> Future<T> executeBlocking(Handler<Promise<T>> blockingCodeHandler);
 
+    long count();
+
     public static final IOExecutor DEFAULT = new IOExecutor() {
         final ExecutorService executorService = Executors.newCachedThreadPool();
-
+        private final AtomicLong count = new AtomicLong();
         public <T> Future<T> executeBlocking(Handler<Promise<T>> blockingCodeHandler) {
-            PromiseInternal<Object> promise = VertxUtil.newPromise();
-            executorService.execute(() -> blockingCodeHandler.handle((Promise<T>) promise));
-            return (Future) promise.future();
+            count.getAndIncrement();
+            try {
+                PromiseInternal<Object> promise = VertxUtil.newPromise();
+                executorService.execute(() -> blockingCodeHandler.handle((Promise<T>) promise));
+                return (Future) promise.future();
+            }finally {
+                count.decrementAndGet();
+            }
+        }
+
+        @Override
+        public long count() {
+            return count.get();
         }
     };
 
@@ -33,6 +46,7 @@ public interface IOExecutor {
             private final ExecutorService executorService = Executors.newCachedThreadPool();
             private final VertxMetrics metrics;
             private PoolMetrics<?> poolMetrics;
+            private final AtomicLong count = new AtomicLong();
 
             public VertxIOExecutor(VertxMetrics metrics) {
                 this.metrics = metrics;
@@ -40,6 +54,7 @@ public interface IOExecutor {
             }
 
             public <T> Future<T> executeBlocking(Handler<Promise<T>> blockingCodeHandler) {
+                count.getAndIncrement();
                 Promise<T> promise = VertxUtil.newPromise();
                 PoolMetrics metrics = poolMetrics;
                 Object queueMetric = metrics != null ? metrics.submitted() : null;
@@ -66,8 +81,15 @@ public interface IOExecutor {
                         metrics.rejected(queueMetric);
                     }
                     throw e;
+                }finally {
+                    count.decrementAndGet();
                 }
                 return fut;
+            }
+
+            @Override
+            public long count() {
+                return count.get();
             }
         }
         return new VertxIOExecutor((VertxMetrics) ((VertxImpl) vertx).getMetrics());
