@@ -5,70 +5,57 @@
 
 
 <?import com.sun.javafx.scene.control.skin.SplitPaneSkin.Content?>
-<BorderPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.MainPaneVO">
-    <top>
-        <MenuBar fx:id="menu" maxWidth="Infinity" minHeight="25">
-        </MenuBar>
+<BorderPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1"
+  fx:controller="io.mycat.ui.MainPaneVO">
+  <top>
+    <MenuBar fx:id="menu" maxWidth="Infinity" minHeight="25">
+    </MenuBar>
 
-    </top>
-   <center>
-      <AnchorPane fx:id="mainPane">
-        <VBox >
-            <HBox >
-                <Button fx:id="flashRootButton" text="刷新"></Button>
-            </HBox>
-            <TabPane fx:id="tabPane" prefHeight ="600">
-               <Tab text="欢迎页">
-                   <content>
-                     <TextArea text="">
+  </top>
+  <center>
+    <AnchorPane fx:id="mainPane">
+      <VBox>
+        <HBox>
+          <Button fx:id="flashRootButton" text="刷新"></Button>
+        </HBox>
+        <TabPane fx:id="tabPane" prefHeight="600">
+          <Tab text="欢迎页">
+            <content>
+              <TextArea text="">
 
-                     </TextArea>
-                   </content>
-               </Tab>
-      </TabPane >
+              </TextArea>
+            </content>
+          </Tab>
+        </TabPane>
+        <SplitPane dividerPositions="0.3" orientation="VERTICAL">
+          <VBox>
             <HBox fx:id="runMenu" layoutX="0" layoutY="0" maxWidth="Infinity" minHeight="25">
-                <Button fx:id="runButton" text="执行"/>
-      </HBox>
-      <SplitPane dividerPositions="0.5">
-          <VBox>
-              <Label text="查询" />
+              <Button fx:id="runButton" text="执行"/>
+            </HBox>
+            <SplitPane dividerPositions="0.5">
+              <VBox>
+                <Label text="查询"/>
                 <TextArea fx:id="inputSql">
-
-          </TextArea>
+                </TextArea>
+              </VBox>
+              <VBox>
+                <Label text="执行计划"/>
+                <TableView fx:id="explain">
+                </TableView>
+              </VBox>
+            </SplitPane>
           </VBox>
           <VBox>
-              <Label text="执行计划" />
-                <TextArea fx:id="explain">
-
-          </TextArea>
+            <Label text="输出结果"/>
+            <TableView fx:id="output"></TableView>
           </VBox>
-            </SplitPane>
-            <Label text="输出结果" />
-            <TextArea fx:id="output">
+        </SplitPane>
 
-      </TextArea>
-        </VBox>
-      
-      <!--    <HBox fx:id="main"  layoutX="0" layoutY="25"  maxWidth="Infinity" >-->
-      
-      <!--        <VBox>-->
-      <!--            <Label text="对象"></Label>-->
-      
-      <!--        </VBox>-->
-      <!--        <VBox>-->
-      <!--            <Label text="可视化属性"></Label>-->
-      <!--        </VBox>-->
-      
-      <!--        <VBox>-->
-      <!--            <Label text="可视化文本"></Label>-->
-      <!--            <TextArea />-->
-      <!--        </VBox>-->
-      <!--    </HBox>-->
-      
-      <!--    </SplitPane>-->
-      </AnchorPane>
-   </center>
-    <bottom>
-        <Label fx:id="statusMessage" text="状态"></Label>
-    </bottom>
+      </VBox>
+
+    </AnchorPane>
+  </center>
+  <bottom>
+    <Label maxHeight="15" fx:id="statusMessage" text="状态"></Label>
+  </bottom>
 </BorderPane>

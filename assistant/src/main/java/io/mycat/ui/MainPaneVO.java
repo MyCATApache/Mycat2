@@ -34,8 +34,8 @@ public class MainPaneVO {
     public TabPane tabPane;
     public HBox runMenu;
     public TextArea inputSql;
-    public TextArea explain;
-    public TextArea output;
+    public TableView explain;
+    public TableView output;
     public Label statusMessage;
     public Button flashRootButton;
     public   Button runButton;
@@ -199,11 +199,9 @@ public class MainPaneVO {
         runButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                output.clear();
-                explain.clear();
 
-                LineOuter outputText = new LineOuter(output);
-                LineOuter explainText = new LineOuter(explain);
+                TableViewOuter outputText = new TableViewOuter(output);
+                TableViewOuter explainText = new TableViewOuter(explain);
 
                 Tab s = selectTab.get();
 
@@ -232,17 +230,19 @@ public class MainPaneVO {
                         try (Statement statement = connection.createStatement();) {
                             if (select) {
                                 ResultSet resultSet = statement.executeQuery(sql);
-                                outputText.appendLine(Table.read().db(resultSet).print());
+                                TableData tableData = ResultSetPrinter.getTable(resultSet);
+                                outputText.appendData(tableData);
                             } else {
                                 boolean affectRow = statement.execute(sqlStatement.toString());
-                                outputText.appendLine("affectRow:" + affectRow);
+                                outputText.setPlaceholder("affectRow:" + affectRow);
                             }
                             MySqlExplainStatement mySqlExplainStatement = new MySqlExplainStatement();
                             mySqlExplainStatement.setStatement(sqlStatement.clone());
                             ResultSet resultSet = statement.executeQuery(mySqlExplainStatement.toString());
-                            explainText.appendLine(Table.read().db(resultSet).print(200));
+                            TableData tableData = ResultSetPrinter.getTable(resultSet);
+                            explainText.appendData(tableData);
                         } catch (Exception e) {
-                            outputText.appendLine(e.getLocalizedMessage());
+                            outputText.setPlaceholder(e.getLocalizedMessage());
                             MainPaneVO.popAlter(e);
                         }
                     }
