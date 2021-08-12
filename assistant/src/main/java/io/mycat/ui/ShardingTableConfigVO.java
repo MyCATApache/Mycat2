@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static io.mycat.ui.Controller.initPartitionsView;
+import static io.mycat.ui.MainPaneVO.popAlter;
 
 @Data
 public class ShardingTableConfigVO implements VO {
@@ -72,13 +73,17 @@ public class ShardingTableConfigVO implements VO {
     }
 
     public void save() {
-        String schemaName = this.schemaName.getText();
-        String tableName = this.tableName.getText();
-        Objects.requireNonNull(schemaName,"schemaName must not be null");
-        Objects.requireNonNull(tableName,"tableName must not be null");
-        ShardingTableConfig shardingTableConfig = getShardingTableConfig();
-        controller.save(schemaName, tableName, validate(shardingTableConfig));
-        controller.flashSchemas();
+        try {
+            String schemaName = this.schemaName.getText();
+            String tableName = this.tableName.getText();
+            Objects.requireNonNull(schemaName, "schemaName must not be null");
+            Objects.requireNonNull(tableName, "tableName must not be null");
+            ShardingTableConfig shardingTableConfig = getShardingTableConfig();
+            controller.save(schemaName, tableName, validate(shardingTableConfig));
+            controller.flashSchemas();
+        }catch (Exception e){
+            popAlter(e);
+        }
     }
 
     public void flash() {
@@ -142,10 +147,12 @@ public class ShardingTableConfigVO implements VO {
                 file = testFile;
                 testFile = null;
             }
-
+            if(file==null){
+                return;
+            }
             inputPartitions(view, file);
         } catch (Exception e) {
-            MainPaneVO.popAlter(e);
+            popAlter(e);
         }
     }
 
@@ -268,7 +275,7 @@ public class ShardingTableConfigVO implements VO {
             SceneUtil.close(scene);
             flash();
         } catch (Exception e) {
-            MainPaneVO.popAlter(e);
+            popAlter(e);
         }
     }
 

@@ -22,7 +22,7 @@ import io.mycat.vertxmycat.AbstractMySqlConnectionImpl;
 import io.vertx.core.*;
 import io.vertx.sqlclient.SqlConnection;
 
-public class NativeDatasourcePoolImpl extends MycatDatasourcePool {
+public class NativeDatasourcePoolImpl extends AbstractMycatDatasourcePool {
     public NativeDatasourcePoolImpl(String targetName) {
         super(targetName);
     }

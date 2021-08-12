@@ -222,7 +222,7 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                     }else if (value instanceof Timestamp) {
                         value =  ((Timestamp) value).toLocalDateTime();
                     }else if (value instanceof String){
-                        value = Timestamp.valueOf((String) value);
+                        value = MycatTimeUtil.timestampStringToTimestamp((String) value);
                     }else {
                         throw new UnsupportedOperationException("unsupport type:" + value);
                     }
