@@ -23,7 +23,7 @@ import io.mycat.vertxmycat.JdbcMySqlConnection;
 import io.vertx.core.Future;
 import io.vertx.sqlclient.SqlConnection;
 
-public class JdbcDatasourcePoolImpl extends MycatDatasourcePool {
+public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
     public JdbcDatasourcePoolImpl(String targetName) {
         super(targetName);
     }
