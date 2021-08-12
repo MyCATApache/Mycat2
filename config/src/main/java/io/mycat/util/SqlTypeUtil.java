@@ -53,8 +53,8 @@ public class SqlTypeUtil {
             case ADD_TABLE:
             case TUNNEL_DOWNLOAD:
             case UPLOAD:
+            case UNKNOWN:
                 return true;
-
         }
     }
 }

@@ -6,6 +6,7 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLType;
+import io.mycat.util.SqlTypeUtil;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
@@ -38,7 +39,7 @@ public class MainPaneVO {
     public TableView output;
     public Label statusMessage;
     public Button flashRootButton;
-    public   Button runButton;
+    public Button runButton;
     public Map<String, Controller> tabObjectMap = new HashMap<>();
 
     public void init() {
@@ -86,7 +87,7 @@ public class MainPaneVO {
                                 controller.getMain().prefHeightProperty().bind(tabPane.heightProperty());//菜单自适应
 
                                 Tab tab = new Tab(name, parent);
-                                tabObjectMap.put(name,controller);
+                                tabObjectMap.put(name, controller);
                                 tabPane.getTabs().add(tab);
                                 SingleSelectionModel selectionModel = tabPane.getSelectionModel();
                                 selectionModel.select(tab);
@@ -214,19 +215,7 @@ public class MainPaneVO {
                     Connection connection = infoProvider.createConnection();
                     for (SQLStatement sqlStatement : sqlStatements) {
                         SQLType sqlType = SQLParserUtils.getSQLType(sqlStatement.toString(), DbType.mysql);
-                        boolean select;
-                        switch (sqlType) {
-                            case SELECT:
-                            case EXPLAIN:
-                            case SHOW:
-                            case DESC:
-                            case UNKNOWN:
-                                select = true;
-                                break;
-                            default:
-                                select = false;
-                        }
-
+                        boolean select = !SqlTypeUtil.isDml(sqlType);
                         try (Statement statement = connection.createStatement();) {
                             if (select) {
                                 ResultSet resultSet = statement.executeQuery(sql);
