@@ -3,28 +3,57 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="531.0" prefWidth="889.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.ShardingTableConfigVO">
-    <children>
-        <Label layoutX="281.0" layoutY="3.0" prefHeight="23.0" prefWidth="93.0" text="分片表" />
-        <Label layoutX="14.0" layoutY="15.0" prefHeight="30.0" prefWidth="93.0" text="逻辑库名" />
-        <TextField fx:id="schemaName" layoutX="76.0" layoutY="19.0" />
-        <Label layoutX="275.0" layoutY="15.0" prefHeight="30.0" prefWidth="180.0" text="逻辑表名" />
-        <TextField fx:id="tableName" layoutX="354.0" layoutY="19.0" />
-        <Label layoutX="17.0" layoutY="48.0" prefHeight="30.0" prefWidth="180.0" text="建表SQL" />
-        <TextArea fx:id="createTableSQL" layoutX="76.0" layoutY="45.0" prefHeight="23.0" prefWidth="532.0" />
+<?import javafx.geometry.Insets?>
+<AnchorPane prefHeight="531.0" prefWidth="889.0" xmlns="http://javafx.com/javafx/11.0.1"
+  xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.ShardingTableConfigVO">
+  <children>
+    <Label layoutX="281.0" layoutY="3.0" prefHeight="23.0" prefWidth="93.0" text="分片表"/>
 
-        <Label layoutX="275.0" layoutY="82.0" prefHeight="23.0" prefWidth="93.0" text="算法信息" />
-         <TextArea fx:id="shardingInfo" layoutX="76.0" layoutY="104.0" prefHeight="83.0" prefWidth="532.0" />
+    <HBox layoutX="14.0" layoutY="28.0" maxWidth="Infinity" minHeight="30">
+      <Label prefHeight="30.0" prefWidth="93.0" text="逻辑库名"/>
+      <TextField fx:id="schemaName" prefWidth="150.0"/>
+      <Label prefHeight="30.0" prefWidth="70" text="逻辑表名"/>
+      <TextField fx:id="tableName"/>
+    </HBox>
 
-        <Label layoutX="275.0" layoutY="199.0" prefHeight="23.0" prefWidth="93.0" text="分区" />
-        <TableView fx:id="partitionsView" layoutX="76.0" layoutY="222.0" prefHeight="121.0" prefWidth="532.0">
-         <columnResizePolicy>
-            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
-         </columnResizePolicy></TableView>
-        <Button fx:id="saveShardingTable" layoutX="288.0" layoutY="487.0" onAction="#save" text="保存" />
-        <Button fx:id="inputPartitionButton" layoutX="568.0" layoutY="199.0" onAction="#inputPartitions" text="导入" />
-        <ListView fx:id="indexTableList" layoutX="76.0" layoutY="366.0" prefHeight="121.0" prefWidth="453.0" />
-        <Button fx:id="addIndexTable" layoutX="532.0" layoutY="378.0" onAction="#addIndexTable" text="添加索引表" />
-        <Button fx:id="deleteIndexTable" layoutX="532.0" layoutY="415.0" onAction="#deleteIndexTable" text="删除索引表" />
-    </children>
+    <HBox layoutX="14.0" layoutY="65.0" maxWidth="Infinity" minHeight="30">
+      <Label prefHeight="30.0" prefWidth="93.0" text="建表SQL"/>
+      <TextArea fx:id="createTableSQL" prefHeight="23.0"
+        prefWidth="532.0"/>
+    </HBox>
+
+    <HBox layoutX="14.0" layoutY="130.0" maxWidth="Infinity" minHeight="30">
+      <Label layoutX="14.0" prefHeight="23.0" prefWidth="93.0" text="算法信息"/>
+      <TextArea fx:id="shardingInfo" prefHeight="83.0"
+        prefWidth="532.0"/>
+    </HBox>
+    <HBox layoutX="14.0" layoutY="230.0" maxWidth="Infinity" minHeight="30">
+      <Label layoutX="275.0" prefHeight="23.0" prefWidth="93.0" text="分区"/>
+      <TableView fx:id="partitionsView" prefHeight="121.0"
+        prefWidth="532.0">
+        <columnResizePolicy>
+          <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+        </columnResizePolicy>
+      </TableView>
+      <VBox prefWidth="120" style="-fx-padding: 5 0 0 15; " >
+        <Button fx:id="inputPartitionButton"
+          onAction="#inputPartitions"
+          text="导入"/>
+      </VBox>
+    </HBox>
+
+    <HBox layoutX="14.0" layoutY="366.0" maxWidth="Infinity" minHeight="30">
+      <Label layoutX="275.0" prefHeight="23.0" prefWidth="93.0" text="索引表"/>
+      <ListView fx:id="indexTableList" prefHeight="121.0"
+        prefWidth="453.0"/>
+      <VBox style="-fx-padding: 5 0 0 15; " prefWidth="120" spacing="30">
+        <Button fx:id="addIndexTable" onAction="#addIndexTable"
+          text="添加索引表"/>
+        <Button fx:id="deleteIndexTable"
+          onAction="#deleteIndexTable"
+          text="删除索引表"/>
+      </VBox>
+    </HBox>
+    <Button fx:id="saveShardingTable" layoutX="288.0" layoutY="487.0" onAction="#save" text="保存"/>
+  </children>
 </AnchorPane>
