@@ -176,7 +176,6 @@ public class MainPaneVO {
                 dialog.initModality(Modality.APPLICATION_MODAL);
                 VBox dialogVbox = new VBox(20);
                 dialogVbox.getChildren().add(new TextField("https://github.com/MyCATApache/Mycat2 "));
-                dialogVbox.getChildren().add(new Label("author:chenjunwen"));
                 Button button = new Button("关闭");
                 button.setId("closeAbout");
                 button.setOnAction(event1 -> dialog.close());
