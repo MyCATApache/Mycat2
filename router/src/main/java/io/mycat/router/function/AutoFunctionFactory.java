@@ -403,7 +403,7 @@ public class AutoFunctionFactory {
             template.make(context).writeTo(stringWriter);
             String[] strings = SplitUtil.split(stringWriter.getBuffer().toString(), sep);
 
-            IndexDataNode backendTableInfo = new IndexDataNode(strings[0], strings[1], strings[2], currentTableCount, currentDbIndex, currentTableIndex);
+            IndexDataNode backendTableInfo = new IndexDataNode(strings[0], strings[1], strings[2], currentDbIndex, currentTableIndex,currentTableCount);
             indexDataNodes.add(backendTableInfo);
         }
         if (flattenMapping) {

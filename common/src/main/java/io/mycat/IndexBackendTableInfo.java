@@ -40,6 +40,9 @@ public class IndexBackendTableInfo implements Partition {
                                 int tableIndex,int index) {
         this(targetName, new SchemaInfo(targetSchema, targetTable));
         this.dbIndex = dbIndex;
+        if (dbIndex>0){
+            System.out.println();
+        }
         this.tableIndex = tableIndex;
         this.index = index;
     }

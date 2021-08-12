@@ -740,7 +740,7 @@ public class BaseTest extends ApplicationTest {
 
 
                 robot.interrupt();
-                Path tempFile = Files.createTempFile("inputPartition", "csv");
+                Path tempFile = Files.createTempFile("inputPartition", ".csv");
                 System.out.println(tempFile);
                 StringWriter stringWriter = new StringWriter();
                 CSVWriter csvWriter = new CSVWriter(stringWriter);
@@ -873,25 +873,25 @@ public class BaseTest extends ApplicationTest {
             schemaObjectCell.getTreeItem().setExpanded(true);
             robot.interrupt();
         });
-        lookupNode(ObjectItem.ofShardingTable("mycat", "address").getId()).ifPresent(c -> {
-            rightClickOn(c);
-            robot.moveTo("#deleteShardingTable", Motion.DEFAULT);
-            robot.clickOn("#deleteShardingTable");
-            robot.interrupt();
-        });
-        lookupNode("enter").ifPresent(c -> {
-            clickOn(c);
-            robot.interrupt();
-        });
-        lookupNode(ObjectItem.ofShardingTable("mycat", "address").getId()).ifPresent(new Consumer<Node>() {
-            @Override
-            public void accept(Node node) {
-                SchemaObjectCell schemaObjectCell = (SchemaObjectCell) node;
-                System.out.println();
-                Assert.assertNull(schemaObjectCell.getTreeItem());
-            }
-        });
-
-        System.out.println(sceneSet);
+//        lookupNode(ObjectItem.ofShardingTable("mycat", "address").getId()).ifPresent(c -> {
+//            rightClickOn(c);
+//            robot.moveTo("#deleteShardingTable", Motion.DEFAULT);
+//            robot.clickOn("#deleteShardingTable");
+//            robot.interrupt();
+//        });
+//        lookupNode("enter").ifPresent(c -> {
+//            clickOn(c);
+//            robot.interrupt();
+//        });
+//        lookupNode(ObjectItem.ofShardingTable("mycat", "address").getId()).ifPresent(new Consumer<Node>() {
+//            @Override
+//            public void accept(Node node) {
+//                SchemaObjectCell schemaObjectCell = (SchemaObjectCell) node;
+//                System.out.println();
+//                Assert.assertNull(schemaObjectCell.getTreeItem());
+//            }
+//        });
+//
+//        System.out.println(sceneSet);
     }
 }
