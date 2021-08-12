@@ -16,6 +16,8 @@ public interface MycatServer {
 
     RowBaseIterator showNativeBackends();
 
+    long countConnection();
+
     void start() throws Exception;
 
     int kill(List<Long> id);

@@ -64,6 +64,11 @@
             <version>4.0.2</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>com.github.oshi</groupId>
+            <artifactId>oshi-core</artifactId>
+            <version>5.2.0</version>
+        </dependency>
     </dependencies>
 
 </project>

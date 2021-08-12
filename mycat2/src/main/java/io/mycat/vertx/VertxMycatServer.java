@@ -75,6 +75,11 @@ public class VertxMycatServer implements MycatServer {
     }
 
     @Override
+    public long countConnection() {
+        return server.countConnection();
+    }
+
+    @Override
     public void start() throws Exception {
         this.server = new MycatSessionManager(serverConfig);
         this.server.start();
@@ -156,6 +161,11 @@ public class VertxMycatServer implements MycatServer {
         @Override
         public RowBaseIterator showNativeBackends() {
             return demo();
+        }
+
+        @Override
+        public long countConnection() {
+            return sessions.size();
         }
     }
 

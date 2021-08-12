@@ -27,6 +27,7 @@ import io.mycat.proxy.session.*;
 import io.mycat.replica.ReplicaSelectorManager;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -214,10 +215,7 @@ public class NativeMycatServer implements MycatServer {
 
     @Override
     public RowBaseIterator showConnections() {
-        Objects.requireNonNull(reactorManager);
-        List<MycatSession> sessions = reactorManager.getList().stream()
-                .flatMap(i -> i.getFrontManager().getAllSessions().stream())
-                .collect(Collectors.toList());
+        List<MycatSession> sessions = getMycatSessions();
 
         ResultSetBuilder builder = ResultSetBuilder.create();
 
@@ -297,6 +295,15 @@ public class NativeMycatServer implements MycatServer {
             ));
         }
         return builder.build();
+    }
+
+    @NotNull
+    private List<MycatSession> getMycatSessions() {
+        Objects.requireNonNull(reactorManager);
+        List<MycatSession> sessions = reactorManager.getList().stream()
+                .flatMap(i -> i.getFrontManager().getAllSessions().stream())
+                .collect(Collectors.toList());
+        return sessions;
     }
 
     @Override
@@ -404,5 +411,10 @@ public class NativeMycatServer implements MycatServer {
 
         }
         return resultSetBuilder.build();
+    }
+
+    @Override
+    public long countConnection() {
+        return getMycatSessions().size();
     }
 }

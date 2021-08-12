@@ -4,6 +4,8 @@ import io.mycat.LogicTableType;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.LogicSchemaConfig;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -18,6 +20,7 @@ import javafx.util.Callback;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.mycat.ui.MainPaneVO.popAlter;
 import static io.mycat.ui.UIMain.getPath;
 
 public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeCell<ObjectItem>> {
@@ -41,7 +44,7 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                 if (event.getButton() == MouseButton.SECONDARY) {
                     ContextMenu contextMenu = new ContextMenu();
                     TreeItem<ObjectItem> treeItem = cell.getTreeItem();
-                    if(treeItem == null){
+                    if (treeItem == null) {
                         return;
                     }
                     if (!treeItem.isLeaf() && treeItem.getParent() == tree.getRoot()) {
@@ -50,21 +53,48 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                             case "schemas": {
                                 MenuItem item1 = new MenuItem("新建逻辑库");
                                 item1.setId("addSchema");
-                                item1.setOnAction(event1 -> controller.edit(new LogicSchemaConfig()));
+                                item1.setOnAction(new EventHandler<ActionEvent>() {
+                                    @Override
+                                    public void handle(ActionEvent event1) {
+                                        try {
+                                            controller.edit(new LogicSchemaConfig());
+                                        } catch (Exception e) {
+                                            popAlter(e);
+                                        }
+                                    }
+                                });
                                 contextMenu.getItems().add(item1);
                                 break;
                             }
                             case "datasources": {
                                 MenuItem item1 = new MenuItem("新建数据源");
                                 item1.setId("addDatasource");
-                                item1.setOnAction(event1 -> controller.edit(new DatasourceConfig()));
+                                item1.setOnAction(new EventHandler<ActionEvent>() {
+                                    @Override
+                                    public void handle(ActionEvent event1) {
+                                        try {
+                                            controller.edit(new DatasourceConfig());
+                                        } catch (Exception e) {
+                                            popAlter(e);
+                                        }
+                                    }
+                                });
                                 contextMenu.getItems().add(item1);
                                 break;
                             }
                             case "clusters": {
                                 MenuItem item1 = new MenuItem("新建集群");
                                 item1.setId("addCluster");
-                                item1.setOnAction(event1 -> controller.edit(new ClusterConfig()));
+                                item1.setOnAction(new EventHandler<ActionEvent>() {
+                                    @Override
+                                    public void handle(ActionEvent event1) {
+                                        try {
+                                        controller.edit(new ClusterConfig());
+                                        } catch (Exception e) {
+                                            popAlter(e);
+                                        }
+                                    }
+                                });
                                 contextMenu.getItems().add(item1);
                                 break;
                             }
@@ -77,11 +107,18 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                                 case SCHEMA: {
                                     MenuItem item1 = new MenuItem("删除逻辑库配置");
                                     item1.setId("deleteSchema");
-                                    item1.setOnAction(event1 -> {
-                                        boolean doAction = display("删除逻辑库配置", "确认删除逻辑库配置");
-                                        if (doAction) {
-                                            controller.getInfoProvider().deleteLogicalSchema(command.getSchema());
-                                            controller.flashRoot();
+                                    item1.setOnAction(new EventHandler<ActionEvent>() {
+                                        @Override
+                                        public void handle(ActionEvent event1) {
+                                            try {
+                                                boolean doAction = display("删除逻辑库配置", "确认删除逻辑库配置");
+                                                if (doAction) {
+                                                    controller.getInfoProvider().deleteLogicalSchema(command.getSchema());
+                                                    controller.flashRoot();
+                                                }
+                                            } catch (Exception e) {
+                                                popAlter(e);
+                                            }
                                         }
                                     });
                                     contextMenu.getItems().add(item1);
@@ -90,32 +127,66 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                                 case SHARDING_TABLES: {
                                     MenuItem item1 = new MenuItem("新建分片表");
                                     item1.setId("addShardingTable");
-                                    item1.setOnAction(event1 -> controller.addShardingTable(schema));
+                                    item1.setOnAction(new EventHandler<ActionEvent>() {
+                                        @Override
+                                        public void handle(ActionEvent event1) {
+                                            try {
+                                                controller.addShardingTable(schema);
+                                            } catch (Exception e) {
+                                                popAlter(e);
+                                            }
+                                        }
+                                    });
                                     contextMenu.getItems().add(item1);
                                     break;
                                 }
                                 case GLOBAL_TABLES: {
                                     MenuItem item1 = new MenuItem("新建全局表");
                                     item1.setId("addGlobalTable");
-                                    item1.setOnAction(event1 -> controller.addGlobalTableConfig(schema));
+                                    item1.setOnAction(new EventHandler<ActionEvent>() {
+                                        @Override
+                                        public void handle(ActionEvent event1) {
+                                            try {
+                                                controller.addGlobalTableConfig(schema);
+                                            } catch (Exception e) {
+                                                popAlter(e);
+                                            }
+                                        }
+                                    });
                                     contextMenu.getItems().add(item1);
                                     break;
                                 }
                                 case SINGLE_TABLES: {
                                     MenuItem item1 = new MenuItem("新建单表");
                                     item1.setId("addSingleTable");
-                                    item1.setOnAction(event1 -> controller.addNormalTableConfig(schema));
+                                    item1.setOnAction(new EventHandler<ActionEvent>() {
+                                        @Override
+                                        public void handle(ActionEvent event1) {
+                                            try {
+                                                controller.addNormalTableConfig(schema);
+                                            } catch (Exception e) {
+                                                popAlter(e);
+                                            }
+                                        }
+                                    });
                                     contextMenu.getItems().add(item1);
                                     break;
                                 }
                                 case SHARDING_TABLE: {
                                     MenuItem item1 = new MenuItem("删除分片表配置");
                                     item1.setId("deleteShardingTable");
-                                    item1.setOnAction(event1 -> {
-                                        boolean doAction = display("删除分片表", "确认删除分片表配置");
-                                        if (doAction) {
-                                            controller.getInfoProvider().deleteTable(schema,command.getTable());
-                                            controller.flashSchemas();
+                                    item1.setOnAction(new EventHandler<ActionEvent>() {
+                                        @Override
+                                        public void handle(ActionEvent event1) {
+                                            try {
+                                                boolean doAction = display("删除分片表", "确认删除分片表配置");
+                                                if (doAction) {
+                                                    controller.getInfoProvider().deleteTable(schema, command.getTable());
+                                                    controller.flashSchemas();
+                                                }
+                                            } catch (Exception e) {
+                                                popAlter(e);
+                                            }
                                         }
                                     });
                                     contextMenu.getItems().add(item1);
@@ -124,11 +195,18 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                                 case GLOBAL_TABLE: {
                                     MenuItem item1 = new MenuItem("删除全局表配置");
                                     item1.setId("deleteGlobalTable");
-                                    item1.setOnAction(event1 -> {
-                                        boolean doAction = display("删除全局表配置", "确认删除全局表配置");
-                                        if (doAction) {
-                                            controller.getInfoProvider().deleteTable(command.getSchema(),command.getTable());
-                                            controller.flashSchemas();
+                                    item1.setOnAction(new EventHandler<ActionEvent>() {
+                                        @Override
+                                        public void handle(ActionEvent event1) {
+                                            try {
+                                                boolean doAction = display("删除全局表配置", "确认删除全局表配置");
+                                                if (doAction) {
+                                                    controller.getInfoProvider().deleteTable(command.getSchema(), command.getTable());
+                                                    controller.flashSchemas();
+                                                }
+                                            } catch (Exception e) {
+                                                popAlter(e);
+                                            }
                                         }
                                     });
                                     contextMenu.getItems().add(item1);
@@ -137,11 +215,18 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                                 case SINGLE_TABLE: {
                                     MenuItem item1 = new MenuItem("删除单表配置");
                                     item1.setId("deleteSingleTable");
-                                    item1.setOnAction(event1 -> {
-                                        boolean doAction = display("删除单表配置", "确认删除单表配置");
-                                        if (doAction) {
-                                            controller.getInfoProvider().deleteTable(command.getSchema(),command.getTable());
-                                            controller.flashSchemas();
+                                    item1.setOnAction(new EventHandler<ActionEvent>() {
+                                        @Override
+                                        public void handle(ActionEvent event1) {
+                                            try {
+                                                boolean doAction = display("删除单表配置", "确认删除单表配置");
+                                                if (doAction) {
+                                                    controller.getInfoProvider().deleteTable(command.getSchema(), command.getTable());
+                                                    controller.flashSchemas();
+                                                }
+                                            } catch (Exception e) {
+                                                popAlter(e);
+                                            }
                                         }
                                     });
                                     contextMenu.getItems().add(item1);
@@ -150,11 +235,18 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                                 case CLUSTER: {
                                     MenuItem item1 = new MenuItem("删除");
                                     item1.setId("deleteCluster");
-                                    item1.setOnAction(event1 -> {
-                                        boolean doAction = display("删除集群", "确认删除集群");
-                                        if (doAction) {
-                                            controller.getInfoProvider().deleteCluster(command.getCluster());
-                                            controller.flashClusterAndDataSource();
+                                    item1.setOnAction(new EventHandler<ActionEvent>() {
+                                        @Override
+                                        public void handle(ActionEvent event1) {
+                                            try {
+                                                boolean doAction = display("删除集群", "确认删除集群");
+                                                if (doAction) {
+                                                    controller.getInfoProvider().deleteCluster(command.getCluster());
+                                                    controller.flashClusterAndDataSource();
+                                                }
+                                            } catch (Exception e) {
+                                                popAlter(e);
+                                            }
                                         }
                                     });
                                     contextMenu.getItems().add(item1);
@@ -164,10 +256,14 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                                     MenuItem item1 = new MenuItem("删除");
                                     item1.setId("deleteDatasource");
                                     item1.setOnAction(event1 -> {
-                                        boolean doAction = display("删除数据源", "确认删除数据源");
-                                        if (doAction) {
-                                            controller.getInfoProvider().deleteDatasource(command.getDatasource());
-                                            controller.flashClusterAndDataSource();
+                                        try {
+                                            boolean doAction = display("删除数据源", "确认删除数据源");
+                                            if (doAction) {
+                                                controller.getInfoProvider().deleteDatasource(command.getDatasource());
+                                                controller.flashClusterAndDataSource();
+                                            }
+                                        } catch (Exception e) {
+                                            popAlter(e);
                                         }
                                     });
                                     contextMenu.getItems().add(item1);
@@ -199,8 +295,8 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                         if (command.getSchema() == null || command.getTable() == null) {
                             return;
                         }
-                        LogicTableType logicTableType ;
-                        String schemaName =command.getSchema();
+                        LogicTableType logicTableType;
+                        String schemaName = command.getSchema();
                         String tableName = command.getTable();
 
                         switch (command.getType()) {
@@ -218,7 +314,7 @@ public class TreeItemCellFactory implements Callback<TreeView<ObjectItem>, TreeC
                         }
 
                         Optional<Object> config = controller.getInfoProvider().getTableConfigByName(command.getSchema(), command.getTable());
-                        config.ifPresent(c -> controller.edit(logicTableType,schemaName,tableName,c));
+                        config.ifPresent(c -> controller.edit(logicTableType, schemaName, tableName, c));
 
 
                         break;

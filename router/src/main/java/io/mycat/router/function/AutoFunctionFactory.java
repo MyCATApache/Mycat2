@@ -55,9 +55,9 @@ public class AutoFunctionFactory {
 
     @SneakyThrows
     public static final CustomRuleFunction
-    getTableFunction(ShardingTableHandler tableHandler, ShardingFunction config) {
+    getTableFunction(ShardingTableHandler tableHandler, ShardingFunction shardingFunction) {
 
-        Map<String, Object> properties = config.getProperties();
+        Map<String, Object> properties = shardingFunction.getProperties();
 
         int dbNum = Integer.parseInt(properties.getOrDefault("dbNum", 1).toString());
         int tableNum = Integer.parseInt(properties.getOrDefault("tableNum", 1).toString());
@@ -403,7 +403,7 @@ public class AutoFunctionFactory {
             template.make(context).writeTo(stringWriter);
             String[] strings = SplitUtil.split(stringWriter.getBuffer().toString(), sep);
 
-            IndexDataNode backendTableInfo = new IndexDataNode(strings[0], strings[1], strings[2], currentTableCount, currentDbIndex, currentTableIndex);
+            IndexDataNode backendTableInfo = new IndexDataNode(strings[0], strings[1], strings[2], currentDbIndex, currentTableIndex,currentTableCount);
             indexDataNodes.add(backendTableInfo);
         }
         if (flattenMapping) {

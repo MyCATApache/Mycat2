@@ -15,9 +15,9 @@ public class IndexDataNode extends BackendTableInfo {
     private final int index;
 
     public IndexDataNode(String targetName, String targetSchema, String targetTable,
-                         int index,
                          int dbIndex,
-                         int tableIndex) {
+                         int tableIndex,
+                         int index) {
         super(targetName, targetSchema, targetTable);
         this.dbIndex = dbIndex;
         this.tableIndex = tableIndex;
