@@ -6,22 +6,33 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="io.mycat.ui.Controller"
-            prefHeight="400.0" prefWidth="1000.0">
-    <SplitPane fx:id="main" dividerPositions="0.0, 0.0" >
-        <VBox >
-            <Label text="对象树" />
-            <TreeView fx:id="objectTree" minWidth="100"  maxWidth="600" minHeight="600"/>
-        </VBox>
-        <VBox>
-            <Label text="对象" />
-            <VBox fx:id="objectNav" minWidth="600" minHeight="600"/>
-        </VBox>
-        <VBox>
-            <Label text="文本" />
-            <TextArea fx:id="objectText" minHeight="600" > </TextArea>
-        </VBox>
-    </SplitPane>
+<AnchorPane prefHeight="400.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.Controller">
+   <children>
+       <SplitPane fx:id="main" dividerPositions="0.0, 0.0">
+          <items>
+              <VBox>
+                 <children>
+                     <Label text="对象树" />
+                     <TreeView fx:id="objectTree" maxWidth="600" minHeight="600" minWidth="100" />
+                 </children>
+              </VBox>
+              <VBox minHeight="600" minWidth="600">
+                 <children>
+                     <Label text="对象" />
+                         <ScrollPane maxHeight="600" minWidth="600" prefHeight="546.0" prefWidth="600.0" >
+                            <content>
+                                <VBox fx:id="objectNav"> </VBox>
+                            </content>
+                         </ScrollPane>
+                 </children>
+                  </VBox>
+              <VBox>
+                 <children>
+                     <Label text="文本" />
+                     <TextArea fx:id="objectText" minHeight="600"> </TextArea>
+                 </children>
+              </VBox>
+          </items>
+       </SplitPane>
+   </children>
 </AnchorPane>
