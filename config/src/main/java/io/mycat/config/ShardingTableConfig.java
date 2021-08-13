@@ -18,10 +18,11 @@ public class ShardingTableConfig {
 
     Map<String,ShardingTableConfig> shardingIndexTables = new HashMap<>();
 
-    public ShardingTableConfig(ShardingBackEndTableInfoConfig partition, ShardingFunction function, String createTableSQL, Map<String, ShardingTableConfig> shardingIndexTables) {
+    public ShardingTableConfig(ShardingBackEndTableInfoConfig partition, ShardingFunction function, String createTableSQL,Boolean autoIncrement, Map<String, ShardingTableConfig> shardingIndexTables) {
         this.partition = partition;
         this.function = function;
         this.createTableSQL = createTableSQL;
+        this.autoIncrement = autoIncrement;
         this.shardingIndexTables = shardingIndexTables;
     }
 
