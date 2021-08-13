@@ -14,6 +14,7 @@ public class ShardingTableConfig {
     ShardingBackEndTableInfoConfig partition = new ShardingBackEndTableInfoConfig();
     ShardingFunction function = new ShardingFunction();
     String createTableSQL;
+    Boolean autoIncrement;
 
     Map<String,ShardingTableConfig> shardingIndexTables = new HashMap<>();
 
