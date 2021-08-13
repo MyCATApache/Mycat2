@@ -69,6 +69,8 @@ public class Controller {
         objectNav.setPrefWidth(120);
         objectNav.getChildren().clear();
         TextArea emptyLabel = new TextArea("请选择对象");
+        emptyLabel.setPrefHeight(500);
+        emptyLabel.setPrefWidth(900);
         objectNav.getChildren().add(emptyLabel);
 
         objectNav.removeEventHandler(EventType.ROOT, navToText);

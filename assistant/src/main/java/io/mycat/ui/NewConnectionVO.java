@@ -11,7 +11,7 @@ import lombok.Data;
 public class NewConnectionVO {
 
     public TextField newConnectionName;
-    public TextArea url;
+    public TextField url;
     public TextField user;
     public PasswordField password;
     public Controller controller;

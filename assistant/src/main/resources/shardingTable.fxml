@@ -6,43 +6,43 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 
-<AnchorPane prefHeight="661.0" prefWidth="850.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.ShardingTableConfigVO">
+<AnchorPane prefHeight="700.0" prefWidth="850.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.ShardingTableConfigVO">
    <children>
-     <Label layoutX="281.0" layoutY="3.0" prefHeight="23.0" prefWidth="93.0" text="分片表" />
-   
-     <HBox layoutX="14.0" layoutY="28.0" maxWidth="Infinity" minHeight="30" prefHeight="65.0" prefWidth="632.0">
+     <Label layoutX="247.0" prefHeight="82.0" prefWidth="100" text="分片表" />
+
+     <HBox layoutX="14.0" layoutY="85.0" maxWidth="Infinity" minHeight="30" prefHeight="65.0">
        <children>
-         <Label prefHeight="30.0" prefWidth="93.0" text="逻辑库名" />
-         <TextField fx:id="schemaName" prefWidth="189.0" />
-         <Label prefHeight="30.0" prefWidth="139.0" text="逻辑表名">
+         <Label prefHeight="30.0" prefWidth="100" text="逻辑库名" />
+         <TextField fx:id="schemaName" prefWidth="270.0" />
+         <Label prefHeight="30.0" prefWidth="210.0" text="逻辑表名">
            <HBox.margin>
-             <Insets bottom="35.0" />
+             <Insets />
            </HBox.margin>
            <padding>
-             <Insets left="65.0" />
+             <Insets left="131.0" />
            </padding>
          </Label>
-         <TextField fx:id="tableName" />
+         <TextField fx:id="tableName" prefHeight="30.0" prefWidth="241.0" />
        </children>
      </HBox>
-   
-     <HBox layoutX="14.0" layoutY="75.0" maxWidth="Infinity" minHeight="30">
+
+     <HBox layoutX="14.0" layoutY="130.0" maxWidth="Infinity" minHeight="30">
        <children>
-         <Label prefHeight="30.0" prefWidth="93.0" text="建表SQL" />
-         <TextArea fx:id="createTableSQL" prefHeight="129.0" prefWidth="532.0" />
+         <Label prefHeight="30.0" prefWidth="100" text="建表SQL" />
+         <TextArea fx:id="createTableSQL" prefHeight="129.0" prefWidth="720.0" />
        </children>
      </HBox>
-   
-     <HBox layoutX="14.0" layoutY="220.0" maxWidth="Infinity" minHeight="30">
+
+     <HBox layoutX="14.0" layoutY="280.0" maxWidth="Infinity" minHeight="30">
        <children>
-         <Label layoutX="14.0" prefHeight="23.0" prefWidth="93.0" text="算法信息" />
-         <TextArea fx:id="shardingInfo" prefHeight="83.0" prefWidth="532.0" />
+         <Label layoutX="14.0" prefHeight="23.0" prefWidth="100" text="算法信息" />
+         <TextArea fx:id="shardingInfo" prefHeight="83.0" prefWidth="720.0" />
        </children>
      </HBox>
-     <HBox layoutX="14.0" layoutY="317.0" maxWidth="Infinity" minHeight="30">
+     <HBox layoutX="14.0" layoutY="380.0" maxWidth="Infinity" minHeight="30">
        <children>
-         <Label layoutX="275.0" prefHeight="23.0" prefWidth="93.0" text="分区" />
-         <TableView fx:id="partitionsView" prefHeight="121.0" prefWidth="532.0">
+         <Label layoutX="275.0" prefHeight="23.0" prefWidth="100" text="分区" />
+         <TableView fx:id="partitionsView" prefHeight="121.0" prefWidth="720.0">
            <columnResizePolicy>
              <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
            </columnResizePolicy>
@@ -54,11 +54,11 @@
          </VBox>
        </children>
      </HBox>
-   
-     <HBox layoutX="14.0" layoutY="465.0" maxWidth="Infinity" minHeight="30">
+
+     <HBox layoutX="14.0" layoutY="520.0" maxWidth="Infinity" minHeight="30">
        <children>
-         <Label layoutX="275.0" prefHeight="23.0" prefWidth="93.0" text="索引表" />
-         <ListView fx:id="indexTableList" prefHeight="121.0" prefWidth="532.0" />
+         <Label layoutX="275.0" prefHeight="23.0" prefWidth="100" text="索引表" />
+         <ListView fx:id="indexTableList" prefHeight="121.0" prefWidth="720.0" />
          <VBox prefWidth="120" spacing="30" style="-fx-padding: 5 0 0 15; ">
            <children>
              <Button fx:id="addIndexTable" onAction="#addIndexTable" text="添加索引表" />
@@ -67,6 +67,6 @@
          </VBox>
        </children>
      </HBox>
-     <Button fx:id="saveShardingTable" layoutX="316.0" layoutY="619.0" onAction="#save" text="保存" />
+     <Button fx:id="saveShardingTable" layoutX="396.0" layoutY="655.0" onAction="#save" text="保存" />
    </children>
 </AnchorPane>
