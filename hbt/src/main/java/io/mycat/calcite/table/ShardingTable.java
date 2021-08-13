@@ -42,7 +42,6 @@ public class ShardingTable implements ShardingTableHandler {
     private List<Partition> backends;
     public List<ShardingIndexTable> indexTables;
     private ShardingTableConfig tableConfig;
-    private final boolean isAutoIncrement;
 
     public ShardingTable(LogicTable logicTable,
                          List<Partition> backends,
@@ -54,10 +53,6 @@ public class ShardingTable implements ShardingTableHandler {
         this.shardingFuntion = shardingFuntion;
         this.indexTables = shardingIndexTables.stream().map(i -> i.withPrimary(ShardingTable.this)).collect(Collectors.toList());
         this.tableConfig = tableConfigEntry;
-
-        this.isAutoIncrement = Optional.ofNullable(this.tableConfig.getAutoIncrement()).orElseGet(() -> {
-            return logicTable.getAutoIncrementColumn() != null;
-        });
     }
 
     @Override
@@ -158,7 +153,9 @@ public class ShardingTable implements ShardingTableHandler {
 
     @Override
     public SimpleColumnInfo getAutoIncrementColumn() {
-        if (this.isAutoIncrement) {
+        if (Optional.ofNullable(this.tableConfig.getAutoIncrement()).orElseGet(() -> {
+            return logicTable.getAutoIncrementColumn() != null;
+        })) {
             return logicTable.getAutoIncrementColumn();
         } else {
             return null;
