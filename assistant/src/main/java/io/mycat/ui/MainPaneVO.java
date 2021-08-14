@@ -214,7 +214,7 @@ public class MainPaneVO {
                     List<SQLStatement> sqlStatements = SQLUtils.parseStatements(sql, DbType.mysql);
                     Connection connection = infoProvider.createConnection();
                     for (SQLStatement sqlStatement : sqlStatements) {
-                        SQLType sqlType = SQLParserUtils.getSQLType(sqlStatement.toString(), DbType.mysql);
+                        SQLType sqlType = SQLParserUtils.getSQLTypeV2(sqlStatement.toString(), DbType.mysql);
                         boolean select = !SqlTypeUtil.isDml(sqlType);
                         try (Statement statement = connection.createStatement();) {
                             if (select) {
