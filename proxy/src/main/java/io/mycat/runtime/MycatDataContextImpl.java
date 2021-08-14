@@ -262,7 +262,7 @@ public class MycatDataContextImpl implements MycatDataContext {
             case NET_WRITE_TIMEOUT:
                 return getNetWriteTimeout();
             case IS_READ_ONLY: {
-                return 0;
+                return isReadOnly()?1:0;
             }
             case IS_IN_TRANSCATION: {
                 return isInTransaction() ? 1 : 0;

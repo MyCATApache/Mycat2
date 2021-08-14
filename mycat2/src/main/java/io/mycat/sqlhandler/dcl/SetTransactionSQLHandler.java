@@ -16,6 +16,7 @@ package io.mycat.sqlhandler.dcl;
 
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSetTransactionStatement;
 import io.mycat.MycatDataContext;
+import io.mycat.MycatDataContextEnum;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
@@ -32,6 +33,12 @@ public class SetTransactionSQLHandler extends AbstractSQLHandler<MySqlSetTransac
     protected Future<Void> onExecute(SQLRequest<MySqlSetTransactionStatement> request, MycatDataContext dataContext, Response response) {
         MySqlSetTransactionStatement statement = request.getAst();
         String isolationLevel = statement.getIsolationLevel();
+        String accessModel = statement.getAccessModel();
+        if ("WRITE".equalsIgnoreCase(accessModel)){
+            dataContext.setVariable(MycatDataContextEnum.IS_READ_ONLY,false);
+        }else if ("ONLY".equalsIgnoreCase(accessModel)){
+            dataContext.setVariable(MycatDataContextEnum.IS_READ_ONLY,true);
+        }
         MySQLIsolation mySQLIsolation = MySQLIsolation.parse(isolationLevel);
         if (mySQLIsolation == null) {
             return response.sendOk();
