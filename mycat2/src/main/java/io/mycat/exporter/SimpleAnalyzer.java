@@ -12,12 +12,14 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.sqlrecorder;
+package io.mycat.exporter;
+
+import io.mycat.monitor.SqlEntry;
 
 import java.util.List;
 
 public interface SimpleAnalyzer {
-    List<SqlRecord> getRecords();
+    List<SqlEntry> getRecords();
 
-    void addSqlRecord(SqlRecord record);
+    void addSqlRecord(SqlEntry record);
 }

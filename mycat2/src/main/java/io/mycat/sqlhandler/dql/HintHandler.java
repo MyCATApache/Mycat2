@@ -30,6 +30,8 @@ import io.mycat.commands.SqlResultSetService;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.exporter.SqlRecorderRuntime;
+import io.mycat.monitor.SqlEntry;
 import io.mycat.replica.PhysicsInstance;
 import io.mycat.replica.ReplicaSelector;
 import io.mycat.replica.ReplicaSelectorManager;
@@ -42,8 +44,6 @@ import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.sqlhandler.SqlHints;
 import io.mycat.sqlhandler.dml.UpdateSQLHandler;
-import io.mycat.sqlrecorder.SqlRecord;
-import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.util.JsonUtil;
 import io.mycat.util.NameMap;
 import io.mycat.util.VertxUtil;
@@ -62,6 +62,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.sql.JDBCType;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -700,24 +701,23 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         resultSetBuilder.addColumnInfo("end_time", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("execute_time", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("target_name", JDBCType.VARCHAR);
-        Stream<SqlRecord> sqlRecords = SqlRecorderRuntime.INSTANCE.getRecords().stream()
-                .sorted(Comparator.comparingLong(SqlRecord::getExecuteTime).reversed());
+        Stream<SqlEntry> sqlRecords = SqlRecorderRuntime.INSTANCE.getRecords().stream()
+                .sorted(Comparator.comparingLong(SqlEntry::getSqlTime).reversed());
         Map map = JsonUtil.from(body, Map.class);
         Object idText = map.get("trace_id");
 
         if (idText != null) {
-            long id = Long.parseLong(Objects.toString(idText));
-            sqlRecords = sqlRecords.filter(i -> id == i.getId());
+            sqlRecords = sqlRecords.filter(i -> idText == i.getTraceId());
         }
         sqlRecords.forEach(r -> {
             resultSetBuilder.addObjectRowPayload(Arrays.asList(
-                    Objects.toString(r.getId()),
+                    Objects.toString(r.getTraceId()),
                     Objects.toString(r.getSql()),
-                    Objects.toString(r.getSqlRows()),
-                    Objects.toString(r.getStartTime()),
-                    Objects.toString(r.getEndTime()),
-                    Objects.toString(r.getExecuteTime()),
-                    Objects.toString(r.getTarget())
+                    Objects.toString(r.getAffectRow()),
+                    Objects.toString(r.getResponseTime().minus(Duration.ofMillis(r.getSqlTime()))),
+                    Objects.toString(r.getResponseTime()),
+                    Objects.toString(r.getSqlTime()),
+                    Objects.toString(null)
             ));
         });
         return response.sendResultSet(resultSetBuilder.build());

@@ -3,7 +3,6 @@ package io.mycat.connection;
 import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.sqlrecorder.SqlRecord;
 
 import java.nio.charset.Charset;
 import java.util.Map;
