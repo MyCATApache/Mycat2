@@ -1,4 +1,4 @@
-package io.mycat.beans.log.monitor;
+package io.mycat.monitor;
 
 import com.alibaba.druid.sql.parser.SQLType;
 import lombok.Data;
