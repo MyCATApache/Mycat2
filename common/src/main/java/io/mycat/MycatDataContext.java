@@ -3,7 +3,6 @@ package io.mycat;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
-import io.mycat.sqlrecorder.SqlRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,12 +111,6 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
     public String resolveDatasourceTargetName(String targetName, boolean master);
 
     Map<Long, PreparedStatement> getPrepareInfo();
-
-    SqlRecord startSqlRecord();
-
-    SqlRecord currentSqlRecord();
-
-    void endSqlRecord();
 
     default String setLastMessage(Throwable e) {
         LOGGER.error("",e);

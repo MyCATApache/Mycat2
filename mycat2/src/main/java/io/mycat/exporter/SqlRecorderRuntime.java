@@ -12,55 +12,47 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.sqlrecorder;
+package io.mycat.exporter;
 
-import io.mycat.ScheduleUtil;
+import io.mycat.monitor.SqlEntry;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public enum SqlRecorderRuntime implements SimpleAnalyzer {
     INSTANCE;
 
     public static long ONE_SECOND = TimeUnit.SECONDS.toMillis(1);
-    private final ConcurrentLinkedDeque<SqlRecord> context = new ConcurrentLinkedDeque<>();
-    private long now;
+    private final ConcurrentLinkedDeque<SqlEntry> context = new ConcurrentLinkedDeque<>();
+
 
     SqlRecorderRuntime() {
-        ScheduledExecutorService timer = ScheduleUtil.getTimer();
-        now = System.currentTimeMillis();
-        timer.scheduleAtFixedRate(() -> now = System.currentTimeMillis(), 0, 1, TimeUnit.MILLISECONDS);
+
     }
 
     @Override
-    public List<SqlRecord> getRecords() {
-        LinkedList<SqlRecord> sqlRecords = new LinkedList<>(context);
-        List<SqlRecord> subs = sqlRecords.stream().flatMap(i -> i.getPhySqlRecords().stream()).collect(Collectors.toList());
-        sqlRecords.addAll(subs);
-        return sqlRecords;
+    public List<SqlEntry> getRecords() {
+        ArrayList<SqlEntry> sqlEntries = new ArrayList<>(context);
+        Collections.sort(sqlEntries);
+        return sqlEntries;
     }
 
     @Override
-    public void addSqlRecord(SqlRecord record) {
+    public void addSqlRecord(SqlEntry record) {
         if (record != null) {
-            boolean anyAllow = true;
-            boolean condition = (record.getEndTime() - record.getStartTime()) > ONE_SECOND;
-            if (anyAllow || condition) {
+            boolean condition = record.getSqlTime() > ONE_SECOND;
+            if (condition) {
                 if (context.size() > 5000) {
-                    context.removeFirst();
+                    ArrayList<SqlEntry> sqlEntries = new ArrayList<>(context);
+                    Collections.sort(sqlEntries);
+                    context.clear();
+                    context.removeLast();
                 }
                 context.addLast(record);
             }
         }
     }
-
-    public long now() {
-        return now;
-    }
-
-
 }

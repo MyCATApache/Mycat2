@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import static io.mycat.ExecuteType.*;
@@ -219,7 +220,7 @@ public class ReceiverImpl implements Response {
         private MySQLServerSession session;
         private Disposable disposable;
         Function<Object[], byte[]> convertor;
-
+        private final AtomicLong rowCount = new AtomicLong(0);
         public MysqlPayloadObjectObserver(Promise<Void> promise,
                                           boolean moreResultSet, boolean binary, MySQLServerSession session) {
             this.promise = promise;
@@ -236,6 +237,7 @@ public class ReceiverImpl implements Response {
         @Override
         public void onNext(@NonNull MysqlPayloadObject next) {
             if (next instanceof MysqlRow) {
+                rowCount.getAndIncrement();
                 session.writeBytes(this.convertor.apply(((MysqlRow) next).getRow()), false);
             } else if (next instanceof MySQLColumnDef) {
                 MycatRowMetaData rowMetaData = ((MySQLColumnDef) next).getMetaData();
@@ -261,6 +263,7 @@ public class ReceiverImpl implements Response {
 
         @Override
         public void onComplete() {
+            session.getDataContext().setAffectedRows(rowCount.get());
             disposable.dispose();
             session.getDataContext().getTransactionSession().closeStatementState()
                     .onComplete(event -> {

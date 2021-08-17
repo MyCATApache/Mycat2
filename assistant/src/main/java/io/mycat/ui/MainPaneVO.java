@@ -6,7 +6,12 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLType;
+import io.mycat.ui.chart.DatabaseInstanceChart;
+import io.mycat.ui.chart.InstanceChart;
+import io.mycat.ui.chart.ReplicaInstanceChart;
 import io.mycat.util.SqlTypeUtil;
+import io.mycat.util.StringUtil;
+import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
@@ -20,13 +25,16 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import lombok.Data;
-import tech.tablesaw.api.Table;
+import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 @Data
 public class MainPaneVO {
@@ -165,6 +173,83 @@ public class MainPaneVO {
             }
         });
         fileMenu.getItems().addAll(newConnection, newTestConnection);
+
+        //////////////////////////////////////monitor///////////////////////////////////////////////////////////////////
+        MenuItem newMonitorConnection = new MenuItem("监控页");
+        newMonitorConnection.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                try {
+                    FXMLLoader loader = UIMain.loader("/monitor.fxml");
+                    Parent parent = loader.load();
+
+                    MonitorConnector monitorConnector = loader.getController();
+
+                    EventHandler<ActionEvent> replicaHandler = getMonitorConnectorButtonHandler(monitorConnector,
+                            (name, monitorService) -> new ReplicaInstanceChart(name, monitorService));
+
+                    monitorConnector.getReplicaMonitorButton().setOnAction(replicaHandler);
+
+                    EventHandler<ActionEvent> dbHandler = getMonitorConnectorButtonHandler(monitorConnector,
+                            (name, monitorService) -> new DatabaseInstanceChart(name, monitorService));
+                    monitorConnector.getDbMonitorButton().setOnAction(dbHandler);
+
+                    EventHandler<ActionEvent> instanceHandler = getMonitorConnectorButtonHandler(monitorConnector,
+                            (name, monitorService) -> new InstanceChart(name, monitorService));
+                    monitorConnector.getInstanceMonitorButton().setOnAction(instanceHandler);
+
+                    Stage stage = new Stage();
+                    stage.setTitle("监控页");
+                    stage.setScene(new Scene(parent, 600, 400));
+                    stage.show();
+//                    monitor.setInfoProvider(UIMain.getInfoProviderFactory().create(InfoProviderType.LOCAL, map));
+//                    monitorConnector.flashRoot();
+//                    monitorConnector.getMain().prefWidthProperty().bind(tabPane.widthProperty());//菜单自适应
+//                    monitorConnector.getMain().prefHeightProperty().bind(tabPane.heightProperty());//菜单自适应
+//                    tabObjectMap.put(name, monitorConnector);
+//                    Tab tab = new Tab(name, parent);
+//                    tab.setOnClosed(new EventHandler<Event>() {
+//                        @Override
+//                        public void handle(Event event) {
+//                            monitorConnector.getInfoProvider().close();
+//                        }
+//                    });
+//                    tabPane.getTabs().add(tab);
+//                    SingleSelectionModel selectionModel = tabPane.getSelectionModel();
+//                    selectionModel.select(tab);
+//                    dialog.close();
+                } catch (Exception e) {
+                    popAlter(e);
+                }
+            }
+
+            @NotNull
+            private EventHandler<ActionEvent> getMonitorConnectorButtonHandler(MonitorConnector monitorConnector, BiFunction<String,MonitorService, Application> factory) {
+                return event12 -> {
+                    String ipText = monitorConnector.getMonitorIp().getText();
+                    String portText = monitorConnector.getMonitorPort().getText();
+                    String name = monitorConnector.getMonitorName().getText();
+                    if (StringUtil.isEmpty(name)) {
+                        Objects.requireNonNull(null, "name  must not be null");
+                    }
+                    if (StringUtil.isEmpty(ipText)) {
+                        Objects.requireNonNull(null, "ip  must not be null");
+                    }
+                    if (StringUtil.isEmpty(portText)) {
+                        Objects.requireNonNull(null, "port  must not be null");
+                    }
+                    int port = Integer.parseInt(portText);
+                    MonitorService monitorService = new MonitorService(ipText, port);
+                    try {
+                        Stage stage = new Stage();
+                        factory.apply(name,monitorService).start(stage);
+                    } catch (Exception e) {
+                        popAlter(e);
+                    }
+                };
+            }
+        });
+        fileMenu.getItems().add(newMonitorConnection);
 
         Menu helpMenu = new Menu("帮助");
         helpMenu.setId("help");

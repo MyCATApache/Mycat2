@@ -1,7 +1,6 @@
-package io.mycat.beans.log.monitor;
+package io.mycat.monitor;
 
-import com.google.common.util.concurrent.AtomicDouble;
-
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class InstanceMonitor {
@@ -13,6 +12,8 @@ public class InstanceMonitor {
     private static final AtomicLong prt = new AtomicLong();
 
 
+    private static long startTime = System.currentTimeMillis();
+
     public static final void plusLrt(long value) {
         lrt.getAndAdd(value);
         lqpsCount.getAndAdd(1);
@@ -23,27 +24,39 @@ public class InstanceMonitor {
         pqpsCount.getAndIncrement();
     }
 
-    public void reset() {
+    public static void reset() {
         lqpsCount.set(0);
         pqpsCount.set(0);
 
         lrt.set(0);
         prt.set(0);
+
+        startTime = System.currentTimeMillis();
     }
 
     public static double getLqps() {
-        return lrt.get()*1.0/ lqpsCount.get();
+       return  ((long)(lqpsCount.get() * 1.0/ getSecondTIme()));
+    }
+
+    private static long getSecondTIme() {
+        return TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime);
     }
 
     public static double getPqps() {
-        return prt.get()*1.0/pqpsCount.get();
+        return ((long)(pqpsCount.get() * 1.0 / getSecondTIme()));
     }
 
-    public static long getLrt() {
-        return lrt.get();
+    public static double getLrt() {
+        if (lqpsCount.get() == 0){
+            return 0;
+        }
+        return  ((long)(lrt.get() * 1.0 / lqpsCount.get()));
     }
 
     public static double getPrt() {
-        return prt.get();
+        if (pqpsCount.get() == 0){
+            return 0;
+        }
+        return ((long)(prt.get() * 1.0 / pqpsCount.get()));
     }
 }

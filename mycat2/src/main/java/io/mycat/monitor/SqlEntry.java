@@ -1,13 +1,14 @@
-package io.mycat.beans.log.monitor;
+package io.mycat.monitor;
 
 import com.alibaba.druid.sql.parser.SQLType;
 import lombok.Data;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 
 @Data
-public class SqlEntry implements LogEntry {
+public class SqlEntry implements LogEntry ,Comparable<SqlEntry>{
     int instanceId;
     String user;
     String connectionId;
@@ -66,5 +67,10 @@ public class SqlEntry implements LogEntry {
         sqlEntry.setResult(result);
         sqlEntry.setExternalMessage(externalMessage);
         return sqlEntry;
+    }
+
+    @Override
+    public int compareTo(@NotNull SqlEntry o) {
+        return (int)(this.sqlTime - o.getSqlTime());
     }
 }

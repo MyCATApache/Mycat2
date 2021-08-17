@@ -20,9 +20,6 @@ import com.alibaba.druid.sql.SQLUtils;
 import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.sqlrecorder.SqlRecord;
-import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.util.packet.AbstractWritePacket;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.ObservableEmitter;
@@ -72,7 +69,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     private final Map<Long, PreparedStatement> preparedStatementMap = new HashMap<>();
 
     public static final AtomicLong IDS = new AtomicLong();
-    private volatile SqlRecord record;
+
     private final AtomicLong prepareStatementIds = new AtomicLong(0);
     private ObservableEmitter<AbstractWritePacket> emitter;
     private volatile Observable<AbstractWritePacket> observable;
@@ -398,26 +395,6 @@ public class MycatDataContextImpl implements MycatDataContext {
     @Override
     public Map<Long, PreparedStatement> getPrepareInfo() {
         return preparedStatementMap;
-    }
-
-    @Override
-    public SqlRecord startSqlRecord() {
-        record = new SqlRecord();
-        record.setStartTime(SqlRecord.now());
-        return record;
-    }
-
-    @Override
-    public SqlRecord currentSqlRecord() {
-        return Objects.requireNonNull(record);
-    }
-
-    @Override
-    public void endSqlRecord() {
-        if (record != null) {
-            record.setEndTime();
-            SqlRecorderRuntime.INSTANCE.addSqlRecord(record);
-        }
     }
 
     @Override
