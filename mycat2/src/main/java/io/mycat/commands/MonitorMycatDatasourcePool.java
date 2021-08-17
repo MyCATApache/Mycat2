@@ -1,6 +1,6 @@
 package io.mycat.commands;
 
-import io.mycat.beans.log.monitor.DatabaseInstanceEntry;
+import io.mycat.monitor.DatabaseInstanceEntry;
 import io.vertx.core.Future;
 import io.vertx.sqlclient.SqlConnection;
 

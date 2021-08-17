@@ -25,7 +25,6 @@ import com.alibaba.druid.sql.ast.expr.SQLNumericLiteralExpr;
 import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLStartTransactionStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowAuthorsStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
@@ -40,18 +39,20 @@ import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.MycatHint;
 import io.mycat.calcite.spm.*;
+import io.mycat.monitor.LogEntryHolder;
+import io.mycat.monitor.MycatSQLLogMonitor;
 import io.mycat.sqlhandler.SQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.sqlhandler.ShardingSQLHandler;
 import io.mycat.sqlhandler.dcl.*;
 import io.mycat.sqlhandler.ddl.*;
-import io.mycat.sqlhandler.ddl.CreateSequenceHandler;
 import io.mycat.sqlhandler.dml.*;
 import io.mycat.sqlhandler.dql.*;
-import io.mycat.sqlrecorder.SqlRecord;
-import io.mycat.util.NameMap;
+import io.mycat.util.SqlTypeUtil;
 import io.reactivex.rxjava3.core.Observable;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -177,9 +178,6 @@ public enum MycatdbCommand {
                     @Override
                     @SneakyThrows
                     public Future<Void> apply(Void unused) {
-                        SqlRecord sqlRecord = dataContext.startSqlRecord();
-                        sqlRecord.setTarget(dataContext.getUser().getHost());
-                        sqlRecord.setSql(sqlStatement);
                         return execute(dataContext, response, sqlStatement);
                     }
                 });
@@ -386,15 +384,24 @@ public enum MycatdbCommand {
     }
 
     public static Future<Void> execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) {
+
+
+        String sql = sqlStatement.toParameterizedString();
+        SQLType sqlType = SQLParserUtils.getSQLType(sql, DbType.mysql);
+        MycatSQLLogMonitor logMonitor = MetaClusterCurrent.wrapper(MycatSQLLogMonitor.class);
+        LogEntryHolder logRecord = logMonitor.startRecord(dataContext, null, sqlType, sql);
+
+        //////////////////////////////////////////////////////////////////////////////////////
         dataContext.putProcessStateMap(Collections.emptyMap());
         sqlStatement.setAfterSemi(false);//remove semi
         boolean existSqlResultSetService = MetaClusterCurrent.exist(SqlResultSetService.class);
         //////////////////////////////////apply transaction///////////////////////////////////
         TransactionSession transactionSession = dataContext.getTransactionSession();
-        return transactionSession.openStatementState().flatMap(unused -> {
+        Future future = transactionSession.openStatementState().flatMap(unused -> {
             //////////////////////////////////////////////////////////////////////////////////////
             if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
-                SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
+                SqlResultSetService sqlResultSetService
+                        = MetaClusterCurrent.wrapper(SqlResultSetService.class);
                 Optional<Observable<MysqlPayloadObject>> baseIteratorOptional = sqlResultSetService.get((SQLSelectStatement) sqlStatement);
                 if (baseIteratorOptional.isPresent()) {
                     return receiver.sendResultSet(baseIteratorOptional.get());
@@ -406,19 +413,7 @@ public enum MycatdbCommand {
                 Object targetArray = hintRoute.getOrDefault("TARGET", null);
                 if (targetArray != null) {
                     String sqlText = sqlStatement.toString();
-                    SQLType sqlType = SQLParserUtils.getSQLType(sqlText, DbType.mysql);
-                    boolean select;
-                    switch (sqlType) {
-                        case SELECT:
-                        case EXPLAIN:
-                        case SHOW:
-                        case DESC:
-                        case UNKNOWN:
-                            select = true;
-                            break;
-                        default:
-                            select = false;
-                    }
+                    boolean select = !SqlTypeUtil.isDml(sqlType);
                     if (!(targetArray instanceof List)) {
                         targetArray = Collections.singletonList(targetArray.toString());
                     }
@@ -443,6 +438,15 @@ public enum MycatdbCommand {
                 }
             }
         });
+        future = future.onComplete((Handler<AsyncResult>) event -> {
+            if (event.succeeded()) {
+                logRecord.recordSQLEnd(true, Collections.emptyMap(), "");
+            } else {
+                String localizedMessage = Optional.ofNullable(event.cause()).map(i -> i.getLocalizedMessage()).orElse("");
+                logRecord.recordSQLEnd(false, Collections.emptyMap(), localizedMessage);
+            }
+        });
+        return future;
     }
 
     @NotNull

@@ -196,21 +196,6 @@ public class JdbcMycatDataContext implements MycatDataContext {
     }
 
     @Override
-    public SqlRecord startSqlRecord() {
-        return null;
-    }
-
-    @Override
-    public SqlRecord currentSqlRecord() {
-        return null;
-    }
-
-    @Override
-    public void endSqlRecord() {
-
-    }
-
-    @Override
     public long nextPrepareStatementId() {
         return 0;
     }

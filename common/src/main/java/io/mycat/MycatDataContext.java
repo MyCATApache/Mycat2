@@ -113,12 +113,6 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     Map<Long, PreparedStatement> getPrepareInfo();
 
-    SqlRecord startSqlRecord();
-
-    SqlRecord currentSqlRecord();
-
-    void endSqlRecord();
-
     default String setLastMessage(Throwable e) {
         LOGGER.error("",e);
         String string = getThrowableString(e);
