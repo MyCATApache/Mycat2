@@ -1,41 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.1"
-  xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.SingleTableVO">
+<AnchorPane prefHeight="400.0" prefWidth="903.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.SingleTableVO">
   <children>
-    <Label layoutX="193.0" layoutY="75.0" prefHeight="23.0" prefWidth="93.0" text="单表"/>
-    <HBox layoutX="192.0" layoutY="119.0" maxWidth="Infinity" minHeight="30">
-      <Label prefHeight="30.0" prefWidth="93.0" text="逻辑库名"/>
-      <TextField fx:id="schemaName"/>
+    <Label layoutX="247.0" prefHeight="82.0" prefWidth="100" text="单表" />
+    <HBox layoutX="192.0" layoutY="85.0" maxWidth="Infinity" minHeight="30">
+       <children>
+         <Label prefWidth="100.0" text="逻辑库名" />
+         <TextField fx:id="schemaName" prefWidth="470.0" />
+       </children>
     </HBox>
-    <HBox layoutX="192.0" layoutY="151.0" maxWidth="Infinity" minHeight="30">
-      <Label layoutX="192.0" prefHeight="30.0" prefWidth="93.0" text="逻辑表名"/>
-      <TextField fx:id="tableName"/>
+    <HBox layoutX="192.0" layoutY="125.0" maxWidth="Infinity" minHeight="30">
+       <children>
+         <Label layoutX="192.0" prefWidth="100.0" text="逻辑表名" />
+         <TextField fx:id="tableName" prefWidth="470.0" />
+       </children>
     </HBox>
-    <HBox layoutX="192.0" layoutY="189.0" maxWidth="Infinity" minHeight="30">
-      <Label prefHeight="30.0" prefWidth="93.0" text="建表SQL"/>
-      <TextArea fx:id="createTableSQL" prefHeight="150.0"
-        prefWidth="495.0"/>
-    </HBox>
-
-    <HBox layoutX="192.0" layoutY="364.0" maxWidth="Infinity" minHeight="30">
-      <Label prefHeight="30.0" prefWidth="93.0" text="目标名"/>
-      <TextField fx:id="targetName"/>
-    </HBox>
-
-    <HBox layoutX="192.0" layoutY="403.0" maxWidth="Infinity" minHeight="30">
-      <Label prefHeight="30.0" prefWidth="93.0" text="物理库名"/>
-      <TextField fx:id="phySchemaName"/>
-    </HBox>
-    <HBox layoutX="192.0" layoutY="441.0" maxWidth="Infinity" minHeight="30">
-      <Label prefHeight="30.0"  text="目标物理表名"/>
-      <TextField fx:id="phyTableName"/>
+    <HBox layoutX="192.0" layoutY="165.0" maxWidth="Infinity" minHeight="30">
+       <children>
+         <Label prefHeight="30.0" prefWidth="100.0" text="建表SQL" />
+         <TextArea fx:id="createTableSQL" prefHeight="150.0" prefWidth="470.0" />
+       </children>
     </HBox>
 
+    <HBox layoutX="192.0" layoutY="330.0" maxWidth="Infinity" minHeight="30">
+   <children>
+         <Label prefHeight="30.0" prefWidth="100.0" text="目标名" />
+         <TextField fx:id="targetName"  prefWidth="470.0" />
+   </children>
+    </HBox>
 
-    <Button fx:id="saveSingleTable" layoutX="269.0" layoutY="485.0" onAction="#save" text="保存"/>
+    <HBox layoutX="192.0" layoutY="370.0" maxWidth="Infinity" minHeight="30">
+   <children>
+         <Label prefHeight="30.0" prefWidth="100" text="物理库名" />
+         <TextField fx:id="phySchemaName" prefWidth="470.0" />
+   </children>
+    </HBox>
+    <HBox layoutX="192.0" layoutY="410.0" maxWidth="Infinity" minHeight="30">
+       <children>
+         <Label prefHeight="30.0" prefWidth="100.0" text="目标物理表名" />
+         <TextField fx:id="phyTableName" prefWidth="470.0" />
+       </children>
+    </HBox>
+
+
+    <Button fx:id="saveSingleTable" layoutX="369.0" layoutY="470.0" onAction="#save" text="保存" />
   </children>
 </AnchorPane>

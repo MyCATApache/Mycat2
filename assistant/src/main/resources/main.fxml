@@ -1,61 +1,84 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.*?>
+<?import java.lang.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-
-
 <?import com.sun.javafx.scene.control.skin.SplitPaneSkin.Content?>
-<BorderPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1"
-  fx:controller="io.mycat.ui.MainPaneVO">
-  <top>
-    <MenuBar fx:id="menu" maxWidth="Infinity" minHeight="25">
-    </MenuBar>
 
+<BorderPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.MainPaneVO">
+  <top >
+    <MenuBar fx:id="menu" maxWidth="Infinity" minHeight="25">
+      <menus>
+      </menus>
+    </MenuBar>
   </top>
   <center>
     <AnchorPane fx:id="mainPane">
-      <VBox>
-        <HBox>
-          <Button fx:id="flashRootButton" text="刷新"></Button>
-        </HBox>
-        <TabPane fx:id="tabPane" prefHeight="600">
-          <Tab text="欢迎页">
-            <content>
-              <TextArea text="">
+       <children>
+         <VBox>
+            <children>
+              <HBox>
+                 <children>
+                   <Button fx:id="flashRootButton" text="刷新" />
+                 </children>
+              </HBox>
+              <TabPane fx:id="tabPane" prefHeight="600">
+                 <tabs>
+                   <Tab text="欢迎页">
+                     <content>
+                       <TextArea text="">
 
               </TextArea>
-            </content>
-          </Tab>
-        </TabPane>
-        <SplitPane dividerPositions="0.3" orientation="VERTICAL">
-          <VBox>
-            <HBox fx:id="runMenu" layoutX="0" layoutY="0" maxWidth="Infinity" minHeight="25">
-              <Button fx:id="runButton" text="执行"/>
-            </HBox>
-            <SplitPane dividerPositions="0.5">
-              <VBox>
-                <Label text="查询"/>
-                <TextArea fx:id="inputSql">
+                     </content>
+                   </Tab>
+                 </tabs>
+              </TabPane>
+              <SplitPane dividerPositions="0.3" orientation="VERTICAL">
+                 <items>
+                   <VBox>
+                      <children>
+                        <HBox fx:id="runMenu" layoutX="0" layoutY="0" maxWidth="Infinity" minHeight="25">
+                           <children>
+                             <Button fx:id="runButton" text="执行" />
+                           </children>
+                        </HBox>
+                        <SplitPane dividerPositions="0.5">
+                           <items>
+                             <VBox>
+                                <children>
+                                  <Label text="查询" />
+                                  <TextArea fx:id="inputSql">
                 </TextArea>
-              </VBox>
-              <VBox>
-                <Label text="执行计划"/>
-                <TableView fx:id="explain">
+                                </children>
+                             </VBox>
+                             <VBox>
+                                <children>
+                                  <Label text="执行计划" />
+                                  <TableView fx:id="explain">
                 </TableView>
-              </VBox>
-            </SplitPane>
-          </VBox>
-          <VBox>
-            <Label text="输出结果"/>
-            <TableView fx:id="output"></TableView>
-          </VBox>
-        </SplitPane>
+                                </children>
+                             </VBox>
+                           </items>
+                        </SplitPane>
+                      </children>
+                   </VBox>
+                   <VBox>
+                      <children>
+                        <Label text="输出结果" />
+                        <TableView fx:id="output" />
+                      </children>
+                   </VBox>
+                 </items>
+              </SplitPane>
+            </children>
 
-      </VBox>
+         </VBox>
+       </children>
 
     </AnchorPane>
   </center>
   <bottom>
-    <Label maxHeight="15" fx:id="statusMessage" text="状态"></Label>
+    <Label fx:id="statusMessage" maxHeight="15" text="状态" />
   </bottom>
 </BorderPane>

@@ -1,18 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.NewConnectionVO">
-    <Label layoutX="82.0" layoutY="21.0" prefHeight="119.0" prefWidth="304.0" text="名称" />
-    <TextField fx:id="newConnectionName" layoutX="180.0" layoutY="72.0" prefHeight="23.0" prefWidth="323.0" text="con1"/>
-    <Label layoutX="82.0" layoutY="72.0" prefHeight="83.0" prefWidth="122.0" text="URL" />
-    <TextArea fx:id="url"
-              text="jdbc:mysql://localhost:8066/mysql?characterEncoding=utf8&amp;useSSL=false&amp;serverTimezone=Asia/Shanghai&amp;allowPublicKeyRetrieval=true"
-              layoutX="180.0" layoutY="102.0" prefHeight="23.0" prefWidth="323.0" />
-    <Label layoutX="82.0" layoutY="163.0" text="用户名" />
-    <TextField fx:id="user" text="root" layoutX="180.0" layoutY="159.0" prefHeight="23.0" prefWidth="323.0" />
-    <Label layoutX="82.0" layoutY="193.0" prefHeight="15.0" prefWidth="167.0" text="密码" />
-    <PasswordField fx:id="password" text="123456" layoutX="180.0" layoutY="189.0" prefHeight="23.0" prefWidth="323.0" />
-    <Button fx:id="connect" layoutX="260.0" layoutY="293.0" text="连接" />
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.NewConnectionVO">
+  <children>
+    <HBox layoutX="82.0" layoutY="50.0" maxWidth="Infinity" minHeight="30" prefHeight="65.0" prefWidth="400">
+      <children>
+        <Label layoutX="82.0" prefWidth="83.0" text="名称" />
+        <TextField fx:id="newConnectionName" prefHeight="23.0" prefWidth="323.0" text="con1" />
+      </children>
+    </HBox>
+
+    <HBox layoutX="82.0" layoutY="98.0" maxWidth="Infinity" minHeight="30" prefHeight="50.0" prefWidth="400">
+      <children>
+        <Label prefWidth="83" text="URL" />
+        <TextField fx:id="url" prefHeight="23.0" prefWidth="323.0" text="jdbc:mysql://localhost:8066/mysql?characterEncoding=utf8&amp;useSSL=false&amp;serverTimezone=Asia/Shanghai&amp;allowPublicKeyRetrieval=true" />
+      </children>
+    </HBox>
+
+    <HBox layoutX="82.0" layoutY="146.0" maxWidth="Infinity" minHeight="30" prefHeight="40.0" prefWidth="400">
+      <children>
+        <Label prefWidth="83.0" text="用户名" />
+        <TextField fx:id="user" prefHeight="23.0" prefWidth="323.0" text="root" />
+      </children>
+    </HBox>
+    <HBox layoutX="82.0" layoutY="194.0" maxWidth="Infinity" minHeight="30" prefHeight="65.0" prefWidth="400">
+      <children>
+        <Label prefHeight="15.0" prefWidth="83.0" text="密码" />
+        <PasswordField fx:id="password" prefHeight="23.0" prefWidth="323.0" text="123456" />
+      </children>
+    </HBox>
+
+    <Button fx:id="connect" layoutX="257.0" layoutY="259.0" text="连接" />
+  </children>
 </AnchorPane>

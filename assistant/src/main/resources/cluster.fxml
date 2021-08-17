@@ -1,19 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.*?>
+<?import java.lang.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.ClusterVO">
-    <children>
-        <Label layoutX="192.0" layoutY="14.0" prefHeight="82.0" prefWidth="93.0" text="集群" />
-        <Label layoutX="192.0" layoutY="84.0" prefHeight="30.0" prefWidth="93.0" text="集群名称" />
-        <TextField fx:id="name" layoutX="255.0" layoutY="87.0" prefHeight="23.0" prefWidth="161.0" />
-        <Label layoutX="192.0" layoutY="100.0" prefHeight="59.0" prefWidth="93.0" text="集群类型" />
-        <TextField fx:id="type" layoutX="255.0" layoutY="121.0" prefHeight="23.0" prefWidth="161.0" />
-        <Label layoutX="78.0" layoutY="149.0" prefHeight="50.0" prefWidth="180.0" text="可写节点列表" />
-        <ListView fx:id="masterList" layoutX="78.0" layoutY="197.0" prefHeight="148.0" prefWidth="161.0" />
-        <Label layoutX="416.0" layoutY="162.0" prefHeight="23.0" prefWidth="294.0" text="可读节点列表" />
-        <ListView fx:id="replicaList" layoutX="416.0" layoutY="197.0" prefHeight="148.0" prefWidth="201.0" />
-        <Button  fx:id="saveCluster" layoutX="315.0" layoutY="345.0" text="保存" onAction="#save"/>
-    </children>
+<AnchorPane prefHeight="472.0" prefWidth="837.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.ClusterVO">
+  <children>
+    <Label layoutX="247.0" prefHeight="82.0" prefWidth="100" text="集群" />
+    <HBox layoutX="192.0" layoutY="85.0" maxWidth="Infinity" minHeight="30">
+       <children>
+         <Label prefHeight="30.0" prefWidth="100" text="集群名称" />
+         <TextField fx:id="name" prefHeight="23.0" prefWidth="470.0" />
+       </children>
+    </HBox>
+    <HBox layoutX="192.0" layoutY="125.0" maxWidth="Infinity" minHeight="30">
+       <children>
+         <Label prefHeight="30.0" prefWidth="100" text="集群类型" />
+         <TextField fx:id="type" prefHeight="23.0" prefWidth="470.0" />
+       </children>
+    </HBox>
+    <HBox layoutX="105.0" layoutY="175.0" maxWidth="Infinity" minHeight="30">
+       <children>
+         <VBox>
+            <children>
+              <Label prefHeight="23.0" prefWidth="294.0" text="可写节点列表" />
+              <ListView fx:id="masterList" prefHeight="148.0" prefWidth="161.0" />
+            </children>
+         </VBox>
+           <VBox>
+               <padding>
+                  <Insets left="66.0" />
+               </padding></VBox>
+           <VBox>
+            <children>
+              <Label prefHeight="23.0" prefWidth="294.0" text="可读节点列表" />
+              <ListView fx:id="replicaList" prefHeight="148.0" prefWidth="201.0">
+              </ListView>
+            </children>
+         </VBox>
+       </children>
+    </HBox>
+    <Button fx:id="saveCluster" layoutX="369.0" layoutY="386.0" onAction="#save" text="保存" />
+  </children>
 </AnchorPane>
