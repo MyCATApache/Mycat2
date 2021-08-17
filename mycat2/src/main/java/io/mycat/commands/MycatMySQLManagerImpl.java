@@ -20,7 +20,6 @@ import io.mycat.MetaClusterCurrent;
 import io.mycat.NativeMycatServer;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.MycatRouterConfig;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.replica.InstanceType;
@@ -28,6 +27,7 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.sqlclient.SqlConnection;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
 import java.util.*;
@@ -50,14 +50,14 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
                 case NATIVE:
                 case NATIVE_JDBC:
                     if (nativeServer) {
-                        NativeDatasourcePoolImpl nativeDatasourcePool = new NativeDatasourcePoolImpl(name);
+                        MycatDatasourcePool nativeDatasourcePool = createNativeDatasourcePool(name);
                         futureList.add(nativeDatasourcePool.getConnection()
-                                .flatMap(c -> c.close().map((MycatDatasourcePool) nativeDatasourcePool))
-                                .recover(throwable -> Future.succeededFuture(new JdbcDatasourcePoolImpl(name))));
+                                .flatMap(c -> c.close().map(nativeDatasourcePool))
+                                .recover(throwable -> Future.succeededFuture(createJdbcDatasourcePool(name))));
                         break;
                     }
                 case JDBC:
-                    hashMap.put(name, new JdbcDatasourcePoolImpl(name));
+                    hashMap.put(name, createJdbcDatasourcePool(name));
                     break;
 
             }
@@ -69,6 +69,18 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
         }
         this.map = hashMap;
 
+    }
+
+    @NotNull
+    private MycatDatasourcePool createNativeDatasourcePool(String name) {
+        NativeDatasourcePoolImpl nativeDatasourcePool = new NativeDatasourcePoolImpl(name);
+        return new MonitorMycatDatasourcePool(nativeDatasourcePool);
+    }
+
+    @NotNull
+    private MycatDatasourcePool createJdbcDatasourcePool(String name) {
+        JdbcDatasourcePoolImpl jdbcDatasourcePool = new JdbcDatasourcePoolImpl(name);
+        return new MonitorMycatDatasourcePool(jdbcDatasourcePool);
     }
 
     @Override
@@ -94,8 +106,8 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
             DatasourceConfig config = jdbcDataSource.getConfig();
             if (jdbcDataSource.isMySQLType()) {
                 if (Optional.ofNullable(config.getInstanceType()).map(i -> InstanceType.valueOf(i.toUpperCase()))
-                                .orElse(InstanceType.READ_WRITE)
-                                .isWriteType()) {
+                        .orElse(InstanceType.READ_WRITE)
+                        .isWriteType()) {
                     Connection connection = jdbcDataSource.getDataSource().getConnection();
                     map.put(string, connection);
                 }
