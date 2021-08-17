@@ -55,7 +55,7 @@ public class MonitorSqlConnection implements SqlConnection {
 
     @Override
     public Query<RowSet<Row>> query(String s) {
-        throw new UnsupportedOperationException();
+        return sqlConnection.query(s);
     }
 
     @Override

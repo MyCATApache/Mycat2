@@ -211,7 +211,7 @@ public class JdbcResponse implements Response {
         return promise.future().onComplete(new Handler<AsyncResult<Object>>() {
             @Override
             public void handle(AsyncResult<Object> event) {
-                dataContext.setAffectedRows(rowCountIterator.rowCount);
+                //dataContext.setAffectedRows(rowCountIterator.rowCount);
             }
         }).mapEmpty();
     }

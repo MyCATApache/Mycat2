@@ -263,7 +263,7 @@ public class ReceiverImpl implements Response {
 
         @Override
         public void onComplete() {
-            session.getDataContext().setAffectedRows(rowCount.get());
+           // session.getDataContext().setAffectedRows(rowCount.get());
             disposable.dispose();
             session.getDataContext().getTransactionSession().closeStatementState()
                     .onComplete(event -> {
