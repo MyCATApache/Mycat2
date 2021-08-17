@@ -25,6 +25,7 @@ import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.commands.MycatMySQLManagerImpl;
 import io.mycat.commands.SqlResultSetService;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.monitor.MonitorReplicaSelectorManager;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.proxy.session.AuthenticatorImpl;
@@ -193,6 +194,7 @@ public class ConfigPrepareExecuter {
                         }
                     };
                 });
+        replicaSelector = new MonitorReplicaSelectorManager(replicaSelector);
         jdbcConnectionManager = new JdbcConnectionManager(
                 datasourceProvider,
                 datasourceConfigMap,
