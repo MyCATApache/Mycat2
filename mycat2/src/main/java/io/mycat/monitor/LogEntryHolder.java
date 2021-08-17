@@ -4,6 +4,7 @@ import com.alibaba.druid.sql.parser.SQLType;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.config.ServerConfig;
+import io.mycat.exporter.SqlRecorderRuntime;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -39,9 +40,9 @@ public class LogEntryHolder {
     }
 
 
-   public void recordSQLEnd(boolean result,
-                      Map<String, Object> targets,
-                      String externalMessage) {
+    public void recordSQLEnd(boolean result,
+                             Map<String, Object> targets,
+                             String externalMessage) {
         try {
             Objects.requireNonNull(this.sqlEntry);
             long now = System.currentTimeMillis();
@@ -49,6 +50,9 @@ public class LogEntryHolder {
             this.sqlEntry.end(time, LocalDateTime.now(), mycatDataContext.getAffectedRows(), result, targets, externalMessage);
             mycatSQLLogMonitor.pushSqlLog(this.sqlEntry);
             InstanceMonitor.plusLrt(time);
+
+            SqlRecorderRuntime recorderRuntime = MetaClusterCurrent.wrapper(SqlRecorderRuntime.class);
+            recorderRuntime.addSqlRecord(this.sqlEntry);
         } finally {
             this.sqlEntry = null;
         }

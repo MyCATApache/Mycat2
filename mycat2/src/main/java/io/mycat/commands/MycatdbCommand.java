@@ -39,6 +39,7 @@ import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.MycatHint;
 import io.mycat.calcite.spm.*;
+import io.mycat.exporter.SqlRecorderRuntime;
 import io.mycat.monitor.LogEntryHolder;
 import io.mycat.monitor.MycatSQLLogMonitor;
 import io.mycat.sqlhandler.SQLHandler;
@@ -438,6 +439,7 @@ public enum MycatdbCommand {
                 }
             }
         });
+
         future = future.onComplete((Handler<AsyncResult>) event -> {
             if (event.succeeded()) {
                 logRecord.recordSQLEnd(true, Collections.emptyMap(), "");
