@@ -7,13 +7,9 @@ import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.api.collector.MysqlRow;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.core.Observable;
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
+import io.vertx.core.*;
 import io.vertx.sqlclient.SqlConnection;
 import lombok.Getter;
 
@@ -181,8 +177,10 @@ public class JdbcResponse implements Response {
         }
         Iterator<Object[]> transform = Iterators.transform(iterator, (i) -> ((MysqlRow) i).getRow());
         Promise<Object> promise = Promise.promise();
-        this.iterator = new Iterator<Object[]>() {
 
+
+        class RowCountIterator implements Iterator<Object[]> {
+            long rowCount = 0;
             @Override
             public boolean hasNext() {
                 try {
@@ -200,6 +198,7 @@ public class JdbcResponse implements Response {
             @Override
             public Object[] next() {
                 try {
+                    rowCount++;
                     return transform.next();
                 } catch (Exception e) {
                     promise.fail(e);
@@ -207,6 +206,13 @@ public class JdbcResponse implements Response {
                 }
             }
         };
-        return promise.future().mapEmpty();
+        RowCountIterator rowCountIterator = new RowCountIterator();
+        this.iterator = rowCountIterator;
+        return promise.future().onComplete(new Handler<AsyncResult<Object>>() {
+            @Override
+            public void handle(AsyncResult<Object> event) {
+                dataContext.setAffectedRows(rowCountIterator.rowCount);
+            }
+        }).mapEmpty();
     }
 }

@@ -1,9 +1,11 @@
-package io.mycat.beans.log.monitor;
+package io.mycat.monitor;
 
 import io.mycat.IOExecutor;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatServer;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import oshi.SystemInfo;
@@ -12,7 +14,8 @@ import oshi.hardware.GlobalMemory;
 
 
 @Data
-
+@ToString
+@EqualsAndHashCode
 public class InstanceEntry implements LogEntry {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceEntry.class);
     double cpu;
@@ -29,7 +32,7 @@ public class InstanceEntry implements LogEntry {
     double con;
 
 
-    public InstanceEntry snapshot() {
+    public  static InstanceEntry snapshot() {
         SystemInfo systemInfo = new SystemInfo();
 
         CentralProcessor processor = systemInfo.getHardware().getProcessor();
@@ -52,21 +55,11 @@ public class InstanceEntry implements LogEntry {
         if (Double.isInfinite(cpuRes)) {
             cpuRes = 1;
         }
-        GlobalMemory memory = systemInfo.getHardware().getMemory();
-        long totalByte = memory.getTotal();
-        long acaliableByte = memory.getAvailable();
-
-        double memRes = (totalByte - acaliableByte) * 1.0 / totalByte;
-        if (Double.isNaN(memRes)) {
-            cpuRes = 0;
-        }
-        if (Double.isInfinite(memRes)) {
-            cpuRes = 1;
-        }
+        //double memRes = getMemRes(systemInfo);
 
         InstanceEntry e = new InstanceEntry();
         e.cpu = cpuRes;
-        e.mem = memRes;
+        e.mem = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())*1.0/Runtime.getRuntime().totalMemory();
         e.lqps = InstanceMonitor.getLqps();
         e.pqps = InstanceMonitor.getPqps();
         e.lrt = InstanceMonitor.getLrt();
@@ -77,5 +70,22 @@ public class InstanceEntry implements LogEntry {
         return e;
     }
 
+    private static double getMemRes(SystemInfo systemInfo) {
+        GlobalMemory memory = systemInfo.getHardware().getMemory();
+        long totalByte = memory.getTotal();
+        long acaliableByte = memory.getAvailable();
 
+        double memRes = (totalByte - acaliableByte) * 1.0 / totalByte;
+        if (Double.isNaN(memRes)) {
+            memRes = 0;
+        }
+        if (Double.isInfinite(memRes)) {
+            memRes = 1;
+        }
+        return memRes;
+    }
+
+    public static void reset() {
+        InstanceMonitor.reset();
+    }
 }

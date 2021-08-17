@@ -8,16 +8,18 @@ import java.util.concurrent.TimeUnit;
 @Data
 @EqualsAndHashCode
 public class MonitorConfig {
-    String ip;
-    int port;
-    SqlLogConfig sqlLogConfig = new SqlLogConfig();
-    TimerConfig instanceMonitorConfig = createOneSecondTimeConfig();
-    TimerConfig readWriteRatioConfig = createOneSecondTimeConfig();
+    String ip = "localhost";
+    int port = 9066;
+    boolean open = true;
+    SqlLogConfig sqlLog = new SqlLogConfig();
+    TimerConfig instanceMonitor = createOneSecondTimeConfig();
+    TimerConfig readWriteRatioMonitor = createOneSecondTimeConfig();
+    TimerConfig databaseInstanceMonitor = createOneSecondTimeConfig();
 
     public static TimerConfig createOneSecondTimeConfig() {
         TimerConfig timerConfig = new TimerConfig();
-        timerConfig.setInitialDelay(1);
-        timerConfig.setPeriod(1);
+        timerConfig.setInitialDelay(30);
+        timerConfig.setPeriod(30);
         timerConfig.setTimeUnit(TimeUnit.SECONDS.name());
         return timerConfig;
     }

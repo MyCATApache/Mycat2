@@ -13,9 +13,21 @@ import lombok.Data;
  * @date 2021/8/12 12:01
  */
 @Data
-@AllArgsConstructor
 public class TableData {
   int columnCount;
   ResultSetMetaData resultSetMetaData;
+  List<String> columnNames;
   List<String[]> dataList;
+
+  public TableData(List<String> columnNames, List<String[]> dataList) {
+    this.columnCount = columnNames.size();
+    this.columnNames = columnNames;
+    this.dataList = dataList;
+  }
+
+  public TableData(int columnCount, ResultSetMetaData resultSetMetaData, List<String[]> dataList) {
+    this.columnCount = columnCount;
+    this.resultSetMetaData = resultSetMetaData;
+    this.dataList = dataList;
+  }
 }

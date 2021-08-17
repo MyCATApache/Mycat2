@@ -896,73 +896,74 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     public static Map<String, IndexInfo> getIndexInfo(String sql, String schemaName, List<SimpleColumnInfo> columnInfoList) {
-        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-        if (!(sqlStatement instanceof MySqlCreateTableStatement)) {
-            return null;
-        }
-        String tableName = ((MySqlCreateTableStatement) sqlStatement).getTableName();
-        List<MySqlTableIndex> mysqlIndexes = ((MySqlCreateTableStatement) sqlStatement).getMysqlIndexes();
-        Map<String, IndexInfo> indexInfoMap = new LinkedHashMap<>();
-        for (MySqlTableIndex astIndex : mysqlIndexes) {
-            // 索引名
-            String indexName = SQLUtils.normalize(astIndex.getName().getSimpleName());
-            try {
-                // 索引列
-                List<SimpleColumnInfo> mycatIndexes = new ArrayList<>(columnInfoList);
-                Set<String> astIndexSet = astIndex.getColumns().stream()
-                        .map(SQLSelectOrderByItem::getExpr)
-                        .map(SQLName.class::cast)
-                        .map(SQLName::getSimpleName)
-                        .map(SQLUtils::normalize)
-                        .collect(Collectors.toSet());
-                for (int i = 0; i < mycatIndexes.size(); i++) {
-                    if (!astIndexSet.contains(mycatIndexes.get(i).getColumnName())) {
-                        mycatIndexes.set(i, null);
-                    }
-                }
-
-                // 覆盖列
-                List<SimpleColumnInfo> mycatCoverings = new ArrayList<>(columnInfoList);
-                Set<String> astCoveringSet = astIndex.getCovering().stream()
-                        .map(SQLName::getSimpleName)
-                        .map(SQLUtils::normalize)
-                        .collect(Collectors.toSet());
-                for (int i = 0; i < mycatCoverings.size(); i++) {
-                    if (!astCoveringSet.contains(mycatCoverings.get(i).getColumnName())) {
-                        mycatCoverings.set(i, null);
-                    }
-                }
-
-                // DB分区
-                SQLMethodInvokeExpr dbPartitionBy = (SQLMethodInvokeExpr) astIndex.getDbPartitionBy();
-                String dbPartitionByMethodName = null;
-                List<SimpleColumnInfo> dbPartitionByColumms = new ArrayList<>();
-                if (dbPartitionBy != null) {
-                    dbPartitionByMethodName = dbPartitionBy.getMethodName();
-                    List<SQLExpr> arguments = dbPartitionBy.getArguments();
-                    for (SQLExpr argument : arguments) {
-                        SQLName sqlName = (SQLName) argument;
-                        SimpleColumnInfo columnInfo = columnInfoList.stream()
-                                .filter(e -> SQLUtils.nameEquals(e.getColumnName(), sqlName.getSimpleName()))
-                                .findFirst()
-                                .orElseThrow(() -> new IllegalStateException("解析 " + dbPartitionBy + "时, 发现字段[" + sqlName + "]在列中不存在"));
-                        dbPartitionByColumms.add(columnInfo);
-                    }
-                }
-
-                IndexInfo old = indexInfoMap.put(indexName, new IndexInfo(schemaName, tableName, indexName,
-                        mycatIndexes.toArray(new SimpleColumnInfo[0]),
-                        mycatCoverings.toArray(new SimpleColumnInfo[0]),
-                        new IndexInfo.DBPartitionBy(dbPartitionByMethodName,
-                                dbPartitionByColumms.toArray(new SimpleColumnInfo[0]))));
-                if (old != null) {
-                    throw new IllegalStateException("存在重复的索引名称 " + indexName);
-                }
-            } catch (ClassCastException e) {
-                throw new IllegalStateException("暂时不支持该索引语法" + astIndex);
-            }
-        }
-        return indexInfoMap;
+//        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+//        if (!(sqlStatement instanceof MySqlCreateTableStatement)) {
+//            return null;
+//        }
+//        String tableName = ((MySqlCreateTableStatement) sqlStatement).getTableName();
+//        List<MySqlTableIndex> mysqlIndexes = ((MySqlCreateTableStatement) sqlStatement).getMysqlIndexes();
+//        Map<String, IndexInfo> indexInfoMap = new LinkedHashMap<>();
+//        for (MySqlTableIndex astIndex : mysqlIndexes) {
+//            // 索引名
+//            String indexName = SQLUtils.normalize(astIndex.getName().getSimpleName());
+//            try {
+//                // 索引列
+//                List<SimpleColumnInfo> mycatIndexes = new ArrayList<>(columnInfoList);
+//                Set<String> astIndexSet = astIndex.getColumns().stream()
+//                        .map(SQLSelectOrderByItem::getExpr)
+//                        .map(SQLName.class::cast)
+//                        .map(SQLName::getSimpleName)
+//                        .map(SQLUtils::normalize)
+//                        .collect(Collectors.toSet());
+//                for (int i = 0; i < mycatIndexes.size(); i++) {
+//                    if (!astIndexSet.contains(mycatIndexes.get(i).getColumnName())) {
+//                        mycatIndexes.set(i, null);
+//                    }
+//                }
+//
+//                // 覆盖列
+//                List<SimpleColumnInfo> mycatCoverings = new ArrayList<>(columnInfoList);
+//                Set<String> astCoveringSet = astIndex.getCovering().stream()
+//                        .map(SQLName::getSimpleName)
+//                        .map(SQLUtils::normalize)
+//                        .collect(Collectors.toSet());
+//                for (int i = 0; i < mycatCoverings.size(); i++) {
+//                    if (!astCoveringSet.contains(mycatCoverings.get(i).getColumnName())) {
+//                        mycatCoverings.set(i, null);
+//                    }
+//                }
+//
+//                // DB分区
+//                SQLMethodInvokeExpr dbPartitionBy = (SQLMethodInvokeExpr) astIndex.getDbPartitionBy();
+//                String dbPartitionByMethodName = null;
+//                List<SimpleColumnInfo> dbPartitionByColumms = new ArrayList<>();
+//                if (dbPartitionBy != null) {
+//                    dbPartitionByMethodName = dbPartitionBy.getMethodName();
+//                    List<SQLExpr> arguments = dbPartitionBy.getArguments();
+//                    for (SQLExpr argument : arguments) {
+//                        SQLName sqlName = (SQLName) argument;
+//                        SimpleColumnInfo columnInfo = columnInfoList.stream()
+//                                .filter(e -> SQLUtils.nameEquals(e.getColumnName(), sqlName.getSimpleName()))
+//                                .findFirst()
+//                                .orElseThrow(() -> new IllegalStateException("解析 " + dbPartitionBy + "时, 发现字段[" + sqlName + "]在列中不存在"));
+//                        dbPartitionByColumms.add(columnInfo);
+//                    }
+//                }
+//
+//                IndexInfo old = indexInfoMap.put(indexName, new IndexInfo(schemaName, tableName, indexName,
+//                        mycatIndexes.toArray(new SimpleColumnInfo[0]),
+//                        mycatCoverings.toArray(new SimpleColumnInfo[0]),
+//                        new IndexInfo.DBPartitionBy(dbPartitionByMethodName,
+//                                dbPartitionByColumms.toArray(new SimpleColumnInfo[0]))));
+//                if (old != null) {
+//                    throw new IllegalStateException("存在重复的索引名称 " + indexName);
+//                }
+//            } catch (ClassCastException e) {
+//                throw new IllegalStateException("暂时不支持该索引语法" + astIndex);
+//            }
+//        }
+//        return indexInfoMap;
+        return Collections.emptyMap();
     }
 
     public void createPhysicalTables() {

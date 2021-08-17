@@ -42,6 +42,7 @@ public class ShardingTable implements ShardingTableHandler {
     private List<Partition> backends;
     public List<ShardingIndexTable> indexTables;
     private ShardingTableConfig tableConfig;
+    private Boolean autoIncrementColumn;
 
     public ShardingTable(LogicTable logicTable,
                          List<Partition> backends,
@@ -51,7 +52,7 @@ public class ShardingTable implements ShardingTableHandler {
         this.logicTable = logicTable;
         this.backends = (backends == null || backends.isEmpty()) ? Collections.emptyList() : backends;
         this.shardingFuntion = shardingFuntion;
-        this.indexTables = shardingIndexTables.stream().map(i->i.withPrimary(ShardingTable.this)).collect(Collectors.toList());
+        this.indexTables = shardingIndexTables.stream().map(i -> i.withPrimary(ShardingTable.this)).collect(Collectors.toList());
         this.tableConfig = tableConfigEntry;
     }
 
@@ -153,7 +154,16 @@ public class ShardingTable implements ShardingTableHandler {
 
     @Override
     public SimpleColumnInfo getAutoIncrementColumn() {
-        return logicTable.getAutoIncrementColumn();
+        if (autoIncrementColumn == null) {
+            autoIncrementColumn = Optional.ofNullable(this.tableConfig.getAutoIncrement()).orElseGet(() -> {
+                return logicTable.getAutoIncrementColumn() != null;
+            });
+        }
+        if (autoIncrementColumn) {
+            return logicTable.getAutoIncrementColumn();
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -238,7 +248,7 @@ public class ShardingTable implements ShardingTableHandler {
     }
 
     public List<KeyMeta> keyMetas() {
-        List<String> shardingKeys = this.getColumns().stream().filter(i -> i.isShardingKey()).map(i->i.getColumnName()).collect(Collectors.toList());
+        List<String> shardingKeys = this.getColumns().stream().filter(i -> i.isShardingKey()).map(i -> i.getColumnName()).collect(Collectors.toList());
         List<KeyMeta> keyMetas = new ArrayList<>();
         for (int i = 0; i < shardingKeys.size(); i++) {
             KeyMeta keyMeta = KeyMeta.of(shardingFuntion.name(), shardingKeys.get(i));

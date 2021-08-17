@@ -3,7 +3,6 @@ package io.mycat.connection;
 import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.sqlrecorder.SqlRecord;
 
 import java.nio.charset.Charset;
 import java.util.Map;
@@ -193,21 +192,6 @@ public class JdbcMycatDataContext implements MycatDataContext {
     @Override
     public Map<Long, PreparedStatement> getPrepareInfo() {
         return null;
-    }
-
-    @Override
-    public SqlRecord startSqlRecord() {
-        return null;
-    }
-
-    @Override
-    public SqlRecord currentSqlRecord() {
-        return null;
-    }
-
-    @Override
-    public void endSqlRecord() {
-
     }
 
     @Override

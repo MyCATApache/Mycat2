@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mycat.ui.MonitorConnector">
+   <children>
+
+      <Label layoutX="44.0" layoutY="70.0" text="Mycat2服务器IP" />
+       <TextField fx:id="monitorIp" layoutX="157.0" layoutY="66.0" text="localhost" />
+      <Label layoutX="44.0" layoutY="112.0" text="端口" />
+      <TextField fx:id="monitorPort" layoutX="157.0" layoutY="108.0" text="9066" />
+      <Button fx:id="instanceMonitorButton" layoutX="41.0" layoutY="221.0" mnemonicParsing="false" text="实例监控" />
+      <Button fx:id="dbMonitorButton" layoutX="238.0" layoutY="221.0" mnemonicParsing="false" text="数据库监控" />
+      <Button fx:id="replicaMonitorButton" layoutX="134.0" layoutY="221.0" mnemonicParsing="false" text="集群监控" />
+<!--      <Button fx:id="allButton" layoutX="343.0" layoutY="221.0" mnemonicParsing="false" text="打开全部" />-->
+      <Label layoutX="41.0" layoutY="33.0" text="名称" />
+      <TextField fx:id="monitorName" layoutX="157.0" layoutY="29.0" text="con1" />
+       
+   </children>
+</AnchorPane>
