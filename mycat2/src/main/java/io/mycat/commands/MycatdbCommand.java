@@ -39,7 +39,6 @@ import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.MycatHint;
 import io.mycat.calcite.spm.*;
-import io.mycat.exporter.SqlRecorderRuntime;
 import io.mycat.monitor.LogEntryHolder;
 import io.mycat.monitor.MycatSQLLogMonitor;
 import io.mycat.sqlhandler.SQLHandler;
@@ -166,7 +165,7 @@ public enum MycatdbCommand {
             if (text.charAt(0) == 'B') {
                 //baseline
                 Response response = responseFactory.apply(1);
-                return handleBasline(text, dataContext, response);
+                return handleBaseline(text, dataContext, response);
             }
             LinkedList<SQLStatement> statements = parse(text);
             if (statements.isEmpty()) {
@@ -193,7 +192,7 @@ public enum MycatdbCommand {
         }
     }
 
-    private Future<Void> handleBasline(String text, MycatDataContext dataContext, Response response) {
+    private Future<Void> handleBaseline(String text, MycatDataContext dataContext, Response response) {
         QueryPlanCache queryPlanCache = MetaClusterCurrent.wrapper(MemPlanCache.class);
         if (text.startsWith("BASELINE ")) {
             text = text.substring("BASELINE".length()).trim();
@@ -387,7 +386,7 @@ public enum MycatdbCommand {
     public static Future<Void> execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) {
 
 
-        String sql = sqlStatement.toParameterizedString();
+        String sql = sqlStatement.toString();
         SQLType sqlType = SQLParserUtils.getSQLType(sql, DbType.mysql);
         MycatSQLLogMonitor logMonitor = MetaClusterCurrent.wrapper(MycatSQLLogMonitor.class);
         LogEntryHolder logRecord = logMonitor.startRecord(dataContext, null, sqlType, sql);
