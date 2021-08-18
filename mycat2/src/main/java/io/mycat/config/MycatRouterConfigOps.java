@@ -303,6 +303,9 @@ public class MycatRouterConfigOps implements AutoCloseable {
         for (SQLTableElement sqlTableElement : tableStatement.getTableElementList()) {
             if (sqlTableElement instanceof MySqlTableIndex) {
                 MySqlTableIndex element = (MySqlTableIndex) sqlTableElement;
+                if(!element.isGlobal()){
+                    continue;
+                }
                 SQLIndexDefinition indexDefinition = element.getIndexDefinition();
                 MySqlCreateTableStatement indexCreateTableStatement = new MySqlCreateTableStatement();
                 indexCreateTableStatement.setIfNotExiists(true);
