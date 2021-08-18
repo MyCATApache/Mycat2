@@ -43,7 +43,7 @@ public class MySQLLogConsumer implements Consumer<SqlEntry> {
                             "  `traceId` varchar(22) NOT NULL,\n" +
                             "  `hash` varchar(22) DEFAULT NULL,\n" +
                             "  `sqlType` varchar(22) DEFAULT NULL,\n" +
-                            "  `sql` tinytext,\n" +
+                            "  `sql` longtext,\n" +
                             "  `transactionId` varchar(22) DEFAULT NULL,\n" +
                             "  `sqlTime` time DEFAULT NULL,\n" +
                             "  `responseTime` datetime DEFAULT NULL,\n" +
