@@ -809,6 +809,8 @@ public class SQLRBORewriter extends RelShuttleImpl {
             }
         } else if (lType == Distribution.Type.PHY && rType == Distribution.Type.PHY) {
 
+        } else if (lType == Distribution.Type.BROADCAST && rType == Distribution.Type.BROADCAST) {
+
         } else {
             return Optional.empty();
         }
