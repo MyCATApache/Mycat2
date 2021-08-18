@@ -18,6 +18,7 @@ import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.google.common.collect.ImmutableMap;
 import io.mycat.*;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.util.MycatSQLExprTableSourceUtil;
@@ -61,14 +62,17 @@ public class HackRouter {
         res = metadataManager.checkVaildNormalRoute(tableNames);
         if (res.isPresent()) {
             Distribution distribution = res.get();
-            targetMap = NameMap.immutableCopyOf(Collections.emptyMap());
 
-            targetMap.putAll(
+
+            ImmutableMap.Builder<String, Partition> builder = ImmutableMap.builder();
+            builder.putAll(
                     distribution.getGlobalTables().stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getDataNode())));
 
             Map<String, Partition> normalMap = distribution.getNormalTables().stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getDataNode()));
-            targetMap.putAll(normalMap);
+            builder.putAll(normalMap);
 
+
+            targetMap = NameMap.immutableCopyOf(builder.build());
             switch (distribution.type()) {
                 case BROADCAST:
                     List<Partition> globalDataNode = distribution.getGlobalTables().get(0).getGlobalDataNode();
