@@ -18,29 +18,30 @@ import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.MetadataManager;
-import io.mycat.MycatDataContext;
-import io.mycat.MycatException;
+import io.mycat.*;
+import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.util.MycatSQLExprTableSourceUtil;
 import io.mycat.util.NameMap;
 import io.mycat.util.Pair;
 
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 public class HackRouter {
     SQLStatement selectStatement;
     private MycatDataContext dataContext;
-    private  NameMap<MetadataManager.SimpleRoute> singleTables;
+    Optional<Distribution> res;
+    private MetadataManager metadataManager;
+    private String targetName;
+    private NameMap<Partition> normalMap;
 
     public HackRouter(SQLStatement selectStatement, MycatDataContext context) {
         this.selectStatement = selectStatement;
         this.dataContext = context;
     }
-    public boolean analyse(){
+
+    public boolean analyse() {
         Set<Pair<String, String>> tableNames = new HashSet<>();
         selectStatement.accept(new MySqlASTVisitorAdapter() {
             @Override
@@ -56,32 +57,46 @@ public class HackRouter {
                 return super.visit(x);
             }
         });
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        this.singleTables = new NameMap<>();
-        boolean singleTarget = metadataManager.checkVaildNormalRoute(tableNames, singleTables);
-        return singleTarget;
+        this.metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        res = metadataManager.checkVaildNormalRoute(tableNames);
+        if (res.isPresent()) {
+            Distribution distribution = res.get();
+            switch (distribution.type()) {
+                case BROADCAST:
+                    List<Partition> globalDataNode = distribution.getGlobalTables().get(0).getGlobalDataNode();
+                    int i = ThreadLocalRandom.current().nextInt(0, globalDataNode.size());
+                    normalMap = NameMap.immutableCopyOf( distribution.getGlobalTables().stream().collect(Collectors.toMap(k->k.getUniqueName(),v->v.getDataNode())));
+                    targetName = globalDataNode.get(i).getTargetName();
+                    return true;
+                case SHARDING:
+                    return false;
+                case PHY:
+                    normalMap = NameMap.immutableCopyOf(
+                            distribution.getNormalTables().stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getDataNode())));
+                    targetName = normalMap.values().iterator().next().getTargetName();
+                    return true;
+            }
+        } else {
+            return false;
+        }
+        return false;
     }
 
-    public Pair<String,String> getPlan(){
-        String[] targetName = new String[1];
-        selectStatement.accept(new MySqlASTVisitorAdapter() {
-            @Override
-            public boolean visit(SQLExprTableSource x) {
-                String tableName = x.getTableName();
-                if (tableName != null) {
-                    tableName = SQLUtils.normalize(tableName);
-                    MetadataManager.SimpleRoute normalTable = singleTables.get(tableName);
-                    if (normalTable != null) {
-                        String schema = SQLUtils.normalize(Optional.ofNullable(x.getSchema()).orElse(dataContext.getDefaultSchema()));
-                        if (normalTable.getSchemaName().equalsIgnoreCase(schema)) {
-                            MycatSQLExprTableSourceUtil.setSqlExprTableSource(normalTable.getSchemaName(),normalTable.getTableName(),x);
-                            targetName[0] = Objects.requireNonNull(normalTable.getTargetName());
-                        }
+    public Pair<String, String> getPlan() {
+        if (normalMap != null) {
+            selectStatement.accept(new MySqlASTVisitorAdapter() {
+                @Override
+                public boolean visit(SQLExprTableSource x) {
+                    String tableName = SQLUtils.normalize(x.getTableName());
+                    String schema = SQLUtils.normalize(Optional.ofNullable(x.getSchema()).orElse(dataContext.getDefaultSchema()));
+                    Partition partition = normalMap.get(schema + "_" + tableName, false);
+                    if (partition != null) {
+                        MycatSQLExprTableSourceUtil.setSqlExprTableSource(partition.getSchema(), partition.getTable(), x);
                     }
+                    return super.visit(x);
                 }
-                return super.visit(x);
-            }
-        });
-        return Pair.of(Objects.requireNonNull(targetName[0]), selectStatement.toString());
+            });
+        }
+        return Pair.of(targetName, selectStatement.toString());
     }
 }

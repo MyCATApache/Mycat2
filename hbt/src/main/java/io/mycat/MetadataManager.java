@@ -31,6 +31,7 @@ import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mysql.MySQLType;
+import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.table.*;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
@@ -366,8 +367,8 @@ public class MetadataManager implements MysqlVariableService {
             while (tableIterator.next()) {
                 tables.add(tableIterator.getString(0));
             }
-        }catch (Exception e){
-            LOGGER.error("",e);
+        } catch (Exception e) {
+            LOGGER.error("", e);
             return Collections.emptyMap();
         }
         Map<String, NormalTableConfig> res = new ConcurrentHashMap<>();
@@ -447,29 +448,29 @@ public class MetadataManager implements MysqlVariableService {
         ImmutableList.Builder<BackendTableInfo> builder = ImmutableList.builder();
         if (data != null) {
             for (List datum : data) {
-                if (datum.size() == 6){
+                if (datum.size() == 6) {
                     String target = Objects.toString(datum.get(0));
                     String schema = Objects.toString(datum.get(1));
                     String table = Objects.toString(datum.get(2));
                     int dbIndex = Integer.parseInt(Objects.toString(datum.get(3)));
-                    int tableIndex = Integer.parseInt( Objects.toString(datum.get(4)));
-                    int index = Integer.parseInt( Objects.toString(datum.get(5)));
+                    int tableIndex = Integer.parseInt(Objects.toString(datum.get(4)));
+                    int index = Integer.parseInt(Objects.toString(datum.get(5)));
 
                     BackendTableInfo indexBackendTableInfo = new IndexDataNode(target, schema, table, dbIndex, tableIndex, index);
                     builder.add(indexBackendTableInfo);
-                }else if (datum.size() == 3){
+                } else if (datum.size() == 3) {
                     String target = Objects.toString(datum.get(0));
                     String schema = Objects.toString(datum.get(1));
                     String table = Objects.toString(datum.get(2));
 
-                    builder.add( new BackendTableInfo(target,schema,table));
-                }else{
+                    builder.add(new BackendTableInfo(target, schema, table));
+                } else {
                     throw new UnsupportedOperationException("format must be " +
-                            "target,schema,table" +" or "+
+                            "target,schema,table" + " or " +
                             "target,schema,table,dbIndex,tableIndex,index");
                 }
             }
-        } else if (stringListEntry.getSchemaNames()!=null){
+        } else if (stringListEntry.getSchemaNames() != null) {
             String schemaNames = stringListEntry.getSchemaNames();
             String tableNames = stringListEntry.getTableNames();
             String targetNames = stringListEntry.getTargetNames();
@@ -778,9 +779,9 @@ public class MetadataManager implements MysqlVariableService {
         }
     }
 
-    public boolean checkVaildNormalRoute(Set<Pair<String, String>> tableNames, NameMap<SimpleRoute> tables) {
+    public Optional<Distribution> checkVaildNormalRoute(Set<Pair<String, String>> tableNames) {
         NameMap<SchemaHandler> schemaMap1 = getSchemaMap();
-        Set<String> targets = new HashSet<>();
+        Distribution leftDistribution = null;
         TableHandler tableHandler = null;
         for (Pair<String, String> tableName : tableNames) {
             SchemaHandler schemaHandler = schemaMap1.get(SQLUtils.normalize(tableName.getKey()), false);
@@ -789,45 +790,34 @@ public class MetadataManager implements MysqlVariableService {
                 if (logicTables != null) {
                     tableHandler = logicTables.get(SQLUtils.normalize(tableName.getValue()), false);
                     if (tableHandler != null) {
-                        if (tableHandler.getType() == LogicTableType.NORMAL
-                                ||
-                                tableHandler.getType() == LogicTableType.GLOBAL) {
-                            Partition partition = null;
+                        if (tableHandler.getType() == LogicTableType.NORMAL || tableHandler.getType() == LogicTableType.GLOBAL) {
+                            Distribution rightDistribution;
                             if (tableHandler.getType() == LogicTableType.NORMAL) {
                                 NormalTable tableHandler1 = (NormalTable) tableHandler;
-                                partition = tableHandler1.getDataNode();
+                                rightDistribution = Distribution.of(tableHandler1);
                             } else if (tableHandler.getType() == LogicTableType.GLOBAL) {
                                 GlobalTable tableHandler1 = (GlobalTable) tableHandler;
-                                int size = tableHandler1.getGlobalDataNode().size();
-                                if (size == 0) {
-                                    throw new IllegalArgumentException("datanodes of global table is empty");
-                                }
-                                int i = ThreadLocalRandom.current().nextInt(0, size);
-                                partition = tableHandler1.getGlobalDataNode().get(i);
+                                rightDistribution = Distribution.of(tableHandler1);
                             } else {
                                 throw new IllegalArgumentException("unsupported table type:" + tableHandler.getType());
                             }
-                            tables.put(tableHandler.getTableName(),
-                                    new SimpleRoute(partition.getSchema(), partition.getTable(), partition.getTargetName()));
-                            if (targets.add(partition.getTargetName())) {
-                                if (targets.size() > 1) {
-                                    return false;
-                                }
+                            if (leftDistribution == null) {
+                                leftDistribution = rightDistribution;
+                            } else {
+                                leftDistribution = leftDistribution.join(rightDistribution).orElse(null);
                             }
                             continue;
-                        } else {
-                            return false;
+                        } else {//sharding table
+                            return Optional.empty();
                         }
                     }
                 }
             }
         }
-//        if (tables.values().isEmpty() && tableNames.size() == 1) {
-//            Pair<String, String> next = tableNames.iterator().next();
-//            tables.put(next.getValue(), new SimpleRoute(next.getKey(), next.getValue(), prototype));
-//            targets.add(prototype);
-//        }
-        return targets.size() == 1;
+        if (leftDistribution == null) {
+            return Optional.empty();
+        }
+        return Optional.of(leftDistribution);
     }
 
 
@@ -968,7 +958,7 @@ public class MetadataManager implements MysqlVariableService {
 
     public void createPhysicalTables() {
         this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream())
-                .filter(i->i.getType()  == LogicTableType.SHARDING || i.getType()  == LogicTableType.GLOBAL)
+                .filter(i -> i.getType() == LogicTableType.SHARDING || i.getType() == LogicTableType.GLOBAL)
                 .parallel()
                 .forEach(tableHandler -> tableHandler.createPhysicalTables());
     }
