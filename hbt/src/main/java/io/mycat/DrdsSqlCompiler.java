@@ -478,7 +478,7 @@ public class DrdsSqlCompiler {
             builder.addGroupBegin();
             builder.addRuleInstance(MycatHepJoinClustering.Config.DEFAULT.toRule());
             builder.addGroupEnd();
-            builder.addMatchLimit(8);
+            builder.addMatchLimit(64);
             builder.addGroupBegin();
             builder.addRuleInstance(CoreRules.MULTI_JOIN_OPTIMIZE);
             builder.addGroupEnd();
@@ -488,24 +488,26 @@ public class DrdsSqlCompiler {
             RelNode bestExp = planner.findBestExp();
 
             return bestExp;
-        }).orElse(unAvg);
+        }).flatMap(relNode -> {
+            class MultiJoinFinder extends RelShuttleImpl {
+                boolean multiJoin = false;
 
-        class MultiJoinFinder extends RelShuttleImpl{
-            boolean multiJoin  =false;
-            @Override
-            public RelNode visit(RelNode other) {
-                if (other instanceof MultiJoin){
-                    multiJoin = true;
+                @Override
+                public RelNode visit(RelNode other) {
+                    if (other instanceof MultiJoin) {
+                        multiJoin = true;
+                    }
+                    return super.visit(other);
                 }
-                return super.visit(other);
             }
-        }
-        MultiJoinFinder multiJoinFinder = new MultiJoinFinder();
-        joinClustering.accept(multiJoinFinder);
+            MultiJoinFinder multiJoinFinder = new MultiJoinFinder();
+            relNode.accept(multiJoinFinder);
 
-        if (multiJoinFinder.multiJoin){
-            joinClustering = unAvg;
-        }
+            if (multiJoinFinder.multiJoin) {
+                return Optional.empty();
+            }
+            return Optional.of(relNode);
+        }).orElse(unAvg);
 
         HepProgramBuilder builder = new HepProgramBuilder();
         builder.addGroupBegin().addRuleCollection(ImmutableList.of(
