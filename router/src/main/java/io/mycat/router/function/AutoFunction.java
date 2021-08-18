@@ -157,13 +157,13 @@ public abstract class AutoFunction extends CustomRuleFunction {
         return (List) scanAll();
     }
 
-    public abstract List<IndexDataNode> scanAll();
+    public abstract List<Partition> scanAll();
 
-    public abstract List<IndexDataNode> scanOnlyTableIndex(int index);
+    public abstract List<Partition> scanOnlyTableIndex(int index);
 
-    public abstract List<IndexDataNode> scanOnlyDbIndex(int index);
+    public abstract List<Partition> scanOnlyDbIndex(int index);
 
-    public abstract List<IndexDataNode> scanOnlyDbTableIndex(int dbIndex, int tableIndex);
+    public abstract List<Partition> scanOnlyDbTableIndex(int dbIndex, int tableIndex);
 
     @Override
     protected void init(ShardingTableHandler tableHandler, Map<String, Object> properties, Map<String, Object> ranges) {

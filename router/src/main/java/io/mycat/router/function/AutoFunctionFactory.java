@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import groovy.text.SimpleTemplateEngine;
 import groovy.text.Template;
+import io.mycat.Partition;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.config.ShardingFunction;
 import io.mycat.router.CustomRuleFunction;
@@ -131,7 +132,7 @@ public class AutoFunctionFactory {
                 );
 
                 if (!column1.getType().equals(column2.getType())) {
-                    throw new IllegalArgumentException(column1+" and "+column2+" type is different");
+                    throw new IllegalArgumentException(column1 + " and " + column2 + " type is different");
                 }
                 int n;
                 if (methodInvokeExpr.getArguments().size() > 2) {
@@ -374,84 +375,90 @@ public class AutoFunctionFactory {
         final boolean finalFlattenMapping = flattenMapping;
         final ToIntFunction<Object> finalDbFunction = dbFunction;
         final ToIntFunction<Object> finalTableFunction = tableFunction;
-        List<IndexDataNode> indexDataNodes = new ArrayList<>();
+        List<Partition> indexDataNodes =  Optional
+                .ofNullable(tableHandler.dataNodes())
+                .map(i -> new ArrayList<>(i))
+                .orElse(new ArrayList<>());
 
-        List<int[]> seq = new ArrayList<>();
-        int tableCount = 0;
-        for (int dbIndex = 0; dbIndex < dbNum; dbIndex++) {
-            for (int tableIndex = 0; tableIndex < tableNum; tableCount++, tableIndex++) {
-                seq.add(new int[]{dbIndex, tableIndex, tableCount});
+        if (indexDataNodes.isEmpty()){
+            List<int[]> seq = new ArrayList<>();
+            int tableCount = 0;
+            for (int dbIndex = 0; dbIndex < dbNum; dbIndex++) {
+                for (int tableIndex = 0; tableIndex < tableNum; tableCount++, tableIndex++) {
+                    seq.add(new int[]{dbIndex, tableIndex, tableCount});
+                }
+            }
+
+            SimpleTemplateEngine templateEngine = new SimpleTemplateEngine();
+            Template template = templateEngine.createTemplate(mappingFormat);
+            HashMap<String, Object> context = new HashMap<>(properties);
+
+
+            for (int i = 0; i < seq.size(); i++) {
+                int seqIndex = i / storeDbNum;
+                int[] ints = seq.get(i);
+                int currentDbIndex = ints[0];
+                int currentTableIndex = ints[1];
+                int currentTableCount = ints[2];
+                context.put("targetIndex", String.valueOf(seqIndex));
+                context.put("dbIndex", String.valueOf(currentDbIndex));
+                context.put("tableIndex", String.valueOf(currentTableIndex));
+                context.put("index", String.valueOf(currentTableCount));
+                StringWriter stringWriter = new StringWriter();
+                template.make(context).writeTo(stringWriter);
+                String[] strings = SplitUtil.split(stringWriter.getBuffer().toString(), sep);
+
+                IndexDataNode backendTableInfo = new IndexDataNode(strings[0], strings[1], strings[2], currentDbIndex, currentTableIndex, currentTableCount);
+                indexDataNodes.add(backendTableInfo);
             }
         }
 
-        SimpleTemplateEngine templateEngine = new SimpleTemplateEngine();
-        Template template = templateEngine.createTemplate(mappingFormat);
-        HashMap<String, Object> context = new HashMap<>(properties);
-
-
-        for (int i = 0; i < seq.size(); i++) {
-            int seqIndex = i / storeDbNum;
-            int[] ints = seq.get(i);
-            int currentDbIndex = ints[0];
-            int currentTableIndex = ints[1];
-            int currentTableCount = ints[2];
-            context.put("targetIndex", String.valueOf(seqIndex));
-            context.put("dbIndex", String.valueOf(currentDbIndex));
-            context.put("tableIndex", String.valueOf(currentTableIndex));
-            context.put("index", String.valueOf(currentTableCount));
-            StringWriter stringWriter = new StringWriter();
-            template.make(context).writeTo(stringWriter);
-            String[] strings = SplitUtil.split(stringWriter.getBuffer().toString(), sep);
-
-            IndexDataNode backendTableInfo = new IndexDataNode(strings[0], strings[1], strings[2], currentDbIndex, currentTableIndex,currentTableCount);
-            indexDataNodes.add(backendTableInfo);
-        }
         if (flattenMapping) {
-            Map<Integer, List<IndexDataNode>> dbIndexToNode = indexDataNodes.stream().collect(Collectors.groupingBy(k -> k.getDbIndex()));
+            Map<Integer, List<Partition>> dbIndexToNode = indexDataNodes.stream().collect(Collectors.groupingBy(k -> k.getDbIndex()));
             return new AutoFunction(dbNum, tableNum, dbMethod, tableMethod, dbShardingKeys, tableShardingKeys, finalDbFunction, finalTableFunction, storeNum) {
                 @Override
-                public List<IndexDataNode> scanAll() {
+                public List<Partition> scanAll() {
                     return ImmutableList.copyOf(indexDataNodes);
                 }
 
                 @Override
-                public List<IndexDataNode> scanOnlyTableIndex(int index) {
+                public List<Partition> scanOnlyTableIndex(int index) {
                     return ImmutableList.of(indexDataNodes.get(index));
                 }
 
                 @Override
-                public List<IndexDataNode> scanOnlyDbIndex(int index) {
+                public List<Partition> scanOnlyDbIndex(int index) {
                     return dbIndexToNode.get(index);
                 }
 
                 @Override
-                public List<IndexDataNode> scanOnlyDbTableIndex(int dbIndex, int tableIndex) {
+                public List<Partition> scanOnlyDbTableIndex(int dbIndex, int tableIndex) {
                     return scanOnlyTableIndex(tableIndex);
                 }
             };
         } else {
-            Map<Integer, List<IndexDataNode>> dbIndexToNode = indexDataNodes.stream().collect(Collectors.groupingBy(k -> k.getDbIndex()));
-            Map<Integer, List<IndexDataNode>> tableIndexToNode = indexDataNodes.stream().collect(Collectors.groupingBy(k -> k.getTableIndex()));
+            Map<Integer, List<Partition>> dbIndexToNode = indexDataNodes.stream().collect(Collectors.groupingBy(k -> k.getDbIndex()));
+            Map<Integer, List<Partition>> tableIndexToNode = indexDataNodes.stream().collect(Collectors.groupingBy(k -> k.getTableIndex()));
             return new AutoFunction(dbNum, tableNum, dbMethod, tableMethod, dbShardingKeys, tableShardingKeys, finalDbFunction, finalTableFunction, storeNum) {
                 @Override
-                public List<IndexDataNode> scanAll() {
+                public List<Partition> scanAll() {
                     return ImmutableList.copyOf(indexDataNodes);
                 }
 
                 @Override
-                public List<IndexDataNode> scanOnlyTableIndex(int index) {
+                public List<Partition> scanOnlyTableIndex(int index) {
                     return ImmutableList.copyOf(tableIndexToNode.get(index));
                 }
 
                 @Override
-                public List<IndexDataNode> scanOnlyDbIndex(int index) {
+                public List<Partition> scanOnlyDbIndex(int index) {
                     return ImmutableList.copyOf(dbIndexToNode.get(index));
                 }
 
                 @Override
-                public List<IndexDataNode> scanOnlyDbTableIndex(int dbIndex, int tableIndex) {
-                    List<IndexDataNode> dataNodes = Objects.requireNonNull(dbIndexToNode.get(dbIndex));
-                    for (IndexDataNode dataNode : dataNodes) {
+                public List<Partition> scanOnlyDbTableIndex(int dbIndex, int tableIndex) {
+                    List<Partition> dataNodes = Objects.requireNonNull(dbIndexToNode.get(dbIndex));
+                    for (Partition dataNode : dataNodes) {
                         if (dataNode.getTableIndex() == tableIndex) {
                             return ImmutableList.of(dataNode);
                         }
