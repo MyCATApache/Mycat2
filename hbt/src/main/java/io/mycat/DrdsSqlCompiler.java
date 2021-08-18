@@ -63,6 +63,7 @@ import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.rules.MultiJoin;
 import org.apache.calcite.rel.rules.MycatHepJoinClustering;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.SchemaPlus;
@@ -369,8 +370,7 @@ public class DrdsSqlCompiler {
     public MycatRel optimizeWithCBO(RelNode logPlan, Collection<RelOptRule> relOptRules) {
         if (logPlan instanceof MycatRel) {
             return (MycatRel) logPlan;
-        } else
-        {
+        } else {
             RelOptCluster cluster = logPlan.getCluster();
             RelOptPlanner planner = cluster.getPlanner();
             planner.clear();
@@ -485,8 +485,28 @@ public class DrdsSqlCompiler {
 
             HepPlanner planner = new HepPlanner(builder.build());
             planner.setRoot(relNode);
-            return planner.findBestExp();
+            RelNode bestExp = planner.findBestExp();
+
+            return bestExp;
         }).orElse(unAvg);
+
+        class MultiJoinFinder extends RelShuttleImpl{
+            boolean multiJoin  =false;
+            @Override
+            public RelNode visit(RelNode other) {
+                if (other instanceof MultiJoin){
+                    multiJoin = true;
+                }
+                return super.visit(other);
+            }
+        }
+        MultiJoinFinder multiJoinFinder = new MultiJoinFinder();
+        joinClustering.accept(multiJoinFinder);
+
+        if (multiJoinFinder.multiJoin){
+            joinClustering = unAvg;
+        }
+
         HepProgramBuilder builder = new HepProgramBuilder();
         builder.addGroupBegin().addRuleCollection(ImmutableList.of(
                 CoreRules.PROJECT_MERGE,
