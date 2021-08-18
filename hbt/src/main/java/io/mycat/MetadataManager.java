@@ -804,7 +804,12 @@ public class MetadataManager implements MysqlVariableService {
                             if (leftDistribution == null) {
                                 leftDistribution = rightDistribution;
                             } else {
-                                leftDistribution = leftDistribution.join(rightDistribution).orElse(null);
+                                Optional<Distribution> newDistribution = leftDistribution.join(rightDistribution);
+                                if (newDistribution.isPresent()) {
+                                    leftDistribution = newDistribution.get();
+                                } else {
+                                    return Optional.empty();
+                                }
                             }
                             continue;
                         } else {//sharding table

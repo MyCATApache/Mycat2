@@ -77,6 +77,11 @@ public class NameMap<V> {
         return this;
     }
 
+    public NameMap<V> putAll(Map<String, ? extends V> m) {
+        map.putAll(m);
+        return this;
+    }
+
     public V get(String name) {
         return get(name, false);
     }

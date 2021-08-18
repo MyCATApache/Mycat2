@@ -34,7 +34,7 @@ public class HackRouter {
     Optional<Distribution> res;
     private MetadataManager metadataManager;
     private String targetName;
-    private NameMap<Partition> normalMap;
+    private NameMap<Partition> targetMap;
 
     public HackRouter(SQLStatement selectStatement, MycatDataContext context) {
         this.selectStatement = selectStatement;
@@ -61,20 +61,26 @@ public class HackRouter {
         res = metadataManager.checkVaildNormalRoute(tableNames);
         if (res.isPresent()) {
             Distribution distribution = res.get();
+            targetMap = NameMap.immutableCopyOf(Collections.emptyMap());
+
+            targetMap.putAll(
+                    distribution.getGlobalTables().stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getDataNode())));
+
+            Map<String, Partition> normalMap = distribution.getNormalTables().stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getDataNode()));
+            targetMap.putAll(normalMap);
+
             switch (distribution.type()) {
                 case BROADCAST:
                     List<Partition> globalDataNode = distribution.getGlobalTables().get(0).getGlobalDataNode();
                     int i = ThreadLocalRandom.current().nextInt(0, globalDataNode.size());
-                    normalMap = NameMap.immutableCopyOf( distribution.getGlobalTables().stream().collect(Collectors.toMap(k->k.getUniqueName(),v->v.getDataNode())));
                     targetName = globalDataNode.get(i).getTargetName();
                     return true;
                 case SHARDING:
                     return false;
-                case PHY:
-                    normalMap = NameMap.immutableCopyOf(
-                            distribution.getNormalTables().stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getDataNode())));
+                case PHY: {
                     targetName = normalMap.values().iterator().next().getTargetName();
                     return true;
+                }
             }
         } else {
             return false;
@@ -83,13 +89,13 @@ public class HackRouter {
     }
 
     public Pair<String, String> getPlan() {
-        if (normalMap != null) {
+        if (targetMap != null) {
             selectStatement.accept(new MySqlASTVisitorAdapter() {
                 @Override
                 public boolean visit(SQLExprTableSource x) {
                     String tableName = SQLUtils.normalize(x.getTableName());
                     String schema = SQLUtils.normalize(Optional.ofNullable(x.getSchema()).orElse(dataContext.getDefaultSchema()));
-                    Partition partition = normalMap.get(schema + "_" + tableName, false);
+                    Partition partition = targetMap.get(schema + "_" + tableName, false);
                     if (partition != null) {
                         MycatSQLExprTableSourceUtil.setSqlExprTableSource(partition.getSchema(), partition.getTable(), x);
                     }
