@@ -16,7 +16,10 @@ package io.mycat.replica;
 
 import io.mycat.plug.loadBalance.LoadBalanceElement;
 import io.mycat.plug.loadBalance.SessionCounter;
+import io.mycat.replica.heartbeat.HeartbeatFlow;
 import lombok.ToString;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -25,6 +28,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 @ToString
 public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PhysicsInstanceImpl.class);
     final InstanceType type;
     final String name;
     final SessionCounter sessionCounter;
@@ -104,7 +108,12 @@ public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance 
 
     @Override
     public int getSessionCounter() {
-        return sessionCounter.getSessionCounter();
+        try {
+            return sessionCounter.getSessionCounter();
+        }catch (Exception e){
+            LOGGER.error("",e);
+            return 0;
+        }
     }
 
 

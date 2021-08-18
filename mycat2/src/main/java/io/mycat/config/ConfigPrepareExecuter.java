@@ -180,20 +180,25 @@ public class ConfigPrepareExecuter {
         Map<String, ClusterConfig> clusters = mycatRouterConfig.getClusters().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
         replicaSelector = new ReplicaSelectorRuntime(mycatRouterConfig.getClusters(), datasourceConfigMap, loadBalanceManager,
                 name -> {
-                    MySQLManager manager = MetaClusterCurrent.wrapper(MySQLManager.class);
-                    return manager.getSessionCount(name);
+                    try {
+                        MySQLManager manager = MetaClusterCurrent.wrapper(MySQLManager.class);
+                        return manager.getSessionCount(name);
+                    } catch (Exception e) {
+                        LOGGER.error("", e);
+                        return 0;
+                    }
                 }, (command, initialDelay, period, unit) -> {
-                    ScheduledFuture<?> scheduled = ScheduleUtil.getTimer().scheduleAtFixedRate(command, initialDelay, period, unit);
-                    return () -> {
-                        try {
-                            if (scheduled != null && (!scheduled.isDone() || !scheduled.isCancelled())) {
-                                scheduled.cancel(true);
-                            }
-                        }catch (Throwable throwable){
-                            LOGGER.error("",throwable);
-                        }
-                    };
-                });
+            ScheduledFuture<?> scheduled = ScheduleUtil.getTimer().scheduleAtFixedRate(command, initialDelay, period, unit);
+            return () -> {
+                try {
+                    if (scheduled != null && (!scheduled.isDone() || !scheduled.isCancelled())) {
+                        scheduled.cancel(true);
+                    }
+                } catch (Throwable throwable) {
+                    LOGGER.error("", throwable);
+                }
+            };
+        });
         replicaSelector = new MonitorReplicaSelectorManager(replicaSelector);
         jdbcConnectionManager = new JdbcConnectionManager(
                 datasourceProvider,
@@ -328,17 +333,17 @@ public class ConfigPrepareExecuter {
             context.put(SqlResultSetService.class, sqlResultSetService);
         }
         DbPlanManagerPersistorImpl newDbPlanManagerPersistor = null;
-        if(!MetaClusterCurrent.exist(MemPlanCache.class)){
+        if (!MetaClusterCurrent.exist(MemPlanCache.class)) {
             newDbPlanManagerPersistor = new DbPlanManagerPersistorImpl();
             MemPlanCache memPlanCache = new MemPlanCache((newDbPlanManagerPersistor));
             context.put(MemPlanCache.class, memPlanCache);
-            context.put(QueryPlanner.class,new QueryPlanner(memPlanCache));
-        }else {
+            context.put(QueryPlanner.class, new QueryPlanner(memPlanCache));
+        } else {
             MemPlanCache memPlanCache = MetaClusterCurrent.wrapper(MemPlanCache.class);
             memPlanCache.clearCache();
         }
-        if(!MetaClusterCurrent.exist(StatisticCenter.class)){
-            context.put(StatisticCenter.class,new StatisticCenter());
+        if (!MetaClusterCurrent.exist(StatisticCenter.class)) {
+            context.put(StatisticCenter.class, new StatisticCenter());
         }
 //        PlanCache2 planCache = MetaClusterCurrent.wrapper(PlanCache2.class);
 //        planCache.clear();
@@ -346,16 +351,16 @@ public class ConfigPrepareExecuter {
         MySQLManager mySQLManager;
         context.put(MySQLManager.class, mySQLManager = new MycatMySQLManagerImpl((MycatRouterConfig) context.get(MycatRouterConfig.class)));
 
-        context.put(DrdsSqlCompiler.class, new DrdsSqlCompiler(new DrdsConfig(){
+        context.put(DrdsSqlCompiler.class, new DrdsSqlCompiler(new DrdsConfig() {
             @Override
             public NameMap<SchemaHandler> schemas() {
-                return ((MetadataManager)(context.get(MetadataManager.class))).getSchemaMap();
+                return ((MetadataManager) (context.get(MetadataManager.class))).getSchemaMap();
             }
         }));
         ServerConfig serverConfig = (ServerConfig) context.get(ServerConfig.class);
         LocalXaMemoryRepositoryImpl localXaMemoryRepository = LocalXaMemoryRepositoryImpl.createLocalXaMemoryRepository(() -> mySQLManager);
         context.put(XaLog.class, new XaLogImpl(localXaMemoryRepository, serverConfig.getMycatId(), Objects.requireNonNull(mySQLManager)));
-        context.put(UpdatePlanCache.class,new UpdatePlanCache());
+        context.put(UpdatePlanCache.class, new UpdatePlanCache());
         MetaClusterCurrent.register(context);
 
         MycatRouterConfig curConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
@@ -369,9 +374,9 @@ public class ConfigPrepareExecuter {
                 try {
 
                     memPlanCache.init();
-                }catch (Throwable throwable){
-                    LOGGER.error("",throwable);
-                   promise.fail(throwable);
+                } catch (Throwable throwable) {
+                    LOGGER.error("", throwable);
+                    promise.fail(throwable);
                 }
             }
         });
@@ -382,18 +387,18 @@ public class ConfigPrepareExecuter {
         statisticCenter.init();
         boolean allMatchMySQL = curConfig.getDatasources().stream().allMatch(s -> "mysql".equalsIgnoreCase(s.getDbType()));
         XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
-        if (allMatchMySQL){
+        if (allMatchMySQL) {
             authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
             boolean hasXA = authenticator.allUsers().stream().anyMatch(u -> TransactionType.parse(u.getTransactionType()) == TransactionType.JDBC_TRANSACTION_TYPE);
             if (hasXA) {
                 LOGGER.info("readXARecoveryLog start");
                 xaLog.readXARecoveryLog();
             }
-        }else {
-            try{
-               // xaLog.readXARecoveryLog();
-            }catch (Throwable throwable){
-                LOGGER.warn("try readXARecoveryLog",throwable);
+        } else {
+            try {
+                // xaLog.readXARecoveryLog();
+            } catch (Throwable throwable) {
+                LOGGER.warn("try readXARecoveryLog", throwable);
             }
 
         }
