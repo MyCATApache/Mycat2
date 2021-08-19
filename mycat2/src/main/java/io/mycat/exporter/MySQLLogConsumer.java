@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 public class MySQLLogConsumer implements Consumer<SqlEntry> {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLLogConsumer.class);
     boolean init = false;
+    boolean initFail = false;
     @SneakyThrows
     public MySQLLogConsumer() {
 
@@ -64,7 +65,11 @@ public class MySQLLogConsumer implements Consumer<SqlEntry> {
                 init();
             }catch (Exception e){
                 LOGGER.error("",e);
+                initFail = true;
             }
+        }
+        if (initFail){
+            return;
         }
         IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
@@ -112,7 +117,7 @@ public class MySQLLogConsumer implements Consumer<SqlEntry> {
                                 ));
                     }
                 } catch (Exception e) {
-                    LOGGER.error("", e);
+                    LOGGER.warn("", e);
                 }finally {
                     event.tryComplete();
                 }
