@@ -62,6 +62,8 @@ public class ServerConfig {
     private boolean joinClustering = true;
     private String serverVersion = "5.7.33-mycat-2.0";
     private boolean ignoreCast = false;
+    //BROADCAST
+    private boolean forcedPushDownBroadcast = true;
 
     public static void main(String[] args) {
         System.out.println(JsonUtil.toJson(new ServerConfig()));

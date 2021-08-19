@@ -36,7 +36,7 @@ public enum SqlRecorderRuntime implements SimpleAnalyzer {
     @Override
     public void addSqlRecord(SqlEntry record) {
         if (record != null) {
-            boolean condition = record.getSqlTime() > (5 * ONE_SECOND);
+            boolean condition = record.getSqlTime() > (30 * ONE_SECOND);
             if (condition) {
                 if (context.size() > 5000) {
                     IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);

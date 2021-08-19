@@ -16,6 +16,7 @@ package io.mycat.calcite.rewriter;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.LogicTableType;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatConvention;
@@ -25,6 +26,7 @@ import io.mycat.calcite.localrel.LocalSort;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatHashAggregate;
 import io.mycat.calcite.table.*;
+import io.mycat.config.ServerConfig;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.util.NameMap;
 import org.apache.calcite.plan.*;
@@ -537,21 +539,21 @@ public class SQLRBORewriter extends RelShuttleImpl {
             planner.setRoot(input);
             RelNode bestExp = planner.findBestExp();
 
-            if (bestExp instanceof Aggregate){
-             Aggregate mergeAgg = (Aggregate) bestExp;
-              if (mergeAgg.getInput() instanceof Union){
-                  MycatView multiView = view.changeTo(
-                          mergeAgg.getInput(0).getInput(0),
-                          dataNodeInfo);
-                  MycatHashAggregate mycatHashAggregate =
-                          MycatHashAggregate
-                                  .create(mergeAgg.getTraitSet(),
-                                          multiView,
-                                          mergeAgg.getGroupSet(),
-                                          mergeAgg.getGroupSets(),
-                                          mergeAgg.getAggCallList());
-                  return Optional.of(mycatHashAggregate);
-              }
+            if (bestExp instanceof Aggregate) {
+                Aggregate mergeAgg = (Aggregate) bestExp;
+                if (mergeAgg.getInput() instanceof Union) {
+                    MycatView multiView = view.changeTo(
+                            mergeAgg.getInput(0).getInput(0),
+                            dataNodeInfo);
+                    MycatHashAggregate mycatHashAggregate =
+                            MycatHashAggregate
+                                    .create(mergeAgg.getTraitSet(),
+                                            multiView,
+                                            mergeAgg.getGroupSet(),
+                                            mergeAgg.getGroupSets(),
+                                            mergeAgg.getAggCallList());
+                    return Optional.of(mycatHashAggregate);
+                }
             }
             return Optional.empty();
         }
@@ -781,6 +783,11 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 case ANTI:
                     break;
                 case RIGHT:
+                    ServerConfig serverConfig = MetaClusterCurrent.wrapper(io.mycat.config.ServerConfig.class);
+                    if (serverConfig.isForcedPushDownBroadcast()) {
+                        break;
+                    }
+                    return Optional.empty();
                 case FULL:
                     return Optional.empty();
             }
@@ -792,6 +799,11 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 case SEMI:
                 case ANTI:
                 case LEFT:
+                    ServerConfig serverConfig = MetaClusterCurrent.wrapper(io.mycat.config.ServerConfig.class);
+                    if (serverConfig.isForcedPushDownBroadcast()) {
+                        break;
+                    }
+                    return Optional.empty();
                 case FULL:
                     return Optional.empty();
             }

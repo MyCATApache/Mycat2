@@ -11,9 +11,9 @@ import java.util.concurrent.TimeUnit;
 @Data
 public class SqlLogConfig {
     boolean open = true;
-    long sqlTimeFilter = TimeUnit.SECONDS.toMillis(1) / 2;
+    long sqlTimeFilter = TimeUnit.SECONDS.toMillis(30);
     Set<SQLType> sqlTypeFilter = new HashSet<>(Arrays.asList(
-            SQLType.SELECT,SQLType.INSERT,SQLType.INSERT_VALUES,SQLType.UPDATE,SQLType.DELETE
+            SQLType.SELECT
     ));
     String clazz = "io.mycat.exporter.MySQLLogConsumer";
 }
