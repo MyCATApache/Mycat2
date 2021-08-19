@@ -63,7 +63,7 @@ public class ServerConfig {
     private String serverVersion = "5.7.33-mycat-2.0";
     private boolean ignoreCast = false;
     //BROADCAST
-    private boolean forcedPushDownBroadcast = true;
+    private boolean forcedPushDownBroadcast = false;
 
     public static void main(String[] args) {
         System.out.println(JsonUtil.toJson(new ServerConfig()));
