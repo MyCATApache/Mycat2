@@ -199,9 +199,13 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo, Closeable, Re
 
 
     private void updateFile(List<PhysicsInstance> newWriteDataSource) {
-        ReplicaReporter replicaReporter = MetaClusterCurrent.wrapper(ReplicaReporter.class);
-        Map<String, List<String>> state = replicaSelectorRuntime.getState();
-        replicaReporter.reportReplica(state);
+        if (MetaClusterCurrent.exist(ReplicaReporter.class)) {
+            ReplicaReporter replicaReporter = MetaClusterCurrent.wrapper(ReplicaReporter.class);
+            Map<String, List<String>> state = replicaSelectorRuntime.getState();
+            replicaReporter.reportReplica(state);
+        } else {
+            LOGGER.error("not found ReplicaReporter");
+        }
     }
 
     @Override
@@ -285,29 +289,29 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo, Closeable, Re
         }
     }
 
-    public synchronized void removeWriteDataSource(String dataSource){
+    public synchronized void removeWriteDataSource(String dataSource) {
         PhysicsInstance physicsInstance = Objects.requireNonNull(datasourceMap.get(dataSource));
         writeDataSourceList.remove(physicsInstance);
     }
 
 
-    public synchronized void addWriteDataSource(String dataSource){
+    public synchronized void addWriteDataSource(String dataSource) {
         PhysicsInstance physicsInstance = datasourceMap.get(dataSource);
-        if(!writeDataSourceList.contains(physicsInstance)){
+        if (!writeDataSourceList.contains(physicsInstance)) {
             writeDataSourceList.add(physicsInstance);
         }
 
     }
 
-    public synchronized void addReadDataSource(String dataSource){
+    public synchronized void addReadDataSource(String dataSource) {
         PhysicsInstance physicsInstance = datasourceMap.get(dataSource);
-        if (!readDataSource.contains(physicsInstance)){
+        if (!readDataSource.contains(physicsInstance)) {
             readDataSource.add(physicsInstance);
         }
 
     }
 
-    public synchronized void removeReadDataSource(String dataSource){
+    public synchronized void removeReadDataSource(String dataSource) {
         readDataSource.remove(Objects.requireNonNull(datasourceMap.get(dataSource)));
     }
 
