@@ -1,20 +1,13 @@
-/**
- * Copyright (C) <2021>  <chen junwen>
- * <p>
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU General Public License as published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * <p>
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
- * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- * <p>
- * You should have received a copy of the GNU General Public License along with this program.  If
- * not, see <http://www.gnu.org/licenses/>.
- */
 package io.mycat.exporter;
 
+import io.mycat.IOExecutor;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.monitor.SqlEntry;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 public enum SqlRecorderRuntime implements SimpleAnalyzer {
     INSTANCE;
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlRecorderRuntime.class);
     public static long ONE_SECOND = TimeUnit.SECONDS.toMillis(1);
     private final ConcurrentLinkedDeque<SqlEntry> context = new ConcurrentLinkedDeque<>();
 
@@ -43,15 +36,27 @@ public enum SqlRecorderRuntime implements SimpleAnalyzer {
     @Override
     public void addSqlRecord(SqlEntry record) {
         if (record != null) {
-            boolean condition = record.getSqlTime() > ONE_SECOND;
+            boolean condition = record.getSqlTime() > (5 * ONE_SECOND);
             if (condition) {
                 if (context.size() > 5000) {
-                    ArrayList<SqlEntry> sqlEntries = new ArrayList<>(context);
-                    Collections.sort(sqlEntries);
-                    context.clear();
-                    context.removeLast();
+                    IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
+                    ioExecutor.executeBlocking((Handler<Promise<Void>>) promise -> {
+                        synchronized (SqlRecorderRuntime.INSTANCE) {
+                            if (context.size() > 5000) {
+                                try {
+                                    ArrayList<SqlEntry> sqlEntries = new ArrayList<>(context);
+                                    Collections.sort(sqlEntries);
+                                    context.clear();
+                                    context.addAll(sqlEntries.subList(0, context.size() / 2));
+                                } catch (Exception e) {
+                                    LOGGER.warn("", e);
+                                } finally {
+                                    promise.tryComplete();
+                                }
+                            }
+                        }
+                    });
                 }
-                context.addLast(record);
             }
         }
     }
