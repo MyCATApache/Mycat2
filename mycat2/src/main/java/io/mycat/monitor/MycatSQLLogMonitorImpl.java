@@ -78,11 +78,11 @@ public class MycatSQLLogMonitorImpl extends MycatSQLLogMonitor {
 
 
         {
-            TimerConfig readWriteRatioConfig = this.monitorConfig.getReadWriteRatioMonitor();
-            TimeUnit timeUnit = TimeUnit.valueOf(readWriteRatioConfig.getTimeUnit());
-            long readWriteRatioMillis = timeUnit.toMillis(readWriteRatioConfig.getPeriod());
+            TimerConfig clusterConfig = this.monitorConfig.getClusterMonitor();
+            TimeUnit timeUnit = TimeUnit.valueOf(clusterConfig.getTimeUnit());
+            long readWriteRatioMillis = timeUnit.toMillis(clusterConfig.getPeriod());
 
-            vertx.setTimer(timeUnit.toMillis(readWriteRatioConfig.getInitialDelay()), event -> vertx.setPeriodic(readWriteRatioMillis, event12 -> {
+            vertx.setTimer(timeUnit.toMillis(clusterConfig.getInitialDelay()), event -> vertx.setPeriodic(readWriteRatioMillis, event12 -> {
                 rwEntryMapSnapshot = RWEntry.snapshot();
                 RWEntry.reset();
             }));

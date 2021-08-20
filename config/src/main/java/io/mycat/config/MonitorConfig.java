@@ -13,7 +13,7 @@ public class MonitorConfig {
     boolean open = true;
     SqlLogConfig sqlLog = new SqlLogConfig();
     TimerConfig instanceMonitor = createOneSecondTimeConfig();
-    TimerConfig readWriteRatioMonitor = createOneSecondTimeConfig();
+    TimerConfig clusterMonitor = createOneSecondTimeConfig();
     TimerConfig databaseInstanceMonitor = createOneSecondTimeConfig();
 
     public static TimerConfig createOneSecondTimeConfig() {
