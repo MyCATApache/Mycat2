@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -13,18 +15,19 @@ import java.util.stream.Collectors;
 @Data
 @EqualsAndHashCode
 public class DatasourceConfig {
-    @javax.validation.constraints.NotNull
+
     private String name;
-    @javax.validation.constraints.NotNull
+
+
     private String user;
     private String password;
     private int maxCon = 1000;
     private int minCon = 1;
     private int maxRetryCount = 5;
     private long maxConnectTimeout = 30 * 1000;
-    @javax.validation.constraints.NotNull
+
     private String dbType = "mysql";
-    @javax.validation.constraints.NotNull
+
     private String url;
     private int weight = 0;
     private List<String> initSqls;

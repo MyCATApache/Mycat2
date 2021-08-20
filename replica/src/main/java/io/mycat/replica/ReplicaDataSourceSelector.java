@@ -109,12 +109,6 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo, Closeable, Re
 
     public synchronized PhysicsInstance register(String dataSourceName, InstanceType type,
                                                  int weight, SessionCounter sessionCounter) {
-        datasourceMap.compute(dataSourceName, new BiFunction<String, PhysicsInstance, PhysicsInstance>() {
-            @Override
-            public PhysicsInstance apply(String s, PhysicsInstance physicsInstance) {
-                return null;
-            }
-        });
         PhysicsInstance physicsInstance = datasourceMap.computeIfAbsent(dataSourceName,
                 dataSourceName1 -> new PhysicsInstanceImpl(dataSourceName, type, DEFAULT_ALIVE,
                         DEFAULT_SELECT_AS_READ, weight, sessionCounter,

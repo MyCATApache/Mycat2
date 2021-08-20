@@ -32,7 +32,8 @@ public class DrdsConfig implements DrdsConst {
 
     @Override
     public boolean bkaJoin() {
-        return true;
+        ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
+        return serverConfig.isBkaJoin();
     }
 
 //    @Override

@@ -51,7 +51,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         super(dataContext, context, drdsSqlWithParams);
     }
 
-    synchronized Future<SqlConnection>  getConnection(String key) {
+    synchronized Future<SqlConnection> getConnection(String key) {
         XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
         if (context.isInTransaction()) {
             return transactionConnnectionMap
@@ -276,11 +276,10 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
 
     public static List<PartitionGroup> mapSharding(MycatView view, List<Partition> object) {
         Distribution distribution = view.getDistribution();
-        ImmutableMap.Builder<String, Partition> globalbuilder = ImmutableMap.builder();
+        HashMap<String, Partition> globalMap = new HashMap<>();
         for (GlobalTable globalTable : distribution.getGlobalTables()) {
-            globalbuilder.put(globalTable.getUniqueName(), globalTable.getDataNode());
+            globalMap.put(globalTable.getUniqueName(), globalTable.getDataNode());
         }
-        ImmutableMap<String, Partition> globalMap = globalbuilder.build();
         ShardingTable shardingTable = distribution.getShardingTables().get(0);
         String primaryTableUniqueName = shardingTable.getLogicTable().getUniqueName();
         List<Partition> primaryTableFilterPartitions = object;
