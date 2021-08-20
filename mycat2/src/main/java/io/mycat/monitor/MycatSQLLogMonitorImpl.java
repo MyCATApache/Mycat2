@@ -45,7 +45,7 @@ public class MycatSQLLogMonitorImpl extends MycatSQLLogMonitor {
                 @Override
                 public void handle(HttpServerRequest event) {
                     String uri = event.path().toLowerCase();
-                    Object res = "hello";
+                    Object res = "mycat2 monitor";
                     if (uri.startsWith(SHOW_INSTANCE_MONITOR_URL.toLowerCase())) {
                         instanceSnapshot = InstanceEntry.snapshot();
                         res = instanceSnapshot;
