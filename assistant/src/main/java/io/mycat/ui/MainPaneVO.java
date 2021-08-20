@@ -21,12 +21,17 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -339,9 +344,20 @@ public class MainPaneVO {
         Stage stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.setTitle("警告");
-        Scene scene = SceneUtil.createScene(new Label(e.getLocalizedMessage()), 200, 100);
+        VBox pane = new VBox();
+
+        final Writer result = new StringWriter();
+        final PrintWriter printWriter = new PrintWriter(result);
+        e.printStackTrace(printWriter);
+        pane.getChildren().add(new TextArea(result.toString()));
+
+        Button button = new Button();
+        button.setText("关闭");
+        button.setOnAction(event -> stage.close());
+        pane.getChildren().add(button);
+        Scene scene = new Scene(pane);
         stage.setScene(scene);
         stage.showAndWait();
-        SceneUtil.close(scene);
+        stage.close();
     }
 }
