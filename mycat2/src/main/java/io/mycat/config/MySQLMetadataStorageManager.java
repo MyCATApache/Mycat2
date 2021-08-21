@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 
 public class MySQLMetadataStorageManager extends MetadataStorageManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLMetadataStorageManager.class);
-    private final String datasourceProvider;
 
     final static String SCHEMAS_KEY = "SCHEMAS";
     final String CLUSTERS_KEY = "CLUSTERS";
@@ -35,17 +34,17 @@ public class MySQLMetadataStorageManager extends MetadataStorageManager {
     final String SQLCACHES_KEY = "SQLCACHES";
     long curVersion = -1;
 
-    public MySQLMetadataStorageManager(String datasourceProvider) {
-        this.datasourceProvider = datasourceProvider;
+    public MySQLMetadataStorageManager() {
+
     }
 
     @Override
     public void start() throws Exception {
-        loadConfig();
-
+        throw new UnsupportedOperationException();
     }
 
-    public void loadConfig() throws Exception {
+    @SneakyThrows
+    public MycatRouterConfig fetchFromStore() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
 
 
@@ -110,12 +109,48 @@ public class MySQLMetadataStorageManager extends MetadataStorageManager {
             newMycatRouterConfig.setUsers(usersConfig.getUsers());
             newMycatRouterConfig.setSqlCacheConfigs(sqlCacheRootConfig.getSqlCaches());
             newMycatRouterConfig.setSequences(sequence.getSequences());
-
-            try (ConfigOps configOps = this.startOps();) {
-                configOps.commit(new MycatRouterConfigOps(newMycatRouterConfig, configOps));
-            }
-            ;
+            return newMycatRouterConfig;
         }
+    }
+
+    @Override
+    @SneakyThrows
+    public void sync(MycatRouterConfig mycatRouterConfig, State state) {
+        String schemasText = getSchemaJson(mycatRouterConfig);
+        String clustersText = getClusterJson(mycatRouterConfig);
+        String datasourcesText = getDatasourceJson(mycatRouterConfig);
+        String usersText = getUserJson(mycatRouterConfig);
+        String sequencesText = getSequenceJson(mycatRouterConfig);
+        String sqlCacheText = getSqlCacheJson(mycatRouterConfig);
+
+        HashMap<String, String> map = new HashMap<>();
+        map.put(SCHEMAS_KEY, schemasText);
+        map.put(CLUSTERS_KEY, clustersText);
+        map.put(DATASOURCES_KEY, datasourcesText);
+        map.put(USERS_KEY, usersText);
+        map.put(SEQUENCES_KEY, sequencesText);
+        map.put(SQLCACHES_KEY, sqlCacheText);
+
+        curVersion = System.currentTimeMillis();
+
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+
+
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
+            Connection rawConnection = connection.getRawConnection();
+            rawConnection.setAutoCommit(false);
+            rawConnection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            PreparedStatement preparedStatement = rawConnection.prepareStatement("INSERT INTO `mycat`.`config` (`key`, `value`, `version`) VALUES (?, ?, ?); ");
+            preparedStatement.clearBatch();
+            for (Map.Entry<String, String> e : map.entrySet()) {
+                preparedStatement.setObject(1, e.getKey());
+                preparedStatement.setObject(2, e.getValue());
+                preparedStatement.setObject(3, curVersion);
+            }
+            rawConnection.commit();
+            rawConnection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+        }
+
     }
 
     private String getSqlCacheJson(MycatRouterConfig mycatRouterConfig) {
@@ -169,6 +204,8 @@ public class MySQLMetadataStorageManager extends MetadataStorageManager {
     }
 
     void logReplica(int count, LocalDateTime time, Map<String, List<String>> dsNames) {
+        State state = new State();
+        state.getReplica().putAll(dsNames);
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
         IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
@@ -184,7 +221,7 @@ public class MySQLMetadataStorageManager extends MetadataStorageManager {
                     preparedStatement.setObject(3, time);
                 }
             } catch (Exception e) {
-                LOGGER.error("",e);
+                LOGGER.error("", e);
                 vertx.setTimer(TimeUnit.SECONDS.toMillis(3), event -> ioExecutor.executeBlocking((Handler<Promise<Void>>) event1 -> {
                     try {
                         logReplica(count - 1, time, dsNames);
@@ -198,76 +235,9 @@ public class MySQLMetadataStorageManager extends MetadataStorageManager {
 
     @Override
     public ConfigOps startOps() {
-        return new ConfigOps() {
-
-            @Override
-            @SneakyThrows
-            public Object currentConfig() {
-                return MetaClusterCurrent.wrapper(MycatRouterConfig.class);
-            }
-
-            @Override
-            public void commit(Object ops) throws Exception {
-                commitAndSyncDb((MycatRouterConfigOps) ops);
-            }
-
-            private void commitAndSyncDb(MycatRouterConfigOps ops) throws Exception {
-                MycatRouterConfigOps routerConfig = ops;
-                ConfigPrepareExecuter prepare = new ConfigPrepareExecuter(routerConfig, MySQLMetadataStorageManager.this, datasourceProvider);
-                prepare.prepareRuntimeObject();
-                prepare.prepareStoreDDL();
-                prepare.commit();
-
-                MycatRouterConfig mycatRouterConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
-                sync(mycatRouterConfig);
-            }
-
-            @SneakyThrows
-            private void sync(MycatRouterConfig mycatRouterConfig) {
-
-                String schemasText = getSchemaJson(mycatRouterConfig);
-                String clustersText = getClusterJson(mycatRouterConfig);
-                String datasourcesText = getDatasourceJson(mycatRouterConfig);
-                String usersText = getUserJson(mycatRouterConfig);
-                String sequencesText = getSequenceJson(mycatRouterConfig);
-                String sqlCacheText = getSqlCacheJson(mycatRouterConfig);
-
-                HashMap<String, String> map = new HashMap<>();
-                map.put(SCHEMAS_KEY, schemasText);
-                map.put(CLUSTERS_KEY, clustersText);
-                map.put(DATASOURCES_KEY, datasourcesText);
-                map.put(USERS_KEY, usersText);
-                map.put(SEQUENCES_KEY, sequencesText);
-                map.put(SQLCACHES_KEY, sqlCacheText);
-
-                curVersion = System.currentTimeMillis();
-
-                JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-
-
-                try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
-                    Connection rawConnection = connection.getRawConnection();
-                    rawConnection.setAutoCommit(false);
-                    rawConnection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-                    PreparedStatement preparedStatement = rawConnection.prepareStatement("INSERT INTO `mycat`.`config` (`key`, `value`, `version`) VALUES (?, ?, ?); ");
-                    preparedStatement.clearBatch();
-                    for (Map.Entry<String, String> e : map.entrySet()) {
-                        preparedStatement.setObject(1, e.getKey());
-                        preparedStatement.setObject(2, e.getValue());
-                        preparedStatement.setObject(3, curVersion);
-                    }
-                    rawConnection.commit();
-                    rawConnection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-                }
-
-            }
-
-            @Override
-            public void close() {
-
-            }
-        };
+        throw new UnsupportedOperationException();
     }
+
 
     @Data
     public static class UserRootConfig {

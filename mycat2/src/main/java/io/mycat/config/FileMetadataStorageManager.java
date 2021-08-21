@@ -23,7 +23,6 @@ import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.replica.ReplicaType;
-import io.vertx.core.Future;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
@@ -44,14 +43,12 @@ import java.util.stream.Stream;
 
 public class FileMetadataStorageManager extends MetadataStorageManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileMetadataStorageManager.class);
-    private MycatServerConfig serverConfig;
     private final String datasourceProvider;
     private final Path baseDirectory;
 
 
     @SneakyThrows
     public FileMetadataStorageManager(MycatServerConfig serverConfig, String datasourceProvider, Path baseDirectory) {
-        this.serverConfig = serverConfig;
         this.datasourceProvider = datasourceProvider;
         this.baseDirectory = baseDirectory;
     }
@@ -201,7 +198,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     @Override
     @SneakyThrows
     public void start() {
-        start(loadFromLocalFile());
+        start(fetchFromStore());
     }
 
     public void start(MycatRouterConfig mycatRouterConfig) {
@@ -217,18 +214,13 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     public void reportReplica(Map<String, List<String>> setMap) {
         Path statePath = baseDirectory.resolve("state.json");
         final State state = new State();
-        state.replica.putAll(setMap);
+        state.getReplica().putAll(setMap);
         writeFile(
                 ConfigReaderWriter.getReaderWriterBySuffix("json")
                         .transformation(state), statePath);
 
     }
 
-    @EqualsAndHashCode
-    @Data
-    public static class State {
-        final Map<String, List<String>> replica = new HashMap<>();
-    }
 
     @Override
     @SneakyThrows
@@ -264,13 +256,15 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         };
     }
 
-    public State commitAndSyncDisk(MycatRouterConfigOps ops) throws IOException {
-        String suffix = "json";
-        MycatRouterConfigOps routerConfig = ops;
-        ConfigPrepareExecuter prepare = new ConfigPrepareExecuter(routerConfig, FileMetadataStorageManager.this, datasourceProvider);
-        prepare.prepareRuntimeObject();
-        prepare.prepareStoreDDL();
+    @Override
+    public MycatRouterConfig fetchFromStore() {
+        return loadFromLocalFile();
+    }
 
+    @Override
+    @SneakyThrows
+    public void sync(MycatRouterConfig routerConfig, State state) {
+        String suffix = "json";
         Path schemasPath = baseDirectory.resolve("schemas");
         Path clustersPath = baseDirectory.resolve("clusters");
         Path datasources = baseDirectory.resolve("datasources");
@@ -278,24 +272,6 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         Path sequences = baseDirectory.resolve("sequences");
         Path sqlcaches = baseDirectory.resolve("sqlcaches");
 
-        if (routerConfig.isUpdateSchemas()) {
-            cleanDirectory(schemasPath);
-        }
-        if (routerConfig.isUpdateClusters()) {
-            cleanDirectory(clustersPath);
-        }
-        if (routerConfig.isUpdateDatasources()) {
-            cleanDirectory(datasources);
-        }
-        if (routerConfig.isUpdateUsers()) {
-            cleanDirectory(users);
-        }
-        if (routerConfig.isUpdateSequences()) {
-            cleanDirectory(sequences);
-        }
-        if (routerConfig.isUpdateSqlCaches()) {
-            cleanDirectory(sqlcaches);
-        }
 
         for (LogicSchemaConfig schemaConfig : Optional.ofNullable(routerConfig.getSchemas()).orElse(Collections.emptyList())) {
             String fileName = schemaConfig.getSchemaName() + ".schema." + suffix;
@@ -333,24 +309,57 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             Path filePath = clustersPath.resolve(fileName);
             writeFile(t, filePath);
         }
-        for (SqlCacheConfig i : Optional.ofNullable(routerConfig.getSqlCaches()).orElse(Collections.emptyList())) {
+        for (SqlCacheConfig i : Optional.ofNullable(routerConfig.getSqlCacheConfigs()).orElse(Collections.emptyList())) {
             String fileName = i.getName() + ".sqlcache." + suffix;
             ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
             String t = readerWriterBySuffix.transformation(i);
             Path filePath = sqlcaches.resolve(fileName);
             writeFile(t, filePath);
         }
-        State state = new State();
-        ReplicaSelectorManager replicaSelector = Optional.ofNullable(prepare.getReplicaSelector()).orElseGet(() -> MetaClusterCurrent.wrapper(ReplicaSelectorManager.class));
-        state.replica.putAll(replicaSelector.getState());
-        prepare.commit();
         Path statePath = baseDirectory.resolve("state.json");
         Files.deleteIfExists(statePath);
         if (Files.notExists(statePath)) Files.createFile(statePath);
         writeFile(
                 ConfigReaderWriter.getReaderWriterBySuffix("json")
-                        .transformation(state), statePath);
-        return (state);
+                        .transformation(state), statePath);;
+    }
+
+    public void commitAndSyncDisk(MycatRouterConfigOps ops) throws IOException {
+
+        MycatRouterConfigOps routerConfig = ops;
+        ConfigPrepareExecuter prepare = new ConfigPrepareExecuter(routerConfig, FileMetadataStorageManager.this, datasourceProvider);
+        prepare.prepareRuntimeObject();
+        prepare.prepareStoreDDL();
+        prepare.commit();
+
+        Path schemasPath = baseDirectory.resolve("schemas");
+        Path clustersPath = baseDirectory.resolve("clusters");
+        Path datasources = baseDirectory.resolve("datasources");
+        Path users = baseDirectory.resolve("users");
+        Path sequences = baseDirectory.resolve("sequences");
+        Path sqlcaches = baseDirectory.resolve("sqlcaches");
+
+        if (routerConfig.isUpdateSchemas()) {
+            cleanDirectory(schemasPath);
+        }
+        if (routerConfig.isUpdateClusters()) {
+            cleanDirectory(clustersPath);
+        }
+        if (routerConfig.isUpdateDatasources()) {
+            cleanDirectory(datasources);
+        }
+        if (routerConfig.isUpdateUsers()) {
+            cleanDirectory(users);
+        }
+        if (routerConfig.isUpdateSequences()) {
+            cleanDirectory(sequences);
+        }
+        if (routerConfig.isUpdateSqlCaches()) {
+            cleanDirectory(sqlcaches);
+        }
+
+
+        sync(MetaClusterCurrent.wrapper(MycatRouterConfig.class),new State());
     }
 
 

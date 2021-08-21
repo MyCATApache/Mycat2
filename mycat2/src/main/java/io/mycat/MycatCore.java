@@ -125,34 +125,18 @@ public class MycatCore {
         switch (mode) {
             case PROPERTY_MODE_LOCAL: {
                 context.put(LockService.class, new LocalLockServiceImpl());
-                metadataStorageManager = new FileMetadataStorageManager(serverConfig, datasourceProvider, this.baseDirectory);
+                FileMetadataStorageManager fileMetadataStorageManager = new FileMetadataStorageManager(serverConfig, datasourceProvider, this.baseDirectory);
+                MySQLMetadataStorageManager dbMetadataStorageManager = new MySQLMetadataStorageManager();
+                AssembleMetadataStorageManager assembleMetadataStorageManager = new AssembleMetadataStorageManager(dbMetadataStorageManager, fileMetadataStorageManager);
+                metadataStorageManager =assembleMetadataStorageManager;
+                context.put(AssembleMetadataStorageManager.class, metadataStorageManager);
+                metadataStorageManager.start();
                 break;
             }
-            case PROPERTY_MODE_CLUSTER:
-                String zkAddress = System.getProperty("zk_address", (String) serverConfig.getProperties().get("zk_address"));
-                if (zkAddress != null) {
-                    testZkAddressOrStartDefaultZk(zkAddress);
-                } else {
-                    zkAddress = "localhost:2181";
-                    EmbeddedZKServer.startDefaultZK();
-                }
-                ZKBuilder zkBuilder = new ZKBuilder(zkAddress);
-                context.put(LockService.class, new ZKLockServiceImpl());
-                CuratorFramework curatorFramework = zkBuilder.build();
-                context.put(CuratorFramework.class, curatorFramework);
-                metadataStorageManager =
-                        new CoordinatorMetadataStorageManager(
-                                new FileMetadataStorageManager(serverConfig,
-                                        datasourceProvider,
-                                        this.baseDirectory),
-                                curatorFramework);
-                break;
             default: {
                 throw new UnsupportedOperationException();
             }
         }
-
-        context.put(metadataStorageManager.getClass(), metadataStorageManager);
         context.put(MetadataStorageManager.class, metadataStorageManager);
         MetaClusterCurrent.register(context);
     }

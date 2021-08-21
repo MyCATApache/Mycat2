@@ -118,6 +118,14 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     if ("showTopology".equalsIgnoreCase(cmd)) {
                         return showTopology(response, body, metadataManager);
                     }
+                    if ("checkConfigConsistency".equalsIgnoreCase(cmd)) {
+                        AssembleMetadataStorageManager assembleMetadataStorageManager = MetaClusterCurrent.wrapper(AssembleMetadataStorageManager.class);
+                        boolean res = assembleMetadataStorageManager.check();
+                        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+                        resultSetBuilder.addColumnInfo("value", JDBCType.VARCHAR);
+                        resultSetBuilder.addObjectRowPayload(Arrays.asList(res?1:0));
+                        return response.sendResultSet(resultSetBuilder.build());
+                    }
                     if ("resetConfig".equalsIgnoreCase(cmd)) {
                         MycatRouterConfigOps ops = ConfigUpdater.getOps();
                         ops.reset();
@@ -1019,6 +1027,16 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         if ("readXARecoveryLog".equalsIgnoreCase(cmd)) {
             XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
             xaLog.readXARecoveryLog();
+            return;
+        }
+        if ("syncConfigFromFileToDb".equalsIgnoreCase(cmd)) {
+            AssembleMetadataStorageManager assembleMetadataStorageManager = MetaClusterCurrent.wrapper(AssembleMetadataStorageManager.class);
+            assembleMetadataStorageManager.syncConfigFromFileToDb();
+            return;
+        }
+        if ("syncConfigFromDbToFile".equalsIgnoreCase(cmd)) {
+            AssembleMetadataStorageManager assembleMetadataStorageManager = MetaClusterCurrent.wrapper(AssembleMetadataStorageManager.class);
+            assembleMetadataStorageManager.syncConfigFromDbToFile();
             return;
         }
     }
