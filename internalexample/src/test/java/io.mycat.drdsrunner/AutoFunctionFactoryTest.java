@@ -1,7 +1,6 @@
-package io.mycat.sql.function;
+package io.mycat.drdsrunner;
 
 import io.mycat.*;
-import io.mycat.assemble.MycatTest;
 import io.mycat.config.*;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
@@ -16,7 +15,7 @@ public class AutoFunctionFactoryTest implements MycatTest {
     public static MetadataManager getMetadataManager(ShardingTableConfig shardingTableConfig) {
         System.setProperty("mode", "local");
         MycatCore mycatCore = new MycatCore();
-        MetadataStorageManager fileMetadataStorageManager = MetaClusterCurrent.wrapper(MetadataStorageManager.class);
+        MetadataStorageManager metadataStorageManager = MetaClusterCurrent.wrapper(MetadataStorageManager.class);
         MycatRouterConfig mycatRouterConfig = new MycatRouterConfig();
         LogicSchemaConfig logicSchemaConfig = new LogicSchemaConfig();
         mycatRouterConfig.getSchemas().add(logicSchemaConfig);
@@ -50,7 +49,7 @@ public class AutoFunctionFactoryTest implements MycatTest {
         mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("ds0", DB1));
         mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("ds1", DB2));
         mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("prototype", DB1));
-        fileMetadataStorageManager.start(mycatRouterConfig);
+        metadataStorageManager.start(mycatRouterConfig);
         return MetaClusterCurrent.wrapper(MetadataManager.class);
     }
 }

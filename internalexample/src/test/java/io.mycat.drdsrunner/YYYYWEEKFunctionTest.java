@@ -1,4 +1,4 @@
-package io.mycat.sql.function;
+package io.mycat.drdsrunner;
 
 import io.mycat.Partition;
 import io.mycat.MetadataManager;

@@ -21,7 +21,7 @@ public class DatasourceConfig {
 
     private String user;
     private String password;
-    private int maxCon = 100;
+    private int maxCon = 1000;
     private int minCon = 1;
     private int maxRetryCount = 5;
     private long maxConnectTimeout = 30 * 1000;

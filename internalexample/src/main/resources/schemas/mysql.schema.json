@@ -1,0 +1,64 @@
+{
+	"customTables":{},
+	"globalTables":{},
+	"normalTables":{
+		"spm_baseline":{
+			"createTableSQL":"CREATE TABLE mysql.spm_baseline (\n\t`id` bigint(22) NOT NULL AUTO_INCREMENT,\n\t`sql` longtext,\n\t`fix_plan_id` bigint(22) DEFAULT NULL,\n\tKEY `id` (`id`)\n) ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci",
+			"locality":{
+				"schemaName":"mysql",
+				"tableName":"spm_baseline",
+				"targetName":"prototype"
+			}
+		},
+		"role_edges":{
+			"createTableSQL":"CREATE TABLE mysql.role_edges (\n\t`FROM_HOST` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`FROM_USER` char(32) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`TO_HOST` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`TO_USER` char(32) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`WITH_ADMIN_OPTION` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\tPRIMARY KEY (`FROM_HOST`, `FROM_USER`, `TO_HOST`, `TO_USER`)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Role hierarchy and role grants'",
+			"locality":{
+				"schemaName":"mysql",
+				"tableName":"role_edges",
+				"targetName":"prototype"
+			}
+		},
+		"mycat_sequence":{
+			"createTableSQL":"CREATE TABLE mysql.mycat_sequence (\n\t`NAME` varchar(64) NOT NULL,\n\t`current_value` bigint(20) NOT NULL,\n\t`increment` int(11) NOT NULL DEFAULT '1',\n\tPRIMARY KEY (`NAME`)\n) ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci",
+			"locality":{
+				"schemaName":"mysql",
+				"tableName":"mycat_sequence",
+				"targetName":"prototype"
+			}
+		},
+		"proc":{
+			"createTableSQL":"CREATE TABLE `mysql`.`proc` (\n  `db` varchar(64) DEFAULT NULL,\n  `name` varchar(64) DEFAULT NULL,\n  `type` enum('FUNCTION','PROCEDURE','PACKAGE', 'PACKAGE BODY'),\n  `specific_name` varchar(64) DEFAULT NULL,\n  `language` enum('SQL'),\n  `sql_data_access` enum('CONTAINS_SQL', 'NO_SQL', 'READS_SQL_DATA', 'MODIFIES_SQL_DATA'),\n  `is_deterministic` enum('YES','NO'),\n  `security_type` enum('INVOKER','DEFINER'),\n  `param_list` blob,\n  `returns` longblob,\n  `body` longblob,\n  `definer` varchar(141),\n  `created` timestamp,\n  `modified` timestamp,\n  `sql_mode` \tset('REAL_AS_FLOAT', 'PIPES_AS_CONCAT', 'ANSI_QUOTES', 'IGNORE_SPACE', 'IGNORE_BAD_TABLE_OPTIONS', 'ONLY_FULL_GROUP_BY', 'NO_UNSIGNED_SUBTRACTION', 'NO_DIR_IN_CREATE', 'POSTGRESQL', 'ORACLE', 'MSSQL', 'DB2', 'MAXDB', 'NO_KEY_OPTIONS', 'NO_TABLE_OPTIONS', 'NO_FIELD_OPTIONS', 'MYSQL323', 'MYSQL40', 'ANSI', 'NO_AUTO_VALUE_ON_ZERO', 'NO_BACKSLASH_ESCAPES', 'STRICT_TRANS_TABLES', 'STRICT_ALL_TABLES', 'NO_ZERO_IN_DATE', 'NO_ZERO_DATE', 'INVALID_DATES', 'ERROR_FOR_DIVISION_BY_ZERO', 'TRADITIONAL', 'NO_AUTO_CREATE_USER', 'HIGH_NOT_PRECEDENCE', 'NO_ENGINE_SUBSTITUTION', 'PAD_CHAR_TO_FULL_LENGTH', 'EMPTY_STRING_IS_NULL', 'SIMULTANEOUS_ASSIGNMENT'),\n  `comment` text,\n  `character_set_client` char(32),\n  `collation_connection` \tchar(32),\n  `db_collation` \tchar(32),\n  `body_utf8` \tlongblob,\n  `aggregate` \tenum('NONE', 'GROUP')\n) ",
+			"locality":{
+				"schemaName":"mysql",
+				"tableName":"proc",
+				"targetName":"prototype"
+			}
+		},
+		"spm_plan":{
+			"createTableSQL":"CREATE TABLE mysql.spm_plan (\n\t`id` bigint(22) NOT NULL AUTO_INCREMENT,\n\t`sql` longtext,\n\t`rel` longtext,\n\t`code` longtext,\n\t`baseline_id` bigint(22) DEFAULT NULL,\n\t`accept` tinyint(1) DEFAULT NULL,\n\tKEY `id` (`id`)\n) ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci",
+			"locality":{
+				"schemaName":"mysql",
+				"tableName":"spm_plan",
+				"targetName":"prototype"
+			}
+		},
+		"innodb_index_stats":{
+			"createTableSQL":"CREATE TABLE mysql.innodb_index_stats (\n\t`database_name` varchar(64) COLLATE utf8_bin NOT NULL,\n\t`table_name` varchar(199) COLLATE utf8_bin NOT NULL,\n\t`index_name` varchar(64) COLLATE utf8_bin NOT NULL,\n\t`last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n\t`stat_name` varchar(64) COLLATE utf8_bin NOT NULL,\n\t`stat_value` bigint(20) UNSIGNED NOT NULL,\n\t`sample_size` bigint(20) UNSIGNED DEFAULT NULL,\n\t`stat_description` varchar(1024) COLLATE utf8_bin NOT NULL,\n\tPRIMARY KEY (`database_name`, `table_name`, `index_name`, `stat_name`)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC",
+			"locality":{
+				"schemaName":"mysql",
+				"tableName":"innodb_index_stats",
+				"targetName":"prototype"
+			}
+		},
+		"innodb_table_stats":{
+			"createTableSQL":"CREATE TABLE mysql.innodb_table_stats (\n\t`database_name` varchar(64) COLLATE utf8_bin NOT NULL,\n\t`table_name` varchar(199) COLLATE utf8_bin NOT NULL,\n\t`last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n\t`n_rows` bigint(20) UNSIGNED NOT NULL,\n\t`clustered_index_size` bigint(20) UNSIGNED NOT NULL,\n\t`sum_of_other_index_sizes` bigint(20) UNSIGNED NOT NULL,\n\tPRIMARY KEY (`database_name`, `table_name`)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC",
+			"locality":{
+				"schemaName":"mysql",
+				"tableName":"innodb_table_stats",
+				"targetName":"prototype"
+			}
+		}
+	},
+	"schemaName":"mysql",
+	"shadingTables":{}
+}

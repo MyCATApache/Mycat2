@@ -148,10 +148,13 @@ public class MetadataManager implements MysqlVariableService {
 
         Set<String> databases = new HashSet<>();
 
-        databases.add("information_schema");
-        databases.add("mysql");
-        databases.add("performance_schema");
-
+        if(!Boolean.getBoolean("testhbt")){
+            databases.add("information_schema");
+            databases.add("mysql");
+            databases.add("performance_schema");
+        }else {
+            loadVariables = false;
+        }
 
         this.globalVariables = new NameMap<Object>();
         this.sessionVariables = new NameMap<>();

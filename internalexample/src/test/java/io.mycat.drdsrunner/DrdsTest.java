@@ -1,7 +1,6 @@
 package io.mycat.drdsrunner;
 
 import io.mycat.*;
-import io.mycat.assemble.MycatTest;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.rewriter.OptimizationContext;
@@ -36,8 +35,9 @@ public abstract class DrdsTest implements MycatTest {
         synchronized (DrdsTest.class) {
             if (drdsRunner == null) {
                 System.setProperty("mode","local");
+                System.setProperty("testhbt",Boolean.TRUE.toString());
                 MycatCore mycatCore = new MycatCore();
-                MetadataStorageManager fileMetadataStorageManager = MetaClusterCurrent.wrapper(MetadataStorageManager.class);
+                MetadataStorageManager metadataStorageManager = MetaClusterCurrent.wrapper(MetadataStorageManager.class);
                 MycatRouterConfig mycatRouterConfig = new MycatRouterConfig();
                 LogicSchemaConfig logicSchemaConfig = new LogicSchemaConfig();
                 mycatRouterConfig.getSchemas().add(logicSchemaConfig);
@@ -72,10 +72,10 @@ public abstract class DrdsTest implements MycatTest {
                 GlobalTableConfig globalTableConfig = new GlobalTableConfig();
                 globalTableConfig.getBroadcast().add(
                         GlobalBackEndTableInfoConfig.builder().targetName("c0").build()
-                        );
+                );
                 globalTableConfig.getBroadcast().add(
                         GlobalBackEndTableInfoConfig.builder().targetName("c1").build()
-                        );
+                );
                 globalTableConfig.setCreateTableSQL("CREATE TABLE `global` (\n" +
                         "  `id` int(11) NOT NULL AUTO_INCREMENT,\n" +
                         "  `companyname` varchar(20) DEFAULT NULL,\n" +
@@ -197,7 +197,7 @@ public abstract class DrdsTest implements MycatTest {
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("ds0", DB1));
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("ds1", DB2));
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("prototype", DB1));
-                fileMetadataStorageManager.start(mycatRouterConfig);
+                metadataStorageManager.start(mycatRouterConfig);
                 drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
                 metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
             }
