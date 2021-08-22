@@ -12,7 +12,7 @@ import java.util.Set;
 public abstract class MetadataStorageManager implements ReplicaReporter {
 
     public abstract void start() throws Exception;
-
+    public abstract void start(MycatRouterConfig mycatRouterConfig);
     public abstract void reportReplica(Map<String, List<String>> dsNames);
 
     public abstract ConfigOps startOps();

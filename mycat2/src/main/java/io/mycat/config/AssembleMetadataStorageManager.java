@@ -10,9 +10,10 @@ public class AssembleMetadataStorageManager extends MetadataStorageManager {
     MetadataStorageManager dbManager;
     MetadataStorageManager fileManager;
 
-    public AssembleMetadataStorageManager(MetadataStorageManager dbManager, MetadataStorageManager fileManager) {
-        this.dbManager = dbManager;
+    public AssembleMetadataStorageManager(MetadataStorageManager fileManager, MetadataStorageManager dbManager) {
+
         this.fileManager = fileManager;
+        this.dbManager = dbManager;
     }
 
     @Override
@@ -21,25 +22,34 @@ public class AssembleMetadataStorageManager extends MetadataStorageManager {
     }
 
     @Override
+    public void start(MycatRouterConfig mycatRouterConfig) {
+        fileManager.start(mycatRouterConfig);
+    }
+
+    @Override
     public void reportReplica(Map<String, List<String>> dsNames) {
-        dbManager.reportReplica(dsNames);
         fileManager.reportReplica(dsNames);
+        if (dbManager != null) {
+            dbManager.reportReplica(dsNames);
+        }
     }
 
     @Override
     public ConfigOps startOps() {
-        return dbManager.startOps();
+        return fileManager.startOps();
     }
 
     @Override
     public MycatRouterConfig fetchFromStore() {
-        return dbManager.fetchFromStore();
+        return fileManager.fetchFromStore();
     }
 
     @Override
     public void sync(MycatRouterConfig mycatRouterConfig, State state) {
-        dbManager.sync(mycatRouterConfig, state);
         fileManager.sync(mycatRouterConfig, state);
+        if (dbManager != null) {
+            dbManager.sync(mycatRouterConfig, state);
+        }
     }
 
     public MycatRouterConfig fetchConfigFromDb() {
@@ -52,17 +62,25 @@ public class AssembleMetadataStorageManager extends MetadataStorageManager {
 
     public void syncConfigFromFileToDb() {
         MycatRouterConfig mycatRouterConfig = fileManager.fetchFromStore();
-        dbManager.sync(mycatRouterConfig, new State());
+        if (dbManager != null) {
+            dbManager.sync(mycatRouterConfig, new State());
+        }
     }
 
     public void syncConfigFromDbToFile() {
-        MycatRouterConfig mycatRouterConfig = dbManager.fetchFromStore();
-        fileManager.sync(mycatRouterConfig, new State());
+        if (dbManager != null) {
+            MycatRouterConfig mycatRouterConfig = dbManager.fetchFromStore();
+            fileManager.sync(mycatRouterConfig, new State());
+        }
+
     }
 
     public boolean check() {
-        MycatRouterConfig one = fileManager.fetchFromStore();
-        MycatRouterConfig two = dbManager.fetchFromStore();
-        return one.equals(two);
+        if (dbManager != null) {
+            MycatRouterConfig one = fileManager.fetchFromStore();
+            MycatRouterConfig two = dbManager.fetchFromStore();
+            return one.equals(two);
+        }
+        return true;
     }
 }

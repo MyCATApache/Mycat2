@@ -159,6 +159,7 @@ public class ConfigPrepareExecuter {
                 MycatRouterConfig routerConfig = new MycatRouterConfig();
                 FileMetadataStorageManager.defaultConfig(routerConfig);
                 fullInitBy(routerConfig);
+                clearSqlCache();
                 break;
         }
     }

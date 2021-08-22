@@ -28,7 +28,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import lombok.SneakyThrows;
 import org.apache.calcite.util.RxBuiltInMethod;
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.groovy.util.Maps;
 import org.apache.zookeeper.client.ConnectStringParser;
 import org.jetbrains.annotations.NotNull;
@@ -127,7 +126,7 @@ public class MycatCore {
                 context.put(LockService.class, new LocalLockServiceImpl());
                 FileMetadataStorageManager fileMetadataStorageManager = new FileMetadataStorageManager(serverConfig, datasourceProvider, this.baseDirectory);
                 MySQLMetadataStorageManager dbMetadataStorageManager = new MySQLMetadataStorageManager();
-                AssembleMetadataStorageManager assembleMetadataStorageManager = new AssembleMetadataStorageManager(dbMetadataStorageManager, fileMetadataStorageManager);
+                AssembleMetadataStorageManager assembleMetadataStorageManager = new AssembleMetadataStorageManager(fileMetadataStorageManager, dbMetadataStorageManager);
                 metadataStorageManager =assembleMetadataStorageManager;
                 context.put(AssembleMetadataStorageManager.class, metadataStorageManager);
                 metadataStorageManager.start();

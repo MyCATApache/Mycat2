@@ -125,7 +125,7 @@ public class MetadataManager implements MysqlVariableService {
                     sequenceGenerator,
                     replicaSelectorRuntime,
                     jdbcConnectionManager,
-                    prototype);
+                    prototype,true);
         } catch (Throwable throwable) {
             throw MycatErrorCode.createMycatException(MycatErrorCode.ERR_FETCH_METADATA, "MetadataManager init fail", throwable);
         }
@@ -137,7 +137,8 @@ public class MetadataManager implements MysqlVariableService {
                            SequenceGenerator sequenceGenerator,
                            ReplicaSelectorManager replicaSelectorRuntime,
                            JdbcConnectionManager jdbcConnectionManager,
-                           String prototype
+                           String prototype,
+                           boolean loadVariables
     ) {
         this.loadBalanceManager = Objects.requireNonNull(loadBalanceManager);
         this.sequenceGenerator = Objects.requireNonNull(sequenceGenerator);
@@ -147,38 +148,33 @@ public class MetadataManager implements MysqlVariableService {
 
         Set<String> databases = new HashSet<>();
 
-//        try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
-//            try(RowBaseIterator dbIterator = connection.executeQuery("show databases")){
-//                while (dbIterator.next()) {
-//                    databases.add(dbIterator.getString(1));
-//                }
-//            }
-//        }
-
         databases.add("information_schema");
         databases.add("mysql");
         databases.add("performance_schema");
 
 
         this.globalVariables = new NameMap<Object>();
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
-            try (RowBaseIterator rowBaseIterator = connection.executeQuery(" SHOW GLOBAL VARIABLES;")) {
-                while (rowBaseIterator.next()) {
-                    globalVariables.put(
-                            rowBaseIterator.getString(0),
-                            rowBaseIterator.getObject(1)
-                    );
+        this.sessionVariables = new NameMap<>();
+        if (loadVariables) {
+            try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
+                try (RowBaseIterator rowBaseIterator = connection.executeQuery(" SHOW GLOBAL VARIABLES;")) {
+                    while (rowBaseIterator.next()) {
+                        globalVariables.put(
+                                rowBaseIterator.getString(0),
+                                rowBaseIterator.getObject(1)
+                        );
+                    }
                 }
             }
-        }
-        this.sessionVariables = new NameMap<>();
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
-            try (RowBaseIterator rowBaseIterator = connection.executeQuery(" SHOW SESSION VARIABLES;")) {
-                while (rowBaseIterator.next()) {
-                    sessionVariables.put(
-                            rowBaseIterator.getString(0),
-                            rowBaseIterator.getObject(1)
-                    );
+
+            try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
+                try (RowBaseIterator rowBaseIterator = connection.executeQuery(" SHOW SESSION VARIABLES;")) {
+                    while (rowBaseIterator.next()) {
+                        sessionVariables.put(
+                                rowBaseIterator.getString(0),
+                                rowBaseIterator.getObject(1)
+                        );
+                    }
                 }
             }
         }

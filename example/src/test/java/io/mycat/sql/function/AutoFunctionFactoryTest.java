@@ -16,7 +16,7 @@ public class AutoFunctionFactoryTest implements MycatTest {
     public static MetadataManager getMetadataManager(ShardingTableConfig shardingTableConfig) {
         System.setProperty("mode", "local");
         MycatCore mycatCore = new MycatCore();
-        FileMetadataStorageManager fileMetadataStorageManager = MetaClusterCurrent.wrapper(FileMetadataStorageManager.class);
+        MetadataStorageManager fileMetadataStorageManager = MetaClusterCurrent.wrapper(MetadataStorageManager.class);
         MycatRouterConfig mycatRouterConfig = new MycatRouterConfig();
         LogicSchemaConfig logicSchemaConfig = new LogicSchemaConfig();
         mycatRouterConfig.getSchemas().add(logicSchemaConfig);

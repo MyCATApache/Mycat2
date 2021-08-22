@@ -43,6 +43,11 @@ public class MySQLMetadataStorageManager extends MetadataStorageManager {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public void start(MycatRouterConfig mycatRouterConfig) {
+        throw new UnsupportedOperationException();
+    }
+
     @SneakyThrows
     public MycatRouterConfig fetchFromStore() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
