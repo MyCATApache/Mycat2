@@ -1,7 +1,6 @@
 package io.mycat.sql;
 
 import io.mycat.assemble.MycatTest;
-import io.mycat.drdsrunner.Explain;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
 import org.junit.Assert;

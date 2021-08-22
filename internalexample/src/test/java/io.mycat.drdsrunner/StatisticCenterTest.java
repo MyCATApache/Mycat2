@@ -1,4 +1,4 @@
-package io.mycat.statistic;
+package io.mycat.drdsrunner;
 
 import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.*;
@@ -16,6 +16,7 @@ import io.mycat.drdsrunner.DrdsTest;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.statistic.StatisticCenter;
 import io.mycat.util.NameMap;
 import io.vertx.core.Vertx;
 import org.apache.groovy.util.Maps;

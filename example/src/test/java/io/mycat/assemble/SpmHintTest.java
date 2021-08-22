@@ -1,8 +1,6 @@
 package io.mycat.assemble;
 
 import com.alibaba.druid.util.JdbcUtils;
-import io.mycat.DrdsSqlCompiler;
-import io.mycat.drdsrunner.DrdsTest;
 import io.mycat.hint.BaselineAddHint;
 import io.mycat.hint.BaselineListHint;
 import io.mycat.hint.BaselineUpdateHint;
@@ -11,7 +9,6 @@ import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +16,7 @@ import java.util.Objects;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
-public class SpmHintTest extends DrdsTest {
+public class SpmHintTest implements MycatTest {
 
     @Test
     public void testAdd() throws Exception {
