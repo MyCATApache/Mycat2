@@ -699,6 +699,8 @@ public class MetadataManager implements MysqlVariableService {
                             }
 
                         }
+                    }catch (Exception e){
+                        LOGGER.error("",e);
                     }
                     try (RowBaseIterator rowBaseIterator = connection.executeQuery("select * from " + targetSchemaTable + " limit 0")) {
                         MycatRowMetaData metaData = rowBaseIterator.getMetaData();
