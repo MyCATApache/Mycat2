@@ -46,6 +46,7 @@ public class ConfigBroadcasterController {
             JdbcUtils.execute(slaveDatasource, syncConfigFromDbToFile_cmd, Collections.emptyList());
             LOGGER.info("sync slave successfully :"+slave);
         }
+        LOGGER.info("all sync slave successfully ");
         return;
 
     }
