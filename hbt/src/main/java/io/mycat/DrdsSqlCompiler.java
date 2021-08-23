@@ -511,6 +511,8 @@ public class DrdsSqlCompiler {
 
         HepProgramBuilder builder = new HepProgramBuilder();
         builder.addGroupBegin().addRuleCollection(ImmutableList.of(
+                CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES,
+                CoreRules.AGGREGATE_ANY_PULL_UP_CONSTANTS,
                 CoreRules.PROJECT_MERGE,
                 CoreRules.PROJECT_CORRELATE_TRANSPOSE,
                 CoreRules.PROJECT_SET_OP_TRANSPOSE,
