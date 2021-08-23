@@ -102,7 +102,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                     sqlStatement instanceof SQLDeleteStatement
             );
             MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-            metadataManager.resolveMetadata(sqlStatement);
+
             ResultSetBuilder fieldsBuilder = ResultSetBuilder.create();
             MycatRowMetaData fields = fieldsBuilder.build().getMetaData();
             ResultSetBuilder paramsBuilder = ResultSetBuilder.create();

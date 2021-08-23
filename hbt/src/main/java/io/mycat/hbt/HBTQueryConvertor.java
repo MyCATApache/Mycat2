@@ -242,8 +242,7 @@ public class HBTQueryConvertor {
     private RelDataType tryGetRelDataTypeByParse(String sql) {
         try {
             SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-            MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-            metadataManager.resolveMetadata(sqlStatement);
+
             if (sqlStatement instanceof SQLSelectStatement) {
                 SQLSelectQueryBlock firstQueryBlock = ((SQLSelectStatement) sqlStatement).getSelect().getFirstQueryBlock();
                 final RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;

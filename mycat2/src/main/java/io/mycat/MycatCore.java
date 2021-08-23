@@ -129,7 +129,6 @@ public class MycatCore {
                 AssembleMetadataStorageManager assembleMetadataStorageManager = new AssembleMetadataStorageManager(fileMetadataStorageManager, dbMetadataStorageManager);
                 metadataStorageManager =assembleMetadataStorageManager;
                 context.put(AssembleMetadataStorageManager.class, metadataStorageManager);
-                metadataStorageManager.start();
                 break;
             }
             default: {

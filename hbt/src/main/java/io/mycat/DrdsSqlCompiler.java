@@ -168,7 +168,7 @@ public class DrdsSqlCompiler {
             return compileQuery(optimizationContext, plus, drdsSql);
         }
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        metadataManager.resolveMetadata(sqlStatement);
+
         if (sqlStatement instanceof MySqlInsertStatement) {
             MySqlInsertStatement insertStatement = (MySqlInsertStatement) sqlStatement;
             String schemaName = SQLUtils.normalize(insertStatement.getTableSource().getSchema());

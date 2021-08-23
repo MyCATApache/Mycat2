@@ -166,12 +166,8 @@ public class ConfigPrepareExecuter {
 
     @NotNull
     private MetadataManager createMetaData() {
-        return MetadataManager.createMetadataManager(ops.getSchemas(),
-                MetaClusterCurrent.wrapper(LoadBalanceManager.class),
-                MetaClusterCurrent.wrapper(SequenceGenerator.class),
-                MetaClusterCurrent.wrapper(ReplicaSelectorManager.class),
-                MetaClusterCurrent.wrapper(JdbcConnectionManager.class),
-                "prototype");
+        return MetadataManager.createMetadataManager(ops.getSchemas().stream().collect(Collectors.toMap(k->k.getSchemaName(),v->v)),
+                "prototype",MetaClusterCurrent.wrapper(JdbcConnectionManager.class));
     }
 
     public void fullInitBy(MycatRouterConfig mycatRouterConfig) {
@@ -215,7 +211,7 @@ public class ConfigPrepareExecuter {
         ServerConfig serverConfig = MetaClusterCurrent.wrapper(MycatServerConfig.class).getServer();
         this.sequenceGenerator = new SequenceGenerator(serverConfig.getMycatId(), mycatRouterConfig.getSequences());
         this.authenticator = new AuthenticatorImpl(mycatRouterConfig.getUsers().stream().collect(Collectors.toMap(k -> k.getUsername(), v -> v)));
-        this.metadataManager = MetadataManager.createMetadataManager(mycatRouterConfig.getSchemas(), loadBalanceManager, sequenceGenerator, replicaSelector, jdbcConnectionManager, mycatRouterConfig.getPrototype());
+        this.metadataManager = MetadataManager.createMetadataManager(mycatRouterConfig.getSchemas().stream().collect(Collectors.toMap(k->k.getSchemaName(),v->v)),mycatRouterConfig.getPrototype(),jdbcConnectionManager);
 
         if (MetaClusterCurrent.exist(SqlResultSetService.class)) {
             SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
@@ -308,8 +304,10 @@ public class ConfigPrepareExecuter {
             context.put(JdbcConnectionManager.class, jdbcConnectionManager);
         }
         if (metadataManager != null) {
-            context.put(metadataManager.getClass(), metadataManager);
-            context.put(MysqlVariableService.class, metadataManager);
+            context.put(MetadataManager.class, metadataManager);
+            if (!context.containsKey(MysqlVariableService.class)){
+                context.put(MysqlVariableService.class, new MysqlVariableServiceImpl((JdbcConnectionManager)context.get(JdbcConnectionManager.class)));
+            }
         }
         if (datasourceConfigProvider != null) {
             context.put(datasourceConfigProvider.getClass(), datasourceConfigProvider);

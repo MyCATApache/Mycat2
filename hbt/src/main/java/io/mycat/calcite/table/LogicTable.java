@@ -91,7 +91,6 @@ public class LogicTable {
     public static TableHandler createGlobalTable(String schemaName,
                                                  String tableName,
                                                  List<Partition> backendTableInfos,
-                                                 LoadBalanceStrategy loadBalance,
                                                  List<SimpleColumnInfo> columns,
                                                  Map<String, IndexInfo> indexInfos,
                                                  String createTableSQL,

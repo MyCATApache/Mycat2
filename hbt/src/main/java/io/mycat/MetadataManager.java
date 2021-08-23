@@ -16,15 +16,10 @@ package io.mycat;
 
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLDataType;
-import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.SQLCreateViewStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
 import com.google.common.collect.ImmutableList;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.JdbcRowMetaData;
@@ -40,6 +35,7 @@ import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.replica.ReplicaSelectorManager;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.function.IndexDataNode;
 import io.mycat.router.mycat1xfunction.PartitionRuleFunctionManager;
 import io.mycat.util.*;
@@ -54,7 +50,6 @@ import org.slf4j.LoggerFactory;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -62,36 +57,21 @@ import java.util.stream.Stream;
 /**
  * @author Junwen Chen
  **/
-public class MetadataManager implements MysqlVariableService {
+public class MetadataManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetadataManager.class);
     final NameMap<SchemaHandler> schemaMap = new NameMap<>();
-    final LoadBalanceManager loadBalanceManager;
-    final SequenceGenerator sequenceGenerator;
-    final ReplicaSelectorManager replicaSelectorRuntime;
-    final JdbcConnectionManager jdbcConnectionManager;
-
     @Getter
     final String prototype;
 
-    //    public final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
-    private final NameMap<Object> globalVariables;
-    private final NameMap<Object> sessionVariables;
+    @Getter
+    private final Map<String, List<ShardingTable>> erTableGroup = new HashMap<>();
 
-    @Getter
-    private final Map<String, List<ShardingTable>> erTableGroup;
-    @Getter
-    private final List<GlobalTable> globalTables;
-    @Getter
-    private final List<NormalTable> normalTables;
-
+    public JdbcConnectionManager getJdbcConnectionManager(){
+        return MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+    }
 
     public void removeSchema(String schemaName) {
         schemaMap.remove(schemaName);
-    }
-
-    public void addSchema(String schemaName, String dataNode) {
-        SchemaHandlerImpl schemaHandler = new SchemaHandlerImpl(schemaName, dataNode);
-        schemaMap.put(schemaName, schemaHandler);
     }
 
     public void addTable(String schemaName,
@@ -113,255 +93,136 @@ public class MetadataManager implements MysqlVariableService {
         }
     }
 
-    public static MetadataManager createMetadataManager(List<LogicSchemaConfig> schemaConfigs,
-                                                        LoadBalanceManager loadBalanceManager,
-                                                        SequenceGenerator sequenceGenerator,
-                                                        ReplicaSelectorManager replicaSelectorRuntime,
-                                                        JdbcConnectionManager jdbcConnectionManager,
-                                                        String prototype) {
+    public static MetadataManager createMetadataManager(Map<String,LogicSchemaConfig> schemaConfigs,
+                                                        String prototype,JdbcConnectionManager jdbcConnectionManager) {
         try {
-            return new MetadataManager(schemaConfigs,
-                    loadBalanceManager,
-                    sequenceGenerator,
-                    replicaSelectorRuntime,
-                    jdbcConnectionManager,
-                    prototype,true);
+            MysqlMetadataManager mysqlMetadataManager = new MysqlMetadataManager(schemaConfigs,
+                    prototype) {
+                @Override
+                public JdbcConnectionManager getJdbcConnectionManager() {
+                    return jdbcConnectionManager;
+                }
+            };
+            mysqlMetadataManager.recomputeERRelation();
+            return mysqlMetadataManager;
         } catch (Throwable throwable) {
             throw MycatErrorCode.createMycatException(MycatErrorCode.ERR_FETCH_METADATA, "MetadataManager init fail", throwable);
         }
     }
 
     @SneakyThrows
-    public MetadataManager(List<LogicSchemaConfig> schemaConfigs,
-                           LoadBalanceManager loadBalanceManager,
-                           SequenceGenerator sequenceGenerator,
-                           ReplicaSelectorManager replicaSelectorRuntime,
-                           JdbcConnectionManager jdbcConnectionManager,
-                           String prototype,
-                           boolean loadVariables
+    public MetadataManager(Map<String,LogicSchemaConfig>  schemaConfigs,
+                           String prototype
     ) {
-        this.loadBalanceManager = Objects.requireNonNull(loadBalanceManager);
-        this.sequenceGenerator = Objects.requireNonNull(sequenceGenerator);
-        this.replicaSelectorRuntime = Objects.requireNonNull(replicaSelectorRuntime);
-        this.jdbcConnectionManager = Objects.requireNonNull(jdbcConnectionManager);
         this.prototype = Objects.requireNonNull(prototype);
-
-        Set<String> databases = new HashSet<>();
-
-        if(!Boolean.getBoolean("testhbt")){
-            databases.add("information_schema");
-            databases.add("mysql");
-            databases.add("performance_schema");
-        }else {
-            loadVariables = false;
-        }
-
-        this.globalVariables = new NameMap<Object>();
-        this.sessionVariables = new NameMap<>();
-        if (loadVariables) {
-            try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
-                try (RowBaseIterator rowBaseIterator = connection.executeQuery(" SHOW GLOBAL VARIABLES;")) {
-                    while (rowBaseIterator.next()) {
-                        globalVariables.put(
-                                rowBaseIterator.getString(0),
-                                rowBaseIterator.getObject(1)
-                        );
-                    }
-                }
-            }
-
-            try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
-                try (RowBaseIterator rowBaseIterator = connection.executeQuery(" SHOW SESSION VARIABLES;")) {
-                    while (rowBaseIterator.next()) {
-                        sessionVariables.put(
-                                rowBaseIterator.getString(0),
-                                rowBaseIterator.getObject(1)
-                        );
-                    }
-                }
-            }
-        }
-        /////////////////////////////////////////////////////////////////
-        addInnerTable(schemaConfigs, prototype);
-
 
         ///////////////////////////////////////////////////////////////
         //更新新配置里面的信息
-        Map<String, LogicSchemaConfig> schemaConfigMap = schemaConfigs
-                .stream()
-                .collect(Collectors.toMap(k -> k.getSchemaName(), v -> v));
-
-        for (String database : databases) {
-            schemaConfigMap.computeIfAbsent(database, s -> {
-                LogicSchemaConfig schemaConfig = new LogicSchemaConfig();
-                schemaConfig.setSchemaName(database);
-                schemaConfig.setTargetName(prototype);
-                return schemaConfig;
-            });
-        }
+        Map<String, LogicSchemaConfig> schemaConfigMap = schemaConfigs;
 
         for (Map.Entry<String, LogicSchemaConfig> entry : schemaConfigMap.entrySet()) {
             String orignalSchemaName = entry.getKey();
             LogicSchemaConfig value = entry.getValue();
             String targetName = value.getTargetName();
-            final String schemaName = orignalSchemaName;
-            addSchema(schemaName, targetName);
-            if (targetName != null) {
-                Map<String, NormalTableConfig> normalTables = value.getNormalTables();
-                Map<String, NormalTableConfig> adds = getDefaultNormalTable(targetName, schemaName, tableName -> {
-                    NormalTableConfig normalTableConfig = normalTables.get(tableName);
-                    boolean needLoadCreateTableSQL = true;
-                    if (normalTableConfig != null) {
-                        if (normalTableConfig.getCreateTableSQL() != null) {
-                            needLoadCreateTableSQL = false;
-                        }
+            addSchema(prototype, value, targetName, orignalSchemaName);
+        }
+    }
+
+    public void recomputeERRelation(){
+        Stream<ShardingTable> shardingTables = this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream()).filter(i -> i.getType() == LogicTableType.SHARDING)
+                .map(i -> (ShardingTable) i);
+        Map<String, List<ShardingTable>> res = shardingTables.collect(Collectors.groupingBy(i -> i.getShardingFuntion().getErUniqueID()));
+        this.erTableGroup.clear();
+        this.erTableGroup.putAll(res);
+    }
+
+    public void addSchema(String prototype, LogicSchemaConfig value, String targetName, String schemaName) {
+        SchemaHandlerImpl schemaHandler = new SchemaHandlerImpl(schemaName, targetName);
+        schemaMap.put(schemaName, schemaHandler);
+        if (targetName != null) {
+            Map<String, NormalTableConfig> normalTables = value.getNormalTables();
+            Map<String, NormalTableConfig> adds = getDefaultNormalTable(targetName, schemaName, tableName -> {
+                NormalTableConfig normalTableConfig = normalTables.get(tableName);
+                boolean needLoadCreateTableSQL = true;
+                if (normalTableConfig != null) {
+                    if (normalTableConfig.getCreateTableSQL() != null) {
+                        needLoadCreateTableSQL = false;
                     }
-                    return needLoadCreateTableSQL;
-                });
-
-                for (Map.Entry<String, NormalTableConfig> add : adds.entrySet()) {
-                    normalTables.computeIfAbsent(add.getKey(), (n) -> add.getValue());
                 }
-            }
+                return needLoadCreateTableSQL;
+            });
 
-            for (Map.Entry<String, NormalTableConfig> e : value.getNormalTables().entrySet()) {
-                String tableName = e.getKey();
-                removeTable(schemaName, tableName);
-                NormalTableConfig tableConfigEntry = e.getValue();
-                try {
-                    addNormalTable(schemaName, tableName,
-                            tableConfigEntry,
-                            prototype
-                    );
-                } catch (Throwable throwable) {
-                    LOGGER.warn("", throwable);
-                }
-            }
-            for (Map.Entry<String, GlobalTableConfig> e : value.getGlobalTables().entrySet()) {
-                String tableName = e.getKey();
-                removeTable(schemaName, tableName);
-                GlobalTableConfig tableConfigEntry = e.getValue();
-                List<Partition> backendTableInfos = tableConfigEntry.getBroadcast().stream().map(i -> new BackendTableInfo(i.getTargetName(), schemaName, tableName)).collect(Collectors.toList());
-                addGlobalTable(schemaName, tableName,
-                        tableConfigEntry,
-                        prototype,
-                        backendTableInfos
-                );
-            }
-            for (Map.Entry<String, ShardingTableConfig> primaryTable : value.getShardingTables().entrySet()) {
-                String tableName = primaryTable.getKey();
-                ShardingTableConfig tableConfigEntry = primaryTable.getValue();
-                removeTable(schemaName, tableName);
-
-                Set<Map.Entry<String, ShardingTableConfig>> indexTables = Optional.ofNullable(tableConfigEntry.getShardingIndexTables())
-                        .orElse(Collections.emptyMap()).entrySet();
-
-                List<ShardingIndexTable> shardingIndexTables = new ArrayList<>();
-                for (Map.Entry<String, ShardingTableConfig> secondTable : indexTables) {
-                    String indexTableName = secondTable.getKey();
-                    String indexName = indexTableName.replace(tableName + "_", "");
-                    ShardingTableConfig indexTableValue = secondTable.getValue();
-                    ShardingIndexTable shardingIndexTable = createShardingIndexTable(schemaName, indexName, indexTableName,
-                            indexTableValue,
-                            prototype,
-                            getBackendTableInfos(indexTableValue.getPartition()));
-                    shardingIndexTables.add(shardingIndexTable);
-                }
-
-                addShardingTable(schemaName, tableName,
-                        tableConfigEntry,
-                        prototype,
-                        getBackendTableInfos(tableConfigEntry.getPartition()),
-                        shardingIndexTables);
-            }
-
-            for (Map.Entry<String, CustomTableConfig> e : value.getCustomTables().entrySet()) {
-                String tableName = e.getKey();
-                removeTable(schemaName, tableName);
-                CustomTableConfig tableConfigEntry = e.getValue();
-                addCustomTable(schemaName,
-                        tableName,
-                        tableConfigEntry
-                );
+            for (Map.Entry<String, NormalTableConfig> add : adds.entrySet()) {
+                normalTables.computeIfAbsent(add.getKey(), (n) -> add.getValue());
             }
         }
 
-        Stream<ShardingTable> shardingTables = this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream()).filter(i -> i.getType() == LogicTableType.SHARDING)
-                .map(i -> (ShardingTable) i);
-        this.erTableGroup = shardingTables.collect(Collectors.groupingBy(i -> i.getShardingFuntion().getErUniqueID()));
+        for (Map.Entry<String, NormalTableConfig> e : value.getNormalTables().entrySet()) {
+            String tableName = e.getKey();
+            removeTable(schemaName, tableName);
+            NormalTableConfig tableConfigEntry = e.getValue();
+            try {
+                addNormalTable(schemaName, tableName,
+                        tableConfigEntry,
+                        prototype
+                );
+            } catch (Throwable throwable) {
+                LOGGER.warn("", throwable);
+            }
+        }
+        for (Map.Entry<String, GlobalTableConfig> e : value.getGlobalTables().entrySet()) {
+            String tableName = e.getKey();
+            removeTable(schemaName, tableName);
+            GlobalTableConfig tableConfigEntry = e.getValue();
+            List<Partition> backendTableInfos = tableConfigEntry.getBroadcast().stream().map(i -> new BackendTableInfo(i.getTargetName(), schemaName, tableName)).collect(Collectors.toList());
+            addGlobalTable(schemaName, tableName,
+                    tableConfigEntry,
+                    prototype,
+                    backendTableInfos
+            );
+        }
+        for (Map.Entry<String, ShardingTableConfig> primaryTable : value.getShardingTables().entrySet()) {
+            String tableName = primaryTable.getKey();
+            ShardingTableConfig tableConfigEntry = primaryTable.getValue();
+            removeTable(schemaName, tableName);
 
-        this.globalTables = this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream()).filter(i -> i.getType() == LogicTableType.GLOBAL)
-                .map(i -> (GlobalTable) i).collect(Collectors.toList());
+            Set<Map.Entry<String, ShardingTableConfig>> indexTables = Optional.ofNullable(tableConfigEntry.getShardingIndexTables())
+                    .orElse(Collections.emptyMap()).entrySet();
 
-        this.normalTables = this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream()).filter(i -> i.getType() == LogicTableType.NORMAL)
-                .map(i -> (NormalTable) i).collect(Collectors.toList());
-    }
+            List<ShardingIndexTable> shardingIndexTables = new ArrayList<>();
+            for (Map.Entry<String, ShardingTableConfig> secondTable : indexTables) {
+                String indexTableName = secondTable.getKey();
+                String indexName = indexTableName.replace(tableName + "_", "");
+                ShardingTableConfig indexTableValue = secondTable.getValue();
+                ShardingIndexTable shardingIndexTable = createShardingIndexTable(schemaName, indexName, indexTableName,
+                        indexTableValue,
+                        prototype,
+                        getBackendTableInfos(indexTableValue.getPartition()));
+                shardingIndexTables.add(shardingIndexTable);
+            }
 
-    private void addInnerTable(List<LogicSchemaConfig> schemaConfigs, String prototype) {
-        String schemaName = "mysql";
-        String targetName = "prototype";
-        String tableName = "proc";
+            addShardingTable(schemaName, tableName,
+                    tableConfigEntry,
+                    prototype,
+                    getBackendTableInfos(tableConfigEntry.getPartition()),
+                    shardingIndexTables);
+        }
 
-        LogicSchemaConfig logicSchemaConfig = schemaConfigs.stream()
-                .filter(i -> schemaName.equals(i.getSchemaName()))
-                .findFirst()
-                .orElseGet(() -> {
-                    LogicSchemaConfig config = new LogicSchemaConfig();
-                    config.setSchemaName(schemaName);
-                    config.setTargetName(prototype);
-                    schemaConfigs.add(config);
-                    return config;
-                });
-
-
-        Map<String, NormalTableConfig> normalTables = logicSchemaConfig.getNormalTables();
-        normalTables.putIfAbsent(tableName, NormalTableConfig.create(schemaName, tableName,
-                "CREATE TABLE `mysql`.`proc` (\n" +
-                        "  `db` varchar(64) DEFAULT NULL,\n" +
-                        "  `name` varchar(64) DEFAULT NULL,\n" +
-                        "  `type` enum('FUNCTION','PROCEDURE','PACKAGE', 'PACKAGE BODY'),\n" +
-                        "  `specific_name` varchar(64) DEFAULT NULL,\n" +
-                        "  `language` enum('SQL'),\n" +
-                        "  `sql_data_access` enum('CONTAINS_SQL', 'NO_SQL', 'READS_SQL_DATA', 'MODIFIES_SQL_DATA'),\n" +
-                        "  `is_deterministic` enum('YES','NO'),\n" +
-                        "  `security_type` enum('INVOKER','DEFINER'),\n" +
-                        "  `param_list` blob,\n" +
-                        "  `returns` longblob,\n" +
-                        "  `body` longblob,\n" +
-                        "  `definer` varchar(141),\n" +
-                        "  `created` timestamp,\n" +
-                        "  `modified` timestamp,\n" +
-                        "  `sql_mode` \tset('REAL_AS_FLOAT', 'PIPES_AS_CONCAT', 'ANSI_QUOTES', 'IGNORE_SPACE', 'IGNORE_BAD_TABLE_OPTIONS', 'ONLY_FULL_GROUP_BY', 'NO_UNSIGNED_SUBTRACTION', 'NO_DIR_IN_CREATE', 'POSTGRESQL', 'ORACLE', 'MSSQL', 'DB2', 'MAXDB', 'NO_KEY_OPTIONS', 'NO_TABLE_OPTIONS', 'NO_FIELD_OPTIONS', 'MYSQL323', 'MYSQL40', 'ANSI', 'NO_AUTO_VALUE_ON_ZERO', 'NO_BACKSLASH_ESCAPES', 'STRICT_TRANS_TABLES', 'STRICT_ALL_TABLES', 'NO_ZERO_IN_DATE', 'NO_ZERO_DATE', 'INVALID_DATES', 'ERROR_FOR_DIVISION_BY_ZERO', 'TRADITIONAL', 'NO_AUTO_CREATE_USER', 'HIGH_NOT_PRECEDENCE', 'NO_ENGINE_SUBSTITUTION', 'PAD_CHAR_TO_FULL_LENGTH', 'EMPTY_STRING_IS_NULL', 'SIMULTANEOUS_ASSIGNMENT'),\n" +
-                        "  `comment` text,\n" +
-                        "  `character_set_client` char(32),\n" +
-                        "  `collation_connection` \tchar(32),\n" +
-                        "  `db_collation` \tchar(32),\n" +
-                        "  `body_utf8` \tlongblob,\n" +
-                        "  `aggregate` \tenum('NONE', 'GROUP')\n" +
-                        ") ", targetName));
-
-        LogicSchemaConfig mycat = schemaConfigs.stream().filter(i ->
-                "mycat".equalsIgnoreCase(i.getSchemaName()))
-                .findFirst().orElseGet(() -> {
-                    LogicSchemaConfig schemaConfig = new LogicSchemaConfig();
-                    schemaConfig.setSchemaName("mycat");
-                    schemaConfigs.add(schemaConfig);
-                    return schemaConfig;
-                });
-        Map<String, CustomTableConfig> customTables = mycat.getCustomTables();
-
-        customTables.computeIfAbsent("dual", (n) -> {
-            CustomTableConfig tableConfig = CustomTableConfig.builder().build();
-            tableConfig.setClazz(DualCustomTableHandler.class.getCanonicalName());
-            tableConfig.setCreateTableSQL("create table mycat.dual(id int)");
-            return tableConfig;
-        });
+        for (Map.Entry<String, CustomTableConfig> e : value.getCustomTables().entrySet()) {
+            String tableName = e.getKey();
+            removeTable(schemaName, tableName);
+            CustomTableConfig tableConfigEntry = e.getValue();
+            addCustomTable(schemaName,
+                    tableName,
+                    tableConfigEntry
+            );
+        }
     }
 
 
     private Map<String, NormalTableConfig> getDefaultNormalTable(String targetName, String schemaName, Predicate<String> tableFilter) {
         Set<String> tables = new HashSet<>();
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
+        try (DefaultConnection connection = getJdbcConnectionManager().getConnection(targetName)) {
             RowBaseIterator tableIterator = connection.executeQuery("show tables from " + schemaName);
             while (tableIterator.next()) {
                 tables.add(tableIterator.getString(0));
@@ -433,9 +294,7 @@ public class MetadataManager implements MysqlVariableService {
 
         //////////////////////////////////////////////
 
-        LoadBalanceStrategy loadBalance = loadBalanceManager.getLoadBalanceByBalanceName(tableConfigEntry.getBalance());
-
-        addLogicTable(LogicTable.createGlobalTable(schemaName, tableName, backendTableInfos, loadBalance, columns, indexInfos, createTableSQL, tableConfigEntry));
+        addLogicTable(LogicTable.createGlobalTable(schemaName, tableName, backendTableInfos, columns, indexInfos, createTableSQL, tableConfigEntry));
     }
 
 
@@ -491,10 +350,6 @@ public class MetadataManager implements MysqlVariableService {
         return (List) builder.build();
     }
 
-    private synchronized void accrptDDL(String schemaName, String sql) {
-//        TABLE_REPOSITORY.setDefaultSchema(schemaName);
-//        TABLE_REPOSITORY.acceptDDL(sql);
-    }
 
     @SneakyThrows
     public void addShardingTable(String schemaName,
@@ -548,11 +403,6 @@ public class MetadataManager implements MysqlVariableService {
         String createTableSQL = logicTable.getCreateTableSQL();
         NameMap<TableHandler> tableMap = schemaMap.get(schemaName).logicTables();
         tableMap.put(tableName, logicTable);
-        try {
-            accrptDDL(schemaName, createTableSQL);
-        } catch (Throwable ignored) {
-
-        }
     }
 
 
@@ -595,7 +445,7 @@ public class MetadataManager implements MysqlVariableService {
                 String targetName = backendTableInfo.getTargetName();
                 String schema = backendTableInfo.getSchema();
                 String table = backendTableInfo.getTable();
-                try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
+                try (DefaultConnection connection = getJdbcConnectionManager().getConnection(targetName)) {
                     DatabaseMetaData metaData = connection.getRawConnection().getMetaData();
                     return CalciteConvertors.convertfromDatabaseMetaData(metaData, schema, schema, table);
                 }
@@ -611,7 +461,7 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     public List<SimpleColumnInfo> getSimpleColumnInfos(String schemaName, String tableName, String targetName) {
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
+        try (DefaultConnection connection = getJdbcConnectionManager().getConnection(targetName)) {
             Connection rawConnection = connection.getRawConnection();
             DatabaseMetaData metaData = rawConnection.getMetaData();
             return CalciteConvertors.convertfromDatabaseMetaData(metaData, schemaName, schemaName, tableName);
@@ -628,8 +478,7 @@ public class MetadataManager implements MysqlVariableService {
         Partition backendTableInfo = backends.get(0);
         String targetName = backendTableInfo.getTargetName();
         String targetSchemaTable = backendTableInfo.getTargetSchemaTable();
-        String name = replicaSelectorRuntime.getDatasourceNameByReplicaName(targetName, true, null);
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection(name)) {
+        try (DefaultConnection connection = getJdbcConnectionManager().getConnection(targetName)) {
             Connection rawConnection = connection.getRawConnection();
             String sql = "select * from " + targetSchemaTable + " where 0 ";
             try (Statement statement = rawConnection.createStatement()) {
@@ -659,8 +508,7 @@ public class MetadataManager implements MysqlVariableService {
                 Partition backendTableInfo = backend;
                 String targetName = backendTableInfo.getTargetName();
                 String targetSchemaTable = backendTableInfo.getTargetSchemaTable();
-                String name = replicaSelectorRuntime.getDatasourceNameByReplicaName(targetName, true, null);
-                try (DefaultConnection connection = jdbcConnectionManager.getConnection(name)) {
+                try (DefaultConnection connection = getJdbcConnectionManager().getConnection(targetName)) {
                     String sql = "SHOW CREATE TABLE " + targetSchemaTable;
                     try (RowBaseIterator rowBaseIterator = connection.executeQuery(sql)) {
                         while (rowBaseIterator.next()) {
@@ -727,15 +575,9 @@ public class MetadataManager implements MysqlVariableService {
                 continue;
             }
         }
-
-
         return null;
     }
 
-
-    public void resolveMetadata(SQLStatement sqlStatement) {
-//        TABLE_REPOSITORY.resolve(sqlStatement, ResolveAllColumn, ResolveIdentifierAlias, CheckColumnAmbiguous);
-    }
 
     //////////////////////////////////////////calculate///////////////////////////////
 
@@ -743,20 +585,9 @@ public class MetadataManager implements MysqlVariableService {
         return schemaMap.containsKey(Objects.requireNonNull(name), false);
     }
 
-    @Override
-    public Object getGlobalVariable(String name) {
-        return globalVariables.get(name.startsWith("@@") ? name.substring(2) : name, false);
-    }
-
-    @Override
-    public Object getSessionVariable(String name) {
-        Object o = sessionVariables.get(name, false);
-        return o;
-    }
-
-    @Override
     public int getDefaultStoreNodeNum() {
-        long c = replicaSelectorRuntime.getReplicaMap()
+        ReplicaSelectorManager selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
+        long c = selectorRuntime.getReplicaMap()
                 .keySet()
                 .stream()
                 .distinct()
@@ -826,25 +657,6 @@ public class MetadataManager implements MysqlVariableService {
         return Optional.of(leftDistribution);
     }
 
-
-    public static class Rrs {
-        Collection<Partition> backEndTableInfos;
-        SQLExprTableSource table;
-
-        public Rrs(Collection<Partition> backEndTableInfos, SQLExprTableSource table) {
-            this.backEndTableInfos = backEndTableInfos;
-            this.table = table;
-        }
-
-        public Collection<Partition> getBackEndTableInfos() {
-            return backEndTableInfos;
-        }
-
-        public SQLExprTableSource getTable() {
-            return table;
-        }
-    }
-
     public TableHandler getTable(String schemaName, String tableName) {
         return Optional.ofNullable(schemaMap).map(i -> i.get(schemaName)).map(i -> i.logicTables().get(tableName)).orElse(null);
     }
@@ -886,79 +698,12 @@ public class MetadataManager implements MysqlVariableService {
         }
         if (sqlStatement instanceof SQLCreateViewStatement) {
             SQLCreateViewStatement createViewStatement = (SQLCreateViewStatement) sqlStatement;
-            mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(jdbcConnectionManager, prototypeServer, (SQLCreateViewStatement) sqlStatement);
+            mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(getJdbcConnectionManager(), prototypeServer, (SQLCreateViewStatement) sqlStatement);
         }
         return CalciteConvertors.getColumnInfo(Objects.requireNonNull(mycatRowMetaData));
     }
 
     public static Map<String, IndexInfo> getIndexInfo(String sql, String schemaName, List<SimpleColumnInfo> columnInfoList) {
-//        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-//        if (!(sqlStatement instanceof MySqlCreateTableStatement)) {
-//            return null;
-//        }
-//        String tableName = ((MySqlCreateTableStatement) sqlStatement).getTableName();
-//        List<MySqlTableIndex> mysqlIndexes = ((MySqlCreateTableStatement) sqlStatement).getMysqlIndexes();
-//        Map<String, IndexInfo> indexInfoMap = new LinkedHashMap<>();
-//        for (MySqlTableIndex astIndex : mysqlIndexes) {
-//            // 索引名
-//            String indexName = SQLUtils.normalize(astIndex.getName().getSimpleName());
-//            try {
-//                // 索引列
-//                List<SimpleColumnInfo> mycatIndexes = new ArrayList<>(columnInfoList);
-//                Set<String> astIndexSet = astIndex.getColumns().stream()
-//                        .map(SQLSelectOrderByItem::getExpr)
-//                        .map(SQLName.class::cast)
-//                        .map(SQLName::getSimpleName)
-//                        .map(SQLUtils::normalize)
-//                        .collect(Collectors.toSet());
-//                for (int i = 0; i < mycatIndexes.size(); i++) {
-//                    if (!astIndexSet.contains(mycatIndexes.get(i).getColumnName())) {
-//                        mycatIndexes.set(i, null);
-//                    }
-//                }
-//
-//                // 覆盖列
-//                List<SimpleColumnInfo> mycatCoverings = new ArrayList<>(columnInfoList);
-//                Set<String> astCoveringSet = astIndex.getCovering().stream()
-//                        .map(SQLName::getSimpleName)
-//                        .map(SQLUtils::normalize)
-//                        .collect(Collectors.toSet());
-//                for (int i = 0; i < mycatCoverings.size(); i++) {
-//                    if (!astCoveringSet.contains(mycatCoverings.get(i).getColumnName())) {
-//                        mycatCoverings.set(i, null);
-//                    }
-//                }
-//
-//                // DB分区
-//                SQLMethodInvokeExpr dbPartitionBy = (SQLMethodInvokeExpr) astIndex.getDbPartitionBy();
-//                String dbPartitionByMethodName = null;
-//                List<SimpleColumnInfo> dbPartitionByColumms = new ArrayList<>();
-//                if (dbPartitionBy != null) {
-//                    dbPartitionByMethodName = dbPartitionBy.getMethodName();
-//                    List<SQLExpr> arguments = dbPartitionBy.getArguments();
-//                    for (SQLExpr argument : arguments) {
-//                        SQLName sqlName = (SQLName) argument;
-//                        SimpleColumnInfo columnInfo = columnInfoList.stream()
-//                                .filter(e -> SQLUtils.nameEquals(e.getColumnName(), sqlName.getSimpleName()))
-//                                .findFirst()
-//                                .orElseThrow(() -> new IllegalStateException("解析 " + dbPartitionBy + "时, 发现字段[" + sqlName + "]在列中不存在"));
-//                        dbPartitionByColumms.add(columnInfo);
-//                    }
-//                }
-//
-//                IndexInfo old = indexInfoMap.put(indexName, new IndexInfo(schemaName, tableName, indexName,
-//                        mycatIndexes.toArray(new SimpleColumnInfo[0]),
-//                        mycatCoverings.toArray(new SimpleColumnInfo[0]),
-//                        new IndexInfo.DBPartitionBy(dbPartitionByMethodName,
-//                                dbPartitionByColumms.toArray(new SimpleColumnInfo[0]))));
-//                if (old != null) {
-//                    throw new IllegalStateException("存在重复的索引名称 " + indexName);
-//                }
-//            } catch (ClassCastException e) {
-//                throw new IllegalStateException("暂时不支持该索引语法" + astIndex);
-//            }
-//        }
-//        return indexInfoMap;
         return Collections.emptyMap();
     }
 

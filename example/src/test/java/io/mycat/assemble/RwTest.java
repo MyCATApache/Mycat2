@@ -168,7 +168,7 @@ public class RwTest implements MycatTest {
     public void testAddNormal() throws Exception {
         try (Connection mycat = getMySQLConnection(DB_MYCAT);) {
             execute(mycat, RESET_CONFIG);
-
+            execute(mycat, CreateSchemaHint.create("mysql"));
             execute(mycat, CreateDataSourceHint
                     .create("dw0", DB2));
 
