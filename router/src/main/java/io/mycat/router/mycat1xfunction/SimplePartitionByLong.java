@@ -18,4 +18,9 @@ public class SimplePartitionByLong extends PartitionByLong {
     public String name() {
         return "SimplePartitionByLong";
     }
+
+    @Override
+    public String getErUniqueID() {
+        return  getClass().getName()+":"+super.getErUniqueID();
+    }
 }

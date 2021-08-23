@@ -199,7 +199,7 @@ public class PartitionByFileMap extends Mycat1xSingleValueRuleFunction {
 
     @Override
     public String getErUniqueID() {
-        return "" + app2Partition + type + partitionNum + defaultNode;
+        return  getClass().getName()+":"+app2Partition + type + partitionNum + defaultNode;
     }
 
     public static void main(String[] args) {

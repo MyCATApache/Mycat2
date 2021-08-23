@@ -67,6 +67,6 @@ public class PartitionByMod extends Mycat1xSingleValueRuleFunction {
 
     @Override
     public String getErUniqueID() {
-        return "" + count;
+        return  getClass().getName()+":"+ count;
     }
 }

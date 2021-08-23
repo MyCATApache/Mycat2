@@ -147,7 +147,7 @@ public class PartitionByDate extends Mycat1xSingleValueRuleFunction {
 
     @Override
     public String getErUniqueID() {
-        return "" + beginDate + partionTime + endDate + nCount + dateFormat;
+        return  getClass().getName()+":"+ beginDate + partionTime + endDate + nCount + dateFormat;
     }
 
 }

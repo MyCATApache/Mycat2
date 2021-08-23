@@ -67,6 +67,6 @@ public class PartitionConstant extends Mycat1xSingleValueRuleFunction {
     }
     @Override
     public String getErUniqueID() {
-        return "" + defaultNode + Arrays.toString(nodes);
+        return  getClass().getName()+":"+defaultNode + Arrays.toString(nodes);
     }
 }

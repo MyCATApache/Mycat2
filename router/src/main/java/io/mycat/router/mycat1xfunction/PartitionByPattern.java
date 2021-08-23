@@ -92,6 +92,6 @@ public class PartitionByPattern extends Mycat1xSingleValueRuleFunction {
   }
   @Override
   public String getErUniqueID() {
-    return "" + patternValue + longRanges+nPartition+defaultNode;
+    return  getClass().getName()+":"+ patternValue + longRanges+nPartition+defaultNode;
   }
 }

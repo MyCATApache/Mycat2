@@ -75,6 +75,6 @@ public class PartitionByLatestMonth extends Mycat1xSingleValueRuleFunction {
     }
     @Override
     public String getErUniqueID() {
-        return "" + splitOneDay+hourSpan+formatter;
+        return  getClass().getName()+":"+ splitOneDay+hourSpan+formatter;
     }
 }

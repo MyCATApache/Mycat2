@@ -120,6 +120,6 @@ public class PartitionByRangeDateHash extends Mycat1xSingleValueRuleFunction {
   }
   @Override
   public String getErUniqueID() {
-    return "" + formatter + beginDate + groupPartionSize + partionDay;
+    return  getClass().getName()+":"+ formatter + beginDate + groupPartionSize + partionDay;
   }
 }

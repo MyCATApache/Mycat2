@@ -220,6 +220,6 @@ public class PartitionByMonth extends Mycat1xSingleValueRuleFunction {
 
     @Override
     public String getErUniqueID() {
-        return "" + nPartition + scene + formatter + beginDate + endDate+sEndDate;
+        return  getClass().getName()+":"+ nPartition + scene + formatter + beginDate + endDate+sEndDate;
     }
 }

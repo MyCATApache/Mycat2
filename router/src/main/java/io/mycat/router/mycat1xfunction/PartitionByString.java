@@ -108,7 +108,7 @@ public class PartitionByString extends Mycat1xSingleValueRuleFunction {
   }
   @Override
   public String getErUniqueID() {
-    return "" + hashSliceStart + hashSliceEnd + partitionUtil;
+    return  getClass().getName()+":"+ hashSliceStart + hashSliceEnd + partitionUtil;
   }
 
 }

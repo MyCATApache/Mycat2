@@ -12,4 +12,9 @@ public class PartitionByCRC32PreSlot extends ConsistentHashPreSlot {
     public PartitionByCRC32PreSlot() {
         super("PartitionByCRC32PreSlot", 102400, new PureJavaCrc32HashFunction());
     }
+
+    @Override
+    public String getErUniqueID() {
+        return  getClass().getName()+":"+ super.getErUniqueID();
+    }
 }

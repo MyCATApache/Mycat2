@@ -196,6 +196,6 @@ public class PartitionByHotDate extends Mycat1xSingleValueRuleFunction {
 
     @Override
     public String getErUniqueID() {
-        return "" + dateFormat + sLastDay + sPartionDay;
+        return  getClass().getName()+":"+ dateFormat + sLastDay + sPartionDay;
     }
 }

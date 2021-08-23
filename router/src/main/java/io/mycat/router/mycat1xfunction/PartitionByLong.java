@@ -72,6 +72,6 @@ public class PartitionByLong extends Mycat1xSingleValueRuleFunction {
 
     @Override
     public String getErUniqueID() {
-        return "" + partitionUtil;
+        return  getClass().getName()+":"+partitionUtil;
     }
 }

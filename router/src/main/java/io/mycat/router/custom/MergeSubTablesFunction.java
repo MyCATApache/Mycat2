@@ -179,7 +179,7 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
 
     @Override
     public String getErUniqueID() {
-        return defaultPartition + tablePrefix + beginIndex + endIndex + segmentQuery;
+        return  getClass().getName()+":"+defaultPartition + tablePrefix + beginIndex + endIndex + segmentQuery;
     }
 
     private Partition getDataNode(String tableName) {

@@ -91,6 +91,6 @@ public class PartitionByJumpConsistentHash extends Mycat1xSingleValueRuleFunctio
     }
     @Override
     public String getErUniqueID() {
-        return "" + totalBuckets;
+        return  getClass().getName()+":"+ totalBuckets;
     }
 }
