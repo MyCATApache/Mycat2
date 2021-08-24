@@ -29,7 +29,7 @@ public class MycatAggDistinctRule extends RelRule<MycatAggDistinctRule.Config> {
     public void onMatch(RelOptRuleCall call) {
         Aggregate topAggregate = call.rel(0);
         MycatView mycatView = call.rel(2);
-        RelHint lastAggHint = HintTools.getLastAggHint(topAggregate.getHints());
+        RelHint lastAggHint = HintTools.getLastPushAggHint(topAggregate.getHints());
         if (lastAggHint != null) {
             if ("push_down_agg_distinct".equalsIgnoreCase(lastAggHint.hintName)) {
                 //check

@@ -15,6 +15,7 @@
 package io.mycat.calcite.rewriter;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.HintTools;
 import io.mycat.LogicTableType;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.SimpleColumnInfo;
@@ -786,6 +787,12 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 case ANTI:
                     break;
                 case RIGHT:
+                    RelHint lastPushJoinHint = HintTools.getLastPushJoinHint(join.getHints());
+                    if (lastPushJoinHint != null) {
+                        if ("push_down_join_broadcast".equalsIgnoreCase(lastPushJoinHint.hintName)) {
+                            break;
+                        }
+                    }
                     ServerConfig serverConfig = MetaClusterCurrent.wrapper(io.mycat.config.ServerConfig.class);
                     if (serverConfig.isForcedPushDownBroadcast()) {
                         break;
@@ -802,6 +809,12 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 case SEMI:
                 case ANTI:
                 case LEFT:
+                    RelHint lastPushJoinHint = HintTools.getLastPushJoinHint(join.getHints());
+                    if (lastPushJoinHint != null) {
+                        if ("push_down_join_broadcast".equalsIgnoreCase(lastPushJoinHint.hintName)) {
+                            break;
+                        }
+                    }
                     ServerConfig serverConfig = MetaClusterCurrent.wrapper(io.mycat.config.ServerConfig.class);
                     if (serverConfig.isForcedPushDownBroadcast()) {
                         break;

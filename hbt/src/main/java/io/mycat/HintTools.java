@@ -130,7 +130,7 @@ public class HintTools {
         }).findFirst().orElse(null);
     }
 
-    public static RelHint getLastAggHint(List<RelHint> hints) {
+    public static RelHint getLastPushAggHint(List<RelHint> hints) {
         if (hints == null) return null;
         return hints.stream().filter(relHint -> {
             switch (relHint.hintName.toLowerCase()) {
@@ -142,7 +142,18 @@ public class HintTools {
             }
         }).findFirst().orElse(null);
     }
-
+    public static RelHint getLastPushJoinHint(List<RelHint> hints) {
+        if (hints == null) return null;
+        return hints.stream().filter(relHint -> {
+            switch (relHint.hintName.toLowerCase()) {
+                case "push_down_join_broadcast": {
+                    return true;
+                }
+                default:
+                    return false;
+            }
+        }).findFirst().orElse(null);
+    }
     public static RelHint getLastIndexHint(List<RelHint> hints) {
         if (hints == null) return null;
         return hints.stream().filter(relHint -> {
