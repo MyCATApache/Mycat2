@@ -30,6 +30,7 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.util.BuiltInMethod;
@@ -48,34 +49,37 @@ public class MycatHashAggregate extends EnumerableAggregateBase implements Mycat
     protected MycatHashAggregate(
             RelOptCluster cluster,
             RelTraitSet traitSet,
+            List<RelHint> hints,
             RelNode input,
             ImmutableBitSet groupSet,
             List<ImmutableBitSet> groupSets,
             List<AggregateCall> aggCalls) {
-        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), ImmutableList.of(), input, groupSet, groupSets, aggCalls);
+        super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), hints, input, groupSet, groupSets, aggCalls);
         assert getConvention() instanceof MycatConvention;
     }
     public MycatHashAggregate(
             RelInput relInput) {
         this(relInput.getCluster(), relInput.getTraitSet(),
+                relInput.getHints(),
                 relInput.getInput(), relInput.getBitSet("group"),
                 relInput.getBitSetList("groups"), relInput.getAggregateCalls("aggs"));
     }
     public static MycatHashAggregate create(
             RelTraitSet traitSet,
+            List<RelHint> hints,
             RelNode input,
             ImmutableBitSet groupSet,
             List<ImmutableBitSet> groupSets,
             List<AggregateCall> aggCalls) {
         traitSet = traitSet.replace(MycatConvention.INSTANCE);
-        return new MycatHashAggregate(input.getCluster(),traitSet,input,groupSet,groupSets,aggCalls);
+        return new MycatHashAggregate(input.getCluster(),traitSet,hints,input,groupSet,groupSets,aggCalls);
 
     }
     @Override
     public MycatHashAggregate copy(RelTraitSet traitSet, RelNode input,
                                    ImmutableBitSet groupSet,
                                    List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-        return new MycatHashAggregate(getCluster(), traitSet, input,
+        return new MycatHashAggregate(getCluster(), traitSet, getHints(),input,
                 groupSet, groupSets, aggCalls);
     }
 

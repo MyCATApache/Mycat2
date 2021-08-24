@@ -55,11 +55,11 @@ public class HintTools {
                             HintPredicates.and(HintPredicates.JOIN, joinWithFixedTableName(), (hint, rel) -> {
                                 Join join = (Join) rel;
                                 JoinInfo info = join.analyzeCondition();
-                                return  !info.leftKeys.isEmpty()
+                                return !info.leftKeys.isEmpty()
                                         && !info.rightKeys.isEmpty();
                             }))
                             .converterRules()
-                            .excludedRules(MycatMergeJoinRule.INSTANCE,MycatJoinRule.INSTANCE)
+                            .excludedRules(MycatMergeJoinRule.INSTANCE, MycatJoinRule.INSTANCE)
                             .build())
             .hintStrategy("use_nl_join",
                     HintStrategy.builder(
@@ -94,7 +94,7 @@ public class HintTools {
                             .build())
             .hintStrategy("use_values_join",
                     HintStrategy.builder(
-                            HintPredicates.and(HintPredicates.JOIN,joinWithFixedTableName()))
+                            HintPredicates.and(HintPredicates.JOIN, joinWithFixedTableName()))
                             .excludedRules(
                                     MycatTableLookupSemiJoinRule.INSTANCE,
                                     MycatMergeJoinRule.INSTANCE)
@@ -103,6 +103,9 @@ public class HintTools {
                     HintStrategy.builder((hint, rel) -> true)
                             .build())
             .hintStrategy("INDEX",
+                    HintStrategy.builder((hint, rel) -> true)
+                            .build())
+            .hintStrategy("push_down_count_distinct",
                     HintStrategy.builder((hint, rel) -> true)
                             .build())
             .build();
@@ -118,7 +121,7 @@ public class HintTools {
                 case "use_values_join":
                 case "no_hash_join":
                 case "no_merge_join":
-                case "no_bka_join":{
+                case "no_bka_join": {
                     return true;
                 }
                 default:
@@ -126,6 +129,20 @@ public class HintTools {
             }
         }).findFirst().orElse(null);
     }
+
+    public static RelHint getLastAggHint(List<RelHint> hints) {
+        if (hints == null) return null;
+        return hints.stream().filter(relHint -> {
+            switch (relHint.hintName.toLowerCase()) {
+                case "push_down_count_distinct": {
+                    return true;
+                }
+                default:
+                    return false;
+            }
+        }).findFirst().orElse(null);
+    }
+
     public static RelHint getLastIndexHint(List<RelHint> hints) {
         if (hints == null) return null;
         return hints.stream().filter(relHint -> {
@@ -138,6 +155,7 @@ public class HintTools {
             }
         }).findFirst().orElse(null);
     }
+
     /**
      * Creates mock hint strategies with given builder.
      *
@@ -158,7 +176,7 @@ public class HintTools {
             }
             LogicalJoin join = (LogicalJoin) rel;
             final List<String> tableNames = hint.listOptions;
-            if (tableNames.size()!=2){
+            if (tableNames.size() != 2) {
                 return false;
             }
 
@@ -167,7 +185,7 @@ public class HintTools {
             collectAlias(leftAlias, join.getLeft());
             collectAlias(rightAlias, join.getRight());
 
-            return leftAlias.contains( tableNames.get(0))&&rightAlias.contains(tableNames.get(1));
+            return leftAlias.contains(tableNames.get(0)) && rightAlias.contains(tableNames.get(1));
         };
     }
 

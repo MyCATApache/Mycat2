@@ -47,6 +47,7 @@ public class MycatAggregateRule extends MycatConverterRule {
         final RelTraitSet traitSet =
                 agg.getTraitSet().replace(out);
         return MycatHashAggregate.create(traitSet,
+                agg.getHints(),
                 convert(agg.getInput(), out), agg.getGroupSet(),
                 agg.getGroupSets(), agg.getAggCallList());
     }
