@@ -803,19 +803,11 @@ public final class MycatAggregateExpandDistinctAggregatesRule
         final Integer arg = aggCall.getArgList().get(j);
         newArgs.add(sourceOf.get(arg));
       }
-      if (aggCall.getAggregation().kind == SqlKind.COUNT){
-        final AggregateCall newAggCall =
-                AggregateCall.create(aggCall.getAggregation(), false,
-                        aggCall.isApproximate(), aggCall.ignoreNulls(), ImmutableList.of(), -1, aggCall.collation,
-                        aggCall.getType(), aggCall.getName());
-        newAggCalls.set(i, newAggCall);
-      }else {
         final AggregateCall newAggCall =
                 AggregateCall.create(aggCall.getAggregation(), false,
                         aggCall.isApproximate(), aggCall.ignoreNulls(), newArgs, -1, aggCall.collation,
                         aggCall.getType(), aggCall.getName());
         newAggCalls.set(i, newAggCall);
-      }
     }
   }
 
