@@ -58,7 +58,7 @@ public class QueryPlanner {
 
     public   List<CodeExecuterContext> getAcceptedMycatRelList(DrdsSql drdsSql) {
         List<CodeExecuterContext> acceptedMycatRelList = planCache2.getAcceptedMycatRelList(drdsSql);
-        if (acceptedMycatRelList.isEmpty()) {//for debug,set it true
+        if (acceptedMycatRelList.isEmpty()) {
             synchronized (this){
                 acceptedMycatRelList = planCache2.getAcceptedMycatRelList(drdsSql);
                 if (!acceptedMycatRelList.isEmpty()){
@@ -72,5 +72,10 @@ public class QueryPlanner {
         } else {
             return acceptedMycatRelList;
         }
+
+//for debug,set it true
+//        List<CodeExecuterContext> acceptedMycatRelList = planCache2.getAcceptedMycatRelList(drdsSql);
+//        PlanResultSet add = planCache2.add(false, drdsSql);
+//        return Collections.singletonList(add.getContext());
     }
 }

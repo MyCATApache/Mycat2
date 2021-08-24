@@ -14,13 +14,15 @@
  */
 package io.mycat.calcite.spm;
 
-import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.AsyncMycatDataContextImpl;
 import io.mycat.DrdsSqlWithParams;
 import io.mycat.MycatDataContext;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.calcite.*;
+import io.mycat.calcite.CodeExecuterContext;
+import io.mycat.calcite.ExplainWriter;
+import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatSQLTableLookup;
@@ -105,7 +107,7 @@ public class PlanImpl implements Plan {
             case PHYSICAL:
                 String s = dumpPlan();
                 list.addAll(Arrays.asList(s.split("\n")));
-                List<SpecificSql> map = specificSql(drdsSql);
+                List<SpecificSql> map = specificSql(drdsSql,dataContext);
                 for (SpecificSql specificSql : map) {
                     list.addAll(Arrays.asList(specificSql.toString().split("\n")));
                 }
@@ -143,7 +145,16 @@ public class PlanImpl implements Plan {
     }
 
     @NotNull
+    @Override
     public List<SpecificSql> specificSql(DrdsSqlWithParams drdsSql) {
+        return specificSql(drdsSql,5);
+    }
+
+    public List<SpecificSql> specificSql(DrdsSqlWithParams drdsSql,MycatDataContext mycatDataContext){
+        return specificSql(drdsSql,mycatDataContext.getMergeUnionSize());
+    }
+    @NotNull
+    public List<SpecificSql> specificSql(DrdsSqlWithParams drdsSql,int mergeUnionSize) {
         List<SpecificSql> res = new ArrayList<>();
         getMycatRel().accept(new RelShuttleImpl() {
             @Override
@@ -153,7 +164,7 @@ public class PlanImpl implements Plan {
                 if (relNode instanceof MycatView) {
                     MycatView view =  (MycatView)relNode;
                     SqlNode sqlTemplate = view.getSQLTemplate(false);
-                    ImmutableMultimap<String, SqlString> apply = view.apply(sqlTemplate, AsyncMycatDataContextImpl.getSqlMap(executerContext.getConstantMap(),view, drdsSql,drdsSql.getHintDataNodeFilter()), drdsSql.getParams());
+                    ImmutableMultimap<String, SqlString> apply = view.apply(mergeUnionSize,sqlTemplate, AsyncMycatDataContextImpl.getSqlMap(executerContext.getConstantMap(),view, drdsSql,drdsSql.getHintDataNodeFilter()), drdsSql.getParams());
                     ImmutableMultimap<String, SqlString> stringImmutableMultimap =apply;
                     for (Map.Entry<String, SqlString> entry : (stringImmutableMultimap.entries())) {
                         SqlString sqlString = new SqlString(

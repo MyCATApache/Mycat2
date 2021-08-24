@@ -101,7 +101,7 @@ public class MycatRules {
             (input, hints, groupSet, groupSets, aggCalls) -> {
                 final RelOptCluster cluster = input.getCluster();
                 final RelTraitSet traitSet = cluster.traitSetOf(input.getConvention());
-                return MycatHashAggregate.create(traitSet, input, groupSet,
+                return MycatHashAggregate.create(traitSet,hints, input, groupSet,
                         groupSets, aggCalls);
             };
 

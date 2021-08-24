@@ -15,6 +15,7 @@
 package io.mycat.calcite.rewriter;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.HintTools;
 import io.mycat.LogicTableType;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.SimpleColumnInfo;
@@ -36,6 +37,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.*;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -491,6 +493,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         RelNode input = original;
         Distribution dataNodeInfo = null;
         MycatView view = null;
+        ImmutableList<RelHint> hints = aggregate.getHints();
         if (input instanceof MycatView) {
             dataNodeInfo = ((MycatView) input).getDistribution();
             view = (MycatView) original;
@@ -548,6 +551,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                     MycatHashAggregate mycatHashAggregate =
                             MycatHashAggregate
                                     .create(mergeAgg.getTraitSet(),
+                                            hints,
                                             multiView,
                                             mergeAgg.getGroupSet(),
                                             mergeAgg.getGroupSets(),
@@ -783,6 +787,12 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 case ANTI:
                     break;
                 case RIGHT:
+                    RelHint lastPushJoinHint = HintTools.getLastPushJoinHint(join.getHints());
+                    if (lastPushJoinHint != null) {
+                        if ("push_down_join_broadcast".equalsIgnoreCase(lastPushJoinHint.hintName)) {
+                            break;
+                        }
+                    }
                     ServerConfig serverConfig = MetaClusterCurrent.wrapper(io.mycat.config.ServerConfig.class);
                     if (serverConfig.isForcedPushDownBroadcast()) {
                         break;
@@ -799,6 +809,12 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 case SEMI:
                 case ANTI:
                 case LEFT:
+                    RelHint lastPushJoinHint = HintTools.getLastPushJoinHint(join.getHints());
+                    if (lastPushJoinHint != null) {
+                        if ("push_down_join_broadcast".equalsIgnoreCase(lastPushJoinHint.hintName)) {
+                            break;
+                        }
+                    }
                     ServerConfig serverConfig = MetaClusterCurrent.wrapper(io.mycat.config.ServerConfig.class);
                     if (serverConfig.isForcedPushDownBroadcast()) {
                         break;

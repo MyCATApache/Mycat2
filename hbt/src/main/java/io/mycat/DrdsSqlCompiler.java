@@ -32,9 +32,7 @@ import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatProject;
 import io.mycat.calcite.physical.MycatTopN;
 import io.mycat.calcite.physical.MycatUpdateRel;
-import io.mycat.calcite.rewriter.MatierialRewriter;
-import io.mycat.calcite.rewriter.OptimizationContext;
-import io.mycat.calcite.rewriter.SQLRBORewriter;
+import io.mycat.calcite.rewriter.*;
 import io.mycat.calcite.rules.*;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.spm.PlanImpl;
@@ -511,7 +509,7 @@ public class DrdsSqlCompiler {
 
         HepProgramBuilder builder = new HepProgramBuilder();
         builder.addGroupBegin().addRuleCollection(ImmutableList.of(
-                CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES,
+                MycatAggregateExpandDistinctAggregatesRule.Config.DEFAULT.toRule(),
                 CoreRules.AGGREGATE_ANY_PULL_UP_CONSTANTS,
                 CoreRules.PROJECT_MERGE,
                 CoreRules.PROJECT_CORRELATE_TRANSPOSE,
@@ -525,6 +523,7 @@ public class DrdsSqlCompiler {
         builder.addGroupBegin().addRuleInstance(CoreRules.PROJECT_MERGE).addGroupEnd().addMatchOrder(HepMatchOrder.ARBITRARY);
         builder.addGroupBegin()
                 .addRuleCollection(LocalRules.RBO_RULES)
+                .addRuleInstance( MycatAggDistinctRule.Config.DEFAULT.toRule())
                 .addGroupEnd().addMatchOrder(HepMatchOrder.BOTTOM_UP);
         builder.addMatchLimit(1024);
         HepPlanner planner = new HepPlanner(builder.build());

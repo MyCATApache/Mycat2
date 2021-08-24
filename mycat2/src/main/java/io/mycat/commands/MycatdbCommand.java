@@ -335,6 +335,11 @@ public enum MycatdbCommand {
                 for (MycatHint.Function function : mycatHint.getFunctions()) {
                     String name = function.getName();
                     switch (name.toUpperCase()) {
+                        case "MERGE_UNION_SIZE":{
+                            MycatHint.Argument argument = function.getArguments().get(0);
+                            SQLNumericLiteralExpr value = (SQLNumericLiteralExpr) argument.getValue();
+                            map.put("MERGE_UNION_SIZE", value.getNumber());
+                        }
                         case "EXECUTE_TIMEOUT": {
                             MycatHint.Argument argument = function.getArguments().get(0);
                             SQLNumericLiteralExpr value = (SQLNumericLiteralExpr) argument.getValue();

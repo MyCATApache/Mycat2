@@ -1,6 +1,7 @@
 package org.apache.calcite.runtime;
 
 import io.mycat.DrdsSqlWithParams;
+import io.mycat.MycatDataContext;
 import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
@@ -38,4 +39,6 @@ public interface NewMycatDataContext extends DataContext {
     public String getUser();
 
     public DrdsSqlWithParams getDrdsSql();
+
+    public MycatDataContext getContext();
 }
