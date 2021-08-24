@@ -1,19 +1,23 @@
 package io.mycat.calcite.rewriter;
 
 import io.mycat.HintTools;
+import io.mycat.calcite.localrel.LocalAggregate;
 import io.mycat.calcite.logical.MycatView;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.RelBuilder;
 
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static io.mycat.calcite.localrel.LocalRules.normalize;
 
 public class MycatAggDistinctRule extends RelRule<MycatAggDistinctRule.Config> {
     /**
@@ -32,19 +36,14 @@ public class MycatAggDistinctRule extends RelRule<MycatAggDistinctRule.Config> {
         RelHint lastAggHint = HintTools.getLastPushAggHint(topAggregate.getHints());
         if (lastAggHint != null) {
             if ("push_down_agg_distinct".equalsIgnoreCase(lastAggHint.hintName)) {
-                //check
-                if(topAggregate.getAggCallList().size() == 1&&topAggregate.getGroupSet().isEmpty()){
-                    List<AggregateCall> aggCallList = topAggregate.getAggCallList();
-                    if(aggCallList.size() == 1){
-                        AggregateCall aggregateCall = aggCallList.get(0);
-                        if(aggregateCall.getAggregation().kind == SqlKind.COUNT){
-                            Aggregate distinctAgg = call.rel(1);
-                            if(distinctAgg.getAggCallList().isEmpty()&&!distinctAgg.getGroupSet().isEmpty()){
-                                opt(call, topAggregate, mycatView);
-                            }
-                        }
+                Aggregate aggregate = topAggregate;
+                MycatView input = mycatView;
+                SQLRBORewriter.aggregate(input, LocalAggregate.create(aggregate, input)).ifPresent(new Consumer<RelNode>() {
+                    @Override
+                    public void accept(RelNode res) {
+                        call.transformTo(normalize(res));
                     }
-                }
+                });
 
             }
         }
