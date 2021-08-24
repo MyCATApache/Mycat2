@@ -15,13 +15,13 @@ import org.apache.calcite.tools.RelBuilder;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MycatCountDistinctRule extends RelRule<MycatCountDistinctRule.Config> {
+public class MycatAggDistinctRule extends RelRule<MycatAggDistinctRule.Config> {
     /**
      * Creates a RelRule.
      *
      * @param config
      */
-    public MycatCountDistinctRule(Config config) {
+    public MycatAggDistinctRule(Config config) {
         super(config);
     }
 
@@ -31,7 +31,7 @@ public class MycatCountDistinctRule extends RelRule<MycatCountDistinctRule.Confi
         MycatView mycatView = call.rel(2);
         RelHint lastAggHint = HintTools.getLastAggHint(topAggregate.getHints());
         if (lastAggHint != null) {
-            if ("push_down_count_distinct".equalsIgnoreCase(lastAggHint.hintName)) {
+            if ("push_down_agg_distinct".equalsIgnoreCase(lastAggHint.hintName)) {
                 //check
                 if(topAggregate.getAggCallList().size() == 1&&topAggregate.getGroupSet().isEmpty()){
                     List<AggregateCall> aggCallList = topAggregate.getAggCallList();
@@ -64,20 +64,21 @@ public class MycatCountDistinctRule extends RelRule<MycatCountDistinctRule.Confi
     }
 
     public interface Config extends RelRule.Config {
-        MycatCountDistinctRule.Config DEFAULT = EMPTY.as(MycatCountDistinctRule.Config.class)
+        MycatAggDistinctRule.Config DEFAULT = EMPTY.as(MycatAggDistinctRule.Config.class)
                 .withOperandFor();
 
         @Override
-        default MycatCountDistinctRule toRule() {
-            return new MycatCountDistinctRule(this);
+        default MycatAggDistinctRule toRule() {
+            return new MycatAggDistinctRule(this);
         }
 
-        default MycatCountDistinctRule.Config withOperandFor() {
+        default MycatAggDistinctRule.Config withOperandFor() {
             return withOperandSupplier(b0 ->
                     b0.operand(Aggregate.class)
                             .oneInput(i -> i.operand(Aggregate.class).predicate(rel -> rel.getAggCallList().isEmpty() && !rel.getGroupSet().isEmpty())
                                     .oneInput(j -> j.operand(MycatView.class).predicate(rel -> rel.isMergeAgg()).noInputs())))
-                    .as(MycatCountDistinctRule.Config.class);
+                    .withDescription("MycatAggDistinctRule")
+                    .as(MycatAggDistinctRule.Config.class);
         }
     }
 }

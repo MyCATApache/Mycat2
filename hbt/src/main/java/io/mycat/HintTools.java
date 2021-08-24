@@ -105,7 +105,7 @@ public class HintTools {
             .hintStrategy("INDEX",
                     HintStrategy.builder((hint, rel) -> true)
                             .build())
-            .hintStrategy("push_down_count_distinct",
+            .hintStrategy("push_down_agg_distinct",
                     HintStrategy.builder((hint, rel) -> true)
                             .build())
             .build();
@@ -134,7 +134,7 @@ public class HintTools {
         if (hints == null) return null;
         return hints.stream().filter(relHint -> {
             switch (relHint.hintName.toLowerCase()) {
-                case "push_down_count_distinct": {
+                case "push_down_agg_distinct": {
                     return true;
                 }
                 default:

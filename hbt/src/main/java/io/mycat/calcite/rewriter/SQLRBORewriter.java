@@ -36,6 +36,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.*;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -491,6 +492,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         RelNode input = original;
         Distribution dataNodeInfo = null;
         MycatView view = null;
+        ImmutableList<RelHint> hints = aggregate.getHints();
         if (input instanceof MycatView) {
             dataNodeInfo = ((MycatView) input).getDistribution();
             view = (MycatView) original;
@@ -548,6 +550,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                     MycatHashAggregate mycatHashAggregate =
                             MycatHashAggregate
                                     .create(mergeAgg.getTraitSet(),
+                                            hints,
                                             multiView,
                                             mergeAgg.getGroupSet(),
                                             mergeAgg.getGroupSets(),

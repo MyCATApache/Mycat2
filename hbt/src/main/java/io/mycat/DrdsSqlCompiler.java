@@ -33,7 +33,7 @@ import io.mycat.calcite.physical.MycatProject;
 import io.mycat.calcite.physical.MycatTopN;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.rewriter.MatierialRewriter;
-import io.mycat.calcite.rewriter.MycatCountDistinctRule;
+import io.mycat.calcite.rewriter.MycatAggDistinctRule;
 import io.mycat.calcite.rewriter.OptimizationContext;
 import io.mycat.calcite.rewriter.SQLRBORewriter;
 import io.mycat.calcite.rules.*;
@@ -526,7 +526,7 @@ public class DrdsSqlCompiler {
         builder.addGroupBegin().addRuleInstance(CoreRules.PROJECT_MERGE).addGroupEnd().addMatchOrder(HepMatchOrder.ARBITRARY);
         builder.addGroupBegin()
                 .addRuleCollection(LocalRules.RBO_RULES)
-                .addRuleInstance( MycatCountDistinctRule.Config.DEFAULT.toRule())
+                .addRuleInstance( MycatAggDistinctRule.Config.DEFAULT.toRule())
                 .addGroupEnd().addMatchOrder(HepMatchOrder.BOTTOM_UP);
         builder.addMatchLimit(1024);
         HepPlanner planner = new HepPlanner(builder.build());
