@@ -60,6 +60,7 @@ import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
+import org.apache.calcite.rel.rules.AggregateExpandDistinctAggregatesRule;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.MultiJoin;
 import org.apache.calcite.rel.rules.MycatHepJoinClustering;
@@ -509,7 +510,7 @@ public class DrdsSqlCompiler {
 
         HepProgramBuilder builder = new HepProgramBuilder();
         builder.addGroupBegin().addRuleCollection(ImmutableList.of(
-                MycatAggregateExpandDistinctAggregatesRule.Config.DEFAULT.toRule(),
+                AggregateExpandDistinctAggregatesRule.Config.DEFAULT.toRule(),
                 CoreRules.AGGREGATE_ANY_PULL_UP_CONSTANTS,
                 CoreRules.PROJECT_MERGE,
                 CoreRules.PROJECT_CORRELATE_TRANSPOSE,
