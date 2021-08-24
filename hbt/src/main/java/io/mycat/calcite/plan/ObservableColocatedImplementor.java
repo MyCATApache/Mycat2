@@ -38,7 +38,7 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
             List<PartitionGroup> partitions = sqlMycatDataContext.getPartition(mycatRel.getDigest()).orElse(Collections.emptyList());
             if (partitions.size() == 1) {
                 ImmutableMultimap<String, SqlString> sqlMap = mycatView
-                        .apply(codeExecuterContext.getRelContext().get(mycatView.getDigest()).getSqlTemplate(), partitions, drdsSqlWithParams.getParams());
+                        .apply(context.getMergeUnionSize(),codeExecuterContext.getRelContext().get(mycatView.getDigest()).getSqlTemplate(), partitions, drdsSqlWithParams.getParams());
                 Map.Entry<String, SqlString> kv = sqlMap.entries().stream().iterator().next();
                 SqlString sqlString = kv.getValue();
                 ExplainDetail explainDetail = new ExplainDetail(ExecuteType.QUERY, Collections.singletonList(kv.getKey()), sqlString.getSql(), null,   MycatPreparedStatementUtil.extractParams(drdsSqlWithParams.getParams(),sqlString.getDynamicParameters()));

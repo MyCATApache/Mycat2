@@ -18,10 +18,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import io.mycat.DrdsSqlCompiler;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.Partition;
-import io.mycat.PartitionGroup;
+import io.mycat.*;
 import io.mycat.calcite.*;
 import io.mycat.calcite.localrel.LocalFilter;
 import io.mycat.calcite.localrel.LocalProject;
@@ -145,9 +142,10 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             TableScan tableScan,
             final RexNode wholeCondition,
             List<Integer> projects,
-            RelDataType orginalRowType){
-        return produceIndexViews(tableScan,wholeCondition,projects,orginalRowType,null);
+            RelDataType orginalRowType) {
+        return produceIndexViews(tableScan, wholeCondition, projects, orginalRowType, null);
     }
+
     public static List<RelNode> produceIndexViews(
             TableScan tableScan,
             final RexNode wholeCondition,
@@ -162,7 +160,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         ArrayList<RelNode> tableArrayList = new ArrayList<>(indexTables.size());
         MycatView primaryTableScan;
         for (ShardingIndexTable indexTable : indexTables) {
-            if(indexName!=null&&!indexName.equalsIgnoreCase(indexTable.getIndexName())){
+            if (indexName != null && !indexName.equalsIgnoreCase(indexTable.getIndexName())) {
                 continue;
             }
             ProjectIndexMapping indexMapping = project(indexTable, projects);
@@ -242,7 +240,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
                 MycatRel mycatProject = createMycatProject(relNode, getProjectStringList(projects, tableScan.getRowType()));
 
-                if (!RelOptUtil.areRowTypesEqual(orginalRowType,mycatProject.getRowType(),false)){
+                if (!RelOptUtil.areRowTypesEqual(orginalRowType, mycatProject.getRowType(), false)) {
                     System.out.println();
                 }
                 tableArrayList.add(mycatProject);
@@ -278,10 +276,12 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         }
         return newProject;
     }
-    public static MycatRel createMycatProject(RelNode indexTableScan, List<String> indexColumns){
-        return createMycatProject(indexTableScan,indexColumns,true);
+
+    public static MycatRel createMycatProject(RelNode indexTableScan, List<String> indexColumns) {
+        return createMycatProject(indexTableScan, indexColumns, true);
     }
-    public static MycatRel createMycatProject(RelNode indexTableScan, List<String> indexColumns,boolean nullable) {
+
+    public static MycatRel createMycatProject(RelNode indexTableScan, List<String> indexColumns, boolean nullable) {
         RelDataType rowType = indexTableScan.getRowType();
         ArrayList<Integer> ints = new ArrayList<>();
         for (String indexColumn : indexColumns) {
@@ -381,10 +381,10 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     }
 
     public ImmutableMultimap<String, SqlString> apply(
+            int mergeUnionSize,
             SqlNode sqlTemplateArg,
             List<PartitionGroup> dataNodes, List<Object> params) {
         SqlNode sqlTemplate = sqlTemplateArg;
-        int mergeUnionSize = MetaClusterCurrent.exist(ServerConfig.class) ? MetaClusterCurrent.wrapper(ServerConfig.class).getMergeUnionSize() : 5;
         if (distribution.type() == Distribution.Type.BROADCAST) {
             GlobalTable globalTable = distribution.getGlobalTables().get(0);
             List<Partition> globalPartition = globalTable.getGlobalDataNode();

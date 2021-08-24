@@ -268,7 +268,7 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
                     rightView.getCondition().map(c -> c.accept(rexShuttle)).orElse(null));
             DrdsSqlWithParams drdsSql = context.getDrdsSql();
             SqlNode sqlTemplate = newRightView.getSQLTemplate(DrdsSqlWithParams.isForUpdate(drdsSql.getParameterizedSql()));
-            ImmutableMultimap<String, SqlString> apply1 = newRightView.apply(sqlTemplate, sqlMycatDataContext.getSqlMap(Collections.emptyMap(), newRightView, drdsSql, drdsSql.getHintDataNodeFilter()), drdsSql.getParams());
+            ImmutableMultimap<String, SqlString> apply1 = newRightView.apply(context.getContext().getMergeUnionSize(),sqlTemplate, sqlMycatDataContext.getSqlMap(Collections.emptyMap(), newRightView, drdsSql, drdsSql.getHintDataNodeFilter()), drdsSql.getParams());
             return Observable.merge(sqlMycatDataContext.getObservables(apply1, rightRowMetaData));
         });
         return rightObservable;

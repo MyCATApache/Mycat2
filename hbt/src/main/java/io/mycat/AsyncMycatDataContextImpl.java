@@ -148,11 +148,12 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
 
         private DrdsSqlWithParams drdsSqlWithParams;
         private ConcurrentMap<String, List<PartitionGroup>> cache = new ConcurrentHashMap<>();
-
+        MycatDataContext dataContext;
 
         public SqlMycatDataContextImpl(MycatDataContext dataContext, CodeExecuterContext context, DrdsSqlWithParams drdsSqlWithParams) {
             super(dataContext, context, drdsSqlWithParams);
             this.drdsSqlWithParams = drdsSqlWithParams;
+            this.dataContext = dataContext;
         }
 
         public List<Observable<Object[]>> getObservableList(String node) {
@@ -164,7 +165,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             List<PartitionGroup> sqlMap = getPartition(node).get();
             boolean share = mycatRelDatasourceSourceInfo.refCount > 0;
             List<Observable<Object[]>> observables = getObservables((view
-                    .apply(mycatRelDatasourceSourceInfo.getSqlTemplate(), sqlMap, drdsSqlWithParams.getParams())), mycatRelDatasourceSourceInfo.getColumnInfo());
+                    .apply(dataContext.getMergeUnionSize(),mycatRelDatasourceSourceInfo.getSqlTemplate(), sqlMap, drdsSqlWithParams.getParams())), mycatRelDatasourceSourceInfo.getColumnInfo());
             if (share) {
                 observables = observables.stream().map(i -> i.share()).collect(Collectors.toList());
                 shareObservable.put(node, observables);

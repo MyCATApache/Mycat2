@@ -69,7 +69,8 @@ public interface Plan  {
     public   String dumpPlan();
     @NotNull
      List<SpecificSql> specificSql(DrdsSqlWithParams drdsSql);
-
+    @NotNull
+     List<SpecificSql> specificSql(DrdsSqlWithParams drdsSql,MycatDataContext mycatDataContext);
 
 
 }

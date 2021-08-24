@@ -105,4 +105,8 @@ public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
     public Long getRowCount() {
         return context.getAffectedRows();
     }
+
+    public MycatDataContext getContext() {
+        return context;
+    }
 }

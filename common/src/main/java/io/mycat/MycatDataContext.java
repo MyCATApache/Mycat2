@@ -3,6 +3,7 @@ package io.mycat;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
+import io.mycat.config.ServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,7 +114,7 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
     Map<Long, PreparedStatement> getPrepareInfo();
 
     default String setLastMessage(Throwable e) {
-        LOGGER.error("",e);
+        LOGGER.error("", e);
         String string = getThrowableString(e);
         setLastMessage(string);
         return string;
@@ -135,4 +136,9 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
     public Map<String, Object> getProcessStateMap();
 
     public void putProcessStateMap(Map<String, Object> map);
+
+    default public int getMergeUnionSize() {
+        return ((Number) this.getProcessStateMap().getOrDefault("MERGE_UNION_SIZE", MetaClusterCurrent.exist(ServerConfig.class) ? MetaClusterCurrent.wrapper(ServerConfig.class).getMergeUnionSize() : 5)).intValue();
+
+    }
 }
