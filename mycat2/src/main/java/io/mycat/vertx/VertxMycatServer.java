@@ -134,6 +134,7 @@ public class VertxMycatServer implements MycatServer {
             socket.closeHandler(event -> {
                 String message = "session:{} is closing:{}";
                 LOGGER.info(message, vertxSession);
+                sessions.remove(vertxSession);
             });
             sessions.add(vertxSession);
         }
