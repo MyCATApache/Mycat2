@@ -19,6 +19,8 @@ package io.mycat.beans.mysql.packet;
 
 import io.mycat.config.MySQLServerCapabilityFlags;
 
+import java.nio.charset.StandardCharsets;
+
 /**
  * https://mariadb.com/kb/en/library/err_packet/
  *
@@ -31,7 +33,7 @@ public class ErrorPacketImpl implements ErrorPacket {
     private int progress;
     private byte[] progress_info;
     private byte mark = ' ';
-    private byte[] sqlState = DEFAULT_SQLSTATE;
+    private byte[] sqlState = "".getBytes(StandardCharsets.UTF_8);
     private String message;
 
     public int getErrorCode() {
@@ -51,8 +53,8 @@ public class ErrorPacketImpl implements ErrorPacket {
             buffer.writeFixInt(3, progress);
             buffer.writeLenencString(progress_info);
         } else if (MySQLServerCapabilityFlags.isClientProtocol41(serverCapabilities)) {
-            buffer.writeByte(mark);
-            buffer.writeFixString(sqlState);
+//            buffer.writeByte(mark);
+//            buffer.writeFixString(sqlState);
             buffer.writeEOFString(message);
         } else {
             buffer.writeEOFString(message);

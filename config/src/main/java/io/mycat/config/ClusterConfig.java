@@ -24,8 +24,8 @@ public class ClusterConfig {
     private String readBalanceName;
     private String writeBalanceName;
     @javax.validation.constraints.NotNull
-    private List<String> masters;
-    private List<String> replicas;
+    private List<String> masters = new ArrayList<>();
+    private List<String> replicas = new ArrayList<>();
     private HeartbeatConfig heartbeat = HeartbeatConfig.builder()
             .minSwitchTimeInterval(300)
             .heartbeatTimeout(1000)

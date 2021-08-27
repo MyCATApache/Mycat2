@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.JDBCType;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -338,8 +339,23 @@ public class MycatVertxMySQLHandler {
             }
             promise.onComplete(o -> {
                 if (o.failed()) {
-                    mycatDataContext.setLastMessage(o.cause());
-                    this.session.writeErrorEndPacketBySyncInProcessError(0);
+                    Throwable cause = o.cause();
+                    int errorCode = 0;
+                    String message;
+                    String sqlState;
+                    if (cause instanceof SQLException){
+                        errorCode = ((SQLException) cause).getErrorCode();
+                        message = ((SQLException) cause).getMessage();
+                        sqlState = ((SQLException) cause).getSQLState();
+                    }else if (cause instanceof MycatException){
+                        errorCode = ((MycatException) cause).getErrorCode();
+                        message = ((MycatException) cause).getMessage();
+                        sqlState = "";
+                    }else {
+                        message = o.toString();
+                    }
+                    mycatDataContext.setLastMessage(message);
+                    this.session.writeErrorEndPacketBySyncInProcessError(errorCode);
                 }
                 checkPendingMessages();
             });
