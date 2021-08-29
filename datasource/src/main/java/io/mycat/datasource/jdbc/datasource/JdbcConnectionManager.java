@@ -179,7 +179,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
             for (JdbcDataSource value : dataSourceMap.values()) {
                 value.close();
             }
-        }, 30, TimeUnit.SECONDS);
+        }, 3, TimeUnit.SECONDS);
 
     }
 
