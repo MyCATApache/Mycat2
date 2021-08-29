@@ -49,28 +49,28 @@ public class StatisticCenter {
 
     @SneakyThrows
     public void init() {
-        if (init) {
-            return;
-        }
-        init = true;
-        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        try (DefaultConnection prototype = jdbcConnectionManager.getConnection(targetName)) {
-            Connection rawConnection = prototype.getRawConnection();
-            JdbcUtils.execute(rawConnection, "CREATE TABLE IF NOT EXISTS mycat.`analyze_table` (\n" +
-                    "  `table_rows` bigint(20) NOT NULL,\n" +
-                    "  `name` varchar(64) NOT NULL\n" +
-                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-            List<Map<String, Object>> maps = JdbcUtils.executeQuery(rawConnection, "select table_rows as `table_rows`,name from mycat.`analyze_table`", Collections.emptyList());
-            for (Map<String, Object> map : maps) {
-                Number table_rows = (Number) map.get("table_rows");
-                String name = (String) map.get("name");
-                String[] strings = name.split("_");
-                StatisticObject statisticObject = new StatisticObject();
-                statisticObject.setRowCount(table_rows.doubleValue());
-                statisticMap.put(Key.of(strings[0], strings[1]), statisticObject);
-            }
-
-        }
+//        if (init) {
+//            return;
+//        }
+//        init = true;
+//        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+//        try (DefaultConnection prototype = jdbcConnectionManager.getConnection(targetName)) {
+//            Connection rawConnection = prototype.getRawConnection();
+//            JdbcUtils.execute(rawConnection, "CREATE TABLE IF NOT EXISTS mycat.`analyze_table` (\n" +
+//                    "  `table_rows` bigint(20) NOT NULL,\n" +
+//                    "  `name` varchar(64) NOT NULL\n" +
+//                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+//            List<Map<String, Object>> maps = JdbcUtils.executeQuery(rawConnection, "select table_rows as `table_rows`,name from mycat.`analyze_table`", Collections.emptyList());
+//            for (Map<String, Object> map : maps) {
+//                Number table_rows = (Number) map.get("table_rows");
+//                String name = (String) map.get("name");
+//                String[] strings = name.split("_");
+//                StatisticObject statisticObject = new StatisticObject();
+//                statisticObject.setRowCount(table_rows.doubleValue());
+//                statisticMap.put(Key.of(strings[0], strings[1]), statisticObject);
+//            }
+//
+//        }
     }
 
     public Double getLogicTableRow(String schemaName, String tableName) {

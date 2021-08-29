@@ -39,12 +39,11 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
     private final ConcurrentHashMap<String, MycatDatasourcePool> map;
 
     @SneakyThrows
-    public MycatMySQLManagerImpl(MycatRouterConfig config) {
+    public MycatMySQLManagerImpl(List<DatasourceConfig> dsList) {
         boolean nativeServer = MetaClusterCurrent.exist(NativeMycatServer.class);
         ConcurrentHashMap<String, MycatDatasourcePool> hashMap = new ConcurrentHashMap<>();
-        MycatRouterConfig mycatRouterConfig = config;
         List<Future<MycatDatasourcePool>> futureList = new ArrayList<>();
-        for (DatasourceConfig datasource : mycatRouterConfig.getDatasources()) {
+        for (DatasourceConfig datasource :dsList) {
             String name = datasource.getName();
             switch (datasource.computeType()) {
                 case NATIVE:

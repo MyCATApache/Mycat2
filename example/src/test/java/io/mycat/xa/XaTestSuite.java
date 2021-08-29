@@ -60,7 +60,7 @@ public abstract class XaTestSuite {
     public XaTestSuite(MySQLManager mySQLManager,
                        BiFunction<MySQLManager,XaLog,XaSqlConnection> factory) throws Exception {
         this.mySQLManager = mySQLManager;
-        this.xaLog = XaLogImpl.createXaLog(mySQLManager);
+        this.xaLog = XaLogImpl.createXaLog(()->mySQLManager);
         this.factory = factory;
 
         Connection mySQLConnection = getMySQLConnection(DB2);

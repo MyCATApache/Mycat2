@@ -65,7 +65,7 @@ public class GlobalTableConfigVO implements VO {
 
     @Override
     public String toJsonConfig() {
-        return Json.encodePrettily(getGlobalTableConfig());
+        return Json.encodePrettilyPrettily(getGlobalTableConfig());
     }
 
     @Override

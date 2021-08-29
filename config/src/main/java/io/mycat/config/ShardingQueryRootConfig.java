@@ -11,7 +11,6 @@ import java.util.List;
 @EqualsAndHashCode
 public class ShardingQueryRootConfig {
     List<LogicSchemaConfig> schemas = new ArrayList<>();
-    String prototype;
 
     public static void main(String[] args) {
         ShardingQueryRootConfig rootConfig = new ShardingQueryRootConfig();

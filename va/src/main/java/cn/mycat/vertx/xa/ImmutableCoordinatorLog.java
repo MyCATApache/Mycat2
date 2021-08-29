@@ -115,7 +115,7 @@ public class ImmutableCoordinatorLog implements Serializable {
     }
 
     public String toJson() {
-        return Json.encode(new MutableCoordinatorLog(getXid(), getParticipants().toArray(new ImmutableParticipantLog[0]), commitMarked));
+        return Json.encodePrettily(new MutableCoordinatorLog(getXid(), getParticipants().toArray(new ImmutableParticipantLog[0]), commitMarked));
     }
 
     public static ImmutableCoordinatorLog from(String text) {

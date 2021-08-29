@@ -21,6 +21,7 @@ import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.buffer.DefaultReactorBufferPool;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.config.*;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.proxy.MySQLDatasourcePool;
 import io.mycat.proxy.reactor.*;
 import io.mycat.proxy.session.*;
@@ -152,8 +153,7 @@ public class NativeMycatServer implements MycatServer {
 
     @Override
     public RowBaseIterator showNativeDataSources() {
-        MycatRouterConfig mycatRouterConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
-        Map<String, DatasourceConfig> datasourceConfigMap = mycatRouterConfig.getDatasources().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
+        Map<String, DatasourceConfig> datasourceConfigMap = MetaClusterCurrent.wrapper(JdbcConnectionManager.class).getConfig();
 
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
 

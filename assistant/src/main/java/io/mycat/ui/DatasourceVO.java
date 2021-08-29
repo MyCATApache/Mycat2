@@ -69,7 +69,7 @@ public class DatasourceVO implements VO {
 
     @Override
     public String toJsonConfig() {
-        return Json.encodePrettily(getDatasourceConfig());
+        return Json.encodePrettilyPrettily(getDatasourceConfig());
     }
 
     @Override

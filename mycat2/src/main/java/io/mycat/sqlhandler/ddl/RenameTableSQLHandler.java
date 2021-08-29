@@ -70,7 +70,7 @@ public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableSt
                     String orgTableName = name.getName();
                     TableHandler tableHandler = metadataManager.getTable(orgSchemaName, orgTableName);
 
-                    MycatRouterConfig mycatRouterConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
+                    MycatRouterConfig mycatRouterConfig = MetaClusterCurrent.wrapper(BaseMetadataStorageManager.class).getConfig();
                     Object tableConfig = mycatRouterConfig.getSchemas().stream()
                             .filter(n -> tableHandler.getSchemaName().equalsIgnoreCase(n.getSchemaName()))
                             .map(logicSchemaConfig -> {

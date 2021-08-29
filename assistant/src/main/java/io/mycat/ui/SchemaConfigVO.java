@@ -30,7 +30,7 @@ public class SchemaConfigVO implements VO{
 
     @Override
     public String toJsonConfig() {
-        return Json.encodePrettily(getLogicSchemaConfig());
+        return Json.encodePrettilyPrettily(getLogicSchemaConfig());
     }
 
     @Override

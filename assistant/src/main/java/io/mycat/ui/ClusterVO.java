@@ -38,7 +38,7 @@ public class ClusterVO implements VO{
 
     @Override
     public String toJsonConfig() {
-        return Json.encodePrettily(getClusterConfig());
+        return Json.encodePrettilyPrettily(getClusterConfig());
     }
 
     @Override

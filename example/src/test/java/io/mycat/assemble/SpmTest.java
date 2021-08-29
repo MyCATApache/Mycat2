@@ -85,9 +85,7 @@ public class SpmTest implements MycatTest {
                 }
         );
         context.put(JdbcConnectionManager.class, jdbcManager = new JdbcConnectionManager(DruidDatasourceProvider.class.getName(),
-                datasources,
-                clusterConfigs,
-                manager
+                datasources
         ));
         MetaClusterCurrent.register(context);
     }

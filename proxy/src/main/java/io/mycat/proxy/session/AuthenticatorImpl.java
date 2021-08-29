@@ -1,7 +1,6 @@
 package io.mycat.proxy.session;
 
 import io.mycat.Authenticator;
-import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.config.UserConfig;
 import lombok.AllArgsConstructor;
@@ -16,7 +15,7 @@ import java.util.regex.Pattern;
 
 public class AuthenticatorImpl implements Authenticator {
     final Map<String, Matcher> userMatchers = new HashMap<>();
-    final Map<String, UserConfig> map;
+    final Map<String, UserConfig> config;
     public AuthenticatorImpl(Map<String, UserConfig> map) {
         for (Map.Entry<String,UserConfig> stringUserConfigEntry : map.entrySet()) {
          UserConfig value = stringUserConfigEntry.getValue();
@@ -29,7 +28,7 @@ public class AuthenticatorImpl implements Authenticator {
             Matcher matcher = new Matcher(value.getPassword(), stringPredicate);
             userMatchers.put(stringUserConfigEntry.getKey(), matcher);
         }
-        this.map = map;
+        this.config = map;
     }
 
     @Override
@@ -50,12 +49,16 @@ public class AuthenticatorImpl implements Authenticator {
 
     @Override
     public UserConfig getUserInfo(String username) {
-        return map.get(username);
+        return config.get(username);
     }
 
     @Override
     public List<UserConfig> allUsers() {
-        return new ArrayList<>(map.values());
+        return new ArrayList<>(config.values());
+    }
+
+    public Map<String, UserConfig> getConfig() {
+        return config;
     }
 
     @AllArgsConstructor

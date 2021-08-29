@@ -4,6 +4,7 @@ import io.mycat.config.UserConfig;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 public interface Authenticator {
 
@@ -12,6 +13,8 @@ public interface Authenticator {
     UserConfig getUserInfo(String username);
 
     List<UserConfig> allUsers();
+
+    public Map<String, UserConfig> getConfig();
 
     @Data
     public static class AuthInfo {

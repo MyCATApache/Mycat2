@@ -25,6 +25,7 @@ import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
 import io.mycat.replica.heartbeat.strategy.*;
 import io.mycat.util.CollectionUtil;
+import org.apache.hadoop.yarn.webapp.hamlet2.Hamlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,8 +109,10 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
         CollectionUtil.safeUpdateByUpdate(this.physicsInstanceMap, newphysicsInstanceMap);
     }
 
-
-    /////////////////////////////////////////public manager/////////////////////////////////////////////////////////////
+    public List<ClusterConfig> getConfig() {
+        return replicaConfigList;
+    }
+/////////////////////////////////////////public manager/////////////////////////////////////////////////////////////
 
 
     public void removeCluster(String name) {
@@ -227,8 +230,8 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
         int maxRequestCount = replicaConfig.getMaxCon() == null ? Integer.MAX_VALUE : replicaConfig.getMaxCon();
 
         assert datasourceConfigMap.size() != 0;
-        DatasourceConfig datasourceConfig = datasourceConfigMap.values().stream().iterator().next();
-        String dbType = datasourceConfig.getDbType();
+
+        String dbType = datasourceConfigMap.values().stream().findFirst().map(i->i.getDbType()).orElse("mysql");
 
         ReplicaSelector selector = registerCluster(
                 name,
@@ -405,7 +408,11 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
     }
 
     public void removeHeartFlow(String replicaName, String datasourceName) {
-        heartbeatDetectorMap.remove(replicaName + "." + datasourceName);
+        HeartbeatFlow remove = heartbeatDetectorMap.remove(replicaName + "." + datasourceName);
+    }
+
+    public void clearHeartbeatDetector(){
+        heartbeatDetectorMap.clear();
     }
 
     private Function<HeartbeatFlow, HeartBeatStrategy> getStrategyByReplicaType(String replicaType) {

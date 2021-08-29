@@ -17,6 +17,7 @@ package io.mycat.datasource.jdbc.datasource;
 
 import com.alibaba.druid.pool.DruidPooledConnection;
 import com.alibaba.druid.util.JdbcUtils;
+import com.google.common.collect.ImmutableList;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.config.ClusterConfig;
@@ -47,13 +48,10 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcConnectionManager.class);
     private final ConcurrentHashMap<String, JdbcDataSource> dataSourceMap = new ConcurrentHashMap<>();
     private final DatasourceProvider datasourceProvider;
-    private final ReplicaSelectorManager replicaSelector;
 
     public JdbcConnectionManager(String customerDatasourceProvider,
-                                 Map<String, DatasourceConfig> datasources,
-                                 Map<String, ClusterConfig> clusterConfigs,
-                                 ReplicaSelectorManager replicaSelector) {
-        this(datasources, clusterConfigs, createDatasourceProvider(customerDatasourceProvider), replicaSelector);
+                                 Map<String, DatasourceConfig> datasources){
+        this(datasources, createDatasourceProvider(customerDatasourceProvider));
     }
 
     private static DatasourceProvider createDatasourceProvider(String customerDatasourceProvider) {
@@ -70,30 +68,28 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
     }
 
     public JdbcConnectionManager(Map<String, DatasourceConfig> datasources,
-                                 Map<String, ClusterConfig> clusterConfigs,
-                                 DatasourceProvider provider,
-                                 ReplicaSelectorManager replicaSelector) {
+                                 DatasourceProvider provider) {
         this.datasourceProvider = Objects.requireNonNull(provider);
-        this.replicaSelector = replicaSelector;
-
-        for (DatasourceConfig datasource : datasources.values()) {
-            if (datasource.computeType().isJdbc()) {
-                addDatasource(datasource);
-            }
-        }
-
-        for (ClusterConfig replica : clusterConfigs.values()) {
-            String replicaName = replica.getName();
-            for (String datasource : replica.allDatasources()) {
-                putHeartFlow(replicaName, datasource);
-            }
-        }
-
         //移除不必要的配置
         //新配置中的数据源名字
         Set<String> datasourceNames = datasources.keySet();
         Map<String, JdbcDataSource> datasourceInfo = this.getDatasourceInfo();
         new HashSet<>(datasourceInfo.keySet()).stream().filter(name -> !datasourceNames.contains(name)).forEach(name -> removeDatasource(name));
+    }
+
+    public void registerReplicaSelector(ReplicaSelectorManager replicaSelectorManager){
+        replicaSelectorManager.clearHeartbeatDetector();
+        for (ClusterConfig clusterConfig : replicaSelectorManager.getConfig()) {
+            List<String> dsNames = (List) ImmutableList.builder().addAll(clusterConfig.getMasters()).addAll(clusterConfig.getReplicas()).build();
+            for (String name :dsNames) {
+                JdbcDataSource jdbcDataSource = dataSourceMap.get(name);
+                if (jdbcDataSource==null){
+                    LOGGER.error("unknown dsName:{}",name);
+                }else {
+                    putHeartFlow(replicaSelectorManager,clusterConfig.getName(),name);
+                }
+            }
+        }
     }
 
     @Override
@@ -119,10 +115,12 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
 
     public DefaultConnection getConnection(String name, Boolean autocommit,
                                            int transactionIsolation, boolean readOnly) {
-        final JdbcDataSource key = dataSourceMap.computeIfAbsent(name, s -> {
-            JdbcDataSource jdbcDataSource = dataSourceMap.get(replicaSelector.getDatasourceNameByReplicaName(s, true, null));
-            return Objects.requireNonNull(jdbcDataSource, "unknown target:" + name);
-        });
+        JdbcDataSource key = dataSourceMap.get(name);
+        if (key == null) {
+            ReplicaSelectorManager replicaSelector = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
+            key = dataSourceMap.get(replicaSelector.getDatasourceNameByReplicaName(name, true, null));
+            Objects.requireNonNull(key, "unknown target:" + name);
+        }
         DefaultConnection defaultConnection;
         Connection connection = null;
         try {
@@ -187,8 +185,8 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         return Collections.unmodifiableMap(dataSourceMap);
     }
 
-    private void putHeartFlow(String replicaName, String datasource) {
-        replicaSelector.putHeartFlow(replicaName, datasource, new Consumer<HeartBeatStrategy>() {
+    private void putHeartFlow(  ReplicaSelectorManager replicaSelectorManager,String replicaName, String datasource) {
+        replicaSelectorManager.putHeartFlow(replicaName, datasource, new Consumer<HeartBeatStrategy>() {
             @Override
             public void accept(HeartBeatStrategy heartBeatStrategy) {
                 IOExecutor vertx = MetaClusterCurrent.wrapper(IOExecutor.class);
@@ -235,5 +233,15 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
 
     public DatasourceProvider getDatasourceProvider() {
         return datasourceProvider;
+    }
+
+    public Map<String, DatasourceConfig> getConfig() {
+        HashMap<String, DatasourceConfig> res = new HashMap<>();
+        for (Map.Entry<String, JdbcDataSource> entry : dataSourceMap.entrySet()) {
+            DatasourceConfig config = entry.getValue().getConfig();
+            String key = entry.getKey();
+            res.put(key, config);
+        }
+        return res;
     }
 }

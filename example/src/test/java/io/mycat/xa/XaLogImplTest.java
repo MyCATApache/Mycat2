@@ -48,7 +48,7 @@ public class XaLogImplTest {
     public static final Map<String, Connection> connectionMap = new HashMap<>();
 
     private XaLog getDemoRepository() {
-        return XaLogImpl.createXaLog(new TestMySQLManagerImpl(
+        return XaLogImpl.createXaLog(()->new TestMySQLManagerImpl(
                 Arrays.asList(demoConfig("ds1", 3306)
                         , demoConfig("ds2", 3307))));
     }

@@ -304,7 +304,6 @@ public class DrdsRunnerHelper {
 
     public static SchemaPlus convertRoSchemaPlus(DrdsConst config) {
         SchemaPlus plus = CalciteSchema.createRootSchema(false).plus();
-        List<MycatSchema> schemas = new ArrayList<>();
         for (Map.Entry<String, SchemaHandler> entry : config.schemas().entrySet()) {
             String schemaName = entry.getKey();
             SchemaHandler schemaHandler = entry.getValue();
@@ -315,7 +314,6 @@ public class DrdsRunnerHelper {
             }
             MycatSchema schema = MycatSchema.create(config, schemaName, logicTableMap);
             plus.add(schemaName, schema);
-            schemas.add(schema);
         }
         return plus;
     }

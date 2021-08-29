@@ -58,7 +58,7 @@ public class MycatSQLLogMonitorImpl extends MycatSQLLogMonitor {
                     } else if (uri.startsWith(QUERY_SQL_LOG.toLowerCase())) {
                         res = null;
                     }
-                    event.response().end(Json.encode(res));
+                    event.response().end(Json.encodePrettily(res));
                 }
             }).listen(port, ip);
         }

@@ -73,7 +73,7 @@ public class SingleTableVO implements VO{
 
     @Override
     public String toJsonConfig() {
-        return Json.encodePrettily(getNormalTableConfig());
+        return Json.encodePrettilyPrettily(getNormalTableConfig());
     }
 
     @Override

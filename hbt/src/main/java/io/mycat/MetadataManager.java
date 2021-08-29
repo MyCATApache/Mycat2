@@ -31,11 +31,7 @@ import io.mycat.calcite.table.*;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.plug.loadBalance.LoadBalanceManager;
-import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.replica.ReplicaSelectorManager;
-import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.function.IndexDataNode;
 import io.mycat.router.mycat1xfunction.PartitionRuleFunctionManager;
 import io.mycat.util.*;
@@ -66,7 +62,7 @@ public class MetadataManager {
     @Getter
     private final Map<String, List<ShardingTable>> erTableGroup = new HashMap<>();
 
-    public JdbcConnectionManager getJdbcConnectionManager(){
+    public JdbcConnectionManager getJdbcConnectionManager() {
         return MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
     }
 
@@ -88,13 +84,21 @@ public class MetadataManager {
         if (schemaHandler != null) {
             NameMap<TableHandler> stringLogicTableConcurrentHashMap = schemaMap.get(schemaName).logicTables();
             if (stringLogicTableConcurrentHashMap != null) {
+                TableHandler tableHandler = stringLogicTableConcurrentHashMap.get(tableName);
+                if (tableHandler!=null&&tableHandler.getType() == LogicTableType.SHARDING) {
+                    ShardingTable shardingTable = (ShardingTable) tableHandler;
+                    for (ShardingIndexTable indexTable : shardingTable.getIndexTables()) {
+                        removeTable(schemaName, indexTable.getTableName());
+                    }
+
+                }
                 stringLogicTableConcurrentHashMap.remove(tableName);
             }
         }
     }
 
-    public static MetadataManager createMetadataManager(Map<String,LogicSchemaConfig> schemaConfigs,
-                                                        String prototype,JdbcConnectionManager jdbcConnectionManager) {
+    public static MetadataManager createMetadataManager(Map<String, LogicSchemaConfig> schemaConfigs,
+                                                        String prototype, JdbcConnectionManager jdbcConnectionManager) {
         try {
             MysqlMetadataManager mysqlMetadataManager = new MysqlMetadataManager(schemaConfigs,
                     prototype) {
@@ -111,7 +115,7 @@ public class MetadataManager {
     }
 
     @SneakyThrows
-    public MetadataManager(Map<String,LogicSchemaConfig>  schemaConfigs,
+    public MetadataManager(Map<String, LogicSchemaConfig> schemaConfigs,
                            String prototype
     ) {
         this.prototype = Objects.requireNonNull(prototype);
@@ -128,12 +132,16 @@ public class MetadataManager {
         }
     }
 
-    public void recomputeERRelation(){
+    public void recomputeERRelation() {
         Stream<ShardingTable> shardingTables = this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream()).filter(i -> i.getType() == LogicTableType.SHARDING)
                 .map(i -> (ShardingTable) i);
         Map<String, List<ShardingTable>> res = shardingTables.collect(Collectors.groupingBy(i -> i.getShardingFuntion().getErUniqueID()));
         this.erTableGroup.clear();
         this.erTableGroup.putAll(res);
+    }
+
+    public void addSchema(LogicSchemaConfig value) {
+        addSchema(getPrototype(), value, value.getTargetName(), value.getSchemaName());
     }
 
     public void addSchema(String prototype, LogicSchemaConfig value, String targetName, String schemaName) {
@@ -159,53 +167,15 @@ public class MetadataManager {
 
         for (Map.Entry<String, NormalTableConfig> e : value.getNormalTables().entrySet()) {
             String tableName = e.getKey();
-            removeTable(schemaName, tableName);
-            NormalTableConfig tableConfigEntry = e.getValue();
-            try {
-                addNormalTable(schemaName, tableName,
-                        tableConfigEntry,
-                        prototype
-                );
-            } catch (Throwable throwable) {
-                LOGGER.warn("", throwable);
-            }
+            addNormalTable(schemaName, tableName, e.getValue());
         }
         for (Map.Entry<String, GlobalTableConfig> e : value.getGlobalTables().entrySet()) {
             String tableName = e.getKey();
-            removeTable(schemaName, tableName);
-            GlobalTableConfig tableConfigEntry = e.getValue();
-            List<Partition> backendTableInfos = tableConfigEntry.getBroadcast().stream().map(i -> new BackendTableInfo(i.getTargetName(), schemaName, tableName)).collect(Collectors.toList());
-            addGlobalTable(schemaName, tableName,
-                    tableConfigEntry,
-                    prototype,
-                    backendTableInfos
-            );
+            addGlobalTable(schemaName, tableName, e.getValue());
         }
         for (Map.Entry<String, ShardingTableConfig> primaryTable : value.getShardingTables().entrySet()) {
             String tableName = primaryTable.getKey();
-            ShardingTableConfig tableConfigEntry = primaryTable.getValue();
-            removeTable(schemaName, tableName);
-
-            Set<Map.Entry<String, ShardingTableConfig>> indexTables = Optional.ofNullable(tableConfigEntry.getShardingIndexTables())
-                    .orElse(Collections.emptyMap()).entrySet();
-
-            List<ShardingIndexTable> shardingIndexTables = new ArrayList<>();
-            for (Map.Entry<String, ShardingTableConfig> secondTable : indexTables) {
-                String indexTableName = secondTable.getKey();
-                String indexName = indexTableName.replace(tableName + "_", "");
-                ShardingTableConfig indexTableValue = secondTable.getValue();
-                ShardingIndexTable shardingIndexTable = createShardingIndexTable(schemaName, indexName, indexTableName,
-                        indexTableValue,
-                        prototype,
-                        getBackendTableInfos(indexTableValue.getPartition()));
-                shardingIndexTables.add(shardingIndexTable);
-            }
-
-            addShardingTable(schemaName, tableName,
-                    tableConfigEntry,
-                    prototype,
-                    getBackendTableInfos(tableConfigEntry.getPartition()),
-                    shardingIndexTables);
+            addShardingTable(schemaName, tableName, primaryTable.getValue());
         }
 
         for (Map.Entry<String, CustomTableConfig> e : value.getCustomTables().entrySet()) {
@@ -217,6 +187,55 @@ public class MetadataManager {
                     tableConfigEntry
             );
         }
+    }
+
+    public void addShardingTable(String schemaName, String tableName, ShardingTableConfig tableConfig) {
+        ShardingTableConfig tableConfigEntry = tableConfig;
+        removeTable(schemaName, tableName);
+
+        Set<Map.Entry<String, ShardingTableConfig>> indexTables = Optional.ofNullable(tableConfigEntry.getShardingIndexTables())
+                .orElse(Collections.emptyMap()).entrySet();
+
+        List<ShardingIndexTable> shardingIndexTables = new ArrayList<>();
+        for (Map.Entry<String, ShardingTableConfig> secondTable : indexTables) {
+            String indexTableName = secondTable.getKey();
+            String indexName = indexTableName.replace(tableName + "_", "");
+            ShardingTableConfig indexTableValue = secondTable.getValue();
+            ShardingIndexTable shardingIndexTable = createShardingIndexTable(schemaName, indexName, indexTableName,
+                    indexTableValue,
+                    prototype,
+                    getBackendTableInfos(indexTableValue.getPartition()));
+            shardingIndexTables.add(shardingIndexTable);
+        }
+
+        addShardingTable(schemaName, tableName,
+                tableConfigEntry,
+                prototype,
+                getBackendTableInfos(tableConfigEntry.getPartition()),
+                shardingIndexTables);
+    }
+
+    public void addNormalTable(String schemaName, String tableName, NormalTableConfig normalTableConfig) {
+        removeTable(schemaName, tableName);
+        NormalTableConfig tableConfigEntry = normalTableConfig;
+        try {
+            addNormalTable(schemaName, tableName,
+                    tableConfigEntry,
+                    prototype
+            );
+        } catch (Throwable throwable) {
+            LOGGER.warn("", throwable);
+        }
+    }
+
+    public void addGlobalTable(String schemaName, String tableName, GlobalTableConfig globalTableConfig) {
+        removeTable(schemaName, tableName);
+        List<Partition> backendTableInfos = globalTableConfig.getBroadcast().stream().map(i -> new BackendTableInfo(i.getTargetName(), schemaName, tableName)).collect(Collectors.toList());
+        addGlobalTable(schemaName, tableName,
+                globalTableConfig,
+                prototype,
+                backendTableInfos
+        );
     }
 
 
@@ -547,8 +566,8 @@ public class MetadataManager {
                             }
 
                         }
-                    }catch (Exception e){
-                        LOGGER.error("",e);
+                    } catch (Exception e) {
+                        LOGGER.error("", e);
                     }
                     try (RowBaseIterator rowBaseIterator = connection.executeQuery("select * from " + targetSchemaTable + " limit 0")) {
                         MycatRowMetaData metaData = rowBaseIterator.getMetaData();

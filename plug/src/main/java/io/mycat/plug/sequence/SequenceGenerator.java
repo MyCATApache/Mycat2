@@ -84,4 +84,8 @@ public class SequenceGenerator {
             }
         });
     }
+
+    public List<SequenceConfig> getSequencesConfig() {
+        return sequencesConfig;
+    }
 }

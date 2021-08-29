@@ -1,6 +1,7 @@
 package io.mycat.monitor;
 
 import io.mycat.ReplicaBalanceType;
+import io.mycat.config.ClusterConfig;
 import io.mycat.replica.PhysicsInstance;
 import io.mycat.replica.ReplicaSelector;
 import io.mycat.replica.ReplicaSelectorManager;
@@ -34,6 +35,11 @@ public class MonitorReplicaSelectorManager implements ReplicaSelectorManager {
     @Override
     public void putHeartFlow(String replicaName, String datasourceName, Consumer<HeartBeatStrategy> executer) {
         replicaSelectorManager.putHeartFlow(replicaName,datasourceName,executer);
+    }
+
+    @Override
+    public void clearHeartbeatDetector() {
+        replicaSelectorManager.clearHeartbeatDetector();
     }
 
     @Override
@@ -87,7 +93,12 @@ public class MonitorReplicaSelectorManager implements ReplicaSelectorManager {
     }
 
     @Override
-    public void close() throws IOException {
+    public List<ClusterConfig> getConfig() {
+        return replicaSelectorManager.getConfig();
+    }
+
+    @Override
+    public void close() {
         replicaSelectorManager.close();
     }
 }

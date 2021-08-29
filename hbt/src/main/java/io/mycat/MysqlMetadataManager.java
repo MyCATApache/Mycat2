@@ -4,43 +4,42 @@ import io.mycat.calcite.table.DualCustomTableHandler;
 import io.mycat.config.CustomTableConfig;
 import io.mycat.config.LogicSchemaConfig;
 import io.mycat.config.NormalTableConfig;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.plug.loadBalance.LoadBalanceManager;
-import io.mycat.plug.sequence.SequenceGenerator;
-import io.mycat.replica.ReplicaSelectorManager;
 
 import java.util.*;
 
 public class MysqlMetadataManager extends MetadataManager {
 
     public MysqlMetadataManager(Map<String,LogicSchemaConfig> schemaConfigs, String prototype) {
-        super(fix(prototype,schemaConfigs), prototype);
+        super(addMySQLSystemTable(schemaConfigs), prototype);
+    }
+    public static Map<String,LogicSchemaConfig> getMySQLSystemTables(){
+        return addMySQLSystemTable(Collections.emptyMap());
     }
 
-    private static Map<String,LogicSchemaConfig>  fix(String prototype,Map<String,LogicSchemaConfig> orginal) {
-        orginal = new HashMap<>(orginal);
-        Set<String> databases = new HashSet<>();
-        databases.add("information_schema");
-        databases.add("mysql");
-        databases.add("performance_schema");
-
-
-        for (String database : databases) {
-            if (!orginal.containsKey(database)){
-                LogicSchemaConfig schemaConfig = new LogicSchemaConfig();
-                schemaConfig.setSchemaName(database);
-                schemaConfig.setTargetName(prototype);
-                orginal.put(database,schemaConfig);
-            }
-        }
-
-        ArrayList<LogicSchemaConfig> logicSchemaConfigs = new ArrayList<>();
-        addInnerTable(logicSchemaConfigs,"prototype");
-        for (LogicSchemaConfig logicSchemaConfig : logicSchemaConfigs) {
-            if (!orginal.containsKey(logicSchemaConfig.getSchemaName())){
-                orginal.put(logicSchemaConfig.getSchemaName(),logicSchemaConfig);
-            }
-        }
+    public static Map<String,LogicSchemaConfig> addMySQLSystemTable(Map<String,LogicSchemaConfig> orginal) {
+//        orginal = new HashMap<>(orginal);
+//        Set<String> databases = new HashSet<>();
+//        databases.add("information_schema");
+//        databases.add("mysql");
+//        databases.add("performance_schema");
+//
+//
+//        for (String database : databases) {
+//            if (!orginal.containsKey(database)){
+//                LogicSchemaConfig schemaConfig = new LogicSchemaConfig();
+//                schemaConfig.setSchemaName(database);
+//                schemaConfig.setTargetName("prototype");
+//                orginal.put(database,schemaConfig);
+//            }
+//        }
+//
+//        ArrayList<LogicSchemaConfig> logicSchemaConfigs = new ArrayList<>();
+//        addInnerTable(logicSchemaConfigs,"prototype");
+//        for (LogicSchemaConfig logicSchemaConfig : logicSchemaConfigs) {
+//            if (!orginal.containsKey(logicSchemaConfig.getSchemaName())){
+//                orginal.put(logicSchemaConfig.getSchemaName(),logicSchemaConfig);
+//            }
+//        }
         return orginal;
     }
 

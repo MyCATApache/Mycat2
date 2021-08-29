@@ -39,4 +39,10 @@ public final class LogicSchemaConfig {
         }
         return Optional.empty();
     }
+
+    public void removeTable(String tableName){
+        this.getGlobalTables().remove(tableName);
+        this.getNormalTables().remove(tableName);
+        this.getShardingTables().remove(tableName);
+    }
 }

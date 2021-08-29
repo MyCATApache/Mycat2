@@ -15,6 +15,7 @@
 package io.mycat.replica;
 
 import io.mycat.ReplicaBalanceType;
+import io.mycat.config.ClusterConfig;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
 
@@ -24,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public interface ReplicaSelectorManager extends Closeable {
+public interface ReplicaSelectorManager {
 
     default String getDatasourceNameByReplicaName(String name, boolean master,  String loadBalanceStrategy){
         return getDatasourceNameByReplicaName(name,master,ReplicaBalanceType.NONE,loadBalanceStrategy);
@@ -33,6 +34,8 @@ public interface ReplicaSelectorManager extends Closeable {
     String getDatasourceNameByReplicaName(String name, boolean master, ReplicaBalanceType replicaBalanceType, String loadBalanceStrategy);
 
     void putHeartFlow(String replicaName, String datasourceName, Consumer<HeartBeatStrategy> executer);
+
+    public void clearHeartbeatDetector();
 
     String getDbTypeByTargetName(String name);
 
@@ -53,4 +56,8 @@ public interface ReplicaSelectorManager extends Closeable {
     List<String> getRepliaNameListByInstanceName(String name);
 
     Map<String, HeartbeatFlow> getHeartbeatDetectorMap();
+
+    public List<ClusterConfig> getConfig();
+
+    public void close();
 }

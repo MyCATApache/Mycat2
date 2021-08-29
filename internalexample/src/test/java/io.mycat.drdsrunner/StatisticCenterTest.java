@@ -85,9 +85,7 @@ public class StatisticCenterTest extends DrdsTest {
         );
         context.put(ReplicaSelectorManager.class,manager);
         context.put(JdbcConnectionManager.class, jdbcManager = new JdbcConnectionManager(DruidDatasourceProvider.class.getName(),
-                datasources,
-                clusterConfigs,
-                manager
+                datasources
         ));
         MetaClusterCurrent.register(context);
         statisticCenter.init();

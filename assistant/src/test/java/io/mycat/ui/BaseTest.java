@@ -292,7 +292,7 @@ public class BaseTest extends ApplicationTest {
                     robot.interrupt();
                 });
                 String config
-                        = Json.encodePrettily(GlobalTableConfig.builder()
+                        = Json.encodePrettilyPrettily(GlobalTableConfig.builder()
                         .createTableSQL("\n" +
                                 "CREATE TABLE `address` (\n" +
                                 "  `id` int(11) NOT NULL,\n" +
@@ -435,7 +435,7 @@ public class BaseTest extends ApplicationTest {
                 datasourceConfig.setUser("root");
                 datasourceConfig.setPassword("123456");
                 datasourceConfig.setUrl(url);
-                String config = Json.encode(datasourceConfig);
+                String config = Json.encodePrettily(datasourceConfig);
                 lookupTextNode("#objectText").ifPresent(c -> {
                     c.setText(config);
                     robot.interrupt();
@@ -496,7 +496,7 @@ public class BaseTest extends ApplicationTest {
                 robot.clickOn("#addCluster");
                 robot.interrupt();
 
-                String config = Json.encode(CreateClusterHint.createConfig("c3", Arrays.asList("prototypeDs"), Arrays.asList()));
+                String config = Json.encodePrettily(CreateClusterHint.createConfig("c3", Arrays.asList("prototypeDs"), Arrays.asList()));
                 lookupTextNode("#objectText").ifPresent(c -> {
                     c.setText(config);
                     robot.interrupt();
@@ -584,7 +584,7 @@ public class BaseTest extends ApplicationTest {
                 robot.clickOn("#addSchema");
                 robot.interrupt();
 
-                String config = Json.encode(CreateSchemaHint.createConfig("s3", null));
+                String config = Json.encodePrettily(CreateSchemaHint.createConfig("s3", null));
                 lookupTextNode("#objectText").ifPresent(c -> {
                     c.setText(config);
                     robot.interrupt();
@@ -726,7 +726,7 @@ public class BaseTest extends ApplicationTest {
                             ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
                 });
                 robot.interrupt();
-                String functionConfig = Json.encodePrettily(ShardingFunction.builder()
+                String functionConfig = Json.encodePrettilyPrettily(ShardingFunction.builder()
                         .clazz(PartitionByRangeMod.class.getCanonicalName())
                         .properties(Maps.of(
                                 "defaultNode", -1,
@@ -798,7 +798,7 @@ public class BaseTest extends ApplicationTest {
         });
         robot.interrupt();
         robot.interrupt();
-        String functionConfig = Json.encodePrettily(ShardingFunction.builder()
+        String functionConfig = Json.encodePrettilyPrettily(ShardingFunction.builder()
                 .clazz(PartitionByRangeMod.class.getCanonicalName())
                 .properties(Maps.of(
                         "defaultNode", -1,

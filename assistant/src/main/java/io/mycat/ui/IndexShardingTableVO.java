@@ -112,7 +112,7 @@ public class IndexShardingTableVO implements VO {
 
     @Override
     public String toJsonConfig() {
-        return Json.encodePrettily(toShardingTableConfig());
+        return Json.encodePrettilyPrettily(toShardingTableConfig());
     }
 
     @Override

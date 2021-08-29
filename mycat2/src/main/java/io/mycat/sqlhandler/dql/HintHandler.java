@@ -96,9 +96,8 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         body = s.substring(bodyStartIndex);
                     }
 
-
+                    MycatRouterConfig routerConfig = MetaClusterCurrent.wrapper(BaseMetadataStorageManager.class).getConfig();
                     MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-                    MycatRouterConfig routerConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
                     ReplicaSelectorManager replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
                     JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                     MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
@@ -119,7 +118,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         return showTopology(response, body, metadataManager);
                     }
                     if ("checkConfigConsistency".equalsIgnoreCase(cmd)) {
-                        AssembleMetadataStorageManager assembleMetadataStorageManager = MetaClusterCurrent.wrapper(AssembleMetadataStorageManager.class);
+                        MycatMetadataStorageManager assembleMetadataStorageManager = MetaClusterCurrent.wrapper(MycatMetadataStorageManager.class);
                         boolean res = assembleMetadataStorageManager.check();
                         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
                         resultSetBuilder.addColumnInfo("value", JDBCType.VARCHAR);
@@ -417,7 +416,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         resultSetBuilder.addColumnInfo("REPLICA", JDBCType.VARCHAR);
                         Collection<PhysicsInstance> values =
                                 replicaSelectorRuntime.getPhysicsInstances();
-                        Map<String, DatasourceConfig> dataSourceConfig = routerConfig.getDatasources().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
+                        Map<String, DatasourceConfig> dataSourceConfig = jdbcConnectionManager.getConfig().values().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
 
 
                         for (PhysicsInstance instance : values) {
@@ -506,7 +505,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         return response.sendResultSet(() -> builder.build());
                     }
                     if ("showConfigText".equalsIgnoreCase(cmd)) {
-                        MycatRouterConfig mycatRouterConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
+                        MycatRouterConfig mycatRouterConfig = MetaClusterCurrent.wrapper(BaseMetadataStorageManager.class).getConfig();
                         String text = JsonUtil.toJson(mycatRouterConfig);
                         ResultSetBuilder builder = ResultSetBuilder.create();
                         builder.addColumnInfo("CONFIG_TEXT", JDBCType.VARCHAR);
@@ -601,7 +600,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
     }
 
     @Nullable
-    private Future<Void> showTables(Response response, String body, MetadataManager metadataManager, MycatRouterConfig routerConfig) {
+    private Future<Void> showTables(Response response, String body, MetadataManager metadataManager,MycatRouterConfig routerConfig) {
         Map map = JsonUtil.from(body, Map.class);
         String type = (String) map.get("type");
         String schemaName = (String) map.get("schemaName");
@@ -642,6 +641,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
             String CREATE_TABLE_SQL = table.getCreateTableSQL();
             LogicTableType TYPE = table.getType();
             String COLUMNS = table.getColumns().stream().map(i -> i.toString()).collect(Collectors.joining(","));
+
             String CONFIG = routerConfig.getSchemas().stream()
                     .filter(i -> SCHEMA_NAME.equalsIgnoreCase(i.getSchemaName()))
                     .map(i -> {
@@ -891,7 +891,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
     }
 
     public static RowBaseIterator showClusters(String clusterName) {
-        MycatRouterConfig routerConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
+        MycatRouterConfig routerConfig = MetaClusterCurrent.wrapper(BaseMetadataStorageManager.class).getConfig();
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
         resultSetBuilder.addColumnInfo("NAME", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("SWITCH_TYPE", JDBCType.VARCHAR);
@@ -1029,13 +1029,18 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
             xaLog.readXARecoveryLog();
             return;
         }
+        if ("syncMemoryToAll".equalsIgnoreCase(cmd)) {
+            MycatMetadataStorageManager assembleMetadataStorageManager = MetaClusterCurrent.wrapper(MycatMetadataStorageManager.class);
+            assembleMetadataStorageManager.syncMemoryToAll();
+            return;
+        }
         if ("syncConfigFromFileToDb".equalsIgnoreCase(cmd)) {
-            AssembleMetadataStorageManager assembleMetadataStorageManager = MetaClusterCurrent.wrapper(AssembleMetadataStorageManager.class);
+            MycatMetadataStorageManager assembleMetadataStorageManager = MetaClusterCurrent.wrapper(MycatMetadataStorageManager.class);
             assembleMetadataStorageManager.syncConfigFromFileToDb();
             return;
         }
         if ("syncConfigFromDbToFile".equalsIgnoreCase(cmd)) {
-            AssembleMetadataStorageManager assembleMetadataStorageManager = MetaClusterCurrent.wrapper(AssembleMetadataStorageManager.class);
+            MycatMetadataStorageManager assembleMetadataStorageManager = MetaClusterCurrent.wrapper(MycatMetadataStorageManager.class);
             assembleMetadataStorageManager.syncConfigFromDbToFile();
             return;
         }

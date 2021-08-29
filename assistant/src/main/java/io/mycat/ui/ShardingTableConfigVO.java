@@ -87,7 +87,7 @@ public class ShardingTableConfigVO implements VO {
     }
 
     public void flash() {
-        this.getShardingInfo().setText(Json.encodePrettily(shardingTableConfig.getFunction()));
+        this.getShardingInfo().setText(Json.encodePrettilyPrettily(shardingTableConfig.getFunction()));
         this.getCreateTableSQL().setText(shardingTableConfig.getCreateTableSQL());
 
         TableView partitionsView = this.getPartitionsView();
@@ -200,7 +200,7 @@ public class ShardingTableConfigVO implements VO {
 //                indexShardingTableVO.getSchemaName().setText(indexTable.getSchemaName());
 //                indexShardingTableVO.getTableName().setText(indexTable.getTableName());
 //                indexShardingTableVO.getIndexName().setText(indexTable.getIndexName());
-//                indexShardingTableVO.getShardingInfo().setText(Json.encodePrettily(tableConfig.getFunction()));
+//                indexShardingTableVO.getShardingInfo().setText(Json.encodePrettilyPrettily(tableConfig.getFunction()));
 //                initPartitionsView(MetadataManager.getBackendTableInfos(tableConfig.getPartition()), this.partitionsView);
 //            }
 //
@@ -214,7 +214,7 @@ public class ShardingTableConfigVO implements VO {
 
     @Override
     public String toJsonConfig() {
-        return Json.encodePrettily(getShardingTableConfig());
+        return Json.encodePrettilyPrettily(getShardingTableConfig());
     }
 
 //    public void setShardingTable(ShardingTable shardingTable) {
@@ -224,7 +224,7 @@ public class ShardingTableConfigVO implements VO {
 //        this.getTableName().setText(shardingTable.getTableName());
 //
 //        ShardingTableConfig shardingTableConfig = shardingTable.getTableConfig();
-//        this.getShardingInfo().setText(Json.encodePrettily(shardingTableConfig.getFunction()));
+//        this.getShardingInfo().setText(Json.encodePrettilyPrettily(shardingTableConfig.getFunction()));
 //        this.getCreateTableSQL().setText(shardingTable.getCreateTableSQL());
 //
 //        TableView partitionsView = this.getPartitionsView();

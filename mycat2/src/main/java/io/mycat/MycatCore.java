@@ -54,7 +54,7 @@ public class MycatCore {
     public static final String PROPERTY_MODE_CLUSTER = "cluster";
     public static final String PROPERTY_METADATADIR = "metadata";
     private final MycatServer mycatServer;
-    private final MetadataStorageManager metadataStorageManager;
+    private final MycatMetadataStorageManager metadataStorageManager;
     private final Path baseDirectory;
 
     static {
@@ -104,39 +104,42 @@ public class MycatCore {
         vertxOptions.getMetricsOptions().setFactory(new MycatVertxMetricsFactory());
         this.mycatServer = newMycatServer(serverConfig);
 
-        HashMap<Class, Object> context = new HashMap<>();
         Vertx vertx = Vertx.vertx(vertxOptions);
-        context.put(IOExecutor.class, IOExecutor.fromVertx(vertx));
-        context.put(serverConfig.getServer().getClass(), serverConfig.getServer());
-        context.put(serverConfiguration.getClass(), serverConfiguration);
-        context.put(serverConfig.getClass(), serverConfig);
-        context.put(LoadBalanceManager.class, new LoadBalanceManager(serverConfig.getLoadBalance()));
-        context.put(Vertx.class, vertx);
-        context.put(this.mycatServer.getClass(), mycatServer);
-        context.put(MycatServer.class, mycatServer);
-        context.put(SqlRecorderRuntime.class, SqlRecorderRuntime.INSTANCE);
-        context.put(MycatSQLLogMonitor.class,new MycatSQLLogMonitorImpl(serverConfig.getServer().getMycatId(),serverConfig.getMonitor(),vertx));
+        MetaClusterCurrent.register(IOExecutor.class, IOExecutor.fromVertx(vertx));
+        MetaClusterCurrent.register(serverConfig.getServer().getClass(), serverConfig.getServer());
+        MetaClusterCurrent.register(serverConfiguration.getClass(), serverConfiguration);
+        MetaClusterCurrent.register(serverConfig.getClass(), serverConfig);
+        MetaClusterCurrent.register(LoadBalanceManager.class, new LoadBalanceManager(serverConfig.getLoadBalance()));
+        MetaClusterCurrent.register(Vertx.class, vertx);
+        MetaClusterCurrent.register(this.mycatServer.getClass(), mycatServer);
+        MetaClusterCurrent.register(MycatServer.class, mycatServer);
+        MetaClusterCurrent.register(SqlRecorderRuntime.class, SqlRecorderRuntime.INSTANCE);
+
+        MetaClusterCurrent.register(MycatSQLLogMonitor.class,new MycatSQLLogMonitorImpl(serverConfig.getServer().getMycatId(),serverConfig.getMonitor(),vertx));
         ////////////////////////////////////////////tmp///////////////////////////////////
-        MetaClusterCurrent.register(context);
+
 
         String mode = Optional.ofNullable(System.getProperty("mode"))
                 .orElse(serverConfig.getMode());
         switch (mode) {
             case PROPERTY_MODE_LOCAL: {
-                context.put(LockService.class, new LocalLockServiceImpl());
-                FileMetadataStorageManager fileMetadataStorageManager = new FileMetadataStorageManager(serverConfig, datasourceProvider, this.baseDirectory);
-                MySQLMetadataStorageManager dbMetadataStorageManager = new MySQLMetadataStorageManager();
-                AssembleMetadataStorageManager assembleMetadataStorageManager = new AssembleMetadataStorageManager(fileMetadataStorageManager, dbMetadataStorageManager);
-                metadataStorageManager =assembleMetadataStorageManager;
-                context.put(AssembleMetadataStorageManager.class, metadataStorageManager);
+                MetaClusterCurrent.register(LockService.class, new LocalLockServiceImpl());
+                FileStorageManager fileStorageManager = new FileStorageManager(this.baseDirectory);
+
+                CoreMetadataStorageManager coreMetadataStorageManager = new CoreMetadataStorageManager(serverConfig);
+                DbBaseMetadataStorageManagerImpl dbBaseMetadataStorageManager = new DbBaseMetadataStorageManagerImpl();
+                MycatMetadataStorageManager newFileMetadataStorageManager = new MycatMetadataStorageManager(coreMetadataStorageManager, fileStorageManager,dbBaseMetadataStorageManager);
+
+                metadataStorageManager =newFileMetadataStorageManager;
+                MetaClusterCurrent.register(MycatMetadataStorageManager.class,metadataStorageManager);
+                MetaClusterCurrent.register(BaseMetadataStorageManager.class, metadataStorageManager);
                 break;
             }
             default: {
                 throw new UnsupportedOperationException();
             }
         }
-        context.put(MetadataStorageManager.class, metadataStorageManager);
-        MetaClusterCurrent.register(context);
+        MetaClusterCurrent.register(BaseMetadataStorageManager.class, metadataStorageManager);
     }
 
     private void testZkAddressOrStartDefaultZk(String zkAddress) throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
@@ -194,7 +197,7 @@ public class MycatCore {
     }
 
     public void startServer() throws Exception {
-        metadataStorageManager.start();
+        metadataStorageManager.syncConfigFromFile();
         mycatServer.start();
     }
 

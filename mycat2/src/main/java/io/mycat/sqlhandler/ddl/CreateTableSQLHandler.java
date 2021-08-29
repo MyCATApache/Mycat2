@@ -29,6 +29,7 @@ import org.apache.calcite.avatica.Meta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -106,7 +107,7 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
                 } else if (createTableSql.getDbPartitionBy() == null && createTableSql.getTablePartitionBy() == null) {
                     ops.putNormalTable(schemaName, tableName, createTableSql);
                 } else {
-                    ops.putHashTable(schemaName, tableName, createTableSql);
+                    ops.putHashTable(schemaName, tableName, createTableSql, Collections.emptyMap());
                 }
 
             } else {
