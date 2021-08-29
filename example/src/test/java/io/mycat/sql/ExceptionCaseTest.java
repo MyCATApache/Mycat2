@@ -65,7 +65,7 @@ public class ExceptionCaseTest implements MycatTest {
             } catch (SQLException e) {
                 Assert.assertEquals(1062,e.getErrorCode());
                 Assert.assertEquals("23000",e.getSQLState());
-                Assert.assertEquals("Duplicate entry '1' for key 'PRIMARY'",e.getMessage());
+                Assert.assertTrue(e.getMessage().startsWith("Duplicate"));
                 System.out.println();
             }
 
@@ -82,7 +82,7 @@ public class ExceptionCaseTest implements MycatTest {
             } catch (SQLException e) {
                 Assert.assertEquals(1062,e.getErrorCode());
                 Assert.assertEquals("23000",e.getSQLState());
-                Assert.assertEquals("Duplicate entry '1' for key 'PRIMARY'",e.getMessage());
+                Assert.assertTrue(e.getMessage().startsWith("Duplicate"));
                 System.out.println();
             }
         }
