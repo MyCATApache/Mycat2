@@ -23,6 +23,7 @@ import io.mycat.calcite.localrel.MycatAggregateUnionTransposeRule;
 import io.mycat.calcite.localrel.LocalRules;
 import io.mycat.calcite.localrel.LocalSort;
 import io.mycat.calcite.logical.MycatView;
+import io.mycat.calcite.physical.MycatHashAggregate;
 import io.mycat.calcite.table.*;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.util.NameMap;
@@ -527,7 +528,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             RelNode backup = input;
             if (!(input instanceof Union)) {
                 input = LogicalUnion.create(ImmutableList.of(input, input), true);
-                input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
+                input = LogicalAggregate.create(input, aggregate.getHints(), aggregate.getGroupSet(), aggregate.getGroupSets(), aggregate.getAggCallList());
             }
             HepProgramBuilder hepProgram = new HepProgramBuilder();
             hepProgram.addMatchLimit(512);
@@ -535,15 +536,24 @@ public class SQLRBORewriter extends RelShuttleImpl {
             HepPlanner planner = new HepPlanner(hepProgram.build());
             planner.setRoot(input);
             RelNode bestExp = planner.findBestExp();
-            if (bestExp instanceof Aggregate && ((Aggregate) bestExp).getInput() instanceof Union) {
-                MycatView multiView = view.changeTo(
-                        bestExp.getInput(0).getInput(0),
-                        dataNodeInfo);
-                return Optional.of(bestExp.copy(aggregate.getTraitSet(), ImmutableList.of(multiView)));
-            } else {
-                return Optional.empty();
-            }
 
+            if (bestExp instanceof Aggregate){
+             Aggregate mergeAgg = (Aggregate) bestExp;
+              if (mergeAgg.getInput() instanceof Union){
+                  MycatView multiView = view.changeTo(
+                          mergeAgg.getInput(0).getInput(0),
+                          dataNodeInfo);
+                  MycatHashAggregate mycatHashAggregate =
+                          MycatHashAggregate
+                                  .create(mergeAgg.getTraitSet(),
+                                          multiView,
+                                          mergeAgg.getGroupSet(),
+                                          mergeAgg.getGroupSets(),
+                                          mergeAgg.getAggCallList());
+                  return Optional.of(mycatHashAggregate);
+              }
+            }
+            return Optional.empty();
         }
     }
 
