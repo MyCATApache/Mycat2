@@ -16,11 +16,14 @@
 package io.mycat.xa;
 
 import cn.mycat.vertx.xa.SimpleConfig;
+import com.alibaba.druid.pool.DruidDataSource;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.commands.AbstractMySQLManagerImpl;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.newquery.NewMycatConnection;
+import io.mycat.newquery.NewMycatConnectionImpl;
 import io.mycat.replica.InstanceType;
 import io.vertx.core.Future;
 import io.vertx.core.impl.logging.Logger;
@@ -32,40 +35,43 @@ import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.SqlConnection;
 import lombok.SneakyThrows;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TestMySQLManagerImpl extends AbstractMySQLManagerImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestMySQLManagerImpl.class);
-    private final ConcurrentHashMap<String, MySQLPool> nameMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, DruidDataSource> nameMap = new ConcurrentHashMap<>();
 
     public TestMySQLManagerImpl(List<SimpleConfig> configList) {
         Objects.requireNonNull(configList);
         for (SimpleConfig simpleConfig : configList) {
             String name = simpleConfig.getName();
-            MySQLPool pool = getMySQLPool(simpleConfig.getPort(), simpleConfig.getHost(), simpleConfig.getDatabase(), simpleConfig.getUser(), simpleConfig.getPassword(), simpleConfig.getMaxSize());
+            DruidDataSource pool = getMySQLPool(simpleConfig.getPort(), simpleConfig.getHost(), simpleConfig.getDatabase(), simpleConfig.getUser(), simpleConfig.getPassword(), simpleConfig.getMaxSize());
             nameMap.put(name, pool);
         }
     }
 
-    private MySQLPool getMySQLPool(int port, String host, String database, String user, String password, int maxSize) {
-        MySQLConnectOptions connectOptions = new MySQLConnectOptions()
-                .setPort(port)
-                .setAuthenticationPlugin(MySQLAuthenticationPlugin.MYSQL_NATIVE_PASSWORD)
-                .setHost(host)
-                .setDatabase(database)
-                .setUser(user)
-                .setPassword(password);
-        PoolOptions poolOptions = new PoolOptions()
-                .setMaxSize(maxSize);
-        return MySQLPool.pool(connectOptions, poolOptions);
+    private DruidDataSource getMySQLPool(int port, String host, String database, String user, String password, int maxSize) {
+        DruidDataSource druidDataSource = new DruidDataSource();
+
+        druidDataSource.setUrl("jdbc:mysql://" +host+
+                        ":" +port+
+                "/"
+                +database+
+                "?characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true");
+        druidDataSource.setUsername(user);
+        druidDataSource.setPassword(password);
+        return druidDataSource;
     }
 
 
     @Override
-    public Future<SqlConnection> getConnection(String targetName) {
-        return nameMap.get(targetName).getConnection();
+    @SneakyThrows
+    public Future<NewMycatConnection> getConnection(String targetName) {
+        NewMycatConnectionImpl newMycatConnection = new NewMycatConnectionImpl(nameMap.get(targetName).getConnection());
+        return Future.succeededFuture(newMycatConnection);
     }
 
     @Override
@@ -76,7 +82,7 @@ public class TestMySQLManagerImpl extends AbstractMySQLManagerImpl {
     @Override
     @SneakyThrows
     public Map<String, java.sql.Connection> getWriteableConnectionMap() {
-        ConcurrentHashMap.KeySetView<String, MySQLPool> strings = nameMap.keySet();
+        ConcurrentHashMap.KeySetView<String, DruidDataSource> strings = nameMap.keySet();
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         Map<String, JdbcDataSource> datasourceInfo = jdbcConnectionManager.getDatasourceInfo();
         HashMap<String, Connection> map = new HashMap<>();
@@ -95,11 +101,13 @@ public class TestMySQLManagerImpl extends AbstractMySQLManagerImpl {
 
     @Override
     public Future<Void> close() {
-        return null;
+        nameMap.values().forEach(c->c.close());
+        return Future.succeededFuture();
     }
 
     @Override
     public Future<Map<String, Integer>> computeConnectionUsageSnapshot() {
+
         return null;
     }
 }

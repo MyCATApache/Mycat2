@@ -22,6 +22,7 @@ import io.mycat.config.DatasourceConfig;
 import io.mycat.config.MycatRouterConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.newquery.NewMycatConnection;
 import io.mycat.replica.InstanceType;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -74,17 +75,17 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
     @NotNull
     private MycatDatasourcePool createNativeDatasourcePool(String name) {
         NativeDatasourcePoolImpl nativeDatasourcePool = new NativeDatasourcePoolImpl(name);
-        return new MonitorMycatDatasourcePool(nativeDatasourcePool);
+        return nativeDatasourcePool;
     }
 
     @NotNull
     private MycatDatasourcePool createJdbcDatasourcePool(String name) {
         JdbcDatasourcePoolImpl jdbcDatasourcePool = new JdbcDatasourcePoolImpl(name);
-        return new MonitorMycatDatasourcePool(jdbcDatasourcePool);
+        return jdbcDatasourcePool;
     }
 
     @Override
-    public Future<SqlConnection> getConnection(String targetName) {
+    public Future<NewMycatConnection> getConnection(String targetName) {
         MycatDatasourcePool mycatDatasourcePool = Objects.requireNonNull(map.get(targetName));
         return mycatDatasourcePool.getConnection();
     }

@@ -16,6 +16,7 @@
  */
 package io.mycat.commands;
 
+import io.mycat.newquery.NewMycatConnection;
 import io.vertx.core.Future;
 import io.vertx.sqlclient.SqlConnection;
 import org.slf4j.Logger;
@@ -29,7 +30,7 @@ public  abstract class AbstractMycatDatasourcePool implements MycatDatasourcePoo
         this.targetName = targetName;
     }
 
-    public abstract Future<SqlConnection> getConnection();
+    public abstract Future<NewMycatConnection> getConnection();
 
     public abstract Integer getAvailableNumber();
     public abstract Integer getUsedNumber();

@@ -19,6 +19,7 @@ package cn.mycat.vertx.xa.impl;
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.State;
 import cn.mycat.vertx.xa.XaLog;
+import io.mycat.newquery.NewMycatConnection;
 import io.vertx.core.Future;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
@@ -37,13 +38,13 @@ public class OnePhaseXaSqlConnection extends BaseXaSqlConnection {
     public Future<Void> commit() {
         return Future.future(promise -> {
             if (map.size() == 1) {
-                SqlConnection sqlConnection = map.values().iterator().next();
+                NewMycatConnection sqlConnection = map.values().iterator().next();
                 Future<Void> xaEnd = executeTranscationConnection(connection ->
-                        connection.query(String.format(XA_END, xid)).execute().mapEmpty());
+                        connection.update(String.format(XA_END, xid)).mapEmpty());
                 xaEnd.onFailure(promise::fail);
                 xaEnd.onSuccess(event -> {
                     changeTo(sqlConnection, State.XA_ENDED);
-                    executeTranscationConnection(connection -> connection.query(String.format(XA_COMMIT_ONE_PHASE, xid)).execute().mapEmpty()).onComplete(event1 -> {
+                    executeTranscationConnection(connection -> connection.update(String.format(XA_COMMIT_ONE_PHASE, xid)).mapEmpty()).onComplete(event1 -> {
                         if (event1.succeeded()) {
                             changeTo(sqlConnection, State.XA_COMMITED);
                             inTranscation = false;

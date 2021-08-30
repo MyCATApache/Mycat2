@@ -32,7 +32,9 @@ import com.google.common.collect.Iterables;
 import io.mycat.PreparedStatement;
 import io.mycat.Process;
 import io.mycat.*;
+import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlPayloadObject;
+import io.mycat.api.collector.MysqlRow;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.calcite.CodeExecuterContext;
@@ -42,6 +44,8 @@ import io.mycat.calcite.spm.QueryPlanner;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
+import io.mycat.newquery.MysqlCollector;
+import io.mycat.newquery.NewMycatConnection;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -70,26 +74,26 @@ public class VertxExecuter {
     private static final Logger LOGGER = LoggerFactory.getLogger(VertxExecuter.class);
 
 
-    public static Future<long[]> runUpdate(Future<SqlConnection> sqlConnectionFuture, String sql, List<Object> params) {
-        return sqlConnectionFuture.flatMap(c -> c.preparedQuery(sql).execute(Tuple.tuple(params))
-                .map(r -> new long[]{r.rowCount(), Optional.ofNullable(r.property(MySQLClient.LAST_INSERTED_ID)).orElse(0L)}));
+    public static Future<long[]> runUpdate(Future<NewMycatConnection> sqlConnectionFuture, String sql, List<Object> params) {
+        return sqlConnectionFuture.flatMap(c -> c.update(sql, params))
+                .map(r -> new long[]{r.getAffectRows(), r.getLastInsertId()});
     }
 
-    public static Future<long[]> simpleUpdate(MycatDataContext context, boolean xa, boolean onlyFirstSum, Collection<EachSQL> eachSQLs) {
+    public static Future<long[]> simpleUpdate(MycatDataContext context, boolean insert, boolean xa, boolean onlyFirstSum, Collection<EachSQL> eachSQLs) {
         if (xa && (eachSQLs.size() > 1)) {
-            return simpleUpdate(context, xa, onlyFirstSum, (Iterable<EachSQL>) eachSQLs);
+            return simpleUpdate(context, insert, xa, onlyFirstSum, (Iterable<EachSQL>) eachSQLs);
         }
-        return simpleUpdate(context, false, onlyFirstSum, (Iterable<EachSQL>) eachSQLs);
+        return simpleUpdate(context, insert, false, onlyFirstSum, (Iterable<EachSQL>) eachSQLs);
     }
 
-    public static Future<long[]> simpleUpdate(MycatDataContext context, boolean xa, boolean onlyFirstSum, Iterable<EachSQL> eachSQLs) {
+    public static Future<long[]> simpleUpdate(MycatDataContext context, boolean insert, boolean xa, boolean onlyFirstSum, Iterable<EachSQL> eachSQLs) {
         Function<Void, Future<long[]>> function = new Function<Void, Future<long[]>>() {
             final long[] sum = new long[]{0, 0};
 
             @Override
             public Future<long[]> apply(Void unused) {
                 XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
-                ConcurrentHashMap<String, Future<SqlConnection>> map = new ConcurrentHashMap<>();
+                ConcurrentHashMap<String, Future<NewMycatConnection>> map = new ConcurrentHashMap<>();
                 final AtomicBoolean firstRequest = new AtomicBoolean(true);
                 for (EachSQL eachSQL : eachSQLs) {
 
@@ -97,10 +101,14 @@ public class VertxExecuter {
                     String sql = eachSQL.getSql();
                     List<Object> params = eachSQL.getParams();
 
-                    Future<SqlConnection> connectionFuture = map.computeIfAbsent(target, s -> transactionSession.getConnection(target));
-                    Future<long[]> future = VertxExecuter.runUpdate(connectionFuture, sql, params);
-
-                    Future<SqlConnection> returnConnectionFuture = future.map((Function<long[], Void>) longs2 -> {
+                    Future<NewMycatConnection> connectionFuture = map.computeIfAbsent(target, s -> transactionSession.getConnection(target));
+                    Future<long[]> future;
+                    if (insert) {
+                        future = VertxExecuter.runInsert(connectionFuture, sql, params);
+                    } else {
+                        future = VertxExecuter.runUpdate(connectionFuture, sql, params);
+                    }
+                    Future<NewMycatConnection> returnConnectionFuture = future.map((Function<long[], Void>) longs2 -> {
                         if (!onlyFirstSum) {
                             synchronized (sum) {
                                 sum[0] = sum[0] + longs2[0];
@@ -114,7 +122,7 @@ public class VertxExecuter {
                     }).mapEmpty().flatMap(c -> Future.succeededFuture(connectionFuture.result()));
                     map.put(target, returnConnectionFuture);
                 }
-                List<Future<SqlConnection>> futures = new ArrayList<>(map.values());
+                List<Future<NewMycatConnection>> futures = new ArrayList<>(map.values());
                 return CompositeFuture.join((List) futures).map(sum);
             }
         };
@@ -391,10 +399,10 @@ public class VertxExecuter {
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         List<SQLName> columns = (List) statement.getColumns();
-        if (columns.isEmpty()){
-            if(statement.getValues().getValues().size() == table.getColumns().size()){
+        if (columns.isEmpty()) {
+            if (statement.getValues().getValues().size() == table.getColumns().size()) {
                 for (SimpleColumnInfo column : table.getColumns()) {
-                    statement.addColumn(new SQLIdentifierExpr("`"+column.getColumnName()+"`"));
+                    statement.addColumn(new SQLIdentifierExpr("`" + column.getColumnName() + "`"));
                 }
             }
         }
@@ -514,9 +522,9 @@ public class VertxExecuter {
         }
     }
 
-    public static Map<String,RangeVariable> compute(List<SQLName> columns,
-                                                           List<SQLExpr> values,
-                                                           List<Object> params) {
+    public static Map<String, RangeVariable> compute(List<SQLName> columns,
+                                                     List<SQLExpr> values,
+                                                     List<Object> params) {
         Map<String, RangeVariable> variables = new HashMap<>(1);
         for (int i = 0; i < columns.size(); i++) {
             SQLExpr sqlExpr = values.get(i);
@@ -547,7 +555,7 @@ public class VertxExecuter {
                 }
             }
             String columnName = SQLUtils.normalize(columns.get(i).getSimpleName());
-            variables.put(columnName,new RangeVariable(columnName, RangeVariableType.EQUAL, o));
+            variables.put(columnName, new RangeVariable(columnName, RangeVariableType.EQUAL, o));
         }
         return variables;
     }
@@ -620,65 +628,96 @@ public class VertxExecuter {
     }
 
 
-    public static Observable<MysqlPayloadObject> runQueryOutputAsMysqlPayloadObject(Future<SqlConnection> connectionFuture,
+    public static Observable<MysqlPayloadObject> runQueryOutputAsMysqlPayloadObject(Future<NewMycatConnection> connectionFuture,
                                                                                     String sql,
                                                                                     List<Object> values) {
         return Observable.create(emitter -> {
             // 连接到达
             connectionFuture.onSuccess(connection -> {
                 // 预编译到达
-                Process.getCurrentProcess().trace(connection).prepare(sql)
-                        .onSuccess(preparedStatement -> {
-                            // 查询结果到达
-                            PreparedQuery<RowSet<Row>> query = preparedStatement.query();
-                            query.collecting(new EmitterMysqlPayloadCollector(emitter, null, true)).execute(Tuple.tuple(values))
-                                    .onSuccess(event -> emitter.onComplete())
-                                    .onFailure(throwable -> emitter.onError(throwable));
-                        })
-                        .onFailure(throwable -> {
-                            emitter.onError(throwable);
-                        });
-            }).onFailure(throwable -> {
-                emitter.onError(throwable);
-            });
-        });
+                connection.prepareQuery(sql, values, new MysqlCollector() {
 
+                    MycatRowMetaData mycatRowMetaData;
+
+                    @Override
+                    public void onColumnDef(MycatRowMetaData mycatRowMetaData) {
+                        emitter.onNext(new MySQLColumnDef(this.mycatRowMetaData = mycatRowMetaData));
+                    }
+
+                    @Override
+                    public void onRow(Object[] row) {
+                        emitter.onNext(new MysqlRow(BaseRowObservable.getObjects(row, this.mycatRowMetaData)));
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        emitter.onComplete();
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        emitter.onError(e);
+                    }
+                });
+            });
+            connectionFuture.onFailure(i -> emitter.onError(i));
+        });
     }
 
-    public static Observable<Object[]> runQuery(Future<SqlConnection> connectionFuture,
+    public static Observable<Object[]> runQuery(Future<NewMycatConnection> connectionFuture,
                                                 String sql,
                                                 List<Object> values,
-                                                MycatRowMetaData rowMetaData) {
+                                                MycatRowMetaData rowMetaDataArg) {
         return Observable.create(emitter -> {
             // 连接到达
             connectionFuture.onSuccess(connection -> {
                 // 预编译到达
-                Objects.requireNonNull(sql);
-                Objects.requireNonNull(connection);
-                Objects.requireNonNull(Process.getCurrentProcess()).trace(connection).prepare(sql)
-                        .onSuccess(preparedStatement -> {
-                            // 查询结果到达
-                            PreparedQuery<RowSet<Row>> query = preparedStatement.query();
-                            query.collecting(new EmitterObjectsCollector(emitter, rowMetaData)).execute(Tuple.tuple(values))
-                                    .onSuccess(event -> emitter.onComplete())
-                                    .onFailure(throwable -> emitter.onError(throwable));
-                        })
-                        .onFailure(throwable -> {
-                            emitter.onError(throwable);
-                        });
-            }).onFailure(throwable -> {
-                emitter.onError(throwable);
+                connection.prepareQuery(sql, values, new MysqlCollector() {
+
+                    MycatRowMetaData mycatRowMetaData;
+
+                    @Override
+                    public void onColumnDef(MycatRowMetaData mycatRowMetaData) {
+                        this.mycatRowMetaData = Optional.ofNullable(rowMetaDataArg).orElse(mycatRowMetaData);
+                    }
+
+                    @Override
+                    public void onRow(Object[] row) {
+                        emitter.onNext(BaseRowObservable.getObjects(row, this.mycatRowMetaData));
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        emitter.onComplete();
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        emitter.onError(e);
+                    }
+                });
             });
+            connectionFuture.onFailure(i -> emitter.onError(i));
         });
     }
 
-    public static Future<long[]> runUpdate(Future<SqlConnection> sqlConnectionFuture, String sql) {
-        return sqlConnectionFuture.flatMap(c -> c.query(sql).execute()
-                .map(r -> new long[]{r.rowCount(), Optional.ofNullable(r.property(MySQLClient.LAST_INSERTED_ID)).orElse(0L)}));
+    public static Future<long[]> runUpdate(Future<NewMycatConnection> sqlConnectionFuture, String sql) {
+        return sqlConnectionFuture.flatMap(c -> c.update(sql)
+                .map(r -> new long[]{r.getAffectRows(), r.getLastInsertId()}));
+    }
+
+    public static Future<long[]> runInsert(Future<NewMycatConnection> sqlConnectionFuture, String sql) {
+        return sqlConnectionFuture.flatMap(c -> c.insert(sql)
+                .map(r -> new long[]{r.getAffectRows(), r.getLastInsertId()}));
+    }
+
+    public static Future<long[]> runInsert(Future<NewMycatConnection> sqlConnectionFuture, String sql, List<Object> params) {
+        return sqlConnectionFuture.flatMap(c -> c.insert(sql, params)
+                .map(r -> new long[]{r.getAffectRows(), r.getLastInsertId()}));
     }
 
     public static Future<long[]> runUpdate(Map<String, List<Object>> updateMap,
-                                           Future<SqlConnection> sqlConnectionFuture) {
+                                           Future<NewMycatConnection> sqlConnectionFuture) {
         List<long[]> list = Collections.synchronizedList(new ArrayList<>());
         Future<Void> future = Future.succeededFuture();
         for (Map.Entry<String, List<Object>> e : updateMap.entrySet()) {
@@ -751,12 +790,12 @@ public class VertxExecuter {
     }
 
     private static class UpdateByConnection implements Function {
-        private final Future<SqlConnection> sqlConnectionFuture;
+        private final Future<NewMycatConnection> sqlConnectionFuture;
         private final String sql;
         private final List<Object> values;
         private final List<long[]> list;
 
-        public UpdateByConnection(Future<SqlConnection> sqlConnectionFuture, String sql, List<Object> values, List<long[]> list) {
+        public UpdateByConnection(Future<NewMycatConnection> sqlConnectionFuture, String sql, List<Object> values, List<long[]> list) {
             this.sqlConnectionFuture = sqlConnectionFuture;
             this.sql = sql;
             this.values = values;
@@ -765,17 +804,18 @@ public class VertxExecuter {
 
         @Override
         public Object apply(Object unused) {
-            return sqlConnectionFuture
-                    .flatMap(connection -> Process.getCurrentProcess().trace(connection).prepare(sql)
-                            .flatMap(preparedStatement -> {
-                                Future<RowSet<Row>> rowSetFuture;
-                                if (!values.isEmpty() && values.get(0) instanceof List) {
-                                    rowSetFuture = preparedStatement.query().executeBatch(values.stream().map(i -> Tuple.from((List<Object>) i)).collect(Collectors.toList()));
-                                } else {
-                                    rowSetFuture = preparedStatement.query().execute(Tuple.from(values));
-                                }
-                                return rowSetFuture.map(new UpdateResultCollector());
-                            }));
+//            return sqlConnectionFuture
+//                    .flatMap(connection -> Process.getCurrentProcess().trace(connection).prepare(sql)
+//                            .flatMap(preparedStatement -> {
+//                                Future<RowSet<Row>> rowSetFuture;
+//                                if (!values.isEmpty() && values.get(0) instanceof List) {
+//                                    rowSetFuture = preparedStatement.query().executeBatch(values.stream().map(i -> Tuple.from((List<Object>) i)).collect(Collectors.toList()));
+//                                } else {
+//                                    rowSetFuture = preparedStatement.query().execute(Tuple.from(values));
+//                                }
+//                                return rowSetFuture.map(new UpdateResultCollector());
+//                            }));
+            return null;
         }
 
         private class UpdateResultCollector implements Function<RowSet<Row>, Object> {

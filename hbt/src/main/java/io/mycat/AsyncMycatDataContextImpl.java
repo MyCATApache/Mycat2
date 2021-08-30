@@ -16,6 +16,7 @@ import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
+import io.mycat.newquery.NewMycatConnection;
 import io.mycat.querycondition.QueryType;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
@@ -41,8 +42,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
-    final Map<String, Future<SqlConnection>> transactionConnnectionMap = new HashMap<>();// int transaction
-    final List<Future<SqlConnection>> connnectionFutureCollection = new LinkedList<>();//not int transaction
+    final Map<String, Future<NewMycatConnection>> transactionConnnectionMap = new HashMap<>();// int transaction
+    final List<Future<NewMycatConnection>> connnectionFutureCollection = new LinkedList<>();//not int transaction
     final Map<String, List<Observable<Object[]>>> shareObservable = new HashMap<>();
 
     public AsyncMycatDataContextImpl(MycatDataContext dataContext,
@@ -51,19 +52,19 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         super(dataContext, context, drdsSqlWithParams);
     }
 
-    synchronized Future<SqlConnection> getConnection(String key) {
+    synchronized Future<NewMycatConnection> getConnection(String key) {
         XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
         if (context.isInTransaction()) {
             return transactionConnnectionMap
                     .computeIfAbsent(key, s -> transactionSession.getConnection(key));
         }
         MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
-        Future<SqlConnection> connection = mySQLManager.getConnection(key);
+        Future<NewMycatConnection> connection = mySQLManager.getConnection(key);
         connnectionFutureCollection.add(connection);
         return connection;
     }
 
-    synchronized void recycleConnection(String key, Future<SqlConnection> connectionFuture) {
+    synchronized void recycleConnection(String key, Future<NewMycatConnection> connectionFuture) {
         XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
         if (context.isInTransaction()) {
             transactionConnnectionMap.put(key, connectionFuture);
@@ -81,8 +82,8 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             String key = context.resolveDatasourceTargetName(entry.getKey());
             SqlString sqlString = entry.getValue();
             Observable<Object[]> observable = Observable.create(emitter -> {
-                Future<SqlConnection> sessionConnection = getConnection(key);
-                PromiseInternal<SqlConnection> promise = VertxUtil.newPromise();
+                Future<NewMycatConnection> sessionConnection = getConnection(key);
+                PromiseInternal<NewMycatConnection> promise = VertxUtil.newPromise();
                 Observable<Object[]> innerObservable = Objects.requireNonNull(VertxExecuter.runQuery(sessionConnection,
                         sqlString.getSql(),
                         MycatPreparedStatementUtil.extractParams(drdsSqlWithParams.getParams(), sqlString.getDynamicParameters()), calciteRowMetaData));

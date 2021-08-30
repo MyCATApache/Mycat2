@@ -16,12 +16,14 @@
 package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.*;
-import io.vertx.core.*;
+import io.mycat.newquery.NewMycatConnection;
+import io.mycat.newquery.SqlResult;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.SqlConnection;
 
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -36,9 +38,9 @@ import java.util.stream.Collectors;
 
 public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     private final static Logger LOGGER = LoggerFactory.getLogger(BaseXaSqlConnection.class);
-    protected final ConcurrentHashMap<String, SqlConnection> map = new ConcurrentHashMap<>();
-    protected final Map<SqlConnection, State> connectionState = Collections.synchronizedMap(new IdentityHashMap<>());
-    protected final List<SqlConnection> extraConnections = new CopyOnWriteArrayList<>();
+    protected final ConcurrentHashMap<String, NewMycatConnection> map = new ConcurrentHashMap<>();
+    protected final Map<NewMycatConnection, State> connectionState = Collections.synchronizedMap(new IdentityHashMap<>());
+    protected final List<NewMycatConnection> extraConnections = new CopyOnWriteArrayList<>();
     protected final List<Future<Void>> closeList = new CopyOnWriteArrayList<>();
     private final Supplier<MySQLManager> mySQLManagerSupplier;
     protected volatile String xid;
@@ -54,7 +56,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     }
 
 
-    private String getDatasourceName(SqlConnection connection) {
+    private String getDatasourceName(NewMycatConnection connection) {
         return map.entrySet().stream().filter(p -> p.getValue() == connection).map(e -> e.getKey())
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("unknown connection " + connection));
@@ -77,7 +79,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     }
 
 
-    public Future<SqlConnection> getConnection(String targetName) {
+    public Future<NewMycatConnection> getConnection(String targetName) {
 //        for (Map.Entry<String, SqlConnection> stringSqlConnectionEntry : map.entrySet()) {
 //            AbstractMySqlConnectionImpl value = (AbstractMySqlConnectionImpl) stringSqlConnectionEntry.getValue();
 //            value
@@ -88,16 +90,16 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
             if (map.containsKey(targetName)) {
                 return Future.succeededFuture(map.get(targetName));
             } else {
-                Future<SqlConnection> sqlConnectionFuture = mySQLManager.getConnection(targetName);
+                Future<NewMycatConnection> sqlConnectionFuture = mySQLManager.getConnection(targetName);
                 return sqlConnectionFuture.compose(connection -> {
                     map.put(targetName, connection);
                     changeTo(connection, State.XA_INITED);
-                    Future<RowSet<Row>> execute = connection.query(String.format(XA_START, xid)).execute();
+                    Future<SqlResult> execute = connection.update(String.format(XA_START, xid));
                     return execute.map(r -> changeTo(connection, State.XA_STARTED));
                 });
             }
         }
-        Future<SqlConnection> connection = mySQLManager.getConnection(targetName);
+        Future<NewMycatConnection> connection = mySQLManager.getConnection(targetName);
         return connection.map(connection1 -> {
             if (!map.containsKey(targetName)) {
                 map.put(targetName, connection1);
@@ -120,20 +122,20 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     public Future<Void> rollback() {
         return Future.future((Promise<Void> promise) -> {
             logParticipants();
-            Function<SqlConnection, Future<Void>> function = c -> {
+            Function<NewMycatConnection, Future<Void>> function = c -> {
                 Future<Void> future = Future.succeededFuture();
                 switch (connectionState.get(c)) {
                     case XA_INITED:
                         return future;
                     case XA_STARTED:
                         future = future.flatMap(unused -> {
-                            return c.query(String.format(XA_END, xid)).execute()
+                            return c.update(String.format(XA_END, xid))
                                     .map(u -> changeTo(c, State.XA_ENDED)).mapEmpty();
                         });
                     case XA_ENDED:
                     case XA_PREPARED:
-                        future = future.flatMap(unuse -> c.query(String.format(XA_ROLLBACK, xid))
-                                .execute().map(i -> changeTo(c, State.XA_ROLLBACKED))).mapEmpty();
+                        future = future.flatMap(unuse -> c.update(String.format(XA_ROLLBACK, xid))
+                                .map(i -> changeTo(c, State.XA_ROLLBACKED))).mapEmpty();
                 }
                 return future;
             };
@@ -160,7 +162,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     /**
      * retry has a delay time for datasource need duration to recover
      */
-    private Future<Void> retryRollback(Function<SqlConnection, Future<Void>> function) {
+    private Future<Void> retryRollback(Function<NewMycatConnection, Future<Void>> function) {
         return Future.future(promise -> {
             List<Future<Void>> collect = computePrepareRollbackTargets().stream().map(c -> mySQLManager().getConnection(c).flatMap(function)).collect(Collectors.toList());
             CompositeFuture.join((List) collect)
@@ -184,7 +186,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     private void logParticipants() {
         ImmutableParticipantLog[] participantLogs = new ImmutableParticipantLog[map.size()];
         int index = 0;
-        for (Map.Entry<String, SqlConnection> e : map.entrySet()) {
+        for (Map.Entry<String, NewMycatConnection> e : map.entrySet()) {
             participantLogs[index] = new ImmutableParticipantLog(e.getKey(),
                     log.getExpires(),
                     connectionState.get(e.getValue()));
@@ -193,7 +195,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
         log.log(xid, participantLogs);
     }
 
-    protected SqlConnection changeTo(SqlConnection c, State state) {
+    protected NewMycatConnection changeTo(NewMycatConnection c, State state) {
         connectionState.put(c, state);
         log.log(xid, getDatasourceName(c), state);
         return c;
@@ -221,11 +223,11 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                 switch (connectionState.get(connection)) {
                     case XA_INITED:
                         future = future
-                                .flatMap(unuse -> connection.query(String.format(XA_START, xid)).execute())
+                                .flatMap(unuse -> connection.update(String.format(XA_START, xid)))
                                 .map(u -> changeTo(connection, State.XA_STARTED)).mapEmpty();
                     case XA_STARTED:
                         future = future
-                                .flatMap(unuse -> connection.query(String.format(XA_END, xid)).execute())
+                                .flatMap(unuse -> connection.update(String.format(XA_END, xid)))
                                 .map(u -> changeTo(connection, State.XA_ENDED)).mapEmpty();
                     case XA_ENDED:
                     default:
@@ -236,7 +238,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
             xaEnd.onSuccess(event -> {
                 executeTranscationConnection(connection -> {
                     if (connectionState.get(connection) != State.XA_PREPARED) {
-                        return connection.query(String.format(XA_PREPARE, xid)).execute()
+                        return connection.update(String.format(XA_PREPARE, xid))
                                 .map(c -> changeTo(connection, State.XA_PREPARED)).mapEmpty();
                     }
                     return Future.succeededFuture();
@@ -273,7 +275,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                             });
                             future.onSuccess(event16 -> {
                                 executeTranscationConnection(connection -> {
-                                    return connection.query(String.format(XA_COMMIT, xid)).execute()
+                                    return connection.update(String.format(XA_COMMIT, xid))
                                             .map(c -> changeTo(connection, State.XA_COMMITED)).mapEmpty();
                                 })
                                         .onFailure(ignored -> {
@@ -304,8 +306,8 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
             CompositeFuture all = CompositeFuture.join(computePrepareCommittedTargets().stream()
                     .map(s -> mySQLManager().getConnection(s)
                             .compose(c -> {
-                                return c.query(String.format(XA_COMMIT, xid))
-                                        .execute().compose(rows -> {
+                                return c.update(String.format(XA_COMMIT, xid))
+                                        .compose(rows -> {
                                             changeTo(s, State.XA_COMMITED);
                                             return c.close();
                                         }, throwable -> {
@@ -339,7 +341,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
         return collect;
     }
 
-    public Future<Void> executeTranscationConnection(Function<SqlConnection, Future<Void>> connectionFutureFunction) {
+    public Future<Void> executeTranscationConnection(Function<NewMycatConnection, Future<Void>> connectionFutureFunction) {
         if (map.isEmpty()) {
             return Future.succeededFuture();
         }
@@ -358,7 +360,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
         }
         return allFuture.flatMap(unused -> {
             Future<Void> future = Future.succeededFuture();
-            for (SqlConnection extraConnection : extraConnections) {
+            for (NewMycatConnection extraConnection : extraConnections) {
                 future = future.compose(unused2 -> extraConnection.close());
             }
             future = future.onComplete(event -> extraConnections.clear());
@@ -399,7 +401,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     public Future<Void> clearConnections() {
         Future<Void> future = CompositeFuture.join((List) closeList).mapEmpty();
         closeList.clear();
-        for (SqlConnection extraConnection : extraConnections) {
+        for (NewMycatConnection extraConnection : extraConnections) {
             future = future.compose(unused -> extraConnection.close());
         }
         future = future.onComplete(event -> extraConnections.clear());
