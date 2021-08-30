@@ -20,11 +20,12 @@ import io.mycat.MetaClusterCurrent;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.monitor.DatabaseInstanceEntry;
+import io.mycat.monitor.InstanceMonitor;
+import io.mycat.monitor.ThreadMycatConnectionImplWrapper;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.newquery.NewMycatConnectionImpl;
-import io.mycat.vertxmycat.JdbcMySqlConnection;
 import io.vertx.core.Future;
-import io.vertx.sqlclient.SqlConnection;
 
 public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
     public JdbcDatasourcePoolImpl(String targetName) {
@@ -36,24 +37,41 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
         try {
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
             DefaultConnection connection = jdbcConnectionManager.getConnection(targetName);
+            DatabaseInstanceEntry stat = DatabaseInstanceEntry.stat(targetName);
+            stat.plusCon();
+            stat.plusQps();
             NewMycatConnectionImpl newMycatConnection = new NewMycatConnectionImpl(connection.getRawConnection()) {
+                long start;
+
+                @Override
+                public void onSend() {
+                    start = System.currentTimeMillis();
+                }
+
+                @Override
+                public void onRev() {
+                    long end = System.currentTimeMillis();
+                    InstanceMonitor.plusPrt(end - start);
+                }
+
                 @Override
                 public Future<Void> close() {
+                    stat.decCon();
                     connection.close();
                     return Future.succeededFuture();
                 }
             };
-            return Future.succeededFuture(newMycatConnection);
-        } catch (Throwable throwable){
+            return Future.succeededFuture(new ThreadMycatConnectionImplWrapper(stat,newMycatConnection));
+        } catch (Throwable throwable) {
             return Future.failedFuture(throwable);
         }
     }
 
     @Override
     public Integer getAvailableNumber() {
-            JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-            JdbcDataSource jdbcDataSource = jdbcConnectionManager.getDatasourceInfo().get(targetName);
-            return jdbcDataSource.getMaxCon() - jdbcDataSource.getUsedCount();
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        JdbcDataSource jdbcDataSource = jdbcConnectionManager.getDatasourceInfo().get(targetName);
+        return jdbcDataSource.getMaxCon() - jdbcDataSource.getUsedCount();
     }
 
     @Override

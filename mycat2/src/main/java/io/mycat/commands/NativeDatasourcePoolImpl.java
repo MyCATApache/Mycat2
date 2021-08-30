@@ -20,8 +20,9 @@ import io.mycat.NativeMycatServer;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.proxy.MySQLDatasourcePool;
 import io.mycat.vertxmycat.AbstractMySqlConnectionImpl;
-import io.vertx.core.*;
-import io.vertx.sqlclient.SqlConnection;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 
 public class NativeDatasourcePoolImpl extends AbstractMycatDatasourcePool {
     public NativeDatasourcePoolImpl(String targetName) {
@@ -30,16 +31,7 @@ public class NativeDatasourcePoolImpl extends AbstractMycatDatasourcePool {
 
     @Override
     public Future<NewMycatConnection> getConnection() {
-//        return Future.future(promise -> {
-//            NativeMycatServer nativeMycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
-//            MySQLDatasourcePool sqlDatasourcePool = nativeMycatServer.getDatasource(targetName);
-//            sqlDatasourcePool.createSession().flatMap(session -> {
-//                IOExecutor vertx = MetaClusterCurrent.wrapper(IOExecutor.class);
-//                return vertx
-//                        .executeBlocking((Handler<Promise<SqlConnection>>) event -> event.complete(new AbstractMySqlConnectionImpl(session)));
-//            }).onComplete(promise);
-//        });
-        return null;
+        return Future.failedFuture("unsuppprt yet");
     }
 
     @Override
