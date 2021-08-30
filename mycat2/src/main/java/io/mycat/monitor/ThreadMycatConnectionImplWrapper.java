@@ -27,8 +27,7 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
         return ioExecutor.executeBlocking(promise -> {
             try {
                 this.stat.plusThread();
-                newMycatConnection.query(sql, params);
-                promise.tryComplete();
+                newMycatConnection.query(sql, params).onComplete(promise);
             } catch (Exception e) {
                 promise.tryFail(e);
             }finally {
@@ -59,8 +58,7 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
         return ioExecutor.executeBlocking(promise -> {
             try {
                 this.stat.plusThread();
-                newMycatConnection.insert(sql, params);
-                promise.tryComplete();
+                newMycatConnection.insert(sql, params).onComplete(promise);
             } catch (Exception e) {
                 promise.tryFail(e);
             }finally {
@@ -75,8 +73,7 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
         return ioExecutor.executeBlocking(promise -> {
             try {
                 this.stat.plusThread();
-                newMycatConnection.insert(sql);
-                promise.tryComplete();
+                newMycatConnection.insert(sql).onComplete(promise);
             } catch (Exception e) {
                 promise.tryFail(e);
             }finally {
@@ -91,8 +88,7 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
         return ioExecutor.executeBlocking(promise -> {
             try {
                 this.stat.plusThread();
-                newMycatConnection.update(sql);
-                promise.tryComplete();
+                newMycatConnection.update(sql).onComplete(promise);
             } catch (Exception e) {
                 promise.tryFail(e);
             }finally {
@@ -107,8 +103,7 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
         return ioExecutor.executeBlocking(promise -> {
             try {
                 this.stat.plusThread();
-                newMycatConnection.update(sql,params);
-                promise.tryComplete();
+                newMycatConnection.update(sql,params).onComplete(promise);
             } catch (Exception e) {
                 promise.tryFail(e);
             }finally {
