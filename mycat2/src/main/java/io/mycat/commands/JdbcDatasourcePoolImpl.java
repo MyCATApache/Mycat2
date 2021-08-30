@@ -17,8 +17,11 @@
 package io.mycat.commands;
 
 import io.mycat.MetaClusterCurrent;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.newquery.NewMycatConnection;
+import io.mycat.newquery.NewMycatConnectionImpl;
 import io.mycat.vertxmycat.JdbcMySqlConnection;
 import io.vertx.core.Future;
 import io.vertx.sqlclient.SqlConnection;
@@ -29,9 +32,18 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
     }
 
     @Override
-    public Future<SqlConnection> getConnection() {
+    public Future<NewMycatConnection> getConnection() {
         try {
-        return Future.succeededFuture(new JdbcMySqlConnection(targetName));
+            JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+            DefaultConnection connection = jdbcConnectionManager.getConnection(targetName);
+            NewMycatConnectionImpl newMycatConnection = new NewMycatConnectionImpl(connection.getRawConnection()) {
+                @Override
+                public Future<Void> close() {
+                    connection.close();
+                    return Future.succeededFuture();
+                }
+            };
+            return Future.succeededFuture(newMycatConnection);
         } catch (Throwable throwable){
             return Future.failedFuture(throwable);
         }

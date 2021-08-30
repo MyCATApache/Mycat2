@@ -35,7 +35,7 @@ public interface Response {
     Future<Void> sendError(Throwable e);
 
     Future<Void> proxySelect(List<String> targets, String statement);
-
+    Future<Void> proxyInsert(List<String> targets, String proxyUpdate);
     Future<Void> proxyUpdate(List<String> targets, String proxyUpdate);
 
     Future<Void> proxyUpdateToPrototype(String proxyUpdate);

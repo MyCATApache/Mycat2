@@ -858,7 +858,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         while (iterator.hasNext()) {
             Iterable<VertxExecuter.EachSQL> eachSQL = VertxExecuter.rewriteInsertBatchedStatements(iterator.next());
             continution = continution.flatMap(o -> {
-                Future<long[]> future = VertxExecuter.simpleUpdate(dataContext, true, false, eachSQL);
+                Future<long[]> future = VertxExecuter.simpleUpdate(dataContext,true, true, false, eachSQL);
                 return future.map(o2 -> new long[]{o[0] + o2[0], Math.max(o[1], o2[1])});
             });
         }

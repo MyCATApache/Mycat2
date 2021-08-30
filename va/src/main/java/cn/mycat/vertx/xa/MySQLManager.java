@@ -18,6 +18,8 @@ package cn.mycat.vertx.xa;
 import com.mysql.cj.jdbc.JdbcConnection;
 import io.mycat.ConnectionManager;
 import io.mycat.MycatConnection;
+import io.mycat.newquery.NewMycatConnection;
+import io.mycat.newquery.NewMycatConnectionImpl;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.mysqlclient.MySQLPool;
@@ -30,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public interface MySQLManager {
 
-    Future<SqlConnection> getConnection(String targetName);
+    Future<NewMycatConnection> getConnection(String targetName);
     int  getSessionCount(String targetName);
     Map<String, java.sql.Connection> getWriteableConnectionMap();
 

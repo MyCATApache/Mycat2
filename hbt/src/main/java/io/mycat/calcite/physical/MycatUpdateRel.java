@@ -15,6 +15,7 @@
 package io.mycat.calcite.physical;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import io.mycat.DrdsSqlCompiler;
 import io.mycat.calcite.ExplainWriter;
@@ -59,5 +60,9 @@ public class MycatUpdateRel extends AbstractRelNode implements MycatRel {
 
     public SQLStatement getSqlStatement() {
         return sqlStatement;
+    }
+
+    public boolean isInsert(){
+        return sqlStatement instanceof SQLInsertStatement;
     }
 }

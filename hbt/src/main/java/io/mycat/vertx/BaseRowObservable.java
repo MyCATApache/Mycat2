@@ -112,7 +112,6 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
         Object[] objects = getObjects(row, metaData);
         observer.onNext(objects);
     }
-
     @NotNull
     @SneakyThrows
     public static Object[] getObjects(Row row, MycatRowMetaData metaData) {
@@ -283,6 +282,184 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                 case DATALINK:
                 default:
                     value = row.getValue(columnIndex);
+                    LOGGER.warn("may be unsupported type :" + JDBCType.valueOf(columnType));
+            }
+            objects[columnIndex] = value;
+        }
+        return objects;
+    }
+
+
+    @NotNull
+    @SneakyThrows
+    public static Object[] getObjects(Object[] row, MycatRowMetaData metaData) {
+        Object[] objects = new Object[metaData.getColumnCount()];
+        for (int columnIndex = 0; columnIndex < objects.length; columnIndex++) {
+            int columnType = metaData.getColumnType(columnIndex);
+            Object value = null;
+            switch (columnType) {
+                case BIT:
+                case BOOLEAN:
+                {
+                    value = row[columnIndex];
+                    if (value == null){
+                        break;
+                    }
+                    if (value instanceof Boolean){
+                        break;
+                    }
+                    if (value instanceof Number){
+                        value=  MycatValueFactory.BOOLEAN_VALUE_FACTORY.createFromLong(((Number) value).longValue());
+                        break;
+                    }
+                    throw new UnsupportedOperationException("unsupport type:" + value);
+                }
+                case TINYINT:
+                case SMALLINT:
+                case INTEGER:
+                case BIGINT: {
+                    Number numeric = (Number)row[columnIndex];
+                    if (numeric == null) {
+                        value = null;
+                    } else {
+                        value = MycatValueFactory.LONG_VALUE_FACTORY.createFromLong(numeric.longValue());
+                    }
+                    break;
+                }
+
+                case FLOAT:
+                case REAL:
+                case DOUBLE: {
+                    Number numeric =  (Number)row[columnIndex];
+                    if (numeric == null) {
+                        value = null;
+                    } else {
+                        value = numeric.doubleValue();
+                    }
+                    break;
+                }
+
+                case DECIMAL:
+                case NUMERIC: {
+                    value = row[columnIndex];
+                    break;
+                }
+                case NCHAR:
+                case NVARCHAR:
+                case LONGNVARCHAR:
+                case LONGVARCHAR:
+                case VARCHAR:
+                case CHAR: {
+                    value = row[columnIndex];
+                    if (value instanceof String){
+
+                    }else if (value instanceof byte[]){
+                        value = new String((byte[])value);
+                    }
+                    break;
+                }
+                case DATE: {
+                    value = row[columnIndex];
+                    if (value == null) {
+
+                    } else if (value instanceof LocalDate) {
+
+                    } else if (value instanceof  java.sql.Date) {
+                        value = ((Date) value).toLocalDate();
+                    }else if (value instanceof java.util.Date){
+                        java.util.Date value1 = (java.util.Date) value;
+                        value =  LocalDate.of(value1.getYear()+1900,value1.getMonth()+1,value1.getDate());
+                    }else if (value instanceof String){
+                        value = LocalDate.parse((String) value);
+                    }else {
+                        throw new UnsupportedOperationException("unsupport type:" + value);
+                    }
+                    break;
+                }
+                case TIME_WITH_TIMEZONE:
+                case TIME: {
+                    value = row[columnIndex];
+                    if (value == null){
+
+                    }else if ( value instanceof Duration){
+
+                    }else{
+                        String s = value.toString();
+                        value = MycatTimeUtil.timeStringToTimeDuration(s);
+                    }
+                    break;
+                }
+                case TIMESTAMP_WITH_TIMEZONE:
+                case TIMESTAMP: {
+                    value = row[columnIndex];
+                    if (value == null){
+                        value = null;
+                    }else if (value instanceof LocalDateTime){
+
+                    }else if (value instanceof Timestamp) {
+                        value =  ((Timestamp) value).toLocalDateTime();
+                    }else if (value instanceof String){
+                        value = MycatTimeUtil.timestampStringToTimestamp((String) value);
+                    }else {
+                        throw new UnsupportedOperationException("unsupport type:" + value);
+                    }
+                    break;
+                }
+                case NCLOB:
+                case CLOB: {
+                    value = row[columnIndex];
+                    if (value != null && value instanceof Clob) {
+                        Clob value1 = (Clob) value;
+                        try {
+                            value = (value1.getSubString(1, (int) (value1.length())));
+                        } finally {
+                            value1.free();
+                        }
+                    }else {
+                        throw new UnsupportedOperationException("unsupport type:" + value);
+                    }
+                    break;
+                }
+                case BLOB:
+                case LONGVARBINARY:
+                case VARBINARY:
+                case BINARY: {
+                    value = row[columnIndex];
+                    if (value == null) {
+                        value = null;
+                    } else if (value instanceof String) {
+                        value = new ByteString(((String) value).getBytes());
+                    } else if (value instanceof Buffer) {
+                        value = new ByteString(((Buffer) value).getBytes());
+                    } else if (value instanceof Blob) {
+                        Blob value1 = (Blob) value;
+                        try {
+                            value = new ByteString(value1.getBytes(1, (int) (value1.length())));
+                        } finally {
+                            value1.free();
+                        }
+                    } else if (value instanceof byte[]){
+
+                    }else {
+                        throw new UnsupportedOperationException("unsupport type:" + value);
+                    }
+                    break;
+                }
+                case NULL: {
+                    value = null;
+                    break;
+                }
+                case ROWID:
+                case REF_CURSOR:
+                case OTHER:
+                case JAVA_OBJECT:
+                case DISTINCT:
+                case STRUCT:
+                case ARRAY:
+                case REF:
+                case DATALINK:
+                default:
+                    value = row[columnIndex];
                     LOGGER.warn("may be unsupported type :" + JDBCType.valueOf(columnType));
             }
             objects[columnIndex] = value;

@@ -23,6 +23,9 @@ import cn.mycat.vertx.xa.XaSqlConnection;
 import cn.mycat.vertx.xa.impl.XaLogImpl;
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.util.JdbcUtils;
+import io.mycat.newquery.NewMycatConnection;
+import io.mycat.newquery.RowSet;
+import io.mycat.newquery.SqlResult;
 import io.mycat.util.JsonUtil;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
@@ -31,7 +34,6 @@ import io.vertx.core.Handler;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -204,18 +206,18 @@ public abstract class XaTestSuite {
         XaSqlConnection baseXaSqlConnection =  factory.apply(mySQLManager,xaLog);
         baseXaSqlConnection.begin(event -> {
             Assertions.assertTrue(event.succeeded());
-            Future<SqlConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
+            Future<NewMycatConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
             ds1.compose(connection -> {
-                Future<RowSet<Row>> future = connection.query(
+                Future<SqlResult> future = connection.insert(
                         "INSERT INTO db1.travelrecord (id)\n" +
                                 "                       VALUES\n" +
-                                "                       (1);").execute();
+                                "                       (1);");
                 return future.compose(rowSet -> {
-                    Assertions.assertEquals(1, rowSet.rowCount());
+                    Assertions.assertEquals(1, rowSet.getAffectRows());
                     return Future.succeededFuture(connection);
                 });
             }).compose(connection -> {
-                return connection.query("select id from db1.travelrecord").execute()
+                return connection.query("select id from db1.travelrecord")
                         .compose(rows -> {
                             Assertions.assertEquals(1, rows.size());
                             return Future.succeededFuture(connection);
@@ -225,11 +227,11 @@ public abstract class XaTestSuite {
                 baseXaSqlConnection.commit(event12 -> {
                     Assertions.assertTrue(event12.succeeded());
                     Assertions.assertFalse(baseXaSqlConnection.isInTransaction());
-                    Future<SqlConnection> connectionFuture =
+                    Future<NewMycatConnection> connectionFuture =
                             baseXaSqlConnection.getConnection("ds1");
                     connectionFuture
                             .compose(sqlConnection ->
-                                    sqlConnection.query("select id from db1.travelrecord").execute())
+                                    sqlConnection.query("select id from db1.travelrecord"))
                             .onComplete(event1 -> {
                                 Assertions.assertTrue(event1.succeeded());
                                 Assertions.assertEquals(1, event1.result().size());
@@ -247,25 +249,25 @@ public abstract class XaTestSuite {
         XaSqlConnection baseXaSqlConnection =  factory.apply(mySQLManager,xaLog);
         baseXaSqlConnection.begin(event -> {
             Assertions.assertTrue(event.succeeded());
-            Future<SqlConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
-            Future<SqlConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
+            Future<NewMycatConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
+            Future<NewMycatConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
 
             CompositeFuture all = CompositeFuture.join(ds1.compose(connection -> {
-                Future<RowSet<Row>> future = connection.query(
+                Future<SqlResult> future = connection.insert(
                         "INSERT INTO db1.travelrecord (id)\n" +
                                 "                       VALUES\n" +
-                                "                       (1);").execute();
+                                "                       (1);");
                 return future.compose(rowSet -> {
-                    Assertions.assertEquals(1, rowSet.rowCount());
+                    Assertions.assertEquals(1, rowSet.getAffectRows());
                     return Future.succeededFuture(connection);
                 });
             }), ds2.compose(connection -> {
-                Future<RowSet<Row>> future = connection.query(
+                Future<SqlResult> future = connection.insert(
                         "INSERT INTO db1.travelrecord (id)\n" +
                                 "                       VALUES\n" +
-                                "                       (2);").execute();
+                                "                       (2);");
                 return future.compose(rowSet -> {
-                    Assertions.assertEquals(1, rowSet.rowCount());
+                    Assertions.assertEquals(1, rowSet.getAffectRows());
                     return Future.succeededFuture(connection);
                 });
             }));
@@ -274,11 +276,11 @@ public abstract class XaTestSuite {
                 baseXaSqlConnection.commit(event12 -> {
                     Assertions.assertTrue(event12.succeeded());
                     Assertions.assertFalse(baseXaSqlConnection.isInTransaction());
-                    Future<SqlConnection> connectionFuture =
+                    Future<NewMycatConnection> connectionFuture =
                             baseXaSqlConnection.getConnection("ds2");
                     connectionFuture
                             .compose(sqlConnection ->
-                                    sqlConnection.query("select id from db1.travelrecord").execute())
+                                    sqlConnection.query("select id from db1.travelrecord"))
                             .onComplete(event1 -> {
                                 Assertions.assertTrue(event1.succeeded());
                                 Assertions.assertEquals(1, event1.result().size());
@@ -295,25 +297,25 @@ public abstract class XaTestSuite {
         XaSqlConnection baseXaSqlConnection =  factory.apply(mySQLManager,xaLog);
         baseXaSqlConnection.begin(event -> {
             Assertions.assertTrue(event.succeeded());
-            Future<SqlConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
-            Future<SqlConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
+            Future<NewMycatConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
+            Future<NewMycatConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
 
             CompositeFuture all = CompositeFuture.join(ds1.compose(connection -> {
-                Future<RowSet<Row>> future = connection.query(
+                Future<SqlResult> future = connection.insert(
                         "INSERT INTO db1.travelrecord (id)\n" +
                                 "                       VALUES\n" +
-                                "                       (1);").execute();
+                                "                       (1);");
                 return future.compose(rowSet -> {
-                    Assertions.assertEquals(1, rowSet.rowCount());
+                    Assertions.assertEquals(1, rowSet.getAffectRows());
                     return Future.succeededFuture(connection);
                 });
             }), ds2.compose(connection -> {
-                Future<RowSet<Row>> future = connection.query(
+                Future<SqlResult> future = connection.insert(
                         "INSERT INTO  (id)\n" +
                                 "                       VALUES\n" +
-                                "                       (2/0);").execute();
+                                "                       (2/0);");
                 return future.compose(rowSet -> {
-                    Assertions.assertEquals(1, rowSet.rowCount());
+                    Assertions.assertEquals(1, rowSet.getAffectRows());
                     return Future.succeededFuture(connection);
                 });
             }));
@@ -324,11 +326,11 @@ public abstract class XaTestSuite {
                     public void handle(AsyncResult<Void> event) {
                         Assertions.assertTrue(event.succeeded());
                         Assertions.assertFalse(baseXaSqlConnection.isInTransaction());
-                        Future<SqlConnection> connectionFuture =
+                        Future<NewMycatConnection > connectionFuture =
                                 baseXaSqlConnection.getConnection("ds1");
                         connectionFuture
                                 .compose(sqlConnection ->
-                                        sqlConnection.query("select id from db1.travelrecord").execute())
+                                        sqlConnection.query("select id from db1.travelrecord"))
                                 .onComplete(event1 -> {
                                     Assertions.assertTrue(event1.succeeded());
                                     Assertions.assertEquals(0, event1.result().size());
@@ -346,25 +348,25 @@ public abstract class XaTestSuite {
         XaSqlConnection baseXaSqlConnection =  factory.apply(mySQLManager,xaLog);
         baseXaSqlConnection.begin(event -> {
             Assertions.assertTrue(event.succeeded());
-            Future<SqlConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
-            Future<SqlConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
+            Future<NewMycatConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
+            Future<NewMycatConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
 
             CompositeFuture all = CompositeFuture.join(ds1.compose(connection -> {
-                Future<RowSet<Row>> future = connection.query(
+                Future<SqlResult> future = connection.insert(
                         "INSERT INTO db1.travelrecord (id)\n" +
                                 "                       VALUES\n" +
-                                "                       (1);").execute();
+                                "                       (1);");
                 return future.compose(rowSet -> {
-                    Assertions.assertEquals(1, rowSet.rowCount());
+                    Assertions.assertEquals(1, rowSet.getAffectRows());
                     return Future.succeededFuture(connection);
                 });
             }), ds2.compose(connection -> {
-                Future<RowSet<Row>> future = connection.query(
+                Future<SqlResult> future = connection.insert(
                         "INSERT INTO db1.travelrecord (id)\n" +
                                 "                       VALUES\n" +
-                                "                       (2);").execute();
+                                "                       (2);");
                 return future.compose(rowSet -> {
-                    Assertions.assertEquals(1, rowSet.rowCount());
+                    Assertions.assertEquals(1, rowSet.getAffectRows());
                     return Future.succeededFuture(connection);
                 });
             }));
@@ -380,11 +382,11 @@ public abstract class XaTestSuite {
                             public void handle(AsyncResult<Void> event) {
                                 Assertions.assertTrue(event.succeeded());
                                 Assertions.assertFalse(baseXaSqlConnection.isInTransaction());
-                                Future<SqlConnection> connectionFuture =
+                                Future<NewMycatConnection> connectionFuture =
                                         baseXaSqlConnection.getConnection("ds1");
                                 connectionFuture
                                         .compose(sqlConnection ->
-                                                sqlConnection.query("select id from db1.travelrecord").execute())
+                                                sqlConnection.query("select id from db1.travelrecord"))
                                         .onComplete(event1 -> {
                                             Assertions.assertTrue(event1.succeeded());
                                             Assertions.assertEquals(0, event1.result().size());
@@ -405,25 +407,25 @@ public abstract class XaTestSuite {
         XaSqlConnection baseXaSqlConnection =  factory.apply(mySQLManager,xaLog);
         baseXaSqlConnection.begin(event -> {
             Assertions.assertTrue(event.succeeded());
-            Future<SqlConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
-            Future<SqlConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
+            Future<NewMycatConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
+            Future<NewMycatConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
 
             CompositeFuture all = CompositeFuture.join(ds1.compose(connection -> {
-                Future<RowSet<Row>> future = connection.query(
+                Future<SqlResult> future = connection.update(
                         "INSERT INTO db1.travelrecord (id)\n" +
                                 "                       VALUES\n" +
-                                "                       (1);").execute();
+                                "                       (1);");
                 return future.compose(rowSet -> {
-                    Assertions.assertEquals(1, rowSet.rowCount());
+                    Assertions.assertEquals(1, rowSet.getAffectRows());
                     return Future.succeededFuture(connection);
                 });
             }), ds2.compose(connection -> {
-                Future<RowSet<Row>> future = connection.query(
+                Future<SqlResult> future = connection.insert(
                         "INSERT INTO db1.travelrecord (id)\n" +
                                 "                       VALUES\n" +
-                                "                       (2);").execute();
+                                "                       (2);");
                 return future.compose(rowSet -> {
-                    Assertions.assertEquals(1, rowSet.rowCount());
+                    Assertions.assertEquals(1, rowSet.getAffectRows());
                     return Future.succeededFuture(connection);
                 });
             }));
@@ -440,11 +442,11 @@ public abstract class XaTestSuite {
                                         Assertions.assertTrue(event.succeeded());
 
                                         Assertions.assertFalse(baseXaSqlConnection.isInTransaction());
-                                        Future<SqlConnection> connectionFuture =
+                                        Future<NewMycatConnection> connectionFuture =
                                                 baseXaSqlConnection.getConnection("ds1");
                                         connectionFuture
                                                 .compose(sqlConnection ->
-                                                        sqlConnection.query("select id from db1.travelrecord").execute())
+                                                        sqlConnection.query("select id from db1.travelrecord"))
                                                 .onComplete(event1 -> {
                                                     Assertions.assertTrue(event1.succeeded());
                                                     Assertions.assertEquals(1, event1.result().size());

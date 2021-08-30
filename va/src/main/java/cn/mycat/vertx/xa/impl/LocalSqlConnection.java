@@ -18,11 +18,11 @@ package cn.mycat.vertx.xa.impl;
 import cn.mycat.vertx.xa.ImmutableCoordinatorLog;
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.XaLog;
+import io.mycat.newquery.NewMycatConnection;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
-import io.vertx.sqlclient.SqlConnection;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,8 +36,8 @@ import java.util.stream.Collectors;
  */
 public class LocalSqlConnection extends AbstractXaSqlConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(LocalSqlConnection.class);
-    protected final ConcurrentHashMap<String, SqlConnection> map = new ConcurrentHashMap<>();
-    protected final List<SqlConnection> extraConnections = new CopyOnWriteArrayList<>();
+    protected final ConcurrentHashMap<String, NewMycatConnection> map = new ConcurrentHashMap<>();
+    protected final List<NewMycatConnection> extraConnections = new CopyOnWriteArrayList<>();
     protected final List<Future<Void>> closeList = new CopyOnWriteArrayList<>();
     protected final Supplier<MySQLManager> mySQLManagerSupplier;
 
@@ -61,17 +61,17 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
         return Future.succeededFuture();
     }
 
-    public Future<SqlConnection> getConnection(String targetName) {
+    public Future<NewMycatConnection> getConnection(String targetName) {
         if (inTranscation) {
             if (map.containsKey(targetName)) {
                 return Future.succeededFuture(map.get(targetName));
             } else {
-                Future<SqlConnection> sqlConnectionFuture = mySQLManager().getConnection(targetName);
+                Future<NewMycatConnection> sqlConnectionFuture = mySQLManager().getConnection(targetName);
                 return sqlConnectionFuture.compose(connection -> {
                     map.put(targetName, connection);
-                    return connection.query(getTransactionIsolation().getCmd())
-                            .execute().flatMap(rows -> connection.query("begin")
-                                    .execute().mapEmpty()).map(r -> connection);
+                    return connection.update(getTransactionIsolation().getCmd())
+                            .flatMap(rows -> connection.update("begin")
+                            .mapEmpty()).map(r -> connection);
                 });
             }
         }
@@ -88,7 +88,7 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
 
     @Override
     public Future<Void> rollback() {
-        List<Future> rollback = map.values().stream().map(c -> c.query("rollback").execute()).collect(Collectors.toList());
+        List<Future> rollback = map.values().stream().map(c -> c.update("rollback")).collect(Collectors.toList());
         return CompositeFuture.join(rollback).eventually(event -> {
             inTranscation = false;
             //每一个记录日志
@@ -98,7 +98,7 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
 
     @Override
     public Future<Void> commit() {
-        List<Future> rollback = map.values().stream().map(c -> c.query("commit").execute()).collect(Collectors.toList());
+        List<Future> rollback = map.values().stream().map(c -> c.update("commit")).collect(Collectors.toList());
         return CompositeFuture.join(rollback).onComplete(event -> {
             inTranscation = false;
             //每一个记录日志
@@ -122,11 +122,11 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
     public Future<Void> close() {
         Future future = CompositeFuture.join((List) closeList);
         closeList.clear();
-        for (SqlConnection extraConnection : extraConnections) {
+        for (NewMycatConnection extraConnection : extraConnections) {
             future = future.compose(unused -> extraConnection.close());
         }
         future = future.onComplete(event -> extraConnections.clear());
-        for (SqlConnection connection : map.values()) {
+        for (NewMycatConnection connection : map.values()) {
             future = future.compose(unused -> connection.close());
         }
         future = future.onComplete(event -> map.clear());
@@ -148,14 +148,14 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
     public Future<Void> closeStatementState() {
         Future<Void> future = CompositeFuture.join((List) closeList).mapEmpty();
         closeList.clear();
-        for (SqlConnection extraConnection : extraConnections) {
+        for (NewMycatConnection extraConnection : extraConnections) {
             future = future.compose(unused -> extraConnection.close());
         }
         future = future.onComplete(event -> extraConnections.clear());
         if (inTranscation) {
             return future;
         } else {
-            for (SqlConnection connection : map.values()) {
+            for (NewMycatConnection connection : map.values()) {
                 future = future.compose(unused -> connection.close());
             }
             future = future.onComplete(event -> map.clear());

@@ -17,6 +17,7 @@ package io.mycat.sqlhandler.dml;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
@@ -52,6 +53,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
 
     @SneakyThrows
     public static Future<Void> updateHandler(SQLStatement sqlStatement, MycatDataContext dataContext, SQLTableSource tableSourceArg, Response receiver) {
+        boolean insert = sqlStatement instanceof SQLInsertStatement;
         if (tableSourceArg instanceof SQLExprTableSource) {
             SQLExprTableSource tableSource = (SQLExprTableSource) tableSourceArg;
             String schemaName = Optional.ofNullable(tableSource.getSchema() == null ? dataContext.getDefaultSchema() : tableSource.getSchema())
@@ -63,7 +65,11 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
             Optional<String> targetNameOptional = Optional.ofNullable(metadataManager.getPrototype());
             if (!handlerMapOptional.isPresent()) {
                 if (targetNameOptional.isPresent()) {
-                    return receiver.proxyUpdate(Collections.singletonList(targetNameOptional.get()), Objects.toString(sqlStatement));
+                    if (insert){
+                        return receiver.proxyInsert(Collections.singletonList(targetNameOptional.get()), Objects.toString(sqlStatement));
+                    }else {
+                        return receiver.proxyUpdate(Collections.singletonList(targetNameOptional.get()), Objects.toString(sqlStatement));
+                    }
                 } else {
                     return receiver.sendError(new MycatException("Unable to route:" + sqlStatement));
                 }
@@ -85,16 +91,26 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
             TableHandler tableHandler = tableMap.get(tableName);
             ///////////////////////////////common///////////////////////////////
             if (tableHandler == null) {
-                return receiver.proxyUpdate(
-                        Collections.singletonList(Objects.requireNonNull(defaultTargetName, "can not route :" + sqlStatement)),
-                        sqlStatement.toString());
+                if (insert){
+                    return receiver.proxyInsert(
+                            Collections.singletonList(Objects.requireNonNull(defaultTargetName, "can not route :" + sqlStatement)),
+                            sqlStatement.toString());
+                }else {
+                    return receiver.proxyUpdate(
+                            Collections.singletonList(Objects.requireNonNull(defaultTargetName, "can not route :" + sqlStatement)),
+                            sqlStatement.toString());
+                }
             }
             switch (tableHandler.getType()) {
                 case NORMAL:
                     HackRouter hackRouter = new HackRouter(sqlStatement, dataContext);
                     if (hackRouter.analyse()) {
                         Pair<String, String> plan = hackRouter.getPlan();
-                        return receiver.proxyUpdate(Collections.singletonList(plan.getKey()), plan.getValue());
+                        if (insert) {
+                            return receiver.proxyInsert(Collections.singletonList(plan.getKey()), plan.getValue());
+                        }else {
+                            return receiver.proxyUpdate(Collections.singletonList(plan.getKey()), plan.getValue());
+                        }
                     }
                     break;
                 default:
@@ -105,7 +121,11 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
         HackRouter hackRouter = new HackRouter(sqlStatement, dataContext);
         if (hackRouter.analyse()) {
             Pair<String, String> plan = hackRouter.getPlan();
-            return receiver.proxyUpdate(Collections.singletonList(plan.getKey()), plan.getValue());
+            if (insert) {
+                return receiver.proxyInsert(Collections.singletonList(plan.getKey()), plan.getValue());
+            }else {
+                return receiver.proxyUpdate(Collections.singletonList(plan.getKey()), plan.getValue());
+            }
         }
         return receiver.sendError(new MycatException("can not route " + sqlStatement));
     }

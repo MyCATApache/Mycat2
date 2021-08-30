@@ -17,17 +17,17 @@ package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.XaLog;
+import io.mycat.newquery.NewMycatConnection;
 import io.vertx.core.Future;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
-import io.vertx.sqlclient.SqlConnection;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class LocalXaSqlConnection extends BaseXaSqlConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(LocalXaSqlConnection.class);
-    volatile SqlConnection localSqlConnection = null;
+    volatile NewMycatConnection localSqlConnection = null;
     volatile String targetName;
 
     public LocalXaSqlConnection(Supplier<MySQLManager> mySQLManagerSupplier,
@@ -53,21 +53,21 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
             return (Future.succeededFuture());
         }
         if (localSqlConnection != null && map.isEmpty()) {
-            return localSqlConnection.query("commit;").execute()
+            return localSqlConnection.update("commit;")
                     .onSuccess(event -> inTranscation = false).mapEmpty();
         }
         if (inTranscation && localSqlConnection != null) {
-            return super.commitXa((coordinatorLog) -> localSqlConnection.query(
-                    "REPLACE INTO mycat.xa_log (xid) VALUES('" + curXid + "');").execute().mapEmpty())
+            return super.commitXa((coordinatorLog) -> localSqlConnection.update(
+                    "REPLACE INTO mycat.xa_log (xid) VALUES('" + curXid + "');").mapEmpty())
                     .compose((Function<Void, Future<Void>>) o -> {
-                        return localSqlConnection.query("commit;").execute().compose(unused -> {
-                            return localSqlConnection.query("delete from mycat.xa_log where xid = '" + curXid + "'").execute().mapEmpty();
+                        return localSqlConnection.update("commit;").compose(unused -> {
+                            return localSqlConnection.update("delete from mycat.xa_log where xid = '" + curXid + "'").mapEmpty();
                         });
                     }).mapEmpty()
                     .compose(o -> {
                         xid = null;
                         inTranscation = false;
-                        SqlConnection localSqlConnection = this.localSqlConnection;
+                        NewMycatConnection localSqlConnection = this.localSqlConnection;
                         this.localSqlConnection = null;
                         return localSqlConnection.close();
                     }).mapEmpty();
@@ -77,18 +77,18 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
     }
 
     @Override
-    public Future<SqlConnection> getConnection(String targetName) {
+    public Future<NewMycatConnection> getConnection(String targetName) {
         MySQLManager mySQLManager = mySQLManager();
         if (inTranscation) {
             if (this.targetName == null && localSqlConnection == null) {
                 LocalXaSqlConnection.this.targetName = targetName;
-                Future<SqlConnection> sqlConnectionFuture = mySQLManager.getConnection(targetName);
+                Future<NewMycatConnection> sqlConnectionFuture = mySQLManager.getConnection(targetName);
                 return sqlConnectionFuture.map(sqlConnection -> {
                     LocalXaSqlConnection.this.localSqlConnection = sqlConnection;
                     return sqlConnection;
                 }).compose(sqlConnection -> sqlConnection
-                        .query(getTransactionIsolation().getCmd()).execute()
-                        .flatMap(unused -> sqlConnection.query("begin;").execute().map(sqlConnection)));
+                        .update(getTransactionIsolation().getCmd())
+                        .flatMap(unused -> sqlConnection.update("begin;").map(sqlConnection)));
             }
             if (this.targetName != null && this.targetName.equals(targetName)) {
                 return Future.succeededFuture(localSqlConnection);
@@ -117,15 +117,15 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
         }
         if (localSqlConnection != null && map.isEmpty()) {
             inTranscation = false;
-            return localSqlConnection.query("rollback;").execute().compose(unused -> localSqlConnection.close()).mapEmpty();
+            return localSqlConnection.update("rollback;").compose(unused -> localSqlConnection.close()).mapEmpty();
         }
         String curXid = this.xid;
-        SqlConnection curLocalSqlConnection = this.localSqlConnection;
-        return super.rollback().compose(unused -> curLocalSqlConnection.query("rollback;").execute().flatMap(unused1 -> {
+        NewMycatConnection curLocalSqlConnection = this.localSqlConnection;
+        return super.rollback().compose(unused -> curLocalSqlConnection.update("rollback;").flatMap(unused1 -> {
             this.localSqlConnection = null;
             this.targetName = null;
             this.xid = null;
-            return curLocalSqlConnection.query("delete from mycat.xa_log where xid = '" + curXid + "'").execute();
+            return curLocalSqlConnection.update("delete from mycat.xa_log where xid = '" + curXid + "'");
         })).compose(u -> curLocalSqlConnection.close()).mapEmpty();
     }
 
@@ -134,7 +134,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
         return super.closeStatementState()
                 .flatMap(event -> {
                     if (!isInTransaction()) {
-                        SqlConnection localSqlConnection = this.localSqlConnection;
+                        NewMycatConnection localSqlConnection = this.localSqlConnection;
                         this.localSqlConnection = null;
                         this.targetName = null;
                         if (localSqlConnection != null) {
@@ -153,8 +153,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
         return super.close().flatMap(event -> {
             if (localSqlConnection != null) {
                 return localSqlConnection
-                        .query("rollback")
-                        .execute()
+                        .update("rollback")
                         .flatMap(c -> localSqlConnection.close()
                                 .onComplete(event1 -> {
                                     localSqlConnection = null;

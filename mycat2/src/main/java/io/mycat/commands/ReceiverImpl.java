@@ -20,6 +20,7 @@ import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.api.collector.MysqlRow;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.newquery.NewMycatConnection;
 import io.mycat.proxy.session.MySQLServerSession;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.ResultSetMapping;
@@ -70,6 +71,11 @@ public class ReceiverImpl implements Response {
     @Override
     public Future<Void> proxySelect(List<String> targets, String statement) {
         return execute(ExplainDetail.create(QUERY, targets, statement, null));
+    }
+
+    @Override
+    public Future<Void> proxyInsert(List<String> targets, String proxyUpdate) {
+        return execute(ExplainDetail.create(INSERT, targets, proxyUpdate, null));
     }
 
 
@@ -151,7 +157,7 @@ public class ReceiverImpl implements Response {
                 List<Observable<MysqlPayloadObject>> outputs = new LinkedList<>();
                 for (int i = 0; i < targetOrderList.size(); i++) {
                     String datasource = targetOrderList.get(i);
-                    Future<SqlConnection> connectionFuture = transactionSession.getConnection(datasource);
+                    Future<NewMycatConnection> connectionFuture = transactionSession.getConnection(datasource);
                     if (i == 0) {
                         outputs.add(VertxExecuter.runQueryOutputAsMysqlPayloadObject(connectionFuture, sql, detail.getParams()));
                     } else {
@@ -166,8 +172,12 @@ public class ReceiverImpl implements Response {
                 List<Future<long[]>> updateInfoList = new ArrayList<>(targetOrderList.size());
                 for (int i = 0; i < targetOrderList.size(); i++) {
                     String datasource = targetOrderList.get(i);
-                    Future<SqlConnection> connectionFuture = transactionSession.getConnection(datasource);
-                    updateInfoList.add(VertxExecuter.runUpdate(connectionFuture, sql));
+                    Future<NewMycatConnection> connectionFuture = transactionSession.getConnection(datasource);
+                    if (detail.getExecuteType() ==INSERT){
+                        updateInfoList.add(VertxExecuter.runInsert(connectionFuture, sql));
+                    }else {
+                        updateInfoList.add(VertxExecuter.runUpdate(connectionFuture, sql));
+                    }
                 }
                 CompositeFuture all = CompositeFuture.join((List) updateInfoList)
                         .onSuccess(unused->dataContext.getTransactionSession().closeStatementState());

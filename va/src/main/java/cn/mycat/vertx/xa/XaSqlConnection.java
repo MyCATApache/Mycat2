@@ -17,6 +17,7 @@
 package cn.mycat.vertx.xa;
 
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.newquery.NewMycatConnection;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -49,7 +50,7 @@ public interface XaSqlConnection {
 
     public Future<Void> begin();
 
-    public Future<SqlConnection> getConnection(String targetName);
+    public Future<NewMycatConnection> getConnection(String targetName);
 
     default public void rollback(Handler<AsyncResult<Void>> handler) {
         Future<Void> future = rollback();
