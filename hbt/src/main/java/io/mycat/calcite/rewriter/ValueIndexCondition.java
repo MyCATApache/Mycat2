@@ -11,9 +11,14 @@ import io.mycat.util.JsonUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.util.DateString;
+import org.apache.calcite.util.NlsString;
+import org.apache.calcite.util.TimeString;
+import org.apache.calcite.util.TimestampString;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
@@ -241,10 +246,25 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
         ArrayList<Object> builder = new ArrayList<>();
         for (Object o : pointQueryKeyArg) {
             if (o instanceof RexDynamicParam) {
-                builder.add(params.get(((RexDynamicParam) o).getIndex()));
+                o = (params.get(((RexDynamicParam) o).getIndex()));
             }
             if (o instanceof RexCall && ((RexCall) o).getKind() == SqlKind.CAST) {
                 o = ((RexCall) o).getOperands().get(0);
+            }
+            if (o instanceof NlsString) {
+                o = ((NlsString) o).getValue();
+            }
+            if (o instanceof DateString) {
+                o = ((DateString) o).toString();
+            }
+            if (o instanceof TimeString) {
+                o = ((TimeString) o).toString();
+            }
+            if (o instanceof TimestampString) {
+                o = ((TimestampString) o).toString();
+            }
+            if (o instanceof ByteString) {
+                o = ((ByteString) o).getBytes();
             }
             if (o instanceof RexLiteral) {
                 RexLiteral rexLiteral = (RexLiteral) o;
@@ -299,10 +319,8 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                         o = rexLiteral.getValueAs(String.class);
                         break;
                 }
-                builder.add(o);
-            } else {
-                builder.add(o);
             }
+            builder.add(o);
         }
 
         return builder;

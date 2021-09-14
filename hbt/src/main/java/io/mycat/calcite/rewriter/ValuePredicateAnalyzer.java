@@ -72,6 +72,9 @@ public class ValuePredicateAnalyzer {
             RexCall rexCall = (RexCall) rexNode;
             RexNode left = rexCall.getOperands().get(0);
             RexNode right = rexCall.getOperands().get(1);
+            left = RexUtil.removeCast(left);
+            right = RexUtil.removeCast(right);
+
             if (left instanceof RexInputRef && right instanceof RexLiteral) {
                 List<RexLiteral> inList = inMap.computeIfAbsent((RexInputRef) left, integer -> new LinkedList<>());
                 inList.add((RexLiteral) right);

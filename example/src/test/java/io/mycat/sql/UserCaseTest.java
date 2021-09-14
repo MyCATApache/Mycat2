@@ -964,4 +964,95 @@ public class UserCaseTest implements MycatTest {
             execute(mycatConnection, "           INSERT INTO db1.sharding VALUES (null, 'test1', '2021-08-09', 2, 3, NULL);");
         }
     }
+
+    @Test
+    public void case15() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT)) {
+
+
+            execute(mycatConnection, RESET_CONFIG);
+
+            execute(mycatConnection, "DROP DATABASE db1");
+
+
+            execute(mycatConnection, "CREATE DATABASE db1");
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds0",
+                            DB1));
+
+            execute(mycatConnection,
+                    CreateClusterHint.create("c0",
+                            Arrays.asList("ds0"), Collections.emptyList()));
+
+
+
+
+            JdbcUtils.execute(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY,\n" +
+                    "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int(11) DEFAULT NULL,\n" +
+                    "  `blob` longblob DEFAULT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n" +
+                    "dbpartition by mod_hash(id) dbpartitions 16;");
+            String explain = explain(mycatConnection, "select * from db1.travelrecord where id = 3300000000");
+           Assert.assertTrue( explain.contains("MycatView(distribution=[[db1.travelrecord]], conditions=[=($0, CAST(?0):BIGINT NOT NULL)])\n" +
+                    "Each(targetName=c0, sql=SELECT * FROM db1_0.travelrecord_0 AS `travelrecord` WHERE (`travelrecord`.`id` = ?))"));
+             explain = explain(mycatConnection, "select * from db1.travelrecord where id in(3300000000,1101000990)");
+            Assert.assertTrue( explain.contains("db1_0.travelrecord_0"));
+            Assert.assertTrue( explain.contains("db1_14.travelrecord_0"));
+
+            explain = explain(mycatConnection, "select * from db1.travelrecord where id in('3300000000','1101000990')");
+            Assert.assertTrue( explain.contains("db1_0.travelrecord_0"));
+            Assert.assertTrue( explain.contains("db1_14.travelrecord_0"));
+            System.out.println();
+        }
+    }
+
+    @Test
+    public void case16() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT)) {
+
+
+            execute(mycatConnection, RESET_CONFIG);
+
+            execute(mycatConnection, "DROP DATABASE db1");
+
+
+            execute(mycatConnection, "CREATE DATABASE db1");
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds0",
+                            DB1));
+
+            execute(mycatConnection,
+                    CreateClusterHint.create("c0",
+                            Arrays.asList("ds0"), Collections.emptyList()));
+
+
+
+
+            JdbcUtils.execute(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY,\n" +
+                    "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int(11) DEFAULT NULL,\n" +
+                    "  `blob` longblob DEFAULT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n" +
+                    "dbpartition by mod_hash(user_id) dbpartitions 16;");
+            String explain = explain(mycatConnection, "select * from db1.travelrecord where user_id = '3300000000'");
+            Assert.assertTrue( explain.contains("db1_0.travelrecord_0"));
+            explain = explain(mycatConnection, "select * from db1.travelrecord where user_id in('3300000000','1101000990')");
+            Assert.assertTrue( explain.contains("db1_0.travelrecord_0"));
+            Assert.assertTrue( explain.contains("db1_1.travelrecord_0"));
+
+            explain = explain(mycatConnection, "select * from db1.travelrecord where user_id in('3300000000','1101000990')");
+            Assert.assertTrue( explain.contains("db1_0.travelrecord_0"));
+            Assert.assertTrue( explain.contains("db1_1.travelrecord_0"));
+            System.out.println();
+        }
+    }
 }
