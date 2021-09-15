@@ -430,10 +430,10 @@ public class UserCaseTest implements MycatTest {
                                                     "type", "Integer",
                                                     "columnName", "id"
                                             )).ranges(Maps.of(
-                                            "130100", "0",
-                                            "130200", "1",
-                                            "130300", "2"
-                                    )).build())
+                                                    "130100", "0",
+                                                    "130200", "1",
+                                                    "130300", "2"
+                                            )).build())
             );
             deleteData(mycatConnection, "`1cloud`", table);
             Assert.assertEquals(0, count(mycatConnection, "`1cloud`", table));
@@ -986,8 +986,6 @@ public class UserCaseTest implements MycatTest {
                             Arrays.asList("ds0"), Collections.emptyList()));
 
 
-
-
             JdbcUtils.execute(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
                     "  `id` bigint(20) NOT NULL KEY,\n" +
                     "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
@@ -998,15 +996,15 @@ public class UserCaseTest implements MycatTest {
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n" +
                     "dbpartition by mod_hash(id) dbpartitions 16;");
             String explain = explain(mycatConnection, "select * from db1.travelrecord where id = 3300000000");
-           Assert.assertTrue( explain.contains("MycatView(distribution=[[db1.travelrecord]], conditions=[=($0, CAST(?0):BIGINT NOT NULL)])\n" +
+            Assert.assertTrue(explain.contains("MycatView(distribution=[[db1.travelrecord]], conditions=[=($0, CAST(?0):BIGINT NOT NULL)])\n" +
                     "Each(targetName=c0, sql=SELECT * FROM db1_0.travelrecord_0 AS `travelrecord` WHERE (`travelrecord`.`id` = ?))"));
-             explain = explain(mycatConnection, "select * from db1.travelrecord where id in(3300000000,1101000990)");
-            Assert.assertTrue( explain.contains("db1_0.travelrecord_0"));
-            Assert.assertTrue( explain.contains("db1_14.travelrecord_0"));
+            explain = explain(mycatConnection, "select * from db1.travelrecord where id in(3300000000,1101000990)");
+            Assert.assertTrue(explain.contains("db1_0.travelrecord_0"));
+            Assert.assertTrue(explain.contains("db1_14.travelrecord_0"));
 
             explain = explain(mycatConnection, "select * from db1.travelrecord where id in('3300000000','1101000990')");
-            Assert.assertTrue( explain.contains("db1_0.travelrecord_0"));
-            Assert.assertTrue( explain.contains("db1_14.travelrecord_0"));
+            Assert.assertTrue(explain.contains("db1_0.travelrecord_0"));
+            Assert.assertTrue(explain.contains("db1_14.travelrecord_0"));
             System.out.println();
         }
     }
@@ -1032,8 +1030,6 @@ public class UserCaseTest implements MycatTest {
                             Arrays.asList("ds0"), Collections.emptyList()));
 
 
-
-
             JdbcUtils.execute(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
                     "  `id` bigint(20) NOT NULL KEY,\n" +
                     "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
@@ -1044,15 +1040,26 @@ public class UserCaseTest implements MycatTest {
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n" +
                     "dbpartition by mod_hash(user_id) dbpartitions 16;");
             String explain = explain(mycatConnection, "select * from db1.travelrecord where user_id = '3300000000'");
-            Assert.assertTrue( explain.contains("db1_0.travelrecord_0"));
+            Assert.assertTrue(explain.contains("db1_0.travelrecord_0"));
             explain = explain(mycatConnection, "select * from db1.travelrecord where user_id in('3300000000','1101000990')");
-            Assert.assertTrue( explain.contains("db1_0.travelrecord_0"));
-            Assert.assertTrue( explain.contains("db1_1.travelrecord_0"));
+            Assert.assertTrue(explain.contains("db1_0.travelrecord_0"));
+            Assert.assertTrue(explain.contains("db1_1.travelrecord_0"));
 
             explain = explain(mycatConnection, "select * from db1.travelrecord where user_id in('3300000000','1101000990')");
-            Assert.assertTrue( explain.contains("db1_0.travelrecord_0"));
-            Assert.assertTrue( explain.contains("db1_1.travelrecord_0"));
+            Assert.assertTrue(explain.contains("db1_0.travelrecord_0"));
+            Assert.assertTrue(explain.contains("db1_1.travelrecord_0"));
             System.out.println();
         }
+    }
+
+    @Test
+    public void case17() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
+            JdbcUtils.execute(mycatConnection, "use mysql");
+            JdbcUtils.executeQuery(mycatConnection, "desc role_edges", Collections.emptyList());
+            JdbcUtils.execute(mycatConnection, "use information_schema");
+            JdbcUtils.executeQuery(mycatConnection, "desc `tables`", Collections.emptyList());
+        }
+
     }
 }

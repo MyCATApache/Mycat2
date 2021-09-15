@@ -15,12 +15,14 @@
 package io.mycat.sqlhandler.dql;
 
 import com.alibaba.druid.sql.ast.SQLCommentHint;
+import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
-import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
+import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.DrdsSqlWithParams;
 import io.mycat.MycatDataContext;
 import io.mycat.Response;
@@ -50,7 +52,20 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
     @SneakyThrows
     protected Future<Void> onExecute(SQLRequest<MySqlExplainStatement> request, MycatDataContext dataContext, Response response) {
         MySqlExplainStatement explainAst = request.getAst();
+        explainAst.accept0(new MySqlASTVisitorAdapter() {
+            @Override
+            public boolean visit(SQLExprTableSource x) {
+                if (x.getSchema() == null) {
+                    x.setSchema(dataContext.getDefaultSchema());
+                }
+                return super.visit(x);
+            }
+        });
         if (explainAst.isDescribe()) {
+            SQLName tableName = explainAst.getTableName();
+            if (tableName instanceof SQLIdentifierExpr && dataContext.getDefaultSchema() != null) {
+                explainAst.setTableName(new SQLPropertyExpr(new SQLIdentifierExpr(dataContext.getDefaultSchema()), ((SQLIdentifierExpr) tableName).getName()));
+            }
             return response.proxySelectToPrototype(explainAst.toString());
         }
         SQLStatement statement = request.getAst().getStatement();
