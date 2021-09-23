@@ -475,7 +475,9 @@ public class MycatVertxMySQLHandler {
         boolean deprecateEOF = session.isDeprecateEOF();
         String sql = new String(bytes);
         /////////////////////////////////////////////////////
-
+        if(LOGGER.isDebugEnabled()){
+            LOGGER.debug("received pstmt sql:{}",sql);
+        }
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
         boolean allow = (sqlStatement instanceof SQLSelectStatement
                 ||

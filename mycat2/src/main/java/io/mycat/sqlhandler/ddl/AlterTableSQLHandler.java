@@ -34,8 +34,9 @@ import java.util.Set;
 
 public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatement> {
     private static final Logger LOGGER = LoggerFactory.getLogger(AlterTableSQLHandler.class);
+
     @Override
-    protected Future<Void> onExecute(SQLRequest<SQLAlterTableStatement> request, MycatDataContext dataContext, Response response){
+    protected Future<Void> onExecute(SQLRequest<SQLAlterTableStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
         Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
         return lockFuture.flatMap(lock -> {
@@ -48,18 +49,15 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
                 MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
                 TableHandler tableHandler = metadataManager.getTable(schema, tableName);
                 MySqlCreateTableStatement createTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(tableHandler.getCreateTableSQL());
-                boolean changed = createTableStatement.apply(sqlAlterTableStatement);
-                if (changed) {
-                    JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-                    Set<Partition> partitions = getDataNodes(tableHandler);
-                    partitions.add(new BackendTableInfo(metadataManager.getPrototype(), schema, tableName));//add Prototype
-                    executeOnDataNodes(sqlAlterTableStatement, connectionManager, partitions);
-                    CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(), schema, tableName, createTableStatement);
-                }
+                JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+                Set<Partition> partitions = getDataNodes(tableHandler);
+                partitions.add(new BackendTableInfo(metadataManager.getPrototype(), schema, tableName));//add Prototype
+                executeOnDataNodes(sqlAlterTableStatement, connectionManager, partitions);
+                CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(), schema, tableName, createTableStatement);
                 return response.sendOk();
-            }catch (Throwable throwable){
+            } catch (Throwable throwable) {
                 return Future.failedFuture(throwable);
-            }finally {
+            } finally {
                 lock.release();
             }
         });
