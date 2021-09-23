@@ -41,6 +41,13 @@
             <version>8.0.22</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.2.6</version>
+            <scope>compile</scope>
+        </dependency>
+
     </dependencies>
 
 </project>
