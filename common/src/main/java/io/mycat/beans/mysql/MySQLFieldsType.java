@@ -87,7 +87,7 @@ public class MySQLFieldsType {
         initPut(Types.DOUBLE, FIELD_TYPE_DOUBLE);
         initPut(Types.NUMERIC, FIELD_TYPE_NEWDECIMAL);
         initPut(Types.DECIMAL, FIELD_TYPE_NEWDECIMAL);
-        initPut(Types.CHAR, FIELD_TYPE_VARCHAR);
+        initPut(Types.CHAR, FIELD_TYPE_STRING);
         initPut(Types.VARCHAR, MySQLType.FIELD_TYPE_VARCHAR);
         initPut(Types.LONGVARCHAR, FIELD_TYPE_VARCHAR);
         initPut(Types.DATE, FIELD_TYPE_DATE);
