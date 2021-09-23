@@ -71,7 +71,7 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
                 schemaName = "";//mysql workbench 该字段不能为长度0
             }
             int jdbcColumnType = resultSetMetaData.getColumnType(columnIndex);
-            this.columnSchema =  new byte[]{};
+            this.columnSchema = new byte[]{};
             String columnName = resultSetMetaData.getColumnName(columnIndex);
             this.columnName = getBytes(columnName);
             this.columnOrgName = new byte[]{};
@@ -79,9 +79,9 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
             this.columnTable = new byte[]{};
             this.columnNextLength = 0xC;
             this.columnType = MySQLFieldsType.fromJdbcType(jdbcColumnType);
-            this.columnLength = resultSetMetaData.getColumnType(columnIndex)== JDBCType.BIT.getVendorTypeNumber()?1  : columnName.length();
+            this.columnLength = resultSetMetaData.getColumnType(columnIndex) == JDBCType.BIT.getVendorTypeNumber() ? 1 : this.columnName.length;
             this.columnDecimals = (byte) resultSetMetaData.getScale(columnIndex);
-            if (!resultSetMetaData.isNullable(columnIndex)){
+            if (!resultSetMetaData.isNullable(columnIndex)) {
                 this.columnFlags |= MySQLFieldsType.NOT_NULL_FLAG;
             }
             this.columnCharsetSet = 0x21;
@@ -90,13 +90,13 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
                 case VARBINARY:
                 case LONGVARBINARY:
                 case BLOB:
-                case CLOB:{
+                case CLOB: {
                     this.columnFlags |= MySQLFieldsType.BLOB_FLAG;
                     this.columnFlags |= MySQLFieldsType.BINARY_FLAG;
-                    this.columnCharsetSet|=  CharsetMapping.MYSQL_COLLATION_INDEX_binary;
+                    this.columnCharsetSet |= CharsetMapping.MYSQL_COLLATION_INDEX_binary;
                     break;
                 }
-                case TIMESTAMP:{
+                case TIMESTAMP: {
                     this.columnFlags |= MySQLFieldsType.TIMESTAMP_FLAG;
                     break;
                 }
@@ -322,7 +322,7 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
         buffer.skipInReading(2);
         if (!buffer.readFinished()) {
             Long len = buffer.readLenencInt();
-            if (len!=null&&len > 0) {
+            if (len != null && len > 0) {
                 this.columnDefaultValues = buffer.readFixStringBytes(len.intValue());
             }
         }
