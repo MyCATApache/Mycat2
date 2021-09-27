@@ -1100,7 +1100,7 @@ public class UserCaseTest implements MycatTest {
                             Arrays.asList("prototypeDs"), Collections.emptyList()));
 
             execute(mycatConnection, "  CREATE DATABASE db1;");
-            execute(mycatConnection, " /*+ mycat:createTable{\n" +
+            String sql = " /*+ mycat:createTable{\n" +
                     "  \"schemaName\":\"db1\",\n" +
                     "  \"shadingTable\":{\n" +
                     "    \"createTableSQL\":\"CREATE TABLE db1.`sharding` (\\n  `id` bigint NOT NULL AUTO_INCREMENT,\\n  `user_id` varchar(100) DEFAULT NULL,\\n  `create_time` date DEFAULT NULL,\\n  `fee` decimal(10,0) DEFAULT NULL,\\n  `days` int DEFAULT NULL,\\n  `blob` longblob,\\n  PRIMARY KEY (`id`),\\n  KEY `id` (`id`)\\n) ENGINE=InnoDB  DEFAULT CHARSET=utf8\",\n" +
@@ -1118,7 +1118,54 @@ public class UserCaseTest implements MycatTest {
                     "    }\n" +
                     "  },\n" +
                     "  \"tableName\":\"sharding\"\n" +
-                    "} */;");
+                    "} */;";
+            System.out.println(sql);
+            execute(mycatConnection, sql);
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, ShowTopologyHint.create("db1", "sharding"));
+            Assert.assertEquals("[{targetName=c0, schemaName=db1, tableName=t2, dbIndex=0, tableIndex=0, index=0}, {targetName=c1, schemaName=db1, tableName=t2, dbIndex=1, tableIndex=1, index=1}]",
+                    maps.toString());
+            System.out.println();
+        }
+    }
+
+    @Test
+    public void casePartitionData2() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
+
+            execute(mycatConnection, RESET_CONFIG);
+            execute(mycatConnection,
+                    CreateClusterHint.create("c0",
+                            Arrays.asList("prototypeDs"), Collections.emptyList()));
+            execute(mycatConnection,
+                    CreateClusterHint.create("c1",
+                            Arrays.asList("prototypeDs"), Collections.emptyList()));
+
+            execute(mycatConnection, "  CREATE DATABASE db1;");
+            String sql = "\n" +
+                    " /*+ mycat:createTable{\n" +
+                    "  \"schemaName\":\"db1\",\n" +
+                    "  \"shadingTable\":{\n" +
+                    "  \n" +
+                    "\"createTableSQL\":\"create table sharding(id int)\",\n" +
+                    "  \n" +
+                    "\"function\":{\n" +
+                    "        \"properties\":{\n" +
+                    "          \"dbNum\":2,\n" +
+                    "          \"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${tableIndex}\",\n" +
+                    "          \"tableNum\":2,\n" +
+                    "          \"tableMethod\":\"mod_hash(id)\",\n" +
+                    "          \"storeNum\":2,\n" +
+                    "          \"dbMethod\":\"mod_hash(id)\"\n" +
+                    "      }\n" +
+                    "    },\n" +
+                    "    \"partition\":{\n" +
+                    "\"data\":[[\"c0\",\"db1\",\"t2\",\"0\",\"0\",\"0\"],[\"c1\",\"db1\",\"t2\",\"1\",\"1\",\"1\"]]"+
+                    "    }\n" +
+                    "  },\n" +
+                    "  \"tableName\":\"sharding\"\n" +
+                    "} */;";
+            System.out.println(sql);
+            execute(mycatConnection, sql);
             List<Map<String, Object>> maps = executeQuery(mycatConnection, ShowTopologyHint.create("db1", "sharding"));
             Assert.assertEquals("[{targetName=c0, schemaName=db1, tableName=t2, dbIndex=0, tableIndex=0, index=0}, {targetName=c1, schemaName=db1, tableName=t2, dbIndex=1, tableIndex=1, index=1}]",
                     maps.toString());

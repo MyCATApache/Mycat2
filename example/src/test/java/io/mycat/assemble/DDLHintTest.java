@@ -208,7 +208,7 @@ public class DDLHintTest implements MycatTest {
                     " (id bigint) ");
 
             List<Map<String, Object>> res = executeQuery(mycat, ShowTopologyHint.create(schemaName, tableName));
-            Assert.assertEquals("[{targetName=ds0, schemaName=test_add_Schema, tableName=test_table}]",res.toString());
+            Assert.assertEquals("[{targetName=ds0, schemaName=test_add_Schema, tableName=test_table, dbIndex=null, tableIndex=null, index=null}]",res.toString());
             System.out.println();
 
         }
