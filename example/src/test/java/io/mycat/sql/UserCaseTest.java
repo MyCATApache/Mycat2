@@ -1146,12 +1146,12 @@ public class UserCaseTest implements MycatTest {
                     "  \"schemaName\":\"db1\",\n" +
                     "  \"shadingTable\":{\n" +
                     "  \n" +
-                    "\"createTableSQL\":\"create table travelrecord(id int)\",\n" +
+                    "\"createTableSQL\":\"create table sharding(id int)\",\n" +
                     "  \n" +
                     "\"function\":{\n" +
                     "        \"properties\":{\n" +
                     "          \"dbNum\":2,\n" +
-                    "          \"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/travelrecord_${tableIndex}\",\n" +
+                    "          \"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${tableIndex}\",\n" +
                     "          \"tableNum\":2,\n" +
                     "          \"tableMethod\":\"mod_hash(id)\",\n" +
                     "          \"storeNum\":2,\n" +
