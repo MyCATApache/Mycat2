@@ -4,10 +4,8 @@ import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.assemble.MycatTest;
 import io.mycat.config.*;
 import io.mycat.hbt.SchemaConvertor;
-import io.mycat.hint.CreateClusterHint;
-import io.mycat.hint.CreateDataSourceHint;
-import io.mycat.hint.CreateSchemaHint;
-import io.mycat.hint.CreateTableHint;
+import io.mycat.hint.*;
+import io.mycat.router.function.IndexDataNode;
 import io.mycat.router.mycat1xfunction.PartitionByFileMap;
 import io.mycat.router.mycat1xfunction.PartitionByHotDate;
 import io.mycat.util.ByteUtil;
@@ -21,10 +19,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 
@@ -1060,6 +1055,74 @@ public class UserCaseTest implements MycatTest {
             JdbcUtils.execute(mycatConnection, "use information_schema");
             JdbcUtils.executeQuery(mycatConnection, "desc `tables`", Collections.emptyList());
         }
+    }
 
+
+    @Test
+    public void casePartitionData() throws Exception {
+
+        ShardingBackEndTableInfoConfig shardingBackEndTableInfoConfig = new ShardingBackEndTableInfoConfig();
+        List<IndexDataNode> indexDataNodes = Arrays.asList(
+                new IndexDataNode("c0","db1","t1",0,0,0),
+                new IndexDataNode("c1","db1","t1",1,1,1)
+        );
+        List<List> res = new ArrayList<>();
+        for (IndexDataNode indexDataNode : indexDataNodes) {
+
+            String targetName = indexDataNode.getTargetName();
+            String schema = indexDataNode.getSchema();
+            String table = indexDataNode.getTable();
+            Integer dbIndex = indexDataNode.getDbIndex();
+            Integer tableIndex = indexDataNode.getTableIndex();
+            Integer index = indexDataNode.getIndex();
+
+            ArrayList<String> objects = new ArrayList<>(3);
+            objects.add(targetName);
+            objects.add(schema);
+            objects.add(table);
+            objects.add(dbIndex.toString());
+            objects.add(tableIndex.toString());
+            objects.add(index.toString());
+
+            res.add(objects);
+        }
+        shardingBackEndTableInfoConfig.setData(res);
+        System.out.println(Json.encode(shardingBackEndTableInfoConfig));
+
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
+
+            execute(mycatConnection, RESET_CONFIG);
+            execute(mycatConnection,
+                    CreateClusterHint.create("c0",
+                            Arrays.asList("prototypeDs"), Collections.emptyList()));
+            execute(mycatConnection,
+                    CreateClusterHint.create("c1",
+                            Arrays.asList("prototypeDs"), Collections.emptyList()));
+
+            execute(mycatConnection, "  CREATE DATABASE db1;");
+            execute(mycatConnection, " /*+ mycat:createTable{\n" +
+                    "  \"schemaName\":\"db1\",\n" +
+                    "  \"shadingTable\":{\n" +
+                    "    \"createTableSQL\":\"CREATE TABLE db1.`sharding` (\\n  `id` bigint NOT NULL AUTO_INCREMENT,\\n  `user_id` varchar(100) DEFAULT NULL,\\n  `create_time` date DEFAULT NULL,\\n  `fee` decimal(10,0) DEFAULT NULL,\\n  `days` int DEFAULT NULL,\\n  `blob` longblob,\\n  PRIMARY KEY (`id`),\\n  KEY `id` (`id`)\\n) ENGINE=InnoDB  DEFAULT CHARSET=utf8\",\n" +
+                    "    \"function\":{\n" +
+                    "      \"clazz\":\"io.mycat.router.mycat1xfunction.PartitionByHotDate\",\n" +
+                    "      \"properties\":{\n" +
+                    "        \"dateFormat\":\"yyyy-MM-dd\",\n" +
+                    "        \"lastTime\":30,\n" +
+                    "        \"partionDay\":30,\n" +
+                    "        \"columnName\":\"create_time\"\n" +
+                    "      }\n" +
+                    "    },\n" +
+                    "    \"partition\":{\n" +
+                    "\"data\":[[\"c0\",\"db1\",\"t2\",\"0\",\"0\",\"0\"],[\"c1\",\"db1\",\"t2\",\"1\",\"1\",\"1\"]]"+
+                    "    }\n" +
+                    "  },\n" +
+                    "  \"tableName\":\"sharding\"\n" +
+                    "} */;");
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, ShowTopologyHint.create("db1", "sharding"));
+            Assert.assertEquals("[{targetName=c0, schemaName=db1, tableName=t2, dbIndex=0, tableIndex=0, index=0}, {targetName=c1, schemaName=db1, tableName=t2, dbIndex=1, tableIndex=1, index=1}]",
+                    maps.toString());
+            System.out.println();
+        }
     }
 }
