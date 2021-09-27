@@ -35,102 +35,112 @@ public class CreateGsiTest implements MycatTest {
     @Test
     public void createGsi() throws Exception {
         initShardingTable();
-        try (Connection connection = getMySQLConnection(DB_MYCAT)) {
-            execute(connection, "CREATE UNIQUE GLOBAL INDEX `g_i_user_id` ON `db1`.`travelrecord`(`user_id`) \n" +
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+             Connection db1 = getMySQLConnection(DB1);
+             Connection db2 = getMySQLConnection(DB2)) {
+//            execute(db1,"DROP TABLE if exists db1_0.travelrecord_g_i_user_id_0");
+//            execute(db1,"DROP TABLE if exists db1_0.travelrecord_g_i_user_id_1");
+//            execute(db2,"DROP TABLE if exists db1_1.travelrecord_g_i_user_id_2");
+//            execute(db2,"DROP TABLE if exists db1_1.travelrecord_g_i_user_id_3");
+
+            execute(mycatConnection, "CREATE UNIQUE GLOBAL INDEX `g_i_user_id` ON `db1`.`travelrecord`(`user_id`) \n" +
                     "    COVERING(`fee`,id) \n" +
                     "    dbpartition by mod_hash(`user_id`) tbpartition by mod_hash(`user_id`)  tbpartitions 2");
-            boolean b = hasData(connection, "db1", "travelrecord_g_i_user_id");//test create it
-            List<Map<String, Object>> travelrecord_g_i_user_id_topologyHint = executeQuery(connection, ShowTopologyHint.create("db1", "travelrecord_g_i_user_id").toString());
-            Assert.assertEquals("[{targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_0}, {targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_1}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_2}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_3}]", travelrecord_g_i_user_id_topologyHint.toString());
+            boolean b = hasData(mycatConnection, "db1", "travelrecord_g_i_user_id");//test create it
+            List<Map<String, Object>> travelrecord_g_i_user_id_topologyHint = executeQuery(mycatConnection, ShowTopologyHint.create("db1", "travelrecord_g_i_user_id").toString());
+            Assert.assertEquals("[{targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_0, dbIndex=0, tableIndex=0, index=0}," +
+                    " {targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_1, dbIndex=0, tableIndex=1, index=1}, " +
+                    "{targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_2, dbIndex=1, tableIndex=0, index=2}, " +
+                    "{targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_3, dbIndex=1, tableIndex=1, index=3}]", travelrecord_g_i_user_id_topologyHint.toString());
 
 
-            String explainPrimaryTable = explain(connection, "select * from db1.travelrecord where id = 1");
+            String explainPrimaryTable = explain(mycatConnection, "select * from db1.travelrecord where id = 1");
             Assert.assertTrue(explainPrimaryTable.contains("Each(targetName=c0, sql=SELECT * FROM db1_0.travelrecord_1 AS `travelrecord` WHERE (`travelrecord`.`id` = ?))"));
-            String explainIndexScan = explain(connection, "select * from db1.travelrecord where user_id = 1");//index-scan
+            String explainIndexScan = explain(mycatConnection, "select * from db1.travelrecord where user_id = 1");//index-scan
             Assert.assertTrue(explainIndexScan.contains("MycatProject(id=[$0], user_id=[$1], traveldate=[$3], fee=[$2], days=[$4], blob=[$5])\n" +
                     "  MycatSQLTableLookup(condition=[=($0, $7)], joinType=[inner], type=[BACK], correlationIds=[[$cor0]], leftKeys=[[0]])\n" +
                     "    MycatView(distribution=[[db1.travelrecord_g_i_user_id]], conditions=[=($0, ?0)])\n" +
                     "    MycatView(distribution=[[db1.travelrecord]])"));
-            String explainOnlyIndexScan = explain(connection, "select fee from db1.travelrecord where user_id = 1");//index-scan
+            String explainOnlyIndexScan = explain(mycatConnection, "select fee from db1.travelrecord where user_id = 1");//index-scan
             Assert.assertTrue(explainOnlyIndexScan.contains("Each(targetName=c0, sql=SELECT `travelrecord_g_i_user_id`.`fee` FROM db1_0.travelrecord_g_i_user_id_1 AS `travelrecord_g_i_user_id` WHERE (`travelrecord_g_i_user_id`.`user_id` = ?))"));
 
             String explain;
-            explain = explain(connection, "delete  from db1.travelrecord");
+            explain = explain(mycatConnection, "delete  from db1.travelrecord");
             Assert.assertTrue(explain.contains("travelrecord_g_i_user_id"));
-            deleteData(connection, "db1", "travelrecord");
-            deleteData(connection, "db1", "travelrecord_g_i_user_id");
+            deleteData(mycatConnection, "db1", "travelrecord");
+            deleteData(mycatConnection, "db1", "travelrecord_g_i_user_id");
 
-            explain = explain(connection, "insert db1.travelrecord (id,user_id) values(1,2)");
+            explain = explain(mycatConnection, "insert db1.travelrecord (id,user_id) values(1,2)");
             Assert.assertTrue(explain.contains("travelrecord_g_i_user_id"));
             for (int i = 0; i < 10; i++) {
-                execute(connection, "insert db1.travelrecord (id,user_id) values(" + i + "," +
+                execute(mycatConnection, "insert db1.travelrecord (id,user_id) values(" + i + "," +
                         "" +
                         i +
                         ")");
             }
-            List<Map<String, Object>> maps = executeQuery(connection, "select fee from db1.travelrecord where user_id = 1");
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, "select fee from db1.travelrecord where user_id = 1");
             Assert.assertEquals(1, maps.size());
             System.out.println();
 
             //测试事务
-            long count0 = count(connection, "db1", "travelrecord");
-            long count1 = count(connection, "db1", "travelrecord_g_i_user_id");
+            long count0 = count(mycatConnection, "db1", "travelrecord");
+            long count1 = count(mycatConnection, "db1", "travelrecord_g_i_user_id");
 
             Assert.assertEquals(count0, count1);
-            String explain1 = explain(connection, "insert db1.travelrecord (id,user_id) values(" + 100 + "," +
+            String explain1 = explain(mycatConnection, "insert db1.travelrecord (id,user_id) values(" + 100 + "," +
                     "" +
                     100 +
                     ")");
             Assert.assertTrue(explain1.contains("travelrecord_0") && explain1.contains("travelrecord_g_i_user_id_1"));
 
-            connection.setAutoCommit(false);
+            mycatConnection.setAutoCommit(false);
             for (int i = 10; i < 20; i++) {
-                execute(connection, "insert db1.travelrecord (id,user_id) values(" + i + "," +
+                execute(mycatConnection, "insert db1.travelrecord (id,user_id) values(" + i + "," +
                         "" +
                         i +
                         ")");
             }
-            connection.rollback();
+            mycatConnection.rollback();
 
-            long _count0 = count(connection, "db1", "travelrecord");
-            long _count1 = count(connection, "db1", "travelrecord_g_i_user_id");
+            long _count0 = count(mycatConnection, "db1", "travelrecord");
+            long _count1 = count(mycatConnection, "db1", "travelrecord_g_i_user_id");
             Assert.assertEquals(count0, _count0);
             Assert.assertEquals(count1, _count1);
 
             for (int i = 10; i < 20; i++) {
-                execute(connection, "insert db1.travelrecord (id,user_id) values(" + i + "," +
+                execute(mycatConnection, "insert db1.travelrecord (id,user_id) values(" + i + "," +
                         "" +
                         i +
                         ")");
             }
-            connection.setAutoCommit(true);
-            _count0 = count(connection, "db1", "travelrecord");
-            _count1 = count(connection, "db1", "travelrecord_g_i_user_id");
+            mycatConnection.setAutoCommit(true);
+            _count0 = count(mycatConnection, "db1", "travelrecord");
+            _count1 = count(mycatConnection, "db1", "travelrecord_g_i_user_id");
             Assert.assertEquals(20, _count0);
             Assert.assertEquals(20, _count1);
 
-            List<Map<String, Object>> maps2 = executeQuery(connection, "select count(1) from db1.travelrecord where user_id = 1");
-            List<Map<String, Object>> maps3 = executeQuery(connection, "select t.id from db1.travelrecord t  LEFT JOIN db1.company c on t.user_id  = c.id limit 10");
+            List<Map<String, Object>> maps2 = executeQuery(mycatConnection, "select count(1) from db1.travelrecord where user_id = 1");
+            List<Map<String, Object>> maps3 = executeQuery(mycatConnection, "select t.id from db1.travelrecord t  LEFT JOIN db1.company c on t.user_id  = c.id limit 10");
             Assert.assertEquals(1, maps2.size());
             Assert.assertEquals(10, maps3.size());
 
-            List<Map<String, Object>> maps4 = executeQuery(connection, "select t.id from db1.travelrecord t  LEFT JOIN db1.company c on t.user_id  = c.id where t.user_id = 1 limit 10");
+            List<Map<String, Object>> maps4 = executeQuery(mycatConnection, "select t.id from db1.travelrecord t  LEFT JOIN db1.company c on t.user_id  = c.id where t.user_id = 1 limit 10");
             Assert.assertEquals(1, maps4.size());
 
-            List<Map<String, Object>> maps5 = executeQuery(connection, "select t.id from db1.travelrecord t  LEFT JOIN db1.company2 c on t.user_id  = c.id  where t.user_id = 1  limit 10");
+            List<Map<String, Object>> maps5 = executeQuery(mycatConnection, "select t.id from db1.travelrecord t  LEFT JOIN db1.company2 c on t.user_id  = c.id  where t.user_id = 1  limit 10");
             Assert.assertEquals(1, maps5.size());
 
-            testInsertException(connection, TranscationType.XA);
-            testInsertException(connection, TranscationType.PROXY);
+            testInsertException(mycatConnection, TranscationType.XA);
+            testInsertException(mycatConnection, TranscationType.PROXY);
 
             //测试索引注解
             String sql = "SELECT * FROM db1.travelrecord FORCE INDEX(g_i_user_id) WHERE user_id =1 ";
-            String e = explain(connection, sql);
+            String e = explain(mycatConnection, sql);
             Assert.assertTrue(e.contains("travelrecord_g_i_user_id"));
-            List<Map<String, Object>> maps1 = executeQuery(connection, sql);
+            List<Map<String, Object>> maps1 = executeQuery(mycatConnection, sql);
             Assert.assertEquals("[{id=1, user_id=1, traveldate=null, fee=null, days=null, blob=null}]", maps1.toString());
             Assert.assertEquals("[{id=1, user_id=1, traveldate=null, fee=null, days=null, blob=null}]",
-                    executeQuery(connection, "SELECT * FROM db1.travelrecord WHERE user_id =1 ").toString());
+                    executeQuery(mycatConnection, "SELECT * FROM db1.travelrecord WHERE user_id =1 ").toString());
         }
 
     }
@@ -181,7 +191,7 @@ public class CreateGsiTest implements MycatTest {
             execute(connection, "CREATE TABLE IF NOT EXISTS db1.`travelrecord` (\n\t`id` bigint NOT NULL AUTO_INCREMENT,\n\t`user_id` varchar(100) DEFAULT NULL,\n\t`traveldate` date DEFAULT NULL,\n\t`fee` decimal(10, 0) DEFAULT NULL,\n\t`days` int DEFAULT NULL,\n\t`blob` longblob,\n\tPRIMARY KEY (`id`),\n\tKEY `id` (`id`),\n\tGLOBAL INDEX `g_i_user_id`(`user_id`) COVERING (`fee`, id) DBPARTITION BY mod_hash(`user_id`) TBPARTITION BY mod_hash(`user_id`)  TBPARTITIONS 2\n) ENGINE = InnoDB CHARSET = utf8\nDBPARTITION BY mod_hash(id) DBPARTITIONS 2\nTBPARTITION BY mod_hash(id) TBPARTITIONS 2");
             boolean b = hasData(connection, "db1", "travelrecord_g_i_user_id");//test create it
             List<Map<String, Object>> travelrecord_g_i_user_id_topologyHint = executeQuery(connection, ShowTopologyHint.create("db1", "travelrecord_g_i_user_id").toString());
-            Assert.assertEquals("[{targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_0}, {targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_1}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_2}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_3}]", travelrecord_g_i_user_id_topologyHint.toString());
+            Assert.assertEquals("[{targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_0, dbIndex=0, tableIndex=0, index=0}, {targetName=c0, schemaName=db1_0, tableName=travelrecord_g_i_user_id_1, dbIndex=0, tableIndex=1, index=1}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_2, dbIndex=1, tableIndex=0, index=2}, {targetName=c1, schemaName=db1_1, tableName=travelrecord_g_i_user_id_3, dbIndex=1, tableIndex=1, index=3}]", travelrecord_g_i_user_id_topologyHint.toString());
 
 
             String explainPrimaryTable = explain(connection, "select * from db1.travelrecord where id = 1");
