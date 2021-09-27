@@ -38,10 +38,10 @@ public class CreateGsiTest implements MycatTest {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
              Connection db1 = getMySQLConnection(DB1);
              Connection db2 = getMySQLConnection(DB2)) {
-            execute(db1,"DROP TABLE db1_0.travelrecord_g_i_user_id_0");
-            execute(db1,"DROP TABLE db1_0.travelrecord_g_i_user_id_1");
-            execute(db2,"DROP TABLE db1_1.travelrecord_g_i_user_id_2");
-            execute(db2,"DROP TABLE db1_1.travelrecord_g_i_user_id_3");
+//            execute(db1,"DROP TABLE if exists db1_0.travelrecord_g_i_user_id_0");
+//            execute(db1,"DROP TABLE if exists db1_0.travelrecord_g_i_user_id_1");
+//            execute(db2,"DROP TABLE if exists db1_1.travelrecord_g_i_user_id_2");
+//            execute(db2,"DROP TABLE if exists db1_1.travelrecord_g_i_user_id_3");
 
             execute(mycatConnection, "CREATE UNIQUE GLOBAL INDEX `g_i_user_id` ON `db1`.`travelrecord`(`user_id`) \n" +
                     "    COVERING(`fee`,id) \n" +
