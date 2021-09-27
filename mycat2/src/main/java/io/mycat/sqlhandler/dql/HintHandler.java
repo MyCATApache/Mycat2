@@ -688,14 +688,21 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         resultSetBuilder.addColumnInfo("targetName", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("schemaName", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("tableName", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("dbIndex", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("tableIndex", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("index", JDBCType.VARCHAR);
 
         for (Partition partition : backends) {
             String targetName = partition.getTargetName();
             String schemaName = partition.getSchema();
             String tableName = partition.getTable();
 
+            Integer dbIndex = partition.getDbIndex();
+            Integer tableIndex = partition.getTableIndex();
+            Integer index = partition.getIndex();
+
             resultSetBuilder.addObjectRowPayload(
-                    Arrays.asList(targetName, schemaName, tableName));
+                    Arrays.asList(targetName, schemaName, tableName,dbIndex,tableIndex,index));
         }
         return response.sendResultSet(resultSetBuilder.build());
     }

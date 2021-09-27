@@ -53,7 +53,7 @@ public class CreateTableUtils {
             set.addAll(selectorRuntime.getReplicaMap().get(node.getTargetName()).getRawDataSourceMap().keySet());
         }
         if (set.isEmpty()) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("can not found "+node.getTargetName());
         }
         normalizeCreateTableSQLToMySQL(createSQL).ifPresent(sql -> {
             for (String s : set) {
