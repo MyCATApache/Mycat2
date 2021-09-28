@@ -505,7 +505,8 @@ public class AssembleTest implements MycatTest {
 
     @Test
     public void testBit() throws Exception {
-        while (true) {
+        //while (true)
+        {
             try (Connection mycat = getMySQLConnection(DB_MYCAT);
                  Connection db1Connection = getMySQLConnection(DB1);) {
                 mycat.setAutoCommit(true);
