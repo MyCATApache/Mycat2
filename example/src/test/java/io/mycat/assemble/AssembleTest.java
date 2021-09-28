@@ -505,28 +505,30 @@ public class AssembleTest implements MycatTest {
 
     @Test
     public void testBit() throws Exception {
-        try (Connection mycat = getMySQLConnection(DB_MYCAT);
-             Connection db1Connection = getMySQLConnection(DB1);) {
-            mycat.setAutoCommit(true);
-            execute(mycat, "CREATE DATABASE IF NOT EXISTS db1 DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_general_ci;\n");
-            execute(mycat, "CREATE TABLE  if not exists db1.reader ( locked BIT) ENGINE=INNODB;");
-            deleteData(mycat, "db1", "reader");
+        while (true) {
+            try (Connection mycat = getMySQLConnection(DB_MYCAT);
+                 Connection db1Connection = getMySQLConnection(DB1);) {
+                mycat.setAutoCommit(true);
+                execute(mycat, "CREATE DATABASE IF NOT EXISTS db1 DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_general_ci;\n");
+                execute(mycat, "CREATE TABLE  if not exists db1.reader ( locked BIT) ENGINE=INNODB;");
+                deleteData(mycat, "db1", "reader");
 
-            execute(mycat, "insert db1.reader (locked) VALUES (1)");
+                execute(db1Connection, "insert db1.reader (locked) VALUES (1)");
 
-            List<Map<String, Object>> mycatMaps = executeQuery(mycat, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");
-            List<Map<String, Object>> mysqlMaps = executeQuery(db1Connection, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");//[{locked=true}]
+                List<Map<String, Object>> mycatMaps = executeQuery(mycat, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");
+                List<Map<String, Object>> mysqlMaps = executeQuery(db1Connection, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");//[{locked=true}]
 //
-            System.out.println("mycatMaps");
-            System.out.println(mycatMaps);
+                System.out.println("mycatMaps");
+                System.out.println(mycatMaps);
 
-            System.out.println("mysqlMaps");
-            System.out.println(mysqlMaps);
+                System.out.println("mysqlMaps");
+                System.out.println(mysqlMaps);
 
-            if (mysqlMaps.equals(mycatMaps)) {
+                if (mysqlMaps.equals(mycatMaps)) {
 
-            } else {
-                Assert.assertTrue("[{locked=1}]".equals(mycatMaps.toString()) || "[{locked=true}]".equals(mycatMaps.toString()));
+                } else {
+                    Assert.assertTrue("[{locked=1}]".equals(mycatMaps.toString()) || "[{locked=true}]".equals(mycatMaps.toString()));
+                }
             }
         }
     }
