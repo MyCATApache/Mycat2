@@ -1,3 +1,4 @@
+
 /*
  *     Copyright (C) <2021>  <Junwen Chen>
  *
@@ -30,10 +31,6 @@ public interface FunctionFactory {
     }
 
     default boolean isBoolean() {
-        return false;
-    }
-
-    default boolean isRuntimeConstant() {
         return false;
     }
 
