@@ -22,7 +22,7 @@
       <module>va</module>
     <module>assistant</module>
       <module>internalexample</module>
-      <module>executor</module>
+<!--      <module>executor</module>-->
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>
