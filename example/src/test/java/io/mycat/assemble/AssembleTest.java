@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 @net.jcip.annotations.NotThreadSafe
 public class AssembleTest implements MycatTest {
     boolean init = false;
+
     @Before
     public void before() throws Exception {
         if (!init) {
@@ -118,7 +119,6 @@ public class AssembleTest implements MycatTest {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
 
 
-
             List<Map<String, Object>> maps = executeQuery(mycatConnection,
                     "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'db1' UNION SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'xxx' UNION SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = 'db1' ");
 
@@ -151,9 +151,9 @@ public class AssembleTest implements MycatTest {
                     ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
 
             execute(mycatConnection, "START TRANSACTION");
-            execute(mycatConnection,"INSERT INTO `db1`.`travelrecord` (`blob`, `days`, `fee`, `traveldate`, `user_id`) VALUES (NULL, 3, 3, timestamp('2021-02-21 12:23:42.058156'), 'tom')");
+            execute(mycatConnection, "INSERT INTO `db1`.`travelrecord` (`blob`, `days`, `fee`, `traveldate`, `user_id`) VALUES (NULL, 3, 3, timestamp('2021-02-21 12:23:42.058156'), 'tom')");
             execute(mycatConnection, "COMMIT");
-            deleteData(mycatConnection,"db1","travelrecord");
+            deleteData(mycatConnection, "db1", "travelrecord");
 
             execute(mycatConnection, "/*+ mycat:setSequence{\"name\":\"db1_travelrecord\",\"time\":true} */;");
 
@@ -270,7 +270,7 @@ public class AssembleTest implements MycatTest {
             Assert.assertTrue(
                     executeQuery(mycatConnection, "select LAST_INSERT_ID()").toString().contains("999999999")
             );
-            Assert.assertEquals(5,executeQuery(mycatConnection, "select * from db1.travelrecord").size());
+            Assert.assertEquals(5, executeQuery(mycatConnection, "select * from db1.travelrecord").size());
             execute(mycatConnection, "delete from db1.travelrecord");
             Assert.assertFalse(hasData(mycatConnection, "db1", "travelrecord"));
             execute(mycatConnection, "\n" +
@@ -310,19 +310,19 @@ public class AssembleTest implements MycatTest {
     protected void initCluster(Connection mycatConnection) throws Exception {
         execute(mycatConnection,
                 CreateDataSourceHint
-                        .create("dw0",DB1));
+                        .create("dw0", DB1));
 
         execute(mycatConnection,
                 CreateDataSourceHint
-                        .create("dr0",DB1));
+                        .create("dr0", DB1));
 
         execute(mycatConnection,
                 CreateDataSourceHint
-                        .create("dw1",DB2));
+                        .create("dw1", DB2));
 
         execute(mycatConnection,
                 CreateDataSourceHint
-                        .create("dr1",DB2));
+                        .create("dr1", DB2));
 
         execute(mycatConnection,
                 CreateClusterHint
@@ -505,14 +505,14 @@ public class AssembleTest implements MycatTest {
 
     @Test
     public void testBit() throws Exception {
-        try(Connection mycat = getMySQLConnection(DB_MYCAT);
-        Connection db1Connection = getMySQLConnection(DB1);){
+        try (Connection mycat = getMySQLConnection(DB_MYCAT);
+             Connection db1Connection = getMySQLConnection(DB1);) {
             mycat.setAutoCommit(true);
-            execute(mycat,"CREATE DATABASE IF NOT EXISTS db1 DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_general_ci;\n" );
+            execute(mycat, "CREATE DATABASE IF NOT EXISTS db1 DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_general_ci;\n");
             execute(mycat, "CREATE TABLE  if not exists db1.reader ( locked BIT) ENGINE=INNODB;");
-            deleteData(mycat,"db1","reader");
+            deleteData(mycat, "db1", "reader");
 
-            JdbcUtils.execute(mycat,"insert db1.reader (locked) VALUES (?)",Arrays.asList(true));
+            execute(mycat, "insert db1.reader (locked) VALUES (1)");
 
             List<Map<String, Object>> mycatMaps = executeQuery(mycat, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");
             List<Map<String, Object>> mysqlMaps = executeQuery(db1Connection, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");//[{locked=true}]
@@ -523,10 +523,10 @@ public class AssembleTest implements MycatTest {
             System.out.println("mysqlMaps");
             System.out.println(mysqlMaps);
 
-            if (mysqlMaps.equals(mycatMaps)){
+            if (mysqlMaps.equals(mycatMaps)) {
 
-            }else {
-                Assert.assertTrue( "[{locked=1}]".equals(mycatMaps.toString())||"[{locked=true}]".equals(mycatMaps.toString()));
+            } else {
+                Assert.assertTrue("[{locked=1}]".equals(mycatMaps.toString()) || "[{locked=true}]".equals(mycatMaps.toString()));
             }
         }
     }

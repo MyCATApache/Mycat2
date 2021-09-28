@@ -135,7 +135,7 @@ public class ManagerHintTest implements MycatTest {
     public void testErrorSyntax() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
             executeQuery(mycatConnection,
-                    "/* mycat:showConnections{}*/");
+                    "/*+ mycat:showConnections{}*/");
         }
     }
 
