@@ -48,9 +48,9 @@ public class CreateTableHint extends HintBuilder {
     public static String createSharding(
             String schemaName,
             String tableName,
-            ShardingTableConfig shadingTable) {
+            ShardingTableConfig shardingTable) {
         CreateTableConfig createTableConfig = new CreateTableConfig();
-        createTableConfig.setShadingTable(shadingTable);
+        createTableConfig.setShardingTable(shardingTable);
         createTableConfig.setSchemaName(schemaName);
         createTableConfig.setTableName(tableName);
         return create(createTableConfig);

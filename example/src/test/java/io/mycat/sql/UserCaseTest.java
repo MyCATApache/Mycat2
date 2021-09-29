@@ -937,7 +937,7 @@ public class UserCaseTest implements MycatTest {
             execute(mycatConnection, "  CREATE DATABASE db1;");
             execute(mycatConnection, " /*+ mycat:createTable{\n" +
                     "  \"schemaName\":\"db1\",\n" +
-                    "  \"shadingTable\":{\n" +
+                    "  \"shardingTable\":{\n" +
                     "    \"createTableSQL\":\"CREATE TABLE db1.`sharding` (\\n  `id` bigint NOT NULL AUTO_INCREMENT,\\n  `user_id` varchar(100) DEFAULT NULL,\\n  `create_time` date DEFAULT NULL,\\n  `fee` decimal(10,0) DEFAULT NULL,\\n  `days` int DEFAULT NULL,\\n  `blob` longblob,\\n  PRIMARY KEY (`id`),\\n  KEY `id` (`id`)\\n) ENGINE=InnoDB  DEFAULT CHARSET=utf8\",\n" +
                     "    \"function\":{\n" +
                     "      \"clazz\":\"io.mycat.router.mycat1xfunction.PartitionByHotDate\",\n" +
@@ -1102,7 +1102,7 @@ public class UserCaseTest implements MycatTest {
             execute(mycatConnection, "  CREATE DATABASE db1;");
             String sql = " /*+ mycat:createTable{\n" +
                     "  \"schemaName\":\"db1\",\n" +
-                    "  \"shadingTable\":{\n" +
+                    "  \"shardingTable\":{\n" +
                     "    \"createTableSQL\":\"CREATE TABLE db1.`sharding` (\\n  `id` bigint NOT NULL AUTO_INCREMENT,\\n  `user_id` varchar(100) DEFAULT NULL,\\n  `create_time` date DEFAULT NULL,\\n  `fee` decimal(10,0) DEFAULT NULL,\\n  `days` int DEFAULT NULL,\\n  `blob` longblob,\\n  PRIMARY KEY (`id`),\\n  KEY `id` (`id`)\\n) ENGINE=InnoDB  DEFAULT CHARSET=utf8\",\n" +
                     "    \"function\":{\n" +
                     "      \"clazz\":\"io.mycat.router.mycat1xfunction.PartitionByHotDate\",\n" +
@@ -1144,7 +1144,7 @@ public class UserCaseTest implements MycatTest {
             String sql = "\n" +
                     " /*+ mycat:createTable{\n" +
                     "  \"schemaName\":\"db1\",\n" +
-                    "  \"shadingTable\":{\n" +
+                    "  \"shardingTable\":{\n" +
                     "  \n" +
                     "\"createTableSQL\":\"create table sharding(id int)\",\n" +
                     "  \n" +
