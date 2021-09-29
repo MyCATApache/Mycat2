@@ -546,6 +546,9 @@ public class VertxExecuter {
                                 int index = ((SQLVariantRefExpr) sqlExpr1).getIndex();
                                 o = params.get(index);
                                 success = true;
+                            } else if (sqlExpr1 instanceof SQLCharExpr) { // 兼容 compress 等函数，放的是字符串
+                                o = ((SQLCharExpr) sqlExpr1).getText();
+                                success = true;
                             }
                         }
                     }
