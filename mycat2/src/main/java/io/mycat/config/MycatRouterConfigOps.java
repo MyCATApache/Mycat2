@@ -185,14 +185,14 @@ public class MycatRouterConfigOps implements AutoCloseable {
         String tableName = createTableConfig.getTableName();
         NormalTableConfig normalTable = createTableConfig.getNormalTable();
         GlobalTableConfig globalTable = createTableConfig.getGlobalTable();
-        ShardingTableConfig shadingTable = createTableConfig.getShadingTable();
+        ShardingTableConfig shardingTable = createTableConfig.getShardingTable();
 
         if (normalTable != null) {
             putNormalTable(schemaName, tableName, normalTable);
         } else if (globalTable != null) {
             putGlobalTableConfig(schemaName, tableName, globalTable);
-        } else if (shadingTable != null) {
-            putShardingTable(schemaName, tableName, shadingTable);
+        } else if (shardingTable != null) {
+            putShardingTable(schemaName, tableName, shardingTable);
         }
     }
 
@@ -284,8 +284,8 @@ public class MycatRouterConfigOps implements AutoCloseable {
         List<LogicSchemaConfig> schemas = this.schemas;
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
         first.ifPresent(logicSchemaConfig -> {
-            Map<String, ShardingTableConfig> shadingTables = logicSchemaConfig.getShardingTables();
-            shadingTables.put(tableName, config);
+            Map<String, ShardingTableConfig> shardingTables = logicSchemaConfig.getShardingTables();
+            shardingTables.put(tableName, config);
         });
         updateType = UpdateType.CREATE_TABLE;
         this.tableName = tableName;
