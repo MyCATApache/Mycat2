@@ -60,6 +60,6 @@
 		}
 	},
 	"schemaName":"mysql",
-	"shadingTables":{},
+	"shardingTables":{},
 	"targetName":"prototype"
 }
