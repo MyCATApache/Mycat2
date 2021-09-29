@@ -53,7 +53,7 @@ public class HackRouter {
                     if (schema == null) {
                         throw new MycatException("please use schema;");
                     }
-                    tableNames.add(Pair.of(schema, SQLUtils.normalize(tableName)));
+                    tableNames.add(Pair.of(SQLUtils.normalize(schema), SQLUtils.normalize(tableName)));
                 }
                 return super.visit(x);
             }
