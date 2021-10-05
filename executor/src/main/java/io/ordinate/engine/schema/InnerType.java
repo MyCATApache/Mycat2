@@ -22,6 +22,11 @@ import io.ordinate.engine.function.BinarySequence;
 import lombok.Getter;
 import org.apache.arrow.vector.*;
 import org.apache.arrow.vector.types.pojo.ArrowType;
+import org.apache.arrow.vector.types.pojo.Field;
+import org.apache.arrow.vector.types.pojo.Schema;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 @Getter
 public enum InnerType {
@@ -258,5 +263,40 @@ public enum InnerType {
 
     public static ArrowType castToAggType(ArrowType type) {
         return InnerType.from(type).getArrowType();
+    }
+
+    public static InnerType[] fromSchemaToInnerTypes(Schema schema){
+        List<Field> fields = schema.getFields();
+        InnerType[] innerTypes =new InnerType[fields.size()];
+
+        int index = 0;
+        for (Field field : fields) {
+            innerTypes[index]= InnerType.from(field.getType());
+            ++index;
+        }
+
+        return innerTypes;
+    }
+
+    public static  IntInnerType[] fromSchemaToIntInnerTypes(Schema schema){
+        List<Field> fields = schema.getFields();
+        int index = 0;
+        IntInnerType[] intPairs = new IntInnerType[fields.size()];
+        for (Field field : fields) {
+            InnerType innerType = InnerType.from(field.getType());
+            intPairs[index]= IntInnerType.of(index, innerType);
+            ++index;
+        }
+        return intPairs;
+    }
+    public static  IntInnerType[] fromSchemaToIntInnerTypes(List<Integer> indexes,Schema schema){
+        List<Field> fields = schema.getFields();
+        IntInnerType[] intPairs = new IntInnerType[indexes.size()];
+        int seq = 0;
+        for (Integer index : indexes) {
+            InnerType innerType = InnerType.from(fields.get(index).getType());
+            intPairs[seq++]= IntInnerType.of(index, innerType);
+        }
+        return intPairs;
     }
 }

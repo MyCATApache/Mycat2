@@ -40,8 +40,8 @@ public interface Function {
     }
 
 
-    default BinarySequence getBooleanType(Record rec) {
-        return getBinary(rec);
+    default boolean getBooleanType(Record rec) {
+        return getInt(rec)>0;
     }
 
 
