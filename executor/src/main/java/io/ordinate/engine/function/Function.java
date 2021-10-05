@@ -194,16 +194,16 @@ public interface Function {
         return new VectorBatchRecord(vContext.getVectorSchemaRoot());
     }
 
-    public default Function clone() {
+    public default Function copy() {
         List<Function> args = getArgs();
         List<Function> subChildren = args.isEmpty() ? Collections.emptyList() : new ArrayList<>(args.size());
         for (Function arg : args) {
-            subChildren.add(arg.clone());
+            subChildren.add(arg.copy());
         }
-        return clone(args);
+        return copy(args);
     }
 
-    public default Function clone(List<Function> args) {
+    public default Function copy(List<Function> args) {
         throw new UnsupportedOperationException();
     }
 
