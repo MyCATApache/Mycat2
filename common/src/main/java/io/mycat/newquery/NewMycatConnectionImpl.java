@@ -1,12 +1,22 @@
 package io.mycat.newquery;
 
+import com.alibaba.druid.pool.DruidPooledConnection;
 import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.beans.mycat.CopyMycatRowMetaData;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.ObservableEmitter;
+import io.reactivex.rxjava3.core.ObservableOnSubscribe;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import org.apache.arrow.adapter.jdbc.ArrowVectorIterator;
+import org.apache.arrow.adapter.jdbc.JdbcToArrowConfig;
+import org.apache.arrow.adapter.jdbc.JdbcToArrowConfigBuilder;
+import org.apache.arrow.adapter.jdbc.JdbcToArrowUtils;
+import org.apache.arrow.vector.VectorSchemaRoot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +30,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     boolean needLastInsertId;
     Connection connection;
+    ResultSet resultSet;
 
     public NewMycatConnectionImpl(boolean needLastInsertId, Connection connection) {
         this.needLastInsertId = needLastInsertId;
@@ -70,39 +81,39 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     @Override
     public void prepareQuery(String sql, List<Object> params, MysqlCollector collector) {
         try {
-            if (params.isEmpty()){
+            if (params.isEmpty()) {
                 try (Statement statement = connection.createStatement();) {
                     onSend();
-                    ResultSet resultSet = statement.executeQuery(sql);
+                    resultSet = statement.executeQuery(sql);
                     onRev();
                     ResultSetMetaData metaData = resultSet.getMetaData();
                     int columnCount = metaData.getColumnCount();
                     collector.onColumnDef(new CopyMycatRowMetaData(new JdbcRowMetaData(metaData)));
-                    int columnLimit=columnCount+ 1;
-                    while (resultSet.next()){
+                    int columnLimit = columnCount + 1;
+                    while (resultSet.next()) {
                         Object[] objects = new Object[columnCount];
-                        for (int i = 1, j = 0; i < columnLimit; i++,j++) {
+                        for (int i = 1, j = 0; i < columnLimit; i++, j++) {
                             objects[j] = resultSet.getObject(i);
                         }
                         collector.onRow(objects);
                     }
                 }
-            }else {
+            } else {
                 try (PreparedStatement statement = connection.prepareStatement(sql);) {
                     int limit = params.size() + 1;
-                    for (int i = 1; i <limit; i++) {
-                        statement.setObject(i,params.get(i-1));
+                    for (int i = 1; i < limit; i++) {
+                        statement.setObject(i, params.get(i - 1));
                     }
                     onSend();
-                    ResultSet resultSet = statement.executeQuery();
+                    resultSet = statement.executeQuery();
                     onRev();
                     ResultSetMetaData metaData = resultSet.getMetaData();
                     int columnCount = metaData.getColumnCount();
                     collector.onColumnDef(new CopyMycatRowMetaData(new JdbcRowMetaData(metaData)));
-                    int columnLimit=columnCount+ 1;
-                    while (resultSet.next()){
+                    int columnLimit = columnCount + 1;
+                    while (resultSet.next()) {
                         Object[] objects = new Object[columnCount];
-                        for (int i = 1, j = 0; i < columnLimit; i++,j++) {
+                        for (int i = 1, j = 0; i < columnLimit; i++, j++) {
                             objects[j] = resultSet.getObject(i);
                         }
                         collector.onRow(objects);
@@ -110,11 +121,61 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                 }
             }
 
-        }catch (Exception e) {
+        } catch (Exception e) {
             collector.onError(e);
-        }finally {
+        } finally {
+            resultSet = null;
             collector.onComplete();
         }
+    }
+
+    @Override
+    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params) {
+        return Observable.create(new ObservableOnSubscribe<VectorSchemaRoot>() {
+            @Override
+            public void subscribe(@NonNull ObservableEmitter<VectorSchemaRoot> emitter) throws Throwable {
+                JdbcToArrowConfigBuilder jdbcToArrowConfigBuilder = new JdbcToArrowConfigBuilder();
+                JdbcToArrowConfig jdbcToArrowConfig = jdbcToArrowConfigBuilder.build();
+                try {
+                    if (params.isEmpty()) {
+                        try (Statement statement = connection.createStatement();) {
+                            onSend();
+                            resultSet = statement.executeQuery(sql);
+                            onRev();
+                            try (ArrowVectorIterator arrowVectorIterator = ArrowVectorIterator.create(resultSet, jdbcToArrowConfig)) {
+                                while (arrowVectorIterator.hasNext()) {
+                                    VectorSchemaRoot schemaRoot = arrowVectorIterator.next();
+                                    emitter.onNext(schemaRoot);
+                                }
+                            }
+                        }
+                    } else {
+                        try (PreparedStatement statement = connection.prepareStatement(sql);) {
+                            int limit = params.size() + 1;
+                            for (int i = 1; i < limit; i++) {
+                                statement.setObject(i, params.get(i - 1));
+                            }
+                            onSend();
+                            resultSet = statement.executeQuery();
+                            onRev();
+                            try (ArrowVectorIterator arrowVectorIterator = ArrowVectorIterator.create(resultSet, jdbcToArrowConfig)) {
+                                while (arrowVectorIterator.hasNext()) {
+                                    VectorSchemaRoot schemaRoot = arrowVectorIterator.next();
+                                    emitter.onNext(schemaRoot);
+                                }
+                            }
+                        }
+                    }
+
+                } catch (Exception e) {
+                    emitter.onError(e);
+                } finally {
+                    resultSet = null;
+                    emitter.onComplete();
+                }
+
+            }
+        });
     }
 
     @Override
@@ -130,10 +191,10 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                     lastInsertId = getLastInsertId(statement);
                 }
             } else {
-                try (PreparedStatement preparedStatement = connection.prepareStatement(sql,needLastInsertId? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS)) {
+                try (PreparedStatement preparedStatement = connection.prepareStatement(sql, needLastInsertId ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS)) {
                     int limit = params.size() + 1;
-                    for (int i = 1; i <limit; i++) {
-                        preparedStatement.setObject(i,params.get(i-1));
+                    for (int i = 1; i < limit; i++) {
+                        preparedStatement.setObject(i, params.get(i - 1));
                     }
                     onSend();
                     affectRows = preparedStatement.executeUpdate();
@@ -152,7 +213,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     @Override
     public Future<SqlResult> insert(String sql) {
-        return insert(sql,Collections.emptyList());
+        return insert(sql, Collections.emptyList());
     }
 
     @Override
@@ -175,8 +236,8 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
             } else {
                 try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
                     int limit = params.size() + 1;
-                    for (int i = 1; i <limit; i++) {
-                        preparedStatement.setObject(i,params.get(i-1));
+                    for (int i = 1; i < limit; i++) {
+                        preparedStatement.setObject(i, params.get(i - 1));
                     }
                     onSend();
                     affectRows = preparedStatement.executeUpdate();
@@ -199,6 +260,27 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
         return Future.succeededFuture();
     }
 
+    @Override
+    public void abandonConnection() {
+        if (connection instanceof DruidPooledConnection) {
+            DruidPooledConnection connection = (DruidPooledConnection) this.connection;
+            JdbcUtils.close(connection.getConnection());
+            connection.abandond();
+            JdbcUtils.close(connection);
+        } else {
+            JdbcUtils.close(connection);
+        }
+    }
+
+    @Override
+    public Future<Void> abandonQuery() {
+        if (resultSet != null) {
+            JdbcUtils.close(resultSet);
+            resultSet = null;
+        }
+        return Future.succeededFuture();
+    }
+
     private long getLastInsertId(Statement statement) {
         long lastInsertId = 0;
         if (needLastInsertId) {
@@ -207,7 +289,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                     lastInsertId = ((Number) generatedKeys.getObject(1)).longValue();
                 }
             } catch (Exception e) {
-                LOGGER.error("",e);
+                LOGGER.error("", e);
                 lastInsertId = 0;
                 needLastInsertId = false;
             }

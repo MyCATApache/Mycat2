@@ -1,6 +1,8 @@
 package io.mycat.newquery;
 
+import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
+import org.apache.arrow.vector.VectorSchemaRoot;
 
 import java.util.Collections;
 import java.util.List;
@@ -17,6 +19,8 @@ public interface NewMycatConnection {
     Future<RowSet> query(String sql, List<Object> params);
 
     void prepareQuery(String sql, List<Object> params, MysqlCollector collector);
+
+    Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params);
 
     Future<SqlResult> insert(String sql, List<Object> params);
 
@@ -36,7 +40,7 @@ public interface NewMycatConnection {
 
     }
 
-    default void abandon() {
+    public void abandonConnection();
 
-    }
+    public Future<Void> abandonQuery();
 }

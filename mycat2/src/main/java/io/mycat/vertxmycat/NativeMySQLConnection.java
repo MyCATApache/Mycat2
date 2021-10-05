@@ -22,11 +22,13 @@ import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.util.MycatRowMetaDataImpl;
 import io.mycat.util.VertxUtil;
+import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.mysqlclient.impl.datatype.DataType;
 import io.vertx.mysqlclient.impl.protocol.ColumnDefinition;
 import lombok.NonNull;
+import org.apache.arrow.vector.VectorSchemaRoot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -245,6 +247,11 @@ public class NativeMySQLConnection implements NewMycatConnection {
     }
 
     @Override
+    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Future<SqlResult> insert(String sql, List<Object> params) {
         throw new UnsupportedOperationException();
     }
@@ -267,5 +274,15 @@ public class NativeMySQLConnection implements NewMycatConnection {
     @Override
     public Future<Void> close() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void abandonConnection() {
+
+    }
+
+    @Override
+    public Future<Void> abandonQuery() {
+        return null;
     }
 }
