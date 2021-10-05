@@ -145,7 +145,7 @@ io.ordinate.engine.function.cast.CastDatetimeToDoubleFunctionFactory
 io.ordinate.engine.function.cast.CastDatetimeToFloatFunctionFactory
 io.ordinate.engine.function.cast.CastDatetimeToIntFunctionFactory
 io.ordinate.engine.function.cast.CastDatetimeToLongFunctionFactory
-io.ordinate.engine.function.cast.CastTimestampToShortFunctionFactory
+io.ordinate.engine.function.cast.CastDatetimeToShortFunctionFactory
 io.ordinate.engine.function.cast.CastDatetimeToStringFunctionFactory
 io.ordinate.engine.function.cast.CastDatetimeToSymbolFunctionFactory
 io.ordinate.engine.function.cast.CastDatetimeToDatetimeFunctionFactory

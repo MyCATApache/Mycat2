@@ -422,6 +422,14 @@ public class ExecuteCompiler {
         return this;
     }
 
+    public Function makeLiteral(int value) {
+        return IntConstant.newInstance((value));
+    }
+
+    public Function makeLiteral(boolean value) {
+        return BooleanConstant.newInstance(value);
+    }
+
 
     public static enum JoinImpl {
         HASH, NL
