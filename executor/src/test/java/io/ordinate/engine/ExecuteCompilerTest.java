@@ -278,50 +278,50 @@ public class ExecuteCompilerTest extends TestCase {
         Assert.assertEquals("[[1, 2], [1, 2], [3, 4]]",print(objects));
     }
 
-//    @Test
-//    public void testNJoin() {
-//        ExecuteCompiler relBuilder = new ExecuteCompiler();
-//        relBuilder.values(SchemaBuilder.ofArrowType(ArrowTypes.INT32_TYPE, ArrowTypes.STRING_TYPE).toArrow(),
-//                Arrays.asList(new Object[]{1, "2"},
-//                        new Object[]{2, "4"},
-//                        new Object[]{3, "2"}
-//                ));
-//        relBuilder.values(SchemaBuilder.ofArrowType(ArrowTypes.INT32_TYPE, ArrowTypes.STRING_TYPE).toArrow(),
-//                Arrays.asList(new Object[]{1, "22"},
-//                        new Object[]{2, "44"},
-//                        new Object[]{3, "22"}
-//                ));
-//        relBuilder.startJoin();
-//        relBuilder.crossJoin(JoinType.INNER, ExecuteCompiler.JoinImpl.NL,relBuilder.call("=",relBuilder.column(0),relBuilder.column(2)));
-//        PhysicalPlan build = relBuilder.build();
-//        OutputLinq4jPhysicalPlan outputLinq4jPhysicalPlan = new OutputLinq4jPhysicalPlan(build);
-//        Observable<Object[]> execute = outputLinq4jPhysicalPlan.executeToObject(getRootContext());
-//        List<Object[]> objects = execute.toList().blockingGet();
-//        Assert.assertEquals("[[1, 2, 1, 22], [2, 4, 2, 44], [3, 2, 3, 22]]",print(objects));
-//    }
+    @Test
+    public void testNJoin() {
+        ExecuteCompiler relBuilder = new ExecuteCompiler();
+        relBuilder.values(SchemaBuilder.ofArrowType(ArrowTypes.INT32_TYPE, ArrowTypes.STRING_TYPE).toArrow(),
+                Arrays.asList(new Object[]{1, "2"},
+                        new Object[]{2, "4"},
+                        new Object[]{3, "2"}
+                ));
+        relBuilder.values(SchemaBuilder.ofArrowType(ArrowTypes.INT32_TYPE, ArrowTypes.STRING_TYPE).toArrow(),
+                Arrays.asList(new Object[]{1, "22"},
+                        new Object[]{2, "44"},
+                        new Object[]{3, "22"}
+                ));
+        relBuilder.startJoin();
+        relBuilder.crossJoin(JoinType.INNER, ExecuteCompiler.JoinImpl.NL,relBuilder.call("=",relBuilder.column(0),relBuilder.column(2)));
+        PhysicalPlan build = relBuilder.build();
+        OutputLinq4jPhysicalPlan outputLinq4jPhysicalPlan = new OutputLinq4jPhysicalPlan(build);
+        Observable<Object[]> execute = outputLinq4jPhysicalPlan.executeToObject(getRootContext());
+        List<Object[]> objects = execute.toList().blockingGet();
+        Assert.assertEquals("[[1, 2, 1, 22], [2, 4, 2, 44], [3, 2, 3, 22]]",print(objects));
+    }
 //
-//    @Test
-//    public void testCorJoin() {
-//        ExecuteCompiler relBuilder = new ExecuteCompiler();
-//        relBuilder.values(SchemaBuilder.ofArrowType(ArrowTypes.INT32_TYPE, ArrowTypes.STRING_TYPE).toArrow(),
-//                Arrays.asList(new Object[]{1, "2"},
-//                        new Object[]{2, "4"},
-//                        new Object[]{3, "2"}
-//                ));
-//        relBuilder.values(SchemaBuilder.ofArrowType(ArrowTypes.INT32_TYPE, ArrowTypes.STRING_TYPE).toArrow(),
-//                Arrays.asList(new Object[]{1, "22"},
-//                        new Object[]{2, "44"},
-//                        new Object[]{3, "22"}
-//                ));
-//        VariableParameterFunction variableParameterFunction = relBuilder.newCorVariable(InnerType.INT32_TYPE);
-//        relBuilder.filter(relBuilder.call("=",relBuilder.column(0),variableParameterFunction));
-//        relBuilder.correlate(JoinType.INNER, Collections.singletonMap(0,Arrays.asList(variableParameterFunction)));
-//        PhysicalPlan build = relBuilder.build();
-//        OutputLinq4jPhysicalPlan outputLinq4jPhysicalPlan = new OutputLinq4jPhysicalPlan(build);
-//        Observable<Object[]> execute = outputLinq4jPhysicalPlan.executeToObject(getRootContext());
-//        List<Object[]> objects = execute.toList().blockingGet();
-//        Assert.assertEquals("[[1, 2], [2, 4]]",print(objects));
-//    }
+    @Test
+    public void testCorJoin() {
+        ExecuteCompiler relBuilder = new ExecuteCompiler();
+        relBuilder.values(SchemaBuilder.ofArrowType(ArrowTypes.INT32_TYPE, ArrowTypes.STRING_TYPE).toArrow(),
+                Arrays.asList(new Object[]{1, "2"},
+                        new Object[]{2, "4"},
+                        new Object[]{3, "2"}
+                ));
+        relBuilder.values(SchemaBuilder.ofArrowType(ArrowTypes.INT32_TYPE, ArrowTypes.STRING_TYPE).toArrow(),
+                Arrays.asList(new Object[]{1, "22"},
+                        new Object[]{2, "44"},
+                        new Object[]{3, "22"}
+                ));
+        VariableParameterFunction variableParameterFunction = relBuilder.newCorVariable(InnerType.INT32_TYPE);
+        relBuilder.filter(relBuilder.call("=",relBuilder.column(0),variableParameterFunction));
+        relBuilder.correlate(JoinType.INNER, Collections.singletonMap(0,Arrays.asList(variableParameterFunction)));
+        PhysicalPlan build = relBuilder.build();
+        OutputLinq4jPhysicalPlan outputLinq4jPhysicalPlan = new OutputLinq4jPhysicalPlan(build);
+        Observable<Object[]> execute = outputLinq4jPhysicalPlan.executeToObject(getRootContext());
+        List<Object[]> objects = execute.toList().blockingGet();
+        Assert.assertEquals("[[1, 2], [2, 4]]",print(objects));
+    }
 
     @Test
     public void testIndexParam() {
