@@ -23,6 +23,7 @@ import io.ordinate.engine.record.VectorBatchRecord;
 import io.ordinate.engine.schema.InnerType;
 import io.ordinate.engine.vector.VectorContext;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -41,7 +42,7 @@ public interface Function {
 
 
     default boolean getBooleanType(Record rec) {
-        return getInt(rec)>0;
+        return getInt(rec) > 0;
     }
 
 
@@ -192,5 +193,19 @@ public interface Function {
     default Record generateSink(VectorContext vContext) {
         return new VectorBatchRecord(vContext.getVectorSchemaRoot());
     }
+
+    public default Function clone() {
+        List<Function> args = getArgs();
+        List<Function> subChildren = args.isEmpty() ? Collections.emptyList() : new ArrayList<>(args.size());
+        for (Function arg : args) {
+            subChildren.add(arg.clone());
+        }
+        return clone(args);
+    }
+
+    public default Function clone(List<Function> args) {
+        throw new UnsupportedOperationException();
+    }
+
 
 }
