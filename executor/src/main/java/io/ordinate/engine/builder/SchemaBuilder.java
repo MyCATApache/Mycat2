@@ -96,6 +96,19 @@ public class SchemaBuilder {
 
     }
 
+    public static int getFieldCount(VectorSchemaRoot root) {
+        return root.getSchema().getFields().size();
+    }
+
+    public static InnerType[] getInnerTypes(VectorSchemaRoot vectorRowBatch) {
+        int fieldCount = getFieldCount(vectorRowBatch);
+        InnerType[] types = new InnerType[fieldCount];
+        for (int i = 0; i < fieldCount; i++) {
+            types[i]= InnerType.from(vectorRowBatch.getVector(i).getField().getType());
+        }
+        return types;
+    }
+
     public org.apache.arrow.vector.types.pojo.Schema toArrow() {
         ImmutableList.Builder<org.apache.arrow.vector.types.pojo.Field> builder = ImmutableList.builder();
         for (FieldBuilder field : fields) {

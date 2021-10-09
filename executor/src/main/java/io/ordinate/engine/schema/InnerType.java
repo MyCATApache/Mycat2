@@ -33,7 +33,7 @@ public enum InnerType {
     BOOLEAN_TYPE(ArrowTypes.BOOLEAN_TYPE, BitVector.class, boolean.class, "bool"),
     INT8_TYPE(ArrowTypes.INT8_TYPE, TinyIntVector.class, byte.class, "int8"),
     INT16_TYPE(ArrowTypes.INT16_TYPE, SmallIntVector.class, short.class, "int16"),
-    CHAR_TYPE(ArrowTypes.INT16_TYPE, SmallIntVector.class, char.class, "char"),
+    CHAR_TYPE(ArrowTypes.UINT16_TYPE, UInt2Vector.class, char.class, "char"),
     INT32_TYPE(ArrowTypes.INT32_TYPE, IntVector.class, int.class, "int32"),
     INT64_TYPE(ArrowTypes.INT64_TYPE, BigIntVector.class, long.class, "int64"),
     FLOAT_TYPE(ArrowTypes.FLOAT_TYPE, Float4Vector.class, float.class, "float"),
