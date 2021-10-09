@@ -7,5 +7,10 @@ import lombok.Data;
 @Data
 public class PacketResponseImpl implements PacketResponse {
     final PacketRequest request;
-    final int copyCount;
+    int copyCount;
+
+    @Override
+    public void setCopyCount(int n) {
+        this.copyCount = n;
+    }
 }
