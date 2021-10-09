@@ -22,4 +22,8 @@ import lombok.Getter;
 @Getter
 public class MySQLColumnDef implements MysqlPayloadObject {
     private MycatRowMetaData metaData;
+
+    public static MySQLColumnDef of(MycatRowMetaData metaData){
+        return new MySQLColumnDef(metaData);
+    }
 }

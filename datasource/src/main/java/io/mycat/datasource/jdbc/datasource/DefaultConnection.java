@@ -22,8 +22,6 @@ import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.reactivex.rxjava3.core.Observable;
 import lombok.SneakyThrows;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,7 +147,7 @@ public class DefaultConnection implements MycatConnection {
                     MycatRowMetaData metaData = rowBaseIterator.getMetaData();
                     emitter.onNext(new MySQLColumnDef(metaData));
                     while (rowBaseIterator.next()) {
-                        emitter.onNext(new MysqlRow(rowBaseIterator.getObjects()));
+                        emitter.onNext(new MysqlObjectArrayRow(rowBaseIterator.getObjects()));
                     }
                     emitter.onComplete();
                 } catch (Throwable throwable) {

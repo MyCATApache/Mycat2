@@ -5,15 +5,17 @@ import com.google.common.collect.Iterators;
 import io.mycat.*;
 import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlPayloadObject;
-import io.mycat.api.collector.MysqlRow;
+import io.mycat.api.collector.MysqlObjectArrayRow;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.newquery.NewMycatConnection;
+import io.mycat.swapbuffer.PacketRequest;
+import io.mycat.swapbuffer.PacketResponse;
 import io.mycat.vertx.VertxExecuter;
+import io.reactivex.rxjava3.core.Emitter;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.*;
-import io.vertx.sqlclient.SqlConnection;
 import lombok.Getter;
-import org.apache.hadoop.yarn.webapp.hamlet2.Hamlet;
+import org.apache.arrow.vector.VectorSchemaRoot;
 
 import java.util.*;
 
@@ -115,7 +117,7 @@ public class JdbcResponse implements Response {
                         outputs.add(VertxExecuter.runQueryOutputAsMysqlPayloadObject(connectionFuture, sql, detail.getParams()));
                     } else {
                         outputs.add(VertxExecuter.runQuery(connectionFuture, sql, Collections.emptyList(), null)
-                                .map(row -> new MysqlRow(row)));
+                                .map(row -> new MysqlObjectArrayRow(row)));
                     }
                 }
                 return sendResultSet(Observable.concat(outputs));
@@ -172,20 +174,30 @@ public class JdbcResponse implements Response {
     }
 
     @Override
+    public Future<Void> swapBuffer(Observable<PacketRequest> sender, Emitter<PacketResponse> recycler) {
+        return null;
+    }
+
+    @Override
+    public Future<Void> sendVectorResultSet(Observable<VectorSchemaRoot> rootObservable) {
+        return null;
+    }
+
+    @Override
     public Future<Void> sendResultSet(Observable<MysqlPayloadObject> mysqlPacketObservable) {
         Iterable<MysqlPayloadObject> mysqlPayloadObjects = mysqlPacketObservable.blockingIterable();
         Iterator<MysqlPayloadObject> iterator = mysqlPayloadObjects.iterator();
         this. metaData = null;
         while (iterator.hasNext()) {
             MysqlPayloadObject payloadObject = iterator.next();
-            if (payloadObject instanceof MysqlRow) {
+            if (payloadObject instanceof MysqlObjectArrayRow) {
                 throw new UnsupportedOperationException();
             } else if (payloadObject instanceof MySQLColumnDef) {
                 metaData = ((MySQLColumnDef) payloadObject).getMetaData();
                 break;
             }
         }
-        Iterator<Object[]> transform = Iterators.transform(iterator, (i) -> ((MysqlRow) i).getRow());
+        Iterator<Object[]> transform = Iterators.transform(iterator, (i) -> ((MysqlObjectArrayRow) i).getRow());
         Promise<Object> promise = Promise.promise();
 
 

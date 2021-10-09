@@ -20,6 +20,8 @@ import io.mycat.TransactionSession;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.session.ProcessState;
 import io.mycat.runtime.MycatDataContextImpl;
+import io.mycat.swapbuffer.PacketRequest;
+import io.mycat.swapbuffer.PacketResponse;
 import io.mycat.util.VertxUtil;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
@@ -123,9 +125,9 @@ public class VertxSessionImpl implements VertxSession {
     @Override
     public PromiseInternal<Void> writeBytes(byte[] payload, boolean end) {
         if (end) {
-            if (mycatDataContext!=null){
+            if (mycatDataContext != null) {
                 TransactionSession transactionSession = mycatDataContext.getTransactionSession();
-                if (transactionSession!=null){
+                if (transactionSession != null) {
                     transactionSession.closeStatementState();
                 }
             }
@@ -167,7 +169,30 @@ public class VertxSessionImpl implements VertxSession {
     }
 
     @Override
-    public PromiseInternal<Void>  close() {
+    public PacketResponse directWrite(PacketRequest packetRequest) {
+        socket.write(packetRequest.asJavaVertxBuffer());
+        return packetRequest.response();
+    }
+
+    @Override
+    public Future<Void> directWriteEnd() {
+        if (mycatDataContext != null) {
+            TransactionSession transactionSession = mycatDataContext.getTransactionSession();
+            if (transactionSession != null) {
+                transactionSession.closeStatementState();
+            }
+        }
+        this.socket.resume();
+        return Future.succeededFuture();
+    }
+
+    @Override
+    public void directWriteStart() {
+
+    }
+
+    @Override
+    public PromiseInternal<Void> close() {
         mycatDataContext.close();
         Future<Void> future = socket.close();
         return VertxUtil.castPromise(future);

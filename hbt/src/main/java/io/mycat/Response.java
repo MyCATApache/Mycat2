@@ -18,14 +18,13 @@ package io.mycat;
 
 import io.mycat.api.collector.*;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.ObservableEmitter;
-import io.reactivex.rxjava3.core.ObservableOnSubscribe;
-import io.reactivex.rxjava3.internal.subscriptions.SubscriptionArbiter;
+import io.mycat.swapbuffer.PacketMessageConsumer;
+import io.mycat.swapbuffer.PacketRequest;
+import io.mycat.swapbuffer.PacketResponse;
+import io.mycat.swapbuffer.SwapBufferUtil;
+import io.reactivex.rxjava3.core.*;
 import io.vertx.core.Future;
-import io.vertx.core.impl.future.PromiseInternal;
-import org.reactivestreams.Publisher;
+import org.apache.arrow.vector.VectorSchemaRoot;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -35,7 +34,9 @@ public interface Response {
     Future<Void> sendError(Throwable e);
 
     Future<Void> proxySelect(List<String> targets, String statement);
+
     Future<Void> proxyInsert(List<String> targets, String proxyUpdate);
+
     Future<Void> proxyUpdate(List<String> targets, String proxyUpdate);
 
     Future<Void> proxyUpdateToPrototype(String proxyUpdate);
@@ -50,37 +51,35 @@ public interface Response {
     }
 
     default Future<Void> sendResultSet(RowIterable rowIterable) {
-       return sendResultSet(Observable.create(emitter -> {
-           try (RowBaseIterator rowBaseIterator = rowIterable.get()) {
-               MycatRowMetaData metaData = rowBaseIterator.getMetaData();
-               emitter.onNext(new MySQLColumnDef(metaData));
-               while (rowBaseIterator.next()) {
-                   emitter.onNext(new MysqlRow(rowBaseIterator.getObjects()));
-               }
-               emitter.onComplete();
-           }catch (Throwable throwable){
-               emitter.onError(throwable);
-           }
-       }));
+        return sendResultSet(Observable.create(emitter -> {
+            try (RowBaseIterator rowBaseIterator = rowIterable.get()) {
+                MycatRowMetaData metaData = rowBaseIterator.getMetaData();
+                emitter.onNext(new MySQLColumnDef(metaData));
+                while (rowBaseIterator.next()) {
+                    emitter.onNext(new MysqlObjectArrayRow(rowBaseIterator.getObjects()));
+                }
+                emitter.onComplete();
+            } catch (Throwable throwable) {
+                emitter.onError(throwable);
+            }
+        }));
     }
 
     /**
      * check it right
+     *
      * @param rowBaseIteratorSupper
      * @return
      */
     default Future<Void> sendResultSet(Supplier<RowBaseIterator> rowBaseIteratorSupper) {
         return sendResultSet(rowBaseIteratorSupper.get());
     }
-//
-//    default PromiseInternal<Void> sendResultSet(Observable<MysqlPacket> mysqlPacketObservable) {
-//        return sendResultSet(RowIterable.create(rowBaseIterator));
-//    }
-
 
     default Future<Void> sendResultSet(Observable<MysqlPayloadObject> mysqlPacketObservable) {
         throw new UnsupportedOperationException();
     }
+
+//
 
     Future<Void> rollback();
 
@@ -97,4 +96,15 @@ public interface Response {
     Future<Void> sendOk(long affectedRow, long lastInsertId);
 
     <T> T unWrapper(Class<T> clazz);
+
+
+    public default Future<Void> swapBuffer(PacketMessageConsumer messageConsumer, Observable<PacketRequest> sender,
+                                           Emitter<PacketResponse> recycler) {
+       return SwapBufferUtil.consume(messageConsumer, sender, recycler);
+    }
+
+    public  Future<Void> swapBuffer(Observable<PacketRequest> sender,
+                                    Emitter<PacketResponse> recycler);
+
+     public Future<Void> sendVectorResultSet(Observable<VectorSchemaRoot> rootObservable);
 }

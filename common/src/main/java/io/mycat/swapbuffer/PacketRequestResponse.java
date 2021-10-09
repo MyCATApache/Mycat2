@@ -1,14 +1,9 @@
 package io.mycat.swapbuffer;
 
-import java.nio.ByteBuffer;
-
-public class PacketRequestResponse extends PacketRequestImpl implements PacketResponse{
+public abstract class PacketRequestResponse implements PacketRequest,PacketResponse{
     int copyCount;
-    public PacketRequestResponse(ByteBuffer body, int offset, int length) {
-        super(body, offset, length);
-    }
-
-
+    int length;
+    int offset;
     @Override
     public PacketRequest getRequest() {
         return this;
@@ -22,5 +17,32 @@ public class PacketRequestResponse extends PacketRequestImpl implements PacketRe
     @Override
     public void setCopyCount(int n) {
          copyCount = n;
+    }
+
+    @Override
+    public PacketResponse response(int copyCount) {
+        this.copyCount = copyCount;
+        return this;
+    }
+
+    @Override
+    public PacketResponse response() {
+        this.copyCount = this.length();
+        return this;
+    }
+
+    @Override
+    public int length() {
+        return length;
+    }
+
+    @Override
+    public int offset() {
+        return offset;
+    }
+
+    @Override
+    public void close() {
+        PacketRequest.super.close();
     }
 }

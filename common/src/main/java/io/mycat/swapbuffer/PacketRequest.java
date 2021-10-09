@@ -56,4 +56,6 @@ public interface PacketRequest {
     public int length();
 
     int offset();
+
+   default void close(){};
 }

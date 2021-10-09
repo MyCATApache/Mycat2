@@ -20,6 +20,8 @@ import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.MySQLPacketUtil;
+import io.mycat.swapbuffer.PacketRequest;
+import io.mycat.swapbuffer.PacketResponse;
 import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 
@@ -227,4 +229,10 @@ public interface MySQLServerSession<T> {
     MycatDataContext getDataContext();
 
     Future<Void> close(boolean b, String quit);
+
+  PacketResponse directWrite(PacketRequest packetRequest);
+
+  Future<Void> directWriteEnd();
+
+  void directWriteStart();
 }

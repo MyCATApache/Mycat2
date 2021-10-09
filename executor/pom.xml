@@ -117,6 +117,12 @@
             <version>3.0.1</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>common</artifactId>
+            <version>1.20</version>
+            <scope>compile</scope>
+        </dependency>
 
     </dependencies>
 

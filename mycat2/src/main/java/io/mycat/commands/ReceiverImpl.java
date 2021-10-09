@@ -18,20 +18,29 @@ import cn.mycat.vertx.xa.XaSqlConnection;
 import io.mycat.*;
 import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlPayloadObject;
-import io.mycat.api.collector.MysqlRow;
+import io.mycat.api.collector.MysqlObjectArrayRow;
+import io.mycat.api.collector.MysqlByteArrayPayloadRow;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.beans.resultset.ResultSetWriter;
+import io.mycat.beans.resultset.SimpleBinaryWriterImpl;
+import io.mycat.beans.resultset.SimpleTextWriterImpl;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.proxy.session.MySQLServerSession;
+import io.mycat.swapbuffer.*;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.ResultSetMapping;
 import io.mycat.vertx.VertxExecuter;
+import io.ordinate.engine.builder.SchemaBuilder;
+import io.ordinate.engine.schema.InnerType;
+import io.ordinate.engine.util.ResultWriterUtil;
 import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.*;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.*;
-import io.vertx.core.impl.future.PromiseInternal;
-import io.vertx.sqlclient.SqlConnection;
+import org.apache.arrow.vector.*;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -162,7 +171,7 @@ public class ReceiverImpl implements Response {
                         outputs.add(VertxExecuter.runQueryOutputAsMysqlPayloadObject(connectionFuture, sql, detail.getParams()));
                     } else {
                         outputs.add(VertxExecuter.runQuery(connectionFuture, sql, Collections.emptyList(), null)
-                                .map(row -> new MysqlRow(row)));
+                                .map(row -> new MysqlObjectArrayRow(row)));
                     }
                 }
                 return sendResultSet(Observable.concat(outputs));
@@ -173,19 +182,19 @@ public class ReceiverImpl implements Response {
                 for (int i = 0; i < targetOrderList.size(); i++) {
                     String datasource = targetOrderList.get(i);
                     Future<NewMycatConnection> connectionFuture = transactionSession.getConnection(datasource);
-                    if (detail.getExecuteType() ==INSERT){
+                    if (detail.getExecuteType() == INSERT) {
                         updateInfoList.add(VertxExecuter.runInsert(connectionFuture, sql));
-                    }else {
+                    } else {
                         updateInfoList.add(VertxExecuter.runUpdate(connectionFuture, sql));
                     }
                 }
                 CompositeFuture all = CompositeFuture.join((List) updateInfoList)
-                        .onSuccess(unused->dataContext.getTransactionSession().closeStatementState());
-                return all.map(u-> {
+                        .onSuccess(unused -> dataContext.getTransactionSession().closeStatementState());
+                return all.map(u -> {
                     List<long[]> list = all.list();
-                    return list.stream().reduce(new long[]{0,0},(o, o2) -> new long[]{o[0] + o2[0], o[1] + o2[1]});
-                }).flatMap(result->{
-                    return   sendOk(result[0], result[1]);
+                    return list.stream().reduce(new long[]{0, 0}, (o, o2) -> new long[]{o[0] + o2[0], o[1] + o2[1]});
+                }).flatMap(result -> {
+                    return sendOk(result[0], result[1]);
                 });
             default:
                 throw new IllegalStateException("Unexpected value: " + detail.getExecuteType());
@@ -217,6 +226,23 @@ public class ReceiverImpl implements Response {
         return null;
     }
 
+    @Override
+    public Future<Void> swapBuffer(Observable<PacketRequest> sender, Emitter<PacketResponse> recycler) {
+        session.directWriteStart();
+        PacketMessageConsumer messageConsumer = new PacketMessageConsumer() {
+            @Override
+            public void onNext(PacketRequest packetMessage, Emitter<PacketResponse> emitter) {
+                emitter.onNext(session.directWrite(packetMessage));
+            }
+
+            @Override
+            public Future<Void> onComplete() {
+                return session.directWriteEnd();
+            }
+        };
+        return SwapBufferUtil.consume(messageConsumer, sender, recycler);
+    }
+
 
     protected boolean hasMoreResultSet() {
         return count < this.stmtSize;
@@ -231,6 +257,7 @@ public class ReceiverImpl implements Response {
         private Disposable disposable;
         Function<Object[], byte[]> convertor;
         private final AtomicLong rowCount = new AtomicLong(0);
+
         public MysqlPayloadObjectObserver(Promise<Void> promise,
                                           boolean moreResultSet, boolean binary, MySQLServerSession session) {
             this.promise = promise;
@@ -246,9 +273,12 @@ public class ReceiverImpl implements Response {
 
         @Override
         public void onNext(@NonNull MysqlPayloadObject next) {
-            if (next instanceof MysqlRow) {
+            if (next instanceof MysqlObjectArrayRow) {
                 rowCount.getAndIncrement();
-                session.writeBytes(this.convertor.apply(((MysqlRow) next).getRow()), false);
+                session.writeBytes(this.convertor.apply(((MysqlObjectArrayRow) next).getRow()), false);
+            } else if (next instanceof MysqlByteArrayPayloadRow) {
+                rowCount.getAndIncrement();
+                session.writeBytes(((MysqlByteArrayPayloadRow) next).getBytes(), false);
             } else if (next instanceof MySQLColumnDef) {
                 MycatRowMetaData rowMetaData = ((MySQLColumnDef) next).getMetaData();
                 session.writeColumnCount(rowMetaData.getColumnCount());
@@ -273,7 +303,7 @@ public class ReceiverImpl implements Response {
 
         @Override
         public void onComplete() {
-           // session.getDataContext().setAffectedRows(rowCount.get());
+            // session.getDataContext().setAffectedRows(rowCount.get());
             disposable.dispose();
             session.getDataContext().getTransactionSession().closeStatementState()
                     .onComplete(event -> {
@@ -281,5 +311,35 @@ public class ReceiverImpl implements Response {
                                 .onComplete((Handler<AsyncResult>) event1 -> promise.tryComplete());
                     });
         }
+    }
+
+    @Override
+    public Future<Void> sendVectorResultSet(Observable<VectorSchemaRoot> rootObservable) {
+        Observable<MysqlPayloadObject> mysqlPacketObservable = rootObservable.flatMap(new io.reactivex.rxjava3.functions.Function<VectorSchemaRoot, ObservableSource<? extends MysqlPayloadObject>>() {
+
+            InnerType[] types;
+
+            @Override
+            public ObservableSource<? extends MysqlPayloadObject> apply(VectorSchemaRoot vectorRowBatch) throws Throwable {
+                int rowCount = vectorRowBatch.getRowCount();
+                ArrayList<MysqlPayloadObject> objects;
+                if (types == null) {
+                    types = SchemaBuilder.getInnerTypes(vectorRowBatch);
+                    MycatRowMetaData rowMetaData = ResultWriterUtil.vectorRowBatchToResultSetColumn(vectorRowBatch.getSchema());
+                    MySQLColumnDef mySQLColumnDef = MySQLColumnDef.of(rowMetaData);
+                    objects = new ArrayList<>(rowCount + 1);
+                    objects.add(mySQLColumnDef);
+                } else {
+                    objects = new ArrayList<>(rowCount);
+                }
+                for (int rowId = 0; rowId < rowCount; rowId++) {
+                    ResultSetWriter newWriter = binary ? new SimpleBinaryWriterImpl() : new SimpleTextWriterImpl();
+                    ResultWriterUtil.vectorRowBatchToResultSetWriter(vectorRowBatch, newWriter, types, rowId);
+                    objects.add(MysqlByteArrayPayloadRow.of(newWriter.build()));
+                }
+                return Observable.fromIterable(objects);
+            }
+        });
+        return sendResultSet(mysqlPacketObservable);
     }
 }

@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
 
 @AllArgsConstructor
 @Getter
-public class PacketRequestImpl implements PacketRequest{
+public class PacketRequestByteBufferImpl implements PacketRequest{
     final ByteBuffer body;
     final int offset;
     final int length;

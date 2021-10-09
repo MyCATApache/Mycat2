@@ -15,19 +15,15 @@
 package io.mycat.calcite.plan;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
-import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import io.mycat.AsyncMycatDataContextImpl;
 import io.mycat.DrdsSqlWithParams;
 import io.mycat.MycatDataContext;
 import io.mycat.Response;
 import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlPayloadObject;
-import io.mycat.api.collector.MysqlRow;
+import io.mycat.api.collector.MysqlObjectArrayRow;
 import io.mycat.calcite.CodeExecuterContext;
-import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.spm.Plan;
@@ -43,7 +39,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -120,7 +115,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                     Enumerable<Object[]> enumerable = (Enumerable) bindObservable;
                     observable = toObservable(newMycatDataContext, enumerable);
                 }
-                observable.subscribe(objects -> emitter.onNext(new MysqlRow(objects)),
+                observable.subscribe(objects -> emitter.onNext(new MysqlObjectArrayRow(objects)),
                         throwable -> {
                             newMycatDataContext.endFuture()
                                     .onComplete(event -> emitter.onError(throwable));

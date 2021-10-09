@@ -36,8 +36,11 @@ import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.FrontMySQLPacketResolver;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
+import io.mycat.swapbuffer.PacketRequest;
+import io.mycat.swapbuffer.PacketResponse;
 import io.mycat.util.CharsetUtil;
 import io.mycat.util.VertxUtil;
+import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -150,7 +153,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
 
     @Override
-    public  synchronized  PromiseInternal<Void> close(boolean normal, String hint) {
+    public synchronized PromiseInternal<Void> close(boolean normal, String hint) {
         try {
             dataContext.close();
         } catch (Exception e) {
@@ -181,6 +184,21 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
             LOGGER.error("", e);
         }
         return VertxUtil.newSuccessPromise();
+    }
+
+    @Override
+    public PacketResponse directWrite(PacketRequest packetRequest) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Future<Void> directWriteEnd() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void directWriteStart() {
+        throw new UnsupportedOperationException();
     }
 
 
@@ -256,6 +274,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         String lastMessage = this.dataContext.getLastMessage();
         return " " + lastMessage + "";
     }
+
     @Override
     public String setLastMessage(String lastMessage) {
         this.dataContext.setLastMessage(lastMessage);
@@ -290,14 +309,17 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     public boolean isDeprecateEOF() {
         return MySQLServerCapabilityFlags.isDeprecateEOF(this.dataContext.getServerCapabilities());
     }
+
     @Override
     public int getWarningCount() {
         return this.dataContext.getWarningCount();
     }
+
     @Override
     public long getLastInsertId() {
         return this.dataContext.getLastInsertId();
     }
+
     @Override
     public void resetSession() {
         throw new MycatException("unsupport!");
@@ -331,7 +353,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
     @Override
     public void setResponseFinished(ProcessState b) {
-        if(this.processState == ProcessState.DONE && b ==  ProcessState.DONE){
+        if (this.processState == ProcessState.DONE && b == ProcessState.DONE) {
             String error = "The response has ended, but there are still writes ...";
             LOGGER.error(error);
             throw new IllegalArgumentException(error);
@@ -407,7 +429,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
     @Override
     public void setHandleContentOfFilename(boolean need) {
-        this.dataContext.setVariable(MycatDataContextEnum.IS_LOCAL_IN_FILE_REQUEST_STATE, need?1:0);
+        this.dataContext.setVariable(MycatDataContextEnum.IS_LOCAL_IN_FILE_REQUEST_STATE, need ? 1 : 0);
     }
 
 

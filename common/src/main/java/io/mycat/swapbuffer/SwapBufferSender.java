@@ -52,7 +52,7 @@ public abstract class SwapBufferSender {
     protected PacketRequest createRequest(final ByteBuffer body,
                                           final int offset,
                                           final int length) {
-        return new PacketRequestImpl(body, offset, length);
+        return new PacketRequestByteBufferImpl(body, offset, length);
     }
 
     protected int capacity() {
@@ -77,7 +77,7 @@ public abstract class SwapBufferSender {
         buffer.put(this.upstreamIndex, b);
         this.upstreamIndex  =nextUpstreamIndex;
 
-        onNext(new PacketRequestImpl(buffer,offset,        this.upstreamIndex-offset));
+        onNext(new PacketRequestByteBufferImpl(buffer,offset,        this.upstreamIndex-offset));
         return true;
     }
 

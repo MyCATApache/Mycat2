@@ -18,7 +18,7 @@ package io.mycat.vertx;
 
 import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlPayloadObject;
-import io.mycat.api.collector.MysqlRow;
+import io.mycat.api.collector.MysqlObjectArrayRow;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.reactivex.rxjava3.core.ObservableEmitter;
 import io.vertx.mysqlclient.impl.MySQLRowDesc;
@@ -53,7 +53,7 @@ public class EmitterMysqlPayloadCollector implements StreamMysqlCollector {
     @Override
     public void onRow(Row row) {
         currentRowCount++;
-        MysqlPayloadObject packet = new MysqlRow(BaseRowObservable.getObjects(row, rowMetaData));
+        MysqlPayloadObject packet = new MysqlObjectArrayRow(BaseRowObservable.getObjects(row, rowMetaData));
         emitter.onNext(packet);
     }
 

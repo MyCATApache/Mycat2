@@ -29,7 +29,7 @@ public class SimpleTextWriterImpl implements ResultSetWriter {
     }
 
     @Override
-    public void startNullMap(int count) {
+    public void startNewRow(int count) {
         this.row = new byte[count][];
     }
 

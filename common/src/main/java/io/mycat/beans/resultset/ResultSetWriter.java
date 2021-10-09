@@ -17,7 +17,7 @@ package io.mycat.beans.resultset;
 public interface ResultSetWriter {
     public void addFlagNull(boolean value);
 
-    public void startNullMap(int value);
+    public void startNewRow(int value);
 
     public void endNullMap();
 

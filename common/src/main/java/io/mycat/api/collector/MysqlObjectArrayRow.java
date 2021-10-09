@@ -17,10 +17,10 @@ package io.mycat.api.collector;
 import lombok.Getter;
 
 @Getter
-public class MysqlRow implements MysqlPayloadObject {
+public class MysqlObjectArrayRow implements MysqlPayloadObject {
     private Object[] row;
 
-    public MysqlRow(Object[] row) {
+    public MysqlObjectArrayRow(Object[] row) {
         this.row = row;
     }
 }
