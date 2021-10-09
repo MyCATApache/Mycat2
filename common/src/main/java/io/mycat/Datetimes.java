@@ -15,7 +15,7 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.ordinate.engine.util;
+package io.mycat;
 
 import io.questdb.std.datetime.microtime.Timestamps;
 

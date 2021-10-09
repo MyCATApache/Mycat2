@@ -80,6 +80,11 @@
             <artifactId>arrow-jdbc</artifactId>
             <version>5.0.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.questdb</groupId>
+            <artifactId>questdb-jdk8</artifactId>
+            <version>6.0.1</version>
+        </dependency>
     </dependencies>
 
 </project>

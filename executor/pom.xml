@@ -19,6 +19,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>common</artifactId>
+            <version>1.20</version>
+        </dependency>
+        <dependency>
             <groupId>org.codehaus.janino</groupId>
             <artifactId>janino</artifactId>
             <version>3.1.6</version>
@@ -27,11 +32,6 @@
             <groupId>net.openhft</groupId>
             <artifactId>compiler</artifactId>
             <version>2.4.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.questdb</groupId>
-            <artifactId>questdb-jdk8</artifactId>
-            <version>6.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.arrow.gandiva</groupId>
