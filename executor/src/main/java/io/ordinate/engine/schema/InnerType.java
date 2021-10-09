@@ -26,44 +26,47 @@ import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Getter
 public enum InnerType {
-    BOOLEAN_TYPE(ArrowTypes.BOOLEAN_TYPE, BitVector.class, boolean.class, "bool"),
-    INT8_TYPE(ArrowTypes.INT8_TYPE, TinyIntVector.class, byte.class, "int8"),
-    INT16_TYPE(ArrowTypes.INT16_TYPE, SmallIntVector.class, short.class, "int16"),
-    CHAR_TYPE(ArrowTypes.UINT16_TYPE, UInt2Vector.class, char.class, "char"),
-    INT32_TYPE(ArrowTypes.INT32_TYPE, IntVector.class, int.class, "int32"),
-    INT64_TYPE(ArrowTypes.INT64_TYPE, BigIntVector.class, long.class, "int64"),
-    FLOAT_TYPE(ArrowTypes.FLOAT_TYPE, Float4Vector.class, float.class, "float"),
-    DOUBLE_TYPE(ArrowTypes.DOUBLE_TYPE, Float8Vector.class, float.class, "double"),
-    STRING_TYPE(ArrowTypes.STRING_TYPE, VarCharVector.class, String.class, "string"),
-    BINARY_TYPE(ArrowTypes.BINARY_TYPE, VarBinaryVector.class, BinarySequence.class, "binary"),
+    BOOLEAN_TYPE(ArrowTypes.BOOLEAN_TYPE, BitVector.class, boolean.class, "bool",false),
+    INT8_TYPE(ArrowTypes.INT8_TYPE, TinyIntVector.class, byte.class, "int8",true),
+    INT16_TYPE(ArrowTypes.INT16_TYPE, SmallIntVector.class, short.class, "int16",true),
+    CHAR_TYPE(ArrowTypes.UINT16_TYPE, UInt2Vector.class, char.class, "char",false),
+    INT32_TYPE(ArrowTypes.INT32_TYPE, IntVector.class, int.class, "int32",true),
+    INT64_TYPE(ArrowTypes.INT64_TYPE, BigIntVector.class, long.class, "int64",true),
+    FLOAT_TYPE(ArrowTypes.FLOAT_TYPE, Float4Vector.class, float.class, "float",false),
+    DOUBLE_TYPE(ArrowTypes.DOUBLE_TYPE, Float8Vector.class, float.class, "double",false),
+    STRING_TYPE(ArrowTypes.STRING_TYPE, VarCharVector.class, String.class, "string",false),
+    BINARY_TYPE(ArrowTypes.BINARY_TYPE, VarBinaryVector.class, BinarySequence.class, "binary",false),
 
 
-    UINT8_TYPE(ArrowTypes.INT8_TYPE, UInt1Vector.class, byte.class, "uint8"),
-    UINT16_TYPE(ArrowTypes.INT16_TYPE, UInt2Vector.class, short.class, "uint16"),
-    UINT32_TYPE(ArrowTypes.INT32_TYPE, UInt4Vector.class, int.class, "uint32"),
-    UINT64_TYPE(ArrowTypes.INT64_TYPE, UInt8Vector.class, long.class, "uint64"),
+    UINT8_TYPE(ArrowTypes.INT8_TYPE, UInt1Vector.class, byte.class, "uint8",false),
+    UINT16_TYPE(ArrowTypes.INT16_TYPE, UInt2Vector.class, short.class, "uint16",false),
+    UINT32_TYPE(ArrowTypes.INT32_TYPE, UInt4Vector.class, int.class, "uint32",false),
+    UINT64_TYPE(ArrowTypes.INT64_TYPE, UInt8Vector.class, long.class, "uint64",false),
 
-    TIME_MILLI_TYPE(ArrowTypes.TIME_MILLI_TYPE, TimeMilliVector.class, long.class, "time"),
-    DATE_TYPE(ArrowTypes.DATE_TYPE, DateDayVector.class, int.class, "date"),
-    DATETIME_MILLI_TYPE(ArrowTypes.DATETIME_MILLI_TYPE, TimeStampMilliVector.class, long.class, "datetime"),
-    SYMBOL_TYPE(null, null, String.class, "symbol"),
-    OBJECT_TYPE(null, null, Object.class, "object"),
-    NULL_TYPE(null, null, Void.class, "null"),
+    TIME_MILLI_TYPE(ArrowTypes.TIME_MILLI_TYPE, TimeMilliVector.class, long.class, "time",false),
+    DATE_TYPE(ArrowTypes.DATE_TYPE, DateDayVector.class, int.class, "date",false),
+    DATETIME_MILLI_TYPE(ArrowTypes.DATETIME_MILLI_TYPE, TimeStampMilliVector.class, long.class, "datetime",false),
+    SYMBOL_TYPE(null, null, String.class, "symbol",false),
+    OBJECT_TYPE(null, null, Object.class, "object",false),
+    NULL_TYPE(null, null, Void.class, "null",false),
     ;
     private ArrowType arrowType;
     Class<? extends FieldVector> fieldVector;
     private Class javaClass;
     private String alias;
+    private boolean signed;
 
-    InnerType(ArrowType arrowType, Class<? extends FieldVector> fieldVector, Class javaClass, String name) {
+    InnerType(ArrowType arrowType, Class<? extends FieldVector> fieldVector, Class javaClass, String name,boolean signed) {
         this.arrowType = arrowType;
         this.fieldVector = fieldVector;
         this.javaClass = javaClass;
         this.alias = name;
+        this.signed = signed;
     }
 
     public static ArrowType toArrow(InnerType innerType) {
