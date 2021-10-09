@@ -34,6 +34,11 @@ public interface PacketRequest {
         public int length() {
             return 0;
         }
+
+        @Override
+        public int offset() {
+            return 0;
+        }
     };
 
     public PacketResponse response(int copyCount);
@@ -49,4 +54,6 @@ public interface PacketRequest {
     public ByteBuffer asJavaByteBuffer();
 
     public int length();
+
+    int offset();
 }

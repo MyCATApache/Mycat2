@@ -39,6 +39,11 @@ public class PacketRequestImpl implements PacketRequest{
 
     @Override
     public int length() {
-        return 0;
+        return length;
+    }
+
+    @Override
+    public int offset() {
+        return offset;
     }
 }

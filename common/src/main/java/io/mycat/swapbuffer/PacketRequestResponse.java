@@ -1,7 +1,5 @@
 package io.mycat.swapbuffer;
 
-import io.vertx.core.buffer.Buffer;
-
 import java.nio.ByteBuffer;
 
 public class PacketRequestResponse extends PacketRequestImpl implements PacketResponse{
