@@ -175,11 +175,11 @@
             <artifactId>netty-all</artifactId>
             <version>4.1.48.Final</version>
         </dependency>
-        <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>executor</artifactId>
-            <version>1.20</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.mycat</groupId>-->
+<!--            <artifactId>executor</artifactId>-->
+<!--            <version>1.20</version>-->
+<!--        </dependency>-->
     </dependencies>
     <build>
 
