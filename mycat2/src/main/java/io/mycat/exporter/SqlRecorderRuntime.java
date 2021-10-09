@@ -41,22 +41,24 @@ public enum SqlRecorderRuntime implements SimpleAnalyzer {
                 if (context.size() > 5000) {
                     IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
                     ioExecutor.executeBlocking((Handler<Promise<Void>>) promise -> {
-                        synchronized (SqlRecorderRuntime.INSTANCE) {
-                            if (context.size() > 5000) {
-                                try {
+                        try {
+                            synchronized (SqlRecorderRuntime.INSTANCE) {
+                                if (context.size() > 5000) {
                                     ArrayList<SqlEntry> sqlEntries = new ArrayList<>(context);
                                     Collections.sort(sqlEntries);
                                     context.clear();
                                     context.addAll(sqlEntries.subList(0, context.size() / 2));
-                                } catch (Exception e) {
-                                    LOGGER.warn("", e);
-                                } finally {
-                                    promise.tryComplete();
                                 }
                             }
+                        } catch (Exception e) {
+                            LOGGER.warn("", e);
+                        } finally {
+                            promise.tryComplete();
                         }
                     });
                 }
+
+                context.addLast(record);
             }
         }
     }
