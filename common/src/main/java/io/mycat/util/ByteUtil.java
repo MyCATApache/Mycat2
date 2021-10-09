@@ -104,6 +104,10 @@ public class ByteUtil {
         return b1;
     }
 
+    public static byte[] getBytes(byte data) {
+        return new byte[]{data};
+    }
+
     public static byte[] getBytes(short data) {
         byte[] bytes = new byte[2];
         bytes[0] = (byte) (data & 0xff);

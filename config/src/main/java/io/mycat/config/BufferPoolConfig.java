@@ -1,7 +1,6 @@
 package io.mycat.config;
 
 import lombok.Data;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,7 +10,6 @@ public class BufferPoolConfig {
     private static final Map<String, Object> defaultConfig = defaultValue();
     Map<String, Object> args;
 
-    @NotNull
     public static Map defaultValue() {
         HashMap defaultConfig = new HashMap<>();
         long pageSize = 1024 * 1024 * 2;

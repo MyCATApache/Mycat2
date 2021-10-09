@@ -6,9 +6,11 @@ import io.mycat.newquery.MysqlCollector;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.newquery.RowSet;
 import io.mycat.newquery.SqlResult;
+import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import org.apache.arrow.vector.VectorSchemaRoot;
 
 import java.util.List;
 
@@ -30,7 +32,7 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
                 newMycatConnection.query(sql, params).onComplete(promise);
             } catch (Exception e) {
                 promise.tryFail(e);
-            }finally {
+            } finally {
                 this.stat.decThread();
             }
         });
@@ -46,10 +48,15 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
                 promise.tryComplete();
             } catch (Exception e) {
                 promise.tryFail(e);
-            }finally {
+            } finally {
                 this.stat.decThread();
             }
         });
+    }
+
+    @Override
+    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params) {
+        return newMycatConnection.prepareQuery(sql, params);
     }
 
     @Override
@@ -61,7 +68,7 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
                 newMycatConnection.insert(sql, params).onComplete(promise);
             } catch (Exception e) {
                 promise.tryFail(e);
-            }finally {
+            } finally {
                 this.stat.decThread();
             }
         });
@@ -76,7 +83,7 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
                 newMycatConnection.insert(sql).onComplete(promise);
             } catch (Exception e) {
                 promise.tryFail(e);
-            }finally {
+            } finally {
                 this.stat.decThread();
             }
         });
@@ -91,7 +98,7 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
                 newMycatConnection.update(sql).onComplete(promise);
             } catch (Exception e) {
                 promise.tryFail(e);
-            }finally {
+            } finally {
                 this.stat.decThread();
             }
         });
@@ -103,10 +110,10 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
         return ioExecutor.executeBlocking(promise -> {
             try {
                 this.stat.plusThread();
-                newMycatConnection.update(sql,params).onComplete(promise);
+                newMycatConnection.update(sql, params).onComplete(promise);
             } catch (Exception e) {
                 promise.tryFail(e);
-            }finally {
+            } finally {
                 this.stat.decThread();
             }
         });
@@ -115,5 +122,15 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
     @Override
     public Future<Void> close() {
         return newMycatConnection.close();
+    }
+
+    @Override
+    public void abandonConnection() {
+        newMycatConnection.abandonConnection();
+    }
+
+    @Override
+    public Future<Void> abandonQuery() {
+        return newMycatConnection.abandonQuery();
     }
 }

@@ -17,7 +17,9 @@
 
 package io.ordinate.engine.function;
 
+import com.google.common.collect.Iterables;
 import org.apache.calcite.util.NameMap;
+import org.reflections.Reflections;
 
 import java.util.*;
 
@@ -25,7 +27,11 @@ public class FunctionFactoryCache {
     final NameMap<ArrayList<FunctionFactoryDescriptor>> map = new NameMap<>();
 
     public FunctionFactoryCache() {
-        Iterable<FunctionFactory> functionFactories = ServiceLoader.load(FunctionFactory.class, FunctionFactory.class.getClassLoader());
+        List<FunctionFactory> functionFactories = Arrays.asList( Iterables.toArray(ServiceLoader.load(FunctionFactory.class, FunctionFactory.class.getClassLoader()),FunctionFactory.class));
+       if (functionFactories.isEmpty()){
+           Reflections reflections = new Reflections(FunctionFactory.class.getPackage().getName());
+           functionFactories =new ArrayList( reflections.getSubTypesOf(FunctionFactory.class));
+       }
         for (FunctionFactory functionFactory : functionFactories) {
             try {
                 FunctionFactoryDescriptor functionFactoryDescriptor = new FunctionFactoryDescriptor(functionFactory);
@@ -42,6 +48,7 @@ public class FunctionFactoryCache {
             } catch (Exception exception) {
                 exception.fillInStackTrace();
             }
+
 
         }
     }
