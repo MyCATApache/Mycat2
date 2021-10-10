@@ -24,49 +24,50 @@ import org.apache.arrow.vector.*;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
-import org.jetbrains.annotations.NotNull;
 
-import java.nio.charset.StandardCharsets;
+import java.sql.JDBCType;
 import java.util.List;
 
 @Getter
 public enum InnerType {
-    BOOLEAN_TYPE(ArrowTypes.BOOLEAN_TYPE, BitVector.class, boolean.class, "bool",false),
-    INT8_TYPE(ArrowTypes.INT8_TYPE, TinyIntVector.class, byte.class, "int8",true),
-    INT16_TYPE(ArrowTypes.INT16_TYPE, SmallIntVector.class, short.class, "int16",true),
-    CHAR_TYPE(ArrowTypes.UINT16_TYPE, UInt2Vector.class, char.class, "char",false),
-    INT32_TYPE(ArrowTypes.INT32_TYPE, IntVector.class, int.class, "int32",true),
-    INT64_TYPE(ArrowTypes.INT64_TYPE, BigIntVector.class, long.class, "int64",true),
-    FLOAT_TYPE(ArrowTypes.FLOAT_TYPE, Float4Vector.class, float.class, "float",false),
-    DOUBLE_TYPE(ArrowTypes.DOUBLE_TYPE, Float8Vector.class, float.class, "double",false),
-    STRING_TYPE(ArrowTypes.STRING_TYPE, VarCharVector.class, String.class, "string",false),
-    BINARY_TYPE(ArrowTypes.BINARY_TYPE, VarBinaryVector.class, BinarySequence.class, "binary",false),
+    BOOLEAN_TYPE(ArrowTypes.BOOLEAN_TYPE, BitVector.class, boolean.class, "bool",false,JDBCType.BOOLEAN),
+    INT8_TYPE(ArrowTypes.INT8_TYPE, TinyIntVector.class, byte.class, "int8",true,JDBCType.INTEGER),
+    INT16_TYPE(ArrowTypes.INT16_TYPE, SmallIntVector.class, short.class, "int16",true,JDBCType.SMALLINT),
+    CHAR_TYPE(ArrowTypes.UINT16_TYPE, UInt2Vector.class, char.class, "char",false,JDBCType.CHAR),
+    INT32_TYPE(ArrowTypes.INT32_TYPE, IntVector.class, int.class, "int32",true,JDBCType.INTEGER),
+    INT64_TYPE(ArrowTypes.INT64_TYPE, BigIntVector.class, long.class, "int64",true,JDBCType.BIGINT),
+    FLOAT_TYPE(ArrowTypes.FLOAT_TYPE, Float4Vector.class, float.class, "float",false,JDBCType.FLOAT),
+    DOUBLE_TYPE(ArrowTypes.DOUBLE_TYPE, Float8Vector.class, float.class, "double",false,JDBCType.DOUBLE),
+    STRING_TYPE(ArrowTypes.STRING_TYPE, VarCharVector.class, String.class, "string",false,JDBCType.VARCHAR),
+    BINARY_TYPE(ArrowTypes.BINARY_TYPE, VarBinaryVector.class, BinarySequence.class, "binary",false,JDBCType.BINARY),
 
 
-    UINT8_TYPE(ArrowTypes.INT8_TYPE, UInt1Vector.class, byte.class, "uint8",false),
-    UINT16_TYPE(ArrowTypes.INT16_TYPE, UInt2Vector.class, short.class, "uint16",false),
-    UINT32_TYPE(ArrowTypes.INT32_TYPE, UInt4Vector.class, int.class, "uint32",false),
-    UINT64_TYPE(ArrowTypes.INT64_TYPE, UInt8Vector.class, long.class, "uint64",false),
+    UINT8_TYPE(ArrowTypes.INT8_TYPE, UInt1Vector.class, byte.class, "uint8",false,JDBCType.TINYINT),
+    UINT16_TYPE(ArrowTypes.INT16_TYPE, UInt2Vector.class, short.class, "uint16",false,JDBCType.SMALLINT),
+    UINT32_TYPE(ArrowTypes.INT32_TYPE, UInt4Vector.class, int.class, "uint32",false,JDBCType.INTEGER),
+    UINT64_TYPE(ArrowTypes.INT64_TYPE, UInt8Vector.class, long.class, "uint64",false,JDBCType.INTEGER),
 
-    TIME_MILLI_TYPE(ArrowTypes.TIME_MILLI_TYPE, TimeMilliVector.class, long.class, "time",false),
-    DATE_TYPE(ArrowTypes.DATE_TYPE, DateDayVector.class, int.class, "date",false),
-    DATETIME_MILLI_TYPE(ArrowTypes.DATETIME_MILLI_TYPE, TimeStampMilliVector.class, long.class, "datetime",false),
-    SYMBOL_TYPE(null, null, String.class, "symbol",false),
-    OBJECT_TYPE(null, null, Object.class, "object",false),
-    NULL_TYPE(null, null, Void.class, "null",false),
+    TIME_MILLI_TYPE(ArrowTypes.TIME_MILLI_TYPE, TimeMilliVector.class, long.class, "time",false,JDBCType.TIME),
+    DATE_TYPE(ArrowTypes.DATE_TYPE, DateDayVector.class, int.class, "date",false,JDBCType.DATE),
+    DATETIME_MILLI_TYPE(ArrowTypes.DATETIME_MILLI_TYPE, TimeStampMilliVector.class, long.class, "datetime",false,JDBCType.TIMESTAMP),
+    SYMBOL_TYPE(null, null, String.class, "symbol",false,JDBCType.VARCHAR),
+    OBJECT_TYPE(null, null, Object.class, "object",false,JDBCType.JAVA_OBJECT),
+    NULL_TYPE(null, null, Void.class, "null",false,JDBCType.NULL),
     ;
     private ArrowType arrowType;
     Class<? extends FieldVector> fieldVector;
     private Class javaClass;
     private String alias;
     private boolean signed;
+    private JDBCType jdbcType;
 
-    InnerType(ArrowType arrowType, Class<? extends FieldVector> fieldVector, Class javaClass, String name,boolean signed) {
+    InnerType(ArrowType arrowType, Class<? extends FieldVector> fieldVector, Class javaClass, String name, boolean signed, JDBCType jdbcType) {
         this.arrowType = arrowType;
         this.fieldVector = fieldVector;
         this.javaClass = javaClass;
         this.alias = name;
         this.signed = signed;
+        this.jdbcType = jdbcType;
     }
 
     public static ArrowType toArrow(InnerType innerType) {
