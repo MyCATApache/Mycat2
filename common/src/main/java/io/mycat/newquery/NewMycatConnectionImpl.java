@@ -79,7 +79,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     }
 
     @Override
-    public void prepareQuery(String sql, List<Object> params, MysqlCollector collector) {
+    public synchronized void prepareQuery(String sql, List<Object> params, MysqlCollector collector) {
         try {
             if (params.isEmpty()) {
                 try (Statement statement = connection.createStatement();) {
@@ -90,7 +90,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                     int columnCount = metaData.getColumnCount();
                     collector.onColumnDef(new CopyMycatRowMetaData(new JdbcRowMetaData(metaData)));
                     int columnLimit = columnCount + 1;
-                    while (resultSet.next()) {
+                    while (!resultSet.isClosed() && resultSet.next()) {
                         Object[] objects = new Object[columnCount];
                         for (int i = 1, j = 0; i < columnLimit; i++, j++) {
                             objects[j] = resultSet.getObject(i);
@@ -111,7 +111,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                     int columnCount = metaData.getColumnCount();
                     collector.onColumnDef(new CopyMycatRowMetaData(new JdbcRowMetaData(metaData)));
                     int columnLimit = columnCount + 1;
-                    while (resultSet.next()) {
+                    while (!resultSet.isClosed() && resultSet.next()) {
                         Object[] objects = new Object[columnCount];
                         for (int i = 1, j = 0; i < columnLimit; i++, j++) {
                             objects[j] = resultSet.getObject(i);
@@ -124,62 +124,69 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
         } catch (Exception e) {
             collector.onError(e);
         } finally {
-            resultSet = null;
             collector.onComplete();
+            resultSet = null;
         }
     }
 
     @Override
-    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params) {
+    public  Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params) {
         return Observable.create(new ObservableOnSubscribe<VectorSchemaRoot>() {
             @Override
             public void subscribe(@NonNull ObservableEmitter<VectorSchemaRoot> emitter) throws Throwable {
-                JdbcToArrowConfigBuilder jdbcToArrowConfigBuilder = new JdbcToArrowConfigBuilder();
-                JdbcToArrowConfig jdbcToArrowConfig = jdbcToArrowConfigBuilder.build();
-                try {
-                    if (params.isEmpty()) {
-                        try (Statement statement = connection.createStatement();) {
-                            onSend();
-                            resultSet = statement.executeQuery(sql);
-                            onRev();
-                            try (ArrowVectorIterator arrowVectorIterator = ArrowVectorIterator.create(resultSet, jdbcToArrowConfig)) {
-                                while (arrowVectorIterator.hasNext()) {
-                                    VectorSchemaRoot schemaRoot = arrowVectorIterator.next();
-                                    emitter.onNext(schemaRoot);
+
+
+                synchronized (NewMycatConnectionImpl.this){
+
+
+                    JdbcToArrowConfigBuilder jdbcToArrowConfigBuilder = new JdbcToArrowConfigBuilder();
+                    JdbcToArrowConfig jdbcToArrowConfig = jdbcToArrowConfigBuilder.build();
+                    try {
+                        if (params.isEmpty()) {
+                            try (Statement statement = connection.createStatement();) {
+                                onSend();
+                                resultSet = statement.executeQuery(sql);
+                                onRev();
+                                try (ArrowVectorIterator arrowVectorIterator = ArrowVectorIterator.create(resultSet, jdbcToArrowConfig)) {
+                                    while (arrowVectorIterator.hasNext()) {
+                                        VectorSchemaRoot schemaRoot = arrowVectorIterator.next();
+                                        emitter.onNext(schemaRoot);
+                                    }
+                                }
+                            }
+                        } else {
+                            try (PreparedStatement statement = connection.prepareStatement(sql);) {
+                                int limit = params.size() + 1;
+                                for (int i = 1; i < limit; i++) {
+                                    statement.setObject(i, params.get(i - 1));
+                                }
+                                onSend();
+                                resultSet = statement.executeQuery();
+                                onRev();
+                                try (ArrowVectorIterator arrowVectorIterator = ArrowVectorIterator.create(resultSet, jdbcToArrowConfig)) {
+                                    while (arrowVectorIterator.hasNext()) {
+                                        VectorSchemaRoot schemaRoot = arrowVectorIterator.next();
+                                        emitter.onNext(schemaRoot);
+                                    }
                                 }
                             }
                         }
-                    } else {
-                        try (PreparedStatement statement = connection.prepareStatement(sql);) {
-                            int limit = params.size() + 1;
-                            for (int i = 1; i < limit; i++) {
-                                statement.setObject(i, params.get(i - 1));
-                            }
-                            onSend();
-                            resultSet = statement.executeQuery();
-                            onRev();
-                            try (ArrowVectorIterator arrowVectorIterator = ArrowVectorIterator.create(resultSet, jdbcToArrowConfig)) {
-                                while (arrowVectorIterator.hasNext()) {
-                                    VectorSchemaRoot schemaRoot = arrowVectorIterator.next();
-                                    emitter.onNext(schemaRoot);
-                                }
-                            }
-                        }
+
+                    } catch (Exception e) {
+                        emitter.onError(e);
+                    } finally {
+                        emitter.onComplete();
+                        resultSet = null;
                     }
 
-                } catch (Exception e) {
-                    emitter.onError(e);
-                } finally {
-                    resultSet = null;
-                    emitter.onComplete();
-                }
 
+                }
             }
         });
     }
 
     @Override
-    public Future<SqlResult> insert(String sql, List<Object> params) {
+    public synchronized Future<SqlResult> insert(String sql, List<Object> params) {
         try {
             long affectRows;
             long lastInsertId = 0;
@@ -212,17 +219,17 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     }
 
     @Override
-    public Future<SqlResult> insert(String sql) {
+    public synchronized Future<SqlResult> insert(String sql) {
         return insert(sql, Collections.emptyList());
     }
 
     @Override
-    public Future<SqlResult> update(String sql) {
+    public synchronized Future<SqlResult> update(String sql) {
         return update(sql, Collections.emptyList());
     }
 
     @Override
-    public Future<SqlResult> update(String sql, List<Object> params) {
+    public synchronized Future<SqlResult> update(String sql, List<Object> params) {
         try {
             long affectRows;
             long lastInsertId = 0;
@@ -262,13 +269,13 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     @Override
     public void abandonConnection() {
-        if (connection instanceof DruidPooledConnection) {
+        if (this.connection instanceof DruidPooledConnection) {
             DruidPooledConnection connection = (DruidPooledConnection) this.connection;
             JdbcUtils.close(connection.getConnection());
             connection.abandond();
             JdbcUtils.close(connection);
         } else {
-            JdbcUtils.close(connection);
+            JdbcUtils.close(this.connection);
         }
     }
 
@@ -276,7 +283,6 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     public Future<Void> abandonQuery() {
         if (resultSet != null) {
             JdbcUtils.close(resultSet);
-            resultSet = null;
         }
         return Future.succeededFuture();
     }
