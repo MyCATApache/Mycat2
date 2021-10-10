@@ -278,7 +278,7 @@ public class ExecuteCompilerTest extends TestCase {
         Assert.assertEquals("[[1, 2], [1, 2], [3, 4]]",print(objects));
     }
 
-//    @Test
+    @Test
     public void testNJoin() {
         ExecuteCompiler relBuilder = new ExecuteCompiler();
         relBuilder.values(SchemaBuilder.ofArrowType(ArrowTypes.INT32_TYPE, ArrowTypes.STRING_TYPE).toArrow(),

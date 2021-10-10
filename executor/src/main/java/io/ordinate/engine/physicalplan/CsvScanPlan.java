@@ -83,6 +83,7 @@ public class CsvScanPlan implements PhysicalPlan {
                     CSVRecord record = iterator.next();
                     if (vectorSchemaRoot==null) {
                         vectorSchemaRoot = rootContext.getVectorSchemaRoot(arrowSchema, estimateRowCount);
+                        vectorSchemaRoot.setRowCount(estimateRowCount);
                     }
                     List<FieldVector> fieldVectors = vectorSchemaRoot.getFieldVectors();
                     for (int i = 0; i < columnNum; i++) {
