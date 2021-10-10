@@ -50,6 +50,11 @@ public class ResultSetBuilder {
         addColumnInfo(columnName, columnType.getVendorTypeNumber());
         return this;
     }
+    public ResultSetBuilder addColumnInfo(String columnName, JDBCType columnType,boolean nullable,boolean isSigned) {
+        ColumnInfo columnInfo = new ColumnInfo("", "", columnName, columnType.getVendorTypeNumber(), 0, 0, columnName, false, false, nullable, isSigned, columnName.length());
+        columnInfos.add(columnInfo);
+        return this;
+    }
 
     public ResultSetBuilder addColumnInfo(String columnName, int columnType) {
         columnInfos.add(new ColumnInfo(columnName, columnType));

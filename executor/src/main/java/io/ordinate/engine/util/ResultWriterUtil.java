@@ -1,10 +1,14 @@
 package io.ordinate.engine.util;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.resultset.ResultSetWriter;
 import io.ordinate.engine.schema.InnerType;
 import org.apache.arrow.vector.*;
+import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
+
+import java.util.List;
 
 public class ResultWriterUtil {
     public  static void vectorRowBatchToResultSetWriter(VectorSchemaRoot vectorRowBatch,
@@ -125,12 +129,16 @@ public class ResultWriterUtil {
                     }
                 }
             }
-            byte[] build = newWriter.build();
         }
     }
 
     public static MycatRowMetaData vectorRowBatchToResultSetColumn(Schema schema) {
-
-        return null;
+        ResultSetBuilder writer = ResultSetBuilder.create();
+        List<Field> fields = schema.getFields();
+        for (Field field : fields) {
+            InnerType innerType = InnerType.from(field.getType());
+            writer.addColumnInfo(field.getName(),innerType.getJdbcType(),field.isNullable(),innerType.isSigned());
+        }
+        return writer.build().getMetaData();
     }
 }

@@ -17,16 +17,19 @@ package io.mycat.commands;
 import cn.mycat.vertx.xa.XaSqlConnection;
 import io.mycat.*;
 import io.mycat.api.collector.MySQLColumnDef;
-import io.mycat.api.collector.MysqlPayloadObject;
-import io.mycat.api.collector.MysqlObjectArrayRow;
 import io.mycat.api.collector.MysqlByteArrayPayloadRow;
+import io.mycat.api.collector.MysqlObjectArrayRow;
+import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.resultset.ResultSetWriter;
 import io.mycat.beans.resultset.SimpleBinaryWriterImpl;
 import io.mycat.beans.resultset.SimpleTextWriterImpl;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.proxy.session.MySQLServerSession;
-import io.mycat.swapbuffer.*;
+import io.mycat.swapbuffer.PacketMessageConsumer;
+import io.mycat.swapbuffer.PacketRequest;
+import io.mycat.swapbuffer.PacketResponse;
+import io.mycat.swapbuffer.SwapBufferUtil;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.ResultSetMapping;
 import io.mycat.vertx.VertxExecuter;
@@ -34,13 +37,13 @@ import io.ordinate.engine.builder.SchemaBuilder;
 import io.ordinate.engine.schema.InnerType;
 import io.ordinate.engine.util.ResultWriterUtil;
 import io.reactivex.rxjava3.annotations.NonNull;
-import io.reactivex.rxjava3.core.*;
+import io.reactivex.rxjava3.core.Emitter;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.ObservableSource;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.*;
-import org.apache.arrow.vector.*;
-import org.jetbrains.annotations.NotNull;
+import org.apache.arrow.vector.VectorSchemaRoot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -317,7 +320,7 @@ public class ReceiverImpl implements Response {
     public Future<Void> sendVectorResultSet(Observable<VectorSchemaRoot> rootObservable) {
         Observable<MysqlPayloadObject> mysqlPacketObservable = rootObservable.flatMap(new io.reactivex.rxjava3.functions.Function<VectorSchemaRoot, ObservableSource<? extends MysqlPayloadObject>>() {
 
-            InnerType[] types;
+            InnerType[] types = null;
 
             @Override
             public ObservableSource<? extends MysqlPayloadObject> apply(VectorSchemaRoot vectorRowBatch) throws Throwable {
