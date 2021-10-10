@@ -45,6 +45,7 @@ public class RootContext {
     public VectorSchemaRoot getVectorSchemaRoot(Schema schema, int size) {
         VectorSchemaRoot root = VectorSchemaRoot.create(schema, rootAllocator);
         root.allocateNew();
+        root.setRowCount(size);
         return root;
     }
 }

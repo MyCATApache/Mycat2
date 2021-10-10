@@ -144,7 +144,7 @@ public class SchemaBuilder {
             valueVectors.set(index, Double.parseDouble(value));
         } else if (type == ArrowTypes.STRING_TYPE) {
             VarCharVector valueVectors = (VarCharVector) vector;
-            valueVectors.set(index, new Text(value));
+            valueVectors.setSafe(index, new Text(value));
         } else {
             throw new UnsupportedOperationException();
         }
