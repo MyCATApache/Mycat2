@@ -19,6 +19,7 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
+import io.mycat.calcite.ExecutorProviderImpl;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.spm.*;
 import io.mycat.calcite.table.GlobalTable;
@@ -70,7 +71,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static io.mycat.calcite.plan.ObservablePlanImplementorImpl.getMysqlPayloadObjectObservable;
+
 
 public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
 
@@ -138,7 +139,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         DrdsSqlCompiler drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
                         Plan plan = drdsRunner.doHbt(hbt);
                         AsyncMycatDataContextImpl.HbtMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.HbtMycatDataContextImpl(dataContext, plan.getCodeExecuterContext());
-                        Observable<MysqlPayloadObject> rowObservable = getMysqlPayloadObjectObservable(dataContext, sqlMycatDataContext, plan);
+                        Observable<MysqlPayloadObject> rowObservable = ExecutorProviderImpl.INSTANCE.prepare( sqlMycatDataContext, plan).getExecutor();
                         return response.sendResultSet(rowObservable);
                     }
                     if ("createSqlCache".equalsIgnoreCase(cmd)) {

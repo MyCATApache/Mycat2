@@ -45,7 +45,7 @@ public class CodeExecuterContext implements Serializable {
     Map<String, Object> varContext;
     MycatRel mycatRel;
     CodeContext codeContext;
-    private final transient ArrayBindable bindable;
+    public transient Object bindable;
 
     public CodeExecuterContext(Map<RexNode, RexNode> constantMap,
                                Map<String, MycatRelDatasourceSourceInfo> relContext,
@@ -57,7 +57,6 @@ public class CodeExecuterContext implements Serializable {
         this.varContext = varContext;
         this.mycatRel = mycatRel;
         this.codeContext = codeContext;
-        this.bindable = asObjectArray(getBindable(codeContext));
     }
 
     public static final CodeExecuterContext of(
@@ -67,78 +66,13 @@ public class CodeExecuterContext implements Serializable {
             MycatRel mycatRel,
             CodeContext codeContext
     ) {
-        return new CodeExecuterContext(constantMap,relContext, context, mycatRel,codeContext);
+        return new CodeExecuterContext(constantMap, relContext, context, mycatRel, codeContext);
     }
 
     public MycatRowMetaData get(String name) {
         return relContext.get(name).getColumnInfo();
     }
 
-    public ArrayBindable getBindable() {
-        return bindable;
-    }
-
-    @NotNull
-    private static ArrayBindable asObjectArray(ArrayBindable bindable) {
-        if (bindable.getElementType().isArray()) {
-            return bindable;
-        }
-        return new ArrayBindable() {
-            @Override
-            public Class<Object[]> getElementType() {
-                return Object[].class;
-            }
-
-            @Override
-            public Enumerable<Object[]> bind(NewMycatDataContext dataContext) {
-                Enumerable enumerable = bindable.bind(dataContext);
-                return enumerable.select(e -> {
-                    return new Object[]{e};
-                });
-            }
-        };
-    }
-
-    @SneakyThrows
-    static ArrayBindable getBindable(CodeContext codeContext) {
-        ICompilerFactory compilerFactory;
-        try {
-            compilerFactory = CompilerFactoryFactory.getDefaultCompilerFactory();
-        } catch (Exception e) {
-            throw new IllegalStateException(
-                    "Unable to instantiate java compiler", e);
-        }
-        final IClassBodyEvaluator cbe = compilerFactory.newClassBodyEvaluator();
-        cbe.setClassName(codeContext.getName());
-        cbe.setExtendedClass(Utilities.class);
-        cbe.setImplementedInterfaces(new Class[]{ArrayBindable.class});
-        cbe.setParentClassLoader(EnumerableInterpretable.class.getClassLoader());
-        if (CalciteSystemProperty.DEBUG.value()) {
-            // Add line numbers to the generated janino class
-            cbe.setDebuggingInformation(true, true, true);
-        }
-        return (ArrayBindable) cbe.createInstance(new StringReader(codeContext.getCode()));
-    }
-
-//    public String toJson() {
-//        Map<String, String> map = new HashMap<>();
-//        map.put("relContext", relContext.toJson());
-//        map.put("varContext", JsonUtil.toJson(varContext));
-//        map.put("codeContext", codeContext.toJson());
-//        return JsonUtil.toJson(map);
-//    }
-
-    public CodeExecuterContext fromJson(String json) {
-        Map<String, String> map = JsonUtil.from(json, Map.class);
-        String relContext = map.get("relContext");
-        String codeContext = map.get("codeContext");
-//
-//        Map<String,Object> varContext = JsonUtil.from( map.get("varContext"), Map.class);
-//        map.put("relContext", this.relContext.toJson());
-//        map.put("varContext", JsonUtil.toJson(varContext));
-//        map.put("codeContext", codeContext.toJson());
-        return null;
-    }
 
     public MycatRel getMycatRel() {
         return mycatRel;

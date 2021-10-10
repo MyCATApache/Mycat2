@@ -24,6 +24,9 @@ import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.api.collector.MysqlObjectArrayRow;
 import io.mycat.calcite.CodeExecuterContext;
+import io.mycat.calcite.ExecutorProvider;
+import io.mycat.calcite.ExecutorProviderImpl;
+import io.mycat.calcite.PrepareExecutor;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.spm.Plan;
@@ -32,9 +35,11 @@ import io.mycat.vertx.VertxUpdateExecuter;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
+import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.runtime.ArrayBindable;
+import org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,68 +92,30 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
     @Override
     public Future<Void> executeQuery(Plan plan) {
         AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSqlWithParams);
-        Observable<MysqlPayloadObject> rowObservable = getMysqlPayloadObjectObservable(context, sqlMycatDataContext, plan);
+        ExecutorProvider executorProvider =ExecutorProviderImpl.INSTANCE;
+        PrepareExecutor prepare = executorProvider.prepare(sqlMycatDataContext,plan);
+        Observable observable = mapToTimeoutObservable(prepare.getExecutor(), drdsSqlWithParams);
+        switch (prepare.getType()) {
+            case ARROW: {
+                Observable<VectorSchemaRoot> executor = observable;
+                return response.sendVectorResultSet(executor);
+            }
+            case OBJECT: {
+                Observable<MysqlPayloadObject> executor = observable;
+                return response.sendResultSet(executor);
+            }
+            default:
+                throw new IllegalStateException("Unexpected value: " + prepare.getType());
+        }
+    }
+
+    public <T> Observable<T> mapToTimeoutObservable(Observable<T> observable, DrdsSqlWithParams drdsSqlWithParams){
         Optional<Long> timeout = drdsSqlWithParams.getTimeout();
         if (timeout.isPresent()) {
-            rowObservable = rowObservable.timeout(timeout.get(), TimeUnit.MILLISECONDS);
+          return observable.timeout(timeout.get(), TimeUnit.MILLISECONDS);
         }
-        return response.sendResultSet(rowObservable);
-    }
-
-    @NotNull
-    public static Observable<MysqlPayloadObject> getMysqlPayloadObjectObservable(
-            MycatDataContext context,
-            AsyncMycatDataContextImpl newMycatDataContext,
-            Plan plan) {
-        Observable<MysqlPayloadObject> rowObservable = Observable.<MysqlPayloadObject>create(emitter -> {
-            emitter.onNext(new MySQLColumnDef(plan.getMetaData()));
-            CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
-            ArrayBindable bindable = codeExecuterContext.getBindable();
-            try {
-
-                Object bindObservable;
-                bindObservable = bindable.bindObservable(newMycatDataContext);
-                Observable<Object[]> observable;
-                if (bindObservable instanceof Observable) {
-                    observable = (Observable) bindObservable;
-                } else {
-                    Enumerable<Object[]> enumerable = (Enumerable) bindObservable;
-                    observable = toObservable(newMycatDataContext, enumerable);
-                }
-                observable.subscribe(objects -> emitter.onNext(new MysqlObjectArrayRow(objects)),
-                        throwable -> {
-                            newMycatDataContext.endFuture()
-                                    .onComplete(event -> emitter.onError(throwable));
-                        }, () -> {
-                            CompositeFuture compositeFuture = newMycatDataContext.endFuture();
-                            compositeFuture.onSuccess(event -> emitter.onComplete());
-                            compositeFuture.onFailure(event -> emitter.onError(event));
-                        });
-            } catch (Throwable throwable) {
-                CompositeFuture compositeFuture = newMycatDataContext.endFuture();
-                compositeFuture.onComplete(event -> emitter.onError(throwable));
-            }
-        });
-        return rowObservable;
-    }
-
-    @NotNull
-    private static Observable<Object[]> toObservable(AsyncMycatDataContextImpl context, Enumerable<Object[]> enumerable) {
-        Observable<Object[]> observable;
-        observable = Observable.create(emitter1 -> {
-            Future future;
-            try (Enumerator<Object[]> enumerator = enumerable.enumerator()) {
-                while (enumerator.moveNext()) {
-                    emitter1.onNext(enumerator.current());
-                }
-                future = Future.succeededFuture();
-            } catch (Throwable throwable) {
-                future = Future.failedFuture(throwable);
-            }
-            CompositeFuture.join(future, context.endFuture())
-                    .onSuccess(event -> emitter1.onComplete())
-                    .onFailure(event -> emitter1.onError(event));
-        });
         return observable;
     }
+
+
 }

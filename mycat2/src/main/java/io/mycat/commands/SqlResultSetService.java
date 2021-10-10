@@ -24,6 +24,8 @@ import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
+import io.mycat.calcite.ExecutorProviderImpl;
+import io.mycat.calcite.PrepareExecutor;
 import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.config.SqlCacheConfig;
@@ -169,7 +171,8 @@ public class  SqlResultSetService implements Closeable, Dumpable {
                         transactionSession,
                         context, drdsSql, null);
                 AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSql);
-                Observable<MysqlPayloadObject> observable = planImplementor.getMysqlPayloadObjectObservable(context, sqlMycatDataContext, plan);
+                PrepareExecutor prepare = ExecutorProviderImpl.INSTANCE.getPrepareExecutor(sqlMycatDataContext, plan,plan.getCodeExecuterContext());
+                Observable<MysqlPayloadObject> observable = prepare.getExecutor();
                 observable = observable.doOnTerminate(new Action() {
                     @Override
                     public void run() throws Throwable {

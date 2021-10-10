@@ -38,6 +38,7 @@ import io.mycat.api.collector.MysqlObjectArrayRow;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
+import io.mycat.calcite.ExecutorProviderImpl;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.spm.QueryPlanner;
 import io.mycat.calcite.table.GlobalTable;
@@ -213,7 +214,7 @@ public class VertxExecuter {
                 AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext =
                         new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, codeExecuterContext, queryDrdsSqlWithParams);
 
-                ArrayBindable bindable = codeExecuterContext.getBindable();
+                ArrayBindable bindable = ExecutorProviderImpl.INSTANCE.prepare(codeExecuterContext);
 
                 Object bindObservable = bindable.bindObservable(sqlMycatDataContext);
                 try {
