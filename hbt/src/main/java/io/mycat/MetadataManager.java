@@ -707,15 +707,15 @@ public class MetadataManager {
                 .forEach(tableHandler -> tableHandler.createPhysicalTables());
     }
 
-    public List<LogicSchemaConfig> getConfig() {
+    public Map<String,LogicSchemaConfig> getConfig() {
         MetadataManager metadataManager = this;
-        ArrayList<LogicSchemaConfig> schemaConfigs = new ArrayList<>();
+        Map<String,LogicSchemaConfig> schemaConfigs = new HashMap<>();
         for (Map.Entry<String, SchemaHandler> e : metadataManager.getSchemaMap().entrySet()) {
             SchemaHandler schemaHandler = e.getValue();
             LogicSchemaConfig logicSchemaConfig = new LogicSchemaConfig();
             logicSchemaConfig.setSchemaName(e.getKey());
             logicSchemaConfig.setTargetName(schemaHandler.defaultTargetName());
-            schemaConfigs.add(logicSchemaConfig);
+            schemaConfigs.put(e.getKey(),logicSchemaConfig);
 
 
             for (TableHandler tableHandler : schemaHandler.logicTables().values()) {
