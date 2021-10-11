@@ -5,6 +5,7 @@ import io.mycat.MetaClusterCurrent;
 import io.mycat.config.UserConfig;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class ProxyAuthenticator implements Authenticator {
@@ -24,5 +25,11 @@ public class ProxyAuthenticator implements Authenticator {
     public List<UserConfig> allUsers() {
         Authenticator authenticator = Objects.requireNonNull(MetaClusterCurrent.wrapper(Authenticator.class));
         return authenticator.allUsers();
+    }
+
+    @Override
+    public Map<String, UserConfig> getConfig() {
+        Authenticator authenticator = Objects.requireNonNull(MetaClusterCurrent.wrapper(Authenticator.class));
+        return authenticator.getConfig();
     }
 }

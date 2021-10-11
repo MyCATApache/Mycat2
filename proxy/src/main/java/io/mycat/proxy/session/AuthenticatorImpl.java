@@ -58,6 +58,11 @@ public class AuthenticatorImpl implements Authenticator {
         return new ArrayList<>(map.values());
     }
 
+    @Override
+    public Map<String, UserConfig> getConfig() {
+        return map;
+    }
+
     @AllArgsConstructor
     @Data
     static class Matcher {
