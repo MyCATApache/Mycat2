@@ -43,13 +43,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class  SqlResultSetService implements Closeable, Dumpable {
     final HashMap<String, SqlCacheTask> cacheConfigMap = new HashMap<>();
@@ -192,5 +191,9 @@ public class  SqlResultSetService implements Closeable, Dumpable {
     @Override
     public void close() {
         clear();
+    }
+
+    public Map<String,SqlCacheConfig> getConfig(){
+        return cacheConfigMap.values().stream().map(i -> i.getSqlCache()).collect(Collectors.toMap(k -> k.getName(), v -> v));
     }
 }
