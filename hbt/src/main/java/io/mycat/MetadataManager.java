@@ -707,5 +707,42 @@ public class MetadataManager {
                 .forEach(tableHandler -> tableHandler.createPhysicalTables());
     }
 
+    public List<LogicSchemaConfig> getConfig() {
+        MetadataManager metadataManager = this;
+        ArrayList<LogicSchemaConfig> schemaConfigs = new ArrayList<>();
+        for (Map.Entry<String, SchemaHandler> e : metadataManager.getSchemaMap().entrySet()) {
+            SchemaHandler schemaHandler = e.getValue();
+            LogicSchemaConfig logicSchemaConfig = new LogicSchemaConfig();
+            logicSchemaConfig.setSchemaName(e.getKey());
+            logicSchemaConfig.setTargetName(schemaHandler.defaultTargetName());
+            schemaConfigs.add(logicSchemaConfig);
 
+
+            for (TableHandler tableHandler : schemaHandler.logicTables().values()) {
+                switch (tableHandler.getType()) {
+                    case SHARDING: {
+                        ShardingTable shardingTable = (ShardingTable) tableHandler;
+                        ShardingTableConfig tableConfig = shardingTable.getTableConfig();
+                        if (tableConfig == null) continue;
+                        logicSchemaConfig.getShardingTables().put(shardingTable.getSchemaName(), tableConfig);
+                        break;
+                    }
+                    case GLOBAL: {
+                        GlobalTable globalTable = (GlobalTable) tableHandler;
+                        logicSchemaConfig.getGlobalTables().put(globalTable.getSchemaName(), globalTable.getTableConfig());
+                        break;
+                    }
+                    case NORMAL: {
+                        NormalTable normalTable = (NormalTable) tableHandler;
+                        logicSchemaConfig.getNormalTables().put(normalTable.getSchemaName(), normalTable.getTableConfig());
+                        break;
+
+                    }
+                    case CUSTOM:
+                        break;
+                }
+            }
+        }
+        return schemaConfigs;
+    }
 }
