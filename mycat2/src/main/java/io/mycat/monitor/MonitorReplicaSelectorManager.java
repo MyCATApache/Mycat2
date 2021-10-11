@@ -1,6 +1,7 @@
 package io.mycat.monitor;
 
 import io.mycat.ReplicaBalanceType;
+import io.mycat.config.ClusterConfig;
 import io.mycat.replica.PhysicsInstance;
 import io.mycat.replica.ReplicaSelector;
 import io.mycat.replica.ReplicaSelectorManager;
@@ -84,6 +85,11 @@ public class MonitorReplicaSelectorManager implements ReplicaSelectorManager {
     @Override
     public Map<String, HeartbeatFlow> getHeartbeatDetectorMap() {
         return replicaSelectorManager.getHeartbeatDetectorMap();
+    }
+
+    @Override
+    public List<ClusterConfig> getConfig() {
+        return replicaSelectorManager.getConfig();
     }
 
     @Override
