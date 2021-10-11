@@ -31,11 +31,7 @@ import io.mycat.calcite.table.*;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.plug.loadBalance.LoadBalanceManager;
-import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.replica.ReplicaSelectorManager;
-import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.function.IndexDataNode;
 import io.mycat.router.mycat1xfunction.PartitionRuleFunctionManager;
 import io.mycat.util.*;
@@ -61,12 +57,12 @@ public class MetadataManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetadataManager.class);
     final NameMap<SchemaHandler> schemaMap = new NameMap<>();
     @Getter
-    final String prototype;
+    public final static String prototype = PrototypeService.PROTOTYPE;
 
     @Getter
     private final Map<String, List<ShardingTable>> erTableGroup = new HashMap<>();
 
-    public JdbcConnectionManager getJdbcConnectionManager(){
+    public JdbcConnectionManager getJdbcConnectionManager() {
         return MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
     }
 
@@ -93,11 +89,10 @@ public class MetadataManager {
         }
     }
 
-    public static MetadataManager createMetadataManager(Map<String,LogicSchemaConfig> schemaConfigs,
-                                                        String prototype,JdbcConnectionManager jdbcConnectionManager) {
+    public static MetadataManager createMetadataManager(Map<String, LogicSchemaConfig> schemaConfigs,
+                                                        JdbcConnectionManager jdbcConnectionManager) {
         try {
-            MysqlMetadataManager mysqlMetadataManager = new MysqlMetadataManager(schemaConfigs,
-                    prototype) {
+            MysqlMetadataManager mysqlMetadataManager = new MysqlMetadataManager(schemaConfigs) {
                 @Override
                 public JdbcConnectionManager getJdbcConnectionManager() {
                     return jdbcConnectionManager;
@@ -111,24 +106,20 @@ public class MetadataManager {
     }
 
     @SneakyThrows
-    public MetadataManager(Map<String,LogicSchemaConfig>  schemaConfigs,
-                           String prototype
-    ) {
-        this.prototype = Objects.requireNonNull(prototype);
+    public MetadataManager(Map<String, LogicSchemaConfig> schemaConfigs) {
 
         ///////////////////////////////////////////////////////////////
         //更新新配置里面的信息
-        Map<String, LogicSchemaConfig> schemaConfigMap = schemaConfigs;
 
-        for (Map.Entry<String, LogicSchemaConfig> entry : schemaConfigMap.entrySet()) {
+        for (Map.Entry<String, LogicSchemaConfig> entry : schemaConfigs.entrySet()) {
             String orignalSchemaName = entry.getKey();
             LogicSchemaConfig value = entry.getValue();
             String targetName = value.getTargetName();
-            addSchema(prototype, value, targetName, orignalSchemaName);
+            addSchema(value);
         }
     }
 
-    public void recomputeERRelation(){
+    public void recomputeERRelation() {
         Stream<ShardingTable> shardingTables = this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream()).filter(i -> i.getType() == LogicTableType.SHARDING)
                 .map(i -> (ShardingTable) i);
         Map<String, List<ShardingTable>> res = shardingTables.collect(Collectors.groupingBy(i -> i.getShardingFuntion().getErUniqueID()));
@@ -136,7 +127,9 @@ public class MetadataManager {
         this.erTableGroup.putAll(res);
     }
 
-    public void addSchema(String prototype, LogicSchemaConfig value, String targetName, String schemaName) {
+    public void addSchema(LogicSchemaConfig value) {
+        String targetName = value.getTargetName();
+        String schemaName = value.getSchemaName();
         SchemaHandlerImpl schemaHandler = new SchemaHandlerImpl(schemaName, targetName);
         schemaMap.put(schemaName, schemaHandler);
         if (targetName != null) {
@@ -547,8 +540,8 @@ public class MetadataManager {
                             }
 
                         }
-                    }catch (Exception e){
-                        LOGGER.error("",e);
+                    } catch (Exception e) {
+                        LOGGER.error("", e);
                     }
                     try (RowBaseIterator rowBaseIterator = connection.executeQuery("select * from " + targetSchemaTable + " limit 0")) {
                         MycatRowMetaData metaData = rowBaseIterator.getMetaData();

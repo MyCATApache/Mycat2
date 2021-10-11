@@ -4,20 +4,16 @@ import io.mycat.calcite.table.DualCustomTableHandler;
 import io.mycat.config.CustomTableConfig;
 import io.mycat.config.LogicSchemaConfig;
 import io.mycat.config.NormalTableConfig;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.plug.loadBalance.LoadBalanceManager;
-import io.mycat.plug.sequence.SequenceGenerator;
-import io.mycat.replica.ReplicaSelectorManager;
 
 import java.util.*;
 
 public class MysqlMetadataManager extends MetadataManager {
 
-    public MysqlMetadataManager(Map<String,LogicSchemaConfig> schemaConfigs, String prototype) {
-        super(fix(prototype,schemaConfigs), prototype);
+    public MysqlMetadataManager(Map<String,LogicSchemaConfig> schemaConfigs) {
+        super(fix(schemaConfigs));
     }
 
-    private static Map<String,LogicSchemaConfig>  fix(String prototype,Map<String,LogicSchemaConfig> orginal) {
+    private static Map<String,LogicSchemaConfig>  fix(Map<String,LogicSchemaConfig> orginal) {
         orginal = new HashMap<>(orginal);
         Set<String> databases = new HashSet<>();
         databases.add("information_schema");
@@ -35,7 +31,7 @@ public class MysqlMetadataManager extends MetadataManager {
         }
 
         ArrayList<LogicSchemaConfig> logicSchemaConfigs = new ArrayList<>();
-        addInnerTable(logicSchemaConfigs,"prototype");
+        addInnerTable(logicSchemaConfigs);
         for (LogicSchemaConfig logicSchemaConfig : logicSchemaConfigs) {
             if (!orginal.containsKey(logicSchemaConfig.getSchemaName())){
                 orginal.put(logicSchemaConfig.getSchemaName(),logicSchemaConfig);
@@ -44,7 +40,7 @@ public class MysqlMetadataManager extends MetadataManager {
         return orginal;
     }
 
-    private  static void addInnerTable(List<LogicSchemaConfig> schemaConfigs, String prototype) {
+    private  static void addInnerTable(List<LogicSchemaConfig> schemaConfigs) {
         String schemaName = "mysql";
         String targetName = "prototype";
         String tableName = "proc";
@@ -55,7 +51,7 @@ public class MysqlMetadataManager extends MetadataManager {
                 .orElseGet(() -> {
                     LogicSchemaConfig config = new LogicSchemaConfig();
                     config.setSchemaName(schemaName);
-                    config.setTargetName(prototype);
+                    config.setTargetName(MetadataManager.prototype);
                     schemaConfigs.add(config);
                     return config;
                 });

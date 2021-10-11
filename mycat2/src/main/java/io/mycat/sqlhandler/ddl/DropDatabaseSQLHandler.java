@@ -30,8 +30,6 @@ import io.vertx.core.shareddata.Lock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.function.Function;
-
 
 public class DropDatabaseSQLHandler extends AbstractSQLHandler<SQLDropDatabaseStatement> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DropDatabaseSQLHandler.class);

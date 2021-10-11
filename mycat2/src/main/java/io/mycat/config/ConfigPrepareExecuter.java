@@ -167,7 +167,7 @@ public class ConfigPrepareExecuter {
     @NotNull
     private MetadataManager createMetaData() {
         return MetadataManager.createMetadataManager(ops.getSchemas().stream().collect(Collectors.toMap(k->k.getSchemaName(),v->v)),
-                "prototype",MetaClusterCurrent.wrapper(JdbcConnectionManager.class));
+                MetaClusterCurrent.wrapper(JdbcConnectionManager.class));
     }
 
     public void fullInitBy(MycatRouterConfig mycatRouterConfig) {
@@ -211,7 +211,7 @@ public class ConfigPrepareExecuter {
         ServerConfig serverConfig = MetaClusterCurrent.wrapper(MycatServerConfig.class).getServer();
         this.sequenceGenerator = new SequenceGenerator(serverConfig.getMycatId(), mycatRouterConfig.getSequences());
         this.authenticator = new AuthenticatorImpl(mycatRouterConfig.getUsers().stream().collect(Collectors.toMap(k -> k.getUsername(), v -> v)));
-        this.metadataManager = MetadataManager.createMetadataManager(mycatRouterConfig.getSchemas().stream().collect(Collectors.toMap(k->k.getSchemaName(),v->v)),mycatRouterConfig.getPrototype(),jdbcConnectionManager);
+        this.metadataManager = MetadataManager.createMetadataManager(mycatRouterConfig.getSchemas().stream().collect(Collectors.toMap(k->k.getSchemaName(),v->v)), jdbcConnectionManager);
 
         if (MetaClusterCurrent.exist(SqlResultSetService.class)) {
             SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);

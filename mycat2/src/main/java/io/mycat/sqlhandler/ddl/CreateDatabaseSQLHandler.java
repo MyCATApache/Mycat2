@@ -26,13 +26,11 @@ import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.sqlhandler.SqlHints;
 import io.mycat.util.JsonUtil;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.shareddata.Lock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.function.Function;
 
 
 public class CreateDatabaseSQLHandler extends AbstractSQLHandler<SQLCreateDatabaseStatement> {

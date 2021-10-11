@@ -6,6 +6,7 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 
 public class PrototypeService {
    final MetadataManager metadataManager;
+    public final static String PROTOTYPE ="prototype";
 
     public PrototypeService(MetadataManager metadataManager) {
         this.metadataManager = metadataManager;

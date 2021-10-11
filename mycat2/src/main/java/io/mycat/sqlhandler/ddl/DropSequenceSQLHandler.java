@@ -25,7 +25,6 @@ import io.vertx.core.Future;
 import io.vertx.core.shareddata.Lock;
 
 import java.util.Collections;
-import java.util.function.Function;
 
 
 public class DropSequenceSQLHandler extends AbstractSQLHandler<com.alibaba.druid.sql.ast.statement.SQLDropSequenceStatement> {
