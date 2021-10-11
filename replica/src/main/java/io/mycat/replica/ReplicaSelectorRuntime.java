@@ -522,4 +522,8 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
         return getDatasource(balanceStrategy, selector, defaultWriteLoadBalanceStrategy,
                 readDataSourceByReplica);
     }
+
+    public List<ClusterConfig> getConfig() {
+        return replicaConfigList;
+    }
 }

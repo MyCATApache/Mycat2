@@ -15,6 +15,7 @@
 package io.mycat.replica;
 
 import io.mycat.ReplicaBalanceType;
+import io.mycat.config.ClusterConfig;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
 
@@ -53,4 +54,6 @@ public interface ReplicaSelectorManager extends Closeable {
     List<String> getRepliaNameListByInstanceName(String name);
 
     Map<String, HeartbeatFlow> getHeartbeatDetectorMap();
+
+    public List<ClusterConfig> getConfig();
 }
