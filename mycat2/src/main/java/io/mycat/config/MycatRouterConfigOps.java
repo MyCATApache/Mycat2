@@ -254,7 +254,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
 
     public ShardingTableConfig putRangeTable(String schemaName, String tableName, MySqlCreateTableStatement tableStatement, Map<String, Object> infos) {
         Map<String, String> ranges = (Map) infos.get("ranges");
-        Map<String, String> dataNodes = (Map) infos.get("dataNodes");
+        Map<String, String> dataNodes =(Map) Optional.ofNullable (infos.get("dataNodes")).orElseGet(()->infos.get("partition"));
         Map<String, String> properties = (Map) infos.get("properties");
         String aClass = (String) (infos.get("class"));
         String name = (String) (infos.get("name"));
