@@ -16,10 +16,13 @@ package io.mycat;
 
 import io.mycat.config.DatasourceConfig;
 
+import java.util.Map;
+
 /**
  * @author Junwen Chen
  **/
 public interface ConnectionManager<T extends MycatConnection> {
+
     void addDatasource(DatasourceConfig key);
 
     void removeDatasource(String name);
@@ -27,6 +30,8 @@ public interface ConnectionManager<T extends MycatConnection> {
     T getConnection(String name) throws Exception;
 
     void closeConnection(T connection) throws Exception;
+
+    Map<String, DatasourceConfig> getConfig();
 
     void close();
 }

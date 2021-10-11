@@ -15,7 +15,6 @@
 package io.mycat.datasource.jdbc.datasource;
 
 
-import com.alibaba.druid.pool.DruidPooledConnection;
 import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
@@ -25,9 +24,7 @@ import io.mycat.config.ServerConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.DruidDatasourceProvider;
 import io.mycat.replica.ReplicaSelectorManager;
-import io.mycat.replica.ScheduledHanlde;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
-import io.vertx.core.Vertx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +35,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * @author jamie12221 date 2019-05-10 14:46 该类型需要并发处理
@@ -171,6 +167,17 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
             LOGGER.error("", e);
         }
         JdbcUtils.close(connection.connection);
+    }
+
+    @Override
+    public Map<String, DatasourceConfig> getConfig() {
+        HashMap<String, DatasourceConfig> res = new HashMap<>();
+        for (Map.Entry<String, JdbcDataSource> entry : dataSourceMap.entrySet()) {
+            DatasourceConfig config = entry.getValue().getConfig();
+            String key = entry.getKey();
+            res.put(key, config);
+        }
+        return res;
     }
 
     @Override
