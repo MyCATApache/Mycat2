@@ -15,13 +15,16 @@
 package io.mycat.beans.mysql.packet;
 
 import com.mysql.cj.CharsetMapping;
+import com.mysql.cj.result.Field;
 import io.mycat.MycatException;
+import io.mycat.beans.mycat.CopyMycatRowMetaData;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mysql.MySQLFieldInfo;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.util.StringUtil;
 
 import java.sql.JDBCType;
+import java.sql.ResultSetMetaData;
 import java.util.Arrays;
 
 /**
@@ -99,6 +102,26 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
                 case TIMESTAMP: {
                     this.columnFlags |= MySQLFieldsType.TIMESTAMP_FLAG;
                     break;
+                }
+            }
+
+            if (resultSetMetaData instanceof CopyMycatRowMetaData) {
+                CopyMycatRowMetaData rowMetaData = (CopyMycatRowMetaData) resultSetMetaData;
+                ResultSetMetaData rsmd = rowMetaData.metaData();
+                if (null != rsmd && rsmd instanceof com.mysql.cj.jdbc.result.ResultSetMetaData) {
+                    com.mysql.cj.jdbc.result.ResultSetMetaData metaData = (com.mysql.cj.jdbc.result.ResultSetMetaData) rsmd;
+                    Field field = metaData.getFields()[columnIndex];
+                    this.columnSchema = getBytes(field.getDatabaseName());
+                    this.columnTable = getBytes(field.getTableName());
+                    this.columnOrgTable = getBytes(field.getOriginalTableName());
+                    this.columnName = getBytes(field.getName());
+                    this.columnOrgName = getBytes(field.getOriginalName());
+
+                    this.columnCharsetSet = field.getCollationIndex();
+                    this.columnLength = (int) field.getLength();
+                    this.columnType = field.getMysqlTypeId();
+                    this.columnFlags = field.getFlags();
+                    this.columnDecimals = (byte) field.getDecimals();
                 }
             }
 
