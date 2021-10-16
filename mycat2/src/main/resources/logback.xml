@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>
+				%d[%level]%c{100}.%M:%L%m%n
+			</pattern>
+		</encoder>
+	</appender>
+
+	<root level="debug">
+		<appender-ref ref="CONSOLE" />
+	</root>
+</configuration>
