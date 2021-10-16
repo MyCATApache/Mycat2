@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 @Data
 @EqualsAndHashCode
-public class DatasourceConfig {
+public class DatasourceConfig implements KVObject{
 
     private String name;
 
@@ -212,6 +212,20 @@ public class DatasourceConfig {
 
     public void setDbType(String dbType) {
         this.dbType = Objects.requireNonNull(dbType, "dbType is null");
+    }
+
+    @Override
+    public String keyName() {
+        return name;
+    }
+    @Override
+    public String path() {
+        return "datasources";
+    }
+
+    @Override
+    public String fileName() {
+        return "datasource";
     }
 
     public static enum DatasourceType {

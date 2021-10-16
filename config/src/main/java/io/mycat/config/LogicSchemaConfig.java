@@ -3,13 +3,11 @@ package io.mycat.config;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Data
 @EqualsAndHashCode
-public final class LogicSchemaConfig {
+public final class LogicSchemaConfig implements KVObject{
     @javax.validation.constraints.NotNull
     String schemaName;
     String targetName;
@@ -38,5 +36,30 @@ public final class LogicSchemaConfig {
             return Optional.of(normalTableConfig);
         }
         return Optional.empty();
+    }
+
+    public Set<String> tableNames(){
+        HashSet<String> strings = new HashSet<>();
+        strings.addAll(shardingTables.keySet());
+        strings.addAll(globalTables.keySet());
+        strings.addAll(normalTables.keySet());
+        strings.addAll(customTables.keySet());
+        strings.addAll(views.keySet());
+        return strings;
+    }
+
+    @Override
+    public String keyName() {
+        return schemaName;
+    }
+
+    @Override
+    public String path() {
+        return "schemas";
+    }
+
+    @Override
+    public String fileName() {
+        return "schema";
     }
 }

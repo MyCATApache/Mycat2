@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode
-public class SequenceConfig {
+public class SequenceConfig implements KVObject{
     private String name;
 
     // ---------给用户自行扩展预留字段------------
@@ -48,5 +48,20 @@ public class SequenceConfig {
     }
 
     public SequenceConfig() {
+    }
+
+    @Override
+    public String keyName() {
+        return name;
+    }
+
+    @Override
+    public String path() {
+        return "sequences";
+    }
+
+    @Override
+    public String fileName() {
+        return "sequence";
     }
 }

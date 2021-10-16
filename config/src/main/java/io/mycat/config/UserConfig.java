@@ -8,7 +8,7 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 @EqualsAndHashCode
-public class UserConfig {
+public class UserConfig implements KVObject {
     private String username;
     private String password;
     private String ip = null;
@@ -18,5 +18,20 @@ public class UserConfig {
     public static void main(String[] args) {
         String s = JsonUtil.toJson(new UserConfig());
         System.out.println(s);
+    }
+
+    @Override
+    public String keyName() {
+        return username;
+    }
+
+    @Override
+    public String path() {
+        return "users";
+    }
+
+    @Override
+    public String fileName() {
+        return "user";
     }
 }

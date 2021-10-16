@@ -12,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode
-public class ClusterConfig {
+public class ClusterConfig implements KVObject {
     @javax.validation.constraints.NotNull
     private String clusterType = "MASTER_SLAVE";
     @javax.validation.constraints.NotNull
@@ -56,4 +56,17 @@ public class ClusterConfig {
         return nodes;
     }
 
+    @Override
+    public String keyName() {
+        return name;
+    }
+    @Override
+    public String path() {
+        return "clusters";
+    }
+
+    @Override
+    public String fileName() {
+        return "cluster";
+    }
 }
