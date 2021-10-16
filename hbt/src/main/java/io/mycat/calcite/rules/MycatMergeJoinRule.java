@@ -17,29 +17,32 @@
 package io.mycat.calcite.rules;
 
 import io.mycat.HintTools;
+import io.mycat.calcite.ExecutorProviderImpl;
 import io.mycat.calcite.MycatConvention;
 import io.mycat.calcite.MycatConverterRule;
 import io.mycat.calcite.MycatRules;
+import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatSortMergeJoin;
 import io.mycat.calcite.physical.MycatSortMergeSemiJoin;
 import org.apache.calcite.adapter.enumerable.EnumerableMergeJoin;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.RelFieldCollation;
-import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.RelFactories;
+import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalJoin;
+import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.tools.RelBuilderFactory;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,7 +52,7 @@ import java.util.List;
  * copy 2020-7-18
  */
 public class MycatMergeJoinRule extends MycatConverterRule {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatMergeJoinRule.class);
     public static final MycatMergeJoinRule INSTANCE = new MycatMergeJoinRule(MycatConvention.INSTANCE, RelFactories.LOGICAL_BUILDER);
 
     public MycatMergeJoinRule(MycatConvention out, RelBuilderFactory relBuilderFactory) {
@@ -61,91 +64,124 @@ public class MycatMergeJoinRule extends MycatConverterRule {
         final Join join = (Join) rel;
         return convert(join);
     }
+
     public RelNode convert(Join join) {
-        RelHint lastJoinHint = HintTools.getLastJoinHint(join.getHints());
+        return tryMycatSortMergeJoin((Join) join, false);
+    }
+
+    @Nullable
+    public MycatSortMergeJoin tryMycatSortMergeJoin(Join rel, boolean rbo) {
+        RelHint lastJoinHint = HintTools.getLastJoinHint(rel.getHints());
         if (lastJoinHint != null) {
             switch (lastJoinHint.hintName.toLowerCase()) {
                 case "use_hash_join":
                 case "use_bka_join":
                 case "use_nl_join":
-                  return null;
+                    return null;
                 case "use_merge_join":
                 default:
             }
         }
-        return tryMycatSortMergeJoin((Join) join);
-    }
-
-    @Nullable
-    private MycatSortMergeJoin tryMycatSortMergeJoin(Join rel) {
-        Join join = rel;
-        final JoinInfo info = join.analyzeCondition();
-        if (!EnumerableMergeJoin.isMergeJoinSupported(join.getJoinType())) {
-            // EnumerableMergeJoin only supports certain join types.
-            return null;
-        }
-        if (info.pairs().size() == 0) {
-            // EnumerableMergeJoin CAN support cartesian join, but disable it for now.
-            return null;
-        }
-        final List<RelNode> newInputs = new ArrayList<>();
-        final List<RelCollation> collations = new ArrayList<>();
-        int offset = 0;
-        for (Ord<RelNode> ord : Ord.zip(join.getInputs())) {
-            RelTraitSet traits = ord.e.getTraitSet()
-                    .replace(MycatConvention.INSTANCE);
-            if (!info.pairs().isEmpty()) {
-                final List<RelFieldCollation> fieldCollations = new ArrayList<>();
-                for (int key : info.keys().get(ord.i)) {
-                    fieldCollations.add(
-                            new RelFieldCollation(key, RelFieldCollation.Direction.ASCENDING,
-                                    RelFieldCollation.NullDirection.LAST));
-                }
-                final RelCollation collation = RelCollations.of(fieldCollations);
-                collations.add(RelCollations.shift(collation, offset));
-                traits = traits.replace(collation);
+        try {
+            Join join = rel;
+            final JoinInfo info = join.analyzeCondition();
+            if (!EnumerableMergeJoin.isMergeJoinSupported(join.getJoinType())) {
+                // EnumerableMergeJoin only supports certain join types.
+                return null;
             }
-            newInputs.add(convert(ord.e, traits));
-            offset += ord.e.getRowType().getFieldCount();
-        }
-        final RelNode left = newInputs.get(0);
-        final RelNode right = newInputs.get(1);
-        final RelOptCluster cluster = join.getCluster();
-        RelNode newRel;
+            if (info.pairs().size() == 0) {
+                // EnumerableMergeJoin CAN support cartesian join, but disable it for now.
+                return null;
+            }
+            final List<RelNode> newInputs = new ArrayList<>();
+            final List<RelCollation> collations = new ArrayList<>();
+            int offset = 0;
+            for (Ord<RelNode> ord : Ord.zip(join.getInputs())) {
+                RelTraitSet traits = ord.e.getTraitSet()
+                        .replace(MycatConvention.INSTANCE);
+                if (!info.pairs().isEmpty()) {
+                    final List<RelFieldCollation> fieldCollations = new ArrayList<>();
+                    for (int key : info.keys().get(ord.i)) {
+                        fieldCollations.add(
+                                new RelFieldCollation(key, RelFieldCollation.Direction.ASCENDING,
+                                        RelFieldCollation.NullDirection.LAST));
+                    }
+                    final RelCollation collation = RelCollations.of(fieldCollations);
+                    collations.add(RelCollations.shift(collation, offset));
+                    traits = traits.replace(collation);
+                }
+                newInputs.add(convert(ord.e, traits, rbo));
+                offset += ord.e.getRowType().getFieldCount();
+            }
+            final RelNode left = newInputs.get(0);
+            final RelNode right = newInputs.get(1);
+            final RelOptCluster cluster = join.getCluster();
+            RelNode newRel;
 
-        RelTraitSet traitSet = join.getTraitSet()
-                .replace(MycatConvention.INSTANCE);
-        if (!collations.isEmpty()) {
-            traitSet = traitSet.replace(collations);
+            RelTraitSet traitSet = join.getTraitSet()
+                    .replace(MycatConvention.INSTANCE);
+            if (!collations.isEmpty()) {
+                traitSet = traitSet.replace(collations);
+            }
+            // Re-arrange condition: first the equi-join elements, then the non-equi-join ones (if any);
+            // this is not strictly necessary but it will be useful to avoid spurious errors in the
+            // unit tests when verifying the plan.
+            final RexBuilder rexBuilder = join.getCluster().getRexBuilder();
+            final RexNode equi = info.getEquiCondition(left, right, rexBuilder);
+            final RexNode condition;
+            if (info.isEqui()) {
+                condition = equi;
+            } else {
+                final RexNode nonEqui = RexUtil.composeConjunction(rexBuilder, info.nonEquiConditions);
+                condition = RexUtil.composeConjunction(rexBuilder, Arrays.asList(equi, nonEqui));
+            }
+            if (!join.isSemiJoin()) {
+                return MycatSortMergeJoin.create(
+                        traitSet,
+                        join.getHints(),
+                        convert(left, out),
+                        convert(right, out),
+                        condition,
+                        join.getJoinType());
+            } else {
+                return MycatSortMergeSemiJoin.create(
+                        traitSet,
+                        join.getHints(),
+                        convert(left, out),
+                        convert(right, out),
+                        condition,
+                        join.getJoinType());
+            }
+        } catch (Throwable throwable) {
+            LOGGER.error(this.description, throwable);
         }
-        // Re-arrange condition: first the equi-join elements, then the non-equi-join ones (if any);
-        // this is not strictly necessary but it will be useful to avoid spurious errors in the
-        // unit tests when verifying the plan.
-        final RexBuilder rexBuilder = join.getCluster().getRexBuilder();
-        final RexNode equi = info.getEquiCondition(left, right, rexBuilder);
-        final RexNode condition;
-        if (info.isEqui()) {
-            condition = equi;
-        } else {
-            final RexNode nonEqui = RexUtil.composeConjunction(rexBuilder, info.nonEquiConditions);
-            condition = RexUtil.composeConjunction(rexBuilder, Arrays.asList(equi, nonEqui));
-        }
-        if (!join.isSemiJoin()) {
-            return MycatSortMergeJoin.create(
-                    traitSet,
-                    join.getHints(),
-                    convert(left, out),
-                    convert(right, out),
-                    condition,
-                    join.getJoinType());
-        } else {
-            return MycatSortMergeSemiJoin.create(
-                    traitSet,
-                    join.getHints(),
-                    convert(left, out),
-                    convert(right, out),
-                    condition,
-                    join.getJoinType());
-        }
+        return null;
     }
+
+    public static RelNode convert(RelNode e, RelTraitSet targetTraits, boolean rbo) {
+        if (rbo) {
+            if (e instanceof MycatView) {
+                RelTraitSet traitSet = e.getTraitSet();
+                RelCollation collation = traitSet.getCollation();
+                MycatView mycatView = (MycatView) e;
+                RelNode relNode = mycatView.getRelNode();
+                if (collation == null || collation.getFieldCollations().isEmpty()) {
+                    return mycatView.changeTo(LogicalSort.create(relNode, collation, null, null));
+                } else {
+                    if (collation.equals(targetTraits.getCollation())) {
+                        return e;
+                    }
+                    if (relNode instanceof Sort) {//todo check it right
+                        Sort sort = (Sort) relNode;
+                        return mycatView.changeTo(LogicalSort.create(relNode, collation, sort.offset, sort.fetch));
+                    }
+                    return mycatView.changeTo(LogicalSort.create(relNode, collation, null, null));
+                }
+            }
+        } else {
+            return convert(e, targetTraits);
+        }
+        return null;
+    }
+
 }

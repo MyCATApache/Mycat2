@@ -26,6 +26,8 @@ import io.mycat.calcite.localrel.LocalRules;
 import io.mycat.calcite.localrel.LocalSort;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatHashAggregate;
+import io.mycat.calcite.physical.MycatSortMergeJoin;
+import io.mycat.calcite.rules.MycatMergeJoinRule;
 import io.mycat.calcite.table.*;
 import io.mycat.config.ServerConfig;
 import io.mycat.router.CustomRuleFunction;
@@ -292,9 +294,25 @@ public class SQLRBORewriter extends RelShuttleImpl {
         boolean lr = RelMdSqlViews.join(left);
         boolean rr = RelMdSqlViews.join(right);
         if (lr && rr) {
-            return bottomJoin(left, right, join);
+            Optional<RelNode> bottomJoin = bottomJoin(left, right, join);
+            if (bottomJoin.isPresent()) {
+                return bottomJoin;
+            }
+            return tryMergeJoin(left, right, join);
         }
         return Optional.empty();
+    }
+
+    @NotNull
+    private static Optional<RelNode> tryMergeJoin(RelNode left, RelNode right, Join join) {
+        boolean isleftView = left instanceof MycatView;
+        boolean isRightView = right instanceof MycatView;
+        if (isleftView && isRightView) {
+            MycatSortMergeJoin mycatSortMergeJoin = MycatMergeJoinRule.INSTANCE.tryMycatSortMergeJoin(join.copy(join.getTraitSet(), ImmutableList.of(left, right)), false);
+            return Optional.ofNullable(mycatSortMergeJoin);
+        }else {
+            return Optional.empty();
+        }
     }
 
     @Override
@@ -905,7 +923,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             Optional<QueryBuilder> builder = queryBuilder
                     .project(
                             ImmutableIntList.identity(
-                                    project.getRowType().getFieldCount())
+                                            project.getRowType().getFieldCount())
                                     .toIntArray());
             if (builder.isPresent()) {
                 return builder.get();
