@@ -108,6 +108,7 @@ public class MasterSlaveTest extends ReplicaTest {
         manager.putHeartFlow("c0", "dsw1", checkMasterSlave());
         manager.putHeartFlow("c0", "dsw2", checkMasterSlave());
         manager.putHeartFlow("c0", "dsr1", makeBroken());
+        manager.start();
 
         for (Runnable runnable : runnables) {
             runnable.run();
@@ -246,7 +247,7 @@ public class MasterSlaveTest extends ReplicaTest {
         manager.putHeartFlow("c0", "dsw1", makeBroken());
         manager.putHeartFlow("c0", "dsw2", checkMasterSlave());
         manager.putHeartFlow("c0", "dsr1", checkMasterSlave());
-
+        manager.start();
 
         //模拟第一主节点无法连接
 

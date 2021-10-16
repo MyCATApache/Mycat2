@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public interface ReplicaSelectorManager extends Closeable {
+public interface ReplicaSelectorManager  {
 
     default String getDatasourceNameByReplicaName(String name, boolean master,  String loadBalanceStrategy){
         return getDatasourceNameByReplicaName(name,master,ReplicaBalanceType.NONE,loadBalanceStrategy);
@@ -51,9 +51,14 @@ public interface ReplicaSelectorManager extends Closeable {
 
     Collection<PhysicsInstance> getPhysicsInstances();
 
-    List<String> getRepliaNameListByInstanceName(String name);
+    List<String> getReplicaNameListByInstanceName(String name);
 
     Map<String, HeartbeatFlow> getHeartbeatDetectorMap();
 
     public List<ClusterConfig> getConfig();
+
+    void start();
+    void stop();
+
+    void close();
 }

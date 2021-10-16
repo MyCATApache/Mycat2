@@ -123,13 +123,14 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
             selector.unregister(datasourceName);
         }
     }
+
     public String getDatasourceNameByReplicaName(String replicaName, boolean master, ReplicaBalanceType replicaBalanceType, String loadBalanceStrategy) {
         BiFunction<LoadBalanceStrategy, ReplicaSelector, PhysicsInstance> function;
         if (master || replicaBalanceType == ReplicaBalanceType.MASTER) {
             function = this::getWriteDatasource;
-        } else if (replicaBalanceType == ReplicaBalanceType.SLAVE){
+        } else if (replicaBalanceType == ReplicaBalanceType.SLAVE) {
             function = this::getReadDatasource;
-        }else {
+        } else {
             function = this::getDatasource;
         }
         ReplicaSelector replicaDataSourceSelector = replicaMap.get(Objects.requireNonNull(replicaName));
@@ -210,7 +211,7 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
                 }
             }
         } else {
-            instanceType =  master ? InstanceType.READ_WRITE : READ;
+            instanceType = master ? InstanceType.READ_WRITE : READ;
         }
         return registerDatasource(selector.getName(), datasourceConfig.getName(), instanceType,
                 datasourceConfig.getWeight(), sessionCounter);
@@ -259,7 +260,13 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
         }
         for (String datasourceName : datasourceNameList) {
             DatasourceConfig datasource = datasourceConfigMap.get(datasourceName);
-            registerDatasource(master, selector, datasource, () -> sessionCounterProvider.getSessionCounter(datasourceName));
+            if (datasource != null) {
+                registerDatasource(master, selector, datasource, () -> sessionCounterProvider.getSessionCounter(datasourceName));
+            } else {
+                String msg = "ignored " + datasourceName;
+                LOGGER.error(msg);
+                throw new IllegalArgumentException(msg);
+            }
         }
     }
 
@@ -428,7 +435,7 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
                 strategyProvider = MySQLSingleHeartBeatStrategy::new;
                 break;
             default:
-               throw new UnsupportedOperationException("unsupported:"+replicaType);
+                throw new UnsupportedOperationException("unsupported:" + replicaType);
         }
         return strategyProvider;
     }
@@ -465,7 +472,7 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
         return Collections.unmodifiableMap(heartbeatDetectorMap);
     }
 
-    public List<String> getRepliaNameListByInstanceName(String name) {
+    public List<String> getReplicaNameListByInstanceName(String name) {
         List<String> replicaDataSourceSelectorList = new ArrayList<>();
         for (ReplicaSelector replicaDataSourceSelector : this.getReplicaMap().values()) {
             for (PhysicsInstance physicsInstance : replicaDataSourceSelector.getRawDataSourceMap().values()) {
@@ -475,6 +482,19 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
             }
         }
         return replicaDataSourceSelectorList;
+    }
+
+    public void start() {
+        for (ReplicaSelector i : replicaMap.values()) {
+            i.start();
+        }
+    }
+
+    @Override
+    public void stop() {
+        for (ReplicaSelector i : replicaMap.values()) {
+            i.stop();
+        }
     }
 
     @Override
@@ -515,8 +535,8 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
     public PhysicsInstance getReadDatasource(LoadBalanceStrategy balanceStrategy,
                                              ReplicaSelector selector) {
         LoadBalanceStrategy defaultWriteLoadBalanceStrategy = selector.getDefaultWriteLoadBalanceStrategy();
-        List<PhysicsInstance> readDataSourceByReplica = selector.getReadDataSourceByReplica().stream().filter(i->i.getType() == READ).collect(Collectors.toList());
-        if (readDataSourceByReplica.isEmpty()){
+        List<PhysicsInstance> readDataSourceByReplica = selector.getReadDataSourceByReplica().stream().filter(i -> i.getType() == READ).collect(Collectors.toList());
+        if (readDataSourceByReplica.isEmpty()) {
             readDataSourceByReplica = selector.getWriteDataSourceByReplicaType();
         }
         return getDatasource(balanceStrategy, selector, defaultWriteLoadBalanceStrategy,

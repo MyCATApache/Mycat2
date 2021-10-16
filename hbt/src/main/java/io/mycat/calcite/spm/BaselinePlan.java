@@ -34,7 +34,7 @@ public class BaselinePlan<T> {
         if (attach != null) {
             return attach;
         }
-        MemPlanCache memPlanCache = MetaClusterCurrent.wrapper(MemPlanCache.class);
+        QueryPlanCache memPlanCache = MetaClusterCurrent.wrapper(QueryPlanner.class).getPlanCache();
         attach = (T) memPlanCache.getCodeExecuterContext(memPlanCache.getBaseline(baselineId),this);
         return (T) attach;
     }

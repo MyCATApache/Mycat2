@@ -22,14 +22,14 @@ public class ProxyAuthenticator implements Authenticator {
     }
 
     @Override
-    public List<UserConfig> allUsers() {
+    public List<UserConfig> getConfigAsList() {
         Authenticator authenticator = Objects.requireNonNull(MetaClusterCurrent.wrapper(Authenticator.class));
-        return authenticator.allUsers();
+        return authenticator.getConfigAsList();
     }
 
     @Override
-    public Map<String, UserConfig> getConfig() {
+    public Map<String, UserConfig> getConfigAsMap() {
         Authenticator authenticator = Objects.requireNonNull(MetaClusterCurrent.wrapper(Authenticator.class));
-        return authenticator.getConfig();
+        return authenticator.getConfigAsMap();
     }
 }

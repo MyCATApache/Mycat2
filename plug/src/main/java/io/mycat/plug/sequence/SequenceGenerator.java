@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,13 +32,13 @@ import java.util.function.Supplier;
 public class SequenceGenerator {
 
     private final Logger LOGGER = LoggerFactory.getLogger(SequenceGenerator.class);
-    private final List<SequenceConfig> sequencesConfig;
+    private final Collection<SequenceConfig> sequencesConfig;
     private final ConcurrentHashMap<String, SequenceHandler> cache = new ConcurrentHashMap<>();
     private final long workerId;
 
 
     @SneakyThrows
-    public SequenceGenerator(long workerId, List<SequenceConfig> sequences) {
+    public SequenceGenerator(long workerId, Collection<SequenceConfig> sequences) {
         this.workerId = workerId;
         if (sequences == null) {
             sequences = new ArrayList<>();
@@ -84,4 +85,9 @@ public class SequenceGenerator {
             }
         });
     }
+
+    public List<SequenceConfig> getConfigAsList() {
+        return new ArrayList<>(sequencesConfig);
+    }
+
 }

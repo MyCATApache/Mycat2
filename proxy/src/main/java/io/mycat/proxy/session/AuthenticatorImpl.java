@@ -7,16 +7,17 @@ import io.mycat.config.UserConfig;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class AuthenticatorImpl implements Authenticator {
     final Map<String, Matcher> userMatchers = new HashMap<>();
     final Map<String, UserConfig> map;
+    public AuthenticatorImpl(Collection<UserConfig> map){
+        this(map.stream().collect(Collectors.toMap(k->k.getUsername(),v->v)));
+    }
     public AuthenticatorImpl(Map<String, UserConfig> map) {
         for (Map.Entry<String,UserConfig> stringUserConfigEntry : map.entrySet()) {
          UserConfig value = stringUserConfigEntry.getValue();
@@ -27,7 +28,7 @@ public class AuthenticatorImpl implements Authenticator {
                 stringPredicate = (i) -> true;
             }
             Matcher matcher = new Matcher(value.getPassword(), stringPredicate);
-            userMatchers.put(stringUserConfigEntry.getKey(), matcher);
+            userMatchers.put(value.getUsername(), matcher);
         }
         this.map = map;
     }
@@ -54,12 +55,12 @@ public class AuthenticatorImpl implements Authenticator {
     }
 
     @Override
-    public List<UserConfig> allUsers() {
+    public List<UserConfig> getConfigAsList() {
         return new ArrayList<>(map.values());
     }
 
     @Override
-    public Map<String, UserConfig> getConfig() {
+    public Map<String, UserConfig> getConfigAsMap() {
         return map;
     }
 

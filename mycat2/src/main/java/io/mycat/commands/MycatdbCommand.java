@@ -193,7 +193,7 @@ public enum MycatdbCommand {
     }
 
     private Future<Void> handleBaseline(String text, MycatDataContext dataContext, Response response) {
-        QueryPlanCache queryPlanCache = MetaClusterCurrent.wrapper(MemPlanCache.class);
+        QueryPlanCache queryPlanCache = MetaClusterCurrent.wrapper(QueryPlanner.class).getPlanCache();
         if (text.startsWith("BASELINE ")) {
             text = text.substring("BASELINE".length()).trim();
             boolean fix = false;

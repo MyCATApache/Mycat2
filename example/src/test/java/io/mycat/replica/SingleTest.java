@@ -107,6 +107,7 @@ public class SingleTest extends ReplicaTest {
                 Assert.assertEquals("[dsw2]", c0.toString());
             }
         }));
+        manager.start();
         manager.putHeartFlow("c0", "dsw1", checkMasterSlave());
         manager.putHeartFlow("c0", "dsw2", checkMasterSlave());
         manager.putHeartFlow("c0", "dsr1", makeBroken());
@@ -181,6 +182,7 @@ public class SingleTest extends ReplicaTest {
                     };
                 }
         );
+        manager.start();
         manager.putHeartFlow("c0", "dsw1", makeBroken());
         manager.putHeartFlow("c0", "dsw2", checkSelect1());
         manager.putHeartFlow("c0", "dsr1", checkSelect1());

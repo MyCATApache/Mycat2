@@ -105,7 +105,7 @@ public class GaleraTest extends ReplicaTest {
         manager.putHeartFlow("c0", "dsw1", makeBroken());
         manager.putHeartFlow("c0", "dsw2", checkGalera());
         manager.putHeartFlow("c0", "dsr1", checkGalera());
-
+        manager.start();
 
         //模拟第一主节点无法连接
 
@@ -322,6 +322,7 @@ public class GaleraTest extends ReplicaTest {
         manager.putHeartFlow("c0", "dsw1", checkGalera());
         manager.putHeartFlow("c0", "dsw2", checkGalera());
         manager.putHeartFlow("c0", "dsr1", makeBroken());
+        manager.start();
 
         for (Runnable runnable : runnables) {
             runnable.run();

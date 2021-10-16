@@ -9,6 +9,7 @@ import io.mycat.calcite.spm.PlanImpl;
 import io.mycat.config.*;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
+import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.util.JsonUtil;
 import lombok.SneakyThrows;
 import org.apache.calcite.plan.RelOptUtil;
@@ -37,7 +38,6 @@ public abstract class DrdsTest implements MycatTest {
                 System.setProperty("mode","local");
                 System.setProperty("testhbt",Boolean.TRUE.toString());
                 MycatCore mycatCore = new MycatCore();
-                MetadataStorageManager metadataStorageManager = MetaClusterCurrent.wrapper(MetadataStorageManager.class);
                 MycatRouterConfig mycatRouterConfig = new MycatRouterConfig();
                 LogicSchemaConfig logicSchemaConfig = new LogicSchemaConfig();
                 mycatRouterConfig.getSchemas().add(logicSchemaConfig);
@@ -197,7 +197,7 @@ public abstract class DrdsTest implements MycatTest {
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("ds0", DB1));
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("ds1", DB2));
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("prototype", DB1));
-                metadataStorageManager.start(mycatRouterConfig);
+                ConfigUpdater.start(mycatRouterConfig);
                 drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
                 metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
             }

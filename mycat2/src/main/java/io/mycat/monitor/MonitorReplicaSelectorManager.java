@@ -78,8 +78,8 @@ public class MonitorReplicaSelectorManager implements ReplicaSelectorManager {
     }
 
     @Override
-    public List<String> getRepliaNameListByInstanceName(String name) {
-        return replicaSelectorManager.getRepliaNameListByInstanceName(name);
+    public List<String> getReplicaNameListByInstanceName(String name) {
+        return replicaSelectorManager.getReplicaNameListByInstanceName(name);
     }
 
     @Override
@@ -93,7 +93,17 @@ public class MonitorReplicaSelectorManager implements ReplicaSelectorManager {
     }
 
     @Override
-    public void close() throws IOException {
+    public void start() {
+        replicaSelectorManager.start();
+    }
+
+    @Override
+    public void stop() {
+        replicaSelectorManager.stop();
+    }
+
+    @Override
+    public void close() {
         replicaSelectorManager.close();
     }
 }

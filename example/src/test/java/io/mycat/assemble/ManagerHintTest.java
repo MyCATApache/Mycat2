@@ -116,6 +116,7 @@ public class ManagerHintTest implements MycatTest {
     @Test
     public void testShowTables() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
+            execute(mycatConnection,RESET_CONFIG);
             Assert.assertTrue(executeQuery(mycatConnection,
                             "/*+ mycat:showTables{}*/").size() > 2);
             Assert.assertTrue(!executeQuery(mycatConnection,

@@ -17,7 +17,6 @@ package io.mycat.sqlhandler.ddl;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.*;
-import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.config.MycatRouterConfigOps;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
@@ -25,13 +24,14 @@ import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.JsonUtil;
 import io.vertx.core.Future;
 import io.vertx.core.shareddata.Lock;
-import org.apache.calcite.avatica.Meta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+
+import static io.mycat.config.MycatRouterConfigOps.getAutoHashProperties;
 
 /**
  * chenjunwnen
@@ -106,7 +106,7 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
                 } else if (createTableSql.getDbPartitionBy() == null && createTableSql.getTablePartitionBy() == null) {
                     ops.putNormalTable(schemaName, tableName, createTableSql);
                 } else {
-                    ops.putHashTable(schemaName, tableName, createTableSql);
+                    ops.putHashTable(schemaName, tableName, createTableSql, getAutoHashProperties(createTableSql));
                 }
 
             } else {

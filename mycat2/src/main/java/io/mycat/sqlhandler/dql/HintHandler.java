@@ -72,7 +72,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 
-
 public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
 
     public static final HintHandler INSTANCE = new HintHandler();
@@ -124,7 +123,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         boolean res = assembleMetadataStorageManager.check();
                         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
                         resultSetBuilder.addColumnInfo("value", JDBCType.VARCHAR);
-                        resultSetBuilder.addObjectRowPayload(Arrays.asList(res?1:0));
+                        resultSetBuilder.addObjectRowPayload(Arrays.asList(res ? 1 : 0));
                         return response.sendResultSet(resultSetBuilder.build());
                     }
                     if ("resetConfig".equalsIgnoreCase(cmd)) {
@@ -139,7 +138,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         DrdsSqlCompiler drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
                         Plan plan = drdsRunner.doHbt(hbt);
                         AsyncMycatDataContextImpl.HbtMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.HbtMycatDataContextImpl(dataContext, plan.getCodeExecuterContext());
-                        Observable<MysqlPayloadObject> rowObservable = ExecutorProviderImpl.INSTANCE.prepare( sqlMycatDataContext, plan).getExecutor();
+                        Observable<MysqlPayloadObject> rowObservable = ExecutorProviderImpl.INSTANCE.prepare(sqlMycatDataContext, plan).getExecutor();
                         return response.sendResultSet(rowObservable);
                     }
                     if ("createSqlCache".equalsIgnoreCase(cmd)) {
@@ -190,7 +189,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         builder.addColumnInfo("transactionType", JDBCType.VARCHAR);
                         builder.addColumnInfo("dbType", JDBCType.VARCHAR);
                         Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
-                        List<UserConfig> userConfigs = authenticator.allUsers();
+                        List<UserConfig> userConfigs = authenticator.getConfigAsList();
                         for (UserConfig userConfig : userConfigs) {
                             builder.addObjectRowPayload(Arrays.asList(
                                     userConfig.getUsername(),
@@ -358,7 +357,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                     new Timestamp(heartbeatFlow.getLastReceivedQryTime()).toLocalDateTime();
                             Optional<DatasourceConfig> e = Optional.ofNullable(dataSourceConfig.get(NAME));
 
-                            String replicaDataSourceSelectorList = String.join(",", replicaSelectorRuntime.getRepliaNameListByInstanceName(NAME));
+                            String replicaDataSourceSelectorList = String.join(",", replicaSelectorRuntime.getReplicaNameListByInstanceName(NAME));
 
                             resultSetBuilder.addObjectRowPayload(
                                     Arrays.asList(NAME,
@@ -434,7 +433,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                             Optional<DatasourceConfig> e = Optional.ofNullable(dataSourceConfig.get(NAME));
 
 
-                            String replicaDataSourceSelectorList = String.join(",", replicaSelectorRuntime.getRepliaNameListByInstanceName(NAME));
+                            String replicaDataSourceSelectorList = String.join(",", replicaSelectorRuntime.getReplicaNameListByInstanceName(NAME));
 
                             resultSetBuilder.addObjectRowPayload(
                                     Arrays.asList(NAME, ALIVE, READABLE, TYPE, SESSION_COUNT, WEIGHT, MASTER,
@@ -648,13 +647,13 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     .map(i -> {
                         switch (TYPE) {
                             case SHARDING:
-                                return i.getShardingTables();
+                                return NameMap.immutableCopyOf(i.getShardingTables());
                             case GLOBAL:
-                                return i.getGlobalTables();
+                                return NameMap.immutableCopyOf(i.getGlobalTables());
                             case NORMAL:
-                                return i.getNormalTables();
+                                return NameMap.immutableCopyOf(i.getNormalTables());
                             case CUSTOM:
-                                return i.getCustomTables();
+                                return NameMap.immutableCopyOf(i.getCustomTables());
                             default:
                                 return null;
                         }
@@ -703,7 +702,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
             Integer index = partition.getIndex();
 
             resultSetBuilder.addObjectRowPayload(
-                    Arrays.asList(targetName, schemaName, tableName,dbIndex,tableIndex,index));
+                    Arrays.asList(targetName, schemaName, tableName, dbIndex, tableIndex, index));
         }
         return response.sendResultSet(resultSetBuilder.build());
     }
@@ -769,7 +768,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 .toString()
                 .charAt(0);
         final QuoteMode quoteMode = QuoteMode.valueOf(map.getOrDefault("quoteMode",
-                format.getQuoteMode() + "")
+                        format.getQuoteMode() + "")
                 .toString());
         final Character commentStart = Optional.ofNullable(map.get("commentStart")).map(c ->
                 c.toString()
@@ -866,7 +865,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         while (iterator.hasNext()) {
             Iterable<VertxExecuter.EachSQL> eachSQL = VertxExecuter.rewriteInsertBatchedStatements(iterator.next());
             continution = continution.flatMap(o -> {
-                Future<long[]> future = VertxExecuter.simpleUpdate(dataContext,true, true, false, eachSQL);
+                Future<long[]> future = VertxExecuter.simpleUpdate(dataContext, true, true, false, eachSQL);
                 return future.map(o2 -> new long[]{o[0] + o2[0], Math.max(o[1], o2[1])});
             });
         }

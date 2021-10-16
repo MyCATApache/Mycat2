@@ -50,7 +50,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class  SqlResultSetService implements Closeable, Dumpable {
+public class SqlResultSetService implements Closeable, Dumpable {
     final HashMap<String, SqlCacheTask> cacheConfigMap = new HashMap<>();
     final Cache<String, Optional<Observable<MysqlPayloadObject>>> cache = CacheBuilder.newBuilder().maximumSize(65535).build();
     final static Logger log = LoggerFactory.getLogger(SqlResultSetService.class);
@@ -115,10 +115,10 @@ public class  SqlResultSetService implements Closeable, Dumpable {
     public synchronized Dumper snapshot() {
         Dumper dumper = Dumper.create();
         cacheConfigMap.values().stream().map(i -> {
-            String baseInfo = i.sqlCache.toString();
-            boolean hasCache = null != cache.getIfPresent(i.getSqlSelectStatement().toString());
-            return baseInfo + " hasCache:" + hasCache;
-        })
+                    String baseInfo = i.sqlCache.toString();
+                    boolean hasCache = null != cache.getIfPresent(i.getSqlSelectStatement().toString());
+                    return baseInfo + " hasCache:" + hasCache;
+                })
                 .forEach(dumper::addText);
         return dumper;
     }
@@ -149,9 +149,9 @@ public class  SqlResultSetService implements Closeable, Dumpable {
         }
         optionalObservable = cache.getIfPresent(sqlSelectStatement.toString());
         if (optionalObservable == null) {
-         return loadResultSet(sqlSelectStatement);
+            return loadResultSet(sqlSelectStatement);
         } else {
-            return Optional.empty();
+            return optionalObservable;
         }
     }
 
@@ -164,13 +164,13 @@ public class  SqlResultSetService implements Closeable, Dumpable {
             MycatDataContext context = new MycatDataContextImpl();
             try {
                 DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(sqlSelectStatement, context.getDefaultSchema());
-                Plan plan = DrdsRunnerHelper.getPlan( drdsSql);
+                Plan plan = DrdsRunnerHelper.getPlan(drdsSql);
                 XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
                 ObservablePlanImplementorImpl planImplementor = new ObservablePlanImplementorImpl(
                         transactionSession,
                         context, drdsSql, null);
                 AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSql);
-                PrepareExecutor prepare = ExecutorProviderImpl.INSTANCE.getPrepareExecutor(sqlMycatDataContext, plan,plan.getCodeExecuterContext());
+                PrepareExecutor prepare = ExecutorProviderImpl.INSTANCE.getPrepareExecutor(sqlMycatDataContext, plan, plan.getCodeExecuterContext());
                 Observable<MysqlPayloadObject> observable = prepare.getExecutor();
                 observable = observable.doOnTerminate(new Action() {
                     @Override
@@ -178,11 +178,12 @@ public class  SqlResultSetService implements Closeable, Dumpable {
                         transactionSession.closeStatementState().onComplete(event -> context.close());
                     }
                 });
-                observable= observable.cache();
+                List<MysqlPayloadObject> mysqlPayloadObjects = observable.toList().blockingGet();
+                observable = Observable.fromIterable(mysqlPayloadObjects);
                 return Optional.ofNullable(observable);
-            }catch (Throwable t){
+            } catch (Throwable t) {
                 context.close();
-                log.error("",t);
+                log.error("", t);
                 return Optional.empty();
             }
         });
@@ -193,7 +194,12 @@ public class  SqlResultSetService implements Closeable, Dumpable {
         clear();
     }
 
-    public Map<String,SqlCacheConfig> getConfig(){
+    public Map<String, SqlCacheConfig> getConfigAsMap() {
         return cacheConfigMap.values().stream().map(i -> i.getSqlCache()).collect(Collectors.toMap(k -> k.getName(), v -> v));
     }
+
+    public List<SqlCacheConfig> getConfigAsList() {
+        return new ArrayList<>(getConfigAsMap().values());
+    }
+
 }

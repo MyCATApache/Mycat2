@@ -44,15 +44,16 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo, Closeable, Re
     protected final ReplicaType type;
     protected final LoadBalanceStrategy defaultReadLoadBalanceStrategy;
     protected final LoadBalanceStrategy defaultWriteLoadBalanceStrategy;
+    protected final TimerConfig timer;
     private ReplicaSelectorRuntime replicaSelectorRuntime;
     protected volatile List<PhysicsInstance> writeDataSourceList = new CopyOnWriteArrayList<>();//只能被getWriteDataSource读取
     protected volatile List<PhysicsInstance> readDataSource = new CopyOnWriteArrayList<>();
 
     private final static boolean DEFAULT_SELECT_AS_READ = true;
     private final static boolean DEFAULT_ALIVE = false;
-    private final io.mycat.replica.ScheduledHanlde scheduled;
+    private io.mycat.replica.ScheduledHanlde scheduled;
     private String dbType;
-
+    private final Runnable runnable;
 
     public ReplicaDataSourceSelector(String name, String dbType, BalanceType balanceType, ReplicaType type, int maxRequestCount,
                                      ReplicaSwitchType switchType, LoadBalanceStrategy defaultReadLoadBalanceStrategy,
@@ -67,27 +68,44 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo, Closeable, Re
         this.defaultReadLoadBalanceStrategy = defaultReadLoadBalanceStrategy;
         this.defaultWriteLoadBalanceStrategy = defaultWriteLoadBalanceStrategy;
         this.replicaSelectorRuntime = replicaSelectorRuntime;
+        this.timer = timer;
         Objects.requireNonNull(balanceType, "balanceType is null");
 
-        if (timer != null) {
-            this.scheduled = replicaSelectorRuntime.getScheduleProvider().scheduleAtFixedRate(() -> {
-                String replicaName = name;
-                Enumeration<String> keys = datasourceMap.keys();
-                while (keys.hasMoreElements()) {
-                    String datasourceName = keys.nextElement();
-                    String key = replicaName + "." + datasourceName;
-                    HeartbeatFlow heartbeatFlow = replicaSelectorRuntime.getHeartbeatDetectorMap().get(key);
-                    if (heartbeatFlow != null) {
-                        if (LOGGER.isInfoEnabled()) {
-                            LOGGER.info("heartbeat:{}", key);
-                        }
-                        heartbeatFlow.heartbeat();
+
+        runnable = () -> {
+            String replicaName = name;
+            Enumeration<String> keys = datasourceMap.keys();
+            while (keys.hasMoreElements()) {
+                String datasourceName = keys.nextElement();
+                String key = replicaName + "." + datasourceName;
+                HeartbeatFlow heartbeatFlow = replicaSelectorRuntime.getHeartbeatDetectorMap().get(key);
+                if (heartbeatFlow != null) {
+                    if (LOGGER.isInfoEnabled()) {
+                        LOGGER.info("heartbeat:{}", key);
                     }
+                    heartbeatFlow.heartbeat();
                 }
-            }, timer.getInitialDelay(), timer.getPeriod(), TimeUnit.valueOf(timer.getTimeUnit()));
+            }
+        };
+
+    }
+
+    public void start() {
+        if (timer != null) {
+            stop();
+            this.scheduled = replicaSelectorRuntime.getScheduleProvider()
+                    .scheduleAtFixedRate(runnable, timer.getInitialDelay(), timer.getPeriod(), TimeUnit.valueOf(timer.getTimeUnit()));
         } else {
             this.scheduled = null;
         }
+    }
+
+    public void stop() {
+        if (scheduled != null) {
+            scheduled.close();
+            scheduled = null;
+        }
+
     }
 
     @Override
@@ -245,9 +263,7 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo, Closeable, Re
 
     @Override
     public synchronized void close() {
-        if (scheduled != null) {
-            scheduled.close();
-        }
+        stop();
     }
 
     public Collection<String> getAllDataSources() {

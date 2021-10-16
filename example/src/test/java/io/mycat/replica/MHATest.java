@@ -57,6 +57,8 @@ public class MHATest extends ReplicaTest {
         manager.putHeartFlow("c0", "dsw1", checkMHA(true));
         manager.putHeartFlow("c0", "dsw2", checkMHA(false));
         manager.putHeartFlow("c0", "dsr1", checkMHA(false));
+        manager.start();
+
         for (Runnable runnable : runnables) {
             runnable.run();
         }
@@ -104,6 +106,7 @@ public class MHATest extends ReplicaTest {
                     };
                 }
         );
+
         MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
@@ -114,6 +117,7 @@ public class MHATest extends ReplicaTest {
         manager.putHeartFlow("c0", "dsw1", checkMHA(true));
         manager.putHeartFlow("c0", "dsw2", checkMHA(false));
         manager.putHeartFlow("c0", "dsr1", makeBroken());
+        manager.start();
 
         for (Runnable runnable : runnables) {
             runnable.run();
@@ -191,6 +195,7 @@ public class MHATest extends ReplicaTest {
         manager.putHeartFlow("c0", "dsw1", checkMHA(true));
         manager.putHeartFlow("c0", "dsw2", checkMHA(false));
         manager.putHeartFlow("c0", "dsr1", checkMHA(false, Integer.MAX_VALUE));
+        manager.start();
 
         for (Runnable runnable : runnables) {
             runnable.run();
@@ -251,6 +256,7 @@ public class MHATest extends ReplicaTest {
                     };
                 }
         );
+        manager.start();
         manager.putHeartFlow("c0", "dsw1", makeBroken());
         manager.putHeartFlow("c0", "dsw2", checkMHA(false, 0));
         manager.putHeartFlow("c0", "dsr1", checkMHA(false, 0));

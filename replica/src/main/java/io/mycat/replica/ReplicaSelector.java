@@ -69,4 +69,8 @@ public interface ReplicaSelector extends LoadBalanceInfo, Closeable {
     public void addReadDataSource(String dataSource);
 
     public void removeReadDataSource(String dataSource);
+
+    public void start();
+
+    void stop();
 }

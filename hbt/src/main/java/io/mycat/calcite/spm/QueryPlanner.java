@@ -12,10 +12,10 @@ import java.util.Collections;
 import java.util.List;
 
 public class QueryPlanner {
-    QueryPlanCache planCache2 ;
+    QueryPlanCache planCache;
 
     public QueryPlanner(QueryPlanCache planCache2) {
-        this.planCache2 = planCache2;
+        this.planCache = planCache2;
     }
     //    RelMetadataQuery relMetadataQuery = MetaClusterCurrent.wrapper(RelMetadataQuery.class);
 
@@ -56,15 +56,16 @@ public class QueryPlanner {
         }
     }
 
+
     public   List<CodeExecuterContext> getAcceptedMycatRelList(DrdsSql drdsSql) {
-        List<CodeExecuterContext> acceptedMycatRelList = planCache2.getAcceptedMycatRelList(drdsSql);
+        List<CodeExecuterContext> acceptedMycatRelList = planCache.getAcceptedMycatRelList(drdsSql);
         if (acceptedMycatRelList.isEmpty()) {
             synchronized (this){
-                acceptedMycatRelList = planCache2.getAcceptedMycatRelList(drdsSql);
+                acceptedMycatRelList = planCache.getAcceptedMycatRelList(drdsSql);
                 if (!acceptedMycatRelList.isEmpty()){
                     return acceptedMycatRelList;
                 }else {
-                    PlanResultSet add = planCache2.add(false, drdsSql);
+                    PlanResultSet add = planCache.add(false, drdsSql);
                     return Collections.singletonList(add.getContext());
                 }
             }
@@ -78,4 +79,8 @@ public class QueryPlanner {
 //        PlanResultSet add = planCache2.add(false, drdsSql);
 //        return Collections.singletonList(add.getContext());
     }
+    public QueryPlanCache getPlanCache() {
+        return planCache;
+    }
+
 }

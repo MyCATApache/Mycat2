@@ -16,6 +16,7 @@ package io.mycat;
 
 import io.mycat.config.DatasourceConfig;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,7 +32,9 @@ public interface ConnectionManager<T extends MycatConnection> {
 
     void closeConnection(T connection) throws Exception;
 
-    Map<String, DatasourceConfig> getConfig();
+    Map<String, DatasourceConfig> getConfigAsMap();
+
+    public List<DatasourceConfig> getConfigAsList();
 
     void close();
 }

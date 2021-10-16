@@ -27,6 +27,7 @@ import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.xml.dtd.impl.Base;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -43,13 +44,20 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcConnectionManager.class);
     private final ConcurrentHashMap<String, JdbcDataSource> dataSourceMap = new ConcurrentHashMap<>();
     private final DatasourceProvider datasourceProvider;
-    private final ReplicaSelectorManager replicaSelector;
 
     public JdbcConnectionManager(String customerDatasourceProvider,
-                                 Map<String, DatasourceConfig> datasources,
-                                 Map<String, ClusterConfig> clusterConfigs,
-                                 ReplicaSelectorManager replicaSelector) {
-        this(datasources, clusterConfigs, createDatasourceProvider(customerDatasourceProvider), replicaSelector);
+                                 Map<String, DatasourceConfig> datasources) {
+        this(datasources, createDatasourceProvider(customerDatasourceProvider));
+    }
+
+    public void register(ReplicaSelectorManager replicaSelector){
+
+        for (ClusterConfig replica : replicaSelector.getConfig()) {
+            String replicaName = replica.getName();
+            for (String datasource : replica.allDatasources()) {
+                putHeartFlow(replicaSelector,replicaName, datasource);
+            }
+        }
     }
 
     private static DatasourceProvider createDatasourceProvider(String customerDatasourceProvider) {
@@ -66,30 +74,14 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
     }
 
     public JdbcConnectionManager(Map<String, DatasourceConfig> datasources,
-                                 Map<String, ClusterConfig> clusterConfigs,
-                                 DatasourceProvider provider,
-                                 ReplicaSelectorManager replicaSelector) {
+                                 DatasourceProvider provider) {
         this.datasourceProvider = Objects.requireNonNull(provider);
-        this.replicaSelector = replicaSelector;
 
         for (DatasourceConfig datasource : datasources.values()) {
             if (datasource.computeType().isJdbc()) {
                 addDatasource(datasource);
             }
         }
-
-        for (ClusterConfig replica : clusterConfigs.values()) {
-            String replicaName = replica.getName();
-            for (String datasource : replica.allDatasources()) {
-                putHeartFlow(replicaName, datasource);
-            }
-        }
-
-        //移除不必要的配置
-        //新配置中的数据源名字
-        Set<String> datasourceNames = datasources.keySet();
-        Map<String, JdbcDataSource> datasourceInfo = this.getDatasourceInfo();
-        new HashSet<>(datasourceInfo.keySet()).stream().filter(name -> !datasourceNames.contains(name)).forEach(name -> removeDatasource(name));
     }
 
     @Override
@@ -116,6 +108,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
     public DefaultConnection getConnection(String name, Boolean autocommit,
                                            int transactionIsolation, boolean readOnly) {
         final JdbcDataSource key = dataSourceMap.computeIfAbsent(name, s -> {
+            ReplicaSelectorManager replicaSelector = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
             JdbcDataSource jdbcDataSource = dataSourceMap.get(replicaSelector.getDatasourceNameByReplicaName(s, true, null));
             return Objects.requireNonNull(jdbcDataSource, "unknown target:" + name);
         });
@@ -170,14 +163,19 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
     }
 
     @Override
-    public Map<String, DatasourceConfig> getConfig() {
+    public Map<String, DatasourceConfig> getConfigAsMap() {
         HashMap<String, DatasourceConfig> res = new HashMap<>();
         for (Map.Entry<String, JdbcDataSource> entry : dataSourceMap.entrySet()) {
             DatasourceConfig config = entry.getValue().getConfig();
-            String key = entry.getKey();
+            String key = config.getName();
             res.put(key, config);
         }
         return res;
+    }
+
+    @Override
+    public List<DatasourceConfig> getConfigAsList() {
+        return new ArrayList<>(getConfigAsMap().values());
     }
 
     @Override
@@ -194,14 +192,14 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         return Collections.unmodifiableMap(dataSourceMap);
     }
 
-    private void putHeartFlow(String replicaName, String datasource) {
+    private void putHeartFlow(ReplicaSelectorManager replicaSelector,String replicaName, String datasource) {
         replicaSelector.putHeartFlow(replicaName, datasource, new Consumer<HeartBeatStrategy>() {
             @Override
             public void accept(HeartBeatStrategy heartBeatStrategy) {
                 IOExecutor vertx = MetaClusterCurrent.wrapper(IOExecutor.class);
                 vertx.executeBlocking(promise -> {
                     try {
-                        heartbeat(heartBeatStrategy);
+                       // heartbeat(heartBeatStrategy);
                     } catch (Exception e) {
                         heartBeatStrategy.onException(e);
                     } finally {

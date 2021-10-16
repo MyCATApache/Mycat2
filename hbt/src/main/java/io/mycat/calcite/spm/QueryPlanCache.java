@@ -60,4 +60,6 @@ public interface QueryPlanCache {
     public void persistBaseline(long baselineId);
 
     public void loadBaselines();
+
+    <T> Object getCodeExecuterContext(Baseline baseline, BaselinePlan tBaselinePlan);
 }

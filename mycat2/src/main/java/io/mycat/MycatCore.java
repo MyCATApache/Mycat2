@@ -15,11 +15,18 @@
 package io.mycat;
 
 import io.mycat.beans.mysql.MySQLVersion;
-import io.mycat.config.*;
+import io.mycat.config.MycatServerConfig;
+import io.mycat.config.ServerConfiguration;
+import io.mycat.config.ServerConfigurationImpl;
+import io.mycat.config.ThreadPoolExecutorConfig;
+import io.mycat.exporter.SqlRecorderRuntime;
 import io.mycat.monitor.MycatSQLLogMonitor;
 import io.mycat.monitor.MycatSQLLogMonitorImpl;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
-import io.mycat.exporter.SqlRecorderRuntime;
+import io.mycat.sqlhandler.ConfigUpdater;
+import io.mycat.sqlhandler.config.FileStorageManagerImpl;
+import io.mycat.sqlhandler.config.StdStorageManagerImpl;
+import io.mycat.sqlhandler.config.StorageManager;
 import io.mycat.vertx.VertxMycatServer;
 import io.mycat.vertxmycat.MycatVertxMetricsFactory;
 import io.vertx.core.CompositeFuture;
@@ -54,7 +61,6 @@ public class MycatCore {
     public static final String PROPERTY_MODE_CLUSTER = "cluster";
     public static final String PROPERTY_METADATADIR = "metadata";
     private final MycatServer mycatServer;
-    private final MetadataStorageManager metadataStorageManager;
     private final Path baseDirectory;
 
     static {
@@ -115,27 +121,16 @@ public class MycatCore {
         context.put(this.mycatServer.getClass(), mycatServer);
         context.put(MycatServer.class, mycatServer);
         context.put(SqlRecorderRuntime.class, SqlRecorderRuntime.INSTANCE);
+        context.put(LockService.class,new LocalLockServiceImpl());
         context.put(MycatSQLLogMonitor.class,new MycatSQLLogMonitorImpl(serverConfig.getServer().getMycatId(),serverConfig.getMonitor(),vertx));
         ////////////////////////////////////////////tmp///////////////////////////////////
         MetaClusterCurrent.register(context);
 
         String mode = Optional.ofNullable(System.getProperty("mode"))
                 .orElse(serverConfig.getMode());
-        switch (mode) {
-            case PROPERTY_MODE_LOCAL: {
-                context.put(LockService.class, new LocalLockServiceImpl());
-                FileMetadataStorageManager fileMetadataStorageManager = new FileMetadataStorageManager(serverConfig, datasourceProvider, this.baseDirectory);
-                MySQLMetadataStorageManager dbMetadataStorageManager = new MySQLMetadataStorageManager();
-                AssembleMetadataStorageManager assembleMetadataStorageManager = new AssembleMetadataStorageManager(fileMetadataStorageManager, dbMetadataStorageManager);
-                metadataStorageManager =assembleMetadataStorageManager;
-                context.put(AssembleMetadataStorageManager.class, metadataStorageManager);
-                break;
-            }
-            default: {
-                throw new UnsupportedOperationException();
-            }
-        }
-        context.put(MetadataStorageManager.class, metadataStorageManager);
+        FileStorageManagerImpl fileStorageManager = new FileStorageManagerImpl(this.baseDirectory);
+        StdStorageManagerImpl storageManager = new StdStorageManagerImpl(fileStorageManager);
+        context.put(StorageManager.class, storageManager);
         MetaClusterCurrent.register(context);
     }
 
@@ -194,7 +189,7 @@ public class MycatCore {
     }
 
     public void startServer() throws Exception {
-        metadataStorageManager.start();
+        ConfigUpdater.start();
         mycatServer.start();
     }
 

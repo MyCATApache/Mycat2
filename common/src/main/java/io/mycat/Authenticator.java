@@ -12,9 +12,9 @@ public interface Authenticator {
 
     UserConfig getUserInfo(String username);
 
-    List<UserConfig> allUsers();
+    List<UserConfig> getConfigAsList();
 
-    public Map<String, UserConfig> getConfig();
+    public Map<String, UserConfig> getConfigAsMap();
 
     @Data
     public static class AuthInfo {

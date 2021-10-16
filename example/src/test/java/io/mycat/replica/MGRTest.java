@@ -104,6 +104,7 @@ public class MGRTest extends ReplicaTest {
                     };
                 }
         );
+        manager.start();
         MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
@@ -251,6 +252,7 @@ public class MGRTest extends ReplicaTest {
                     };
                 }
         );
+        manager.start();
         manager.putHeartFlow("c0", "dsw1", makeBroken());
         manager.putHeartFlow("c0", "dsw2", checkMGR(false, 0));
         manager.putHeartFlow("c0", "dsr1", checkMGR(false, 0));
