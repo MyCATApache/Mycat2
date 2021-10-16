@@ -24,9 +24,9 @@
             <version>1.20</version>
         </dependency>
         <dependency>
-            <groupId>org.codehaus.janino</groupId>
-            <artifactId>janino</artifactId>
-            <version>3.1.6</version>
+            <groupId>io.mycat</groupId>
+            <artifactId>hbt</artifactId>
+            <version>1.20</version>
         </dependency>
         <dependency>
             <groupId>net.openhft</groupId>
@@ -44,18 +44,6 @@
             <version>5.0.0</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.calcite</groupId>
-            <artifactId>calcite-linq4j</artifactId>
-            <version>1.26.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.calcite</groupId>
-            <artifactId>calcite-core</artifactId>
-            <version>1.26.0</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.arrow</groupId>
             <artifactId>arrow-dataset</artifactId>
             <version>5.0.0</version>
@@ -72,11 +60,6 @@
             <version>1.9.0</version>
         </dependency>
         <dependency>
-            <groupId>io.reactivex.rxjava3</groupId>
-            <artifactId>rxjava</artifactId>
-            <version>3.1.1</version>
-        </dependency>
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.13.2</version>
@@ -87,7 +70,6 @@
             <artifactId>jackson-core</artifactId>
             <version>2.10.1</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
