@@ -17,6 +17,13 @@
             <artifactId>executor</artifactId>
             <version>1.20</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.10.0</version>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client -->
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
@@ -42,6 +49,16 @@
             <artifactId>oshi-dist</artifactId>
             <version>5.2.0</version>
             <type>pom</type>
+            <exclusions>
+                <exclusion>
+                    <artifactId>org.slf4j</artifactId>
+                    <groupId>slf4j-simple</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>oshi-demo</artifactId>
+                    <groupId>com.github.oshi</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- https://mvnrepository.com/artifact/io.prometheus/simpleclient -->
         <dependency>
@@ -78,6 +95,10 @@
                     <groupId>log4j</groupId>
                 </exclusion>
                 <exclusion>
+                    <artifactId>org.slf4j</artifactId>
+                    <groupId>slf4j-simple</groupId>
+                </exclusion>
+                <exclusion>
                     <artifactId>slf4j-api</artifactId>
                     <groupId>org.slf4j</groupId>
                 </exclusion>
@@ -111,11 +132,11 @@
             <version>28.1-jre</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/log4j/log4j -->
-<!--        <dependency>-->
-<!--            <groupId>log4j</groupId>-->
-<!--            <artifactId>log4j</artifactId>-->
-<!--            <version>1.2.17</version>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>log4j</groupId>-->
+        <!--            <artifactId>log4j</artifactId>-->
+        <!--            <version>1.2.17</version>-->
+        <!--        </dependency>-->
         <!-- https://mvnrepository.com/artifact/log4j/apache-log4j-extras -->
         <dependency>
             <groupId>io.mycat</groupId>
@@ -162,6 +183,10 @@
                     <artifactId>log4j</artifactId>
                     <groupId>log4j</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>org.slf4j</artifactId>
+                    <groupId>slf4j-simple</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -180,6 +205,33 @@
             <artifactId>netty-all</artifactId>
             <version>4.1.48.Final</version>
         </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>1.2.3</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.3</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-access</artifactId>
+            <version>1.2.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.danielwegener</groupId>
+            <artifactId>logback-kafka-appender</artifactId>
+            <version>0.2.0-RC2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>2.0.1</version>
+        </dependency>
+
     </dependencies>
     <build>
 
@@ -207,148 +259,148 @@
                     </execution>
                 </executions>
             </plugin>
-<!--            <plugin>-->
-<!--                <groupId>org.codehaus.mojo</groupId>-->
-<!--                <artifactId>appassembler-maven-plugin</artifactId>-->
-<!--                <version>2.1.0</version>-->
-<!--                <configuration>-->
-<!--                    <configurationDirectory>conf</configurationDirectory>-->
-<!--                    &lt;!&ndash;配置文件拷贝&ndash;&gt;-->
-<!--                    <configurationSourceDirectory>src/main/resources</configurationSourceDirectory>-->
-<!--                    <copyConfigurationDirectory>true</copyConfigurationDirectory>-->
-<!--                    &lt;!&ndash;配置文件拷贝&ndash;&gt;-->
-<!--                    <repositoryLayout>flat</repositoryLayout>-->
-<!--                    <repositoryName>lib</repositoryName>-->
-<!--                    <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>-->
-<!--                    <target>${project.build.directory}</target>-->
-<!--                    <useWildcardClassPath>true</useWildcardClassPath>-->
-<!--                    <encoding>UTF-8</encoding>-->
-<!--                    <tempDirectory>tmp</tempDirectory>-->
-<!--                    <daemons>-->
-<!--                        <daemon>-->
-<!--                            <id>mycat</id>-->
-<!--                            <mainClass>io.mycat.MycatCore</mainClass>-->
-<!--                            <commandLineArguments>-->
-<!--                                <commandLineArgument>start</commandLineArgument>-->
-<!--                            </commandLineArguments>-->
-<!--                            <platforms>-->
-<!--                                <platform>jsw</platform>-->
-<!--                            </platforms>-->
-<!--                            <generatorConfigurations>-->
-<!--                                <generatorConfiguration>-->
-<!--                                    <generator>jsw</generator>-->
-<!--                                    <includes>-->
-<!--                                        <include>aix-ppc-32</include>-->
-<!--                                        <include>aix-ppc-64</include>-->
-<!--                                        <include>hpux-parisc-64</include>-->
-<!--                                        <include>linux-x86-32</include>-->
-<!--                                        <include>linux-x86-64</include>-->
-<!--                                        <include>linux-ppc-64</include>-->
-<!--                                        <include>macosx-ppc-32</include>-->
-<!--                                        <include>macosx-x86-universal-32</include>-->
-<!--                                        <include>macosx-universal-32</include>-->
-<!--                                        <include>macosx-universal-64</include>-->
-<!--                                        <include>solaris-sparc-32</include>-->
-<!--                                        <include>solaris-sparc-64</include>-->
-<!--                                        <include>solaris-x86-32</include>-->
-<!--                                        <include>windows-x86-32</include>-->
-<!--                                        <include>windows-x86-64</include>-->
-<!--                                    </includes>-->
-<!--                                    <configuration>-->
-<!--                                        <property>-->
-<!--                                            <name>wrapper.ping.timeout</name>-->
-<!--                                            <value>120</value>-->
-<!--                                        </property>-->
-<!--                                        <property>-->
-<!--                                            <name>set.default.REPO_DIR</name>-->
-<!--                                            <value>lib</value>-->
-<!--                                        </property>-->
-<!--                                        <property>-->
-<!--                                            <name>wrapper.logfile.maxsize</name>-->
-<!--                                            <value>512m</value>-->
-<!--                                        </property>-->
-<!--                                        <property>-->
-<!--                                            <name>wrapper.logfile.maxfiles</name>-->
-<!--                                            <value>30</value>-->
-<!--                                        </property>-->
-<!--                                        <property>-->
-<!--                                            <name>wrapper.logfile</name>-->
-<!--                                            <value>logs/wrapper.log</value>-->
-<!--                                        </property>-->
-<!--                                    </configuration>-->
-<!--                                </generatorConfiguration>-->
-<!--                            </generatorConfigurations>-->
-<!--                            <jvmSettings>-->
-<!--                                <initialMemorySize>256M</initialMemorySize>-->
-<!--                                <maxMemorySize>8192M</maxMemorySize>-->
-<!--                                <systemProperties>-->
-<!--                                    <systemProperty>MYCAT_HOME=./conf</systemProperty>-->
-<!--                                </systemProperties>-->
-<!--                                <extraArguments>-->
-<!--                                    <extraArgument>-Dfile.encoding=UTF-8</extraArgument>-->
-<!--                                    <extraArgument>-server</extraArgument>-->
-<!--                                    &lt;!&ndash; 远程JMX &ndash;&gt;-->
-<!--                                    <extraArgument>-Dcom.sun.management.jmxremote</extraArgument>-->
-<!--                                    <extraArgument>-Dcom.sun.management.jmxremote.port=1984</extraArgument>-->
-<!--                                    <extraArgument>-Dcom.sun.management.jmxremote.authenticate=false</extraArgument>-->
-<!--                                    <extraArgument>-Dcom.sun.management.jmxremote.ssl=false</extraArgument>-->
-<!--                                    <extraArgument>-Xmx32G</extraArgument>-->
-<!--                                    <extraArgument>-Xms1G</extraArgument>-->
-<!--                                </extraArguments>-->
-<!--                            </jvmSettings>-->
-<!--                        </daemon>-->
-<!--                    </daemons>-->
-<!--                </configuration>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <id>generate-jsw-scripts</id>-->
-<!--                        <phase>package</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>generate-daemons</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
+            <!--            <plugin>-->
+            <!--                <groupId>org.codehaus.mojo</groupId>-->
+            <!--                <artifactId>appassembler-maven-plugin</artifactId>-->
+            <!--                <version>2.1.0</version>-->
+            <!--                <configuration>-->
+            <!--                    <configurationDirectory>conf</configurationDirectory>-->
+            <!--                    &lt;!&ndash;配置文件拷贝&ndash;&gt;-->
+            <!--                    <configurationSourceDirectory>src/main/resources</configurationSourceDirectory>-->
+            <!--                    <copyConfigurationDirectory>true</copyConfigurationDirectory>-->
+            <!--                    &lt;!&ndash;配置文件拷贝&ndash;&gt;-->
+            <!--                    <repositoryLayout>flat</repositoryLayout>-->
+            <!--                    <repositoryName>lib</repositoryName>-->
+            <!--                    <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>-->
+            <!--                    <target>${project.build.directory}</target>-->
+            <!--                    <useWildcardClassPath>true</useWildcardClassPath>-->
+            <!--                    <encoding>UTF-8</encoding>-->
+            <!--                    <tempDirectory>tmp</tempDirectory>-->
+            <!--                    <daemons>-->
+            <!--                        <daemon>-->
+            <!--                            <id>mycat</id>-->
+            <!--                            <mainClass>io.mycat.MycatCore</mainClass>-->
+            <!--                            <commandLineArguments>-->
+            <!--                                <commandLineArgument>start</commandLineArgument>-->
+            <!--                            </commandLineArguments>-->
+            <!--                            <platforms>-->
+            <!--                                <platform>jsw</platform>-->
+            <!--                            </platforms>-->
+            <!--                            <generatorConfigurations>-->
+            <!--                                <generatorConfiguration>-->
+            <!--                                    <generator>jsw</generator>-->
+            <!--                                    <includes>-->
+            <!--                                        <include>aix-ppc-32</include>-->
+            <!--                                        <include>aix-ppc-64</include>-->
+            <!--                                        <include>hpux-parisc-64</include>-->
+            <!--                                        <include>linux-x86-32</include>-->
+            <!--                                        <include>linux-x86-64</include>-->
+            <!--                                        <include>linux-ppc-64</include>-->
+            <!--                                        <include>macosx-ppc-32</include>-->
+            <!--                                        <include>macosx-x86-universal-32</include>-->
+            <!--                                        <include>macosx-universal-32</include>-->
+            <!--                                        <include>macosx-universal-64</include>-->
+            <!--                                        <include>solaris-sparc-32</include>-->
+            <!--                                        <include>solaris-sparc-64</include>-->
+            <!--                                        <include>solaris-x86-32</include>-->
+            <!--                                        <include>windows-x86-32</include>-->
+            <!--                                        <include>windows-x86-64</include>-->
+            <!--                                    </includes>-->
+            <!--                                    <configuration>-->
+            <!--                                        <property>-->
+            <!--                                            <name>wrapper.ping.timeout</name>-->
+            <!--                                            <value>120</value>-->
+            <!--                                        </property>-->
+            <!--                                        <property>-->
+            <!--                                            <name>set.default.REPO_DIR</name>-->
+            <!--                                            <value>lib</value>-->
+            <!--                                        </property>-->
+            <!--                                        <property>-->
+            <!--                                            <name>wrapper.logfile.maxsize</name>-->
+            <!--                                            <value>512m</value>-->
+            <!--                                        </property>-->
+            <!--                                        <property>-->
+            <!--                                            <name>wrapper.logfile.maxfiles</name>-->
+            <!--                                            <value>30</value>-->
+            <!--                                        </property>-->
+            <!--                                        <property>-->
+            <!--                                            <name>wrapper.logfile</name>-->
+            <!--                                            <value>logs/wrapper.log</value>-->
+            <!--                                        </property>-->
+            <!--                                    </configuration>-->
+            <!--                                </generatorConfiguration>-->
+            <!--                            </generatorConfigurations>-->
+            <!--                            <jvmSettings>-->
+            <!--                                <initialMemorySize>256M</initialMemorySize>-->
+            <!--                                <maxMemorySize>8192M</maxMemorySize>-->
+            <!--                                <systemProperties>-->
+            <!--                                    <systemProperty>MYCAT_HOME=./conf</systemProperty>-->
+            <!--                                </systemProperties>-->
+            <!--                                <extraArguments>-->
+            <!--                                    <extraArgument>-Dfile.encoding=UTF-8</extraArgument>-->
+            <!--                                    <extraArgument>-server</extraArgument>-->
+            <!--                                    &lt;!&ndash; 远程JMX &ndash;&gt;-->
+            <!--                                    <extraArgument>-Dcom.sun.management.jmxremote</extraArgument>-->
+            <!--                                    <extraArgument>-Dcom.sun.management.jmxremote.port=1984</extraArgument>-->
+            <!--                                    <extraArgument>-Dcom.sun.management.jmxremote.authenticate=false</extraArgument>-->
+            <!--                                    <extraArgument>-Dcom.sun.management.jmxremote.ssl=false</extraArgument>-->
+            <!--                                    <extraArgument>-Xmx32G</extraArgument>-->
+            <!--                                    <extraArgument>-Xms1G</extraArgument>-->
+            <!--                                </extraArguments>-->
+            <!--                            </jvmSettings>-->
+            <!--                        </daemon>-->
+            <!--                    </daemons>-->
+            <!--                </configuration>-->
+            <!--                <executions>-->
+            <!--                    <execution>-->
+            <!--                        <id>generate-jsw-scripts</id>-->
+            <!--                        <phase>package</phase>-->
+            <!--                        <goals>-->
+            <!--                            <goal>generate-daemons</goal>-->
+            <!--                        </goals>-->
+            <!--                    </execution>-->
+            <!--                </executions>-->
+            <!--            </plugin>-->
 
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-antrun-plugin</artifactId>-->
-<!--                <version>1.8</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <id>createDistJar</id>-->
-<!--                        <goals>-->
-<!--                            <goal>run</goal>-->
-<!--                        </goals>-->
-<!--                        <phase>package</phase>-->
-<!--                        <configuration>-->
-<!--                            <target>-->
-<!--                                <echo message="${project.build.directory}"/>-->
-<!--                                <mkdir dir="${project.build.directory}"/>-->
-<!--                                <mkdir dir="${project.build.directory}/jsw/mycat/logs"/>-->
-<!--                                <tar-->
-<!--                                        destfile="${project.build.directory}/mycat2-${project.version}.tar.gz"-->
-<!--                                >-->
-<!--                                    <tarfileset dir="${project.build.directory}/jsw" filemode="755">-->
-<!--                                        <include name="mycat/bin/**"/>-->
-<!--                                        <include name="mycat/conf/**"/>-->
-<!--                                        <include name="mycat/logs"/>-->
-<!--                                        <include name="mycat/lib/**"/>-->
-<!--                                    </tarfileset>-->
-<!--                                    <tarfileset dir="${project.basedir}/..">-->
-<!--                                        <include name="README.md"/>-->
-<!--                                    </tarfileset>-->
-<!--                                </tar>-->
-<!--                                <tar basedir="${project.basedir}/src/main/resources"-->
-<!--                                     destfile="${project.build.directory}/mycat2-${project.version}-resources.tar.gz"-->
-<!--                                     includes="**">-->
-<!--                                </tar>-->
-<!--                            </target>-->
+            <!--            <plugin>-->
+            <!--                <groupId>org.apache.maven.plugins</groupId>-->
+            <!--                <artifactId>maven-antrun-plugin</artifactId>-->
+            <!--                <version>1.8</version>-->
+            <!--                <executions>-->
+            <!--                    <execution>-->
+            <!--                        <id>createDistJar</id>-->
+            <!--                        <goals>-->
+            <!--                            <goal>run</goal>-->
+            <!--                        </goals>-->
+            <!--                        <phase>package</phase>-->
+            <!--                        <configuration>-->
+            <!--                            <target>-->
+            <!--                                <echo message="${project.build.directory}"/>-->
+            <!--                                <mkdir dir="${project.build.directory}"/>-->
+            <!--                                <mkdir dir="${project.build.directory}/jsw/mycat/logs"/>-->
+            <!--                                <tar-->
+            <!--                                        destfile="${project.build.directory}/mycat2-${project.version}.tar.gz"-->
+            <!--                                >-->
+            <!--                                    <tarfileset dir="${project.build.directory}/jsw" filemode="755">-->
+            <!--                                        <include name="mycat/bin/**"/>-->
+            <!--                                        <include name="mycat/conf/**"/>-->
+            <!--                                        <include name="mycat/logs"/>-->
+            <!--                                        <include name="mycat/lib/**"/>-->
+            <!--                                    </tarfileset>-->
+            <!--                                    <tarfileset dir="${project.basedir}/..">-->
+            <!--                                        <include name="README.md"/>-->
+            <!--                                    </tarfileset>-->
+            <!--                                </tar>-->
+            <!--                                <tar basedir="${project.basedir}/src/main/resources"-->
+            <!--                                     destfile="${project.build.directory}/mycat2-${project.version}-resources.tar.gz"-->
+            <!--                                     includes="**">-->
+            <!--                                </tar>-->
+            <!--                            </target>-->
 
-<!--                        </configuration>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
+            <!--                        </configuration>-->
+            <!--                    </execution>-->
+            <!--                </executions>-->
+            <!--            </plugin>-->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>buildnumber-maven-plugin</artifactId>

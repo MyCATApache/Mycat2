@@ -51,6 +51,7 @@ public class QueryPlanner {
                 }
                 return codeExecuterContexts
                         .stream()
+                        .filter(i->i!=null)
                         .map(i -> new SortObject(i, i.getMycatRel().computeSelfCost(relOptCluster.getPlanner(), getRelMetadataQuery()))).min(SortObject::compareTo)
                         .map(i -> i.context).orElse(null);
         }
