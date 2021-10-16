@@ -374,6 +374,7 @@ public class ConfigPrepareExecuter {
                 try {
 
                     memPlanCache.init();
+                    promise.tryComplete();
                 } catch (Throwable throwable) {
                     LOGGER.error("", throwable);
                     promise.fail(throwable);
