@@ -12,6 +12,11 @@
     <artifactId>mycat2</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>executor</artifactId>
+            <version>1.20</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client -->
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
