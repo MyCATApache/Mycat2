@@ -1,26 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-
-	<appender name="kafkaAppender" class="com.github.danielwegener.logback.kafka.KafkaAppender">
-		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-			<pattern>%message %n</pattern>
-			<charset>utf8</charset>
-		</encoder>
-		<topic>applog-test</topic>
-		<keyingStrategy class="com.github.danielwegener.logback.kafka.keying.NoKeyKeyingStrategy"/>
-		<deliveryStrategy class="com.github.danielwegener.logback.kafka.delivery.AsynchronousDeliveryStrategy"/>
-
-		<producerConfig>bootstrap.servers=192.168.18.43:9092,192.168.18.44:9092</producerConfig>
-		<producerConfig>linger.ms=1000</producerConfig>
-		<producerConfig>acks=0</producerConfig>
-		<producerConfig>client.id=localhost-time-collector-logback-relaxed</producerConfig>
-		<producerConfig>max.block.ms=0</producerConfig>
-
-	</appender>
-
-	<logger name="org.apache.kafka.clients" level="error"></logger>
-	<logger name="org.apache.kafka.clients.NetworkClient" level="error"></logger>
-
 	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
 		<encoder>
 			<pattern>
@@ -30,7 +9,6 @@
 	</appender>
 
 	<root level="debug">
-		<appender-ref ref="kafkaAppender"/>
 		<appender-ref ref="CONSOLE" />
 	</root>
 </configuration>
