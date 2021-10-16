@@ -119,7 +119,7 @@ public class CopyMycatRowMetaData implements MycatRowMetaData, Serializable {
 
     @Override
     public ResultSetMetaData metaData() {
-        throw new AssertionError();
+        return null;
     }
 
     @Override
