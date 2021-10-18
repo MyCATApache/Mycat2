@@ -550,7 +550,29 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double v = estimateRowCount(mq);
-        RelOptCost relOptCost = planner.getCostFactory().makeCost(v * 0.1d, 0, 0);
+        RelOptCostFactory costFactory = planner.getCostFactory();
+        switch (distribution.type()) {
+            case PHY:
+            case BROADCAST:
+                break;
+            case SHARDING:
+                Optional<IndexCondition> predicateIndexConditionOptional = getPredicateIndexCondition();
+                if(predicateIndexConditionOptional.isPresent()){
+                    IndexCondition indexCondition = predicateIndexConditionOptional.get();
+                    switch (indexCondition.getQueryType()) {
+                        case PK_POINT_QUERY:
+                            v = 1;
+                            break;
+                        case PK_RANGE_QUERY:
+                            v = v*0.5;
+                            break;
+                        case PK_FULL_SCAN:
+                            break;
+                    }
+                }
+                break;
+        }
+        RelOptCost relOptCost =costFactory.makeCost(v , 0, 0);
         return relOptCost;
     }
 
