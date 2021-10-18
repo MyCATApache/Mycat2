@@ -481,6 +481,11 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     }
 
     @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
+        return relNode.estimateRowCount(mq);
+    }
+
+    @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         Optional<IndexCondition> conditionOptional = getPredicateIndexCondition();
         RelOptCost plannerCost = planner.getCost(relNode, mq);
