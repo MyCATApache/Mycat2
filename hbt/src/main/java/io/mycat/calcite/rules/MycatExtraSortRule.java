@@ -17,6 +17,7 @@
 package io.mycat.calcite.rules;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.ExecutorProviderImpl;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.logical.MycatView;
@@ -41,6 +42,8 @@ import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.rules.AggregateExtractProjectRule;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.tools.RelBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
@@ -53,6 +56,7 @@ import java.util.List;
  */
 public class MycatExtraSortRule extends RelRule<MycatExtraSortRule.Config> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatExtraSortRule.class);
 
     public MycatExtraSortRule(MycatExtraSortRule.Config config) {
         super((Config) config);
@@ -60,49 +64,54 @@ public class MycatExtraSortRule extends RelRule<MycatExtraSortRule.Config> {
 
     @Override
     public void onMatch(RelOptRuleCall call) {
-        Join join = call.rel(0);
-        RelNode leftMycatView = call.rel(1);
-        RelNode rightMycatView = call.rel(2);
+        try {
+            Join join = call.rel(0);
+            RelNode leftMycatView = call.rel(1);
+            RelNode rightMycatView = call.rel(2);
 
-        final JoinInfo info = join.analyzeCondition();
-        if (!EnumerableMergeJoin.isMergeJoinSupported(join.getJoinType())) {
-            // EnumerableMergeJoin only supports certain join types.
-            return;
-        }
-        if (info.pairs().isEmpty()) {
-            // EnumerableMergeJoin CAN support cartesian join, but disable it for now.
-            return;
-        }
-        final List<RelCollation> collations = new ArrayList<>();
-        for (Ord<RelNode> ord : Ord.zip(ImmutableList.of(leftMycatView, rightMycatView))) {
-            final List<RelFieldCollation> fieldCollations = new ArrayList<>();
-            for (int key : info.keys().get(ord.i)) {
-                fieldCollations.add(
-                        new RelFieldCollation(key, RelFieldCollation.Direction.ASCENDING,
-                                RelFieldCollation.NullDirection.LAST));
+            final JoinInfo info = join.analyzeCondition();
+            if (!EnumerableMergeJoin.isMergeJoinSupported(join.getJoinType())) {
+                // EnumerableMergeJoin only supports certain join types.
+                return;
             }
-            collations.add(RelCollations.of(fieldCollations));
+            if (info.pairs().isEmpty()) {
+                // EnumerableMergeJoin CAN support cartesian join, but disable it for now.
+                return;
+            }
+            final List<RelCollation> collations = new ArrayList<>();
+            for (Ord<RelNode> ord : Ord.zip(ImmutableList.of(leftMycatView, rightMycatView))) {
+                final List<RelFieldCollation> fieldCollations = new ArrayList<>();
+                for (int key : info.keys().get(ord.i)) {
+                    fieldCollations.add(
+                            new RelFieldCollation(key, RelFieldCollation.Direction.ASCENDING,
+                                    RelFieldCollation.NullDirection.LAST));
+                }
+                collations.add(RelCollations.of(fieldCollations));
+            }
+            call.transformTo(join.copy(join.getTraitSet(), ImmutableList.of(
+                    pushSort(leftMycatView, collations.get(0)), pushSort(rightMycatView, collations.get(1)))));
+            return;
+        }catch (Exception e){
+            LOGGER.warn("MycatExtraSortRule",e);
         }
-        call.transformTo(join.copy(join.getTraitSet(), ImmutableList.of(
-                pushSort(leftMycatView, collations.get(0)), pushSort(rightMycatView, collations.get(1)))));
-        return;
     }
 
-    private RelNode pushSort(RelNode relNode, RelCollation relCollation) {
-        RelCollation trait = relNode.getTraitSet().getTrait(RelCollationTraitDef.INSTANCE);
-        if (trait.equals(relCollation)) {
+    private RelNode pushSort(RelNode relNode, RelCollation targetRelCollation) {
+        RelCollation orgianlCollation = relNode.getTraitSet().getCollation();
+        if (orgianlCollation!=null&&orgianlCollation.equals(targetRelCollation)) {
             return relNode;
         }
         RelBuilder relBuilder = relBuilderFactory.create(relNode.getCluster(), null);
         if (relNode instanceof MycatView) {
             MycatView mycatView = (MycatView) relNode;
             RelNode innerRelNode = mycatView.getRelNode();
-            relNode = mycatView.changeTo(relBuilder.push(innerRelNode).sort(relCollation).build());
+            relNode = mycatView.changeTo(relBuilder.push(innerRelNode).sort(targetRelCollation).build());
             return relNode;
         } else {
-            return LogicalSort.create(relNode,relCollation,null,null);
+            return LogicalSort.create(relNode,targetRelCollation,null,null);
         }
     }
+
    public static final ImmutableList<RelOptRule> RULES;
     static {
         List<? extends Class<? extends AbstractRelNode>> ups = Arrays.asList(Join.class, Aggregate.class);
