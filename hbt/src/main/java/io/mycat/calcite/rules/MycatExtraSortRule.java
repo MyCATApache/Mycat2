@@ -92,7 +92,7 @@ public class MycatExtraSortRule extends RelRule<MycatExtraSortRule.Config> {
                     pushSort(leftMycatView, collations.get(0)), pushSort(rightMycatView, collations.get(1)))));
             return;
         }catch (Exception e){
-            LOGGER.warn("MycatExtraSortRule",e);
+            LOGGER.error("MycatExtraSortRule",e);
         }
     }
 
