@@ -494,7 +494,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             Sort relNode = (Sort) this.relNode;
             ParamHolder paramHolder = ParamHolder.CURRENT_THREAD_LOCAL.get();
             List<Object> params = paramHolder.getParams();
-            if (!params.isEmpty()) {
+            if (params != null && !params.isEmpty()) {
                 RexNode fetch = relNode.fetch;
                 RexNode offset = relNode.offset;
                 Long fetchValue = null;
@@ -557,14 +557,14 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                 break;
             case SHARDING:
                 Optional<IndexCondition> predicateIndexConditionOptional = getPredicateIndexCondition();
-                if(predicateIndexConditionOptional.isPresent()){
+                if (predicateIndexConditionOptional.isPresent()) {
                     IndexCondition indexCondition = predicateIndexConditionOptional.get();
                     switch (indexCondition.getQueryType()) {
                         case PK_POINT_QUERY:
                             v = 1;
                             break;
                         case PK_RANGE_QUERY:
-                            v = v*0.5;
+                            v = v * 0.5;
                             break;
                         case PK_FULL_SCAN:
                             break;
@@ -572,7 +572,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                 }
                 break;
         }
-        RelOptCost relOptCost =costFactory.makeCost(v , 0, 0);
+        RelOptCost relOptCost = costFactory.makeCost(v, 0, 0);
         return relOptCost;
     }
 
