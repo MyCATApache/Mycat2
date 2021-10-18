@@ -2,8 +2,6 @@ package io.mycat.calcite.rules;
 
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatSQLTableLookup;
-import io.mycat.calcite.physical.MycatTableLookupValues;
-import io.mycat.calcite.rewriter.RBORules;
 import io.mycat.calcite.rewriter.SQLRBORewriter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -14,8 +12,6 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.tools.RelBuilder;
-
-import java.util.Optional;
 
 public class MycatTableLookupCombineRule extends RelRule<MycatTableLookupCombineRule.Config> {
 

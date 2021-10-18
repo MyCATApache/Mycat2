@@ -50,10 +50,6 @@ public class SpmTest implements MycatTest {
                 return new NameMap<>();
             }
 
-            @Override
-            public boolean bkaJoin() {
-                return true;
-            }
         }));
         MetaClusterCurrent.register(context);
         String customerDatasourceProvider = DruidDatasourceProvider.class.getName();

@@ -15,10 +15,7 @@
 package io.mycat.calcite.rewriter;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.HintTools;
-import io.mycat.LogicTableType;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.SimpleColumnInfo;
+import io.mycat.*;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatConvention;
 import io.mycat.calcite.localrel.MycatAggregateUnionTransposeRule;
@@ -58,6 +55,8 @@ import java.util.*;
 
 
 public class SQLRBORewriter extends RelShuttleImpl {
+
+
 
     public static RelBuilder relbuilder(RelOptCluster cluster, RelOptSchema schema) {
         return LocalRules.LOCAL_BUILDER.create(cluster, schema);
@@ -294,23 +293,22 @@ public class SQLRBORewriter extends RelShuttleImpl {
         boolean lr = RelMdSqlViews.join(left);
         boolean rr = RelMdSqlViews.join(right);
         if (lr && rr) {
-            Optional<RelNode> bottomJoin = bottomJoin(left, right, join);
-            if (bottomJoin.isPresent()) {
-                return bottomJoin;
-            }
-            return tryMergeJoin(left, right, join);
+            return rboJoinRewrite(left, right, join);
         }
         return Optional.empty();
     }
 
     @NotNull
-    private static Optional<RelNode> tryMergeJoin(RelNode left, RelNode right, Join join) {
+    public static Optional<RelNode> tryMergeJoin(RelNode left, RelNode right, Join join) {
+        if (!DrdsSqlCompiler.RBO_MERGE_JOIN) {
+            return Optional.empty();
+        }
         boolean isleftView = left instanceof MycatView;
         boolean isRightView = right instanceof MycatView;
         if (isleftView && isRightView) {
-            MycatSortMergeJoin mycatSortMergeJoin = MycatMergeJoinRule.INSTANCE.tryMycatSortMergeJoin(join.copy(join.getTraitSet(), ImmutableList.of(left, right)), false);
+            MycatSortMergeJoin mycatSortMergeJoin = MycatMergeJoinRule.INSTANCE.tryMycatSortMergeJoin(join.copy(join.getTraitSet(), ImmutableList.of(left, right)), true);
             return Optional.ofNullable(mycatSortMergeJoin);
-        }else {
+        } else {
             return Optional.empty();
         }
     }
@@ -630,6 +628,13 @@ public class SQLRBORewriter extends RelShuttleImpl {
 //        return newJoin;
 //    }
 
+    public static Optional<RelNode> rboJoinRewrite(RelNode left, RelNode right, Join join) {
+        Optional<RelNode> relNodeOptional = bottomJoin(left, right, join);
+        if (relNodeOptional.isPresent()) {
+            return relNodeOptional;
+        }
+        return tryMergeJoin(left, right, join);
+    }
 
     public static Optional<RelNode> bottomJoin(RelNode left, RelNode right, Join join) {
         if (left instanceof MycatView && right instanceof MycatView) {

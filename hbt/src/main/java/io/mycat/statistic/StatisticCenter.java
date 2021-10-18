@@ -43,6 +43,7 @@ public class StatisticCenter {
     private final ConcurrentHashMap<Key, StatisticObject> statisticMap = new ConcurrentHashMap<>();
     private final String targetName = "prototype";
     private boolean init = false;
+    public static final Double DEFAULT_ROW_COUNT = Double.valueOf(8000000);
 
     public StatisticCenter() {
     }
@@ -78,7 +79,7 @@ public class StatisticCenter {
         if (statisticObject != null) {
             return statisticObject.getRowCount();
         }
-        return Double.valueOf(5000000);
+        return DEFAULT_ROW_COUNT;
     }
 
     public Double getPhysicsTableRow(String targetName, String schemaName, String tableName) {

@@ -65,6 +65,8 @@ public class ServerConfig {
     //BROADCAST
     private boolean forcedPushDownBroadcast = false;
     private boolean bkaJoin = true;
+    private boolean sortMergeJoin = true;
+    private long bkaJoinLeftRowCountLimit = 1000;
     public static void main(String[] args) {
         System.out.println(JsonUtil.toJson(new ServerConfig()));
     }

@@ -513,6 +513,19 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         builder.addObjectRowPayload(Arrays.asList(text));
                         return response.sendResultSet(builder.build());
                     }
+                    if ("setBkaJoin".equalsIgnoreCase(cmd)) {
+                        DrdsSqlCompiler.RBO_BKA_JOIN = body.contains("1");
+                        return response.sendOk();
+                    }
+                    if ("setSortMergeJoin".equalsIgnoreCase(cmd)) {
+                        DrdsSqlCompiler.RBO_MERGE_JOIN = body.contains("1");
+                        return response.sendOk();
+                    }
+                    if ("setBkaJoinLeftRowCountLimit".equalsIgnoreCase(cmd)) {
+                        DrdsSqlCompiler.BKA_JOIN_LEFT_ROW_COUNT_LIMIT = Long.parseLong(
+                                body.substring(1,body.length()-1));
+                        return response.sendOk();
+                    }
                     if ("baseline".equalsIgnoreCase(cmd)) {
                         Map<String, Object> map = JsonUtil.from(body, Map.class);
                         String command = Objects.requireNonNull(map.get("command")).toString().toLowerCase();

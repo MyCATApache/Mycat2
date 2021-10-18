@@ -16,8 +16,8 @@
  */
 package io.mycat.calcite.rules;
 
+import io.mycat.DrdsSqlCompiler;
 import io.mycat.HintTools;
-import io.mycat.calcite.ExecutorProviderImpl;
 import io.mycat.calcite.MycatConvention;
 import io.mycat.calcite.MycatConverterRule;
 import io.mycat.calcite.MycatRules;
@@ -28,13 +28,15 @@ import org.apache.calcite.adapter.enumerable.EnumerableMergeJoin;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.*;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelFieldCollation;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
@@ -71,6 +73,9 @@ public class MycatMergeJoinRule extends MycatConverterRule {
 
     @Nullable
     public MycatSortMergeJoin tryMycatSortMergeJoin(Join rel, boolean rbo) {
+        if (!DrdsSqlCompiler.RBO_MERGE_JOIN) {
+            return null;
+        }
         RelHint lastJoinHint = HintTools.getLastJoinHint(rel.getHints());
         if (lastJoinHint != null) {
             switch (lastJoinHint.hintName.toLowerCase()) {
@@ -158,24 +163,26 @@ public class MycatMergeJoinRule extends MycatConverterRule {
         return null;
     }
 
-    public static RelNode convert(RelNode e, RelTraitSet targetTraits, boolean rbo) {
+    public RelNode convert(RelNode e, RelTraitSet targetTraits, boolean rbo) {
         if (rbo) {
-            if (e instanceof MycatView) {
-                RelTraitSet traitSet = e.getTraitSet();
-                RelCollation collation = traitSet.getCollation();
+            RelCollation targetCollation = targetTraits.getCollation();
+            if (targetCollation != null && !targetCollation.getFieldCollations().isEmpty() &&
+                    e instanceof MycatView) {
+                RelTraitSet orginalTraitSet = e.getTraitSet();
+                RelCollation orginalCollation = orginalTraitSet.getCollation();
                 MycatView mycatView = (MycatView) e;
                 RelNode relNode = mycatView.getRelNode();
-                if (collation == null || collation.getFieldCollations().isEmpty()) {
-                    return mycatView.changeTo(LogicalSort.create(relNode, collation, null, null));
+                if (orginalCollation == null || orginalCollation.getFieldCollations().isEmpty()) {
+                    return mycatView.changeTo(LogicalSort.create(relNode, targetCollation, null, null));
                 } else {
-                    if (collation.equals(targetTraits.getCollation())) {
+                    if (orginalCollation.equals(targetTraits.getCollation())) {
                         return e;
                     }
                     if (relNode instanceof Sort) {//todo check it right
                         Sort sort = (Sort) relNode;
-                        return mycatView.changeTo(LogicalSort.create(relNode, collation, sort.offset, sort.fetch));
+                        return mycatView.changeTo(LogicalSort.create(relNode, targetCollation, sort.offset, sort.fetch));
                     }
-                    return mycatView.changeTo(LogicalSort.create(relNode, collation, null, null));
+                    return mycatView.changeTo(LogicalSort.create(relNode, targetCollation, null, null));
                 }
             }
         } else {

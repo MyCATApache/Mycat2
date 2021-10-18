@@ -48,11 +48,6 @@ public class StatisticCenterTest extends DrdsTest {
             public NameMap<SchemaHandler> schemas() {
                 return new NameMap<>();
             }
-
-            @Override
-            public boolean bkaJoin() {
-                return true;
-            }
         }));
         MetaClusterCurrent.register(context);
         String customerDatasourceProvider = DruidDatasourceProvider.class.getName();

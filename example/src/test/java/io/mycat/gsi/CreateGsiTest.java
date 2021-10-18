@@ -57,6 +57,7 @@ public class CreateGsiTest implements MycatTest {
             String explainPrimaryTable = explain(mycatConnection, "select * from db1.travelrecord where id = 1");
             Assert.assertTrue(explainPrimaryTable.contains("Each(targetName=c0, sql=SELECT * FROM db1_0.travelrecord_1 AS `travelrecord` WHERE (`travelrecord`.`id` = ?))"));
             String explainIndexScan = explain(mycatConnection, "select * from db1.travelrecord where user_id = 1");//index-scan
+            System.out.println(explainIndexScan);
             Assert.assertTrue(explainIndexScan.contains("MycatProject(id=[$0], user_id=[$1], traveldate=[$3], fee=[$2], days=[$4], blob=[$5])\n" +
                     "  MycatSQLTableLookup(condition=[=($0, $7)], joinType=[inner], type=[BACK], correlationIds=[[$cor0]], leftKeys=[[0]])\n" +
                     "    MycatView(distribution=[[db1.travelrecord_g_i_user_id]], conditions=[=($0, ?0)])\n" +

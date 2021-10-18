@@ -386,4 +386,9 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
     public boolean isSupportStream() {
         return type == Type.NONE;
     }
+
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
+        return super.estimateRowCount(mq);
+    }
 }

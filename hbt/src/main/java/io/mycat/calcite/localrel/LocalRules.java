@@ -20,6 +20,7 @@ import org.apache.calcite.tools.RelBuilderFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public class LocalRules {
@@ -55,7 +56,7 @@ public class LocalRules {
             LocalRules.CalcViewRule.DEFAULT_CONFIG.toRule()
     );
 
-    public static RelNode normalize(RelNode relNode){
+    public static RelNode normalize(RelNode relNode) {
 //        ToLogicalConverter toLogicalConverter = getToLogicalConverter(relNode);
 //        RelNode res = relNode.accept(toLogicalConverter);
 //        RelOptCluster cluster = res.getCluster();
@@ -251,7 +252,8 @@ public class LocalRules {
             Join join = call.rel(0);
             MycatView left = call.rel(1);
             MycatView right = call.rel(2);
-            SQLRBORewriter.bottomJoin(left, right, LocalJoin.create(join, left, right)).ifPresent(new Consumer<RelNode>() {
+            Optional<RelNode> relNodeOptional = SQLRBORewriter.rboJoinRewrite(left, right, LocalJoin.create(join, left, right));
+            relNodeOptional.ifPresent(new Consumer<RelNode>() {
                 @Override
                 public void accept(RelNode rel) {
                     call.transformTo(normalize(rel));

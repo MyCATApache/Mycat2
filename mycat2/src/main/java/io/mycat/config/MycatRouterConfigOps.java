@@ -655,6 +655,10 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
             return Resource.of(MetaClusterCurrent.wrapper(DrdsSqlCompiler.class), true);
         }
         MetadataManager manager = metadataManagerResource.get();
+        ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
+        DrdsSqlCompiler.RBO_BKA_JOIN = serverConfig.isBkaJoin();
+        DrdsSqlCompiler.RBO_MERGE_JOIN = serverConfig.isSortMergeJoin();
+        DrdsSqlCompiler.BKA_JOIN_LEFT_ROW_COUNT_LIMIT = serverConfig.getBkaJoinLeftRowCountLimit();
         return Resource.of(new DrdsSqlCompiler(new DrdsConfig() {
             @Override
             public NameMap<SchemaHandler> schemas() {

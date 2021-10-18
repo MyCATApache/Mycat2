@@ -30,6 +30,7 @@ import io.mycat.calcite.physical.MycatProject;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.IndexCondition;
 import io.mycat.calcite.rewriter.PredicateAnalyzer;
+import io.mycat.calcite.spm.ParamHolder;
 import io.mycat.calcite.table.*;
 import io.mycat.config.ServerConfig;
 import io.mycat.querycondition.QueryType;
@@ -69,6 +70,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -216,7 +218,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                 List<Integer> newProject = getProjectIntList(projects, tableScan.deriveRowType(), indexTableView.getRowType());
                 MycatView view = MycatView
                         .ofCondition(LocalProject.create((Project) RelOptUtil.createProject(indexTableView,
-                                newProject), indexTableView),
+                                        newProject), indexTableView),
                                 Distribution.of(indexTable), pushdownCondition);
                 tableArrayList.add(view);
                 continue;
@@ -298,8 +300,14 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 //                }
 //
 //            }
-            return MycatProject.create(project.getInput(0), projects, project.getRowType());
+            project = MycatProject.create(project.getInput(0), projects, project.getRowType());
         }
+        MycatProject mycatProject = (MycatProject) project;
+        if (mycatProject.getInput() instanceof MycatView) {
+            MycatView mycatProjectInput = (MycatView) mycatProject.getInput();
+            return mycatProjectInput.changeTo(mycatProject.copy(mycatProject.getTraitSet(), ImmutableList.of(mycatProjectInput.getRelNode())));
+        }
+
         return (MycatRel) project;
     }
 
@@ -482,20 +490,68 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     @Override
     public double estimateRowCount(RelMetadataQuery mq) {
-        return relNode.estimateRowCount(mq);
+        if (relNode instanceof Sort) {
+            Sort relNode = (Sort) this.relNode;
+            ParamHolder paramHolder = ParamHolder.CURRENT_THREAD_LOCAL.get();
+            List<Object> params = paramHolder.getParams();
+            if (!params.isEmpty()) {
+                RexNode fetch = relNode.fetch;
+                RexNode offset = relNode.offset;
+                Long fetchValue = null;
+                if (fetch != null && fetch instanceof RexCall && fetch.isA(SqlKind.PLUS)) {
+                    List<RexNode> operands = ((RexCall) fetch).getOperands();
+                    Long one = resolveParam(params, operands.get(0));
+                    Long two = resolveParam(params, operands.get(1));
+                    if (one != null && two != null) {
+                        fetchValue = one + two;
+                    }
+                } else if (fetch instanceof RexLiteral) {
+                    fetchValue = resolveParam(params, fetch);
+                }
+
+                Long offsetValue = resolveParam(params, offset);
+                if (offsetValue == null && fetchValue != null) return fetchValue;
+                if (offsetValue != null && fetchValue != null) return fetchValue - offsetValue;
+            }
+        }
+        Optional<IndexCondition> conditionOptional = getPredicateIndexCondition();
+        double v = relNode.estimateRowCount(mq);
+        if (conditionOptional.isPresent()) {
+            IndexCondition indexCondition = conditionOptional.get();
+            QueryType queryType = indexCondition.getQueryType();
+            double factor = queryType.factor();
+            switch (queryType) {
+                case PK_POINT_QUERY:
+                    if (v > 1000) {
+                        return 1000;
+                    } else {
+                        return v;
+                    }
+                case PK_RANGE_QUERY:
+                    return factor * v;
+                case PK_FULL_SCAN:
+                    return factor * v;
+            }
+        }
+        return v;
+    }
+
+    private Long resolveParam(List<Object> params, RexNode fetch) {
+        if (fetch != null && fetch instanceof RexDynamicParam) {
+            int index = ((RexDynamicParam) fetch).getIndex();
+            if (index < params.size()) {
+                long l = ((Number) params.get(index)).longValue();
+                return l;
+            }
+        }
+        return null;
     }
 
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        Optional<IndexCondition> conditionOptional = getPredicateIndexCondition();
-        RelOptCost plannerCost = planner.getCost(relNode, mq);
-        double factor = 1;
-        if (conditionOptional.isPresent()) {
-            IndexCondition indexCondition = conditionOptional.get();
-            factor = indexCondition.getQueryType().factor();
-        }
-
-        return plannerCost.multiplyBy(factor);
+        double v = estimateRowCount(mq);
+        RelOptCost relOptCost = planner.getCostFactory().makeCost(v * 0.1d, 0, 0);
+        return relOptCost;
     }
 
     private RelNode applyDataNode(Map<String, Partition> map, RelNode relNode) {

@@ -34,7 +34,7 @@ public class MycatJoinClusteringRule extends RelRule<MycatJoinClusteringRule.Con
         final LogicalJoin origJoin = call.rel(0);
         final RelNode left = call.rel(1);
         final RelNode right = call.rel(2);
-        Optional<RelNode> joinOptional = SQLRBORewriter.bottomJoin(left, right, origJoin);
+        Optional<RelNode> joinOptional = SQLRBORewriter.rboJoinRewrite(left, right, origJoin);
         if (joinOptional.isPresent()) {
             call.transformTo(joinOptional.get());
         }

@@ -1,8 +1,8 @@
 package io.mycat.calcite.rules;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.HintTools;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.MycatRelBuilder;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatSQLTableLookup;
 import io.mycat.calcite.rewriter.Distribution;
@@ -11,7 +11,12 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.*;
+import org.apache.calcite.rel.core.CorrelationId;
+import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -21,13 +26,13 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.util.ImmutableBeans;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static io.mycat.DrdsSqlCompiler.BKA_JOIN_LEFT_ROW_COUNT_LIMIT;
 import static io.mycat.calcite.MycatImplementor.MYCAT_SQL_LOOKUP_IN;
 
 public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJoinRule.Config> {
@@ -41,11 +46,25 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
 
     @Override
     public void onMatch(RelOptRuleCall call) {
+
         Join join = call.rel(0);
         RelOptCluster cluster = join.getCluster();
+
+
         RelNode left = call.rel(1);
         RelNode right = call.rel(2);
 
+
+        RelMetadataQuery metadataQuery = cluster.getMetadataQuery();
+        RelHint lastJoinHint = HintTools.getLastJoinHint(join.getHints());
+        if (lastJoinHint != null && "use_bka_join".equalsIgnoreCase(lastJoinHint.hintName)) {
+
+        } else {
+            double leftRowCount = Optional.ofNullable(metadataQuery.getRowCount(left)).orElse(0.0);
+            if (leftRowCount > BKA_JOIN_LEFT_ROW_COUNT_LIMIT) {
+                return;
+            }
+        }
         if (!join.analyzeCondition().isEqui()) {
             return;
         }
@@ -65,7 +84,7 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
             default:
                 return;
         }
-        if (RelOptUtil.countJoins(mycatView.getRelNode())>1){
+        if (RelOptUtil.countJoins(mycatView.getRelNode()) > 1) {
             return;
         }
         RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(cluster, null);

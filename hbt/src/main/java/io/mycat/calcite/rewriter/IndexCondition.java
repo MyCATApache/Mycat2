@@ -5,11 +5,16 @@ import io.mycat.util.JsonUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.rex.RexNode;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @AllArgsConstructor
 @Getter
@@ -72,4 +77,9 @@ public class IndexCondition implements Comparable<IndexCondition>, Serializable 
     }
 
 
+    public RelOptCost cacl(RelOptCost plannerCost, RelOptPlanner planner) {
+        QueryType queryType = getQueryType();
+        double factor = queryType.factor();
+        return plannerCost.multiplyBy(factor);
+    }
 }

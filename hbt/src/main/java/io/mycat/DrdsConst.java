@@ -18,7 +18,7 @@ import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.util.NameMap;
 
 public interface DrdsConst {
+
     public NameMap< SchemaHandler> schemas();
 
-    public boolean bkaJoin();
 }

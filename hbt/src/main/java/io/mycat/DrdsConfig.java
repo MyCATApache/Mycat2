@@ -29,20 +29,4 @@ public class DrdsConfig implements DrdsConst {
         NameMap<SchemaHandler> schemaMap = metadataManager.getSchemaMap();
         return schemaMap;
     }
-
-    @Override
-    public boolean bkaJoin() {
-        ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
-        return serverConfig.isBkaJoin();
-    }
-
-//    @Override
-//    public MycatTableFactory getMycatTableFactory() {
-//        return new MycatTableFactory() {
-//            @Override
-//            public AbstractMycatTable create(String schemaName, String createTableSql, DrdsConst drdsConst) {
-//                return new MycatTableAdapter(schemaName,createTableSql,drdsConst);
-//            }
-//        };
-//    }
 }
