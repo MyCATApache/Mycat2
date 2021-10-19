@@ -83,9 +83,6 @@ public class BindValue {
             if (value instanceof ByteArrayOutputStream) {
                 o = ((ByteArrayOutputStream) value).toByteArray();
             }
-            if (value instanceof String) {
-                o = ((String) value).getBytes();
-            }
             if (value instanceof byte[]) {
                 o = (byte[]) value;
                 return o;
@@ -117,10 +114,14 @@ public class BindValue {
             case MysqlDefs.FIELD_TYPE_VARCHAR:
             case MysqlDefs.FIELD_TYPE_DECIMAL:
             case MysqlDefs.FIELD_TYPE_NEW_DECIMAL:
-            case MysqlDefs.FIELD_TYPE_TINY_BLOB:
-            case MysqlDefs.FIELD_TYPE_BLOB:
-            case MysqlDefs.FIELD_TYPE_MEDIUM_BLOB:
-            case MysqlDefs.FIELD_TYPE_LONG_BLOB:
+
+            case MysqlDefs.FIELD_TYPE_TIME:
+            case MysqlDefs.FIELD_TYPE_DATE:
+            case MysqlDefs.FIELD_TYPE_DATETIME:
+            case MysqlDefs.FIELD_TYPE_TIMESTAMP:
+                if (value instanceof String){
+                    return (String)value;
+                }
                 /**
                  *           case MysqlType.FIELD_TYPE_VAR_STRING:
                  *                     case MysqlType.FIELD_TYPE_STRING:
@@ -130,10 +131,10 @@ public class BindValue {
                  *
                  */
                 return new String((byte[]) value);
-            case MysqlDefs.FIELD_TYPE_TIME:
-            case MysqlDefs.FIELD_TYPE_DATE:
-            case MysqlDefs.FIELD_TYPE_DATETIME:
-            case MysqlDefs.FIELD_TYPE_TIMESTAMP:
+            case MysqlDefs.FIELD_TYPE_TINY_BLOB:
+            case MysqlDefs.FIELD_TYPE_BLOB:
+            case MysqlDefs.FIELD_TYPE_MEDIUM_BLOB:
+            case MysqlDefs.FIELD_TYPE_LONG_BLOB:
                 return value;
             default:
                 return value;

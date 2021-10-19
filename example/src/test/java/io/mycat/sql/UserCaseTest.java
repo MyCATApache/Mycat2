@@ -1172,4 +1172,22 @@ public class UserCaseTest implements MycatTest {
             System.out.println();
         }
     }
+
+    @Test
+    public void case19() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);){
+            execute(mycatConnection, "CREATE DATABASE db1");
+            JdbcUtils.execute(mycatConnection, "use db1");
+            JdbcUtils.execute(mycatConnection,"create table if not exists tinyint_test(`state` tinyint(1) DEFAULT '1');");
+            deleteData(mycatConnection,"db1","tinyint_test");
+            JdbcUtils.execute(mycatConnection,"INSERT INTO `tinyint_test` ( `state`) VALUES (?)",Arrays.asList("1"));
+            Statement statement = mycatConnection.createStatement();
+            ResultSet resultSet = statement.executeQuery("select * from tinyint_test");
+            resultSet.next();
+            int anInt = resultSet.getInt(1);
+            Assert.assertEquals(1,anInt);
+            System.out.println();
+        }
+
+    }
 }
