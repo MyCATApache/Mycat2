@@ -27,9 +27,13 @@ import java.util.Map;
 public class TableCollector {
 
     public static Map<String, Collection<String>> collect(String defaultSchema, String sql) {
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+        return collect(defaultSchema, sqlStatement);
+    }
+
+    public static Map<String, Collection<String>> collect(String defaultSchema, SQLStatement sqlStatement) {
         Map<String, Collection<String>> collectionMap = new HashMap<>();
         try {
-            SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
             sqlStatement.accept(new MySqlASTVisitorAdapter() {
                 @Override
                 public boolean visit(SQLExprTableSource x) {
@@ -53,4 +57,5 @@ public class TableCollector {
         }
         return collectionMap;
     }
+
 }
