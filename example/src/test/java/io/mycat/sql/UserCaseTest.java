@@ -368,7 +368,7 @@ public class UserCaseTest implements MycatTest {
             System.out.println(sql2);
             String explain2 = explain(mycatConnection, sql2);
             System.out.println(explain2);
-            Assert.assertEquals(true, explain2.contains("TableLook"));
+            Assert.assertEquals(true, explain2.contains("TableLook")||explain2.contains("Merge"));
             executeQuery(mycatConnection, sql2);
 
             //test transaction
