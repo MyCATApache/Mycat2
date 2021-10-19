@@ -761,6 +761,7 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
                     }
                     return Resource.of(jdbcConnectionManager, true);
                 } else {
+                    jdbcConnectionManager.close();
                     return Resource.of(new JdbcConnectionManager(
                             DruidDatasourceProvider.class.getCanonicalName(),
                             datasourceConfigUpdateSet.getTargetAsMap()), false);
