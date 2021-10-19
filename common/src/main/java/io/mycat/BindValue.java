@@ -130,7 +130,10 @@ public class BindValue {
                  *                     case MysqlType.FIELD_TYPE_NEWDECIMAL:
                  *
                  */
-                return new String((byte[]) value);
+                if (value instanceof byte[]){
+                    return new String((byte[]) value);
+                }
+                return value;
             case MysqlDefs.FIELD_TYPE_TINY_BLOB:
             case MysqlDefs.FIELD_TYPE_BLOB:
             case MysqlDefs.FIELD_TYPE_MEDIUM_BLOB:
