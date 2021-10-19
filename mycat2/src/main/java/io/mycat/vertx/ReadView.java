@@ -70,7 +70,9 @@ public class ReadView implements MySQLPayloadReadView {
 
     @Override
     public String readLenencString() {
-        return new String(readLenencStringBytes(), UTF_8);
+        byte[] bytes = readLenencStringBytes();
+        if (bytes == null)return null;
+        return new String(bytes, UTF_8);
     }
 
     @Override

@@ -368,7 +368,7 @@ public class UserCaseTest implements MycatTest {
             System.out.println(sql2);
             String explain2 = explain(mycatConnection, sql2);
             System.out.println(explain2);
-            Assert.assertEquals(true, explain2.contains("MycatSortMergeJoin"));
+            Assert.assertEquals(true, explain2.contains("TableLook"));
             executeQuery(mycatConnection, sql2);
 
             //test transaction
@@ -377,6 +377,7 @@ public class UserCaseTest implements MycatTest {
             mycatConnection.setAutoCommit(true);
         }
     }
+
     @Test
     public void test548() throws Exception {
         try (Connection mycat = getMySQLConnection(DB_MYCAT);) {
@@ -1290,6 +1291,24 @@ public class UserCaseTest implements MycatTest {
             ResultSetMetaData mysqlMetaData = mysqlResultSet.getMetaData();
             int mysqlColumnType = mysqlMetaData.getColumnType(1);
             Assert.assertEquals(mysqlColumnType,mycatColumnType);
+        }
+
+    }
+
+    @Test
+    public void case19() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);){
+            execute(mycatConnection, "CREATE DATABASE db1");
+            JdbcUtils.execute(mycatConnection, "use db1");
+            JdbcUtils.execute(mycatConnection,"create table if not exists tinyint_test(`state` tinyint(1) DEFAULT '1');");
+            deleteData(mycatConnection,"db1","tinyint_test");
+            JdbcUtils.execute(mycatConnection,"INSERT INTO `tinyint_test` ( `state`) VALUES (?)",Arrays.asList("1"));
+            Statement statement = mycatConnection.createStatement();
+            ResultSet resultSet = statement.executeQuery("select * from tinyint_test");
+            resultSet.next();
+            int anInt = resultSet.getInt(1);
+            Assert.assertEquals(1,anInt);
+            System.out.println();
         }
 
     }
