@@ -755,18 +755,24 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
         if (MetaClusterCurrent.exist(JdbcConnectionManager.class)) {
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
             if (!datasourceConfigUpdateSet.isEmpty()) {
-                for (DatasourceConfig datasourceConfig : datasourceConfigUpdateSet.getDelete()) {
-                    jdbcConnectionManager.removeDatasource(datasourceConfig.getName());
+                if (datasourceConfigUpdateSet.getDelete().isEmpty() && !datasourceConfigUpdateSet.getCreate().isEmpty()) {
+                    for (DatasourceConfig datasourceConfig : datasourceConfigUpdateSet.getCreate()) {
+                        jdbcConnectionManager.addDatasource(datasourceConfig);
+                    }
+                    return Resource.of(jdbcConnectionManager, true);
+                } else {
+                    return Resource.of(new JdbcConnectionManager(
+                            DruidDatasourceProvider.class.getCanonicalName(),
+                            datasourceConfigUpdateSet.getTargetAsMap()), false);
                 }
-                for (DatasourceConfig datasourceConfig : datasourceConfigUpdateSet.getCreate()) {
-                    jdbcConnectionManager.addDatasource(datasourceConfig);
-                }
+            } else {
+                return Resource.of(jdbcConnectionManager, true);
             }
-            return Resource.of(jdbcConnectionManager, true);
+        } else {
+            return Resource.of(new JdbcConnectionManager(
+                    DruidDatasourceProvider.class.getCanonicalName(),
+                    datasourceConfigUpdateSet.getTargetAsMap()), false);
         }
-        return Resource.of(new JdbcConnectionManager(
-                DruidDatasourceProvider.class.getCanonicalName(),
-                datasourceConfigUpdateSet.getTargetAsMap()), false);
     }
 
     @NotNull
