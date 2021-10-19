@@ -666,8 +666,19 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
 
     @NotNull
     private Resource<MetadataManager> getMetadataManager(UpdateSet<LogicSchemaConfig> schemaConfigUpdateSet, PrototypeService prototypeService) {
-        if (MetaClusterCurrent.exist(MetadataManager.class) && schemaConfigUpdateSet.isEmpty()) {
-            return Resource.of(MetaClusterCurrent.wrapper(MetadataManager.class), true);
+        if (MetaClusterCurrent.exist(MetadataManager.class)) {
+            if (schemaConfigUpdateSet.isEmpty()) {
+                return Resource.of(MetaClusterCurrent.wrapper(MetadataManager.class), true);
+            } else {
+                MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+                for (LogicSchemaConfig logicSchemaConfig : schemaConfigUpdateSet.getDelete()) {
+                    metadataManager.removeSchema(logicSchemaConfig.getSchemaName());
+                }
+                for (LogicSchemaConfig logicSchemaConfig : schemaConfigUpdateSet.getCreate()) {
+                    metadataManager.addSchema(logicSchemaConfig);
+                }
+                return Resource.of(MetaClusterCurrent.wrapper(MetadataManager.class), true);
+            }
         }
         return Resource.of(MetadataManager.createMetadataManager(schemaConfigUpdateSet.getTargetAsMap(), prototypeService), false);
     }
