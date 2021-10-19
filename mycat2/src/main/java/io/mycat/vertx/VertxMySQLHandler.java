@@ -182,9 +182,12 @@ public class VertxMySQLHandler extends DefaultCommandHandler {
                                 byte[] longData = getLongData(statementId, i, this.session);
                                 if (longData == null) {
                                     BindValueUtil.read(readView, bv, StandardCharsets.UTF_8);
+                                    bv.isLongData = false;
                                 } else {
                                     bv.value = longData;
+                                    bv.isLongData = true;
                                 }
+
                             }
                             values[i] = bv;
                         }

@@ -22,6 +22,7 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.SQLCreateViewStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
@@ -968,6 +969,45 @@ public class MetadataManager implements MysqlVariableService {
                 .filter(i -> i.getType() == LogicTableType.SHARDING || i.getType() == LogicTableType.GLOBAL)
                 .parallel()
                 .forEach(tableHandler -> tableHandler.createPhysicalTables());
+    }
+
+    public SQLStatement typeInferenceUpdate(SQLStatement statement, String defaultSchema) {
+        try {
+            if (statement instanceof SQLInsertStatement) {
+                SQLInsertStatement sqlInsertStatement = (SQLInsertStatement) statement;
+                SQLExprTableSource tableSource = sqlInsertStatement.getTableSource();
+                String schemaName = SQLUtils.normalize(Optional.ofNullable(tableSource.getSchema()).orElse(defaultSchema));
+                String tableName = SQLUtils.normalize(tableSource.getTableName());
+                TableHandler table = this.getTable(schemaName, tableName);
+                List<SQLExpr> columns = sqlInsertStatement.getColumns();
+                List<SQLInsertStatement.ValuesClause> valuesList = sqlInsertStatement.getValuesList();
+
+                for (SQLInsertStatement.ValuesClause valuesClause : valuesList) {
+
+                    List<SQLExpr> valuesClauseValues = new ArrayList<>(valuesClause.getValues());
+
+                    for (int i = 0; i < columns.size(); i++) {
+                        SQLExpr expr = valuesClauseValues.get(i);
+                        if (expr instanceof SQLHexExpr) {
+                            SQLHexExpr sqlHexExpr = (SQLHexExpr) expr;
+                            SQLExpr sqlExpr = columns.get(i);
+                            SQLIdentifierExpr sqlIdentifierExpr = (SQLIdentifierExpr) sqlExpr;
+                            String name = sqlIdentifierExpr.normalizedName();
+                            SimpleColumnInfo columnByName = table.getColumnByName(name);
+                            if (columnByName.getType() != SimpleColumnInfo.Type.BLOB) {
+                                valuesClause.replace(expr, sqlHexExpr.toCharExpr());
+                            } else {
+                                continue;
+                            }
+                        }
+                    }
+                }
+                return sqlInsertStatement;
+            }
+        } catch (Exception e) {
+            LOGGER.warn("", e);
+        }
+        return statement;
     }
 
 

@@ -173,22 +173,13 @@ public class PreparedStatement {
         outputStream.write(data);
     }
 
-    /**
-     * 组装sql语句,替换动态参数为实际参数值
-     *
-     * @param values
-     */
-    public String getSqlByBindValue(BindValue[] values) {
-        SQLStatement sqlStatement = getSQLStatementByBindValue(values);
-        return sqlStatement.toString();
-    }
 
     public SQLStatement getSQLStatementByBindValue(BindValue[] values) {
         if (this.bindValues != values) {
             throw new AssertionError();
         }
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(this.statement.toString());
-        boolean primitiveArg = !(sqlStatement instanceof SQLSelectStatement);
+        boolean hasBlob = !(sqlStatement instanceof SQLSelectStatement);
         sqlStatement.accept(new MySqlASTVisitorAdapter() {
             int index;
 
@@ -199,7 +190,7 @@ public class PreparedStatement {
                     if (index < bindValues.length) {
                         io.mycat.BindValue value = bindValues[index++];
                         if (!value.isNull) {
-                            o = value.getJavaObject(primitiveArg);
+                            o = value.getJavaObject(hasBlob);
                         }
                     }
                     SQLReplaceable parent = (SQLReplaceable) x.getParent();

@@ -11,6 +11,7 @@ import io.mycat.router.mycat1xfunction.PartitionByHotDate;
 import io.mycat.util.ByteUtil;
 import io.vertx.core.json.Json;
 import org.apache.groovy.util.Maps;
+import org.apache.orc.impl.InStream;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.boot.autoconfigure.quartz.QuartzProperties;
@@ -21,6 +22,8 @@ import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 @NotThreadSafe
@@ -834,6 +837,30 @@ public class UserCaseTest implements MycatTest {
             System.out.println();
         }
     }
+    @Test
+    public void case14_1() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
+            execute(mycatConnection, RESET_CONFIG);
+            JdbcUtils.execute(mycatConnection, CreateSchemaHint.create("mysql",
+                    "prototype"));
+            JdbcUtils.execute(mycatConnection, "CREATE TABLE mysql.`testblob` (\n" +
+                    "  `id` bigint(20) DEFAULT NULL,\n" +
+                    "  `data` blob\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            deleteData(mycatConnection, "mysql", "testblob");
+            byte[] data = IntStream.range(1,8192).mapToObj(i->String.valueOf(i)).collect(Collectors.joining()).getBytes();
+            PreparedStatement preparedStatement = mycatConnection.prepareStatement("INSERT INTO mysql.testblob \n" +
+                    "(id,data)\n" +
+                    "VALUES\n" +
+                    " (1,?);");
+            preparedStatement.setBytes(1,data);
+            preparedStatement.execute();
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(mycatConnection, "select * from mysql.testblob where id = 1", Collections.emptyList());
+            byte[] data1 = (byte[]) maps.get(0).get("data");
+            Assert.assertTrue(Arrays.equals(data, data1));
+            System.out.println();
+        }
+    }
 
     private void testBlob(Connection mycatConnection, String createTableSQL) throws Exception {
         execute(mycatConnection, createTableSQL);
@@ -1176,6 +1203,7 @@ public class UserCaseTest implements MycatTest {
     @Test
     public void case19() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);){
+            execute(mycatConnection,RESET_CONFIG);
             execute(mycatConnection, "CREATE DATABASE db1");
             JdbcUtils.execute(mycatConnection, "use db1");
             JdbcUtils.execute(mycatConnection,"create table if not exists tinyint_test(`state` tinyint(1) DEFAULT '1');");
