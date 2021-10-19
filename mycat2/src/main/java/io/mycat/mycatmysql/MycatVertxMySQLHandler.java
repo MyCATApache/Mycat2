@@ -9,8 +9,8 @@ import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import io.mycat.*;
 import io.mycat.Process;
+import io.mycat.*;
 import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
@@ -26,7 +26,9 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Action;
 import io.reactivex.rxjava3.functions.Consumer;
-import io.vertx.core.*;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.impl.future.PromiseInternal;
@@ -196,8 +198,10 @@ public class MycatVertxMySQLHandler {
                                 byte[] longData = getLongData(statementId, i, this.session);
                                 if (longData == null) {
                                     BindValueUtil.read(readView, bv, StandardCharsets.UTF_8);
+                                    bv.isLongData = false;
                                 } else {
                                     bv.value = longData;
+                                    bv.isLongData = true;
                                 }
                             }
                             values[i] = bv;
@@ -343,15 +347,15 @@ public class MycatVertxMySQLHandler {
                     int errorCode = 0;
                     String message;
                     String sqlState;
-                    if (cause instanceof SQLException){
+                    if (cause instanceof SQLException) {
                         errorCode = ((SQLException) cause).getErrorCode();
                         message = ((SQLException) cause).getMessage();
                         sqlState = ((SQLException) cause).getSQLState();
-                    }else if (cause instanceof MycatException){
+                    } else if (cause instanceof MycatException) {
                         errorCode = ((MycatException) cause).getErrorCode();
                         message = ((MycatException) cause).getMessage();
                         sqlState = "";
-                    }else {
+                    } else {
                         message = o.toString();
                     }
                     mycatDataContext.setLastMessage(message);
@@ -409,6 +413,7 @@ public class MycatVertxMySQLHandler {
     }
 
     private Future<Void> handlePrepareStatementExecute(long statementId, byte flags, int[] params, BindValue[] values, MycatVertxMysqlSession MycatMysqlSession) throws Exception {
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         io.mycat.PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
@@ -416,9 +421,13 @@ public class MycatVertxMySQLHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("preparestatement:{}", statement);
         }
+        SQLStatement typeStatement = metadataManager.typeInferenceUpdate(statement, dataContext.getDefaultSchema());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("typeInferenceUpdate:{}", typeStatement);
+        }
         Response receiver = new ReceiverImpl(session, 1, true);
         IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
-        return ioExecutor.executeBlocking(event -> MycatdbCommand.execute(dataContext, receiver, statement).onComplete(event));
+        return ioExecutor.executeBlocking(event -> MycatdbCommand.execute(dataContext, receiver, typeStatement).onComplete(event));
     }
 
     private byte[] getLongData(long statementId, int i, MycatVertxMysqlSession MycatMysqlSession) {
@@ -475,8 +484,8 @@ public class MycatVertxMySQLHandler {
         boolean deprecateEOF = session.isDeprecateEOF();
         String sql = new String(bytes);
         /////////////////////////////////////////////////////
-        if(LOGGER.isDebugEnabled()){
-            LOGGER.debug("received pstmt sql:{}",sql);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("received pstmt sql:{}", sql);
         }
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
         boolean allow = (sqlStatement instanceof SQLSelectStatement

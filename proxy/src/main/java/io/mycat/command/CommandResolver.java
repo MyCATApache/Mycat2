@@ -168,8 +168,10 @@ public class CommandResolver {
                                     byte[] longData = commandHandler.getLongData(statementId, i, mycat);
                                     if (longData == null) {
                                         BindValueUtil.read(curPacket, bv, StandardCharsets.UTF_8);
+                                        bv.isLongData = false;
                                     } else {
                                         bv.value = longData;
+                                        bv.isLongData = true;
                                     }
                                 }
                                 values[i] = bv;

@@ -74,11 +74,11 @@ public class BindValue {
         this.value = null;
     }
 
-    public Object getJavaObject(boolean primitive) {
+    public Object getJavaObject(boolean hasBlob) {
         if (isNull){
             return null;
         }
-        if (primitive) {
+        if (hasBlob) {
             byte[] o;
             if (value instanceof ByteArrayOutputStream) {
                 o = ((ByteArrayOutputStream) value).toByteArray();
@@ -119,9 +119,6 @@ public class BindValue {
             case MysqlDefs.FIELD_TYPE_DATE:
             case MysqlDefs.FIELD_TYPE_DATETIME:
             case MysqlDefs.FIELD_TYPE_TIMESTAMP:
-                if (value instanceof String){
-                    return (String)value;
-                }
                 /**
                  *           case MysqlType.FIELD_TYPE_VAR_STRING:
                  *                     case MysqlType.FIELD_TYPE_STRING:
@@ -130,9 +127,6 @@ public class BindValue {
                  *                     case MysqlType.FIELD_TYPE_NEWDECIMAL:
                  *
                  */
-                if (value instanceof byte[]){
-                    return new String((byte[]) value);
-                }
                 return value;
             case MysqlDefs.FIELD_TYPE_TINY_BLOB:
             case MysqlDefs.FIELD_TYPE_BLOB:

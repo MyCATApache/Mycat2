@@ -15,26 +15,23 @@
 package io.mycat;
 
 import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.ast.SQLDataType;
+import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLCreateViewStatement;
+import com.alibaba.druid.sql.ast.expr.SQLHexExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
+import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.google.common.collect.ImmutableList;
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.beans.mycat.MycatErrorCode;
-import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.beans.mysql.MySQLType;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.table.*;
 import io.mycat.config.*;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.router.function.IndexDataNode;
 import io.mycat.router.mycat1xfunction.PartitionRuleFunctionManager;
-import io.mycat.util.*;
+import io.mycat.util.NameMap;
+import io.mycat.util.Pair;
+import io.mycat.util.SplitUtil;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -43,10 +40,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -507,5 +501,44 @@ public class MetadataManager {
             }
         }
         return schemaConfigs;
+    }
+
+    public SQLStatement typeInferenceUpdate(SQLStatement statement, String defaultSchema) {
+        try {
+            if (statement instanceof SQLInsertStatement) {
+                SQLInsertStatement sqlInsertStatement = (SQLInsertStatement) statement;
+                SQLExprTableSource tableSource = sqlInsertStatement.getTableSource();
+                String schemaName = SQLUtils.normalize(Optional.ofNullable(tableSource.getSchema()).orElse(defaultSchema));
+                String tableName = SQLUtils.normalize(tableSource.getTableName());
+                TableHandler table = this.getTable(schemaName, tableName);
+                List<SQLExpr> columns = sqlInsertStatement.getColumns();
+                List<SQLInsertStatement.ValuesClause> valuesList = sqlInsertStatement.getValuesList();
+
+                for (SQLInsertStatement.ValuesClause valuesClause : valuesList) {
+
+                    List<SQLExpr> valuesClauseValues = new ArrayList<>(valuesClause.getValues());
+
+                    for (int i = 0; i < columns.size(); i++) {
+                        SQLExpr expr = valuesClauseValues.get(i);
+                        if (expr instanceof SQLHexExpr) {
+                            SQLHexExpr sqlHexExpr = (SQLHexExpr) expr;
+                            SQLExpr sqlExpr = columns.get(i);
+                            SQLIdentifierExpr sqlIdentifierExpr = (SQLIdentifierExpr) sqlExpr;
+                            String name = sqlIdentifierExpr.normalizedName();
+                            SimpleColumnInfo columnByName = table.getColumnByName(name);
+                            if (columnByName.getType() != SimpleColumnInfo.Type.BLOB) {
+                                valuesClause.replace(expr, sqlHexExpr.toCharExpr());
+                            } else {
+                                continue;
+                            }
+                        }
+                    }
+                }
+                return sqlInsertStatement;
+            }
+        } catch (Exception e) {
+            LOGGER.warn("", e);
+        }
+        return statement;
     }
 }
