@@ -493,10 +493,6 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
                 ReplicaSelectorManager replicaSelectorManager = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
                 replicaSelectorManager.stop();
             }
-            if (MetaClusterCurrent.exist(JdbcConnectionManager.class) && !datasourceConfigUpdateSet.isEmpty()) {
-                JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-                jdbcConnectionManager.close();
-            }
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
             Resource<JdbcConnectionManager> jdbcConnectionManager = getJdbcConnectionManager(datasourceConfigUpdateSet);
@@ -523,12 +519,7 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
             MetaClusterCurrent.register(ReplicaSelectorManager.class, replicaSelectorManager.get());
             MetaClusterCurrent.register(MySQLManager.class, mycatMySQLManager.get());
 
-            try(DefaultConnection connection = jdbcConnectionManager1.getConnection(PrototypeService.PROTOTYPE)){
-
-            }catch (Throwable throwable){
-                System.out.println();
-              jdbcConnectionManager1.getConnection(PrototypeService.PROTOTYPE);
-            }
+            testPrototype(jdbcConnectionManager1);
 
             //////////////////////////////////////////////////////////////////////////////////////////////////////////
             resourceList.clear();
@@ -609,6 +600,12 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
         }
         if (options.persistence) {
             persistence(schemaConfigUpdateSet, clusterConfigUpdateSet, datasourceConfigUpdateSet, sequenceConfigUpdateSet, sqlCacheConfigUpdateSet, userConfigUpdateSet);
+        }
+    }
+
+    private void testPrototype(JdbcConnectionManager jdbcConnectionManager1) {
+        try(DefaultConnection connection = jdbcConnectionManager1.getConnection(PrototypeService.PROTOTYPE)){
+
         }
     }
 
@@ -756,7 +753,14 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
     @NotNull
     private Resource<JdbcConnectionManager> getJdbcConnectionManager(UpdateSet<DatasourceConfig> datasourceConfigUpdateSet) {
         if (datasourceConfigUpdateSet.isEmpty() && MetaClusterCurrent.exist(JdbcConnectionManager.class)) {
-            return Resource.of(MetaClusterCurrent.wrapper(JdbcConnectionManager.class), true);
+            JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+            for (DatasourceConfig datasourceConfig : datasourceConfigUpdateSet.getDelete()) {
+                jdbcConnectionManager.removeDatasource(datasourceConfig.getName());
+            }
+            for (DatasourceConfig datasourceConfig : datasourceConfigUpdateSet.getCreate()) {
+                jdbcConnectionManager.addDatasource(datasourceConfig);
+            }
+            return Resource.of(jdbcConnectionManager, true);
         }
         return Resource.of(new JdbcConnectionManager(
                 DruidDatasourceProvider.class.getCanonicalName(),
