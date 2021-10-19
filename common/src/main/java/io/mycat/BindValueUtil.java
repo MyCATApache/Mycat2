@@ -70,15 +70,6 @@ public class BindValueUtil {
             case MysqlDefs.FIELD_TYPE_VARCHAR:
             case MysqlDefs.FIELD_TYPE_DECIMAL:
             case MysqlDefs.FIELD_TYPE_NEW_DECIMAL:
-            {
-                String vv = mm.readLenencString();
-                if (vv == null) {
-                    bv.isNull = true;
-                } else {
-                    bv.value = vv;
-                }
-                break;
-            }
             case MysqlDefs.FIELD_TYPE_BLOB:
             default: {
                 byte[] vv = mm.readLenencBytes();
