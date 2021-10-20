@@ -14,15 +14,17 @@
  */
 package io.mycat.command;
 
-import io.mycat.*;
+import io.mycat.BindValue;
+import io.mycat.BindValueUtil;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.MycatDataContext;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
+import io.mycat.config.ServerConfig;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -167,7 +169,8 @@ public class CommandResolver {
                                 } else {
                                     byte[] longData = commandHandler.getLongData(statementId, i, mycat);
                                     if (longData == null) {
-                                        BindValueUtil.read(curPacket, bv, StandardCharsets.UTF_8);
+                                        ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
+                                        BindValueUtil.read(curPacket, bv, StandardCharsets.UTF_8,!serverConfig.isPstmtStringVal());
                                         bv.isLongData = false;
                                     } else {
                                         bv.value = longData;

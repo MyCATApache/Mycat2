@@ -19,6 +19,7 @@ import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.commands.MycatdbCommand;
 import io.mycat.commands.ReceiverImpl;
 import io.mycat.config.MySQLServerCapabilityFlags;
+import io.mycat.config.ServerConfig;
 import io.mycat.util.VertxUtil;
 import io.mycat.util.packet.AbstractWritePacket;
 import io.mycat.vertx.ReadView;
@@ -197,7 +198,8 @@ public class MycatVertxMySQLHandler {
                             } else {
                                 byte[] longData = getLongData(statementId, i, this.session);
                                 if (longData == null) {
-                                    BindValueUtil.read(readView, bv, StandardCharsets.UTF_8);
+                                    ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
+                                    BindValueUtil.read(readView, bv, StandardCharsets.UTF_8,!serverConfig.isPstmtStringVal());
                                     bv.isLongData = false;
                                 } else {
                                     bv.value = longData;

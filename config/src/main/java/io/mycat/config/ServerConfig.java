@@ -65,6 +65,7 @@ public class ServerConfig {
     //BROADCAST
     private boolean forcedPushDownBroadcast = false;
     private boolean bkaJoin = true;
+    private boolean pstmtStringVal = false;
     public static void main(String[] args) {
         System.out.println(JsonUtil.toJson(new ServerConfig()));
     }
