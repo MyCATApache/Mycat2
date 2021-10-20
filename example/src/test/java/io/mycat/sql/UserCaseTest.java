@@ -1340,4 +1340,26 @@ public class UserCaseTest implements MycatTest {
         }
 
     }
+
+
+    @Test
+    public void case20() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);){
+            execute(mycatConnection,RESET_CONFIG);
+            execute(mycatConnection, "CREATE DATABASE db1");
+            JdbcUtils.execute(mycatConnection, "use db1");
+            JdbcUtils.execute(mycatConnection, "drop table if  exists int_test");
+            JdbcUtils.execute(mycatConnection,"create table if not exists int_test(`state` int(11)) AUTO_INCREMENT=14132 DEFAULT ;");
+            deleteData(mycatConnection,"db1","int_test");
+            JdbcUtils.execute(mycatConnection,"INSERT INTO `int_test` ( `state`) VALUES (?)",Arrays.asList("14130"));
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(mycatConnection, "select * from int_test", Collections.emptyList());
+            Statement statement = mycatConnection.createStatement();
+            ResultSet resultSet = statement.executeQuery("select * from int_test");
+            resultSet.next();
+            int anInt = resultSet.getInt(1);
+            Assert.assertEquals(14130,anInt);
+            System.out.println();
+        }
+
+    }
 }
