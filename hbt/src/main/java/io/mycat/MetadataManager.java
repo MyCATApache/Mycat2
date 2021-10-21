@@ -70,6 +70,50 @@ public class MetadataManager {
         addShardingTable(schemaName, tableName, tableConfig, getBackendTableInfos(backends), indexTables);
     }
 
+    public void addProcedure(String schemaNameArg, String procedureNameArg, NormalProcedureConfig config) {
+        String schemaName = SQLUtils.normalize(schemaNameArg);
+        String procedureName = SQLUtils.normalize(procedureNameArg);
+        SchemaHandler schemaHandler = schemaMap.get(schemaName);
+        if (schemaHandler != null) {
+            NameMap<ProcedureHandler> procedures = schemaHandler.procedures();
+
+            Optional.ofNullable(config.getLocality()).ifPresent(c -> {
+                if (c.getSchemaName() == null) {
+                    c.setSchemaName(schemaName);
+                }
+                if (c.getProcedureName() == null) {
+                    c.setProcedureName(procedureName);
+                }
+                if (c.getTargetName() == null) {
+                    c.setTargetName(getPrototype());
+                }
+            });
+            procedures.put(procedureName, new NormalProcedureHandler(procedureName,config));
+        }
+    }
+
+    public void removeProcedure(String schemaName, String procedureName) {
+        schemaName = SQLUtils.normalize(schemaName);
+        procedureName = SQLUtils.normalize(procedureName);
+        SchemaHandler schemaHandler = schemaMap.get(schemaName);
+        if (schemaHandler != null) {
+            NameMap<ProcedureHandler> procedures = schemaHandler.procedures();
+            procedures.remove(procedureName);
+        }
+    }
+
+    public Optional<ProcedureHandler> getProcedure(String schemaName, String procedureName) {
+        schemaName = SQLUtils.normalize(schemaName);
+        procedureName = SQLUtils.normalize(procedureName);
+        SchemaHandler schemaHandler = schemaMap.get(schemaName);
+        if (schemaHandler != null) {
+            NameMap<ProcedureHandler> procedures = schemaHandler.procedures();
+            ProcedureHandler procedureHandler = procedures.get(procedureName);
+            return Optional.ofNullable(procedureHandler);
+        }
+        return Optional.empty();
+    }
+
     public void removeTable(String schemaName, String tableName) {
         SchemaHandler schemaHandler = schemaMap.get(schemaName);
         if (schemaHandler != null) {
@@ -191,6 +235,12 @@ public class MetadataManager {
                     tableName,
                     tableConfigEntry
             );
+        }
+        for (Map.Entry<String, NormalProcedureConfig> e : value.getNormalProcedures().entrySet()) {
+            String procedureName = e.getKey();
+            removeProcedure(schemaName, procedureName);
+            NormalProcedureConfig normalProcedureConfig = e.getValue();
+           addProcedure(schemaName,procedureName,normalProcedureConfig);
         }
     }
 
@@ -496,6 +546,15 @@ public class MetadataManager {
 
                     }
                     case CUSTOM:
+                        break;
+                }
+            }
+
+            for (ProcedureHandler procedureHandler : schemaHandler.procedures().values()) {
+                switch (procedureHandler.getType()) {
+                    case NORMAL:
+                        NormalProcedureHandler normalProcedureHandler = (NormalProcedureHandler)procedureHandler;
+                        logicSchemaConfig. getNormalProcedures().put(normalProcedureHandler.getName(),normalProcedureHandler.getConfig());
                         break;
                 }
             }

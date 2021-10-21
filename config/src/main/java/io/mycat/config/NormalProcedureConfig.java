@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode
-public class ProcedureConfig {
+public class NormalProcedureConfig {
     String createProcedureSQL;
-    String targetName;
+    NormalBackEndProcedureInfoConfig locality = new NormalBackEndProcedureInfoConfig();
 }

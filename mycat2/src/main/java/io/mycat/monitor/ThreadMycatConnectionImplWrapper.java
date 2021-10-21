@@ -60,6 +60,11 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
     }
 
     @Override
+    public Future<List<Object>> call(String sql) {
+        return newMycatConnection.call(sql);
+    }
+
+    @Override
     public Future<SqlResult> insert(String sql, List<Object> params) {
         IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
         return ioExecutor.executeBlocking(promise -> {

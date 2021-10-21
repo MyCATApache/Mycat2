@@ -61,4 +61,5 @@ public interface ConfigOps {
 
     public void reset();
 
+    public void addProcedure(String schemaName, String pName, NormalProcedureConfig normalProcedureConfig);
 }

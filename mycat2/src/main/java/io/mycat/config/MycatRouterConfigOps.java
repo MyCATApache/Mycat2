@@ -993,4 +993,24 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
             return tableConfig;
         });
     }
+
+    public void addProcedure(String schemaName, String pName, NormalProcedureConfig normalProcedureConfig) {
+        List<LogicSchemaConfig> schemas = newConfig.getSchemas();
+        Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> schemaName.equalsIgnoreCase(i.getSchemaName())).findFirst();
+        if (first.isPresent()) {
+            LogicSchemaConfig logicSchemaConfig = first.get();
+            Map<String, NormalProcedureConfig> normalProcedures = logicSchemaConfig.getNormalProcedures();
+            normalProcedures.put(pName,normalProcedureConfig);
+        }
+    }
+
+    public void removeProcedure(String schemaName, String pName) {
+        List<LogicSchemaConfig> schemas = newConfig.getSchemas();
+        Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> schemaName.equalsIgnoreCase(i.getSchemaName())).findFirst();
+        if (first.isPresent()) {
+            LogicSchemaConfig logicSchemaConfig = first.get();
+            Map<String, NormalProcedureConfig> normalProcedures = logicSchemaConfig.getNormalProcedures();
+            normalProcedures.remove(pName);
+        }
+    }
 }

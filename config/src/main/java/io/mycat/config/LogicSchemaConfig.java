@@ -20,6 +20,8 @@ public final class LogicSchemaConfig implements KVObject{
 
     Map<String, CustomTableConfig> customTables = new HashMap<>();
 
+    Map<String, NormalProcedureConfig> normalProcedures = new HashMap<>();
+
     Map<String, ViewConfig> views = new HashMap<>();
 
     public Optional<Object> findTable(String tableName) {

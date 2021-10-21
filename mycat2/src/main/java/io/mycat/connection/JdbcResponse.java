@@ -35,6 +35,16 @@ public class JdbcResponse implements Response {
     }
 
     @Override
+    public int getResultSetCounter() {
+        return 0;
+    }
+
+    @Override
+    public void resetResultSetCounter(int count) {
+
+    }
+
+    @Override
     public Future<Void> sendError(Throwable e) {
         return Future.failedFuture(e);
     }
@@ -180,6 +190,11 @@ public class JdbcResponse implements Response {
 
     @Override
     public Future<Void> sendVectorResultSet(Observable<VectorSchemaRoot> rootObservable) {
+        return null;
+    }
+
+    @Override
+    public Future<Void> proxyProcedure(String sql, String targetName) {
         return null;
     }
 

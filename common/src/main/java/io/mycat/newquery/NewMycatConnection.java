@@ -22,6 +22,8 @@ public interface NewMycatConnection {
 
     Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params);
 
+    Future<List<Object>> call(String sql);
+
     Future<SqlResult> insert(String sql, List<Object> params);
 
     Future<SqlResult> insert(String sql);

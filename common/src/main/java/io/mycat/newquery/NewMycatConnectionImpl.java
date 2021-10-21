@@ -12,11 +12,13 @@ import io.reactivex.rxjava3.core.ObservableOnSubscribe;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.jdbcclient.impl.actions.JDBCResponse;
 import org.apache.arrow.adapter.jdbc.ArrowVectorIterator;
 import org.apache.arrow.adapter.jdbc.JdbcToArrowConfig;
 import org.apache.arrow.adapter.jdbc.JdbcToArrowConfigBuilder;
 import org.apache.arrow.adapter.jdbc.JdbcToArrowUtils;
 import org.apache.arrow.vector.VectorSchemaRoot;
+import org.checkerframework.checker.units.qual.C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,13 +132,13 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     }
 
     @Override
-    public  Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params) {
+    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params) {
         return Observable.create(new ObservableOnSubscribe<VectorSchemaRoot>() {
             @Override
             public void subscribe(@NonNull ObservableEmitter<VectorSchemaRoot> emitter) throws Throwable {
 
 
-                synchronized (NewMycatConnectionImpl.this){
+                synchronized (NewMycatConnectionImpl.this) {
 
 
                     JdbcToArrowConfigBuilder jdbcToArrowConfigBuilder = new JdbcToArrowConfigBuilder();
@@ -183,6 +185,36 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                 }
             }
         });
+    }
+
+    @Override
+    public synchronized Future<List<Object>> call(String sql) {
+        try {
+            ArrayList<Object> resultSetList = new ArrayList<>();
+            CallableStatement callableStatement = connection.prepareCall(sql);
+            boolean firstExecuteRes = callableStatement.execute();
+            int updateCount = callableStatement.getUpdateCount();
+            if (firstExecuteRes){
+                ResultSet resultSet = callableStatement.getResultSet();//获取第一个resultSet
+                MycatRowMetaData metaData = new CopyMycatRowMetaData( new JdbcRowMetaData(resultSet.getMetaData()));
+                List<Object[]> objects = new ArrayList<>();
+                while (resultSet.next()){
+                    int columnCount = metaData.getColumnCount();
+                    Object[] row = new Object[columnCount];
+                    for (int i = 0; i < columnCount; i++) {
+                        row[i] = resultSet.getObject(i+1);
+                    }
+                    objects.add(row);
+                }
+                RowSet rowSet = new RowSet(metaData, objects);
+                resultSetList.add(rowSet);
+            }else {
+                resultSetList.add(new long[]{updateCount,0});
+            }
+            return Future.succeededFuture(resultSetList);
+        } catch (Throwable throwable) {
+            return Future.failedFuture(throwable);
+        }
     }
 
     @Override

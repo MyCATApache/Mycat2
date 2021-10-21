@@ -252,6 +252,11 @@ public class NativeMySQLConnection implements NewMycatConnection {
     }
 
     @Override
+    public Future<List<Object>> call(String sql) {
+        return Future.failedFuture(new UnsupportedOperationException());
+    }
+
+    @Override
     public Future<SqlResult> insert(String sql, List<Object> params) {
         throw new UnsupportedOperationException();
     }

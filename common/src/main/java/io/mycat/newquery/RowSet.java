@@ -1,6 +1,8 @@
 package io.mycat.newquery;
 
+import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.beans.mycat.ResultSetBuilder;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -29,4 +31,8 @@ public class RowSet implements Iterable<Object[]>{
     public Iterator<Object[]> iterator() {
         return objects.iterator();
     }
+
+   public RowBaseIterator toRowBaseIterator(){
+        return new ResultSetBuilder.DefObjectRowIteratorImpl(mycatRowMetaData,objects.iterator());
+   }
 }

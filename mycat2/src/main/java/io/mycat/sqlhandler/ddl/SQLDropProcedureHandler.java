@@ -1,19 +1,16 @@
 package io.mycat.sqlhandler.ddl;
 
 import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.ast.SQLParameter;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.SQLBlockStatement;
-import com.alibaba.druid.sql.ast.statement.SQLCreateProcedureStatement;
+import com.alibaba.druid.sql.ast.statement.SQLDropProcedureStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.*;
 import io.mycat.config.MycatRouterConfigOps;
-import io.mycat.config.NormalBackEndProcedureInfoConfig;
-import io.mycat.config.NormalProcedureConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
@@ -23,21 +20,21 @@ import io.vertx.core.Future;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
 
-public class SQLCreateProcedureHandler extends AbstractSQLHandler<SQLCreateProcedureStatement> {
+public class SQLDropProcedureHandler extends AbstractSQLHandler<SQLDropProcedureStatement> {
 
 
     @Override
     @SneakyThrows
-    protected Future<Void> onExecute(SQLRequest<SQLCreateProcedureStatement> request, MycatDataContext dataContext, Response response) {
+    protected Future<Void> onExecute(SQLRequest<SQLDropProcedureStatement> request, MycatDataContext dataContext, Response response) {
 
-        SQLCreateProcedureStatement ast = request.getAst();
+        SQLDropProcedureStatement ast = request.getAst();
         if (ast.getName() instanceof SQLIdentifierExpr) {
             String defaultSchema = dataContext.getDefaultSchema();
             if (defaultSchema != null) {
-                ast.setName(new SQLPropertyExpr( defaultSchema , ((SQLIdentifierExpr) ast.getName()).getName()));
+                ast.setName(new SQLPropertyExpr(defaultSchema, ((SQLIdentifierExpr) ast.getName()).getName()));
             }
         }
 
@@ -47,39 +44,9 @@ public class SQLCreateProcedureHandler extends AbstractSQLHandler<SQLCreateProce
         SQLPropertyExpr pNameExpr = (SQLPropertyExpr) ast.getName();
         String schemaName = SQLUtils.normalize(pNameExpr.getOwnerName().toLowerCase());
         String pName = SQLUtils.normalize(pNameExpr.getName().toLowerCase());
-        List<SQLParameter> sqlParameters = Optional.ofNullable(ast.getParameters()).orElse(Collections.emptyList());
-        Map<SQLParameter.ParameterType, List<SQLParameter>> parameterTypeListMap
-                = sqlParameters.stream().collect(Collectors.groupingBy(k -> k.getParamType()));
-        SQLBlockStatement block = (SQLBlockStatement)ast.getBlock();
-        if (dataContext.getDefaultSchema() != null) {
-            block.accept(new MySqlASTVisitorAdapter() {
-                @Override
-                public void endVisit(SQLExprTableSource x) {
-                    resolveSQLExprTableSource(x, dataContext);
-                }
-            });
-        }
-        Map<String, Collection<String>> collect = TableCollector.collect(dataContext.getDefaultSchema(), block);
-
-
-        int resultSetCount = getResultSetCount(block);
-
-        List<TableHandler> tableHandlers = getTableHandlers(block);
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-
-        NormalProcedureConfig normalProcedureConfig = new NormalProcedureConfig();
-        normalProcedureConfig.setCreateProcedureSQL(ast.toString());
-
-        NormalBackEndProcedureInfoConfig normalBackEndProcedureInfoConfig = new NormalBackEndProcedureInfoConfig();
-        normalBackEndProcedureInfoConfig.setProcedureName(pName);
-        normalBackEndProcedureInfoConfig.setSchemaName(schemaName);
-        normalBackEndProcedureInfoConfig.setTargetName(MetadataManager.getPrototype());
-
-
-        normalProcedureConfig.setLocality(normalBackEndProcedureInfoConfig);
 
         try(MycatRouterConfigOps ops = ConfigUpdater.getOps();){
-            ops.addProcedure(schemaName,pName,normalProcedureConfig);
+            ops.removeProcedure(schemaName,pName);
             ops.commit();
         }
 
@@ -88,6 +55,7 @@ public class SQLCreateProcedureHandler extends AbstractSQLHandler<SQLCreateProce
         try(DefaultConnection connection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype());){
             connection.executeUpdate(ast.toString(),false);
         }
+
         return response.sendOk();
     }
 

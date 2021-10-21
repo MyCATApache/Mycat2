@@ -16,15 +16,14 @@ package io.mycat.commands;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
 import io.mycat.*;
-import io.mycat.api.collector.MySQLColumnDef;
-import io.mycat.api.collector.MysqlByteArrayPayloadRow;
-import io.mycat.api.collector.MysqlObjectArrayRow;
-import io.mycat.api.collector.MysqlPayloadObject;
+import io.mycat.api.collector.*;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.resultset.ResultSetWriter;
 import io.mycat.beans.resultset.SimpleBinaryWriterImpl;
 import io.mycat.beans.resultset.SimpleTextWriterImpl;
 import io.mycat.newquery.NewMycatConnection;
+import io.mycat.newquery.RowSet;
+import io.mycat.newquery.SqlResult;
 import io.mycat.proxy.session.MySQLServerSession;
 import io.mycat.swapbuffer.PacketMessageConsumer;
 import io.mycat.swapbuffer.PacketRequest;
@@ -50,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static io.mycat.ExecuteType.*;
 
@@ -72,6 +72,15 @@ public class ReceiverImpl implements Response {
         this.transactionSession = (XaSqlConnection) this.dataContext.getTransactionSession();
     }
 
+    @Override
+    public int getResultSetCounter() {
+        return this.count;
+    }
+
+    @Override
+    public void resetResultSetCounter(int count) {
+        this.count = count;
+    }
 
     @Override
     public Future<Void> sendError(Throwable e) {
@@ -344,5 +353,42 @@ public class ReceiverImpl implements Response {
             }
         });
         return sendResultSet(mysqlPacketObservable);
+    }
+
+    @Override
+    public Future<Void> proxyProcedure(String sql, String targetName) {
+         targetName = dataContext.resolveDatasourceTargetName(targetName, true);
+        XaSqlConnection transactionSession = (XaSqlConnection) dataContext.getTransactionSession();
+        Future<NewMycatConnection> mySQLManagerConnection = transactionSession.getConnection(targetName);
+        Future<List<Object>> objectFuture = mySQLManagerConnection.flatMap(newMycatConnection -> {
+            Future<List<Object>> call = newMycatConnection.call(sql);
+            return (Future) call;
+        });
+        Future<List<Object>> rowBaseIteratorFuture = objectFuture.map(objects -> objects.stream().map(o -> {
+            if (o instanceof long[]) return o;
+            if (o instanceof SqlResult) return ((SqlResult) o).toLongs();
+            if (o instanceof RowSet) return ((RowSet) o).toRowBaseIterator();
+            throw new UnsupportedOperationException();
+        }).collect(Collectors.toList()));
+        return rowBaseIteratorFuture.flatMap(objectList -> {
+            if (objectList instanceof List) {
+                List list = (List) objectList;
+                int thisStmtResultSetSize = list.size();
+                int resultSetCounter = getResultSetCounter();
+                resetResultSetCounter(resultSetCounter + thisStmtResultSetSize - 1);
+                Future<Void> future = Future.succeededFuture();
+                for (Object o : list) {
+                    if (o instanceof long[]) {
+                        long[] r = (long[]) o;
+                        future = future.flatMap(unused -> sendOk(r[0], r[1]));
+                    } else if (o instanceof RowBaseIterator) {
+                        RowBaseIterator rs = (RowBaseIterator) o;
+                        future = future.flatMap(unused -> sendResultSet(rs));
+                    }
+                    return future;
+                }
+            }
+            throw new UnsupportedOperationException();
+        });
     }
 }

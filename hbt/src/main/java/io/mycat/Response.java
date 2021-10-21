@@ -31,6 +31,10 @@ import java.util.function.Supplier;
 
 public interface Response {
 
+    int getResultSetCounter();
+
+    void resetResultSetCounter(int count);
+
     Future<Void> sendError(Throwable e);
 
     Future<Void> proxySelect(List<String> targets, String statement);
@@ -107,4 +111,6 @@ public interface Response {
                                     Emitter<PacketResponse> recycler);
 
      public Future<Void> sendVectorResultSet(Observable<VectorSchemaRoot> rootObservable);
+
+     public Future<Void> proxyProcedure(String sql,String targetName);
 }

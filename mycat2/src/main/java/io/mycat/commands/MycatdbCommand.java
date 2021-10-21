@@ -141,6 +141,7 @@ public enum MycatdbCommand {
             //Procedure
             sqlHandlers.add(new SQLCreateProcedureHandler());
             sqlHandlers.add(new SQLCallStatementHandler());
+            sqlHandlers.add(new SQLDropProcedureHandler());
 
             for (SQLHandler sqlHandler : sqlHandlers) {
                 Class statementClass = sqlHandler.getStatementClass();

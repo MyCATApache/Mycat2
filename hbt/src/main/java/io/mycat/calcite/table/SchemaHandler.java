@@ -16,6 +16,7 @@
  */
 package io.mycat.calcite.table;
 
+import io.mycat.ProcedureHandler;
 import io.mycat.TableHandler;
 import io.mycat.util.NameMap;
 
@@ -27,4 +28,6 @@ public interface SchemaHandler {
     NameMap<TableHandler> logicTables();
 
     String defaultTargetName();
+
+    NameMap<ProcedureHandler> procedures();
 }
