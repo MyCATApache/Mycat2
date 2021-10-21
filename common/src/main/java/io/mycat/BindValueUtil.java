@@ -27,7 +27,11 @@ import io.mycat.beans.mysql.packet.MySQLPayloadReadView;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @author mycat
@@ -77,7 +81,14 @@ public class BindValueUtil {
                     if (vv == null) {
                         bv.isNull = true;
                     } else {
-                        bv.value = vv;
+                        if (charset == null) {
+                            charset = StandardCharsets.UTF_8;
+                        }
+                        try {
+                            bv.value = charset.newDecoder().onMalformedInput(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(vv));
+                        } catch (CharacterCodingException e) {
+                            bv.value = vv;
+                        }
                     }
                 } else {
                     String vv = mm.readLenencString();
