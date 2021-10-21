@@ -12,13 +12,10 @@ import io.reactivex.rxjava3.core.ObservableOnSubscribe;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.jdbcclient.impl.actions.JDBCResponse;
 import org.apache.arrow.adapter.jdbc.ArrowVectorIterator;
 import org.apache.arrow.adapter.jdbc.JdbcToArrowConfig;
 import org.apache.arrow.adapter.jdbc.JdbcToArrowConfigBuilder;
-import org.apache.arrow.adapter.jdbc.JdbcToArrowUtils;
 import org.apache.arrow.vector.VectorSchemaRoot;
-import org.checkerframework.checker.units.qual.C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
