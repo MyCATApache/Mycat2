@@ -7,7 +7,6 @@ Distributed database based on MySQL or JDBC.
 
 [v1.20-release](https://github.com/MyCATApache/Mycat2/releases/tag/v1.20-2021-10-21)
 
-[introduction Mycat2](https://www.yuque.com/books/share/6606b3b6-3365-4187-94c4-e51116894695/fb2285b811138a442eb850f0127d7ea3)
 [doc-en](https://www.yuque.com/ccazhw/ml3nkf/bef923fb8acc57e0f805d45ef7782670?translate=en)
 [doc-cn](https://www.yuque.com/books/share/6606b3b6-3365-4187-94c4-e51116894695)
 
