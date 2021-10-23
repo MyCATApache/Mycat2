@@ -24,4 +24,6 @@ public interface StorageManager extends ReplicaReporter {
     void syncFromNet();
 
     void syncToNet();
+
+    boolean checkConfigConsistency();
 }

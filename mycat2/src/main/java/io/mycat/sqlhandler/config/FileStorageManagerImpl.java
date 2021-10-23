@@ -47,6 +47,11 @@ public class FileStorageManagerImpl implements StorageManager {
 
     }
 
+    @Override
+    public boolean checkConfigConsistency() {
+        return true;
+    }
+
     private <T extends KVObject> KV<T> getFilekv(String fileNameTemplate, Class<T> aClass, Path dir) {
         return new FileKV(fileNameTemplate, aClass, dir, suffix);
     }

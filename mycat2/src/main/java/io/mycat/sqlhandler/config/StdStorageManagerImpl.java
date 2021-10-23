@@ -7,6 +7,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class StdStorageManagerImpl implements StorageManager {
     final StorageManager fileStorageManager;
@@ -14,15 +17,13 @@ public class StdStorageManagerImpl implements StorageManager {
     public StdStorageManagerImpl(StorageManager fileStorageManager) {
         this.fileStorageManager = fileStorageManager;
     }
-    private  Optional<DatasourceConfig> getPrototypeDatasourceConfig(){
-        return getPrototypeDatasourceConfig(fileStorageManager);
-    }
+
     @Nullable
     public static Optional<DatasourceConfig> getPrototypeDatasourceConfig(StorageManager fileStorageManager) {
         KV<ClusterConfig> clusterConfigKV = fileStorageManager.get(ClusterConfig.class);
         KV<DatasourceConfig> datasourceConfigKV = fileStorageManager.get(DatasourceConfig.class);
-        Optional<ClusterConfig> prototypeOptional = Optional.ofNullable(clusterConfigKV.get("prototype"));
-        DatasourceConfig configPrototypeDs = prototypeOptional.flatMap(clusterConfig -> {
+        Optional<ClusterConfig> prototypeOptional = clusterConfigKV.get("prototype");
+        Optional<DatasourceConfig> datasourceConfigOptional = prototypeOptional.flatMap(clusterConfig -> {
 
             List<String> masters = Optional.ofNullable(clusterConfig.getMasters()).orElse(Collections.emptyList());
             List<String> replicas = Optional.ofNullable(clusterConfig.getReplicas()).orElse(Collections.emptyList());
@@ -33,6 +34,7 @@ public class StdStorageManagerImpl implements StorageManager {
 
             return strings.stream().map(i -> datasourceConfigKV.get(i)).filter(i -> i != null).findFirst();
         }).orElse(Optional.ofNullable(datasourceConfigKV.get("prototype")).orElse(datasourceConfigKV.get("prototypeDs")));
+        DatasourceConfig configPrototypeDs = datasourceConfigOptional.orElse(null);
         if (configPrototypeDs == null) {
             List<DatasourceConfig> values = datasourceConfigKV.values();
             if (values.isEmpty()) {
@@ -63,17 +65,12 @@ public class StdStorageManagerImpl implements StorageManager {
 
     @Override
     public void syncFromNet() {
-        Optional<DatasourceConfig> prototypeDatasourceConfig = getPrototypeDatasourceConfig(fileStorageManager);
-        Objects.requireNonNull(prototypeDatasourceConfig)
-                .ifPresent(datasourceConfig -> {
-                    DbStorageManagerImpl dbStorageManager = getDbStorageManager(datasourceConfig);
-
-                    sync(dbStorageManager, fileStorageManager);
-                });
+        Optional<DbStorageManagerImpl> dbStorageManagerOptional = getDbStorageManager();
+        dbStorageManagerOptional.ifPresent(dbStorageManager -> sync(dbStorageManager, fileStorageManager));
     }
 
     @NotNull
-    private DbStorageManagerImpl getDbStorageManager(DatasourceConfig datasourceConfig) {
+    public DbStorageManagerImpl getDbStorageManager(DatasourceConfig datasourceConfig) {
         DbStorageManagerImpl dbStorageManager = new DbStorageManagerImpl(datasourceConfig);
         for (Class registerClass : registerClasses()) {
             dbStorageManager.register(registerClass);
@@ -81,29 +78,81 @@ public class StdStorageManagerImpl implements StorageManager {
         return dbStorageManager;
     }
 
-    private static void sync(StorageManager from, StorageManager to) {
+    public Optional<DbStorageManagerImpl> getDbStorageManager() {
+        Optional<DatasourceConfig> prototypeDatasourceConfig = getPrototypeDatasourceConfig(fileStorageManager);
+        return Objects.requireNonNull(prototypeDatasourceConfig)
+                .map(datasourceConfig -> {
+                    return getDbStorageManager(datasourceConfig);
+                });
+    }
+
+    public static void sync(StorageManager from, StorageManager to) {
         for (Class registerClass : from.registerClasses()) {
             KV netKv = from.get(registerClass);
             KV localKv = to.get(registerClass);
+            localKv.clear();
             List<KVObject> values = netKv.values();
             for (KVObject value : values) {
-                localKv.put(value.keyName(),value);
+                localKv.put(value.keyName(), value);
             }
         }
+        boolean b = checkConfigConsistency(from, to);
+        if (!b) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    private static boolean checkConfigConsistency(StorageManager from, StorageManager to) {
+//        boolean b = true;
+//        for (Class aClass : from.registerClasses()) {
+//            List left =(List) to.get(aClass).values().stream().sorted().collect(Collectors.toList());
+//            List right =(List) from.get(aClass).values().stream().sorted().collect(Collectors.toList());
+//
+//            if (left.size() != right.size()) {
+//                b = false;
+//            }
+//
+//            for (int i = 0;b&& i < left.size(); i++) {
+//                Object l = left.get(i);
+//                Object r = right.get(i);
+//                if (!l.equals(r)) {
+//                    b= false;
+//                }
+//            }
+//        }
+        return from.registerClasses().stream().parallel().allMatch(aClass -> {
+            return to.get(aClass).values().stream().sorted().collect(Collectors.toList())
+                    .equals(from.get(aClass).values().stream().sorted().collect(Collectors.toList()));
+        });
     }
 
     @Override
     public void syncToNet() {
-        Optional<DatasourceConfig> prototypeDatasourceConfig = getPrototypeDatasourceConfig(fileStorageManager);
-        Objects.requireNonNull(prototypeDatasourceConfig).ifPresent(datasourceConfig -> {
-            sync(fileStorageManager,   getDbStorageManager(datasourceConfig));
+        Optional<DbStorageManagerImpl> dbStorageManagerOptional = getDbStorageManager();
+        dbStorageManagerOptional.ifPresent(dbStorageManager -> {
+            sync(fileStorageManager, dbStorageManager);
         });
+    }
+
+    @Override
+    public boolean checkConfigConsistency() {
+        Collection<Class> fileClasses = fileStorageManager.registerClasses();
+        Optional<DbStorageManagerImpl> dbStorageManagerOptional = getDbStorageManager();
+        if (!dbStorageManagerOptional.isPresent()) {
+            return false;
+        }
+        DbStorageManagerImpl dbStorageManager = dbStorageManagerOptional.get();
+        Collection<Class> dbClasses = dbStorageManager.registerClasses();
+        if (!Objects.equals(fileClasses, dbClasses)) {
+            return false;
+        }
+        return checkConfigConsistency(fileStorageManager, dbStorageManager);
     }
 
     @Override
     public void reportReplica(Map<String, List<String>> state) {
         fileStorageManager.reportReplica(state);
-        Optional<DatasourceConfig> prototypeDatasourceConfig = getPrototypeDatasourceConfig(fileStorageManager);
-        prototypeDatasourceConfig.ifPresent(datasourceConfig -> new DbStorageManagerImpl(datasourceConfig).reportReplica(state));
+        Optional<DbStorageManagerImpl> dbStorageManagerOptional = getDbStorageManager();
+        dbStorageManagerOptional.ifPresent(dbStorageManager -> dbStorageManager.reportReplica(state));
     }
 }

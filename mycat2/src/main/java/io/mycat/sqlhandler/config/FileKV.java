@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class FileKV<T extends KVObject> implements KV<T> {
@@ -26,9 +27,12 @@ public class FileKV<T extends KVObject> implements KV<T> {
     }
 
     @Override
-    public T get(String key) {
+    public Optional< T> get(String key) {
         Path path1 = getPath(key);
-        return Json.decodeValue(readString(path1), aClass);
+        Optional<String> stringOptional = readString(path1);
+        return stringOptional.map(s->{
+            return JsonUtil.from(s, aClass);
+        });
     }
 
     @Override
@@ -52,8 +56,8 @@ public class FileKV<T extends KVObject> implements KV<T> {
     public List<T> values() {
         String s = "." + fileNameTemplate + "." + suffix;
         return Files.list(dir).filter(i -> i.toString().endsWith(s)).map(i -> {
-            String s1 = readString(i);
-            return JsonUtil.from(s1, aClass);
+            Optional<String> s1 = readString(i);
+            return JsonUtil.from(s1.get(), aClass);
         }).collect(Collectors.toList());
     }
 
@@ -63,7 +67,10 @@ public class FileKV<T extends KVObject> implements KV<T> {
     }
 
     @SneakyThrows
-    String readString(Path path) {
-        return new String(Files.readAllBytes(path));
+    Optional<String> readString(Path path) {
+        if (!Files.exists(path)){
+            return Optional.empty();
+        }
+        return Optional.ofNullable(new String(Files.readAllBytes(path)));
     }
 }

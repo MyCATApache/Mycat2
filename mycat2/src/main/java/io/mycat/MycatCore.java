@@ -15,10 +15,7 @@
 package io.mycat;
 
 import io.mycat.beans.mysql.MySQLVersion;
-import io.mycat.config.MycatServerConfig;
-import io.mycat.config.ServerConfiguration;
-import io.mycat.config.ServerConfigurationImpl;
-import io.mycat.config.ThreadPoolExecutorConfig;
+import io.mycat.config.*;
 import io.mycat.exporter.SqlRecorderRuntime;
 import io.mycat.monitor.MycatSQLLogMonitor;
 import io.mycat.monitor.MycatSQLLogMonitorImpl;
@@ -47,6 +44,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -121,17 +119,42 @@ public class MycatCore {
         context.put(this.mycatServer.getClass(), mycatServer);
         context.put(MycatServer.class, mycatServer);
         context.put(SqlRecorderRuntime.class, SqlRecorderRuntime.INSTANCE);
-        context.put(LockService.class,new LocalLockServiceImpl());
-        context.put(MycatSQLLogMonitor.class,new MycatSQLLogMonitorImpl(serverConfig.getServer().getMycatId(),serverConfig.getMonitor(),vertx));
+        context.put(LockService.class, new LocalLockServiceImpl());
+        context.put(MycatSQLLogMonitor.class, new MycatSQLLogMonitorImpl(serverConfig.getServer().getMycatId(), serverConfig.getMonitor(), vertx));
         ////////////////////////////////////////////tmp///////////////////////////////////
         MetaClusterCurrent.register(context);
 
         String mode = Optional.ofNullable(System.getProperty("mode"))
                 .orElse(serverConfig.getMode());
+
+
+        boolean initConfig = false;
+        if (!Files.exists(this.baseDirectory)) {
+            Files.createDirectory(this.baseDirectory);
+            initConfig = true;
+        }
+        if (Files.list(this.baseDirectory).findFirst().isPresent()){
+            initConfig = true;
+        }
+
         FileStorageManagerImpl fileStorageManager = new FileStorageManagerImpl(this.baseDirectory);
         StdStorageManagerImpl storageManager = new StdStorageManagerImpl(fileStorageManager);
+
+        Arrays.asList(LogicSchemaConfig.class,
+                ClusterConfig.class,
+                DatasourceConfig.class,
+                UserConfig.class,
+                SequenceConfig.class,
+                SqlCacheConfig.class
+        ).forEach(c -> {
+            storageManager.register(c);
+        });
         context.put(StorageManager.class, storageManager);
         MetaClusterCurrent.register(context);
+
+        if (initConfig){
+            ConfigUpdater.writeDefaultConfigToFile();
+        }
     }
 
     private void testZkAddressOrStartDefaultZk(String zkAddress) throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
@@ -189,7 +212,7 @@ public class MycatCore {
     }
 
     public void startServer() throws Exception {
-        ConfigUpdater.start();
+        ConfigUpdater.loadConfigFromFile();
         mycatServer.start();
     }
 

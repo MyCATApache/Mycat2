@@ -6,6 +6,7 @@ import io.mycat.util.JsonUtil;
 import io.vertx.core.json.Json;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class DbKVImpl<T extends KVObject> implements KV<T> {
@@ -13,32 +14,39 @@ public class DbKVImpl<T extends KVObject> implements KV<T> {
     private String path;
     final Class aClass;
 
-    public DbKVImpl(DatasourceConfig datasourceConfig, String key, Class aClass) {
+    public DbKVImpl(DatasourceConfig datasourceConfig, String path, Class aClass) {
         this.datasourceConfig = datasourceConfig;
-        this.path = key;
+        this.path = path;
         this.aClass = aClass;
     }
 
     @Override
-    public T get(String key) {
+    public Optional<T> get(String key) {
         Config config = DbStorageManagerImpl.readConfig(datasourceConfig);
-        String s = config.config.get(this.path).get(key);
-        return (T) JsonUtil.from(s, aClass);
+        Map<String, String> stringStringMap = config.config.get(this.path);
+        if (stringStringMap == null) return null;
+        Optional<String> sOptional = Optional.ofNullable(stringStringMap.get(key));
+        return sOptional.map((Function<String, T>) s -> {
+            return ((T)JsonUtil.from(s, aClass));
+        });
     }
 
     @Override
     public void removeKey(String key) {
         Config config = DbStorageManagerImpl.readConfig(datasourceConfig);
-        Map<String, String> stringStringMap = config.config.getOrDefault(this.path, Collections.emptyMap());
+        Map<String, String> stringStringMap = new HashMap<>(config.config.getOrDefault(this.path, Collections.emptyMap()));
         stringStringMap.remove(key);
+        config.config.put(this.path,stringStringMap);
+        DbStorageManagerImpl.removeBy(datasourceConfig,config.version);
         DbStorageManagerImpl.writeString(datasourceConfig, config.config);
     }
 
     @Override
     public void put(String key, T value) {
         Config config = DbStorageManagerImpl.readConfig(datasourceConfig);
-        Map<String, String> stringStringMap = config.config.getOrDefault(this.path, Collections.emptyMap());
-        stringStringMap.put(key, Json.encode(value));
+        Map<String, String> stringStringMap = new HashMap<>(config.config.getOrDefault(this.path, Collections.emptyMap()));
+        stringStringMap.put(key, JsonUtil.toJson(value));
+        config.config.put(this.path,stringStringMap);
         DbStorageManagerImpl.writeString(datasourceConfig, config.config);
     }
 

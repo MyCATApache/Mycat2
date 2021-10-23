@@ -84,6 +84,13 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
         this.newConfig = Json.decodeValue(Json.encode(original), MycatRouterConfig.class);
     }
 
+    public MycatRouterConfigOps(MycatRouterConfig original, StorageManager storageManager, Options options, MycatRouterConfig newConfig) {
+        this.original = original;
+        this.storageManager = storageManager;
+        this.options = options;
+        this.newConfig = newConfig;
+    }
+
     public static boolean isInit() {
         boolean init = MycatRouterConfigOps.init;
         if (init) {

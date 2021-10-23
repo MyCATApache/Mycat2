@@ -197,7 +197,7 @@ public abstract class DrdsTest implements MycatTest {
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("ds0", DB1));
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("ds1", DB2));
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("prototype", DB1));
-                ConfigUpdater.start(mycatRouterConfig);
+                ConfigUpdater.load(mycatRouterConfig);
                 drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
                 metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
             }

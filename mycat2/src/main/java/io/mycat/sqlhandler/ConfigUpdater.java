@@ -26,27 +26,38 @@ import java.nio.file.Path;
 import java.util.List;
 
 public class ConfigUpdater {
-    public static MycatRouterConfigOps getOps(){
+    public static MycatRouterConfigOps getOps() {
         return getOps(Options.builder().persistence(true).build());
     }
+
     public static MycatRouterConfigOps getOps(Options options) {
         StorageManager metadataManager = MetaClusterCurrent.wrapper(StorageManager.class);
         MycatRouterConfig routerConfig = getRuntimeConfigSnapshot();
-        return new MycatRouterConfigOps(routerConfig, metadataManager,options);
+        return new MycatRouterConfigOps(routerConfig, metadataManager, options);
     }
 
     @SneakyThrows
-    public static void start() {
-        start(getFileConfigSnapshot());
+    public static void loadConfigFromFile() {
+        load(getFileConfigSnapshot());
     }
 
     @SneakyThrows
-    public static void start(MycatRouterConfig mycatRouterConfig) {
+    public static void writeDefaultConfigToFile() {
+        MycatRouterConfigOps mycatRouterConfigOps = getOps();
+        mycatRouterConfigOps.reset();
+        mycatRouterConfigOps.commit();
+    }
+
+    @SneakyThrows
+    public static void load(MycatRouterConfig mycatRouterConfig) {
         StorageManager storageManager = MetaClusterCurrent.wrapper(StorageManager.class);
-        new MycatRouterConfigOps(mycatRouterConfig,
+        MycatRouterConfig orginal = MetaClusterCurrent.exist(MycatRouterConfig.class) ?
+                MetaClusterCurrent.wrapper(MycatRouterConfig.class) : new MycatRouterConfig();
+        MycatRouterConfigOps mycatRouterConfigOps = new MycatRouterConfigOps(orginal,
                 storageManager,
                 Options.builder()
-                .persistence(false).build()).commit();
+                        .persistence(false).build(), mycatRouterConfig);
+        mycatRouterConfigOps.commit();
     }
 
     public static StorageManager createStorageManager(Path basePath) {
@@ -57,22 +68,7 @@ public class ConfigUpdater {
 
     @NotNull
     public static MycatRouterConfig getRuntimeConfigSnapshot() {
-//        MycatRouterConfig mycatRouterConfig = new MycatRouterConfig();
-//
-//        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-//        ReplicaSelectorManager replicaSelectorManager = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
-//        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-//        SequenceGenerator sequenceGenerator = MetaClusterCurrent.wrapper(SequenceGenerator.class);
-//        Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
-//        SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
-//
-//        mycatRouterConfig.setSchemas(metadataManager.getConfigAsList());
-//        mycatRouterConfig.setClusters(replicaSelectorManager.getConfig());
-//        mycatRouterConfig.setDatasources(jdbcConnectionManager.getConfigAsList());
-//        mycatRouterConfig.setUsers(authenticator.getConfigAsList());
-//        mycatRouterConfig.setSequences(sequenceGenerator.getConfigAsList());
-//        mycatRouterConfig.setSqlCacheConfigs(sqlResultSetService.getConfigAsList());
-        return MetaClusterCurrent.wrapper(MycatRouterConfig.class);
+        return MetaClusterCurrent.exist(MycatRouterConfig.class)? MetaClusterCurrent.wrapper(MycatRouterConfig.class):new MycatRouterConfig();
     }
 
 

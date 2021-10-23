@@ -50,7 +50,7 @@ public class AutoFunctionFactoryTest implements MycatTest {
         mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("ds0", DB1));
         mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("ds1", DB2));
         mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("prototype", DB1));
-        ConfigUpdater.start(mycatRouterConfig);
+        ConfigUpdater.load(mycatRouterConfig);
         return MetaClusterCurrent.wrapper(MetadataManager.class);
     }
 }

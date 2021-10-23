@@ -44,6 +44,7 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.sqlhandler.SqlHints;
+import io.mycat.sqlhandler.config.StorageManager;
 import io.mycat.sqlhandler.dml.UpdateSQLHandler;
 import io.mycat.util.JsonUtil;
 import io.mycat.util.NameMap;
@@ -119,8 +120,8 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         return showTopology(response, body, metadataManager);
                     }
                     if ("checkConfigConsistency".equalsIgnoreCase(cmd)) {
-                        AssembleMetadataStorageManager assembleMetadataStorageManager = MetaClusterCurrent.wrapper(AssembleMetadataStorageManager.class);
-                        boolean res = assembleMetadataStorageManager.check();
+                        StorageManager assembleMetadataStorageManager = MetaClusterCurrent.wrapper(StorageManager.class);
+                        boolean res = assembleMetadataStorageManager.checkConfigConsistency();
                         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
                         resultSetBuilder.addColumnInfo("value", JDBCType.VARCHAR);
                         resultSetBuilder.addObjectRowPayload(Arrays.asList(res ? 1 : 0));
@@ -523,7 +524,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     }
                     if ("setBkaJoinLeftRowCountLimit".equalsIgnoreCase(cmd)) {
                         DrdsSqlCompiler.BKA_JOIN_LEFT_ROW_COUNT_LIMIT = Long.parseLong(
-                                body.substring(1,body.length()-1));
+                                body.substring(1, body.length() - 1));
                         return response.sendOk();
                     }
                     if ("baseline".equalsIgnoreCase(cmd)) {
@@ -1050,13 +1051,17 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
             return;
         }
         if ("syncConfigFromFileToDb".equalsIgnoreCase(cmd)) {
-            AssembleMetadataStorageManager assembleMetadataStorageManager = MetaClusterCurrent.wrapper(AssembleMetadataStorageManager.class);
-            assembleMetadataStorageManager.syncConfigFromFileToDb();
+            StorageManager assembleMetadataStorageManager = MetaClusterCurrent.wrapper(StorageManager.class);
+            assembleMetadataStorageManager.syncToNet();
+            return;
+        }
+        if ("loadConfigFromFile".equalsIgnoreCase(cmd)) {
+            ConfigUpdater.loadConfigFromFile();
             return;
         }
         if ("syncConfigFromDbToFile".equalsIgnoreCase(cmd)) {
-            AssembleMetadataStorageManager assembleMetadataStorageManager = MetaClusterCurrent.wrapper(AssembleMetadataStorageManager.class);
-            assembleMetadataStorageManager.syncConfigFromDbToFile();
+            StorageManager assembleMetadataStorageManager = MetaClusterCurrent.wrapper(StorageManager.class);
+            assembleMetadataStorageManager.syncFromNet();
             return;
         }
     }
