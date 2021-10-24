@@ -10,6 +10,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.RelBuilder;
@@ -38,13 +39,13 @@ public class MycatAggDistinctRule extends RelRule<MycatAggDistinctRule.Config> {
         if (lastAggHint != null) {
             if ("push_down_agg_distinct".equalsIgnoreCase(lastAggHint.hintName)) {
 
-                if(topAggregate.getAggCallList().size() == 1&&topAggregate.getGroupSet().isEmpty()){
+                if (topAggregate.getAggCallList().size() == 1 && topAggregate.getGroupSet().isEmpty()) {
                     List<AggregateCall> aggCallList = topAggregate.getAggCallList();
-                    if(aggCallList.size() == 1){
+                    if (aggCallList.size() == 1) {
                         AggregateCall aggregateCall = aggCallList.get(0);
-                        if(aggregateCall.getAggregation().kind == SqlKind.COUNT){
+                        if (aggregateCall.getAggregation().kind == SqlKind.COUNT) {
                             Aggregate distinctAgg = call.rel(1);
-                            if(distinctAgg.getAggCallList().isEmpty()&&!distinctAgg.getGroupSet().isEmpty()){
+                            if (distinctAgg.getAggCallList().isEmpty() && !distinctAgg.getGroupSet().isEmpty()) {
                                 opt(call, topAggregate, mycatView);
                                 return;
                             }
@@ -60,7 +61,13 @@ public class MycatAggDistinctRule extends RelRule<MycatAggDistinctRule.Config> {
                     }
                 });
                 return;
-
+            }
+        }
+        if (topAggregate.getAggCallList().isEmpty() && topAggregate.getGroupSets().size() == 1) {
+            RelMetadataQuery metadataQuery = call.getMetadataQuery();
+            if (metadataQuery.areColumnsUnique(mycatView, topAggregate.getGroupSet())) {
+                opt(call, topAggregate, mycatView);
+                return;
             }
         }
     }
@@ -75,7 +82,7 @@ public class MycatAggDistinctRule extends RelRule<MycatAggDistinctRule.Config> {
         MycatView newView = mycatView.changeTo(builder.build());
         builder.push(newView);
         builder.aggregate(builder.groupKey(), builder.sum(builder.field(0)));
-        call.transformTo(RelOptUtil.createCastRel(builder.build(), topAggregate.getRowType(),true));
+        call.transformTo(RelOptUtil.createCastRel(builder.build(), topAggregate.getRowType(), true));
     }
 
     public interface Config extends RelRule.Config {
