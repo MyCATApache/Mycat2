@@ -12,11 +12,14 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.sparkproject.guava.io.Files;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.io.File;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.util.*;
 
+@NotThreadSafe
+@net.jcip.annotations.NotThreadSafe
 public class MycatServerStdStorageManagerTest implements MycatTest {
     public static final String syncConfigFromDbToFile = "/*+mycat:syncConfigFromDbToFile{} */";
     public static final String syncConfigFromFileToDb = "/*+mycat:syncConfigFromFileToDb{} */";
@@ -38,6 +41,7 @@ public class MycatServerStdStorageManagerTest implements MycatTest {
             DatasourceConfig ds = CreateDataSourceHint.createConfig("prototypeDs", DB1);
             DbStorageManagerImpl dbStorageManager = new DbStorageManagerImpl(ds);
             dbStorageManager.register(DatasourceConfig.class);
+            dbStorageManager.createTable();
             KV<DatasourceConfig> datasourceConfigKV = dbStorageManager.get(DatasourceConfig.class);
             String tmpName = System.currentTimeMillis() + "";
             datasourceConfigKV.put(tmpName, CreateDataSourceHint.createConfig(tmpName, DB1));

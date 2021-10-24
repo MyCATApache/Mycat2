@@ -38,23 +38,29 @@ public class DbStorageManagerImpl extends AbstractStorageManagerImpl {
         this.config = config;
 
         if (!CACHE.containsKey(config.getName())) {
-            try (Ds ds = Ds.create(config);
-                 Connection rawConnection = ds.getConnection()) {
-                List<Map<String, Object>> show_databases = JdbcUtils.executeQuery(rawConnection, "show databases", Collections.emptyList());
-                boolean isPresent = show_databases.stream().filter(i -> "mycat".equalsIgnoreCase((String) i.get("Database"))).findFirst().isPresent();
-                if (true){
-                    URL resource = SQLInits.class.getResource("/mycat2init.sql");
-                    File file = new File(resource.toURI());
-                    String s = new String(Files.toByteArray(file));
-                    for (SQLStatement parseStatement : SQLUtils.parseStatements(s, DbType.mysql)) {
-                        JdbcUtils.execute(rawConnection, parseStatement.toString());
-                    }
-                }
-
-            }
+            createTable(config);
             CACHE.put(config.getName(), Boolean.TRUE);
         }
 
+    }
+    public void createTable() throws Exception {
+        createTable(config);
+    }
+    private void createTable(DatasourceConfig config) throws Exception {
+        try (Ds ds = Ds.create(config);
+             Connection rawConnection = ds.getConnection()) {
+            List<Map<String, Object>> show_databases = JdbcUtils.executeQuery(rawConnection, "show databases", Collections.emptyList());
+            boolean isPresent = show_databases.stream().filter(i -> "mycat".equalsIgnoreCase((String) i.get("Database"))).findFirst().isPresent();
+            if (true){
+                URL resource = SQLInits.class.getResource("/mycat2init.sql");
+                File file = new File(resource.toURI());
+                String s = new String(Files.toByteArray(file));
+                for (SQLStatement parseStatement : SQLUtils.parseStatements(s, DbType.mysql)) {
+                    JdbcUtils.execute(rawConnection, parseStatement.toString());
+                }
+            }
+
+        }
     }
 
     @Override
