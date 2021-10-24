@@ -43,18 +43,93 @@ public class DbStorageManagerImpl extends AbstractStorageManagerImpl {
         }
 
     }
+
     public void createTable() throws Exception {
         createTable(config);
     }
+
     private void createTable(DatasourceConfig config) throws Exception {
         try (Ds ds = Ds.create(config);
              Connection rawConnection = ds.getConnection()) {
             List<Map<String, Object>> show_databases = JdbcUtils.executeQuery(rawConnection, "show databases", Collections.emptyList());
             boolean isPresent = show_databases.stream().filter(i -> "mycat".equalsIgnoreCase((String) i.get("Database"))).findFirst().isPresent();
-            if (true){
-                URL resource = SQLInits.class.getResource("/mycat2init.sql");
-                File file = new File(resource.toURI());
-                String s = new String(Files.toByteArray(file));
+            if (true) {
+                String s;
+                try {
+                    URL resource = SQLInits.class.getResource("/mycat2init.sql");
+                    File file = new File(resource.toURI());
+                    s = new String(Files.toByteArray(file));
+                } catch (Exception e) {
+                    s = "CREATE DATABASE IF NOT EXISTS `mycat`;\n" +
+                            "USE `mycat`;\n" +
+                            "DROP TABLE IF EXISTS `analyze_table`;\n" +
+                            "CREATE TABLE `analyze_table` (\n" +
+                            "\t`table_rows` bigint(20) NOT NULL,\n" +
+                            "\t`name` varchar(64) NOT NULL\n" +
+                            ") ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;\n" +
+                            "DROP TABLE IF EXISTS `config`;\n" +
+                            "CREATE TABLE `config` (\n" +
+                            "\t`key` varchar(22) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,\n" +
+                            "\t`value` longtext,\n" +
+                            "\t`version` bigint(20) DEFAULT NULL,\n" +
+                            "\t`secondKey` longtext,\n" +
+                            "\t`deleted` tinyint(1) DEFAULT '0'\n" +
+                            ") ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;\n" +
+                            "DROP TABLE IF EXISTS `replica_log`;\n" +
+                            "CREATE TABLE `replica_log` (\n" +
+                            "\t`name` varchar(22) DEFAULT NULL,\n" +
+                            "\t`dsNames` text,\n" +
+                            "\t`time` datetime DEFAULT NULL\n" +
+                            ") ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;\n" +
+                            "DROP TABLE IF EXISTS `spm_baseline`;\n" +
+                            "CREATE TABLE `spm_baseline` (\n" +
+                            "\t`id` bigint(22) NOT NULL AUTO_INCREMENT,\n" +
+                            "\t`fix_plan_id` bigint(22) DEFAULT NULL,\n" +
+                            "\t`constraint` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,\n" +
+                            "\t`extra_constraint` longtext,\n" +
+                            "\tPRIMARY KEY (`id`),\n" +
+                            "\tUNIQUE KEY `constraint_index` (`constraint`(22)),\n" +
+                            "\tKEY `id` (`id`)\n" +
+                            ") ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;\n" +
+                            "DROP TABLE IF EXISTS `spm_plan`;\n" +
+                            "CREATE TABLE `spm_plan` (\n" +
+                            "\t`id` bigint(22) NOT NULL AUTO_INCREMENT,\n" +
+                            "\t`sql` longtext,\n" +
+                            "\t`rel` longtext,\n" +
+                            "\t`baseline_id` bigint(22) DEFAULT NULL,\n" +
+                            "\tKEY `id` (`id`)\n" +
+                            ") ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;\n" +
+                            "DROP TABLE IF EXISTS `sql_log`;\n" +
+                            "CREATE TABLE `sql_log` (\n" +
+                            "\t`instanceId` bigint(20) DEFAULT NULL,\n" +
+                            "\t`user` varchar(64) DEFAULT NULL,\n" +
+                            "\t`connectionId` bigint(20) DEFAULT NULL,\n" +
+                            "\t`ip` varchar(22) DEFAULT NULL,\n" +
+                            "\t`port` bigint(20) DEFAULT NULL,\n" +
+                            "\t`traceId` varchar(22) NOT NULL,\n" +
+                            "\t`hash` varchar(22) DEFAULT NULL,\n" +
+                            "\t`sqlType` varchar(22) DEFAULT NULL,\n" +
+                            "\t`sql` longtext,\n" +
+                            "\t`transactionId` varchar(22) DEFAULT NULL,\n" +
+                            "\t`sqlTime` bigint(20) DEFAULT NULL,\n" +
+                            "\t`responseTime` datetime DEFAULT NULL,\n" +
+                            "\t`affectRow` int(11) DEFAULT NULL,\n" +
+                            "\t`result` tinyint(1) DEFAULT NULL,\n" +
+                            "\t`externalMessage` tinytext,\n" +
+                            "\tPRIMARY KEY (`traceId`)\n" +
+                            ") ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;\n" +
+                            "DROP TABLE IF EXISTS `variable`;\n" +
+                            "CREATE TABLE `variable` (\n" +
+                            "\t`name` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,\n" +
+                            "\t`value` varchar(22) DEFAULT NULL,\n" +
+                            "\tPRIMARY KEY (`name`)\n" +
+                            ") ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;\n" +
+                            "DROP TABLE IF EXISTS `xa_log`;\n" +
+                            "CREATE TABLE `xa_log` (\n" +
+                            "\t`xid` bigint(20) NOT NULL,\n" +
+                            "\tPRIMARY KEY (`xid`)\n" +
+                            ") ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;\n";
+                }
                 for (SQLStatement parseStatement : SQLUtils.parseStatements(s, DbType.mysql)) {
                     JdbcUtils.execute(rawConnection, parseStatement.toString());
                 }
