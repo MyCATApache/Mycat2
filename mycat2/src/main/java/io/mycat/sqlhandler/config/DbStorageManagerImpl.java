@@ -1,7 +1,13 @@
 package io.mycat.sqlhandler.config;
 
+import com.alibaba.druid.DbType;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.util.JdbcUtils;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.mycat.MetaClusterCurrent;
+import io.mycat.SQLInits;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.KVObject;
 import io.mycat.datasource.jdbc.DruidDatasourceProvider;
@@ -9,18 +15,40 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.curator.shaded.com.google.common.io.Files;
 
+import java.io.File;
+import java.lang.ref.WeakReference;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 public class DbStorageManagerImpl extends AbstractStorageManagerImpl {
 
     final DatasourceConfig config;
-
+    final static  Cache<Object, Object> CACHE = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
+    @SneakyThrows
     public DbStorageManagerImpl(DatasourceConfig config) {
         this.config = config;
+
+        ConcurrentMap<Object, Object> asMap = CACHE.asMap();
+        if(!asMap.containsKey(config.getName())){
+            try (Ds ds = Ds.create(config);
+                 Connection rawConnection = ds.getConnection()) {
+                URL resource = SQLInits.class.getResource("/mycat2init.sql");
+                File file = new File(resource.toURI());
+                String s = new String(Files.toByteArray(file));
+                for (SQLStatement parseStatement : SQLUtils.parseStatements(s, DbType.mysql)) {
+                    JdbcUtils.execute(rawConnection,  parseStatement.toString());
+                }
+            }
+            asMap.put(config.getName(),Boolean.TRUE);
+        }
+
     }
 
     @Override
@@ -163,7 +191,7 @@ public class DbStorageManagerImpl extends AbstractStorageManagerImpl {
     }
 
     @SneakyThrows
-    public static void removeBy(DatasourceConfig datasourceConfig,long curVersion) {
+    public static void removeBy(DatasourceConfig datasourceConfig, long curVersion) {
         try (Ds ds = Ds.create(datasourceConfig);
              Connection rawConnection = ds.getConnection()) {
             rawConnection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
