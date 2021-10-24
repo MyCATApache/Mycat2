@@ -454,6 +454,12 @@
             <artifactId>rxjava3-extensions</artifactId>
             <version>3.0.1</version>
         </dependency>
+        <dependency>
+            <groupId>org.checkerframework</groupId>
+            <artifactId>checker-qual</artifactId>
+            <version>3.5.0</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
