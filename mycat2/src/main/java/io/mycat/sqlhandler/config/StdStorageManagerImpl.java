@@ -3,8 +3,11 @@ package io.mycat.sqlhandler.config;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.KVObject;
+import io.mycat.sqlhandler.ddl.SQLCallStatementHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -13,7 +16,7 @@ import java.util.stream.Collectors;
 
 public class StdStorageManagerImpl implements StorageManager {
     final StorageManager fileStorageManager;
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(StdStorageManagerImpl.class);
     public StdStorageManagerImpl(StorageManager fileStorageManager) {
         this.fileStorageManager = fileStorageManager;
     }
@@ -88,12 +91,12 @@ public class StdStorageManagerImpl implements StorageManager {
 
     public static void sync(StorageManager from, StorageManager to) {
         for (Class registerClass : from.registerClasses()) {
-            KV netKv = from.get(registerClass);
-            KV localKv = to.get(registerClass);
-            localKv.clear();
-            List<KVObject> values = netKv.values();
+            KV fromKv = from.get(registerClass);
+            KV toKv = to.get(registerClass);
+            toKv.clear();
+            List<KVObject> values = fromKv.values();
             for (KVObject value : values) {
-                localKv.put(value.keyName(), value);
+                toKv.put(value.keyName(), value);
             }
         }
         boolean b = checkConfigConsistency(from, to);
@@ -121,8 +124,13 @@ public class StdStorageManagerImpl implements StorageManager {
 //            }
 //        }
         return from.registerClasses().stream().parallel().allMatch(aClass -> {
-            return to.get(aClass).values().stream().sorted().collect(Collectors.toList())
-                    .equals(from.get(aClass).values().stream().sorted().collect(Collectors.toList()));
+            Object toCollect = to.get(aClass).values().stream().sorted().collect(Collectors.toList());
+            Object fromCollect =  from.get(aClass).values().stream().sorted().collect(Collectors.toList());
+            if(toCollect .equals(fromCollect)){
+                return true;
+            }
+            LOGGER.error("from {} \n to {}",fromCollect,toCollect);
+            return false;
         });
     }
 

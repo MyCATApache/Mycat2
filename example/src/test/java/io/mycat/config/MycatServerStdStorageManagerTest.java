@@ -28,8 +28,10 @@ public class MycatServerStdStorageManagerTest implements MycatTest {
     public void test() {
         try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT);) {
             JdbcUtils.execute(mySQLConnection, RESET_CONFIG);
-            JdbcUtils.execute(mySQLConnection, syncConfigFromDbToFile);
             JdbcUtils.execute(mySQLConnection, syncConfigFromFileToDb);
+
+
+
             List<Map<String, Object>> maps = JdbcUtils.executeQuery(mySQLConnection, checkConfigConsistency, Collections.emptyList());
             Assert.assertEquals("[{value=1}]", maps.toString());
 

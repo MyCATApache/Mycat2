@@ -24,29 +24,35 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 public class DbStorageManagerImpl extends AbstractStorageManagerImpl {
 
     final DatasourceConfig config;
-    final static  Cache<Object, Object> CACHE = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
+    final static ConcurrentMap<Object, Object> CACHE = new ConcurrentHashMap<>();
+
     @SneakyThrows
     public DbStorageManagerImpl(DatasourceConfig config) {
         this.config = config;
 
-        ConcurrentMap<Object, Object> asMap = CACHE.asMap();
-        if(!asMap.containsKey(config.getName())){
+        if (!CACHE.containsKey(config.getName())) {
             try (Ds ds = Ds.create(config);
                  Connection rawConnection = ds.getConnection()) {
-                URL resource = SQLInits.class.getResource("/mycat2init.sql");
-                File file = new File(resource.toURI());
-                String s = new String(Files.toByteArray(file));
-                for (SQLStatement parseStatement : SQLUtils.parseStatements(s, DbType.mysql)) {
-                    JdbcUtils.execute(rawConnection,  parseStatement.toString());
+                List<Map<String, Object>> show_databases = JdbcUtils.executeQuery(rawConnection, "show databases", Collections.emptyList());
+                boolean isPresent = show_databases.stream().filter(i -> "mycat".equalsIgnoreCase((String) i.get("Database"))).findFirst().isPresent();
+                if (!isPresent){
+                    URL resource = SQLInits.class.getResource("/mycat2init.sql");
+                    File file = new File(resource.toURI());
+                    String s = new String(Files.toByteArray(file));
+                    for (SQLStatement parseStatement : SQLUtils.parseStatements(s, DbType.mysql)) {
+                        JdbcUtils.execute(rawConnection, parseStatement.toString());
+                    }
                 }
+
             }
-            asMap.put(config.getName(),Boolean.TRUE);
+            CACHE.put(config.getName(), Boolean.TRUE);
         }
 
     }
