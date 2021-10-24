@@ -42,7 +42,7 @@ public class DbStorageManagerImpl extends AbstractStorageManagerImpl {
                  Connection rawConnection = ds.getConnection()) {
                 List<Map<String, Object>> show_databases = JdbcUtils.executeQuery(rawConnection, "show databases", Collections.emptyList());
                 boolean isPresent = show_databases.stream().filter(i -> "mycat".equalsIgnoreCase((String) i.get("Database"))).findFirst().isPresent();
-                if (!isPresent){
+                if (true){
                     URL resource = SQLInits.class.getResource("/mycat2init.sql");
                     File file = new File(resource.toURI());
                     String s = new String(Files.toByteArray(file));
