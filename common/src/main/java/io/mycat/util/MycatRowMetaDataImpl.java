@@ -1,6 +1,9 @@
 package io.mycat.util;
 
+import com.alibaba.druid.sql.ast.SQLIndexDefinition;
+import com.alibaba.druid.sql.ast.statement.SQLColumnConstraint;
 import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.druid.sql.ast.statement.SQLColumnUniqueKey;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
 import io.mycat.beans.mycat.MycatRowMetaData;
 
@@ -14,12 +17,17 @@ public class MycatRowMetaDataImpl implements MycatRowMetaData {
     final String schemaName;
     final int columnCount;
 
-    public MycatRowMetaDataImpl(List<SQLColumnDefinition> columnInfo, List<MySqlTableIndex> indexList,String schemaName, String tableName) {
+    public MycatRowMetaDataImpl(List<SQLColumnDefinition> columnInfo, List<MySqlTableIndex> indexList, String schemaName, String tableName) {
         this.columnInfo = columnInfo;
         this.indexList = indexList;
         this.tableName = tableName;
         this.schemaName = schemaName;
         this.columnCount = columnInfo.size();
+        for (MySqlTableIndex mySqlTableIndex : indexList) {
+            SQLIndexDefinition indexDefinition = mySqlTableIndex.getIndexDefinition();
+            "UNIQUE".equalsIgnoreCase(indexDefinition.getType());
+        }
+
     }
 
     @Override
@@ -98,7 +106,15 @@ public class MycatRowMetaDataImpl implements MycatRowMetaData {
     }
 
     @Override
-    public boolean isIndex(int column) {
-        return isPrimaryKey(column);
+    public boolean isUniqueKey(int column) {
+        boolean uniqueKey = isPrimaryKey(column);
+        if (uniqueKey) return true;
+        List<SQLColumnConstraint> constraints = columnInfo.get(column).getConstraints();
+        if (constraints.isEmpty()){
+            return false;
+        }
+        uniqueKey= constraints.stream().anyMatch(i->i instanceof SQLColumnUniqueKey);
+
+        return uniqueKey;
     }
 }

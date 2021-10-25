@@ -246,7 +246,7 @@ public class CalciteConvertors {
             boolean autoIncrement = mycatRowMetaData.isAutoIncrement(i);
             boolean primaryKey = mycatRowMetaData.isPrimaryKey(i);
             JDBCType jdbcType = JDBCType.valueOf(columnType);
-            boolean index = mycatRowMetaData.isIndex(i);
+            boolean index = mycatRowMetaData.isUniqueKey(i);
             list.add(new SimpleColumnInfo(columnName, precision, scale, jdbcType,
                     mycatRowMetaData.isNullable(i), autoIncrement, primaryKey, index,id));
         }

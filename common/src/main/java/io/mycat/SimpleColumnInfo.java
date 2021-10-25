@@ -44,7 +44,7 @@ public class SimpleColumnInfo {
     final boolean nullable;
     final boolean autoIncrement;
     final boolean primaryKey;
-    final boolean index;
+    final boolean indexKey;
     /**
      * 是否是分片键
      */
@@ -64,7 +64,7 @@ public class SimpleColumnInfo {
     final int id;
 
 
-    public SimpleColumnInfo(@NonNull String columnName, int precision, int scale, @NonNull JDBCType jdbcType, boolean nullable, boolean autoIncrement, boolean primaryKey, boolean index, int id) {
+    public SimpleColumnInfo(@NonNull String columnName, int precision, int scale, @NonNull JDBCType jdbcType, boolean nullable, boolean autoIncrement, boolean primaryKey, boolean indexKey, int id) {
         this.columnName = columnName;
         this.precision = precision;
         this.scale = scale;
@@ -92,7 +92,7 @@ public class SimpleColumnInfo {
         this.nullable = nullable;
         this.autoIncrement = autoIncrement;
         this.primaryKey = primaryKey;
-        this.index = index || primaryKey;
+        this.indexKey = indexKey || primaryKey;
         this.id = id;
     }
 
@@ -299,5 +299,9 @@ public class SimpleColumnInfo {
         final List<String> map;
         @NonNull
         final CustomRuleFunction function;
+    }
+
+    public boolean isUnique(){
+        return primaryKey;
     }
 }

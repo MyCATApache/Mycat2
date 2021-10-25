@@ -74,13 +74,13 @@ public class Statistics {
     }
 
 
-    public static List<ImmutableBitSet> getIndexes(List<SimpleColumnInfo> columns) {
+    public static List<ImmutableBitSet> getUniqueKeys(List<SimpleColumnInfo> columns) {
         List<ImmutableBitSet> immutableBitSets = Collections.emptyList();
         ImmutableList.Builder<ImmutableBitSet> indexes = ImmutableList.builder();
         try {
             int index = 0;
             for (SimpleColumnInfo column : columns) {
-                if (column.isIndex()) {
+                if (column.isUnique()) {
                     indexes.add(ImmutableBitSet.of(index));
                 }
                 index++;
@@ -96,7 +96,7 @@ public class Statistics {
             String logicSchemaName,
             String logicTableName,
             List<SimpleColumnInfo> columns) {
-        List<ImmutableBitSet> immutableBitSets = getIndexes(columns);
+        List<ImmutableBitSet> immutableBitSets = getUniqueKeys(columns);
         return new Statistic() {
             public Double getRowCount() {
                 StatisticCenter statisticCenter = MetaClusterCurrent.wrapper(StatisticCenter.class);

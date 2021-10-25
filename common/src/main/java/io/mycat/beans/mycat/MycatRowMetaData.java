@@ -92,7 +92,7 @@ public interface MycatRowMetaData extends Serializable {
         return list.toString();
     }
 
-    default boolean isIndex(int column) {
+    default boolean isUniqueKey(int column) {
         return isPrimaryKey(column);
     }
 
