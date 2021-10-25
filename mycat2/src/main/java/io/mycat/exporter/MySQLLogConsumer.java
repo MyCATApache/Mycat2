@@ -32,10 +32,8 @@ public class MySQLLogConsumer implements Consumer<SqlEntry> {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         try (DefaultConnection connection = jdbcConnectionManager.getConnection(metadataManager.getPrototype())) {
-            Connection rawConnection = connection.getRawConnection();
-            rawConnection.setSchema("mycat");
             JdbcUtils.execute(connection.getRawConnection(),
-                    " create table if not exists  `sql_log` (\n" +
+                    " create table if not exists  mycat.`sql_log` (\n" +
                             "  `instanceId` bigint(20) DEFAULT NULL,\n" +
                             "  `user` varchar(64) DEFAULT NULL,\n" +
                             "  `connectionId` bigint(20) DEFAULT NULL,\n" +
@@ -71,13 +69,14 @@ public class MySQLLogConsumer implements Consumer<SqlEntry> {
         if (initFail){
             return;
         }
-        IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
-        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        ioExecutor.executeBlocking(new Handler<Promise<Void>>() {
-            @Override
-
-            public void handle(Promise<Void> event) {
+        boolean isInRuntime = MetaClusterCurrent.exist(IOExecutor.class)
+                &&MetaClusterCurrent.exist(JdbcConnectionManager.class)
+                &&MetaClusterCurrent.exist(IOExecutor.class);
+        if (isInRuntime){
+            IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
+            JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+            MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+            ioExecutor.executeBlocking((Handler<Promise<Void>>) event -> {
                 try {
                     try (DefaultConnection connection = jdbcConnectionManager.getConnection(metadataManager.getPrototype())) {
                         JdbcUtils.execute(connection.getRawConnection(), "INSERT INTO `mycat`.`sql_log` (" +
@@ -121,8 +120,7 @@ public class MySQLLogConsumer implements Consumer<SqlEntry> {
                 }finally {
                     event.tryComplete();
                 }
-            }
-        });
-
+            });
+        }
     }
 }
