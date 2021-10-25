@@ -54,6 +54,12 @@ public class MonitorService {
                     promise.tryComplete();
                 }
             }).end());
+            request1.onFailure(new Handler<Throwable>() {
+                @Override
+                public void handle(Throwable throwable) {
+                    promise.fail(throwable);
+                }
+            });
         });
     }
 
