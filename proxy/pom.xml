@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.mycat</groupId>
         <artifactId>parent</artifactId>
-      <version>1.20</version>
+      <version>1.21-aplha</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -20,37 +20,37 @@
       <dependency>
         <groupId>io.mycat</groupId>
         <artifactId>config</artifactId>
-        <version>1.20</version>
+        <version>1.21-aplha</version>
       </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>plug</artifactId>
-          <version>1.20</version>
+          <version>1.21-aplha</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>router</artifactId>
-          <version>1.20</version>
+          <version>1.21-aplha</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-          <version>1.20</version>
+          <version>1.21-aplha</version>
         </dependency>
       <dependency>
         <groupId>io.mycat</groupId>
         <artifactId>replica</artifactId>
-        <version>1.20</version>
+        <version>1.21-aplha</version>
       </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>datasource</artifactId>
-            <version>1.20</version>
+            <version>1.21-aplha</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>va</artifactId>
-            <version>1.20</version>
+            <version>1.21-aplha</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
