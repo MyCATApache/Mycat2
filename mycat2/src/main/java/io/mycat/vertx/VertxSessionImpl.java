@@ -35,6 +35,7 @@ public class VertxSessionImpl implements VertxSession {
     private NetSocket socket;
     int packetId = 0;
     private ProcessState processState;
+    public boolean close;
 
     public VertxSessionImpl(MycatDataContext mycatDataContext, NetSocket socket) {
         this.mycatDataContext = mycatDataContext;
@@ -132,11 +133,15 @@ public class VertxSessionImpl implements VertxSession {
                 }
             }
         }
-        Future<Void> future = socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload)));
-        if (end) {
-            this.socket.resume();
+        if (!close){
+            Future<Void> future = socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload)));
+            if (end) {
+                this.socket.resume();
+            }
+            return VertxUtil.castPromise(future);
+        }else {
+            return VertxUtil.castPromise(Future.failedFuture("session is closed"));
         }
-        return VertxUtil.castPromise(future);
     }
 
     @Override

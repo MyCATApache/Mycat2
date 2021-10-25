@@ -13,6 +13,7 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.Json;
 import lombok.SneakyThrows;
 
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -80,7 +81,7 @@ public class MycatSQLLogMonitorImpl extends MycatSQLLogMonitor {
                     try {
                         instanceSnapshot = InstanceEntry.snapshot();
                         InstanceEntry.reset();
-                    }finally {
+                    } finally {
                         promise.tryComplete();
                     }
                 });
@@ -99,7 +100,7 @@ public class MycatSQLLogMonitorImpl extends MycatSQLLogMonitor {
                     try {
                         rwEntryMapSnapshot = RWEntry.snapshot();
                         RWEntry.reset();
-                    }finally {
+                    } finally {
                         promise.tryComplete();
                     }
                 });
@@ -116,7 +117,7 @@ public class MycatSQLLogMonitorImpl extends MycatSQLLogMonitor {
                     try {
                         databaseInstanceMapSnapshot = DatabaseInstanceEntry.snapshot();
                         DatabaseInstanceEntry.reset();
-                    }finally {
+                    } finally {
                         promise.tryComplete();
                     }
                 });
@@ -134,5 +135,15 @@ public class MycatSQLLogMonitorImpl extends MycatSQLLogMonitor {
                 }
             }
         }
+    }
+
+    @Override
+    public void setSqlTimeFilter(long value) {
+        Optional.ofNullable(this.monitorConfig).ifPresent(i -> i.getSqlLog().setSqlTimeFilter(value));
+    }
+
+    @Override
+    public long getSqlTimeFilter() {
+        return Optional.ofNullable(this.monitorConfig).map(i -> i.getSqlLog().getSqlTimeFilter()).orElse(Long.valueOf(-1));
     }
 }

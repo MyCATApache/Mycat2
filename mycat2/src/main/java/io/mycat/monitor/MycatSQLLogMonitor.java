@@ -22,4 +22,8 @@ public abstract class MycatSQLLogMonitor {
 
 
     abstract protected void pushSqlLog(SqlEntry sqlEntry);
+
+    public abstract void setSqlTimeFilter(long value);
+
+    public  abstract long getSqlTimeFilter();
 }

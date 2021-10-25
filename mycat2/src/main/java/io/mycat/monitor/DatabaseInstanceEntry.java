@@ -56,14 +56,14 @@ public class DatabaseInstanceEntry implements LogEntry {
     }
 
     public static DatabaseInstanceMap snapshot() {
-        Map<String, DatabaseInstanceEntry2> res = new HashMap<>();
+        Map<String, DatabaseInstanceEntryViewEntry> res = new HashMap<>();
         double seconds = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime)*1.0;
         for (Map.Entry<String, DatabaseInstanceEntry> entryEntry : map.entrySet()) {
             long con = entryEntry.getValue().getCon().get();
             long sum = entryEntry.getValue().getQpsSum().get();
             long thread = entryEntry.getValue().getThread().get();
 
-            DatabaseInstanceEntry2 databaseInstanceEntry2 = new DatabaseInstanceEntry2();
+            DatabaseInstanceEntryViewEntry databaseInstanceEntry2 = new DatabaseInstanceEntryViewEntry();
             databaseInstanceEntry2.con = con;
             databaseInstanceEntry2.qps = (long)(sum/seconds);
             databaseInstanceEntry2.thread = thread;
@@ -73,8 +73,8 @@ public class DatabaseInstanceEntry implements LogEntry {
         databaseInstanceMap.databaseInstanceMap = res;
         return databaseInstanceMap;
     }
-
-    public static class DatabaseInstanceEntry2 implements LogEntry {
+    @EqualsAndHashCode
+    public static class DatabaseInstanceEntryViewEntry implements LogEntry {
 
         public long qps = 0;
 
@@ -84,9 +84,10 @@ public class DatabaseInstanceEntry implements LogEntry {
     }
 
     @Data
+    @EqualsAndHashCode
     public static class DatabaseInstanceMap {
 
-        Map<String, DatabaseInstanceEntry2> databaseInstanceMap = new HashMap<>();
+        Map<String, DatabaseInstanceEntryViewEntry> databaseInstanceMap = new HashMap<>();
     }
 
 

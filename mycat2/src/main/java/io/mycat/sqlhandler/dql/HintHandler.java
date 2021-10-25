@@ -32,6 +32,7 @@ import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.exporter.SqlRecorderRuntime;
+import io.mycat.monitor.MycatSQLLogMonitor;
 import io.mycat.monitor.SqlEntry;
 import io.mycat.replica.PhysicsInstance;
 import io.mycat.replica.ReplicaSelector;
@@ -229,7 +230,12 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     if ("showTables".equalsIgnoreCase(cmd)) {
                         return showTables(response, body, metadataManager, routerConfig);
                     }
-
+                    if ("setSqlTimeFilter".equalsIgnoreCase(cmd)) {
+                        return setSqlTimeFilter(response, body,metadataManager);
+                    }
+                    if ("getSqlTimeFilter".equalsIgnoreCase(cmd)) {
+                        return getSqlTimeFilter(response, body,metadataManager);
+                    }
                     if ("showClusters".equalsIgnoreCase(cmd)) {
                         Map map = JsonUtil.from(body, Map.class);
                         String clusterName = (String) map.get("name");
@@ -677,7 +683,29 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         });
         return response.sendResultSet(() -> builder.build());
     }
-
+    private Future<Void> setSqlTimeFilter(Response response, String body, MetadataManager metadataManager) {
+        Map map = JsonUtil.from(body, Map.class);
+        Object value = map.get("value");
+        if (value != null) {
+            long s =Long.parseLong( value.toString());
+            if(MetaClusterCurrent.exist(MycatSQLLogMonitor.class)){
+                MycatSQLLogMonitor mycatSQLLogMonitor = MetaClusterCurrent.wrapper(MycatSQLLogMonitor.class);
+                mycatSQLLogMonitor.setSqlTimeFilter(s);
+            }
+        }
+        return response.sendOk();
+    }
+    private Future<Void> getSqlTimeFilter(Response response, String body, MetadataManager metadataManager) {
+        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+        resultSetBuilder.addColumnInfo("value",JDBCType.VARCHAR);
+        long sqlTimeFilter = -1;
+        if(MetaClusterCurrent.exist(MycatSQLLogMonitor.class)){
+            MycatSQLLogMonitor mycatSQLLogMonitor = MetaClusterCurrent.wrapper(MycatSQLLogMonitor.class);
+             sqlTimeFilter = mycatSQLLogMonitor.getSqlTimeFilter();
+        }
+        resultSetBuilder.addObjectRowPayload(Arrays.asList(sqlTimeFilter));
+        return response.sendResultSet(resultSetBuilder.build());
+    }
     private Future<Void> showTopology(Response response, String body, MetadataManager metadataManager) {
         Map map = JsonUtil.from(body, Map.class);
         TableHandler table = metadataManager.getTable((String) map.get("schemaName"),
