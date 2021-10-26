@@ -17,6 +17,9 @@ package io.mycat.vertx;
 import io.mycat.beans.mysql.packet.MySQLPayloadReadView;
 import io.vertx.core.buffer.Buffer;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class ReadView implements MySQLPayloadReadView {
@@ -156,7 +159,8 @@ public class ReadView implements MySQLPayloadReadView {
     public double readDouble() {
         int tmp = index;
         index+=8;
-        return buffer.getDouble(tmp);
+        byte[] bytes = buffer.getBytes(tmp, index);
+        return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getDouble();
     }
 
     @Override
@@ -178,6 +182,7 @@ public class ReadView implements MySQLPayloadReadView {
     public float readFloat() {
         int tmp = index;
         index+=4;
-        return  buffer.getFloat(tmp);
+        byte[] bytes = buffer.getBytes(tmp, index);
+        return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getFloat();
     }
 }

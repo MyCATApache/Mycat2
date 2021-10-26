@@ -17,6 +17,8 @@ import org.junit.Test;
 import org.springframework.boot.autoconfigure.quartz.QuartzProperties;
 
 import javax.annotation.concurrent.NotThreadSafe;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
@@ -1236,6 +1238,37 @@ public class UserCaseTest implements MycatTest {
             resultSet.next();
             int anInt = resultSet.getInt(1);
             Assert.assertEquals(14130,anInt);
+            System.out.println();
+        }
+
+    }
+
+    @Test
+    public void case21() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);){
+            List<Map<String, Object>> res0 = JdbcUtils.executeQuery(mycatConnection, "select ?", Arrays.asList(0.01d));
+            List<Map<String, Object>> res1 = JdbcUtils.executeQuery(mycatConnection, "select ?", Arrays.asList(0.01f));
+            List<Map<String, Object>> res2 = JdbcUtils.executeQuery(mycatConnection, "select ?", Arrays.asList(1));
+            List<Map<String, Object>> res3 = JdbcUtils.executeQuery(mycatConnection, "select ?", Arrays.asList(1l));
+            List<Map<String, Object>> res4 = JdbcUtils.executeQuery(mycatConnection, "select ?", Arrays.asList((byte)1));
+            List<Map<String, Object>> res5 = JdbcUtils.executeQuery(mycatConnection, "select ?", Arrays.asList((short)1));
+
+            String stringBlob = "{{";
+            byte[] bytes = stringBlob.getBytes();
+            List<Map<String, Object>> res6 = JdbcUtils.executeQuery(mycatConnection, "select ?", Arrays.asList(bytes));//not char ,char会被java序列化成数组
+            List<Map<String, Object>> res7 = JdbcUtils.executeQuery(mycatConnection, "select ?", Arrays.asList(BigDecimal.valueOf(1)));
+            List<Map<String, Object>> res8 = JdbcUtils.executeQuery(mycatConnection, "select ?", Arrays.asList(BigInteger.valueOf(1)));
+
+
+            Assert.assertEquals("[{0.01=0.01}]",res0.toString());
+            Assert.assertEquals("[{0.01=0.01}]",res1.toString());
+            Assert.assertEquals("[{1=1}]",res2.toString());
+            Assert.assertEquals("[{1=1}]",res3.toString());
+            Assert.assertEquals("[{1=1}]",res4.toString());
+            Assert.assertEquals("[{1=1}]",res5.toString());
+            Assert.assertEquals("[{'{{'={{}]",res6.toString());
+            Assert.assertEquals("[{'1'=1}]",res7.toString());
+            Assert.assertEquals("[{1=1}]",res8.toString());
             System.out.println();
         }
 
