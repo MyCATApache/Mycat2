@@ -274,7 +274,9 @@ public enum MycatCalciteSupport implements Context {
                     build.put("regexp_replace", RegexpReplaceFunction.INSTANCE);
                     build.put("not regexp", NotRegexpFunction.INSTANCE);
 
-                    Arrays.asList(BitLengthFunction.INSTANCE,
+                    Arrays.asList(
+                            UUIDFunction.INSTANCE,
+                            BitLengthFunction.INSTANCE,
                             BinFunction.INSTANCE,
                             AsciiFunction.INSTANCE,
                             RegexpSubstrFunction.INSTANCE,

@@ -1268,4 +1268,14 @@ public class UserCaseTest implements MycatTest {
         }
 
     }
+
+
+    @Test
+    public void case596() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);){
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(mycatConnection, "select REPLACE(UUID(),'-','')", Collections.emptyList());
+            System.out.println();
+        }
+
+    }
 }
