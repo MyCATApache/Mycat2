@@ -16,6 +16,8 @@ import org.junit.Test;
 import org.springframework.boot.autoconfigure.quartz.QuartzProperties;
 
 import javax.annotation.concurrent.NotThreadSafe;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
