@@ -37,6 +37,10 @@ public interface MycatRowMetaData extends Serializable {
 
     int getColumnDisplaySize(int column);
 
+    default int getColumnLength(int column){
+        return 255;
+    }
+
     String getColumnName(int column);
 
     String getSchemaName(int column);
