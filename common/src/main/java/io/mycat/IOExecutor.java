@@ -26,9 +26,15 @@ public interface IOExecutor {
         private final AtomicLong count = new AtomicLong();
         public <T> Future<T> executeBlocking(Handler<Promise<T>> blockingCodeHandler) {
             count.getAndIncrement();
+            PromiseInternal<Object> promise = VertxUtil.newPromise();
             try {
-                PromiseInternal<Object> promise = VertxUtil.newPromise();
-                executorService.execute(() -> blockingCodeHandler.handle((Promise<T>) promise));
+                executorService.execute(() -> {
+                    try {
+                        blockingCodeHandler.handle((Promise<T>) promise);
+                    }catch (Exception e){
+                        promise.tryFail(e);
+                    }
+                });
                 return (Future) promise.future();
             }finally {
                 count.decrementAndGet();
