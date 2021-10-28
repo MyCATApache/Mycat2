@@ -31,13 +31,23 @@ public class PrototypeHandlerImpl implements PrototypeHandler {
     @Override
     public List<Object[]> showTables(SQLShowTablesStatement statement) {
         String schemaName = SQLUtils.normalize(statement.getDatabase().getSimpleName());
+
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         NameMap<SchemaHandler> schemaMap = metadataManager.getSchemaMap();
-        SchemaHandler schemaHandler = schemaMap.get(schemaName);
-        if (schemaHandler == null) return Collections.emptyList();
+        Collection<String> strings;
+        SQLExpr like = statement.getLike();
+        if (like== null){
+            SchemaHandler schemaHandler = schemaMap.get(schemaName);
+            if (schemaHandler == null) return Collections.emptyList();
+            NameMap<TableHandler> tables = schemaHandler.logicTables();
+            strings = tables.keySet();
+        }else {
+            TableHandler table = metadataManager.getTable(schemaName, SQLUtils.normalize(like.toString()));
+            if (table==null)return Collections.emptyList();
+            strings = Collections.singleton(table.getTableName());
+        }
+        strings = strings.stream().sorted().collect(Collectors.toList());
 
-        NameMap<TableHandler> tables = schemaHandler.logicTables();
-        Collection<String> strings = tables.keySet();
         return strings.stream().map(i -> new Object[]{i, "BASE TABLE"}).collect(Collectors.toList());
     }
 

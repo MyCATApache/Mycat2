@@ -135,15 +135,6 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
     }
 
     public PrototypeService getPrototypeService() {
-        return MetaClusterCurrent.exist(PrototypeService.class) ? MetaClusterCurrent.wrapper(PrototypeService.class) : new PrototypeService(() -> {
-            JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-            Set<String> strings = connectionManager.getConfigAsMap().keySet();
-            ArrayList<DefaultConnection> retList = new ArrayList<>();
-            for (String string : strings) {
-                DefaultConnection connection = connectionManager.getConnection(string);
-                retList.add(connection);
-            }
-            return retList;
-        });
+        return MetaClusterCurrent.exist(PrototypeService.class) ? MetaClusterCurrent.wrapper(PrototypeService.class) : new PrototypeService();
     }
 }

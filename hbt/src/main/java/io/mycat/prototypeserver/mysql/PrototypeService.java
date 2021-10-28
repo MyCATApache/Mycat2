@@ -1,6 +1,5 @@
 package io.mycat.prototypeserver.mysql;
 
-import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLDataType;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -9,8 +8,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStateme
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCreateDatabaseStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowDatabaseStatusStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowTableStatusStatement;
-import com.alibaba.druid.sql.parser.SQLParserUtils;
-import com.github.jinahya.database.metadata.bind.*;
+import com.github.jinahya.database.metadata.bind.Catalog;
 import io.mycat.BackendTableInfo;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.Partition;
@@ -30,12 +28,9 @@ import io.mycat.util.NameMap;
 import io.mycat.util.SQL2ResultSetUtil;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.ResultSetMetaData;
-import java.sql.SQLFeatureNotSupportedException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
@@ -46,8 +41,7 @@ import java.util.function.Predicate;
 public class PrototypeService {
     public final static String PROTOTYPE = "prototype";
     private static final Logger LOGGER = LoggerFactory.getLogger(PrototypeService.class);
-    private final NameMap<NameMap<String>> schemaList;
-    private ConnectionFactory connectionFactory;
+
     private PrototypeHandler prototypeHandler = new PrototypeHandlerImpl();
 
     public static interface ConnectionFactory {
@@ -55,10 +49,7 @@ public class PrototypeService {
     }
 
     @SneakyThrows
-    public PrototypeService(ConnectionFactory connectionFactory) {
-        this.connectionFactory = connectionFactory;
-        Map<String, Map<String, String>> router = getTables();
-        this.schemaList = toNameMap(router);
+    public PrototypeService() {
     }
 
 
@@ -776,78 +767,78 @@ public class PrototypeService {
         List<Catalog> catalogList;
         String name;
     }
-
-    @Nullable
-    private Map<String, Map<String, String>> getTables() {
-        List<DefaultConnection> connections = this.connectionFactory.scanConnections();
-        try {
-            Map<String, Map<String, String>> router = new HashMap<>();
-            Iterator<Info> iterator = connections.stream().parallel().map(connection -> {
-                        try {
-                            Context context = Context.newInstance(connection.getRawConnection())
-                                    .suppress(SQLFeatureNotSupportedException.class);
-                            Info info = new Info();
-                            info.catalogList = context.getCatalogs(new ArrayList<>());
-                            info.name = connection.getDataSource().getName();
-                            return info;
-                        } catch (Throwable ignored) {
-                            return null;
-                        }
-                    })
-                    .filter(i -> i != null).iterator();
-            while (iterator.hasNext()) {
-                Info catalog = iterator.next();
-                for (Catalog catalog1 : catalog.catalogList) {
-                    List<Schema> schemas = catalog1.getSchemas();
-                    for (Schema schema : schemas) {
-                        String tableCatalog = schema.getTableCatalog();
-                        Map<String, String> tableMap = router.computeIfAbsent(tableCatalog, s -> new HashMap<>());
-                        List<Table> tables = schema.getTables();
-                        for (Table table : tables) {
-                            String tableName = table.getTableName();
-                            MySqlCreateTableStatement mySqlCreateTableStatement = new MySqlCreateTableStatement();
-                            mySqlCreateTableStatement.setTableName(tableName);
-                            mySqlCreateTableStatement.setSchema(tableCatalog);
-                            List<Column> columns = table.getColumns();
-                            int columnCount = columns.size();
-                            Optional<PrimaryKey> primaryKeyOptional = table.getPrimaryKeys().stream().findFirst();
-                            for (int i = 0; i < columnCount; i++) {
-                                Column column = columns.get(i);
-                                String columnName = column.getColumnName();
-                                int columnType = column.getDataType();
-                                String type = SQLDataType.Constants.VARCHAR;
-                                for (MySQLType value : MySQLType.values()) {
-                                    if (value.getJdbcType() == columnType) {
-                                        type = value.getName();
-                                    }
-                                }
-                                boolean nullable = column.getNullable() != ResultSetMetaData.columnNoNulls;
-                                int columnSize = column.getColumnSize();
-
-
-                                SQLColumnDefinition sqlColumnDefinition = new SQLColumnDefinition();
-                                sqlColumnDefinition.setName(columnName);
-                                sqlColumnDefinition.setDataType(SQLParserUtils.createExprParser(type, DbType.mysql).parseDataType());
-                                if (!nullable) {
-                                    sqlColumnDefinition.addConstraint(new SQLNullConstraint());
-                                }
-                                if (primaryKeyOptional.isPresent()) {
-                                    if (primaryKeyOptional.get().getColumnName().equalsIgnoreCase(columnName)) {
-                                        sqlColumnDefinition.addConstraint(new SQLColumnPrimaryKey());
-                                    }
-                                }
-                                mySqlCreateTableStatement.addColumn(column.getColumnName(), type);
-                            }
-                            tableMap.put(tableName, mySqlCreateTableStatement.toString());
-                        }
-                    }
-                }
-            }
-            return router;
-        }finally {
-            close(connections);
-        }
-    }
+//
+//    @Nullable
+//    private Map<String, Map<String, String>> getTables() {
+//        List<DefaultConnection> connections = this.connectionFactory.scanConnections();
+//        try {
+//            Map<String, Map<String, String>> router = new HashMap<>();
+//            Iterator<Info> iterator = connections.stream().parallel().map(connection -> {
+//                        try {
+//                            Context context = Context.newInstance(connection.getRawConnection())
+//                                    .suppress(SQLFeatureNotSupportedException.class);
+//                            Info info = new Info();
+//                            info.catalogList = context.get(new ArrayList<>());
+//                            info.name = connection.getDataSource().getName();
+//                            return info;
+//                        } catch (Throwable ignored) {
+//                            return null;
+//                        }
+//                    })
+//                    .filter(i -> i != null).iterator();
+//            while (iterator.hasNext()) {
+//                Info catalog = iterator.next();
+//                for (Catalog catalog1 : catalog.catalogList) {
+//                    List<Schema> schemas = catalog1.getSchemas();
+//                    for (Schema schema : schemas) {
+//                        String tableCatalog = schema.getTableCatalog();
+//                        Map<String, String> tableMap = router.computeIfAbsent(tableCatalog, s -> new HashMap<>());
+//                        List<Table> tables = schema.getTables();
+//                        for (Table table : tables) {
+//                            String tableName = table.getTableName();
+//                            MySqlCreateTableStatement mySqlCreateTableStatement = new MySqlCreateTableStatement();
+//                            mySqlCreateTableStatement.setTableName(tableName);
+//                            mySqlCreateTableStatement.setSchema(tableCatalog);
+//                            List<Column> columns = table.getColumns();
+//                            int columnCount = columns.size();
+//                            Optional<PrimaryKey> primaryKeyOptional = table.getPrimaryKeys().stream().findFirst();
+//                            for (int i = 0; i < columnCount; i++) {
+//                                Column column = columns.get(i);
+//                                String columnName = column.getColumnName();
+//                                int columnType = column.getDataType();
+//                                String type = SQLDataType.Constants.VARCHAR;
+//                                for (MySQLType value : MySQLType.values()) {
+//                                    if (value.getJdbcType() == columnType) {
+//                                        type = value.getName();
+//                                    }
+//                                }
+//                                boolean nullable = column.getNullable() != ResultSetMetaData.columnNoNulls;
+//                                int columnSize = column.getColumnSize();
+//
+//
+//                                SQLColumnDefinition sqlColumnDefinition = new SQLColumnDefinition();
+//                                sqlColumnDefinition.setName(columnName);
+//                                sqlColumnDefinition.setDataType(SQLParserUtils.createExprParser(type, DbType.mysql).parseDataType());
+//                                if (!nullable) {
+//                                    sqlColumnDefinition.addConstraint(new SQLNullConstraint());
+//                                }
+//                                if (primaryKeyOptional.isPresent()) {
+//                                    if (primaryKeyOptional.get().getColumnName().equalsIgnoreCase(columnName)) {
+//                                        sqlColumnDefinition.addConstraint(new SQLColumnPrimaryKey());
+//                                    }
+//                                }
+//                                mySqlCreateTableStatement.addColumn(column.getColumnName(), type);
+//                            }
+//                            tableMap.put(tableName, mySqlCreateTableStatement.toString());
+//                        }
+//                    }
+//                }
+//            }
+//            return router;
+//        }finally {
+//            close(connections);
+//        }
+//    }
 
     public static void close(Iterable<DefaultConnection> ac) {
         if (ac != null) {
