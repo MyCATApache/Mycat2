@@ -25,11 +25,13 @@ import io.mycat.calcite.table.NormalTableHandler;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.prototypeserver.mysql.PrototypeService;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.ClassUtil;
 import io.mycat.util.MycatSQLExprTableSourceUtil;
 import io.vertx.core.Future;
 import lombok.EqualsAndHashCode;
+import org.apache.calcite.avatica.Meta;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -38,6 +40,7 @@ import java.util.*;
 public abstract class AbstractSQLHandler<Statement extends SQLStatement> implements SQLHandler<Statement> {
     private final Class statementClass;
     public final static String DDL_LOCK = "DDL_LOCK";
+
     public AbstractSQLHandler() {
         Class<?> statement = ClassUtil.findGenericType(this, AbstractSQLHandler.class, "Statement");
         Objects.requireNonNull(statement);
@@ -72,10 +75,10 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
         return statementClass;
     }
 
-    public void resolveSQLExprTableSource( SQLExprTableSource tableSource,MycatDataContext dataContext) {
+    public void resolveSQLExprTableSource(SQLExprTableSource tableSource, MycatDataContext dataContext) {
         if (tableSource.getSchema() == null) {
             String defaultSchema = checkDefaultSchemaNotNull(dataContext);
-            MycatSQLExprTableSourceUtil.setSchema(defaultSchema,tableSource);
+            MycatSQLExprTableSourceUtil.setSchema(defaultSchema, tableSource);
         }
     }
 
@@ -88,12 +91,6 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
         return defaultSchema;
     }
 
-//    public void executeOnPrototype(SQLStatement sqlStatement,
-//                                   JdbcConnectionManager connectionManager) {
-//        try(DefaultConnection connection = connectionManager.getConnection("prototype")){
-//            connection.executeUpdate(sqlStatement.toString(),false);
-//        }
-//    }
     public void executeOnDataNodes(SQLStatement sqlStatement, JdbcConnectionManager connectionManager, Collection<Partition> partitions, SQLExprTableSource tableSource) {
         HashSet<String> set = new HashSet<>();
         for (Partition partition : partitions) {
@@ -105,7 +102,7 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
                 HostInfo hostInfo = connectionUrlParser.getHosts().get(0);
                 String ip = hostInfo.getHost();
                 String port = hostInfo.getPort() + "";
-                if (set.add(ip +":" +port+":"+sql)) {
+                if (set.add(ip + ":" + port + ":" + sql)) {
                     connection.executeUpdate(sql, false);
                 }
             }
@@ -132,8 +129,21 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
             }
             case CUSTOM:
             default:
-                throw MycatErrorCode.createMycatException(MycatErrorCode.ERR_NOT_SUPPORT,"alter custom table supported");
+                throw MycatErrorCode.createMycatException(MycatErrorCode.ERR_NOT_SUPPORT, "alter custom table supported");
         }
         return new HashSet<>(partitions);
+    }
+
+    public PrototypeService getPrototypeService() {
+        return MetaClusterCurrent.exist(PrototypeService.class) ? MetaClusterCurrent.wrapper(PrototypeService.class) : new PrototypeService(() -> {
+            JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+            Set<String> strings = connectionManager.getConfigAsMap().keySet();
+            ArrayList<DefaultConnection> retList = new ArrayList<>();
+            for (String string : strings) {
+                DefaultConnection connection = connectionManager.getConnection(string);
+                retList.add(connection);
+            }
+            return retList;
+        });
     }
 }
