@@ -17,14 +17,20 @@ package io.mycat.sqlhandler.dql;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.statement.SQLShowTablesStatement;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
 import io.mycat.Response;
+import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.prototypeserver.mysql.MySQLResultSet;
+import io.mycat.prototypeserver.mysql.PrototypeService;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 
 
 public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatement> {
@@ -39,6 +45,12 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
         SQLName database = ast.getDatabase();
         if (database == null) {
            return response.sendError(new MycatException("NO DATABASES SELECTED"));
+        }
+        PrototypeService prototypeService = getPrototypeService();
+        Optional<MySQLResultSet> baseIterator = prototypeService.handleSql(request.getAst());
+        if(baseIterator.isPresent()){
+            RowBaseIterator rowBaseIterator = baseIterator.get().build();
+            return response.sendResultSet(rowBaseIterator);
         }
      return response.proxySelectToPrototype(ast.toString());
     }

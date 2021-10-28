@@ -13,6 +13,13 @@
 
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/com.github.jinahya/database-metadata-bind -->
+        <dependency>
+            <groupId>com.github.jinahya</groupId>
+            <artifactId>database-metadata-bind</artifactId>
+            <version>3.2.0</version>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/net.jpountz.lz4/lz4 -->
         <dependency>
             <groupId>net.jpountz.lz4</groupId>

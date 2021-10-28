@@ -14,6 +14,8 @@
  */
 package io.mycat.sqlhandler.dql;
 
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.statement.SQLShowDatabasesStatement;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
@@ -28,13 +30,21 @@ import io.vertx.core.Future;
 
 import java.sql.JDBCType;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 public class ShowDatabasesHanlder extends AbstractSQLHandler<com.alibaba.druid.sql.ast.statement.SQLShowDatabasesStatement> {
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLShowDatabasesStatement> request, MycatDataContext dataContext, Response response) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        SQLShowDatabasesStatement sqlShowDatabasesStatement = request.getAst();
+        SQLExpr like = sqlShowDatabasesStatement.getLike();
         List<String> collect = metadataManager.showDatabases();
+        if (like != null) {
+            String matchSchemaName = SQLUtils.normalize( like.toString());
+            collect = collect.stream().filter(i->i.equalsIgnoreCase(matchSchemaName)).collect(Collectors.toList());
+        }
+
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
         resultSetBuilder.addColumnInfo("Database", JDBCType.VARCHAR);
         for (String s : collect) {

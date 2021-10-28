@@ -26,6 +26,7 @@ import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.table.*;
 import io.mycat.config.*;
+import io.mycat.prototypeserver.mysql.PrototypeService;
 import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.router.function.IndexDataNode;
 import io.mycat.router.mycat1xfunction.PartitionRuleFunctionManager;

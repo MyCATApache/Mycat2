@@ -15,11 +15,19 @@
 package io.mycat.sqlhandler.dql;
 
 import com.alibaba.druid.sql.ast.statement.SQLShowColumnsStatement;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
+import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.prototypeserver.mysql.MySQLResultSet;
+import io.mycat.prototypeserver.mysql.PrototypeService;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
 import io.vertx.core.Future;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 
 
 /**
@@ -27,9 +35,15 @@ import io.vertx.core.Future;
  */
 
 public class ShowColumnsSQLHandler extends AbstractSQLHandler<SQLShowColumnsStatement> {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(ShowColumnsSQLHandler.class);
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLShowColumnsStatement> request, MycatDataContext dataContext, Response response){
+        PrototypeService prototypeService = getPrototypeService();
+        Optional<MySQLResultSet> baseIterator = prototypeService.handleSql(request.getAst());
+        if(baseIterator.isPresent()){
+            RowBaseIterator rowBaseIterator = baseIterator.get().build();
+            return response.sendResultSet(rowBaseIterator);
+        }
         SQLShowColumnsStatement ast = request.getAst();
         return response.proxySelectToPrototype(ast.toString());
     }

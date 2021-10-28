@@ -45,6 +45,7 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.monitor.MonitorReplicaSelectorManager;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.sequence.SequenceGenerator;
+import io.mycat.prototypeserver.mysql.PrototypeService;
 import io.mycat.proxy.session.AuthenticatorImpl;
 import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.replica.ReplicaSelectorRuntime;
@@ -57,7 +58,6 @@ import io.mycat.statistic.StatisticCenter;
 import io.mycat.util.JsonUtil;
 import io.mycat.util.NameMap;
 import io.vertx.core.json.Json;
-import org.apache.calcite.avatica.Meta;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -541,8 +541,18 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
 
             Resource<SequenceGenerator> sequenceGenerator = getSequenceGenerator(sequenceConfigUpdateSet);
             resourceList.add(sequenceGenerator);
+            PrototypeService prototypeService ;
+            MetaClusterCurrent.register(PrototypeService.class,  prototypeService =  new PrototypeService(() -> {
+                JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+                Set<String> strings = connectionManager.getConfigAsMap().keySet();
+                ArrayList<DefaultConnection> retList = new ArrayList<>();
+                for (String string : strings) {
+                    DefaultConnection connection = connectionManager.getConnection(string);
+                    retList.add(connection);
+                }
+                return retList;
+            }));
 
-            PrototypeService prototypeService = new PrototypeService();
             Resource<MetadataManager> metadataManager = getMetadataManager(schemaConfigUpdateSet, prototypeService);
             resourceList.add(metadataManager);
 
@@ -608,6 +618,7 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
         if (options.persistence) {
             persistence(schemaConfigUpdateSet, clusterConfigUpdateSet, datasourceConfigUpdateSet, sequenceConfigUpdateSet, sqlCacheConfigUpdateSet, userConfigUpdateSet);
         }
+
     }
 
     private void testPrototype(JdbcConnectionManager jdbcConnectionManager1) {
