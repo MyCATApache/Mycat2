@@ -1,7 +1,7 @@
 package io.mycat.replica;
 
 import io.mycat.MetaClusterCurrent;
-import io.mycat.ReplicaReporter;
+import io.mycat.ConfigReporter;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.TimerConfig;
@@ -23,7 +23,6 @@ import java.util.function.Consumer;
 
 import static io.mycat.assemble.MycatTest.DB1;
 import static io.mycat.assemble.MycatTest.DB2;
-import static io.mycat.replica.heartbeat.strategy.MGRHeartBeatStrategy.CHECK_SQL;
 
 public class MGRTest extends ReplicaTest {
 
@@ -105,7 +104,7 @@ public class MGRTest extends ReplicaTest {
                 }
         );
         manager.start();
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -182,7 +181,7 @@ public class MGRTest extends ReplicaTest {
                     };
                 }
         );
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -260,7 +259,7 @@ public class MGRTest extends ReplicaTest {
 
         //模拟第一主节点无法连接
 
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -336,7 +335,7 @@ public class MGRTest extends ReplicaTest {
         manager.putHeartFlow("c0", "dsw1", checkMGR(false, 0));
         manager.putHeartFlow("c0", "dsr1", checkMGR(false, 0));
 
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -386,7 +385,7 @@ public class MGRTest extends ReplicaTest {
 
         AtomicInteger switchCounter = new AtomicInteger();
 
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 switchCounter.getAndIncrement();

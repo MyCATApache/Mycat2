@@ -1,7 +1,7 @@
 package io.mycat.replica;
 
 import io.mycat.MetaClusterCurrent;
-import io.mycat.ReplicaReporter;
+import io.mycat.ConfigReporter;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.TimerConfig;
@@ -9,7 +9,6 @@ import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
-import io.mycat.replica.heartbeat.strategy.MGRHeartBeatStrategy;
 import io.mycat.replica.heartbeat.strategy.MHAHeartBeatStrategy;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.NotNull;
@@ -107,7 +106,7 @@ public class MHATest extends ReplicaTest {
                 }
         );
 
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -185,7 +184,7 @@ public class MHATest extends ReplicaTest {
                     };
                 }
         );
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -264,7 +263,7 @@ public class MHATest extends ReplicaTest {
 
         //模拟第一主节点无法连接
 
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -340,7 +339,7 @@ public class MHATest extends ReplicaTest {
         manager.putHeartFlow("c0", "dsw1", checkMHA(false, 0));
         manager.putHeartFlow("c0", "dsr1", checkMHA(false, 0));
 
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -390,7 +389,7 @@ public class MHATest extends ReplicaTest {
 
         AtomicInteger switchCounter = new AtomicInteger();
 
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 switchCounter.getAndIncrement();

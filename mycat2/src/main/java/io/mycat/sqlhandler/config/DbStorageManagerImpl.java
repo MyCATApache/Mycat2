@@ -16,6 +16,7 @@ import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.curator.shaded.com.google.common.io.Files;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -177,6 +178,12 @@ public class DbStorageManagerImpl extends AbstractStorageManagerImpl {
             preparedStatement.execute();
             rawConnection.commit();
         }
+    }
+
+    @Nullable
+    @Override
+    public Optional<DatasourceConfig> getPrototypeDatasourceConfig() {
+        return Optional.of(config);
     }
 
     @AllArgsConstructor

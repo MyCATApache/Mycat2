@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -211,8 +210,8 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo, Closeable, Re
 
 
     private void updateFile(List<PhysicsInstance> newWriteDataSource) {
-        if (MetaClusterCurrent.exist(ReplicaReporter.class)) {
-            ReplicaReporter replicaReporter = MetaClusterCurrent.wrapper(ReplicaReporter.class);
+        if (MetaClusterCurrent.exist(ConfigReporter.class)) {
+            ConfigReporter replicaReporter = MetaClusterCurrent.wrapper(ConfigReporter.class);
             Map<String, List<String>> state = replicaSelectorRuntime.getState();
             replicaReporter.reportReplica(state);
         } else {

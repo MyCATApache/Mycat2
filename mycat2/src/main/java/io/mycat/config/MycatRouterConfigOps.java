@@ -613,7 +613,7 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
     }
 
     private void testPrototype(JdbcConnectionManager jdbcConnectionManager1) {
-        try (DefaultConnection connection = jdbcConnectionManager1.getConnection(PrototypeService.PROTOTYPE)) {
+        try (DefaultConnection connection = jdbcConnectionManager1.getConnection(MetadataManager.getPrototype())) {
 
         }
     }
@@ -944,7 +944,7 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
 
     private static void addInnerTable(List<LogicSchemaConfig> schemaConfigs) {
         String schemaName = "mysql";
-        String targetName = "prototype";
+        String targetName = MetadataManager.getPrototype();
         String tableName = "proc";
 
         LogicSchemaConfig logicSchemaConfig = schemaConfigs.stream()

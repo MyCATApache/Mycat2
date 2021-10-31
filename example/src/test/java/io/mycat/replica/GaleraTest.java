@@ -1,7 +1,7 @@
 package io.mycat.replica;
 
 import io.mycat.MetaClusterCurrent;
-import io.mycat.ReplicaReporter;
+import io.mycat.ConfigReporter;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.TimerConfig;
@@ -109,7 +109,7 @@ public class GaleraTest extends ReplicaTest {
 
         //模拟第一主节点无法连接
 
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -180,7 +180,7 @@ public class GaleraTest extends ReplicaTest {
         manager.putHeartFlow("c0", "dsw1", checkGalera());
         manager.putHeartFlow("c0", "dsr1", checkGalera());
 
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -230,7 +230,7 @@ public class GaleraTest extends ReplicaTest {
 
         AtomicInteger switchCounter = new AtomicInteger();
 
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 switchCounter.getAndIncrement();
@@ -312,7 +312,7 @@ public class GaleraTest extends ReplicaTest {
                     };
                 }
         );
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -390,7 +390,7 @@ public class GaleraTest extends ReplicaTest {
                     };
                 }
         );
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");

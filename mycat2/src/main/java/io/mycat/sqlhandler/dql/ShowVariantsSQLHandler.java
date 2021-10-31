@@ -16,13 +16,17 @@ package io.mycat.sqlhandler.dql;
 
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowVariantsStatement;
 import io.mycat.MycatDataContext;
+import io.mycat.Response;
+import io.mycat.prototypeserver.mysql.MySQLResultSet;
+import io.mycat.prototypeserver.mysql.PrototypeService;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.Response;
 import io.vertx.core.Future;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 
 /**
  * chenjunwen
@@ -109,6 +113,8 @@ public class ShowVariantsSQLHandler extends AbstractSQLHandler<MySqlShowVariants
 //        ResultSetBuilder builder = ResultSetBuilder.create();
 //        builder.addColumnInfo("Variable_name", JDBCType.VARCHAR);
 //        builder.addColumnInfo("Value", JDBCType.VARCHAR);
+        PrototypeService prototypeService = getPrototypeService();
+        Optional<MySQLResultSet> mySQLResultSet = prototypeService.handleSql(request.getSqlString());
         return response.proxySelectToPrototype(request.getAst().toString());
     }
     @NotNull

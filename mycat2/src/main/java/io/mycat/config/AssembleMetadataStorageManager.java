@@ -2,9 +2,11 @@ package io.mycat.config;
 
 import io.mycat.ConfigOps;
 import io.mycat.MetadataStorageManager;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class AssembleMetadataStorageManager extends MetadataStorageManager {
     MetadataStorageManager dbManager;
@@ -32,6 +34,12 @@ public class AssembleMetadataStorageManager extends MetadataStorageManager {
         if (dbManager != null) {
             dbManager.reportReplica(dsNames);
         }
+    }
+
+    @Nullable
+    @Override
+    public Optional<DatasourceConfig> getPrototypeDatasourceConfig() {
+        return fileManager.getPrototypeDatasourceConfig();
     }
 
     @Override

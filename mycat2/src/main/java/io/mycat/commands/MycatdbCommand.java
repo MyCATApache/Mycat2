@@ -113,7 +113,7 @@ public enum MycatdbCommand {
             sqlHandlers.add(new ShowColumnsSQLHandler());
             sqlHandlers.add(new ShowCreateTableSQLHandler());
             sqlHandlers.add(new ShowDatabasesHanlder());
-            sqlHandlers.add(new ShowDatabaseSQLHandler());
+
             sqlHandlers.add(new ShowDatabaseStatusSQLHandler());
             sqlHandlers.add(new ShowEnginesSQLHandler());
             sqlHandlers.add(new ShowErrorsSQLHandler());

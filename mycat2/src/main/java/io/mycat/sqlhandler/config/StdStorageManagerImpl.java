@@ -21,34 +21,6 @@ public class StdStorageManagerImpl implements StorageManager {
         this.fileStorageManager = fileStorageManager;
     }
 
-    @Nullable
-    public static Optional<DatasourceConfig> getPrototypeDatasourceConfig(StorageManager fileStorageManager) {
-        KV<ClusterConfig> clusterConfigKV = fileStorageManager.get(ClusterConfig.class);
-        KV<DatasourceConfig> datasourceConfigKV = fileStorageManager.get(DatasourceConfig.class);
-        Optional<ClusterConfig> prototypeOptional = clusterConfigKV.get("prototype");
-        Optional<DatasourceConfig> datasourceConfigOptional = prototypeOptional.flatMap(clusterConfig -> {
-
-            List<String> masters = Optional.ofNullable(clusterConfig.getMasters()).orElse(Collections.emptyList());
-            List<String> replicas = Optional.ofNullable(clusterConfig.getReplicas()).orElse(Collections.emptyList());
-
-            List<String> strings = new ArrayList<>();
-            strings.addAll(masters);
-            strings.addAll(replicas);
-
-            return strings.stream().map(i -> datasourceConfigKV.get(i)).filter(i -> i != null).findFirst();
-        }).orElse(Optional.ofNullable(datasourceConfigKV.get("prototype")).orElse(datasourceConfigKV.get("prototypeDs")));
-        DatasourceConfig configPrototypeDs = datasourceConfigOptional.orElse(null);
-        if (configPrototypeDs == null) {
-            List<DatasourceConfig> values = datasourceConfigKV.values();
-            if (values.isEmpty()) {
-                //不开启db
-            } else {
-                configPrototypeDs = values.get(0);
-            }
-        }
-        return Optional.ofNullable(configPrototypeDs);
-    }
-
 
     @Override
     public void register(Class aClass) {
@@ -163,4 +135,39 @@ public class StdStorageManagerImpl implements StorageManager {
         Optional<DbStorageManagerImpl> dbStorageManagerOptional = getDbStorageManager();
         dbStorageManagerOptional.ifPresent(dbStorageManager -> dbStorageManager.reportReplica(state));
     }
+
+    @Nullable
+    @Override
+    public Optional<DatasourceConfig> getPrototypeDatasourceConfig() {
+        return Optional.empty();
+    }
+
+    @Nullable
+    public static Optional<DatasourceConfig> getPrototypeDatasourceConfig(StorageManager fileStorageManager) {
+        KV<ClusterConfig> clusterConfigKV = fileStorageManager.get(ClusterConfig.class);
+        KV<DatasourceConfig> datasourceConfigKV = fileStorageManager.get(DatasourceConfig.class);
+        Optional<ClusterConfig> prototypeOptional = clusterConfigKV.get("prototype");
+        Optional<DatasourceConfig> datasourceConfigOptional = prototypeOptional.flatMap(clusterConfig -> {
+
+            List<String> masters = Optional.ofNullable(clusterConfig.getMasters()).orElse(Collections.emptyList());
+            List<String> replicas = Optional.ofNullable(clusterConfig.getReplicas()).orElse(Collections.emptyList());
+
+            List<String> strings = new ArrayList<>();
+            strings.addAll(masters);
+            strings.addAll(replicas);
+
+            return strings.stream().map(i -> datasourceConfigKV.get(i)).filter(i -> i != null).findFirst();
+        }).orElse(Optional.ofNullable(datasourceConfigKV.get("prototype")).orElse(datasourceConfigKV.get("prototypeDs")));
+        DatasourceConfig configPrototypeDs = datasourceConfigOptional.orElse(null);
+        if (configPrototypeDs == null) {
+            List<DatasourceConfig> values = datasourceConfigKV.values();
+            if (values.isEmpty()) {
+                //不开启db
+            } else {
+                configPrototypeDs = values.get(0);
+            }
+        }
+        return Optional.ofNullable(configPrototypeDs);
+    }
+
 }

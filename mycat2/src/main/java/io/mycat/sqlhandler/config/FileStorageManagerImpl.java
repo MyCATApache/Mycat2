@@ -1,8 +1,10 @@
 package io.mycat.sqlhandler.config;
 
+import io.mycat.config.DatasourceConfig;
 import io.mycat.config.KVObject;
 import io.mycat.util.JsonUtil;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,5 +62,11 @@ public class FileStorageManagerImpl implements StorageManager {
     public void reportReplica(Map<String, List<String>> state) {
         Path statePath = baseDirectory.resolve("state.json");
         FileKV.writeFile(JsonUtil.toJson(state),statePath);
+    }
+
+    @Nullable
+    @Override
+    public Optional<DatasourceConfig> getPrototypeDatasourceConfig() {
+        return Optional.empty();
     }
 }

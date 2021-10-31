@@ -20,6 +20,7 @@ import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.builder.SQLBuilderFactory;
 import com.alibaba.druid.sql.builder.SQLSelectBuilder;
 import com.alibaba.druid.util.JdbcUtils;
+import io.mycat.MetadataManager;
 import io.mycat.Partition;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.api.collector.RowBaseIterator;
@@ -29,6 +30,7 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.ShardingTable;
 import io.mycat.TableHandler;
+import io.mycat.prototypeserver.mysql.PrototypeService;
 import io.mycat.replica.ReplicaSelectorManager;
 import lombok.*;
 import org.slf4j.Logger;
@@ -41,7 +43,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StatisticCenter {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatisticCenter.class);
     private final ConcurrentHashMap<Key, StatisticObject> statisticMap = new ConcurrentHashMap<>();
-    private final String targetName = "prototype";
     private boolean init = false;
     public static final Double DEFAULT_ROW_COUNT = Double.valueOf(8000000);
 
@@ -55,7 +56,7 @@ public class StatisticCenter {
         }
         init = true;
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        try (DefaultConnection prototype = jdbcConnectionManager.getConnection(targetName)) {
+        try (DefaultConnection prototype = jdbcConnectionManager.getConnection(MetadataManager.getPrototype())) {
             Connection rawConnection = prototype.getRawConnection();
             JdbcUtils.execute(rawConnection, "CREATE TABLE IF NOT EXISTS mycat.`analyze_table` (\n" +
                     "  `table_rows` bigint(20) NOT NULL,\n" +
@@ -158,7 +159,7 @@ public class StatisticCenter {
         });
 
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype())) {
             Connection rawConnection = connection.getRawConnection();
             JdbcUtils.execute(rawConnection, "insert into mycat.analyze_table (table_rows,name) values(?,?)",
                     Arrays.asList(value, key1.getSchemaName() + key1.getTableName()));

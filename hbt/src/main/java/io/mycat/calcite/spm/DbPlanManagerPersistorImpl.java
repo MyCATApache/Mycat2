@@ -2,6 +2,7 @@ package io.mycat.calcite.spm;
 
 import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.MetaClusterCurrent;
+import io.mycat.MetadataManager;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.util.JsonUtil;
@@ -20,7 +21,6 @@ import java.util.stream.Collectors;
 
 public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
 
-    final String datasourceName = "prototype";
     final static Logger log = LoggerFactory.getLogger(DbPlanManagerPersistorImpl.class);
 
 
@@ -36,7 +36,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
     @Override
     @SneakyThrows
     public synchronized void checkStore() {
-        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+        try (DefaultConnection connection = getManager().getConnection(MetadataManager.getPrototype());) {
             JdbcUtils.execute(connection.getRawConnection(), "CREATE DATABASE  IF  NOT EXISTS mycat");
             JdbcUtils.execute(connection.getRawConnection(), "CREATE TABLE IF  NOT EXISTS mycat.`spm_baseline` (\n" +
                     "  `id` bigint(22) NOT NULL AUTO_INCREMENT,\n" +
@@ -60,7 +60,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
     @Override
     @SneakyThrows
     public synchronized Optional<Baseline> loadBaseline(long baselineId) {
-        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+        try (DefaultConnection connection = getManager().getConnection(MetadataManager.getPrototype());) {
             List<Map<String, Object>> maps = JdbcUtils.executeQuery(connection.getRawConnection(), "SELECT * FROM mycat.spm_baseline where id = ?", Arrays.asList(baselineId));
             if (maps.isEmpty()) {
                 return Optional.empty();
@@ -103,7 +103,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
     @Override
     @SneakyThrows
     public synchronized void deleteBaseline(long baseline) {
-        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+        try (DefaultConnection connection = getManager().getConnection(MetadataManager.getPrototype());) {
             JdbcUtils.executeUpdate(connection.getRawConnection(), "delete  FROM mycat.spm_baseline where id = ?", Arrays.asList(baseline));
             JdbcUtils.executeUpdate(connection.getRawConnection(), "delete  FROM mycat.spm_plan where baseline_id = ?", Arrays.asList(baseline));
         }
@@ -112,7 +112,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
     @Override
     @SneakyThrows
     public synchronized List<BaselinePlan> listPlan(long baseline) {
-        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+        try (DefaultConnection connection = getManager().getConnection(MetadataManager.getPrototype());) {
             List<Map<String, Object>> maps = JdbcUtils.executeQuery(connection.getRawConnection(), "select *  FROM mycat.spm_plan where baseline_id = ?", Arrays.asList(baseline));
             return maps.stream().map((Function<Map<String, Object>, BaselinePlan>) map -> {
                 return new BaselinePlan((String) map.get("sql"), (String) map.get("rel"), (Long) map.get("id"), (Long) map.get("baseline_id"), null);
@@ -125,7 +125,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
     @SneakyThrows
     public synchronized void saveBaseline(Baseline baseline) {
 //        String constraintText = JsonUtil.toJson(baseline.getConstraint());
-//        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+//        try (DefaultConnection connection = getManager().getConnection(MetadataManager.getPrototype());) {
 //            Connection rawConnection = connection.getRawConnection();
 //            rawConnection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 //            rawConnection.setAutoCommit(false);
@@ -150,7 +150,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
     @Override
     @SneakyThrows
     public synchronized Map<Constraint, Baseline> loadAllBaseline() {
-        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+        try (DefaultConnection connection = getManager().getConnection(MetadataManager.getPrototype());) {
             Connection rawConnection = connection.getRawConnection();
             Map<Constraint, Baseline> baselineList = JdbcUtils.executeQuery(rawConnection, "SELECT * FROM mycat.spm_baseline", Collections.emptyList())
                     .stream().map(b -> toBaseline(b)).distinct().collect(Collectors.toMap(k -> k.getConstraint(), v -> v));
@@ -170,7 +170,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
     @Override
     @SneakyThrows
     public void saveBaseline(Collection<Baseline> baselines) {
-        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+        try (DefaultConnection connection = getManager().getConnection(MetadataManager.getPrototype());) {
             Connection rawConnection = connection.getRawConnection();
             rawConnection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             rawConnection.setAutoCommit(false);
@@ -215,7 +215,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
 
     @SneakyThrows
     public synchronized void clear() {
-        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+        try (DefaultConnection connection = getManager().getConnection(MetadataManager.getPrototype());) {
             JdbcUtils.execute(connection.getRawConnection(), "truncate mycat.spm_plan", Arrays.asList());
             JdbcUtils.execute(connection.getRawConnection(), "truncate mycat.spm_baseline", Arrays.asList());
         }
@@ -223,7 +223,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
 
     @SneakyThrows
     public synchronized Optional<BaselinePlan> loadPlan(long planId) {
-        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+        try (DefaultConnection connection = getManager().getConnection(MetadataManager.getPrototype());) {
             List<Map<String, Object>> maps = JdbcUtils.executeQuery(connection.getRawConnection(), "SELECT * FROM mycat.spm_plan where id = ?", Arrays.asList(planId));
             if (maps.size() != 1) {
                 log.error("baseline is duplicate");
@@ -235,7 +235,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
     }
     @SneakyThrows
     public synchronized Optional<BaselinePlan> loadFixPlan(long planId,long baselineId) {
-        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+        try (DefaultConnection connection = getManager().getConnection(MetadataManager.getPrototype());) {
             List<Map<String, Object>> maps = JdbcUtils.executeQuery(connection.getRawConnection(), "SELECT * FROM mycat.spm_plan where id = ? and baseline_id = ?", Arrays.asList(planId,baselineId));
             if (maps.size() != 1) {
                 log.error("baseline is duplicate");
@@ -247,7 +247,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
     }
     @SneakyThrows
     public synchronized List<BaselinePlan> loadPlanByBaselineId(long baselineId) {
-        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+        try (DefaultConnection connection = getManager().getConnection(MetadataManager.getPrototype());) {
             List<Map<String, Object>> maps = JdbcUtils.executeQuery(connection.getRawConnection(), "SELECT * FROM mycat.spm_plan where baseline_id = ?", Arrays.asList(baselineId));
             return maps.stream().map(i->toBaselinePlan(i)).collect(Collectors.toList());
         }
@@ -264,7 +264,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
 
     @SneakyThrows
     public synchronized void savePlan(BaselinePlan plan, boolean fix) {
-        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+        try (DefaultConnection connection = getManager().getConnection(MetadataManager.getPrototype());) {
             Connection rawConnection = connection.getRawConnection();
             rawConnection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             rawConnection.setAutoCommit(false);
@@ -285,7 +285,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
     @Override
     @SneakyThrows
     public synchronized void deletePlan(long planId) {
-        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+        try (DefaultConnection connection = getManager().getConnection(MetadataManager.getPrototype());) {
             Connection rawConnection = connection.getRawConnection();
             JdbcUtils.execute(rawConnection, "delete from mycat.spm_plan where id = ?", Arrays.asList(planId));
             JdbcUtils.execute(rawConnection, "update  mycat.spm_baseline set  fix_plan_id = null where fix_plan_id = ?", Arrays.asList(planId));
@@ -295,7 +295,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
     @Override
     @SneakyThrows
     public synchronized Optional<Baseline> loadBaselineByBaseLineSql(String baseLineSql, Constraint constraint) {
-        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+        try (DefaultConnection connection = getManager().getConnection(MetadataManager.getPrototype());) {
             Connection rawConnection = connection.getRawConnection();
             List<Map<String, Object>> maps = JdbcUtils.executeQuery(rawConnection, "select * from mycat.spm_baseline where `constraint` = ?", Arrays.asList(JsonUtil.toJson(constraint)));
             if (maps.isEmpty()) {
@@ -312,7 +312,7 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
         if (infos.isEmpty()) {
             return;
         }
-        try (DefaultConnection connection = getManager().getConnection(datasourceName);) {
+        try (DefaultConnection connection = getManager().getConnection(MetadataManager.getPrototype());) {
             Connection rawConnection = connection.getRawConnection();
             List<String> list = new ArrayList<>();
             for (String info : infos) {

@@ -5,21 +5,33 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLLiteralExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.*;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCreateDatabaseStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowDatabaseStatusStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowTableStatusStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataManager;
 import io.mycat.TableHandler;
 import io.mycat.calcite.table.SchemaHandler;
+import io.mycat.config.DatasourceConfig;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.util.NameMap;
+import io.vertx.core.json.Json;
+import org.apache.hadoop.yarn.webapp.hamlet2.Hamlet;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class PrototypeHandlerImpl implements PrototypeHandler {
     public static final PrototypeHandler INSTANCE = new PrototypeHandlerImpl();
+    private static final Logger LOGGER = LoggerFactory.getLogger(PrototypeHandlerImpl.class);
 
     @Override
     public List<Object[]> showDataBase(MySqlShowDatabaseStatusStatement mySqlShowDatabaseStatusStatement) {
@@ -36,14 +48,14 @@ public class PrototypeHandlerImpl implements PrototypeHandler {
         NameMap<SchemaHandler> schemaMap = metadataManager.getSchemaMap();
         Collection<String> strings;
         SQLExpr like = statement.getLike();
-        if (like== null){
+        if (like == null) {
             SchemaHandler schemaHandler = schemaMap.get(schemaName);
             if (schemaHandler == null) return Collections.emptyList();
             NameMap<TableHandler> tables = schemaHandler.logicTables();
             strings = tables.keySet();
-        }else {
+        } else {
             TableHandler table = metadataManager.getTable(schemaName, SQLUtils.normalize(like.toString()));
-            if (table==null)return Collections.emptyList();
+            if (table == null) return Collections.emptyList();
             strings = Collections.singleton(table.getTableName());
         }
         strings = strings.stream().sorted().collect(Collectors.toList());
@@ -212,4 +224,126 @@ public class PrototypeHandlerImpl implements PrototypeHandler {
         objects.add(new Object[]{tableName, createTableSQL});
         return objects;
     }
+
+    @Override
+    public List<Object[]> showCharacterSet(MySqlShowCharacterSetStatement statement) {
+        return onJdbc(statement.toString()).orElseGet(() -> {
+            List<Object[]> res = new ArrayList<>();
+            res.add(new Object[]{"utf8mb4", "UTF-8 Unicode", "utf8mb4_0900_ai_ci", "4"});
+            return res;
+        });
+    }
+
+    @Override
+    public List<Object[]> showCollation(MySqlShowCollationStatement statement) {
+        return onJdbc(statement.toString()).orElseGet(() -> {
+            List<Object[]> res = new ArrayList<>();
+            res.add(new Object[]{"utf8_unicode_ci", "utf8", "192", "", "yes", "8", "PAD SPACE"});
+            return res;
+        });
+    }
+
+    @Override
+    public List<Object[]> showStatus(MySqlShowStatusStatement statement) {
+        return onJdbc(statement.toString()).orElseGet(() -> Collections.emptyList());
+    }
+
+    @Override
+    public List<Object[]> showCreateFunction(MySqlShowCreateFunctionStatement statement) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<Object[]> showEngine(MySqlShowEnginesStatement statement) {
+        ArrayList<List<Object>> objects = new ArrayList<>();
+        objects.add(Arrays.asList("InnoDB", "DRFAULT", "Supports transactions, row-level locking, foreign keys and encryption for tables"));
+        objects.add(Arrays.asList("CSV", "YES", "Stores tables as CSV files"));
+        objects.add(Arrays.asList("MRG_MyISAM", "YES", "Collection of identical MyISAM tables"));
+        objects.add(Arrays.asList("MEMORY", "YES", "Hash based, stored in memory, useful for temporary tables"));
+        objects.add(Arrays.asList("MyISAM", "YES", "Non-transactional engine with good performance and small data footprint"));
+        objects.add(Arrays.asList("SEQUENCE", "YES", "Generated tables filled with sequential values"));
+        objects.add(Arrays.asList("Aria", "YES", "Crash-safe tables with MyISAM heritage"));
+        objects.add(Arrays.asList("PERFORMANCE_SCHEMA", "YES", "Performance Schema"));
+
+        return objects.stream().map(i -> i.toArray()).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Object[]> showErrors(MySqlShowErrorsStatement statement) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<Object[]> showIndexesColumns(SQLShowIndexesStatement statement) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<Object[]> showProcedureStatus(MySqlShowProcedureStatusStatement statement) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<Object[]> showVariants(MySqlShowVariantsStatement statement) {
+        Optional<List<Object[]>> objects = onJdbc(statement.toString());
+        List<Object[]> objects1 = objects.get();
+        String encode = Json.encode(objects1);
+        List list = Json.decodeValue(encode, List.class);
+        return objects1;
+    }
+
+    @Override
+    public List<Object[]> showWarnings(MySqlShowWarningsStatement statement) {
+        return null;
+    }
+
+
+    private Optional<List<Object[]>> onJdbc(String statement) {
+        String datasourceDs = null;
+
+        if (MetaClusterCurrent.exist(ReplicaSelectorManager.class)) {
+            ReplicaSelectorManager replicaSelectorManager = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
+            datasourceDs = replicaSelectorManager.getDatasourceNameByReplicaName(MetadataManager.getPrototype(), true, null);
+        } else {
+            datasourceDs = "prototypeDs";
+        }
+
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        Map<String, JdbcDataSource> datasourceInfo = jdbcConnectionManager.getDatasourceInfo();
+        if (datasourceInfo.containsKey(datasourceDs)) {
+            datasourceDs = null;
+        } else {
+            List<DatasourceConfig> configAsList = jdbcConnectionManager.getConfigAsList();
+            if (!configAsList.isEmpty()) {
+                datasourceDs = configAsList.get(0).getName();
+            } else {
+                datasourceDs = null;
+            }
+        }
+        if (datasourceDs == null) {
+            datasourceDs = datasourceInfo.values().stream().filter(i -> i.isMySQLType()).map(i -> i.getName()).findFirst().orElse(null);
+        }
+        if (datasourceDs == null){
+            return Optional.empty();
+        }
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection(datasourceDs)) {
+            Connection rawConnection = connection.getRawConnection();
+            Statement jdbcStatement1 = rawConnection.createStatement();
+            ResultSet resultSet = jdbcStatement1.executeQuery(statement);
+            int columnCount = resultSet.getMetaData().getColumnCount();
+            List<Object[]> res = new ArrayList<>();
+            while (resultSet.next()) {
+                Object[] objects = new Object[columnCount];
+                for (int i = 0; i < columnCount; i++) {
+                    objects[i] = resultSet.getObject(i + 1);
+                }
+                res.add(objects);
+            }
+            return Optional.of(res);
+        } catch (Exception e) {
+            LOGGER.warn("", e);
+        }
+        return Optional.empty();
+    }
+
 }

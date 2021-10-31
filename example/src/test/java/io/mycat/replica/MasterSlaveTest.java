@@ -1,7 +1,7 @@
 package io.mycat.replica;
 
 import io.mycat.MetaClusterCurrent;
-import io.mycat.ReplicaReporter;
+import io.mycat.ConfigReporter;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.TimerConfig;
@@ -98,7 +98,7 @@ public class MasterSlaveTest extends ReplicaTest {
                     };
                 }
         );
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -175,7 +175,7 @@ public class MasterSlaveTest extends ReplicaTest {
                     };
                 }
         );
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -251,7 +251,7 @@ public class MasterSlaveTest extends ReplicaTest {
 
         //模拟第一主节点无法连接
 
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -322,7 +322,7 @@ public class MasterSlaveTest extends ReplicaTest {
         manager.putHeartFlow("c0", "dsw1", checkMasterSlave());
         manager.putHeartFlow("c0", "dsr1", checkMasterSlave());
 
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -372,7 +372,7 @@ public class MasterSlaveTest extends ReplicaTest {
 
         AtomicInteger switchCounter = new AtomicInteger();
 
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 switchCounter.getAndIncrement();

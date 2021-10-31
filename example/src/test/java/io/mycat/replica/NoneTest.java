@@ -1,7 +1,7 @@
 package io.mycat.replica;
 
 import io.mycat.MetaClusterCurrent;
-import io.mycat.ReplicaReporter;
+import io.mycat.ConfigReporter;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.TimerConfig;
@@ -98,7 +98,7 @@ public class NoneTest extends ReplicaTest {
                     };
                 }
         );
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -179,7 +179,7 @@ public class NoneTest extends ReplicaTest {
 
         //模拟第一主节点无法连接
 
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -248,7 +248,7 @@ public class NoneTest extends ReplicaTest {
         }
 
         //切换后又发生短暂的连接损坏,因为新建心跳对象导致切换周期重置,这里不测试最小切换周期
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 List<String> c0 = state.get("c0");
@@ -298,7 +298,7 @@ public class NoneTest extends ReplicaTest {
 
         AtomicInteger switchCounter = new AtomicInteger();
 
-        MetaClusterCurrent.register(Maps.of(ReplicaReporter.class, new ReplicaReporter() {
+        MetaClusterCurrent.register(Maps.of(ConfigReporter.class, new ConfigReporter() {
             @Override
             public void reportReplica(Map<String, List<String>> state) {
                 switchCounter.getAndIncrement();

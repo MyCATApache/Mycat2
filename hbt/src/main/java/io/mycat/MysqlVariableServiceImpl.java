@@ -15,7 +15,7 @@ public class MysqlVariableServiceImpl implements MysqlVariableService {
 
         this.globalVariables = new NameMap<Object>();
         this.sessionVariables = new NameMap<>();
-        String prototype = "prototype";
+        String prototype = MetadataManager.getPrototype();
 
         try (DefaultConnection connection = jdbcConnectionManager.getConnection(prototype)) {
             try (RowBaseIterator rowBaseIterator = connection.executeQuery(" SHOW GLOBAL VARIABLES;")) {

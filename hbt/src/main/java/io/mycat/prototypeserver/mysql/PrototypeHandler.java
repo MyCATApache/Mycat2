@@ -2,10 +2,9 @@ package io.mycat.prototypeserver.mysql;
 
 import com.alibaba.druid.sql.ast.statement.SQLShowColumnsStatement;
 import com.alibaba.druid.sql.ast.statement.SQLShowCreateTableStatement;
+import com.alibaba.druid.sql.ast.statement.SQLShowIndexesStatement;
 import com.alibaba.druid.sql.ast.statement.SQLShowTablesStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCreateDatabaseStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowDatabaseStatusStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowTableStatusStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
 
 import java.util.List;
 
@@ -21,4 +20,24 @@ public interface PrototypeHandler {
     List<Object[]> showCreateDatabase(MySqlShowCreateDatabaseStatement statement);
 
     List<Object[]> showCreateTable(SQLShowCreateTableStatement statement);
+
+    List<Object[]> showCharacterSet(MySqlShowCharacterSetStatement statement);
+
+    List<Object[]> showCollation(MySqlShowCollationStatement statement);
+
+    List<Object[]> showStatus(MySqlShowStatusStatement statement);
+
+    List<Object[]> showCreateFunction(MySqlShowCreateFunctionStatement statement);
+
+    List<Object[]> showEngine(MySqlShowEnginesStatement statement);
+
+    List<Object[]> showErrors(MySqlShowErrorsStatement statement);
+
+    List<Object[]> showIndexesColumns(SQLShowIndexesStatement statement);
+
+    List<Object[]> showProcedureStatus(MySqlShowProcedureStatusStatement statement);
+
+    List<Object[]> showVariants(MySqlShowVariantsStatement statement);
+
+    List<Object[]> showWarnings(MySqlShowWarningsStatement statement);
 }

@@ -12,20 +12,18 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.sqlhandler.dql;
+package io.mycat;
 
-import com.alibaba.druid.sql.ast.statement.SQLShowDatabasesStatement;
-import io.mycat.MycatDataContext;
-import io.mycat.sqlhandler.AbstractSQLHandler;
-import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.Response;
-import io.vertx.core.Future;
+import io.mycat.config.DatasourceConfig;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-public class ShowDatabaseSQLHandler extends AbstractSQLHandler<SQLShowDatabasesStatement> {
+public interface ConfigReporter {
+    void reportReplica(Map<String, List<String>> state);
 
-    @Override
-    protected Future<Void> onExecute(SQLRequest<SQLShowDatabasesStatement> request, MycatDataContext dataContext, Response response){
-        return response.proxySelectToPrototype(request.getSqlString());
+    default Optional<DatasourceConfig> getPrototypeDatasourceConfig() {
+        return Optional.empty();
     }
 }

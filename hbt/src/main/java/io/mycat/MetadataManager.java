@@ -601,4 +601,8 @@ public class MetadataManager {
         }
         return statement;
     }
+
+    public static String getPrototype(){
+        return prototype;
+    }
 }
