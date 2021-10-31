@@ -22,7 +22,11 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -1282,5 +1286,130 @@ public class UserCaseTest implements MycatTest {
             System.out.println();
         }
 
+    }
+
+    @Test
+    public void case597() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);){
+            execute(mycatConnection,RESET_CONFIG);
+            execute(mycatConnection, "CREATE DATABASE db1");
+            JdbcUtils.execute(mycatConnection, "use db1");
+            JdbcUtils.execute(mycatConnection, "drop table if  exists time_test");
+            JdbcUtils.execute(mycatConnection,"create table if not exists time_test(`state` TIME) ");
+            deleteData(mycatConnection,"db1","time_test");
+            LocalTime time = LocalTime.now();
+            JdbcUtils.execute(mycatConnection,"INSERT INTO `time_test` ( `state`) VALUES (?)", Arrays.asList(time));
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(mycatConnection, "select * from time_test", Collections.emptyList());
+            Statement statement = mycatConnection.createStatement();
+            ResultSet resultSet = statement.executeQuery("select * from time_test");
+            resultSet.next();
+            Object object = resultSet.getObject(1);
+            Assert.assertTrue(object instanceof Time);
+            System.out.println();
+        }
+    }
+
+
+    @Test
+    public void case597_1() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);){
+            execute(mycatConnection,RESET_CONFIG);
+            execute(mycatConnection, "CREATE DATABASE db1");
+            JdbcUtils.execute(mycatConnection, "use db1");
+            JdbcUtils.execute(mycatConnection, "drop table if  exists time_test");
+            JdbcUtils.execute(mycatConnection,"create table if not exists time_test(`state` TIME) ");
+            deleteData(mycatConnection,"db1","time_test");
+            LocalTime time = LocalTime.now();
+            JdbcUtils.execute(mycatConnection,"INSERT INTO `time_test` ( `state`) VALUES (?)", Arrays.asList(time));
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(mycatConnection, "select * from time_test", Collections.emptyList());
+            Statement statement = mycatConnection.createStatement();
+            ResultSet resultSet = statement.executeQuery("select * from time_test");
+            resultSet.next();
+            Object object = resultSet.getObject(1);
+            Assert.assertTrue(object instanceof Time);
+            System.out.println();
+        }
+    }
+    @Test
+    public void case597_2() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);){
+            execute(mycatConnection,RESET_CONFIG);
+            execute(mycatConnection, "CREATE DATABASE db1");
+            JdbcUtils.execute(mycatConnection, "use db1");
+            JdbcUtils.execute(mycatConnection, "drop table if  exists date_test");
+            JdbcUtils.execute(mycatConnection,"create table if not exists date_test(`state` date) ");
+            deleteData(mycatConnection,"db1","date_test");
+            LocalDate date = LocalDate.now();
+            JdbcUtils.execute(mycatConnection,"INSERT INTO `date_test` ( `state`) VALUES (?)", Arrays.asList(date));
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(mycatConnection, "select * from date_test", Collections.emptyList());
+            Statement statement = mycatConnection.createStatement();
+            ResultSet resultSet = statement.executeQuery("select * from date_test");
+            resultSet.next();
+            Object object = resultSet.getObject(1);
+            Assert.assertTrue(object instanceof Date);
+            System.out.println();
+        }
+    }
+
+    @Test
+    public void case597_3() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);){
+            execute(mycatConnection,RESET_CONFIG);
+            execute(mycatConnection, "CREATE DATABASE db1");
+            JdbcUtils.execute(mycatConnection, "use db1");
+            JdbcUtils.execute(mycatConnection, "drop table if  exists date_test");
+            JdbcUtils.execute(mycatConnection,"create table if not exists date_test(`state` date) ");
+            deleteData(mycatConnection,"db1","date_test");
+            LocalDate date = LocalDate.now();
+            JdbcUtils.execute(mycatConnection,"INSERT INTO `date_test` ( `state`) VALUES (?)", Arrays.asList(date));
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(mycatConnection, "select * from date_test", Collections.emptyList());
+            Statement statement = mycatConnection.createStatement();
+            ResultSet resultSet = statement.executeQuery("select * from date_test");
+            resultSet.next();
+            Object object = resultSet.getObject(1);
+            Assert.assertTrue(object instanceof Date);
+            System.out.println();
+        }
+    }
+
+    @Test
+    public void case597_4() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);){
+            execute(mycatConnection,RESET_CONFIG);
+            execute(mycatConnection, "CREATE DATABASE db1");
+            JdbcUtils.execute(mycatConnection, "use db1");
+            JdbcUtils.execute(mycatConnection, "drop table if  exists datetime_test");
+            JdbcUtils.execute(mycatConnection,"create table if not exists datetime_test(`state` DATETIME) ");
+            deleteData(mycatConnection,"db1","datetime_test");
+            LocalDateTime dateTime = LocalDateTime.now();
+            JdbcUtils.execute(mycatConnection,"INSERT INTO `datetime_test` ( `state`) VALUES (?)", Arrays.asList(dateTime));
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(mycatConnection, "select * from datetime_test", Collections.emptyList());
+            Statement statement = mycatConnection.createStatement();
+            ResultSet resultSet = statement.executeQuery("select * from datetime_test");
+            resultSet.next();
+            Object object = resultSet.getObject(1);
+            Assert.assertTrue(object instanceof Timestamp);
+            System.out.println();
+        }
+    }
+    @Test
+    public void case597_5() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);){
+            execute(mycatConnection,RESET_CONFIG);
+            execute(mycatConnection, "CREATE DATABASE db1");
+            JdbcUtils.execute(mycatConnection, "use db1");
+            JdbcUtils.execute(mycatConnection, "drop table if  exists datetime_test");
+            JdbcUtils.execute(mycatConnection,"create table if not exists datetime_test(`state` DATETIME) ");
+            deleteData(mycatConnection,"db1","datetime_test");
+            LocalDateTime dateTime = LocalDateTime.now();
+            JdbcUtils.execute(mycatConnection,"INSERT INTO `datetime_test` ( `state`) VALUES (?)", Arrays.asList(dateTime));
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(mycatConnection, "select * from datetime_test", Collections.emptyList());
+            Statement statement = mycatConnection.createStatement();
+            ResultSet resultSet = statement.executeQuery("select * from datetime_test");
+            resultSet.next();
+            Object object = resultSet.getObject(1);
+            Assert.assertTrue(object instanceof Timestamp);
+            System.out.println();
+        }
     }
 }
