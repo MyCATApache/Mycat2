@@ -6,6 +6,7 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -54,6 +55,9 @@ public class MySQLResultSet {
 
     public RowBaseIterator build() {
         MycatMySQLRowMetaData mycatMySQLRowMetaData = new MycatMySQLRowMetaData(columnDefPackets);
+        if (rows == null) {
+            rows = Collections.emptyList();
+        }
         return new ResultSetBuilder.DefObjectRowIteratorImpl(mycatMySQLRowMetaData, rows.iterator());
     }
 }

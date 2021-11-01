@@ -324,7 +324,7 @@ public class PrototypeHandlerImpl implements PrototypeHandler {
 
     @Override
     public List<Object[]> showWarnings(MySqlShowWarningsStatement statement) {
-        return null;
+        return Collections.emptyList();
     }
 
 
