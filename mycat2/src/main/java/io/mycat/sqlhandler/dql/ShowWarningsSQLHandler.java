@@ -26,6 +26,6 @@ public class ShowWarningsSQLHandler extends AbstractSQLHandler<MySqlShowWarnings
 
     @Override
     protected Future<Void> onExecute(SQLRequest<MySqlShowWarningsStatement> request, MycatDataContext dataContext, Response response) {
-        return response.proxySelectToPrototype(request.getAst().toString());
+        return onMetaService(request.getAst(),response);
     }
 }

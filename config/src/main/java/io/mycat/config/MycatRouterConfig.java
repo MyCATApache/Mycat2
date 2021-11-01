@@ -2,6 +2,8 @@ package io.mycat.config;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +20,7 @@ public class MycatRouterConfig {
     public List<SequenceConfig> sequences = new ArrayList<>();// sequences/xxx.sequence.yml
     public List<SqlCacheConfig> sqlCacheConfigs = new ArrayList<>();
     public String prototype = "prototype";// mycat.yml
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatRouterConfig.class);
     public boolean baseMatch(MycatRouterConfig config){
 
         return match((List)this.getSchemas(), (List) config.getSchemas())
@@ -56,6 +58,7 @@ public class MycatRouterConfig {
 
     public void fixPrototypeTargetName() {
         if (containsPrototypeTargetName()) {
+            LOGGER.info("containsPrototypeTargetName = true");
             return;
         }
         if (hasDatasourcePrototypeDsName()){
@@ -64,6 +67,20 @@ public class MycatRouterConfig {
             List<String> masters = clusterConfig.getMasters();
             masters.add("prototypeDs");
             clusters.add(clusterConfig);
+            LOGGER.info("add dsName prototypeDs as prototype cluster");
+        }else {
+            if (!datasources.isEmpty()){
+                DatasourceConfig datasourceConfig = datasources.stream().filter(ds -> "mysql".equalsIgnoreCase(ds.getDbType())).findFirst()
+                        .orElseGet(() -> {
+                            return datasources.get(0);
+                        });
+                ClusterConfig clusterConfig = new ClusterConfig();
+                clusterConfig.setName(prototype);
+                List<String> masters = clusterConfig.getMasters();
+                        masters.add(datasourceConfig.getName());
+                clusters.add(clusterConfig);
+                LOGGER.info("add dsName {}} as prototype cluster",datasourceConfig.getName());
+            }
         }
 
     }

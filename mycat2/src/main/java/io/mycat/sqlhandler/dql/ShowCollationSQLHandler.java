@@ -27,6 +27,6 @@ public class ShowCollationSQLHandler extends AbstractSQLHandler<MySqlShowCollati
 
     @Override
     protected Future<Void> onExecute(SQLRequest<MySqlShowCollationStatement> request, MycatDataContext dataContext, Response response) {
-        return response.proxySelectToPrototype(request.getAst().toString());
+        return onMetaService(request.getAst(),response);
     }
 }

@@ -48,7 +48,7 @@ public class ShowTableStatusSQLHandler extends AbstractSQLHandler<MySqlShowTable
         if (database == null) {
           return  response.sendError(new MycatException("NO DATABASES SELECTED"));
         }
-       return response.proxySelectToPrototype(ast.toString());
+        return onMetaService(ast,response);
     }
 
     private void addColumns(ResultSetBuilder resultSetBuilder) {

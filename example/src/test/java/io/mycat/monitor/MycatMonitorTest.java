@@ -51,9 +51,9 @@ public class MycatMonitorTest implements MycatTest {
         String url = MycatSQLLogMonitorImpl.SHOW_DB_MONITOR_URL;
         DatabaseInstanceEntry.DatabaseInstanceMap b = fetch(url, tClass);
         try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT);) {
-            String sql = " SHOW KEYS FROM `performance_schema`.`accounts`; ";
+            String sql = " select * FROM `performance_schema`.`accounts`; ";
             for (int i = 0; i < 1000; i++) {
-                JdbcUtils.execute(mySQLConnection, sql);
+                JdbcUtils.executeQuery(mySQLConnection, sql,Collections.emptyList());
             }
         }
         DatabaseInstanceEntry.DatabaseInstanceMap f = fetch(url, tClass);

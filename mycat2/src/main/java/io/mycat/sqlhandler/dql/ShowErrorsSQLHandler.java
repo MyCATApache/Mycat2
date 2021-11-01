@@ -26,6 +26,6 @@ public class ShowErrorsSQLHandler extends AbstractSQLHandler<MySqlShowErrorsStat
 
     @Override
     protected Future<Void> onExecute(SQLRequest<MySqlShowErrorsStatement> request, MycatDataContext dataContext, Response response){
-        return response.proxySelectToPrototype(request.getSqlString());
+        return onMetaService(request.getAst(),response);
     }
 }

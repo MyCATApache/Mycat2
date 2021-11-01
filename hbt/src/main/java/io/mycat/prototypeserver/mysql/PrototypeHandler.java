@@ -9,7 +9,8 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
 import java.util.List;
 
 public interface PrototypeHandler {
-    List<Object[]> showDataBase(MySqlShowDatabaseStatusStatement mySqlShowDatabaseStatusStatement);
+
+    List<Object[]> showDataBase(com.alibaba.druid.sql.ast.statement.SQLShowDatabasesStatement sqlShowDatabasesStatement);
 
     List<Object[]> showTables(SQLShowTablesStatement statement);
 

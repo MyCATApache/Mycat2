@@ -542,7 +542,7 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
             Resource<SequenceGenerator> sequenceGenerator = getSequenceGenerator(sequenceConfigUpdateSet);
             resourceList.add(sequenceGenerator);
             PrototypeService prototypeService ;
-            MetaClusterCurrent.register(PrototypeService.class,  prototypeService =  new PrototypeService());
+            context.put(PrototypeService.class,  prototypeService =  new PrototypeService());
 
             Resource<MetadataManager> metadataManager = getMetadataManager(schemaConfigUpdateSet, prototypeService);
             resourceList.add(metadataManager);

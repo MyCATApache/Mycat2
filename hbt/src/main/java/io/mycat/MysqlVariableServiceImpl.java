@@ -6,6 +6,10 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.util.NameMap;
 
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
 public class MysqlVariableServiceImpl implements MysqlVariableService {
 
     //    public final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
@@ -53,5 +57,28 @@ public class MysqlVariableServiceImpl implements MysqlVariableService {
     @Override
     public Object getSessionVariable(String name) {
         return sessionVariables.get(name, false);
+    }
+
+    @Override
+    public List<Object[]> getGlobalVariables() {
+        LinkedList<Object[]> variables = new LinkedList<>();
+        for (Map.Entry<String, Object> e : globalVariables.entrySet()) {
+            String key = e.getKey();
+            Object value = e.getValue();
+            variables.add(new Object[]{key,value});
+        }
+        return variables;
+    }
+
+    @Override
+    public List<Object[]> getSessionVariables() {
+        LinkedList<Object[]> variables = new LinkedList<>();
+        for (Map.Entry<String, Object> e : sessionVariables.entrySet()) {
+            String key = e.getKey();
+            Object value = e.getValue();
+            variables.add(new Object[]{key,value});
+        }
+
+        return variables;
     }
 }

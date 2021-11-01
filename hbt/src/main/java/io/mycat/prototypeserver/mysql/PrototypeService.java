@@ -66,12 +66,18 @@ public class PrototypeService {
         if(LOGGER.isDebugEnabled()){
             LOGGER.debug("prototype process sql:{}",sqlStatement);
         }
-        if (sqlStatement instanceof MySqlShowDatabaseStatusStatement) {
-            MySqlShowDatabaseStatusStatement mySqlShowDatabaseStatusStatement = (MySqlShowDatabaseStatusStatement) sqlStatement;
+        if (sqlStatement instanceof com.alibaba.druid.sql.ast.statement.SQLShowDatabasesStatement) {
+            com.alibaba.druid.sql.ast.statement.SQLShowDatabasesStatement sqlShowDatabasesStatement = (com.alibaba.druid.sql.ast.statement.SQLShowDatabasesStatement) sqlStatement;
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(getShowDatabasesColumns());
-            mySQLResultSet.setRows(prototypeHandler.showDataBase(mySqlShowDatabaseStatusStatement));
+            mySQLResultSet.setRows(prototypeHandler.showDataBase(sqlShowDatabasesStatement));
             return Optional.of( mySQLResultSet);
         }
+//        if (sqlStatement instanceof MySqlShowDatabaseStatusStatement) {
+//            MySqlShowDatabaseStatusStatement mySqlShowDatabaseStatusStatement = (MySqlShowDatabaseStatusStatement) sqlStatement;
+//            MySQLResultSet mySQLResultSet = MySQLResultSet.create(getShowDatabasesColumns());
+//            mySQLResultSet.setRows(prototypeHandler.showDataBaseStatus(mySqlShowDatabaseStatusStatement));
+//            return Optional.of( mySQLResultSet);
+//        }
         if (sqlStatement instanceof SQLShowTablesStatement) {
             SQLShowTablesStatement statement = (SQLShowTablesStatement) sqlStatement;
             String database = SQLUtils.normalize(statement.getDatabase().getSimpleName());
@@ -586,20 +592,6 @@ public class PrototypeService {
 
         columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
 
-
-        Catalog = "def";
-        Database = "mysql";
-        Table = "SHOW_STATISTICS";
-        OriginalTable = "indexes";
-        Name = "Comment";
-        OriginalName = "Index_comment";
-        CharsetNumber = 33;
-        Length = 6144;
-        Type = 253;
-        Flags = 0x1081;
-        Decimals = 0;
-
-        columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
 
 
         Catalog = "def";

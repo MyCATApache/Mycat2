@@ -19,19 +19,20 @@ import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.mysql.cj.conf.ConnectionUrlParser;
 import com.mysql.cj.conf.HostInfo;
 import io.mycat.*;
+import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.calcite.table.GlobalTableHandler;
 import io.mycat.calcite.table.NormalTableHandler;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.prototypeserver.mysql.MySQLResultSet;
 import io.mycat.prototypeserver.mysql.PrototypeService;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.ClassUtil;
 import io.mycat.util.MycatSQLExprTableSourceUtil;
 import io.vertx.core.Future;
 import lombok.EqualsAndHashCode;
-import org.apache.calcite.avatica.Meta;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -135,6 +136,19 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
     }
 
     public PrototypeService getPrototypeService() {
-        return MetaClusterCurrent.exist(PrototypeService.class) ? MetaClusterCurrent.wrapper(PrototypeService.class) : new PrototypeService();
+        if (MetaClusterCurrent.exist(PrototypeService.class)) {
+            return MetaClusterCurrent.wrapper(PrototypeService.class);
+        }
+        return new PrototypeService();
+    }
+
+    public Future<Void> onMetaService(SQLStatement statement, Response response) {
+        PrototypeService prototypeService = getPrototypeService();
+        Optional<MySQLResultSet> mySQLResultSet = prototypeService.handleSql(statement);
+        if (mySQLResultSet.isPresent()) {
+            RowBaseIterator rowBaseIterator = mySQLResultSet.get().build();
+            return response.sendResultSet(rowBaseIterator);
+        }
+        return response.proxySelectToPrototype(statement.toString());
     }
 }

@@ -8,6 +8,7 @@ import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataManager;
+import io.mycat.MysqlVariableService;
 import io.mycat.TableHandler;
 import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.config.DatasourceConfig;
@@ -16,9 +17,6 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.util.NameMap;
-import io.vertx.core.json.Json;
-import org.apache.hadoop.yarn.webapp.hamlet2.Hamlet;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +24,6 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class PrototypeHandlerImpl implements PrototypeHandler {
@@ -34,10 +31,18 @@ public class PrototypeHandlerImpl implements PrototypeHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(PrototypeHandlerImpl.class);
 
     @Override
-    public List<Object[]> showDataBase(MySqlShowDatabaseStatusStatement mySqlShowDatabaseStatusStatement) {
+    public List<Object[]> showDataBase(com.alibaba.druid.sql.ast.statement.SQLShowDatabasesStatement sqlShowDatabasesStatement) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        List<String> strings = metadataManager.showDatabases();
-        return strings.stream().map(i -> new Object[]{i}).collect(Collectors.toList());
+
+        SQLExpr like = sqlShowDatabasesStatement.getLike();
+        List<String> collect = metadataManager.showDatabases();
+        if (like != null) {
+            String matchSchemaName = SQLUtils.normalize( like.toString());
+            collect = collect.stream().filter(i->i.equalsIgnoreCase(matchSchemaName)).collect(Collectors.toList());
+        }
+
+
+        return collect.stream().map(i -> new Object[]{i}).collect(Collectors.toList());
     }
 
     @Override
@@ -250,7 +255,7 @@ public class PrototypeHandlerImpl implements PrototypeHandler {
 
     @Override
     public List<Object[]> showCreateFunction(MySqlShowCreateFunctionStatement statement) {
-        return Collections.emptyList();
+        return onJdbc(statement.toString()).orElseGet(()->Collections.emptyList());
     }
 
     @Override
@@ -275,21 +280,43 @@ public class PrototypeHandlerImpl implements PrototypeHandler {
 
     @Override
     public List<Object[]> showIndexesColumns(SQLShowIndexesStatement statement) {
-        return Collections.emptyList();
+        return onJdbc(statement.toString()).orElseGet(()->Collections.emptyList());
     }
 
     @Override
     public List<Object[]> showProcedureStatus(MySqlShowProcedureStatusStatement statement) {
-        return Collections.emptyList();
+        return onJdbc(statement.toString()).orElseGet(()->Collections.emptyList());
     }
 
     @Override
     public List<Object[]> showVariants(MySqlShowVariantsStatement statement) {
-        Optional<List<Object[]>> objects = onJdbc(statement.toString());
-        List<Object[]> objects1 = objects.get();
-        String encode = Json.encode(objects1);
-        List list = Json.decodeValue(encode, List.class);
-        return objects1;
+       return onJdbc(statement.toString()).orElseGet(() -> {
+            if(MetaClusterCurrent.exist(MysqlVariableService.class)){
+                MysqlVariableService mysqlVariableService = MetaClusterCurrent.wrapper(MysqlVariableService.class);
+                List<Object[]> globalVariables = Collections.emptyList();
+                List<Object[]> sessionVariables = Collections.emptyList();
+                if (statement.isGlobal()){
+                    globalVariables = mysqlVariableService.getGlobalVariables();
+                }
+                if (statement.isSession()){
+                    sessionVariables = mysqlVariableService.getSessionVariables();
+                }
+                Set<String> variableKeys = new HashSet<>();
+                List<Object[]> resVariables = new ArrayList<>(globalVariables.size()+sessionVariables.size());
+                resVariables.addAll(globalVariables);
+                for (Object[] globalVariable : globalVariables) {
+                    variableKeys.add(Objects.toString(globalVariable[0]));
+                }
+                for (Object[] sessionVariable : sessionVariables) {
+                    String key = Objects.toString(sessionVariable[0]);
+                    if (variableKeys.add(key)){
+                        resVariables.add(sessionVariable);
+                    }
+                }
+                return resVariables;
+            }
+            return Collections.emptyList();
+        });
     }
 
     @Override

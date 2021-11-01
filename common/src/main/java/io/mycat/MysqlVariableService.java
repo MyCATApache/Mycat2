@@ -1,5 +1,6 @@
 package io.mycat;
 
+import java.util.List;
 import java.util.Objects;
 
 public interface MysqlVariableService {
@@ -16,4 +17,7 @@ public interface MysqlVariableService {
 
     Object getSessionVariable(String name);
 
+    List<Object[]> getGlobalVariables();
+
+    List<Object[]> getSessionVariables();
 }

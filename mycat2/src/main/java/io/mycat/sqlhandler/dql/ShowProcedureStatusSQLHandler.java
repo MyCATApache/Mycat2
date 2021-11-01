@@ -26,6 +26,6 @@ public class ShowProcedureStatusSQLHandler extends AbstractSQLHandler<MySqlShowP
 
     @Override
     protected Future<Void> onExecute(SQLRequest<MySqlShowProcedureStatusStatement> request, MycatDataContext dataContext, Response response){
-        return response.proxySelectToPrototype(request.getSqlString());
+        return onMetaService(request.getAst(),response);
     }
 }

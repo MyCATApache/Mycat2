@@ -26,6 +26,6 @@ public class ShowIndexesSQLHandler extends AbstractSQLHandler<SQLShowIndexesStat
 
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLShowIndexesStatement> request, MycatDataContext dataContext, Response response) {
-        return response.proxySelectToPrototype(request.getAst().toString());
+        return onMetaService(request.getAst(),response);
     }
 }

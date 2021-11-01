@@ -46,13 +46,7 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
         if (database == null) {
            return response.sendError(new MycatException("NO DATABASES SELECTED"));
         }
-        PrototypeService prototypeService = getPrototypeService();
-        Optional<MySQLResultSet> baseIterator = prototypeService.handleSql(request.getAst());
-        if(baseIterator.isPresent()){
-            RowBaseIterator rowBaseIterator = baseIterator.get().build();
-            return response.sendResultSet(rowBaseIterator);
-        }
-     return response.proxySelectToPrototype(ast.toString());
+        return onMetaService(ast,response);
     }
 
 

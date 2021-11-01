@@ -7,6 +7,7 @@ import io.mycat.beans.mysql.packet.ColumnDefPacket;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MySQLResultSet {
     List<ColumnDefPacket> columnDefPackets = new ArrayList<>();
