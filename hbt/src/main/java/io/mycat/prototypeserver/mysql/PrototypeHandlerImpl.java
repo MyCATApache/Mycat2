@@ -2,7 +2,9 @@ package io.mycat.prototypeserver.mysql;
 
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.expr.SQLLiteralExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
+import com.alibaba.druid.sql.ast.expr.SQLTextLiteralExpr;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
 import io.mycat.MetaClusterCurrent;
@@ -24,6 +26,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class PrototypeHandlerImpl implements PrototypeHandler {
@@ -37,7 +40,7 @@ public class PrototypeHandlerImpl implements PrototypeHandler {
         SQLExpr like = sqlShowDatabasesStatement.getLike();
         List<String> collect = metadataManager.showDatabases();
         if (like != null) {
-            PatternMatcher matcher = PatternMatcher.createMysqlPattern(like.toString(),
+            PatternMatcher matcher = PatternMatcher.createMysqlPattern(SQLUtils.normalize(like.toString()),
                     false);
             collect = collect.stream().filter(i -> matcher.match(i)).collect(Collectors.toList());
         }
@@ -51,22 +54,21 @@ public class PrototypeHandlerImpl implements PrototypeHandler {
         NameMap<SchemaHandler> schemaMap = metadataManager.getSchemaMap();
         SchemaHandler schemaHandler = schemaMap.get(schemaName);
         if (schemaHandler == null) return Collections.emptyList();
-        Collection<String> strings;
+        Collection<String> strings = schemaHandler.logicTables().values().stream().map(i -> i.getTableName()).collect(Collectors.toList());
+        ;
         SQLExpr like = statement.getLike();
         if (like == null) {
             NameMap<TableHandler> tables = schemaHandler.logicTables();
             strings = tables.keySet();
-        } else {
-            PatternMatcher matcher = PatternMatcher.createMysqlPattern(like.toString(),
+        } else if (like instanceof SQLTextLiteralExpr) {
+            PatternMatcher matcher = PatternMatcher.createMysqlPattern(((SQLTextLiteralExpr) like).getText(),
                     false);
-            NameMap<TableHandler> tables = schemaHandler.logicTables();
-            strings = tables.values().stream().map(i -> i.getTableName()).filter(i -> matcher.match(i)).collect(Collectors.toList());
+            strings = strings.stream().filter(i -> matcher.match(i)).collect(Collectors.toList());
         }
-        strings = strings.stream().sorted().collect(Collectors.toList());
         if (statement.isFull()) {
-            return strings.stream().map(i -> new Object[]{i, "BASE TABLE"}).collect(Collectors.toList());
+            return strings.stream().sorted().map(i -> new Object[]{i, "BASE TABLE"}).collect(Collectors.toList());
         } else {
-            return strings.stream().map(i -> new Object[]{i}).collect(Collectors.toList());
+            return strings.stream().sorted().map(i -> new Object[]{i}).collect(Collectors.toList());
         }
     }
 
@@ -74,7 +76,23 @@ public class PrototypeHandlerImpl implements PrototypeHandler {
     public List<Object[]> showColumns(SQLShowColumnsStatement statement) {
         ArrayList<Object[]> objects = new ArrayList<>();
         String schemaName = SQLUtils.normalize(statement.getDatabase().getSimpleName());
-        String tableName = Optional.ofNullable((SQLExpr) statement.getTable()).orElse(statement.getLike()).toString();
+
+
+        String tableName = Optional.ofNullable((SQLExpr) statement.getTable()).map(i -> SQLUtils.normalize(i.toString())).orElse(null);
+
+        if (tableName == null && statement.getLike() != null) {
+            String pattern = SQLUtils.normalize(statement.getLike().toString());
+            PatternMatcher mysqlPattern = PatternMatcher.createMysqlPattern(pattern, false);
+            MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+            SchemaHandler schemaHandler = metadataManager.getSchemaMap().get(schemaName);
+            if (schemaHandler == null) return Collections.emptyList();
+            List<String> tables = schemaHandler.logicTables().values().stream().map(i -> i.getTableName()).collect(Collectors.toList());
+            tableName = tables.stream().filter(i -> mysqlPattern.match(i)).findFirst().orElse(null);
+        }
+        if (tableName == null) {
+            return Collections.emptyList();
+        }
+
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         TableHandler table = metadataManager.getTable(schemaName, tableName);
         if (table == null) return Collections.emptyList();
@@ -162,7 +180,7 @@ public class PrototypeHandlerImpl implements PrototypeHandler {
     public List<Object[]> showTableStatus(MySqlShowTableStatusStatement statement) {
         String database = SQLUtils.normalize(statement.getDatabase().getSimpleName());
         SQLExpr like = statement.getLike();
-        PatternMatcher matcher = PatternMatcher.createMysqlPattern(like.toString(),
+        PatternMatcher matcher = PatternMatcher.createMysqlPattern(SQLUtils.normalize(like.toString()),
                 false);
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         SchemaHandler schemaHandler = metadataManager.getSchemaMap().get(database);
