@@ -36,7 +36,7 @@ import java.util.function.Predicate;
  *
  */
 public class PrototypeService {
-    public final static String PROTOTYPE ="prototype";
+    public final static String PROTOTYPE = "prototype";
     private static final Logger LOGGER = LoggerFactory.getLogger(PrototypeService.class);
 
     private PrototypeHandler prototypeHandler = new PrototypeHandlerImpl();
@@ -58,19 +58,20 @@ public class PrototypeService {
     public Future<Void> handleSql(String sql, Response response) {
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
         Optional<MySQLResultSet> mySQLResultSetOptional = handleSql(sqlStatement);
-       return mySQLResultSetOptional.map(i->response.sendResultSet(i.build()))
-                .orElseGet(()->response.proxySelectToPrototype(sql));
+        return mySQLResultSetOptional.map(i -> response.sendResultSet(i.build()))
+                .orElseGet(() -> response.proxySelectToPrototype(sql));
     }
+
     @NotNull
     public Optional<MySQLResultSet> handleSql(SQLStatement sqlStatement) {
-        if(LOGGER.isDebugEnabled()){
-            LOGGER.debug("prototype process sql:{}",sqlStatement);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("prototype process sql:{}", sqlStatement);
         }
         if (sqlStatement instanceof com.alibaba.druid.sql.ast.statement.SQLShowDatabasesStatement) {
             com.alibaba.druid.sql.ast.statement.SQLShowDatabasesStatement sqlShowDatabasesStatement = (com.alibaba.druid.sql.ast.statement.SQLShowDatabasesStatement) sqlStatement;
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(getShowDatabasesColumns());
             mySQLResultSet.setRows(prototypeHandler.showDataBase(sqlShowDatabasesStatement));
-            return Optional.of( mySQLResultSet);
+            return Optional.of(mySQLResultSet);
         }
 //        if (sqlStatement instanceof MySqlShowDatabaseStatusStatement) {
 //            MySqlShowDatabaseStatusStatement mySqlShowDatabaseStatusStatement = (MySqlShowDatabaseStatusStatement) sqlStatement;
@@ -82,8 +83,8 @@ public class PrototypeService {
             SQLShowTablesStatement statement = (SQLShowTablesStatement) sqlStatement;
             String database = SQLUtils.normalize(statement.getDatabase().getSimpleName());
             List<ColumnDefPacket> columnDefPacketList = getShowTablesColumns(database);
-            if(!statement.isFull()){
-                columnDefPacketList.subList(0,1);
+            if (!statement.isFull()) {
+                columnDefPacketList = columnDefPacketList.subList(0, 1);
             }
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showTables(statement));
@@ -122,85 +123,85 @@ public class PrototypeService {
             mySQLResultSet.setRows(prototypeHandler.showCreateTable(statement));
             return Optional.of(mySQLResultSet);
         }
-        if (sqlStatement instanceof MySqlShowCharacterSetStatement){
+        if (sqlStatement instanceof MySqlShowCharacterSetStatement) {
             MySqlShowCharacterSetStatement statement = (MySqlShowCharacterSetStatement) sqlStatement;
             List<ColumnDefPacket> columnDefPacketList = getShowCharacterSetColumns();
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showCharacterSet(statement));
             return Optional.of(mySQLResultSet);
         }
-        if (sqlStatement instanceof MySqlShowCollationStatement){
+        if (sqlStatement instanceof MySqlShowCollationStatement) {
             MySqlShowCollationStatement statement = (MySqlShowCollationStatement) sqlStatement;
             List<ColumnDefPacket> columnDefPacketList = getShowCollationColumns();
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showCollation(statement));
             return Optional.of(mySQLResultSet);
         }
-        if (sqlStatement instanceof MySqlShowStatusStatement){
+        if (sqlStatement instanceof MySqlShowStatusStatement) {
             MySqlShowStatusStatement statement = (MySqlShowStatusStatement) sqlStatement;
             List<ColumnDefPacket> columnDefPacketList = getShowStatusColumns();
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showStatus(statement));
             return Optional.of(mySQLResultSet);
         }
-        if (sqlStatement instanceof com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCreateFunctionStatement){
+        if (sqlStatement instanceof com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCreateFunctionStatement) {
             com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCreateFunctionStatement
-                     statement = (com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCreateFunctionStatement)sqlStatement;
+                    statement = (com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCreateFunctionStatement) sqlStatement;
             List<ColumnDefPacket> columnDefPacketList = getShowCreateFunctionColumns();
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showCreateFunction(statement));
             return Optional.of(mySQLResultSet);
         }
-        if (sqlStatement instanceof MySqlShowEnginesStatement ){
+        if (sqlStatement instanceof MySqlShowEnginesStatement) {
             MySqlShowEnginesStatement
-                    statement = (MySqlShowEnginesStatement )sqlStatement;
+                    statement = (MySqlShowEnginesStatement) sqlStatement;
             List<ColumnDefPacket> columnDefPacketList = getShowEngineColumns();
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showEngine(statement));
             return Optional.of(mySQLResultSet);
         }
-        if (sqlStatement instanceof MySqlShowErrorsStatement  ){
+        if (sqlStatement instanceof MySqlShowErrorsStatement) {
             MySqlShowErrorsStatement
-                    statement = (MySqlShowErrorsStatement  )sqlStatement;
+                    statement = (MySqlShowErrorsStatement) sqlStatement;
             List<ColumnDefPacket> columnDefPacketList = getShowErrorsColumns();
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showErrors(statement));
             return Optional.of(mySQLResultSet);
         }
-        if (sqlStatement instanceof SQLShowIndexesStatement   ){
+        if (sqlStatement instanceof SQLShowIndexesStatement) {
             SQLShowIndexesStatement
-                    statement = (SQLShowIndexesStatement   )sqlStatement;
+                    statement = (SQLShowIndexesStatement) sqlStatement;
             List<ColumnDefPacket> columnDefPacketList = getShowIndexesColumns();
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showIndexesColumns(statement));
             return Optional.of(mySQLResultSet);
         }
-        if (sqlStatement instanceof MySqlShowProcedureStatusStatement){
+        if (sqlStatement instanceof MySqlShowProcedureStatusStatement) {
             MySqlShowProcedureStatusStatement
-                    statement = (MySqlShowProcedureStatusStatement   )sqlStatement;
+                    statement = (MySqlShowProcedureStatusStatement) sqlStatement;
             List<ColumnDefPacket> columnDefPacketList = getShowProcedureStatusColumns();
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showProcedureStatus(statement));
             return Optional.of(mySQLResultSet);
         }
-        if (sqlStatement instanceof MySqlShowVariantsStatement){
+        if (sqlStatement instanceof MySqlShowVariantsStatement) {
             MySqlShowVariantsStatement
-                    statement = (MySqlShowVariantsStatement   )sqlStatement;
+                    statement = (MySqlShowVariantsStatement) sqlStatement;
             List<ColumnDefPacket> columnDefPacketList = getShowVariantsColumns();
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showVariants(statement));
             return Optional.of(mySQLResultSet);
         }
-        if (sqlStatement instanceof MySqlShowWarningsStatement){
+        if (sqlStatement instanceof MySqlShowWarningsStatement) {
             MySqlShowWarningsStatement
-                    statement = (MySqlShowWarningsStatement   )sqlStatement;
+                    statement = (MySqlShowWarningsStatement) sqlStatement;
             List<ColumnDefPacket> columnDefPacketList = getShowVariantsColumns();
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showWarnings(statement));
             return Optional.of(mySQLResultSet);
         }
-        if(LOGGER.isDebugEnabled()){
-            LOGGER.debug("prototype ignored sql:{}",sqlStatement);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("prototype ignored sql:{}", sqlStatement);
         }
         // SELECT `TABLE_NAME` FROM `INFORMATION_SCHEMA`.`TABLES` WHERE `TABLE_SCHEMA` = '1cloud_0' AND `TABLE_TYPE` = 'VIEW';
         return Optional.empty();
@@ -212,9 +213,9 @@ public class PrototypeService {
         String Catalog = "def";
         String Database = "mysql";
         String Table = "ROUTINES";
-        String OriginalTable ="schemata";
+        String OriginalTable = "schemata";
         String Name = "Db";
-        String OriginalName ="Db";
+        String OriginalName = "Db";
         int CharsetNumber = 33;
         int Length = 192;
         int Type = 253;
@@ -247,9 +248,9 @@ public class PrototypeService {
         String Catalog = "def";
         String Database = "mysql";
         String Table = "ROUTINES";
-        String OriginalTable ="schemata";
+        String OriginalTable = "schemata";
         String Name = "Db";
-        String OriginalName ="Db";
+        String OriginalName = "Db";
         int CharsetNumber = 33;
         int Length = 192;
         int Type = 253;
@@ -410,9 +411,9 @@ public class PrototypeService {
         String Catalog = "def";
         String Database = "";
         String Table = "SHOW_STATISTICS";
-        String OriginalTable ="";
+        String OriginalTable = "";
         String Name = "Table";
-        String OriginalName ="Table";
+        String OriginalName = "Table";
         int CharsetNumber = 33;
         int Length = 192;
         int Type = 253;
@@ -536,7 +537,6 @@ public class PrototypeService {
         columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
 
 
-
         Catalog = "def";
         Database = "";
         Table = "";
@@ -596,7 +596,6 @@ public class PrototypeService {
         columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
 
 
-
         Catalog = "def";
         Database = "";
         Table = "SHOW_STATISTICS";
@@ -620,9 +619,9 @@ public class PrototypeService {
         String Catalog = "def";
         String Database = "";
         String Table = "";
-        String OriginalTable ="";
+        String OriginalTable = "";
         String Name = "Level";
-        String OriginalName ="";
+        String OriginalName = "";
         int CharsetNumber = 33;
         int Length = 21;
         int Type = 253;
@@ -662,15 +661,16 @@ public class PrototypeService {
 
         return columnDefPackets;
     }
+
     private List<ColumnDefPacket> getShowWarningsColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
         String Database = "";
         String Table = "";
-        String OriginalTable ="";
+        String OriginalTable = "";
         String Name = "Level";
-        String OriginalName ="";
+        String OriginalName = "";
         int CharsetNumber = 33;
         int Length = 21;
         int Type = 253;
@@ -717,9 +717,9 @@ public class PrototypeService {
         String Catalog = "def";
         String Database = "information_schema";
         String Table = "ENGINES";
-        String OriginalTable =Table;
+        String OriginalTable = Table;
         String Name = Table;
-        String OriginalName =Table;
+        String OriginalName = Table;
         int CharsetNumber = 33;
         int Length = 192;
         int Type = 253;
@@ -937,12 +937,13 @@ public class PrototypeService {
 
         return columnDefPackets;
     }
+
     private List<ColumnDefPacket> getShowVariantsColumns(boolean global) {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
         String Database = "";
-        String Table = global?"global_variables":"session_variables";
+        String Table = global ? "global_variables" : "session_variables";
         String OriginalTable = Table;
         String Name = "Variable_name";
         String OriginalName = Name;
@@ -1104,7 +1105,6 @@ public class PrototypeService {
         columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
 
 
-
         return columnDefPackets;
     }
 
@@ -1125,17 +1125,17 @@ public class PrototypeService {
 
         columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
 
-         Catalog = "def";
-         Database = "mysql";
-         Table = "CHARACTER_SETS";
-         OriginalTable = "cs";
-         Name = "Description";
-         OriginalName = Name;
-         CharsetNumber = 33;
-         Length = 6144;
-         Type = 253;
-         Flags = 0x1001;
-         Decimals = 0;
+        Catalog = "def";
+        Database = "mysql";
+        Table = "CHARACTER_SETS";
+        OriginalTable = "cs";
+        Name = "Description";
+        OriginalName = Name;
+        CharsetNumber = 33;
+        Length = 6144;
+        Type = 253;
+        Flags = 0x1001;
+        Decimals = 0;
 
         columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
 
@@ -1174,17 +1174,17 @@ public class PrototypeService {
         columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
 
 
-         Catalog = "def";
-         Database = "";
-         Table = "";
-         OriginalTable = "";
-         Name = "Create Table";
-         OriginalName = Name;
-         CharsetNumber = 33;
-         Length = 3072;
-         Type = 253;
-         Flags = 1;
-         Decimals = 31;
+        Catalog = "def";
+        Database = "";
+        Table = "";
+        OriginalTable = "";
+        Name = "Create Table";
+        OriginalName = Name;
+        CharsetNumber = 33;
+        Length = 3072;
+        Type = 253;
+        Flags = 1;
+        Decimals = 31;
 
         columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
 
@@ -1209,17 +1209,17 @@ public class PrototypeService {
         columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
 
 
-         Catalog = "def";
-         Database = "";
-         Table = "TABLES";
-         OriginalTable = "";
-         Name = "Engine";
-         OriginalName = Name;
-         CharsetNumber = 33;
-         Length = 192;
-         Type = 253;
-         Flags = 0;
-         Decimals = 0;
+        Catalog = "def";
+        Database = "";
+        Table = "TABLES";
+        OriginalTable = "";
+        Name = "Engine";
+        OriginalName = Name;
+        CharsetNumber = 33;
+        Length = 192;
+        Type = 253;
+        Flags = 0;
+        Decimals = 0;
 
         columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
 
@@ -1311,7 +1311,6 @@ public class PrototypeService {
         columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
 
 
-
         Catalog = "def";
         Database = "";
         Table = "TABLES";
@@ -1370,7 +1369,6 @@ public class PrototypeService {
         Decimals = 0;
 
         columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
-
 
 
         Catalog = "def";
@@ -1566,7 +1564,6 @@ public class PrototypeService {
         Decimals = 0;
 
         columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
-
 
 
         Catalog = "def";
