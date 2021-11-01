@@ -20,6 +20,9 @@ public class MysqlVariableServiceImpl implements MysqlVariableService {
 
         this.globalVariables = new NameMap<Object>();
         this.sessionVariables = new NameMap<>();
+        globalVariables.put("tx_isolation", "REPEATABLE-READ");
+        globalVariables.put("transaction_isolation","REPEATABLE-READ");
+
         String prototype = MetadataManager.getPrototype();
 
         if(MetaClusterCurrent.exist(ReplicaSelectorManager.class)){
@@ -46,7 +49,26 @@ public class MysqlVariableServiceImpl implements MysqlVariableService {
                     }
                 }
             }
+        }else {
+            globalVariables.put("character_set_client", "utf8");
+            globalVariables.put("character_set_connection", "utf8");
+            globalVariables.put("character_set_results", "utf8");
+            globalVariables.put("character_set_server", "utf8");
+            globalVariables.put("init_connect", "");
+            globalVariables.put("interactive_timeout", "172800");
+            globalVariables.put("lower_case_table_names", "1");
+            globalVariables.put("max_allowed_packet", "16777216");
+            globalVariables.put("net_buffer_length", "8192");
+            globalVariables.put("net_write_timeout", "60");
+            globalVariables.put("query_cache_size", "0");
+            globalVariables.put("query_cache_type", "OFF");
+            globalVariables.put("sql_mode", "STRICT_TRANS_TABLES");
+            globalVariables.put("system_time_zone", "CST");
+            globalVariables.put("time_zone", "SYSTEM");
+            globalVariables.put("lower_case_table_names", "1");
+            globalVariables.put("wait_timeout", "172800");
         }
+
     }
 
     @Override

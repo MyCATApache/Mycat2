@@ -16,6 +16,8 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.replica.ReplicaSelectorManager;
+import io.mycat.util.IntegerUtil;
+import io.mycat.util.LongUtil;
 import io.mycat.util.NameMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -244,6 +246,7 @@ public class PrototypeHandlerImpl implements PrototypeHandler {
         return onJdbc(statement.toString()).orElseGet(() -> {
             List<Object[]> res = new ArrayList<>();
             res.add(new Object[]{"utf8_unicode_ci", "utf8", "192", "", "yes", "8", "PAD SPACE"});
+            res.add(new Object[]{"utf8_general_ci", "utf8", "33", "Yes", "yes", "1", "PAD SPACE"});
             return res;
         });
     }
