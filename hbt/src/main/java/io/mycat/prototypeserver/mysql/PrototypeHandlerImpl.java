@@ -161,7 +161,7 @@ public class PrototypeHandlerImpl implements PrototypeHandler {
 
             String Field = name;
             String Type = dataTypes.get(i);
-            String Collation = SQLUtils.normalize(column.getCollateExpr().toString());
+            String Collation = Optional.ofNullable(column.getCollateExpr()).map(s -> SQLUtils.normalize(s.toString())).orElse(null);
             String Null = column.containsNotNullConstaint() ? "NO" : "YES";
             String Key = sqlStatement.isPrimaryColumn(name) ?
                     "PRI" : sqlStatement.isUNI(name) ? "UNI" : sqlStatement.isMUL(name) ? "MUL" : "";
@@ -169,9 +169,14 @@ public class PrototypeHandlerImpl implements PrototypeHandler {
             String Default = Optional.ofNullable(defaultValues.get(i)).orElse("NULL");
             String Extra = "";
             String Privileges = "select,insert,update,references";
-            String Comment = column.getComment().toString();
+            String Comment = Optional.ofNullable(column.getComment()).map(s->s.toString()).orElse("");
 
-            objects.add(new Object[]{Field, Type, Collation, Null, Key, Default, Extra, Privileges, Comment});
+            if (statement.isFull()){
+                objects.add(new Object[]{Field, Type, Collation, Null, Key, Default, Extra, Privileges, Comment});
+            }else {
+                objects.add(new Object[]{Field, Type, Null, Key, Default, Extra});
+            }
+
         }
         return objects;
     }
@@ -241,7 +246,7 @@ public class PrototypeHandlerImpl implements PrototypeHandler {
     public List<Object[]> showCreateTable(SQLShowCreateTableStatement statement) {
         SQLPropertyExpr sqlPropertyExpr = (SQLPropertyExpr) statement.getName();
         String schemaName = SQLUtils.normalize(sqlPropertyExpr.getOwnerName());
-        String tableName = SQLUtils.normalize(sqlPropertyExpr.getOwnerName());
+        String tableName = SQLUtils.normalize(sqlPropertyExpr.getSimpleName());
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         TableHandler tableHandler = metadataManager.getTable(schemaName, tableName);
         String createTableSQL = tableHandler.getCreateTableSQL();

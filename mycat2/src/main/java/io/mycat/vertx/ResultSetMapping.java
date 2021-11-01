@@ -41,7 +41,10 @@ public class ResultSetMapping {
             public byte[] apply(Object[] objects) {
                 byte[][] row = new byte[columnCount][];
                 for (int columnIndex = 0, rowIndex = 0; rowIndex < columnCount; columnIndex++, rowIndex++) {
-
+                    if(objects[columnIndex] instanceof String){
+                        row[columnIndex] = ((String) objects[columnIndex]).getBytes();
+                        continue;
+                    }
                     int columnType = rowMetaData.getColumnType(columnIndex);
                     switch (columnType) {
                         case Types.VARBINARY:
