@@ -82,6 +82,9 @@ public class PrototypeService {
             SQLShowTablesStatement statement = (SQLShowTablesStatement) sqlStatement;
             String database = SQLUtils.normalize(statement.getDatabase().getSimpleName());
             List<ColumnDefPacket> columnDefPacketList = getShowTablesColumns(database);
+            if(!statement.isFull()){
+                columnDefPacketList.subList(0,1);
+            }
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showTables(statement));
             return Optional.of(mySQLResultSet);
