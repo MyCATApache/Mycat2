@@ -15,6 +15,11 @@ import java.time.temporal.Temporal;
 import java.time.temporal.WeekFields;
 
 public class MycatBuiltInMethodImpl {
+
+    public static String dateSubString(LocalDateTime date, java.time.Period sub) {
+        return timestampToString(date.minus(sub));
+    }
+
     public static String dateSubString(java.lang.String date, java.time.Period sub) {
         if (date == null || sub == null) return null;
         LocalDate date1 = stringToDate(date);
@@ -1493,26 +1498,29 @@ public class MycatBuiltInMethodImpl {
         if (input == null) return null;
         return input;
     }
+
     public static String tinyintToString(Byte input) {
         if (input == null) return null;
         return input.toString();
     }
+
     public static ByteString durationToByteString(Duration input) {
         if (input == null) return null;
         return new ByteString(durationToDouble(input).toString().getBytes());
     }
+
     public static String durationToString(Duration input) {
         if (input == null) return null;
         Duration duration = (Duration) input;
-        int SECONDS_PER_HOUR = 60*60;
+        int SECONDS_PER_HOUR = 60 * 60;
         int SECONDS_PER_MINUTE = 60;
-        long hours = duration.getSeconds()/ SECONDS_PER_HOUR;
+        long hours = duration.getSeconds() / SECONDS_PER_HOUR;
         int minutes = (int) ((duration.getSeconds() % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
         int secs = (int) (duration.getSeconds() % SECONDS_PER_MINUTE);
         int nano = duration.getNano();
         if (nano == 0) {
-            return String.format("%d:%02d:%02d",hours,minutes,secs);
+            return String.format("%d:%02d:%02d", hours, minutes, secs);
         }
-        return String.format("%d:%02d:%02d.%09d",hours,minutes,secs,nano);
+        return String.format("%d:%02d:%02d.%09d", hours, minutes, secs, nano);
     }
 }

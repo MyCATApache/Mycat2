@@ -30,6 +30,7 @@ import org.apache.calcite.sql.type.*;
 
 import java.lang.reflect.Method;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.List;
 
@@ -76,6 +77,11 @@ public  class DateSubFunction extends SqlFunction {
             Method dateAdd = Types.lookupMethod(MycatBuiltInMethodImpl.class, "dateSubString", String.class, Period.class);
             return Expressions.call(dateAdd,one,second);
           }
+            if (one.getType() == LocalDateTime.class&&second.getType() == Period.class&&
+                    SqlTypeName.STRING_TYPES.contains(call.getType().getSqlTypeName())){
+                Method dateAdd = Types.lookupMethod(MycatBuiltInMethodImpl.class, "dateSubString", String.class, Period.class);
+                return Expressions.call(dateAdd,one,second);
+            }
         throw new UnsupportedOperationException("unsupport:"+call);
         }
       };
