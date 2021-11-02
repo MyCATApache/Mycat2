@@ -121,7 +121,7 @@ public class MycatUnion extends Union implements MycatRel {
 
     @Override
     public boolean isSupportStream() {
-        return all;
+        return false;
     }
 
     @Override
