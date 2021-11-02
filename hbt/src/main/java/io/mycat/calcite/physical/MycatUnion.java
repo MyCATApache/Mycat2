@@ -53,6 +53,7 @@ public class MycatUnion extends Union implements MycatRel {
             boolean all) {
         super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), inputs, all);
     }
+
     public MycatUnion(RelInput input) {
         super(input);
     }
@@ -121,7 +122,7 @@ public class MycatUnion extends Union implements MycatRel {
 
     @Override
     public boolean isSupportStream() {
-        return all;
+        return false;
     }
 
     @Override
@@ -134,9 +135,9 @@ public class MycatUnion extends Union implements MycatRel {
             EnumerableRel input = (EnumerableRel) ord.e;
             results.add(implementor.visitChild(this, ord.i, input, pref));
         }
-        boolean toEnumerate = !results.stream().allMatch(result->result.block.getType().getTypeName().contains("Observable"));
+        boolean toEnumerate = true;
 
-        if (toEnumerate){
+        if (toEnumerate) {
             for (Ord<Result> ord : Ord.zip(results)) {
                 Result result = ord.e;
                 Expression childExp =
@@ -161,7 +162,7 @@ public class MycatUnion extends Union implements MycatRel {
                             getRowType(),
                             pref.prefer(JavaRowFormat.ARRAY));
             return implementor.result(physType, builder.toBlock());
-        }else {
+        } else {
             for (Ord<Result> ord : Ord.zip(results)) {
                 Result result = ord.e;
                 Expression childExp =
@@ -170,8 +171,8 @@ public class MycatUnion extends Union implements MycatRel {
                                 result.block));
                 if (unionExp == null) {
                     unionExp = childExp;
-                } else  {
-                    unionExp = Expressions.call(RxBuiltInMethod.OBSERVABLE_UNION_ALL.method,unionExp, childExp);
+                } else {
+                    unionExp = Expressions.call(RxBuiltInMethod.OBSERVABLE_UNION_ALL.method, unionExp, childExp);
                 }
             }
             builder.add(unionExp);
