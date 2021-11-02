@@ -1420,4 +1420,15 @@ public class UserCaseTest implements MycatTest {
             System.out.println();
         }
     }
+
+
+    @Test
+    public void case599() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
+            List<Map<String, Object>> maps1 = executeQuery(mycatConnection, "select DATE_SUB(NOW(), INTERVAL 1 MONTH)");
+            List<Map<String, Object>>  maps2 = executeQuery(mycatConnection, "select DATE_SUB(NOW(), INTERVAL '1' MONTH)");
+            Assert.assertEquals(maps1.get(0).values().toString(),maps2.get(0).values().toString());
+            System.out.println();
+        }
+    }
 }

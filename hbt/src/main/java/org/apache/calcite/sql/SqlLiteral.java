@@ -395,6 +395,9 @@ public class SqlLiteral extends SqlNode {
         if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
           return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
         }
+        if (clazz == Long.class &&value instanceof SqlIntervalLiteral.IntervalValue) {
+          return  clazz.cast( Long.parseLong((( SqlIntervalLiteral.IntervalValue ) value).getIntervalLiteral()));
+        }
         break;
     case INTERVAL_DAY:
       if (clazz == Period.class) {
