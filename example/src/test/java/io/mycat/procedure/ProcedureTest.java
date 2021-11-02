@@ -9,6 +9,8 @@ import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.util.List;
+import java.util.Map;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
@@ -39,6 +41,7 @@ public class ProcedureTest implements MycatTest {
                     "DELETE FROM db1.`travelrecord` WHERE id = p_id;\n" +
                     "END";
             execute(mycatConnection, s);
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, "SELECT db, name, type, comment FROM mysql.proc  ORDER BY name, type");
             deleteData(mycatConnection, "db1", "travelrecord");
             execute(mycatConnection, "INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('1');");
             CallableStatement callableStatement = null;
@@ -80,6 +83,7 @@ public class ProcedureTest implements MycatTest {
                     "BEGIN\n" +
                     "select * FROM db1.`travelrecord` WHERE id = p_id;\n" +
                     "END";
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, "SELECT db, name, type, comment FROM mysql.proc WHERE db = 'mysql' AND name LIKE 'delete_matches' ORDER BY name, type");
             execute(mycatConnection, s);
             deleteData(mycatConnection, "db1", "travelrecord");
             execute(mycatConnection, "INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('1');");

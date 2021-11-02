@@ -204,10 +204,10 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                     }
                     objects.add(row);
                 }
-                LOGGER.info("call {}",sql);
-                for (Object[] object : objects) {
-                    LOGGER.info(Arrays.toString(object));
-                }
+//                LOGGER.info("call {}",sql);
+//                for (Object[] object : objects) {
+//                    LOGGER.info(Arrays.toString(object));
+//                }
                 RowSet rowSet = new RowSet(metaData, objects);
                 resultSetList.add(rowSet);
             }else {

@@ -496,7 +496,7 @@ public class PrototypeService {
         OriginalName = "Name";
         CharsetNumber = 33;
         Length = 192;
-        Type = 3;
+        Type = 253;
         Flags = 0x1001;
         Decimals = 0;
 
