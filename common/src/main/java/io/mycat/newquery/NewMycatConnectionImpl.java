@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -202,6 +203,10 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                         row[i] = resultSet.getObject(i+1);
                     }
                     objects.add(row);
+                }
+                LOGGER.info("call {}",sql);
+                for (Object[] object : objects) {
+                    LOGGER.info(Arrays.toString(object));
                 }
                 RowSet rowSet = new RowSet(metaData, objects);
                 resultSetList.add(rowSet);
