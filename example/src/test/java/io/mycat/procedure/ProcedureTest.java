@@ -12,11 +12,11 @@ import java.sql.ResultSet;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
-public class ProcedureTest  implements MycatTest {
+public class ProcedureTest implements MycatTest {
 
     @Test
     @SneakyThrows
-    public void baseTest(){
+    public void baseTest() {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
             execute(mycatConnection, RESET_CONFIG);
             execute(mycatConnection, "CREATE DATABASE db1");
@@ -31,7 +31,7 @@ public class ProcedureTest  implements MycatTest {
                     "  KEY `id` (`id`)\n" +
                     ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
             );
-            execute(mycatConnection,"DROP PROCEDURE IF EXISTS mysql.`delete_matches`");
+            execute(mycatConnection, "DROP PROCEDURE IF EXISTS mysql.`delete_matches`");
             String s = " CREATE  PROCEDURE mysql.`delete_matches`(\n" +
                     "\tIN p_id INTEGER\n" +
                     ")\n" +
@@ -39,20 +39,26 @@ public class ProcedureTest  implements MycatTest {
                     "DELETE FROM db1.`travelrecord` WHERE id = p_id;\n" +
                     "END";
             execute(mycatConnection, s);
-            deleteData(mycatConnection,"db1","travelrecord");
+            deleteData(mycatConnection, "db1", "travelrecord");
             execute(mycatConnection, "INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('1');");
-            CallableStatement callableStatement = mycatConnection.prepareCall(" CALL mysql.delete_matches(1)");
+            CallableStatement callableStatement = null;
+            try {
+                callableStatement = mycatConnection.prepareCall(" CALL mysql.delete_matches(1)");
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw e;
+            }
             boolean execute = callableStatement.execute();
             Assert.assertFalse(execute);
             int updateCount = callableStatement.getUpdateCount();
-            Assert.assertEquals(1,updateCount);
+            Assert.assertEquals(1, updateCount);
             System.out.println();
         }
     }
 
     @Test
     @SneakyThrows
-    public void baseTest2(){
+    public void baseTest2() {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
             execute(mycatConnection, RESET_CONFIG);
             execute(mycatConnection, "CREATE DATABASE db1");
@@ -67,7 +73,7 @@ public class ProcedureTest  implements MycatTest {
                     "  KEY `id` (`id`)\n" +
                     ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
             );
-            execute(mycatConnection,"DROP PROCEDURE IF EXISTS mysql.`select_matches`");
+            execute(mycatConnection, "DROP PROCEDURE IF EXISTS mysql.`select_matches`");
             String s = " CREATE  PROCEDURE mysql.`select_matches`(\n" +
                     "\tIN p_id INTEGER\n" +
                     ")\n" +
@@ -75,9 +81,15 @@ public class ProcedureTest  implements MycatTest {
                     "select * FROM db1.`travelrecord` WHERE id = p_id;\n" +
                     "END";
             execute(mycatConnection, s);
-            deleteData(mycatConnection,"db1","travelrecord");
+            deleteData(mycatConnection, "db1", "travelrecord");
             execute(mycatConnection, "INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('1');");
-            CallableStatement callableStatement = mycatConnection.prepareCall(" CALL mysql.select_matches(1)");
+            CallableStatement callableStatement = null;
+            try {
+                callableStatement = mycatConnection.prepareCall(" CALL mysql.select_matches(1)");
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw e;
+            }
             boolean execute = callableStatement.execute();
             Assert.assertTrue(execute);
             ResultSet resultSet = callableStatement.getResultSet();
