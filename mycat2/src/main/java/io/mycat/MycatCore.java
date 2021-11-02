@@ -15,7 +15,9 @@
 package io.mycat;
 
 import io.mycat.beans.mysql.MySQLVersion;
+import io.mycat.calcite.ExecutorProvider;
 import io.mycat.config.*;
+import io.mycat.executor.ExecutorProviderImpl;
 import io.mycat.exporter.SqlRecorderRuntime;
 import io.mycat.monitor.MycatSQLLogMonitor;
 import io.mycat.monitor.MycatSQLLogMonitorImpl;
@@ -121,6 +123,7 @@ public class MycatCore {
         context.put(SqlRecorderRuntime.class, SqlRecorderRuntime.INSTANCE);
         context.put(LockService.class, new LocalLockServiceImpl());
         context.put(MycatSQLLogMonitor.class, new MycatSQLLogMonitorImpl(serverConfig.getServer().getMycatId(), serverConfig.getMonitor(), vertx));
+        context.put(ExecutorProvider.class, ExecutorProviderImpl.INSTANCE);
         ////////////////////////////////////////////tmp///////////////////////////////////
         MetaClusterCurrent.register(context);
 
@@ -133,7 +136,7 @@ public class MycatCore {
             Files.createDirectory(this.baseDirectory);
             initConfig = true;
         }
-        if (Files.list(this.baseDirectory).findFirst().isPresent()){
+        if (Files.list(this.baseDirectory).findFirst().isPresent()) {
             initConfig = true;
         }
 
@@ -152,7 +155,7 @@ public class MycatCore {
         context.put(StorageManager.class, storageManager);
         MetaClusterCurrent.register(context);
 
-        if (initConfig){
+        if (initConfig) {
             ConfigUpdater.writeDefaultConfigToFile();
         }
     }

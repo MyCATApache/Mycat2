@@ -17,14 +17,7 @@
 package io.mycat.calcite.rules;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.ExecutorProviderImpl;
-import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.logical.MycatView;
-import io.mycat.calcite.physical.MycatHashJoin;
-import io.mycat.calcite.physical.MycatMergeSort;
-import io.mycat.calcite.physical.MycatSortAgg;
-import io.mycat.calcite.physical.MycatSortMergeJoin;
 import org.apache.calcite.adapter.enumerable.EnumerableMergeJoin;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptRule;
@@ -34,19 +27,11 @@ import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
-import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.logical.LogicalAggregate;
-import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalSort;
-import org.apache.calcite.rel.logical.LogicalTableScan;
-import org.apache.calcite.rel.rules.AggregateExtractProjectRule;
-import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.tools.RelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Array;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

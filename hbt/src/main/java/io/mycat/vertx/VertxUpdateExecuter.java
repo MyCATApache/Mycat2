@@ -19,14 +19,17 @@ package io.mycat.vertx;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.*;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
+import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import io.mycat.*;
 import io.mycat.calcite.CodeExecuterContext;
-import io.mycat.calcite.ExecutorProviderImpl;
+import io.mycat.calcite.ExecutorProvider;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.spm.QueryPlanner;
 import io.mycat.calcite.table.GlobalTable;
@@ -194,7 +197,7 @@ public class VertxUpdateExecuter {
                     AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext =
                             new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, codeExecuterContext, queryDrdsSqlWithParams);
 
-                    ArrayBindable bindable = ExecutorProviderImpl.INSTANCE.prepare( codeExecuterContext);
+                    ArrayBindable bindable = MetaClusterCurrent.wrapper(ExecutorProvider.class).prepare(codeExecuterContext);
 
                     Object bindObservable = bindable.bindObservable(sqlMycatDataContext);
                     try {

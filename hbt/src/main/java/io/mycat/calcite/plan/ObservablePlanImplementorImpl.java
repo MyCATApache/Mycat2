@@ -16,16 +16,9 @@ package io.mycat.calcite.plan;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
-import io.mycat.AsyncMycatDataContextImpl;
-import io.mycat.DrdsSqlWithParams;
-import io.mycat.MycatDataContext;
-import io.mycat.Response;
-import io.mycat.api.collector.MySQLColumnDef;
+import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
-import io.mycat.api.collector.MysqlObjectArrayRow;
-import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.ExecutorProvider;
-import io.mycat.calcite.ExecutorProviderImpl;
 import io.mycat.calcite.PrepareExecutor;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
@@ -33,14 +26,8 @@ import io.mycat.calcite.spm.Plan;
 import io.mycat.vertx.VertxExecuter;
 import io.mycat.vertx.VertxUpdateExecuter;
 import io.reactivex.rxjava3.core.Observable;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import org.apache.arrow.vector.VectorSchemaRoot;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.runtime.ArrayBindable;
-import org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,7 +79,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
     @Override
     public Future<Void> executeQuery(Plan plan) {
         AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSqlWithParams);
-        ExecutorProvider executorProvider =ExecutorProviderImpl.INSTANCE;
+        ExecutorProvider executorProvider = MetaClusterCurrent.wrapper(ExecutorProvider.class);
         PrepareExecutor prepare = executorProvider.prepare(sqlMycatDataContext,plan);
         Observable observable = mapToTimeoutObservable(prepare.getExecutor(), drdsSqlWithParams);
         switch (prepare.getType()) {

@@ -22,11 +22,9 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
-import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
-import io.mycat.calcite.ExecutorProviderImpl;
+import io.mycat.calcite.ExecutorProvider;
 import io.mycat.calcite.PrepareExecutor;
-import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.config.SqlCacheConfig;
 import io.mycat.runtime.MycatDataContextImpl;
@@ -34,9 +32,6 @@ import io.mycat.util.Dumper;
 import io.mycat.util.TimeUnitUtil;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.functions.Action;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -166,11 +161,8 @@ public class SqlResultSetService implements Closeable, Dumpable {
                 DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(sqlSelectStatement, context.getDefaultSchema());
                 Plan plan = DrdsRunnerHelper.getPlan(drdsSql);
                 XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
-                ObservablePlanImplementorImpl planImplementor = new ObservablePlanImplementorImpl(
-                        transactionSession,
-                        context, drdsSql, null);
                 AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSql);
-                PrepareExecutor prepare = ExecutorProviderImpl.INSTANCE.getPrepareExecutor(sqlMycatDataContext, plan, plan.getCodeExecuterContext());
+                PrepareExecutor prepare = MetaClusterCurrent.wrapper(ExecutorProvider.class).prepare(sqlMycatDataContext,plan);
                 Observable<MysqlPayloadObject> observable = prepare.getExecutor();
                 observable = observable.doOnTerminate(new Action() {
                     @Override

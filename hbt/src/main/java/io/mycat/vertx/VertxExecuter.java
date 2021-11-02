@@ -29,16 +29,15 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.visitor.MycatSQLEvalVisitorUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import io.mycat.PreparedStatement;
 import io.mycat.Process;
 import io.mycat.*;
 import io.mycat.api.collector.MySQLColumnDef;
-import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.api.collector.MysqlObjectArrayRow;
+import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
-import io.mycat.calcite.ExecutorProviderImpl;
+import io.mycat.calcite.ExecutorProvider;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.spm.QueryPlanner;
 import io.mycat.calcite.table.GlobalTable;
@@ -50,7 +49,10 @@ import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.mysqlclient.MySQLClient;
-import io.vertx.sqlclient.*;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.SqlConnection;
+import io.vertx.sqlclient.Tuple;
 import lombok.*;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.rel.type.RelDataType;
@@ -214,7 +216,8 @@ public class VertxExecuter {
                 AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext =
                         new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, codeExecuterContext, queryDrdsSqlWithParams);
 
-                ArrayBindable bindable = ExecutorProviderImpl.INSTANCE.prepare(codeExecuterContext);
+                ExecutorProvider executorProvider = MetaClusterCurrent.wrapper(ExecutorProvider.class);
+                ArrayBindable bindable = executorProvider.prepare(codeExecuterContext);
 
                 Object bindObservable = bindable.bindObservable(sqlMycatDataContext);
                 try {

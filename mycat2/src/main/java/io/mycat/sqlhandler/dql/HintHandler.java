@@ -19,7 +19,7 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
-import io.mycat.calcite.ExecutorProviderImpl;
+import io.mycat.calcite.ExecutorProvider;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.spm.*;
 import io.mycat.calcite.table.GlobalTable;
@@ -140,7 +140,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         DrdsSqlCompiler drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
                         Plan plan = drdsRunner.doHbt(hbt);
                         AsyncMycatDataContextImpl.HbtMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.HbtMycatDataContextImpl(dataContext, plan.getCodeExecuterContext());
-                        Observable<MysqlPayloadObject> rowObservable = ExecutorProviderImpl.INSTANCE.prepare(sqlMycatDataContext, plan).getExecutor();
+                        Observable<MysqlPayloadObject> rowObservable = MetaClusterCurrent.wrapper(ExecutorProvider.class).prepare(sqlMycatDataContext, plan).getExecutor();
                         return response.sendResultSet(rowObservable);
                     }
                     if ("createSqlCache".equalsIgnoreCase(cmd)) {
