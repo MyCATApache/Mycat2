@@ -2,9 +2,13 @@ package io.mycat.newquery;
 
 import com.alibaba.druid.pool.DruidPooledConnection;
 import com.alibaba.druid.util.JdbcUtils;
+import com.mysql.cj.result.Field;
 import io.mycat.beans.mycat.CopyMycatRowMetaData;
 import io.mycat.beans.mycat.JdbcRowMetaData;
+import io.mycat.beans.mycat.MycatMySQLRowMetaData;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.beans.mysql.packet.ColumnDefPacket;
+import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.ObservableEmitter;
@@ -16,6 +20,7 @@ import org.apache.arrow.adapter.jdbc.ArrowVectorIterator;
 import org.apache.arrow.adapter.jdbc.JdbcToArrowConfig;
 import org.apache.arrow.adapter.jdbc.JdbcToArrowConfigBuilder;
 import org.apache.arrow.vector.VectorSchemaRoot;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,9 +91,9 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                     onSend();
                     resultSet = statement.executeQuery(sql);
                     onRev();
-                    ResultSetMetaData metaData = resultSet.getMetaData();
-                    int columnCount = metaData.getColumnCount();
-                    collector.onColumnDef(new CopyMycatRowMetaData(new JdbcRowMetaData(metaData)));
+                    MycatRowMetaData mycatRowMetaData = getJdbcRowMetaData(resultSet.getMetaData());
+                    int columnCount = mycatRowMetaData.getColumnCount();
+                    collector.onColumnDef(mycatRowMetaData);
                     int columnLimit = columnCount + 1;
                     while (!resultSet.isClosed() && resultSet.next()) {
                         Object[] objects = new Object[columnCount];
@@ -107,9 +112,9 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                     onSend();
                     resultSet = statement.executeQuery();
                     onRev();
-                    ResultSetMetaData metaData = resultSet.getMetaData();
-                    int columnCount = metaData.getColumnCount();
-                    collector.onColumnDef(new CopyMycatRowMetaData(new JdbcRowMetaData(metaData)));
+                    MycatRowMetaData mycatRowMetaData = getJdbcRowMetaData(resultSet.getMetaData());
+                    int columnCount = mycatRowMetaData.getColumnCount();
+                    collector.onColumnDef(mycatRowMetaData);
                     int columnLimit = columnCount + 1;
                     while (!resultSet.isClosed() && resultSet.next()) {
                         Object[] objects = new Object[columnCount];
@@ -192,15 +197,15 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
             CallableStatement callableStatement = connection.prepareCall(sql);
             boolean firstExecuteRes = callableStatement.execute();
             int updateCount = callableStatement.getUpdateCount();
-            if (firstExecuteRes){
+            if (firstExecuteRes) {
                 ResultSet resultSet = callableStatement.getResultSet();//获取第一个resultSet
-                MycatRowMetaData metaData = new CopyMycatRowMetaData( new JdbcRowMetaData(resultSet.getMetaData()));
+                MycatRowMetaData metaData = getJdbcRowMetaData(resultSet.getMetaData());
                 List<Object[]> objects = new ArrayList<>();
-                while (resultSet.next()){
+                while (resultSet.next()) {
                     int columnCount = metaData.getColumnCount();
                     Object[] row = new Object[columnCount];
                     for (int i = 0; i < columnCount; i++) {
-                        row[i] = resultSet.getObject(i+1);
+                        row[i] = resultSet.getObject(i + 1);
                     }
                     objects.add(row);
                 }
@@ -210,8 +215,8 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 //                }
                 RowSet rowSet = new RowSet(metaData, objects);
                 resultSetList.add(rowSet);
-            }else {
-                resultSetList.add(new long[]{updateCount,0});
+            } else {
+                resultSetList.add(new long[]{updateCount, 0});
             }
             return Future.succeededFuture(resultSetList);
         } catch (Throwable throwable) {
@@ -331,9 +336,41 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
             } catch (Exception e) {
                 LOGGER.error("", e);
                 lastInsertId = 0;
-                needLastInsertId = false;
+                //  needLastInsertId = false;
             }
         }
         return lastInsertId;
     }
+
+    @NotNull
+    private MycatRowMetaData getJdbcRowMetaData(ResultSetMetaData jdbcMetaData) throws SQLException {
+        MycatRowMetaData mycatRowMetaData;
+        String canonicalName = jdbcMetaData.getClass().getCanonicalName();
+        if ("com.mysql.cj.jdbc.result.ResultSetMetaData".equals(canonicalName)) {
+            com.mysql.cj.jdbc.result.ResultSetMetaData mysqlJdbcMetaData = (com.mysql.cj.jdbc.result.ResultSetMetaData) jdbcMetaData;
+            int columnCount = mysqlJdbcMetaData.getColumnCount();
+            Field[] fields = mysqlJdbcMetaData.getFields();
+            List<ColumnDefPacket> columnDefPackets = new ArrayList<>(columnCount);
+            for (int i = 0; i < columnCount; i++) {
+                ColumnDefPacketImpl columnDefPacket = new ColumnDefPacketImpl();
+                Field field = fields[i];
+                columnDefPacket.setColumnSchema(ColumnDefPacketImpl.getBytes(field.getDatabaseName()));
+                columnDefPacket.setColumnTable(ColumnDefPacketImpl.getBytes(field.getTableName()));
+                columnDefPacket.setColumnOrgTable(ColumnDefPacketImpl.getBytes(field.getOriginalTableName()));
+                columnDefPacket.setColumnName(ColumnDefPacketImpl.getBytes(field.getName()));
+                columnDefPacket.setColumnOrgName(ColumnDefPacketImpl.getBytes(field.getOriginalName()));
+                columnDefPacket.setColumnCharsetSet((field.getCollationIndex()));
+                columnDefPacket.setColumnLength((int) field.getLength());
+                columnDefPacket.setColumnType((int) field.getMysqlTypeId());
+                columnDefPacket.setColumnFlags((int) field.getFlags());
+                columnDefPacket.setColumnDecimals((byte) field.getDecimals());
+                columnDefPackets.add(columnDefPacket);
+            }
+            mycatRowMetaData = new MycatMySQLRowMetaData(columnDefPackets);
+        } else {
+            mycatRowMetaData = new CopyMycatRowMetaData(new JdbcRowMetaData(jdbcMetaData));
+        }
+        return mycatRowMetaData;
+    }
+
 }

@@ -14,6 +14,7 @@
  */
 package io.mycat;
 
+import io.mycat.beans.mycat.MycatMySQLRowMetaData;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
@@ -22,7 +23,6 @@ import io.mycat.config.MySQLServerCapabilityFlags;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
-import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -122,11 +122,21 @@ public class MySQLPacketUtil {
     public static final Iterable<byte[]> generateAllColumnDefPayload(MycatRowMetaData metaData) {
         List<byte[]> list = new ArrayList<>(metaData.getColumnCount());
         final int count = metaData.getColumnCount();
-        for (int index = 0; index < count; index++) {
-            list.add(MySQLPacketUtil
-                    .generateColumnDefPayload(
-                            metaData,
-                            index));
+        if (metaData instanceof MycatMySQLRowMetaData) {
+            List<ColumnDefPacketImpl> columnDefPackets = (List) ((MycatMySQLRowMetaData) metaData).getColumnDefPackets();
+            for (int index = 0; index < count; index++) {
+                try (MySQLPayloadWriter writer = new MySQLPayloadWriter(128)) {
+                    columnDefPackets.get(index).writePayload(writer);
+                    list.add(writer.toByteArray());
+                }
+            }
+        } else {
+            for (int index = 0; index < count; index++) {
+                list.add(MySQLPacketUtil
+                        .generateColumnDefPayload(
+                                metaData,
+                                index));
+            }
         }
         return list;
     }

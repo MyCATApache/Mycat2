@@ -3,10 +3,12 @@ package io.mycat.beans.mycat;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.vertx.mysqlclient.impl.datatype.DataType;
+import lombok.Getter;
 
 import java.sql.ResultSetMetaData;
 import java.util.List;
 
+@Getter
 public class MycatMySQLRowMetaData implements MycatRowMetaData {
     final List<ColumnDefPacket> columnDefPackets;
 

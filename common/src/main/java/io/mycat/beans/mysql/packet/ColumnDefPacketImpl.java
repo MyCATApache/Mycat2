@@ -130,7 +130,7 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
         }
     }
 
-    byte[] getBytes(String text) {
+    public static byte[] getBytes(String text) {
         if (text == null || "".equals(text)) {
             return EMPTY;
         }
