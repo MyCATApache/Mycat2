@@ -74,26 +74,26 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
         this.observer = observer;
         sqlConnectionFuture
                 .flatMap(connection -> connection.prepare(sql)).compose(preparedStatement -> {
-            PreparedQuery<RowSet<Row>> query = preparedStatement.query();
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("RowObservableImpl sql:{} connection:{}", sql, sqlConnectionFuture.result());
-            }
-            PreparedQuery<SqlResult<Void>> collecting = query.collecting(this);
-            return collecting.execute(Tuple.tuple(values));
-        }).onSuccess(new Handler<SqlResult<Void>>() {
-            @Override
-            public void handle(SqlResult<Void> event) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("subscribeActual successful sql:{} connection:{}", sql, sqlConnectionFuture.result());
-                }
-                observer.onComplete();
-            }
-        }).onFailure(event -> {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.error("subscribeActual error sql:{}", sql);
-            }
-            this.observer.onError(event);
-        });
+                    PreparedQuery<RowSet<Row>> query = preparedStatement.query();
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("RowObservableImpl sql:{} connection:{}", sql, sqlConnectionFuture.result());
+                    }
+                    PreparedQuery<SqlResult<Void>> collecting = query.collecting(this);
+                    return collecting.execute(Tuple.tuple(values));
+                }).onSuccess(new Handler<SqlResult<Void>>() {
+                    @Override
+                    public void handle(SqlResult<Void> event) {
+
+                        LOGGER.debug("subscribeActual successful sql:{} connection:{}", sql, sqlConnectionFuture.result());
+
+                        observer.onComplete();
+                    }
+                }).onFailure(event -> {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.error("subscribeActual error sql:{}", sql);
+                    }
+                    this.observer.onError(event);
+                });
     }
 
     @Override
@@ -112,6 +112,7 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
         Object[] objects = getObjects(row, metaData);
         observer.onNext(objects);
     }
+
     @NotNull
     @SneakyThrows
     public static Object[] getObjects(Row row, MycatRowMetaData metaData) {
@@ -121,17 +122,16 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
             Object value = null;
             switch (columnType) {
                 case BIT:
-                case BOOLEAN:
-                {
+                case BOOLEAN: {
                     value = row.getValue(columnIndex);
-                    if (value == null){
+                    if (value == null) {
                         break;
                     }
-                    if (value instanceof Boolean){
+                    if (value instanceof Boolean) {
                         break;
                     }
-                    if (value instanceof Number){
-                        value=  MycatValueFactory.BOOLEAN_VALUE_FACTORY.createFromLong(((Number) value).longValue());
+                    if (value instanceof Number) {
+                        value = MycatValueFactory.BOOLEAN_VALUE_FACTORY.createFromLong(((Number) value).longValue());
                         break;
                     }
                     throw new UnsupportedOperationException("unsupport type:" + value);
@@ -173,10 +173,10 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                 case VARCHAR:
                 case CHAR: {
                     value = row.getValue(columnIndex);
-                    if (value instanceof String){
+                    if (value instanceof String) {
 
-                    }else if (value instanceof byte[]){
-                        value = new String((byte[])value);
+                    } else if (value instanceof byte[]) {
+                        value = new String((byte[]) value);
                     }
                     break;
                 }
@@ -186,14 +186,14 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
 
                     } else if (value instanceof LocalDate) {
 
-                    } else if (value instanceof  java.sql.Date) {
+                    } else if (value instanceof java.sql.Date) {
                         value = ((Date) value).toLocalDate();
-                    }else if (value instanceof java.util.Date){
+                    } else if (value instanceof java.util.Date) {
                         java.util.Date value1 = (java.util.Date) value;
-                        value =  LocalDate.of(value1.getYear()+1900,value1.getMonth()+1,value1.getDate());
-                    }else if (value instanceof String){
+                        value = LocalDate.of(value1.getYear() + 1900, value1.getMonth() + 1, value1.getDate());
+                    } else if (value instanceof String) {
                         value = LocalDate.parse((String) value);
-                    }else {
+                    } else {
                         throw new UnsupportedOperationException("unsupport type:" + value);
                     }
                     break;
@@ -201,11 +201,11 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                 case TIME_WITH_TIMEZONE:
                 case TIME: {
                     value = row.getValue(columnIndex);
-                    if (value == null){
+                    if (value == null) {
 
-                    }else if ( value instanceof Duration){
+                    } else if (value instanceof Duration) {
 
-                    }else{
+                    } else {
                         String s = value.toString();
                         value = MycatTimeUtil.timeStringToTimeDuration(s);
                     }
@@ -214,15 +214,15 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                 case TIMESTAMP_WITH_TIMEZONE:
                 case TIMESTAMP: {
                     value = row.getValue(columnIndex);
-                    if (value == null){
+                    if (value == null) {
                         value = null;
-                    }else if (value instanceof LocalDateTime){
+                    } else if (value instanceof LocalDateTime) {
 
-                    }else if (value instanceof Timestamp) {
-                        value =  ((Timestamp) value).toLocalDateTime();
-                    }else if (value instanceof String){
+                    } else if (value instanceof Timestamp) {
+                        value = ((Timestamp) value).toLocalDateTime();
+                    } else if (value instanceof String) {
                         value = MycatTimeUtil.timestampStringToTimestamp((String) value);
-                    }else {
+                    } else {
                         throw new UnsupportedOperationException("unsupport type:" + value);
                     }
                     break;
@@ -237,7 +237,7 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                         } finally {
                             value1.free();
                         }
-                    }else {
+                    } else {
                         throw new UnsupportedOperationException("unsupport type:" + value);
                     }
                     break;
@@ -260,9 +260,9 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                         } finally {
                             value1.free();
                         }
-                    } else if (value instanceof byte[]){
+                    } else if (value instanceof byte[]) {
 
-                    }else {
+                    } else {
                         throw new UnsupportedOperationException("unsupport type:" + value);
                     }
                     break;
@@ -299,17 +299,16 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
             Object value = null;
             switch (columnType) {
                 case BIT:
-                case BOOLEAN:
-                {
+                case BOOLEAN: {
                     value = row[columnIndex];
-                    if (value == null){
+                    if (value == null) {
                         break;
                     }
-                    if (value instanceof Boolean){
+                    if (value instanceof Boolean) {
                         break;
                     }
-                    if (value instanceof Number){
-                        value=  MycatValueFactory.BOOLEAN_VALUE_FACTORY.createFromLong(((Number) value).longValue());
+                    if (value instanceof Number) {
+                        value = MycatValueFactory.BOOLEAN_VALUE_FACTORY.createFromLong(((Number) value).longValue());
                         break;
                     }
                     throw new UnsupportedOperationException("unsupport type:" + value);
@@ -318,11 +317,16 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                 case SMALLINT:
                 case INTEGER:
                 case BIGINT: {
-                    Number numeric = (Number)row[columnIndex];
-                    if (numeric == null) {
+                    Object o = row[columnIndex];
+                    if (o == null) {
                         value = null;
-                    } else {
+                    } else if (o instanceof Number) {
+                        Number numeric = (Number) o;
                         value = MycatValueFactory.LONG_VALUE_FACTORY.createFromLong(numeric.longValue());
+                    } else if (o instanceof Boolean) {
+                        value = (Boolean) o ? 1 : 0;
+                    } else {
+                        throw new UnsupportedOperationException(o.toString());
                     }
                     break;
                 }
@@ -330,7 +334,7 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                 case FLOAT:
                 case REAL:
                 case DOUBLE: {
-                    Number numeric =  (Number)row[columnIndex];
+                    Number numeric = (Number) row[columnIndex];
                     if (numeric == null) {
                         value = null;
                     } else {
@@ -351,10 +355,10 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                 case VARCHAR:
                 case CHAR: {
                     value = row[columnIndex];
-                    if (value instanceof String){
+                    if (value instanceof String) {
 
-                    }else if (value instanceof byte[]){
-                        value = new String((byte[])value);
+                    } else if (value instanceof byte[]) {
+                        value = new String((byte[]) value);
                     }
                     break;
                 }
@@ -364,14 +368,14 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
 
                     } else if (value instanceof LocalDate) {
 
-                    } else if (value instanceof  java.sql.Date) {
+                    } else if (value instanceof java.sql.Date) {
                         value = ((Date) value).toLocalDate();
-                    }else if (value instanceof java.util.Date){
+                    } else if (value instanceof java.util.Date) {
                         java.util.Date value1 = (java.util.Date) value;
-                        value =  LocalDate.of(value1.getYear()+1900,value1.getMonth()+1,value1.getDate());
-                    }else if (value instanceof String){
+                        value = LocalDate.of(value1.getYear() + 1900, value1.getMonth() + 1, value1.getDate());
+                    } else if (value instanceof String) {
                         value = LocalDate.parse((String) value);
-                    }else {
+                    } else {
                         throw new UnsupportedOperationException("unsupport type:" + value);
                     }
                     break;
@@ -379,11 +383,11 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                 case TIME_WITH_TIMEZONE:
                 case TIME: {
                     value = row[columnIndex];
-                    if (value == null){
+                    if (value == null) {
 
-                    }else if ( value instanceof Duration){
+                    } else if (value instanceof Duration) {
 
-                    }else{
+                    } else {
                         String s = value.toString();
                         value = MycatTimeUtil.timeStringToTimeDuration(s);
                     }
@@ -392,15 +396,15 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                 case TIMESTAMP_WITH_TIMEZONE:
                 case TIMESTAMP: {
                     value = row[columnIndex];
-                    if (value == null){
+                    if (value == null) {
                         value = null;
-                    }else if (value instanceof LocalDateTime){
+                    } else if (value instanceof LocalDateTime) {
 
-                    }else if (value instanceof Timestamp) {
-                        value =  ((Timestamp) value).toLocalDateTime();
-                    }else if (value instanceof String){
+                    } else if (value instanceof Timestamp) {
+                        value = ((Timestamp) value).toLocalDateTime();
+                    } else if (value instanceof String) {
                         value = MycatTimeUtil.timestampStringToTimestamp((String) value);
-                    }else {
+                    } else {
                         throw new UnsupportedOperationException("unsupport type:" + value);
                     }
                     break;
@@ -415,7 +419,7 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                         } finally {
                             value1.free();
                         }
-                    }else {
+                    } else {
                         throw new UnsupportedOperationException("unsupport type:" + value);
                     }
                     break;
@@ -438,9 +442,9 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                         } finally {
                             value1.free();
                         }
-                    } else if (value instanceof byte[]){
+                    } else if (value instanceof byte[]) {
 
-                    }else {
+                    } else {
                         throw new UnsupportedOperationException("unsupport type:" + value);
                     }
                     break;
@@ -569,23 +573,23 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
     public static MycatRowMetaData toColumnMetaData(List<ColumnDescriptor> event) {
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
         for (ColumnDescriptor columnDescriptor : event) {
-            if (columnDescriptor instanceof ColumnDefinition){
+            if (columnDescriptor instanceof ColumnDefinition) {
                 ColumnDefinition columnDefinition = (ColumnDefinition) columnDescriptor;
                 String schemaName = columnDefinition.schema();
                 String tableName = columnDefinition.orgTable();
-                String columnName  = columnDefinition.name();
+                String columnName = columnDefinition.name();
                 int columnType = columnDefinition.type().jdbcType.getVendorTypeNumber();
                 int precision = 0;
                 int scale = 0;
                 String columnLabel = columnDefinition.name();
                 boolean isAutoIncrement = false;
                 boolean isCaseSensitive = false;
-                boolean isNullable = (columnDefinition.flags()& ColumnDefinition.ColumnDefinitionFlags.NOT_NULL_FLAG) == 0;
+                boolean isNullable = (columnDefinition.flags() & ColumnDefinition.ColumnDefinitionFlags.NOT_NULL_FLAG) == 0;
                 boolean isSigned = true;
-                int displaySize = (int)columnDefinition.columnLength();
-                resultSetBuilder.addColumnInfo(schemaName,tableName,columnName,columnType,precision,scale,columnLabel,isAutoIncrement,isCaseSensitive,isNullable,
-                        isSigned,displaySize);
-            }else {
+                int displaySize = (int) columnDefinition.columnLength();
+                resultSetBuilder.addColumnInfo(schemaName, tableName, columnName, columnType, precision, scale, columnLabel, isAutoIncrement, isCaseSensitive, isNullable,
+                        isSigned, displaySize);
+            } else {
                 resultSetBuilder.addColumnInfo(columnDescriptor.name(),
                         columnDescriptor.jdbcType());
             }
