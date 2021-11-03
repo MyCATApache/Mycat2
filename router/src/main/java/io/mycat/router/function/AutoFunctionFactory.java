@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableSet;
 import groovy.text.SimpleTemplateEngine;
 import groovy.text.Template;
 import io.mycat.Partition;
+import io.mycat.ShardingTableType;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.config.ShardingFunction;
 import io.mycat.router.CustomRuleFunction;
@@ -412,10 +413,15 @@ public class AutoFunctionFactory {
                 indexDataNodes.add(backendTableInfo);
             }
         }
-
+        ShardingTableType shardingTableType = ShardingTableType.compute(indexDataNodes);
         if (flattenMapping) {
             Map<Integer, List<Partition>> dbIndexToNode = indexDataNodes.stream().collect(Collectors.groupingBy(k -> k.getDbIndex()));
             return new AutoFunction(dbNum, tableNum, dbMethod, tableMethod, dbShardingKeys, tableShardingKeys, finalDbFunction, finalTableFunction, storeNum) {
+                @Override
+                public ShardingTableType getShardingTableType() {
+                    return shardingTableType;
+                }
+
                 @Override
                 public List<Partition> scanAll() {
                     return ImmutableList.copyOf(indexDataNodes);
@@ -440,6 +446,11 @@ public class AutoFunctionFactory {
             Map<Integer, List<Partition>> dbIndexToNode = indexDataNodes.stream().collect(Collectors.groupingBy(k -> k.getDbIndex()));
             Map<Integer, List<Partition>> tableIndexToNode = indexDataNodes.stream().collect(Collectors.groupingBy(k -> k.getTableIndex()));
             return new AutoFunction(dbNum, tableNum, dbMethod, tableMethod, dbShardingKeys, tableShardingKeys, finalDbFunction, finalTableFunction, storeNum) {
+                @Override
+                public ShardingTableType getShardingTableType() {
+                    return shardingTableType;
+                }
+
                 @Override
                 public List<Partition> scanAll() {
                     return ImmutableList.copyOf(indexDataNodes);

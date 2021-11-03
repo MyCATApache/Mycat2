@@ -18,6 +18,7 @@ import com.alibaba.druid.sql.SQLUtils;
 import io.mycat.Partition;
 import io.mycat.MycatException;
 import io.mycat.RangeVariable;
+import io.mycat.ShardingTableType;
 import io.mycat.util.CollectionUtil;
 
 import java.text.MessageFormat;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction {
 
     private String columnName;
+    private ShardingTableType shardingTableType;
 
     public static int[] toIntArray(String string) {
         String[] strs = io.mycat.util.SplitUtil.split(string, ',', true);
@@ -85,6 +87,7 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
         super.callInit(tableHandler, properties, ranges);
         this.columnName = Objects.requireNonNull(
                 properties.get("columnName"), "need columnName").toString();
+
     }
 
     @Override
@@ -183,5 +186,13 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
     @Override
     public boolean isShardingTableKey(String name) {
         return this.columnName.equalsIgnoreCase(name);
+    }
+
+    @Override
+    public ShardingTableType getShardingTableType() {
+        if (this.shardingTableType == null) {
+            this.shardingTableType = ShardingTableType.compute(this.calculate(Collections.emptyMap()));
+        }
+        return shardingTableType;
     }
 }

@@ -17,6 +17,7 @@ package io.mycat.router;
 import com.alibaba.druid.sql.SQLUtils;
 import io.mycat.Partition;
 import io.mycat.RangeVariable;
+import io.mycat.ShardingTableType;
 
 import java.util.Collection;
 import java.util.List;
@@ -87,4 +88,6 @@ public abstract class CustomRuleFunction {
     }
 
     public abstract String getErUniqueID();
+
+    public abstract ShardingTableType getShardingTableType();
 }

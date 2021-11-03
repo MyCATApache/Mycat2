@@ -50,6 +50,7 @@ public class TableHandlerMocks {
             };
             partitions.add(partition);
         }
+        ShardingTableType shardingTableType = ShardingTableType.compute(partitions);
         return new ShardingTableHandler() {
 
             @Override
@@ -64,7 +65,7 @@ public class TableHandlerMocks {
 
             @Override
             public ShardingTableType shardingType() {
-                return ShardingTableType.compute(dataNodes());
+                return shardingTableType;
             }
 
             @Override

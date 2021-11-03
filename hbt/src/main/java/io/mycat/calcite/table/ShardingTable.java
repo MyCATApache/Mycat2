@@ -68,7 +68,7 @@ public class ShardingTable implements ShardingTableHandler {
 
     @Override
     public ShardingTableType shardingType() {
-        return ShardingTableType.compute(dataNodes());
+        return function().getShardingTableType();
     }
 
     @Override
