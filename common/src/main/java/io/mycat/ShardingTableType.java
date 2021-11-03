@@ -15,8 +15,21 @@
 
 package io.mycat;
 
+import java.util.Collection;
+
 public enum ShardingTableType {
     SHARDING_INSTANCE_SINGLE_TABLE,
     SINGLE_INSTANCE_SHARDING_TABLE,
     SHARDING_INSTANCE_SHARDING_TABLE,
+    ;
+    public static ShardingTableType compute(Collection<Partition> partitions){
+        ShardingTableType type = SHARDING_INSTANCE_SHARDING_TABLE;
+        if (partitions.stream().map(i -> i.getTargetName()).distinct().count()==1){
+            return SINGLE_INSTANCE_SHARDING_TABLE;
+        }
+        if(partitions.stream().map(i -> i.getSchema() + i.getTable()).distinct().count()==1){
+            return SHARDING_INSTANCE_SINGLE_TABLE;
+        }
+        return type;
+    }
 }
