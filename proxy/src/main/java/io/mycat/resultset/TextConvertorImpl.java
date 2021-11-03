@@ -93,7 +93,7 @@ public enum TextConvertorImpl implements TextConvertor {
     @Override
     public byte[] convertBlob(Blob v) {
         try {
-            return v.getBytes(0, (int) v.length());
+            return v.getBytes(1, (int) v.length());
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
