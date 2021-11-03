@@ -15,13 +15,23 @@
 
 package io.mycat;
 
+import lombok.Getter;
+
 import java.util.Collection;
 
+
+@Getter
 public enum ShardingTableType {
-    SHARDING_INSTANCE_SINGLE_TABLE,
-    SINGLE_INSTANCE_SHARDING_TABLE,
-    SHARDING_INSTANCE_SHARDING_TABLE,
+    SHARDING_INSTANCE_SINGLE_TABLE(true),
+    SINGLE_INSTANCE_SHARDING_TABLE(false),
+    SHARDING_INSTANCE_SHARDING_TABLE(false),
     ;
+
+    private boolean singleTablePerInstance;
+
+    ShardingTableType(boolean singleTablePerInstance) {
+        this.singleTablePerInstance = singleTablePerInstance;
+    }
 
     public static ShardingTableType DEFAULT = ShardingTableType.SHARDING_INSTANCE_SHARDING_TABLE;
 
@@ -36,5 +46,15 @@ public enum ShardingTableType {
             return SHARDING_INSTANCE_SINGLE_TABLE;
         }
         return SHARDING_INSTANCE_SHARDING_TABLE;
+    }
+
+    /**
+     * when it ensures only a target(allow partitions),when right only a table
+     *
+     * @param right
+     * @return
+     */
+    public boolean joinSameTarget(ShardingTableType right) {
+        return right.isSingleTablePerInstance();
     }
 }
