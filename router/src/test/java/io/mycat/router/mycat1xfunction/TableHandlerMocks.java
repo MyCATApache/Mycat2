@@ -63,6 +63,11 @@ public class TableHandlerMocks {
             }
 
             @Override
+            public ShardingTableType shardingType() {
+                return ShardingTableType.compute(dataNodes());
+            }
+
+            @Override
             public List<SimpleColumnInfo> getColumns() {
                 return null;
             }

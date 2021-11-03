@@ -67,6 +67,11 @@ public class ShardingTable implements ShardingTableHandler {
     }
 
     @Override
+    public ShardingTableType shardingType() {
+        return ShardingTableType.compute(dataNodes());
+    }
+
+    @Override
     public List<SimpleColumnInfo> getColumns() {
         return logicTable.getRawColumns();
     }
