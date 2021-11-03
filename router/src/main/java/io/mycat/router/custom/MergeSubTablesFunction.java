@@ -165,7 +165,7 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
 
     @Override
     public boolean isShardingKey(String name) {
-        return this.columnName.equals(name);
+        return isShardingTableKey(name);
     }
 
     @Override
@@ -175,7 +175,12 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
 
     @Override
     public boolean isShardingTableKey(String name) {
-        return columnName.equals(SQLUtils.normalize(name));
+        return columnName.equalsIgnoreCase(SQLUtils.normalize(name));
+    }
+
+    @Override
+    public boolean isShardingTargetKey(String name) {
+        return isShardingTableKey(name);
     }
 
     @Override

@@ -83,6 +83,8 @@ public abstract class CustomRuleFunction {
 
     public abstract boolean isShardingTableKey(String name);
 
+    public abstract boolean isShardingTargetKey(String name);
+
     public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
         return false;
     }

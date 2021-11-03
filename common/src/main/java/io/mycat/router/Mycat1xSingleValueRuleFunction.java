@@ -195,4 +195,9 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
         }
         return shardingTableType;
     }
+
+    @Override
+    public boolean isShardingTargetKey(String name) {
+        return isShardingTableKey(name);
+    }
 }

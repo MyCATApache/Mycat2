@@ -202,4 +202,18 @@ public abstract class AutoFunction extends CustomRuleFunction {
     public String getErUniqueID() {
         return name;
     }
+
+    @Override
+    public boolean isShardingTargetKey(String name) {
+        switch (getShardingTableType()) {
+            case SHARDING_INSTANCE_SINGLE_TABLE:
+                return isShardingDbKey(name);
+            case SINGLE_INSTANCE_SHARDING_TABLE:
+                return isShardingTableKey(name);
+            case SHARDING_INSTANCE_SHARDING_TABLE:
+                return isShardingDbKey(name) || isShardingTableKey(name);
+            default:
+                throw new IllegalStateException("Unexpected value: " + getShardingTableType());
+        }
+    }
 }
