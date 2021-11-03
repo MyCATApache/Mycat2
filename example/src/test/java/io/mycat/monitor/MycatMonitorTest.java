@@ -53,7 +53,7 @@ public class MycatMonitorTest implements MycatTest {
         try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT);) {
             String sql = " select * FROM `performance_schema`.`accounts`; ";
             for (int i = 0; i < 1000; i++) {
-                JdbcUtils.executeQuery(mySQLConnection, sql,Collections.emptyList());
+                JdbcUtils.executeQuery(mySQLConnection, sql, Collections.emptyList());
             }
         }
         DatabaseInstanceEntry.DatabaseInstanceMap f = fetch(url, tClass);
@@ -100,6 +100,25 @@ public class MycatMonitorTest implements MycatTest {
     public void test4() {
         try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT);
              Connection prototype = getMySQLConnection(DB1);) {
+            execute(prototype, "create database if not exists mycat");
+            execute(prototype, "CREATE TABLE if not exists mycat.`sql_log` (\n" +
+                    "\t`instanceId` bigint(20) DEFAULT NULL,\n" +
+                    "\t`user` varchar(64) DEFAULT NULL,\n" +
+                    "\t`connectionId` bigint(20) DEFAULT NULL,\n" +
+                    "\t`ip` varchar(22) DEFAULT NULL,\n" +
+                    "\t`port` bigint(20) DEFAULT NULL,\n" +
+                    "\t`traceId` varchar(22) NOT NULL,\n" +
+                    "\t`hash` varchar(22) DEFAULT NULL,\n" +
+                    "\t`sqlType` varchar(22) DEFAULT NULL,\n" +
+                    "\t`sql` longtext,\n" +
+                    "\t`transactionId` varchar(22) DEFAULT NULL,\n" +
+                    "\t`sqlTime` bigint(20) DEFAULT NULL,\n" +
+                    "\t`responseTime` datetime DEFAULT NULL,\n" +
+                    "\t`affectRow` int(11) DEFAULT NULL,\n" +
+                    "\t`result` tinyint(1) DEFAULT NULL,\n" +
+                    "\t`externalMessage` tinytext,\n" +
+                    "\tPRIMARY KEY (`traceId`)\n" +
+                    ") ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;");
             deleteData(prototype, "mycat", "sql_log");
             List<Map<String, Object>> maps = JdbcUtils.executeQuery(mySQLConnection, "/*+mycat:getSqlTimeFilter{} */", Collections.emptyList());
             Object orginalValue = maps.get(0).get("value");
@@ -108,12 +127,12 @@ public class MycatMonitorTest implements MycatTest {
             Assert.assertEquals(0, count(prototype, "mycat", "sql_log"));
 
             JdbcUtils.execute(mySQLConnection, "/*+mycat:setSqlTimeFilter{value:0} */", Collections.emptyList());
-            maps=  JdbcUtils.executeQuery(mySQLConnection, "/*+mycat:getSqlTimeFilter{} */", Collections.emptyList());
-            Assert.assertEquals("[{value=0}]",maps.toString());
-            JdbcUtils.executeQuery(mySQLConnection, sql,Collections.emptyList());
+            maps = JdbcUtils.executeQuery(mySQLConnection, "/*+mycat:getSqlTimeFilter{} */", Collections.emptyList());
+            Assert.assertEquals("[{value=0}]", maps.toString());
+            JdbcUtils.executeQuery(mySQLConnection, sql, Collections.emptyList());
             Thread.sleep(1000);
             long count = count(prototype, "mycat", "sql_log");
-            Assert.assertEquals(1,count);
+            Assert.assertEquals(1, count);
             System.out.println();
         }
 
