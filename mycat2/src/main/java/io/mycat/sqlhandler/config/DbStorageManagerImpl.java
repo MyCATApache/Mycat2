@@ -200,6 +200,12 @@ public class DbStorageManagerImpl extends AbstractStorageManagerImpl {
                 Map<String, JdbcDataSource> datasourceInfo = jdbcConnectionManager.getDatasourceInfo();
                 if (datasourceInfo.containsKey(datasourceConfig.getName())) {
                     jdbcDataSource = datasourceInfo.get(datasourceConfig.getName());
+                    try (Connection testConnection = jdbcDataSource.getDataSource().getConnection()) {
+
+                    } catch (Throwable throwable) {
+                        jdbcDataSource = null;
+                    }
+
                 }
             }
             if (jdbcDataSource == null) {
