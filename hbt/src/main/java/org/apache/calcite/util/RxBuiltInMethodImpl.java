@@ -222,11 +222,12 @@ public class RxBuiltInMethodImpl {
         }
     }
 
-    public static Observable<Object[]> enumerableOrObservableConcat(Object left,Object right){
-        if (left instanceof  Enumerable && right instanceof Enumerable){
+    public static Enumerable<Object[]> enumerableOrObservableConcat(Object left, Object right) {
+
+        if (left instanceof Enumerable && right instanceof Enumerable) {
             Enumerable enumerable = ((Enumerable<?>) left).concat((Enumerable) right);
-            return toObservable(enumerable);
+            return enumerable;
         }
-       return toObservable(left).concatWith(toObservable(right));
+        return toEnumerable(left).concat(toEnumerable(right));
     }
 }
