@@ -306,7 +306,7 @@ public enum MycatdbCommand {
                 text)) {
             return true;
         }
-        if (Objects.equals("SHOW /*!50002 GLOBAL */ STATUS",text)){
+        if (Objects.equals("SHOW /*!50002 GLOBAL */ STATUS", text)) {
             return true;
         }
         return false;
@@ -338,7 +338,7 @@ public enum MycatdbCommand {
                 for (MycatHint.Function function : mycatHint.getFunctions()) {
                     String name = function.getName();
                     switch (name.toUpperCase()) {
-                        case "MERGE_UNION_SIZE":{
+                        case "MERGE_UNION_SIZE": {
                             MycatHint.Argument argument = function.getArguments().get(0);
                             SQLNumericLiteralExpr value = (SQLNumericLiteralExpr) argument.getValue();
                             map.put("MERGE_UNION_SIZE", value.getNumber());
@@ -397,53 +397,58 @@ public enum MycatdbCommand {
         String sql = sqlStatement.toString();
         SQLType sqlType = SQLParserUtils.getSQLType(sql, DbType.mysql);
         MycatSQLLogMonitor logMonitor = MetaClusterCurrent.wrapper(MycatSQLLogMonitor.class);
-        LogEntryHolder logRecord = logMonitor.startRecord(dataContext, null, sqlType, sql);
-
         //////////////////////////////////////////////////////////////////////////////////////
         dataContext.putProcessStateMap(Collections.emptyMap());
         sqlStatement.setAfterSemi(false);//remove semi
         boolean existSqlResultSetService = MetaClusterCurrent.exist(SqlResultSetService.class);
         //////////////////////////////////apply transaction///////////////////////////////////
         TransactionSession transactionSession = dataContext.getTransactionSession();
-        Future future = transactionSession.openStatementState().flatMap(unused -> {
-            //////////////////////////////////////////////////////////////////////////////////////
-            if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
-                SqlResultSetService sqlResultSetService
-                        = MetaClusterCurrent.wrapper(SqlResultSetService.class);
-                Optional<Observable<MysqlPayloadObject>> baseIteratorOptional = sqlResultSetService.get((SQLSelectStatement) sqlStatement);
-                if (baseIteratorOptional.isPresent()) {
-                    return receiver.sendResultSet(baseIteratorOptional.get());
-                }
-            }
-            Map<String, Object> hintRoute = getHintRoute(sqlStatement);
-            if (!hintRoute.isEmpty()) {
-                dataContext.putProcessStateMap(hintRoute);
-                Object targetArray = hintRoute.getOrDefault("TARGET", null);
-                if (targetArray != null) {
-                    String sqlText = sqlStatement.toString();
-                    boolean select = !SqlTypeUtil.isDml(sqlType);
-                    if (!(targetArray instanceof List)) {
-                        targetArray = Collections.singletonList(targetArray.toString());
+        Future future = transactionSession.openStatementState();
+        LogEntryHolder logRecord = logMonitor.startRecord(dataContext, null, sqlType, sql);
+        future = future.flatMap(unused -> {
+            try {
+                //////////////////////////////////////////////////////////////////////////////////////
+                if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
+                    SqlResultSetService sqlResultSetService
+                            = MetaClusterCurrent.wrapper(SqlResultSetService.class);
+                    Optional<Observable<MysqlPayloadObject>> baseIteratorOptional = sqlResultSetService.get((SQLSelectStatement) sqlStatement);
+                    if (baseIteratorOptional.isPresent()) {
+                        return receiver.sendResultSet(baseIteratorOptional.get());
                     }
-                    if (select) {
-                        return receiver.proxySelect((List) targetArray, sqlText);
-                    }
-                    return receiver.proxyUpdate((List) targetArray, sqlText);
                 }
-            }
-            SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
+                Map<String, Object> hintRoute = getHintRoute(sqlStatement);
+                if (!hintRoute.isEmpty()) {
+                    dataContext.putProcessStateMap(hintRoute);
+                    Object targetArray = hintRoute.getOrDefault("TARGET", null);
+                    if (targetArray != null) {
+                        String sqlText = sqlStatement.toString();
+                        boolean select = !SqlTypeUtil.isDml(sqlType);
+                        if (!(targetArray instanceof List)) {
+                            targetArray = Collections.singletonList(targetArray.toString());
+                        }
+                        if (select) {
+                            return receiver.proxySelect((List) targetArray, sqlText);
+                        }
+                        return receiver.proxyUpdate((List) targetArray, sqlText);
+                    }
+                }
+                SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
 
-            Class aClass = sqlStatement.getClass();
-            SQLHandler instance = sqlHandlerMap.getInstance(aClass);
-            if (instance != null) {
-                return instance.execute(request, dataContext, receiver);
-            } else {
-                if (sqlStatement instanceof MySqlShowStatement) {
-                    return receiver.proxySelectToPrototype(sqlStatement.toString());
+                Class aClass = sqlStatement.getClass();
+                SQLHandler instance = sqlHandlerMap.getInstance(aClass);
+                if (instance != null) {
+                    return instance.execute(request, dataContext, receiver);
                 } else {
-                    logger.warn("ignore SQL statement:{}", sqlStatement);
-                    return receiver.sendOk();
+                    if (sqlStatement instanceof MySqlShowStatement) {
+                        return receiver.proxySelectToPrototype(sqlStatement.toString());
+                    } else {
+                        logger.warn("ignore SQL statement:{}", sqlStatement);
+                        return receiver.sendOk();
+                    }
                 }
+            } catch (Throwable throwable) {
+                logger.error("",throwable);
+                return Future.failedFuture(throwable);
             }
         });
 

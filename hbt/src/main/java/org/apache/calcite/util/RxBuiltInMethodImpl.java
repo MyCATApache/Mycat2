@@ -221,4 +221,12 @@ public class RxBuiltInMethodImpl {
             throw new UnsupportedOperationException();
         }
     }
+
+    public static Observable<Object[]> enumerableOrObservableConcat(Object left,Object right){
+        if (left instanceof  Enumerable && right instanceof Enumerable){
+            Enumerable enumerable = ((Enumerable<?>) left).concat((Enumerable) right);
+            return toObservable(enumerable);
+        }
+       return toObservable(left).concatWith(toObservable(right));
+    }
 }
