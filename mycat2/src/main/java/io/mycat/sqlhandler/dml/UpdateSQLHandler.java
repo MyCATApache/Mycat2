@@ -21,6 +21,7 @@ import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.*;
+import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.plan.PlanImplementor;
@@ -56,6 +57,10 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
             String schemaName = Optional.ofNullable(tableSource.getSchema() == null ? dataContext.getDefaultSchema() : tableSource.getSchema())
                     .map(i -> SQLUtils.normalize(i)).orElse(null);
             String tableName = SQLUtils.normalize(tableSource.getTableName());
+            if (schemaName == null) {
+                return receiver.sendError("unknown schema", MySQLErrorCode.ER_UNKNOWN_ERROR);
+            }
+            tableSource.setSchema(schemaName);
             SchemaHandler schemaHandler;
             MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
             Optional<NameMap<SchemaHandler>> handlerMapOptional = Optional.ofNullable(metadataManager.getSchemaMap());

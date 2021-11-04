@@ -9,13 +9,14 @@ import org.junit.Before;
 import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 @NotThreadSafe
@@ -117,6 +118,7 @@ public class AssembleTest implements MycatTest {
 
         }
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
+
 
 
             List<Map<String, Object>> maps = executeQuery(mycatConnection,
@@ -532,6 +534,100 @@ public class AssembleTest implements MycatTest {
                     Assert.assertTrue("[{locked=1}]".equals(mycatMaps.toString()) || "[{locked=true}]".equals(mycatMaps.toString()));
                 }
             }
+        }
+    }
+
+
+    @Test
+    public void testReplaceStatement() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+             Connection mysql3306 = getMySQLConnection(DB1);
+             Connection mysql3307 = getMySQLConnection(DB2);) {
+            execute(mycatConnection, RESET_CONFIG);
+            execute(mysql3306, "drop database if exists db1");
+            execute(mysql3306, "drop database if exists db1_0");
+            execute(mysql3306, "drop database if exists db1_1");
+
+            execute(mysql3307, "drop database if exists db1");
+            execute(mysql3307, "drop database if exists db1_0");
+            execute(mysql3307, "drop database if exists db1_1");
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("newDs",
+                            DB1));
+            execute(mycatConnection, CreateClusterHint.create("c0", Arrays.asList("newDs"), Collections.emptyList()));
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("newDs2",
+                            DB2));
+            execute(mycatConnection, CreateClusterHint.create("c1", Arrays.asList("newDs2"), Collections.emptyList()));
+
+        }
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+             Connection mysql3306 = getMySQLConnection(DB1);
+             Connection mysql3307 = getMySQLConnection(DB2);) {
+            execute(mycatConnection, "CREATE DATABASE db1");
+            execute(mycatConnection, "USE `db1`;");
+            execute(mycatConnection, "CREATE TABLE `travelrecord` (\n" +
+                    "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                    "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                    "  `traveldate` date DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int DEFAULT NULL,\n" +
+                    "  `blob` longblob,\n" +
+                    "  PRIMARY KEY (`id`),\n" +
+                    "  KEY `id` (`id`)\n" +
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
+            deleteData(mycatConnection, "db1", "travelrecord");
+
+            execute(mycatConnection, "REPLACE INTO `db1`.`travelrecord` (`blob`, `days`, `fee`, `traveldate`, `user_id`) VALUES (NULL, 3, 3, timestamp('2021-02-21 12:23:42.058156'), 'tom')");
+
+            Assert.assertTrue(
+                    hasData(mycatConnection, "db1", "travelrecord")
+            );
+
+            execute(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
+                    "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                    "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                    "  `traveldate` date DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int DEFAULT NULL,\n" +
+                    "  `blob` longblob,\n" +
+                    "  PRIMARY KEY (`id`),\n" +
+                    "  KEY `id` (`id`)\n" +
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 BROADCAST;");
+
+            deleteData(mycatConnection, "db1", "travelrecord");
+
+            execute(mycatConnection, "REPLACE INTO `db1`.`travelrecord` (`blob`, `days`, `fee`, `traveldate`, `user_id`) VALUES (NULL, 3, 3, timestamp('2021-02-21 12:23:42.058156'), 'tom')");
+
+            Assert.assertTrue(
+                    hasData(mycatConnection, "db1", "travelrecord")
+            );
+            Assert.assertTrue(
+                    hasData(mysql3306, "db1", "travelrecord")
+            );
+            Assert.assertTrue(
+                    hasData(mysql3307, "db1", "travelrecord")
+            );
+
+            execute(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
+                    "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                    "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                    "  `traveldate` date DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int DEFAULT NULL,\n" +
+                    "  `blob` longblob,\n" +
+                    "  PRIMARY KEY (`id`),\n" +
+                    "  KEY `id` (`id`)\n" +
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
+                    + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
+
+            deleteData(mycatConnection, "db1", "travelrecord");
+
+            execute(mycatConnection, "REPLACE INTO `travelrecord` (`blob`, `days`, `fee`, `traveldate`, `user_id`) VALUES (NULL, 3, 3, timestamp('2021-02-21 12:23:42.058156'), 'tom')");
+
+            Assert.assertTrue(
+                    hasData(mycatConnection, "db1", "travelrecord")
+            );
         }
     }
 
