@@ -18,6 +18,11 @@ package io.mycat;
 import lombok.Getter;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 @Getter
@@ -35,14 +40,15 @@ public enum ShardingTableType {
 
     public static ShardingTableType DEFAULT = ShardingTableType.SHARDING_INSTANCE_SHARDING_TABLE;
 
-    public static ShardingTableType compute(Collection<Partition> partitions) {
+    public static ShardingTableType computeByName(Collection<Partition> partitions) {
         if (partitions == null || partitions.isEmpty()) {
             return SHARDING_INSTANCE_SHARDING_TABLE;
         }
         if (partitions.stream().map(i -> i.getTargetName()).distinct().count() == 1) {
             return SINGLE_INSTANCE_SHARDING_TABLE;
         }
-        if (partitions.stream().map(i -> i.getSchema() + i.getTable()).distinct().count() == 1) {
+        Map<String, Set<String>> collect = partitions.stream().collect(Collectors.groupingBy(k -> k.getTargetName(), Collectors.mapping(i -> i.getSchema() + i.getTable(), Collectors.toSet())));
+        if (collect.entrySet().stream().allMatch(i -> i.getValue().size() == 1)) {
             return SHARDING_INSTANCE_SINGLE_TABLE;
         }
         return SHARDING_INSTANCE_SHARDING_TABLE;

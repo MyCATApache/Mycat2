@@ -56,6 +56,7 @@ public class MetadataManager {
 
     @Getter
     private final Map<String, List<ShardingTable>> erTableGroup = new HashMap<>();
+    private final  Map<String, Map<String, Partition>> targetTableGroup = new HashMap<>();
     private final PrototypeService prototypeService;
 
 
@@ -157,6 +158,48 @@ public class MetadataManager {
         Map<String, List<ShardingTable>> res = shardingTables.collect(Collectors.groupingBy(i -> i.getShardingFuntion().getErUniqueID()));
         this.erTableGroup.clear();
         this.erTableGroup.putAll(res);
+
+        Map<String, Map<String, Partition>> resTargetMap = recomputeTargetMap();
+        this.targetTableGroup.clear();
+        this.targetTableGroup.putAll(resTargetMap);
+    }
+
+    @NotNull
+    private Map<String, Map<String, Partition>> recomputeTargetMap() {
+        Map<String,Map<String,Partition>> resTargetMap = new HashMap<>();
+        Iterator<TableHandler> iterator = this.schemaMap.values().stream().map(i -> i.logicTables().values()).flatMap(i -> i.stream()).iterator();
+
+        while (iterator.hasNext()){
+            TableHandler tableHandler = iterator.next();
+            switch (tableHandler.getType()) {
+                case SHARDING:
+                    ShardingTable shardingTable = (ShardingTable) tableHandler;
+                    if (shardingTable.shardingType() == ShardingTableType.SHARDING_INSTANCE_SINGLE_TABLE) {
+                        for (Partition backend : shardingTable.getBackends()) {
+                            Map<String, Partition> pairs = resTargetMap.computeIfAbsent(backend.getTargetName(), s -> new HashMap<>());
+                            pairs.put(shardingTable.getUniqueName(), backend);
+                        }
+                    }
+                    break;
+                case GLOBAL:
+                    GlobalTable globalTable = (GlobalTable) tableHandler;
+                    for (Partition partition : globalTable.getGlobalDataNode()) {
+                        Map<String, Partition> pairs = resTargetMap.computeIfAbsent(partition.getTargetName(), s -> new HashMap<>());
+                        pairs.put(globalTable.getUniqueName(), partition);
+                    }
+
+                    break;
+                case NORMAL:
+                    NormalTable normalTable = (NormalTable) tableHandler;
+                    Partition partition = normalTable.getDataNode();
+                    Map<String, Partition> pairs = resTargetMap.computeIfAbsent(partition.getTargetName(), s -> new HashMap<>());
+                    pairs.put(normalTable.getUniqueName(), partition);
+                    break;
+                case CUSTOM:
+                    break;
+            }
+        }
+        return resTargetMap;
     }
 
     public void addSchema(LogicSchemaConfig value) {

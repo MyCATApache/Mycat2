@@ -24,6 +24,7 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.gsi.GSIService;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.querycondition.KeyMeta;
+import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.CreateTableUtils;
@@ -70,6 +71,7 @@ public class ShardingTable implements ShardingTableHandler {
     public ShardingTableType shardingType() {
         return function().getShardingTableType();
     }
+
 
     @Override
     public List<SimpleColumnInfo> getColumns() {

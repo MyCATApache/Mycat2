@@ -23,7 +23,6 @@ import io.mycat.util.CollectionUtil;
 
 import java.text.MessageFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * @author mycat
@@ -191,7 +190,7 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
     @Override
     public ShardingTableType getShardingTableType() {
         if (this.shardingTableType == null) {
-            this.shardingTableType = ShardingTableType.compute(this.calculate(Collections.emptyMap()));
+            this.shardingTableType = ShardingTableType.computeByName(this.calculate(Collections.emptyMap()));
         }
         return shardingTableType;
     }

@@ -413,7 +413,7 @@ public class AutoFunctionFactory {
                 indexDataNodes.add(backendTableInfo);
             }
         }
-        ShardingTableType shardingTableType = ShardingTableType.compute(indexDataNodes);
+        ShardingTableType shardingTableType = ShardingTableType.computeByName(indexDataNodes);
         if (flattenMapping) {
             Map<Integer, List<Partition>> dbIndexToNode = indexDataNodes.stream().collect(Collectors.groupingBy(k -> k.getDbIndex()));
             return new AutoFunction(dbNum, tableNum, dbMethod, tableMethod, dbShardingKeys, tableShardingKeys, finalDbFunction, finalTableFunction, storeNum) {

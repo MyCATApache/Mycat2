@@ -21,6 +21,7 @@ import io.mycat.TableHandler;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public interface ShardingTableHandler extends TableHandler {
 
@@ -29,6 +30,10 @@ public interface ShardingTableHandler extends TableHandler {
     List<Partition> dataNodes();
 
     ShardingTableType shardingType();
+
+    default  public List<Partition> getPartitionsByTargetName(String name) {
+        return dataNodes().stream().filter(i -> i.getTargetName().equals(name)).collect(Collectors.toList());
+    }
 
     @Override
     List<SimpleColumnInfo> getColumns();
