@@ -82,6 +82,11 @@ public  class DateSubFunction extends SqlFunction {
                 Method dateAdd = Types.lookupMethod(MycatBuiltInMethodImpl.class, "dateSubString", String.class, Period.class);
                 return Expressions.call(dateAdd,one,second);
             }
+            if (one.getType() == LocalDateTime.class&&second.getType() == Duration.class&&
+                    SqlTypeName.STRING_TYPES.contains(call.getType().getSqlTypeName())){
+                Method dateAdd = Types.lookupMethod(MycatBuiltInMethodImpl.class, "dateSubString", String.class, Duration.class);
+                return Expressions.call(dateAdd,one,second);
+            }
         throw new UnsupportedOperationException("unsupport:"+call);
         }
       };

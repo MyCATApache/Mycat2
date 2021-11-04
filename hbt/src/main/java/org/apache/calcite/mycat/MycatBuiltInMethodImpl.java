@@ -16,6 +16,10 @@ import java.time.temporal.WeekFields;
 
 public class MycatBuiltInMethodImpl {
 
+    public static String dateSubString(LocalDateTime date, java.time.Duration sub) {
+        return timestampToString(date.minus(sub));
+    }
+
     public static String dateSubString(LocalDateTime date, java.time.Period sub) {
         return timestampToString(date.minus(sub));
     }
