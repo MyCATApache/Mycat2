@@ -53,6 +53,7 @@ public class MycatUnion extends Union implements MycatRel {
             boolean all) {
         super(cluster, Objects.requireNonNull(traitSet).replace(MycatConvention.INSTANCE), inputs, all);
     }
+
     public MycatUnion(RelInput input) {
         super(input);
     }
@@ -102,7 +103,7 @@ public class MycatUnion extends Union implements MycatRel {
                 unionExp = childExp;
             } else {
                 unionExp = all
-                        ? Expressions.call(unionExp, RxBuiltInMethod.ENUMERABLE_OBSERVABLE_CONCAT.method, childExp)
+                        ? Expressions.call(RxBuiltInMethod.ENUMERABLE_OBSERVABLE_CONCAT.method, unionExp, childExp)
                         : Expressions.call(unionExp,
                         BuiltInMethod.UNION.method,
                         Expressions.list(childExp)
@@ -134,9 +135,9 @@ public class MycatUnion extends Union implements MycatRel {
             EnumerableRel input = (EnumerableRel) ord.e;
             results.add(implementor.visitChild(this, ord.i, input, pref));
         }
-        boolean toEnumerate = !results.stream().allMatch(result->result.block.getType().getTypeName().contains("Observable"));
+        boolean toEnumerate = !results.stream().allMatch(result -> result.block.getType().getTypeName().contains("Observable"));
 
-        if (toEnumerate){
+        if (toEnumerate) {
             for (Ord<Result> ord : Ord.zip(results)) {
                 Result result = ord.e;
                 Expression childExp =
@@ -147,7 +148,7 @@ public class MycatUnion extends Union implements MycatRel {
                     unionExp = childExp;
                 } else {
                     unionExp = all
-                            ? Expressions.call(unionExp, RxBuiltInMethod.ENUMERABLE_OBSERVABLE_CONCAT.method, childExp)
+                            ? Expressions.call(RxBuiltInMethod.ENUMERABLE_OBSERVABLE_CONCAT.method, unionExp, childExp)
                             : Expressions.call(unionExp,
                             BuiltInMethod.UNION.method,
                             Expressions.list(childExp)
@@ -161,7 +162,7 @@ public class MycatUnion extends Union implements MycatRel {
                             getRowType(),
                             pref.prefer(JavaRowFormat.ARRAY));
             return implementor.result(physType, builder.toBlock());
-        }else {
+        } else {
             for (Ord<Result> ord : Ord.zip(results)) {
                 Result result = ord.e;
                 Expression childExp =
@@ -170,8 +171,8 @@ public class MycatUnion extends Union implements MycatRel {
                                 result.block));
                 if (unionExp == null) {
                     unionExp = childExp;
-                } else  {
-                    unionExp = Expressions.call(RxBuiltInMethod.OBSERVABLE_UNION_ALL.method,unionExp, childExp);
+                } else {
+                    unionExp = Expressions.call(RxBuiltInMethod.OBSERVABLE_UNION_ALL.method, unionExp, childExp);
                 }
             }
             builder.add(unionExp);
