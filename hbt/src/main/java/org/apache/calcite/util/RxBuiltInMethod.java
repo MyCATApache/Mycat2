@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.ExtendedEnumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Predicate1;
@@ -23,6 +24,7 @@ public enum RxBuiltInMethod {
     OBSERVABLE_FILTER(RxBuiltInMethodImpl.class,
             "filter", Observable.class, Predicate1.class),
     OBSERVABLE_UNION_ALL(RxBuiltInMethodImpl.class, "unionAll", Observable.class, Observable.class),
+    ENUMERABLE_OBSERVABLE_CONCAT(RxBuiltInMethodImpl.class, "enumerableOrObservableConcat", Object.class,Object.class),
     OBSERVABLE_TOP_N(RxBuiltInMethodImpl.class, "topN", Observable.class, Comparator.class, long.class, long.class),
     OBSERVABLE_SORT(RxBuiltInMethodImpl.class, "sort", Observable.class, Comparator.class),
     OBSERVABLE_LIMIT(RxBuiltInMethodImpl.class, "limit", Observable.class, long.class),
