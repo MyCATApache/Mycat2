@@ -1418,4 +1418,12 @@ public class UserCaseTest implements MycatTest {
         }
     }
 
+    @Test
+    public void case599_1() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
+            List<Map<String, Object>> maps1 = executeQuery(mycatConnection, "select DATE_SUB(NOW(), INTERVAL 30 MINUTE)");
+            System.out.println();
+        }
+    }
+
 }
