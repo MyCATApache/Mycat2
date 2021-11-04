@@ -102,7 +102,7 @@ public class MycatUnion extends Union implements MycatRel {
                 unionExp = childExp;
             } else {
                 unionExp = all
-                        ? Expressions.call(unionExp, BuiltInMethod.CONCAT.method, childExp)
+                        ? Expressions.call(unionExp, RxBuiltInMethod.ENUMERABLE_OBSERVABLE_CONCAT.method, childExp)
                         : Expressions.call(unionExp,
                         BuiltInMethod.UNION.method,
                         Expressions.list(childExp)
@@ -121,7 +121,7 @@ public class MycatUnion extends Union implements MycatRel {
 
     @Override
     public boolean isSupportStream() {
-        return false;
+        return all;
     }
 
     @Override
@@ -147,7 +147,7 @@ public class MycatUnion extends Union implements MycatRel {
                     unionExp = childExp;
                 } else {
                     unionExp = all
-                            ? Expressions.call(unionExp, BuiltInMethod.CONCAT.method, childExp)
+                            ? Expressions.call(unionExp, RxBuiltInMethod.ENUMERABLE_OBSERVABLE_CONCAT.method, childExp)
                             : Expressions.call(unionExp,
                             BuiltInMethod.UNION.method,
                             Expressions.list(childExp)
