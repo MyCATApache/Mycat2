@@ -9,19 +9,21 @@ import org.junit.Before;
 import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
 public class AssembleTest implements MycatTest {
     boolean init = false;
+
     @Before
     public void before() throws Exception {
         if (!init) {
@@ -118,7 +120,6 @@ public class AssembleTest implements MycatTest {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
 
 
-
             List<Map<String, Object>> maps = executeQuery(mycatConnection,
                     "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'db1' UNION SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'xxx' UNION SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = 'db1' ");
 
@@ -151,9 +152,9 @@ public class AssembleTest implements MycatTest {
                     ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
 
             execute(mycatConnection, "START TRANSACTION");
-            execute(mycatConnection,"INSERT INTO `db1`.`travelrecord` (`blob`, `days`, `fee`, `traveldate`, `user_id`) VALUES (NULL, 3, 3, timestamp('2021-02-21 12:23:42.058156'), 'tom')");
+            execute(mycatConnection, "INSERT INTO `db1`.`travelrecord` (`blob`, `days`, `fee`, `traveldate`, `user_id`) VALUES (NULL, 3, 3, timestamp('2021-02-21 12:23:42.058156'), 'tom')");
             execute(mycatConnection, "COMMIT");
-            deleteData(mycatConnection,"db1","travelrecord");
+            deleteData(mycatConnection, "db1", "travelrecord");
 
             execute(mycatConnection, "/*+ mycat:setSequence{\"name\":\"db1_travelrecord\",\"time\":true} */;");
 
@@ -270,7 +271,7 @@ public class AssembleTest implements MycatTest {
             Assert.assertTrue(
                     executeQuery(mycatConnection, "select LAST_INSERT_ID()").toString().contains("999999999")
             );
-            Assert.assertEquals(5,executeQuery(mycatConnection, "select * from db1.travelrecord").size());
+            Assert.assertEquals(5, executeQuery(mycatConnection, "select * from db1.travelrecord").size());
             execute(mycatConnection, "delete from db1.travelrecord");
             Assert.assertFalse(hasData(mycatConnection, "db1", "travelrecord"));
             execute(mycatConnection, "\n" +
@@ -310,19 +311,19 @@ public class AssembleTest implements MycatTest {
     protected void initCluster(Connection mycatConnection) throws Exception {
         execute(mycatConnection,
                 CreateDataSourceHint
-                        .create("dw0",DB1));
+                        .create("dw0", DB1));
 
         execute(mycatConnection,
                 CreateDataSourceHint
-                        .create("dr0",DB1));
+                        .create("dr0", DB1));
 
         execute(mycatConnection,
                 CreateDataSourceHint
-                        .create("dw1",DB2));
+                        .create("dw1", DB2));
 
         execute(mycatConnection,
                 CreateDataSourceHint
-                        .create("dr1",DB2));
+                        .create("dr1", DB2));
 
         execute(mycatConnection,
                 CreateClusterHint
@@ -505,14 +506,14 @@ public class AssembleTest implements MycatTest {
 
     @Test
     public void testBit() throws Exception {
-        try(Connection mycat = getMySQLConnection(DB_MYCAT);
-            Connection db1Connection = getMySQLConnection(DB1);){
+        try (Connection mycat = getMySQLConnection(DB_MYCAT);
+             Connection db1Connection = getMySQLConnection(DB1);) {
             mycat.setAutoCommit(true);
-            execute(mycat,"CREATE DATABASE IF NOT EXISTS db1 DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_general_ci;\n" );
+            execute(mycat, "CREATE DATABASE IF NOT EXISTS db1 DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_general_ci;\n");
             execute(mycat, "CREATE TABLE  if not exists db1.reader ( locked BIT) ENGINE=INNODB;");
-            deleteData(mycat,"db1","reader");
+            deleteData(mycat, "db1", "reader");
 
-            JdbcUtils.execute(mycat,"insert db1.reader (locked) VALUES (?)",Arrays.asList(true));
+            JdbcUtils.execute(mycat, "insert db1.reader (locked) VALUES (?)", Arrays.asList(true));
 
             List<Map<String, Object>> mycatMaps = executeQuery(mycat, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");
             List<Map<String, Object>> mysqlMaps = executeQuery(db1Connection, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");//[{locked=true}]
@@ -523,12 +524,106 @@ public class AssembleTest implements MycatTest {
             System.out.println("mysqlMaps");
             System.out.println(mysqlMaps);
 
-            if (mysqlMaps.equals(mycatMaps)){
+            if (mysqlMaps.equals(mycatMaps)) {
 
-            }else {
-                Assert.assertTrue( "[{locked=1}]".equals(mycatMaps.toString())||"[{locked=true}]".equals(mycatMaps.toString()));
+            } else {
+                Assert.assertTrue("[{locked=1}]".equals(mycatMaps.toString()) || "[{locked=true}]".equals(mycatMaps.toString()));
             }
         }
     }
+
+    @Test
+    public void testReplaceStatement() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+             Connection mysql3306 = getMySQLConnection(DB1);
+             Connection mysql3307 = getMySQLConnection(DB2);) {
+            execute(mycatConnection, RESET_CONFIG);
+            execute(mysql3306, "drop database if exists db1");
+            execute(mysql3306, "drop database if exists db1_0");
+            execute(mysql3306, "drop database if exists db1_1");
+
+            execute(mysql3307, "drop database if exists db1");
+            execute(mysql3307, "drop database if exists db1_0");
+            execute(mysql3307, "drop database if exists db1_1");
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("newDs",
+                            DB1));
+            execute(mycatConnection, CreateClusterHint.create("c0", Arrays.asList("newDs"), Collections.emptyList()));
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("newDs2",
+                            DB2));
+            execute(mycatConnection, CreateClusterHint.create("c1", Arrays.asList("newDs2"), Collections.emptyList()));
+
+        }
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+             Connection mysql3306 = getMySQLConnection(DB1);
+             Connection mysql3307 = getMySQLConnection(DB2);) {
+            execute(mycatConnection, "CREATE DATABASE db1");
+            execute(mycatConnection, "USE `db1`;");
+            execute(mycatConnection, "CREATE TABLE `travelrecord` (\n" +
+                    "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                    "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                    "  `traveldate` date DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int DEFAULT NULL,\n" +
+                    "  `blob` longblob,\n" +
+                    "  PRIMARY KEY (`id`),\n" +
+                    "  KEY `id` (`id`)\n" +
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
+            deleteData(mycatConnection, "db1", "travelrecord");
+
+            execute(mycatConnection, "REPLACE INTO `db1`.`travelrecord` (`blob`, `days`, `fee`, `traveldate`, `user_id`) VALUES (NULL, 3, 3, timestamp('2021-02-21 12:23:42.058156'), 'tom')");
+
+            Assert.assertTrue(
+                    hasData(mycatConnection, "db1", "travelrecord")
+            );
+
+            execute(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
+                    "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                    "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                    "  `traveldate` date DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int DEFAULT NULL,\n" +
+                    "  `blob` longblob,\n" +
+                    "  PRIMARY KEY (`id`),\n" +
+                    "  KEY `id` (`id`)\n" +
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 BROADCAST;");
+
+            deleteData(mycatConnection, "db1", "travelrecord");
+
+            execute(mycatConnection, "REPLACE INTO `db1`.`travelrecord` (`blob`, `days`, `fee`, `traveldate`, `user_id`) VALUES (NULL, 3, 3, timestamp('2021-02-21 12:23:42.058156'), 'tom')");
+
+            Assert.assertTrue(
+                    hasData(mycatConnection, "db1", "travelrecord")
+            );
+            Assert.assertTrue(
+                    hasData(mysql3306, "db1", "travelrecord")
+            );
+            Assert.assertTrue(
+                    hasData(mysql3307, "db1", "travelrecord")
+            );
+
+            execute(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
+                    "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                    "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                    "  `traveldate` date DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int DEFAULT NULL,\n" +
+                    "  `blob` longblob,\n" +
+                    "  PRIMARY KEY (`id`),\n" +
+                    "  KEY `id` (`id`)\n" +
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
+                    + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
+
+            deleteData(mycatConnection, "db1", "travelrecord");
+
+            execute(mycatConnection, "REPLACE INTO `travelrecord` (`blob`, `days`, `fee`, `traveldate`, `user_id`) VALUES (NULL, 3, 3, timestamp('2021-02-21 12:23:42.058156'), 'tom')");
+
+            Assert.assertTrue(
+                    hasData(mycatConnection, "db1", "travelrecord")
+            );
+        }
+    }
+
 
 }

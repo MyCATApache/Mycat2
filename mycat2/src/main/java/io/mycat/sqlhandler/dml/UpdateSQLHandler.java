@@ -17,16 +17,15 @@ package io.mycat.sqlhandler.dml;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.*;
+import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.plan.PlanImplementor;
 import io.mycat.calcite.rewriter.OptimizationContext;
 import io.mycat.calcite.spm.Plan;
-import io.mycat.calcite.spm.QueryPlanner;
 import io.mycat.calcite.spm.UpdatePlanCache;
 import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
@@ -41,7 +40,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 
 public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
 
@@ -57,6 +55,10 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
             String schemaName = Optional.ofNullable(tableSource.getSchema() == null ? dataContext.getDefaultSchema() : tableSource.getSchema())
                     .map(i -> SQLUtils.normalize(i)).orElse(null);
             String tableName = SQLUtils.normalize(tableSource.getTableName());
+            if (schemaName == null) {
+                return receiver.sendError("unknown schema", MySQLErrorCode.ER_UNKNOWN_ERROR);
+            }
+            tableSource.setSchema(schemaName);
             SchemaHandler schemaHandler;
             MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
             Optional<NameMap<SchemaHandler>> handlerMapOptional = Optional.ofNullable(metadataManager.getSchemaMap());

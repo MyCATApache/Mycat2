@@ -63,7 +63,10 @@ public class VertxUpdateExecuter {
         if (sqlStatement instanceof SQLInsertStatement) {
             return (SQLExprTableSource) ((SQLInsertStatement) sqlStatement).getTableSource();
         }
-        throw new UnsupportedOperationException();
+        if (sqlStatement instanceof SQLReplaceStatement) {
+            return (SQLExprTableSource) ((SQLReplaceStatement) sqlStatement).getTableSource();
+        }
+        throw new UnsupportedOperationException(sqlStatement+" can not get SQLExprTableSource");
     }
 
     public static SQLExpr getWhere(SQLStatement sqlStatement) {
@@ -76,7 +79,10 @@ public class VertxUpdateExecuter {
         if (sqlStatement instanceof SQLInsertStatement) {
             return null;
         }
-        throw new UnsupportedOperationException();
+        if (sqlStatement instanceof SQLReplaceStatement) {
+            return null;
+        }
+       return null;
     }
 
     public static void setFrom(SQLStatement sqlStatement, SQLExprTableSource tableSource) {
