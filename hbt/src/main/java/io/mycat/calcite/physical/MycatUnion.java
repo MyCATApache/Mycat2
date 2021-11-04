@@ -103,7 +103,7 @@ public class MycatUnion extends Union implements MycatRel {
                 unionExp = childExp;
             } else {
                 unionExp = all
-                        ? Expressions.call(unionExp, RxBuiltInMethod.ENUMERABLE_OBSERVABLE_CONCAT.method, childExp)
+                        ? Expressions.call(RxBuiltInMethod.ENUMERABLE_OBSERVABLE_CONCAT.method, unionExp, childExp)
                         : Expressions.call(unionExp,
                         BuiltInMethod.UNION.method,
                         Expressions.list(childExp)
@@ -135,7 +135,7 @@ public class MycatUnion extends Union implements MycatRel {
             EnumerableRel input = (EnumerableRel) ord.e;
             results.add(implementor.visitChild(this, ord.i, input, pref));
         }
-        boolean toEnumerate = true;
+        boolean toEnumerate = !results.stream().allMatch(result -> result.block.getType().getTypeName().contains("Observable"));
 
         if (toEnumerate) {
             for (Ord<Result> ord : Ord.zip(results)) {
@@ -148,7 +148,7 @@ public class MycatUnion extends Union implements MycatRel {
                     unionExp = childExp;
                 } else {
                     unionExp = all
-                            ? Expressions.call(unionExp, RxBuiltInMethod.ENUMERABLE_OBSERVABLE_CONCAT.method, childExp)
+                            ? Expressions.call(RxBuiltInMethod.ENUMERABLE_OBSERVABLE_CONCAT.method, unionExp, childExp)
                             : Expressions.call(unionExp,
                             BuiltInMethod.UNION.method,
                             Expressions.list(childExp)

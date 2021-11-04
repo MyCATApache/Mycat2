@@ -115,7 +115,15 @@ public interface MycatRel extends RelNode, EnumerableRel, Serializable {
 
     @NotNull
     public default Expression toEnumerate(Expression input) {
-        return Expressions.call(RxBuiltInMethod.TO_ENUMERABLE.method, input);
+        if (!isSupportStream()){
+            Type type = input.getType();
+            if (!(type instanceof Enumerable)) {
+                input = Expressions.call(RxBuiltInMethod.TO_ENUMERABLE.method, input);
+            }
+            return input;
+        }else {
+            return input;
+        }
     }
 
     public default Expression toObservable(Expression input) {

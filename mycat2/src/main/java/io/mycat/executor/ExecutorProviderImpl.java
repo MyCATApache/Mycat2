@@ -82,7 +82,11 @@ public class ExecutorProviderImpl implements ExecutorProvider {
             // Add line numbers to the generated janino class
             cbe.setDebuggingInformation(true, true, true);
         }
-        return (ArrayBindable) cbe.createInstance(new StringReader(codeContext.getCode()));
+        String code = codeContext.getCode();
+        if (LOGGER.isDebugEnabled()){
+            LOGGER.debug(code);
+        }
+        return (ArrayBindable) cbe.createInstance(new StringReader(code));
     }
 
     @NotNull
