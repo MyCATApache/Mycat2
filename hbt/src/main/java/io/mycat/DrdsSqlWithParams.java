@@ -1,31 +1,28 @@
 package io.mycat;
 
 import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
 import com.alibaba.druid.sql.ast.expr.SQLListExpr;
-import com.alibaba.druid.sql.ast.expr.SQLNumberExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNumericLiteralExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.MycatHint;
-import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.spm.ParamHolder;
 import io.mycat.calcite.spm.QueryPlanner;
 import io.mycat.util.NameMap;
-import lombok.Getter;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.commons.lang3.mutable.Mutable;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.curator.shaded.com.google.common.collect.ImmutableMap;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -143,7 +140,7 @@ public class DrdsSqlWithParams extends DrdsSql {
                             }
                             List<Partition> finalNewPartitions = newPartitions;
                             List<PartitionGroup> maps = finalNewPartitions.stream().map(i -> {
-                                return  new PartitionGroup(i.getTargetName(), ImmutableMap.of(logicalTables.get(0), i));
+                                return new PartitionGroup(i.getTargetName(), ImmutableMap.of(logicalTables.get(0), i));
                             }).collect(Collectors.toList());
                             return Optional.of(maps);
                         }
@@ -167,60 +164,72 @@ public class DrdsSqlWithParams extends DrdsSql {
 
                         if (!logicalTables.isEmpty() && !condition.isEmpty()) {
                             String where = condition.get(0);
-                            String sql;
+                            SQLExpr oneSqlExpr = SQLUtils.toMySqlExpr(where);
+                            List<SQLExpr> sqlExprs;
+                            if (oneSqlExpr instanceof SQLBinaryOpExpr && ((SQLBinaryOpExpr) oneSqlExpr).getOperator() == SQLBinaryOperator.BooleanAnd) {
+                                sqlExprs = SQLUtils.split((SQLBinaryOpExpr) oneSqlExpr);
+                            } else {
+                                sqlExprs = Collections.singletonList(oneSqlExpr);
+                            }
+
                             Map<String, TableHandler> aliasTableMap = detector.tableHandlerMap;
-                            StringJoiner sb = new StringJoiner(" join ");
+                            int whereIndex = 0;
+
+                            List<List<PartitionGroup>> partitionGroupMap = new ArrayList<>();
+
                             for (Map.Entry<String, TableHandler> e : aliasTableMap.entrySet()) {
                                 TableHandler table = e.getValue();
                                 String schemaName = table.getSchemaName();
                                 String tableName = table.getTableName();
-                                sb.add(schemaName + "." + tableName + " " + e.getKey());
-                            }
-                            if (aliasTableMap.size() == 1) {
-                                sql = "select *  from " + sb.toString() + " where " + where;
-                            } else {
-                                sql = "select *  from " + sb.toString() + " on " + where;
-                            }
+                                String sql = "select *  from `" + schemaName + "`.`" + tableName + "` as `" + e.getKey() + "` where " + ((whereIndex < sqlExprs.size()) ? sqlExprs.get(whereIndex).toString() : "true");
+                                whereIndex++;
 
-                            DrdsSqlWithParams hintSql = DrdsRunnerHelper.preParse(sql, null);
+                                DrdsSqlWithParams hintSql = DrdsRunnerHelper.preParse(sql, null);
 
-                            QueryPlanner planner = MetaClusterCurrent.wrapper(QueryPlanner.class);
-                            ParamHolder paramHolder = ParamHolder.CURRENT_THREAD_LOCAL.get();
-                            paramHolder.setData(hintSql.getParams(), hintSql.getTypeNames());
-                            try {
-                                CodeExecuterContext codeExecuterContext = planner.innerComputeMinCostCodeExecuterContext(hintSql);
-
-                                List<PartitionGroup> collect2 = codeExecuterContext.getRelContext()
-                                        .values()
-                                        .stream()
-                                        .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(codeExecuterContext.getConstantMap(), i.getRelNode(), hintSql, Optional.empty()).stream())
-                                        .filter(targetFilter)
-                                        .collect(Collectors.toList());
-                                //逻辑优化
-                                if (!logicalPhysicalMap.isEmpty()) {
-                                    int index = 0;
-                                    for (PartitionGroup group : new ArrayList<>(collect2)) {
-                                        for (Map.Entry<String, Partition> entry : new ArrayList<>(group.getMap().entrySet())) {
-                                            List<Partition> partitions = logicalPhysicalMap.get(entry.getKey());
-                                            if (partitions == null) continue;
-                                            if (index >= partitions.size()) {
-                                                collect2.remove(group);
-                                                continue;
-                                            }
-                                            entry.setValue(partitions.get(index));
-                                        }
-                                        ++index;
-                                    }
+                                QueryPlanner planner = MetaClusterCurrent.wrapper(QueryPlanner.class);
+                                ParamHolder paramHolder = ParamHolder.CURRENT_THREAD_LOCAL.get();
+                                paramHolder.setData(hintSql.getParams(), hintSql.getTypeNames());
+                                try {
+                                    CodeExecuterContext codeExecuterContext = planner.innerComputeMinCostCodeExecuterContext(hintSql);
+                                    partitionGroupMap.add(codeExecuterContext.getRelContext()
+                                            .values()
+                                            .stream()
+                                            .flatMap(i -> AsyncMycatDataContextImpl.getSqlMap(codeExecuterContext.getConstantMap(), i.getRelNode(), hintSql, Optional.empty()).stream())
+                                            .filter(targetFilter)
+                                            .collect(Collectors.toList()));
+                                } finally {
+                                    paramHolder.clear();
                                 }
-                                return Optional.of(collect2);
-
-                            } catch (Exception e) {
-                                log.error("", e);
-                            } finally {
-                                paramHolder.clear();
                             }
-                        }
 
+                            List<PartitionGroup> partitionGroups = partitionGroupMap.stream().reduce(new BinaryOperator<List<PartitionGroup>>() {
+                                @Override
+                                public List<PartitionGroup> apply(List<PartitionGroup> partitionGroups, List<PartitionGroup> partitionGroups2) {
+                                    for (PartitionGroup partitionGroup : partitionGroups) {
+                                        Optional<PartitionGroup> first = partitionGroups2.stream()
+                                                .filter(i -> i.getTargetName().equals(partitionGroup.getTargetName())).findFirst();
+                                        first.ifPresent(group -> partitionGroup.map.putAll(group.map));
+                                    }
+                                    return partitionGroups;
+                                }
+                            }).orElse(Collections.emptyList());
+                            if (!logicalPhysicalMap.isEmpty()) {
+                                int index = 0;
+                                for (PartitionGroup group : new ArrayList<>(partitionGroups)) {
+                                    for (Map.Entry<String, Partition> entry : new ArrayList<>(group.getMap().entrySet())) {
+                                        List<Partition> partitions = logicalPhysicalMap.get(entry.getKey());
+                                        if (partitions == null) continue;
+                                        if (index >= partitions.size()) {
+                                            partitionGroups.remove(group);
+                                            continue;
+                                        }
+                                        entry.setValue(partitions.get(index));
+                                    }
+                                    ++index;
+                                }
+                            }
+                            return Optional.of(partitionGroups);
+                        }
                     }
                 }
 
