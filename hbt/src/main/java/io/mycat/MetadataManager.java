@@ -346,6 +346,7 @@ public class MetadataManager {
         List<List> data = stringListEntry.getData();
         ImmutableList.Builder<BackendTableInfo> builder = ImmutableList.builder();
         if (data != null) {
+            int indexCounter = 0;
             for (List datum : data) {
                 if (datum.size() == 6) {
                     String target = Objects.toString(datum.get(0));
@@ -362,12 +363,13 @@ public class MetadataManager {
                     String schema = Objects.toString(datum.get(1));
                     String table = Objects.toString(datum.get(2));
 
-                    builder.add(new BackendTableInfo(target, schema, table));
+                    builder.add(new IndexDataNode(target, schema, table,0,indexCounter,indexCounter));
                 } else {
                     throw new UnsupportedOperationException("format must be " +
                             "target,schema,table" + " or " +
                             "target,schema,table,dbIndex,tableIndex,index");
                 }
+                indexCounter++;
             }
         } else if (stringListEntry.getSchemaNames() != null) {
             String schemaNames = stringListEntry.getSchemaNames();
