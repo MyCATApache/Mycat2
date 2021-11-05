@@ -187,6 +187,9 @@ public class HintTools {
             }
             LogicalJoin join = (LogicalJoin) rel;
             final List<String> tableNames = hint.listOptions;
+            if (tableNames.isEmpty()){
+                return true;
+            }
             if (tableNames.size() != 2) {
                 return false;
             }

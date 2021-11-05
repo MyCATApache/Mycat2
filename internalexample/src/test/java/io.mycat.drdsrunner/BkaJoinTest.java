@@ -38,6 +38,7 @@ public class BkaJoinTest extends DrdsTest {
         DrdsConst config = sqlCompiler.getConfig();
         DrdsSqlCompiler.RBO_MERGE_JOIN = false;
         DrdsSqlCompiler.RBO_BKA_JOIN = true;
+        DrdsSqlCompiler.BKA_JOIN_LEFT_ROW_COUNT_LIMIT = 8000000;
         DrdsSqlCompiler drdsSqlCompiler = new DrdsSqlCompiler(new DrdsConst() {
             @Override
             public NameMap<SchemaHandler> schemas() {
@@ -174,12 +175,27 @@ public class BkaJoinTest extends DrdsTest {
 
     @Test
     public void testSelectShardingNormalNormal2() throws Exception {
-        Explain explain = parse("select * from db1.sharding s join db1.normal e on s.id = e.id join db1.normal2 g on e.id = g.id");
+        Explain explain = parse("/*+ mycat:no_hash_join() */select * from db1.sharding s join db1.normal e on s.id = e.id join db1.normal2 g on e.id = g.id");
         Assert.assertEquals(
                 "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=addressname}, {columnType=BIGINT, nullable=false, columnName=id1}, {columnType=VARCHAR, nullable=true, columnName=addressname0}]",
                 explain.getColumnInfo());
         String explainText = explain.dumpPlan().trim();
-        Assert.assertEquals("MycatProject(id=[$4], user_id=[$5], traveldate=[$6], fee=[$7], days=[$8], blob=[$9], id0=[$0], addressname=[$1], id1=[$2], addressname0=[$3])   MycatSQLTableLookup(condition=[=($4, $0)], joinType=[inner], type=[BACK], correlationIds=[[$cor0]], leftKeys=[[0]])     MycatView(distribution=[[db1.normal, db1.normal2]])     MycatView(distribution=[[db1.sharding]], conditions=[IN(ROW($0), ROW(CAST($cor0):BIGINT NOT NULL))])",
+        Assert.assertEquals("MycatSQLTableLookup(condition=[=($6, $8)], joinType=[inner], type=[BACK], correlationIds=[[$cor3]], leftKeys=[[6]])   MycatSQLTableLookup(condition=[=($0, $6)], joinType=[inner], type=[BACK], correlationIds=[[$cor0]], leftKeys=[[0]])     MycatView(distribution=[[db1.sharding]])     MycatView(distribution=[[db1.normal]])   MycatView(distribution=[[db1.normal2]])",
+                explainText
+        );
+        Assert.assertEquals("[Each(targetName=prototype, sql=SELECT * FROM db1.normal2 AS `normal2` WHERE ((`normal2`.`id`) IN ($cor3))), Each(targetName=prototype, sql=SELECT * FROM db1.normal AS `normal` WHERE ((`normal`.`id`) IN ($cor0))), Each(targetName=c0, sql=SELECT * FROM db1_0.sharding_0 AS `sharding` union all SELECT * FROM db1_0.sharding_1 AS `sharding`)\n" +
+                        "Each(targetName=c1, sql=SELECT * FROM db1_1.sharding_0 AS `sharding` union all SELECT * FROM db1_1.sharding_1 AS `sharding`)]",
+                explain.specificSql().toString());
+    }
+
+    @Test
+    public void testSelectShardingNormalNormal3() throws Exception {
+        Explain explain = parse("/*+ mycat:use_bka_join() */select * from db1.normal e join db1.normal2 g on e.id = g.id join db1.sharding s on s.id = e.id");
+        Assert.assertEquals(
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=addressname}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=addressname0}, {columnType=BIGINT, nullable=false, columnName=id1}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}]",
+                explain.getColumnInfo());
+        String explainText = explain.dumpPlan().trim();
+        Assert.assertEquals("MycatSQLTableLookup(condition=[=($4, $0)], joinType=[inner], type=[BACK], correlationIds=[[$cor0]], leftKeys=[[0]])   MycatView(distribution=[[db1.normal, db1.normal2]])   MycatView(distribution=[[db1.sharding]], conditions=[IN(ROW($0), ROW(CAST($cor0):BIGINT NOT NULL))])",
                 explainText
         );
         Assert.assertEquals("[Each(targetName=c0, sql=SELECT * FROM db1_0.sharding_0 AS `sharding` WHERE ((`sharding`.`id`) IN ($cor0)) union all SELECT * FROM db1_0.sharding_1 AS `sharding` WHERE ((`sharding`.`id`) IN ($cor0)))\n" +
@@ -187,6 +203,20 @@ public class BkaJoinTest extends DrdsTest {
                 explain.specificSql().toString());
     }
 
+    @Test
+    public void testSelectShardingNormalNormal4() throws Exception {
+        Explain explain = parse("select * from db1.sharding s join db1.normal e on s.id = e.id join db1.normal2 g on e.id = g.id");
+        Assert.assertEquals(
+                "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=addressname}, {columnType=BIGINT, nullable=false, columnName=id1}, {columnType=VARCHAR, nullable=true, columnName=addressname0}]",
+                explain.getColumnInfo());
+        String explainText = explain.dumpPlan().trim();
+        Assert.assertEquals("MycatProject(id=[$4], user_id=[$5], traveldate=[$6], fee=[$7], days=[$8], blob=[$9], id0=[$0], addressname=[$1], id1=[$2], addressname0=[$3])   MycatHashJoin(condition=[=($0, $4)], joinType=[inner])     MycatView(distribution=[[db1.normal, db1.normal2]])     MycatView(distribution=[[db1.sharding]])",
+                explainText
+        );
+        Assert.assertEquals("[Each(targetName=prototype, sql=SELECT * FROM db1.normal AS `normal`     INNER JOIN db1.normal2 AS `normal2` ON (`normal`.`id` = `normal2`.`id`)), Each(targetName=c0, sql=SELECT * FROM db1_0.sharding_0 AS `sharding` union all SELECT * FROM db1_0.sharding_1 AS `sharding`)\n" +
+                        "Each(targetName=c1, sql=SELECT * FROM db1_1.sharding_0 AS `sharding` union all SELECT * FROM db1_1.sharding_1 AS `sharding`)]",
+                explain.specificSql().toString());
+    }
 
 
 
