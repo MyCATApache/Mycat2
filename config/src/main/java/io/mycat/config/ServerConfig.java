@@ -66,6 +66,7 @@ public class ServerConfig {
     private boolean forcedPushDownBroadcast = false;
     private boolean bkaJoin = true;
     private boolean sortMergeJoin = true;
+    private boolean partitionKeyJoin = true;
     private long bkaJoinLeftRowCountLimit = 1000;
     private boolean pstmtStringVal = false;
     public static void main(String[] args) {

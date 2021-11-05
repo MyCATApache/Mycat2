@@ -89,6 +89,7 @@ public class DrdsSqlCompiler {
     private final DrdsConst config;
     private final CalciteCatalogReader catalogReader;
 
+    public static boolean RBO_PARTITION_KEY_JOIN = true;
     public static boolean RBO_MERGE_JOIN = true;
     public static boolean RBO_BKA_JOIN = true;
     public static long BKA_JOIN_LEFT_ROW_COUNT_LIMIT = 1000;

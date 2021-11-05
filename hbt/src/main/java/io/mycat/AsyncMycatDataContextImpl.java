@@ -18,6 +18,7 @@ import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.querycondition.QueryType;
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
@@ -92,9 +93,9 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                         },
                         throwable -> {
                             sessionConnection.onSuccess(c -> {
-                                //close connection?
-                                promise.fail(throwable);
-                            })
+                                        //close connection?
+                                        promise.fail(throwable);
+                                    })
                                     .onFailure(t -> promise.fail(t));
                         }, () -> {
                             sessionConnection.onSuccess(c -> {
@@ -166,7 +167,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             List<PartitionGroup> sqlMap = getPartition(node).get();
             boolean share = mycatRelDatasourceSourceInfo.refCount > 0;
             List<Observable<Object[]>> observables = getObservables((view
-                    .apply(dataContext.getMergeUnionSize(),mycatRelDatasourceSourceInfo.getSqlTemplate(), sqlMap, drdsSqlWithParams.getParams())), mycatRelDatasourceSourceInfo.getColumnInfo());
+                    .apply(dataContext.getMergeUnionSize(), mycatRelDatasourceSourceInfo.getSqlTemplate(), sqlMap, drdsSqlWithParams.getParams())), mycatRelDatasourceSourceInfo.getColumnInfo());
             if (share) {
                 observables = observables.stream().map(i -> i.share()).collect(Collectors.toList());
                 shareObservable.put(node, observables);
@@ -276,51 +277,48 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         }
     }
 
-    public static List<PartitionGroup> mapSharding(MycatView view, List<Partition> object) {
+    public static List<PartitionGroup> mapSharding(MycatView view, List<Partition> partitionList) {
         Distribution distribution = view.getDistribution();
-        HashMap<String, Partition> globalMap = new HashMap<>();
+        List<ShardingTable> shardingTableList = distribution.getShardingTables();
+        ShardingTable primaryShardingTable = shardingTableList.get(0);
+        CustomRuleFunction primaryShardingFunction = primaryShardingTable.getShardingFuntion();
+        HashMap<String, Partition> groupTemplate = new HashMap<>();
+        for (NormalTable normalTable : distribution.getNormalTables()) {//可能存在错误的数据分布,但是错误的数据分布访问不到
+            groupTemplate.put(normalTable.getUniqueName(), normalTable.getDataNode());
+        }
         for (GlobalTable globalTable : distribution.getGlobalTables()) {
-            globalMap.put(globalTable.getUniqueName(), globalTable.getDataNode());
+            groupTemplate.put(globalTable.getUniqueName(), globalTable.getDataNode());
         }
-        ShardingTable shardingTable = distribution.getShardingTables().get(0);
-        String primaryTableUniqueName = shardingTable.getLogicTable().getUniqueName();
-        List<Partition> primaryTableFilterPartitions = object;
-//                Map<String, List<DataNode>> collect = this.shardingTables.stream()
-//                        .collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getShardingFuntion().calculate(Collections.emptyMap())));
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        List<ShardingTable> shardingTables = metadataManager.getErTableGroup().getOrDefault(shardingTable.getShardingFuntion().getErUniqueID(), Collections.singletonList(shardingTable));
-        Map<String, List<Partition>> collect = shardingTables.stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.dataNodes()));
-        Map<Integer, String> mappingIndex = new HashMap<>();
-        List<String> allDataNodeUniqueNames = collect.get(primaryTableUniqueName).stream().sequential().map(i -> i.getUniqueName()).collect(Collectors.toList());
-        {
-
-            for (Partition filterPartition : primaryTableFilterPartitions) {
-                int index = 0;
-                for (String allDataNodeUniqueName : allDataNodeUniqueNames) {
-                    if (allDataNodeUniqueName.equals(filterPartition.getUniqueName())) {
-                        mappingIndex.put(index, filterPartition.getTargetName());
-                        break;
+        if (distribution.getShardingTables().size() == 1) {
+            List<PartitionGroup> res = new ArrayList<>(partitionList.size());
+            for (Partition partition : partitionList) {
+                HashMap<String, Partition> map = new HashMap<>(groupTemplate);
+                map.put(primaryShardingTable.getUniqueName(), partition);
+                res.add(new PartitionGroup(partition.getTargetName(), map));
+            }
+            return res;
+        } else {
+            List<ShardingTable> joinShardingTables = shardingTableList.subList(1, shardingTableList.size());
+            List<PartitionGroup> res = new ArrayList<>(partitionList.size());
+            for (Partition primaryPartition : partitionList) {
+                HashMap<String, Partition> map = new HashMap<>(groupTemplate);
+                map.put(primaryShardingTable.getUniqueName(), primaryPartition);
+                for (ShardingTable joinShardingTable : joinShardingTables) {
+                    CustomRuleFunction joinFunction = joinShardingTable.function();
+                    if (primaryShardingFunction.isSameDistribution(joinFunction)) {
+                        Partition joinPartition = joinFunction.getPartition(primaryShardingFunction.indexOf(primaryPartition));
+                        map.put(joinShardingTable.getUniqueName(), joinPartition);
+                    } else if (primaryShardingFunction.isSameTargetFunctionDistribution(joinFunction)) {
+                        List<Partition> joinPartitions = joinShardingTable.getPartitionsByTargetName(primaryPartition.getTargetName());
+                        if (joinPartitions.size() != 1) {
+                            throw new IllegalArgumentException("wrong partition " + joinPartitions + " in " + view);
+                        }
+                        map.put(joinShardingTable.getUniqueName(), joinPartitions.get(0));
                     }
-                    index++;
                 }
-
+                res.add(new PartitionGroup(primaryPartition.getTargetName(), map));
             }
+            return res;
         }
-        List<PartitionGroup> res = new ArrayList<>();
-        for (Map.Entry<Integer, String> entry : mappingIndex.entrySet()) {
-            Integer index = entry.getKey();
-            HashMap<String, Partition> map = new HashMap<>();
-            for (Map.Entry<String, List<Partition>> stringListEntry : collect.entrySet()) {
-                List<Partition> partitions = stringListEntry.getValue();
-                if (partitions.size() > index) {
-                    map.put(stringListEntry.getKey(), partitions.get(index));
-                } else {
-                    break;
-                }
-            }
-            map.putAll(globalMap);
-            res.add(new PartitionGroup(entry.getValue(), map));
-        }
-        return res;
     }
 }

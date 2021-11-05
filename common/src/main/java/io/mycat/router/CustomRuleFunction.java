@@ -20,8 +20,10 @@ import io.mycat.RangeVariable;
 import io.mycat.ShardingTableType;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 /**
  * @author cjw
@@ -43,7 +45,7 @@ public abstract class CustomRuleFunction {
         }
         if (partitions.size() != 1) {
             List<Partition> dataNodes2 = calculate(values);
-             dataNodes2 = calculate(values);
+            dataNodes2 = calculate(values);
             throw new IllegalArgumentException("路由计算返回结果个数为" + partitions.size());
         }
         Partition partition = partitions.get(0);
@@ -102,7 +104,66 @@ public abstract class CustomRuleFunction {
         return false;
     }
 
+    public boolean isSameTargetFunctionDistribution(CustomRuleFunction customRuleFunction) {
+        return false;
+    }
+
+    public boolean isSameTableFunctionDistribution(CustomRuleFunction customRuleFunction) {
+        return false;
+    }
+
+    public boolean isAllPartitionInTargetName(String targetName) {
+        switch (getShardingTableType()) {
+            case SINGLE_INSTANCE_SHARDING_TABLE:
+                List<Partition> partitions = calculate(Collections.emptyMap());
+                if (partitions.isEmpty()) return false;
+                return partitions.get(0).getTargetName().equals(targetName);
+            case SHARDING_INSTANCE_SINGLE_TABLE:
+            case SHARDING_INSTANCE_SHARDING_TABLE:
+            default:
+                return false;
+        }
+    }
+
+    public boolean isSameDbFunctionDistribution(CustomRuleFunction customRuleFunction) {
+        return false;
+    }
+
     public abstract String getErUniqueID();
 
     public abstract ShardingTableType getShardingTableType();
+
+    public Integer indexOf(Partition findPartition) {
+        Integer index = findPartition.getIndex();
+        if (index == null) {
+            List<Partition> calculate = calculate(Collections.emptyMap());
+            int i = calculate.indexOf(findPartition);
+            if (i != -1) {
+                return i;
+            }
+            String findUniqueName = findPartition.getUniqueName();
+            i = 0;
+            for (Partition partition1 : calculate) {
+                if (partition1.getUniqueName().equals(findUniqueName)) {
+                    return i;
+                }
+                i++;
+            }
+            return null;
+        }
+        return index;
+    }
+
+    public Partition getPartition(int index) {
+        List<Partition> partitions = calculate(Collections.emptyMap());
+        Partition maybePartition = partitions.get(index);
+        if (maybePartition.getIndex() != null) {
+            if (maybePartition.getIndex() == index) {
+                return maybePartition;
+            } else {
+                return partitions.stream().filter(p -> p.getIndex() == index).findFirst().orElse(null);
+            }
+        }
+        return maybePartition;
+    }
 }

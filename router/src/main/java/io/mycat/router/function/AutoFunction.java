@@ -23,15 +23,19 @@ import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 
 public abstract class AutoFunction extends CustomRuleFunction {
     String name;
     int dbNum;
     int tableNum;
-    Object dbMethod;
-    Object tableMethod;
+    SQLMethodInvokeExpr dbMethod;
+    SQLMethodInvokeExpr tableMethod;
     private Set<String> dbKeys;
     private Set<String> tableKeys;
     final ToIntFunction<Object> finalDbFunction;
@@ -57,6 +61,10 @@ public abstract class AutoFunction extends CustomRuleFunction {
 
         this.name = MessageFormat.format("dbNum:{0} tableNum:{1} dbMethod:{2} tableMethod:{3} storeNum:{4}",
                 dbNum, tableNum, extractKey(dbMethod), extractKey(tableMethod), storeNum);
+    }
+
+    private static String extractMethodText(SQLMethodInvokeExpr method) {
+        return method.toString().replaceAll(extractKey(method), "");
     }
 
     private static String extractKey(SQLMethodInvokeExpr method) {
@@ -215,5 +223,63 @@ public abstract class AutoFunction extends CustomRuleFunction {
             default:
                 throw new IllegalStateException("Unexpected value: " + getShardingTableType());
         }
+    }
+
+    @Override
+    public boolean isSameTargetFunctionDistribution(CustomRuleFunction customRuleFunction) {
+        if (customRuleFunction instanceof AutoFunction) {
+            AutoFunction left = this;
+            AutoFunction right = (AutoFunction) customRuleFunction;
+            Set<String> leftTargets = left.scanAll().stream().map(i -> i.getTargetName()).collect(Collectors.toSet());
+            Set<String> rightTargets = right.scanAll().stream().map(i -> i.getTargetName()).collect(Collectors.toSet());
+            if (leftTargets.equals(rightTargets)) {
+                switch (left.getShardingTableType()) {
+                    case SHARDING_INSTANCE_SHARDING_TABLE:
+                    case SHARDING_INSTANCE_SINGLE_TABLE: {
+                        switch (right.getShardingTableType()) {
+                            case SHARDING_INSTANCE_SINGLE_TABLE:
+                            case SHARDING_INSTANCE_SHARDING_TABLE:
+                                return isSameDbFunctionDistribution(right);
+                            case SINGLE_INSTANCE_SHARDING_TABLE:
+                            default:
+                                return false;
+                        }
+                    }
+                    case SINGLE_INSTANCE_SHARDING_TABLE: {
+                        switch (right.getShardingTableType()) {
+                            case SHARDING_INSTANCE_SINGLE_TABLE:
+                            case SHARDING_INSTANCE_SHARDING_TABLE:
+                            default:
+                                return false;
+                            case SINGLE_INSTANCE_SHARDING_TABLE:
+                                return true;
+                        }
+                    }
+                    default:
+                        return false;
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean isSameTableFunctionDistribution(CustomRuleFunction customRuleFunction) {
+        if (customRuleFunction instanceof AutoFunction) {
+            AutoFunction left = this;
+            AutoFunction right = (AutoFunction) customRuleFunction;
+            return left.tableNum == right.tableNum && extractMethodText(left.tableMethod).equalsIgnoreCase(extractMethodText(right.tableMethod));
+        }
+        return false;
+    }
+
+    @Override
+    public boolean isSameDbFunctionDistribution(CustomRuleFunction customRuleFunction) {
+        if (customRuleFunction instanceof AutoFunction) {
+            AutoFunction left = this;
+            AutoFunction right = (AutoFunction) customRuleFunction;
+            return left.dbNum == right.dbNum && extractMethodText(left.dbMethod).equalsIgnoreCase(extractMethodText(right.dbMethod));
+        }
+        return false;
     }
 }

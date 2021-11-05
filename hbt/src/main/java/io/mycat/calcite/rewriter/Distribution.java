@@ -20,6 +20,7 @@ import io.mycat.*;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
+import io.mycat.router.CustomRuleFunction;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
@@ -68,24 +69,24 @@ public class Distribution {
         Distribution distribution = new Distribution(shardingTables, globalTables, normalTables);
 
         unquineName.stream().map(i -> {
-            String[] split = i.split("\\.");
-            return SchemaInfo.of(split[0], split[1]);
-        })
+                    String[] split = i.split("\\.");
+                    return SchemaInfo.of(split[0], split[1]);
+                })
                 .map(n -> metadataManager.getTable(n.getTargetSchema(), n.getTargetTable())).forEach(t -> {
-            switch (t.getType()) {
-                case SHARDING:
-                    shardingTables.add((ShardingTable) t);
-                    break;
-                case GLOBAL:
-                    globalTables.add((GlobalTable) t);
-                    break;
-                case NORMAL:
-                    normalTables.add((NormalTable) t);
-                    break;
-                case CUSTOM:
-                    throw new UnsupportedOperationException();
-            }
-        });
+                    switch (t.getType()) {
+                        case SHARDING:
+                            shardingTables.add((ShardingTable) t);
+                            break;
+                        case GLOBAL:
+                            globalTables.add((GlobalTable) t);
+                            break;
+                        case NORMAL:
+                            normalTables.add((NormalTable) t);
+                            break;
+                        case CUSTOM:
+                            throw new UnsupportedOperationException();
+                    }
+                });
 
         return distribution;
     }
@@ -138,6 +139,13 @@ public class Distribution {
                                         merge(this.globalTables, arg.globalTables),
                                         merge(this.normalTables, arg.normalTables)));
                     case SHARDING:
+                        ShardingTable shardingTable = this.shardingTables.get(0);
+                        if (shardingTable.function().isAllPartitionInTargetName(arg.normalTables.get(0).getDataNode().getTargetName())) {
+                            return Optional.of(
+                                    new Distribution(merge(this.shardingTables, arg.shardingTables),
+                                            merge(this.globalTables, arg.globalTables),
+                                            merge(this.normalTables, arg.normalTables)));
+                        }
                         return Optional.empty();
                     default:
                         throw new IllegalStateException("Unexpected value: " + this.type());
@@ -150,6 +158,13 @@ public class Distribution {
             case SHARDING:
                 switch (this.type()) {
                     case PHY:
+                        ShardingTable shardingTable = arg.shardingTables.get(0);
+                        if (shardingTable.function().isAllPartitionInTargetName(this.normalTables.get(0).getDataNode().getTargetName())) {
+                            return Optional.of(
+                                    new Distribution(merge(this.shardingTables, arg.shardingTables),
+                                            merge(this.globalTables, arg.globalTables),
+                                            merge(this.normalTables, arg.normalTables)));
+                        }
                         return Optional.empty();
                     case BROADCAST:
                         return Optional.of(
@@ -157,9 +172,10 @@ public class Distribution {
                                         merge(this.globalTables, arg.globalTables),
                                         merge(this.normalTables, arg.normalTables)));
                     case SHARDING:
-                        if (this.shardingTables.get(0).getShardingFuntion()
-                                .isSameDistribution(
-                                        (arg.shardingTables.get(0).getShardingFuntion()))) {
+                        CustomRuleFunction leftShardingFuntion = this.shardingTables.get(0).getShardingFuntion();
+                        CustomRuleFunction rightShardingFuntion = arg.shardingTables.get(0).getShardingFuntion();
+                        if (leftShardingFuntion.isSameDistribution(rightShardingFuntion) ||
+                                isTargetPartitionJoin(leftShardingFuntion, rightShardingFuntion)) {
                             return Optional.of(
                                     new Distribution(merge(this.shardingTables, arg.shardingTables),
                                             merge(this.globalTables, arg.globalTables),
@@ -172,6 +188,11 @@ public class Distribution {
             default:
                 throw new IllegalStateException("Unexpected value: " + arg.type());
         }
+    }
+
+    public static boolean isTargetPartitionJoin(CustomRuleFunction leftShardingFuntion, CustomRuleFunction rightShardingFuntion) {
+        return leftShardingFuntion.isSameTargetFunctionDistribution(rightShardingFuntion)
+                && rightShardingFuntion.getShardingTableType().isSingleTablePerInstance();
     }
 
 
@@ -188,7 +209,6 @@ public class Distribution {
     }
 
 
-
     public Stream<Map<String, Partition>> getDataNodes(Function<ShardingTable, List<Partition>> function) {
         switch (this.type()) {
             case BROADCAST:
@@ -203,19 +223,24 @@ public class Distribution {
                 return Stream.of(builder);
             }
             case SHARDING: {
-                ImmutableMap.Builder<String, Partition> globalbuilder = ImmutableMap.builder();
+                ImmutableMap.Builder<String, Partition> globalBuilder = ImmutableMap.builder();
                 for (GlobalTable globalTable : this.globalTables) {
-                    globalbuilder.put(globalTable.getUniqueName(), globalTable.getDataNode());
+                    globalBuilder.put(globalTable.getUniqueName(), globalTable.getDataNode());
                 }
-                ImmutableMap<String, Partition> globalMap = globalbuilder.build();
+                ImmutableMap<String, Partition> globalMap = globalBuilder.build();
+
+                ImmutableMap.Builder<String, Partition> normalBuilder = ImmutableMap.builder();
+                for (NormalTable normalTable : this.normalTables) {
+                    normalBuilder.put(normalTable.getUniqueName(), normalTable.getDataNode());
+                }
+                ImmutableMap<String, Partition> normalMap = globalBuilder.build();
+
                 ShardingTable shardingTable = this.shardingTables.get(0);
                 String primaryTableUniqueName = shardingTable.getLogicTable().getUniqueName();
                 List<Partition> primaryTableFilterPartitions = function.apply(shardingTable);
 //                Map<String, List<DataNode>> collect = this.shardingTables.stream()
 //                        .collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getShardingFuntion().calculate(Collections.emptyMap())));
-                MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-                List<ShardingTable> shardingTables = metadataManager.getErTableGroup().getOrDefault(shardingTable.getShardingFuntion().getErUniqueID(), Collections.emptyList());
-                Map<String, List<Partition>> collect = shardingTables.stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.dataNodes()));
+                Map<String, List<Partition>> collect = getStringListMap(shardingTable);
                 List<Integer> mappingIndex = new ArrayList<>();
                 List<String> allDataNodeUniqueNames = collect.get(primaryTableUniqueName).stream().sequential().map(i -> i.getUniqueName()).collect(Collectors.toList());
                 {
@@ -251,6 +276,14 @@ public class Distribution {
         }
     }
 
+    @NotNull
+    private Map<String, List<Partition>> getStringListMap(ShardingTable shardingTable) {
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        List<ShardingTable> shardingTables = metadataManager.getErTableGroup().getOrDefault(shardingTable.getShardingFuntion().getErUniqueID(), Collections.emptyList());
+        Map<String, List<Partition>> collect = shardingTables.stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.dataNodes()));
+        return collect;
+    }
+
     public Set<String> getTargets() {
         return getDataNodes().flatMap(i -> i.values().stream()).map(i -> i.getTargetName()).collect(Collectors.toSet());
     }
@@ -258,8 +291,8 @@ public class Distribution {
     public Distribution changeToPrimaryShardingTable(ShardingTable indexTable) {
         assert !(shardingTables.isEmpty());
         ArrayList<ShardingTable> newShardingTables = new ArrayList<>(shardingTables);
-        newShardingTables.set(0,indexTable);
-        return new Distribution(newShardingTables,globalTables,normalTables);
+        newShardingTables.set(0, indexTable);
+        return new Distribution(newShardingTables, globalTables, normalTables);
     }
 
     public static enum Type {
@@ -315,4 +348,19 @@ public class Distribution {
 
         return String.join(",", each);
     }
+
+    public boolean canAsBroadcast(Distribution rdistribution) {
+        return canAsBroadcast(this, rdistribution);
+    }
+
+    private static boolean canAsBroadcast(Distribution ldistribution, Distribution rdistribution) {
+        boolean asBroadcast = false;
+        if (ldistribution.type() == Distribution.Type.SHARDING && rdistribution.type() == Distribution.Type.PHY) {
+            asBroadcast = ldistribution.getShardingTables().get(0).function().isAllPartitionInTargetName(rdistribution.getNormalTables().get(0).getDataNode().getTargetName());
+        } else if (ldistribution.type() == Distribution.Type.PHY && rdistribution.type() == Distribution.Type.SHARDING) {
+            asBroadcast = canAsBroadcast(rdistribution,ldistribution);
+        }
+        return asBroadcast;
+    }
+
 }
