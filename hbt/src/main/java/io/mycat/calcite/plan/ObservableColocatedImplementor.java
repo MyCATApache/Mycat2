@@ -33,6 +33,31 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
         super(xaSqlConnection, context, drdsSqlWithParams, response);
     }
 
+
+     class Replacer extends MySqlASTVisitorAdapter {
+        NameMap<Partition> partition;
+        boolean success = true;
+
+        public Replacer(NameMap<Partition> partition) {
+            this.partition = partition;
+        }
+
+        @Override
+        public boolean visit(SQLExprTableSource x) {
+            if (!success) return false;
+            String schema = SQLUtils.normalize(x.getSchema());
+            String table = SQLUtils.normalize(x.getTableName());
+            String s = schema + "_" + table;
+            Partition tableInfo = partition.get(s, false);
+            if (tableInfo != null) {
+                MycatSQLExprTableSourceUtil.setSqlExprTableSource(tableInfo.getSchema(), tableInfo.getTable(), x);
+            } else {
+                success = false;
+            }
+            return false;
+        }
+    }
+
     @Override
     public Future<Void> executeQuery(Plan plan) {
         Optional<PartitionGroup> colocatedPushDownOptional = checkColocatedPushDown(plan);
@@ -41,41 +66,17 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
             NameMap<Partition> partition = NameMap.immutableCopyOf(partitionGroup.getMap());
             String targetName = partitionGroup.getTargetName();
             SQLStatement parameterizedStatement = drdsSqlWithParams.getParameterizedStatement().clone();
-            parameterizedStatement.accept(new MySqlASTVisitorAdapter() {
-                @Override
-                public boolean visit(SQLExprTableSource x) {
-                    String schema = SQLUtils.normalize(x.getSchema());
-                    String table = SQLUtils.normalize(x.getTableName());
-                    String s = schema + "_" + table;
-                    Partition tableInfo = partition.get(s, false);
-                    if (tableInfo == null) {
-                        checkColocatedPushDown(plan);
-                    }
-                    MycatSQLExprTableSourceUtil.setSqlExprTableSource(tableInfo.getSchema(), tableInfo.getTable(), x);
-                    return false;
-                }
-            });
-            parameterizedStatement.accept(new MySqlASTVisitorAdapter() {
-                @Override
-                public boolean visit(SQLExprTableSource x) {
-                    String schema = SQLUtils.normalize(x.getSchema());
-                    String table = SQLUtils.normalize(x.getTableName());
-                    String s = schema + "_" + table;
-                    Partition tableInfo = partition.get(s, false);
-                    if (tableInfo == null) {
-                        checkColocatedPushDown(plan);
-                    }
-                    MycatSQLExprTableSourceUtil.setSqlExprTableSource(tableInfo.getSchema(), tableInfo.getTable(), x);
-                    return false;
-                }
-            });
-            ExplainDetail explainDetail = new ExplainDetail(ExecuteType.QUERY, Collections.singletonList(targetName), parameterizedStatement.toString(), null, drdsSqlWithParams.getParams());
-            return response.execute(explainDetail);
+            Replacer replacer = new Replacer(partition);
+            parameterizedStatement.accept(replacer);
+            if (replacer.success){
+                ExplainDetail explainDetail = new ExplainDetail(ExecuteType.QUERY, Collections.singletonList(targetName), parameterizedStatement.toString(), null, drdsSqlWithParams.getParams());
+                return response.execute(explainDetail);
+            }
         }
         return super.executeQuery(plan);
     }
 
-    private Optional<PartitionGroup> checkColocatedPushDown(Plan plan) {
+    private  Optional<PartitionGroup> checkColocatedPushDown(Plan plan) {
         CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
         AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, codeExecuterContext, drdsSqlWithParams);
         Map<String, MycatRelDatasourceSourceInfo> relContext = codeExecuterContext.getRelContext();
