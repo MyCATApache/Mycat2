@@ -790,6 +790,9 @@ public enum MycatCalciteSupport implements Context {
     }
 
     public SqlDialect getSqlDialectByTargetName(String name) {
+        if (!MetaClusterCurrent.exist(ReplicaSelectorManager.class)){
+            return MycatSqlDialect.DEFAULT;
+        }
         ReplicaSelectorManager selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
         String dbTypeText = selectorRuntime.getDbTypeByTargetName(name);
         switch (dbTypeText) {

@@ -99,8 +99,11 @@ public class Statistics {
         List<ImmutableBitSet> immutableBitSets = getUniqueKeys(columns);
         return new Statistic() {
             public Double getRowCount() {
-                StatisticCenter statisticCenter = MetaClusterCurrent.wrapper(StatisticCenter.class);
-                return statisticCenter.getLogicTableRow(logicSchemaName, logicTableName);
+                if(MetaClusterCurrent.exist(StatisticCenter.class)){
+                    StatisticCenter statisticCenter = MetaClusterCurrent.wrapper(StatisticCenter.class);
+                    return statisticCenter.getLogicTableRow(logicSchemaName, logicTableName);
+                }
+                return StatisticCenter.DEFAULT_ROW_COUNT;
             }
 
             public boolean isKey(ImmutableBitSet columns) {

@@ -510,8 +510,7 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
             return replicaDataSourceSelector.getDbType();
         }
         DatasourceConfig datasourceConfig = datasources.get(name);
-        Objects.requireNonNull(datasourceConfig, "unknown dbType of :" + name);
-        return datasourceConfig.getDbType();
+        return  Optional.ofNullable(datasourceConfig).map(i->i.getType()).orElse("mysql");
     }
 
     public Map<String, List<String>> getState() {

@@ -817,6 +817,13 @@ public class SQLRBORewriter extends RelShuttleImpl {
                                     sameTargetPartitionJoin = true;
                                 }
                             }
+                        }else if (rightTableType == LogicTableType.GLOBAL) {
+                            {//partition key
+                                if (DrdsSqlCompiler.RBO_PARTITION_KEY_JOIN && inPartitionKey
+                                        && lFunction.isShardingPartitionKey(lColumn.getColumnName())) {
+                                    sameTargetPartitionJoin = true;
+                                }
+                            }
                         }
                     }
                     if (erJoin || sameTargetPartitionJoin) {
@@ -858,7 +865,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                             break;
                         }
                     }
-                    ServerConfig serverConfig = MetaClusterCurrent.wrapper(io.mycat.config.ServerConfig.class);
+                    ServerConfig serverConfig = getServerConfig();
                     if (serverConfig.isForcedPushDownBroadcast()) {
                         break;
                     }
@@ -882,7 +889,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                             break;
                         }
                     }
-                    ServerConfig serverConfig = MetaClusterCurrent.wrapper(io.mycat.config.ServerConfig.class);
+                    ServerConfig serverConfig = getServerConfig();
                     if (serverConfig.isForcedPushDownBroadcast()) {
                         break;
                     }
@@ -912,6 +919,10 @@ public class SQLRBORewriter extends RelShuttleImpl {
         return ldistribution.join(rdistribution).map(distribution -> MycatView.ofBottom(
                 join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
                 distribution));
+    }
+
+    private static ServerConfig getServerConfig() {
+        return MetaClusterCurrent.exist(ServerConfig.class)?MetaClusterCurrent.wrapper(ServerConfig.class):new ServerConfig();
     }
 
 
