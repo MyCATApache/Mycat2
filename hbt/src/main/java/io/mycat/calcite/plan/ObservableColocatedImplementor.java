@@ -71,7 +71,7 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
             if (list.size() == 1) {
                 PartitionGroup each = list.get(0);
                 if (result == null) {
-                    result = new PartitionGroup(each.getTargetName(), new HashMap<>());
+                    result = new PartitionGroup(each.getTargetName(), new HashMap<>(each.getMap()));
                 } else if (result.getTargetName().equals(each.getTargetName())) {
                     Map<String, Partition> eachMap = each.getMap();
                     Map<String, Partition> resMap = result.getMap();
