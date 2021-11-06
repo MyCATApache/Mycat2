@@ -871,13 +871,21 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
             routerConfig.getDatasources().add(datasourceConfig);
 
             if (routerConfig.getClusters().isEmpty()) {
-                ClusterConfig clusterConfig = new ClusterConfig();
-                clusterConfig.setName("prototype");
-                clusterConfig.setMasters(Collections.singletonList("prototypeDs"));
-                clusterConfig.setMaxCon(200);
-                clusterConfig.setClusterType(ReplicaType.MASTER_SLAVE.name());
-                clusterConfig.setSwitchType(ReplicaSwitchType.SWITCH.name());
-                routerConfig.getClusters().add(clusterConfig);
+                ClusterConfig prototypeClusterConfig = new ClusterConfig();
+                prototypeClusterConfig.setName("prototype");
+                prototypeClusterConfig.setMasters(Collections.singletonList("prototypeDs"));
+                prototypeClusterConfig.setMaxCon(200);
+                prototypeClusterConfig.setClusterType(ReplicaType.MASTER_SLAVE.name());
+                prototypeClusterConfig.setSwitchType(ReplicaSwitchType.SWITCH.name());
+                routerConfig.getClusters().add(prototypeClusterConfig);
+
+                ClusterConfig c0ClusterConfig = new ClusterConfig();
+                c0ClusterConfig.setName("c0");
+                c0ClusterConfig.setMasters(Collections.singletonList("prototypeDs"));
+                c0ClusterConfig.setMaxCon(200);
+                c0ClusterConfig.setClusterType(ReplicaType.MASTER_SLAVE.name());
+                c0ClusterConfig.setSwitchType(ReplicaSwitchType.SWITCH.name());
+                routerConfig.getClusters().add(c0ClusterConfig);
             }
         }
         routerConfig.fixPrototypeTargetName();
