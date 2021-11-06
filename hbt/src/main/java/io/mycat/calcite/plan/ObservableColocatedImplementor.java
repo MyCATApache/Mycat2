@@ -12,7 +12,10 @@ import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.MycatRelDatasourceSourceInfo;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.logical.MycatView;
+import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.spm.Plan;
+import io.mycat.calcite.table.ShardingIndexTable;
+import io.mycat.calcite.table.ShardingTable;
 import io.mycat.util.MycatSQLExprTableSourceUtil;
 import io.mycat.util.NameMap;
 import io.vertx.core.Future;
@@ -21,6 +24,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -37,7 +41,6 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
             NameMap<Partition> partition = NameMap.immutableCopyOf(partitionGroup.getMap());
             String targetName = partitionGroup.getTargetName();
             SQLStatement parameterizedStatement = drdsSqlWithParams.getParameterizedStatement().clone();
-
             parameterizedStatement.accept(new MySqlASTVisitorAdapter() {
                 @Override
                 public boolean visit(SQLExprTableSource x) {
@@ -45,6 +48,23 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
                     String table = SQLUtils.normalize(x.getTableName());
                     String s = schema + "_" + table;
                     Partition tableInfo = partition.get(s, false);
+                    if (tableInfo == null) {
+                        checkColocatedPushDown(plan);
+                    }
+                    MycatSQLExprTableSourceUtil.setSqlExprTableSource(tableInfo.getSchema(), tableInfo.getTable(), x);
+                    return false;
+                }
+            });
+            parameterizedStatement.accept(new MySqlASTVisitorAdapter() {
+                @Override
+                public boolean visit(SQLExprTableSource x) {
+                    String schema = SQLUtils.normalize(x.getSchema());
+                    String table = SQLUtils.normalize(x.getTableName());
+                    String s = schema + "_" + table;
+                    Partition tableInfo = partition.get(s, false);
+                    if (tableInfo == null) {
+                        checkColocatedPushDown(plan);
+                    }
                     MycatSQLExprTableSourceUtil.setSqlExprTableSource(tableInfo.getSchema(), tableInfo.getTable(), x);
                     return false;
                 }
@@ -59,12 +79,22 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
         CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
         AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, codeExecuterContext, drdsSqlWithParams);
         Map<String, MycatRelDatasourceSourceInfo> relContext = codeExecuterContext.getRelContext();
-        List<List<PartitionGroup>> lists = relContext.values().stream()
-                .filter(mycatRelDatasourceSourceInfo -> mycatRelDatasourceSourceInfo.getRelNode() instanceof MycatView)
-                .map(mycatRelDatasourceSourceInfo -> (MycatView) mycatRelDatasourceSourceInfo.getRelNode())
-                .map(mycatView -> {
-                    return sqlMycatDataContext.getPartition(mycatView.getDigest()).orElse(Collections.emptyList());
-                }).collect(Collectors.toList());
+        List<List<PartitionGroup>> lists = new ArrayList<>();
+        for (MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo : relContext.values()) {
+            if (mycatRelDatasourceSourceInfo.getRelNode() instanceof MycatView) {
+                MycatView mycatView = (MycatView) mycatRelDatasourceSourceInfo.getRelNode();
+                if (mycatView.getDistribution().type() == Distribution.Type.SHARDING) {
+                    for (ShardingTable shardingTable : mycatView.getDistribution().getShardingTables()) {
+                        if (shardingTable instanceof ShardingIndexTable) {
+                            return Optional.empty();
+                        }
+                    }
+                }
+                lists.add(sqlMycatDataContext.getPartition(mycatView.getDigest()).orElse(Collections.emptyList()));
+            } else {
+                return Optional.empty();
+            }
+        }
 
         PartitionGroup result = null;//Colocated Push Down
         for (List<PartitionGroup> list : lists) {

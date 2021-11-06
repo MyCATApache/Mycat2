@@ -8,6 +8,7 @@ import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.logical.MycatViewDataNodeMapping;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatMergeSort;
+import io.mycat.calcite.physical.MycatSQLTableLookup;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.plan.PlanImplementor;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
@@ -304,6 +305,10 @@ public class DrdsExecutorCompiler {
                                 tableScan);
                     });
                     rel.refCount += 1;
+                }
+                if (other instanceof MycatSQLTableLookup){
+                    MycatView right = ((MycatSQLTableLookup) other).getRight();
+                    right.accept(this);
                 }
                 return super.visit(other);
             }
