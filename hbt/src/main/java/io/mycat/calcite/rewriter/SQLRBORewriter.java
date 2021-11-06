@@ -771,59 +771,38 @@ public class SQLRBORewriter extends RelShuttleImpl {
                     boolean erJoin = false;
                     boolean sameTargetPartitionJoin = false;
 
-                    if ((leftTableType == LogicTableType.SHARDING)) {
+                    if (leftTableType == LogicTableType.SHARDING) {
                         ShardingTable leftTableHandler = (ShardingTable) leftRelNode.logicTable();
                         SimpleColumnInfo lColumn = leftTableHandler.getColumns().get(leftColumnOrigin.getOriginColumnOrdinal());
                         CustomRuleFunction lFunction = leftTableHandler.getShardingFuntion();
 
-
-                        boolean inPartitionKey = left.getPredicateIndexCondition()
-                                .filter(i -> i.getQueryType() == QueryType.PK_POINT_QUERY)
-                                .map(i -> i.getIndexColumnNames().stream().anyMatch(c -> lFunction.isShardingPartitionKey(c))).orElse(false);
+                        boolean inPartitionKey = isInPartitionKey(left, lFunction);
 
                         if (rightTableType == LogicTableType.SHARDING) {
 
                             ShardingTable rightTableHandler = (ShardingTable) rightRelNode.logicTable();
                             SimpleColumnInfo rColumn = rightTableHandler.getColumns().get(rightColumnOrigin.getOriginColumnOrdinal());
                             CustomRuleFunction rFunction = rightTableHandler.getShardingFuntion();
-
-                            {//er
-                                erJoin = lFunction.isSameDistribution(rFunction)
-                                        &&
-                                        lFunction.isShardingDbKey(lColumn.getColumnName())
-                                                ==
-                                                rFunction.isShardingDbKey(rColumn.getColumnName())
-                                        &&
-                                        lFunction.isShardingTableKey(lColumn.getColumnName())
-                                                ==
-                                                rFunction.isShardingTableKey(rColumn.getColumnName());
-                            }
+                            erJoin = isErJoinEqualColumn(lColumn, lFunction, rColumn, rFunction);
 
                             {//partition key
                                 if (DrdsSqlCompiler.RBO_PARTITION_KEY_JOIN && inPartitionKey) {
                                     if (lFunction.isShardingPartitionKey(lColumn.getColumnName()) ==
                                             rFunction.isShardingPartitionKey(rColumn.getColumnName()) &&
                                             Distribution.isTargetPartitionJoin(lFunction, rFunction)) {
-                                        sameTargetPartitionJoin = true;
+                                        sameTargetPartitionJoin |= true;
                                     }
                                 }
                             }
-                        } else if (rightTableType == LogicTableType.NORMAL) {
-                            NormalTable rightTableHandler = (NormalTable) rightRelNode.logicTable();
-                            {//partition key
-                                if (DrdsSqlCompiler.RBO_PARTITION_KEY_JOIN && inPartitionKey
-                                        && lFunction.isShardingPartitionKey(lColumn.getColumnName()) &&
-                                        lFunction.isAllPartitionInTargetName(rightTableHandler.getDataNode().getTargetName())) {
-                                    sameTargetPartitionJoin = true;
-                                }
-                            }
-                        }else if (rightTableType == LogicTableType.GLOBAL) {
-                            {//partition key
-                                if (DrdsSqlCompiler.RBO_PARTITION_KEY_JOIN && inPartitionKey
-                                        && lFunction.isShardingPartitionKey(lColumn.getColumnName())) {
-                                    sameTargetPartitionJoin = true;
-                                }
-                            }
+                        }
+                    }
+                    if (leftTableType == LogicTableType.SHARDING) {
+                        if (rightTableType == LogicTableType.GLOBAL || rightTableType == LogicTableType.NORMAL) {
+                            sameTargetPartitionJoin |= isSameTargetPartitionJoin(left, leftColumnOrigin, leftRelNode, rightRelNode);
+                        }
+                    }else if (leftTableType == LogicTableType.GLOBAL || leftTableType == LogicTableType.NORMAL) {
+                        if (rightTableType == LogicTableType.SHARDING) {
+                            sameTargetPartitionJoin |= isSameTargetPartitionJoin(right, leftColumnOrigin, rightRelNode, rightRelNode);
                         }
                     }
                     if (erJoin || sameTargetPartitionJoin) {
@@ -831,11 +810,57 @@ public class SQLRBORewriter extends RelShuttleImpl {
                                 .map(distribution -> MycatView.ofCondition(join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())), distribution,
                                         conditions));
                     }
-
                 }
             }
         }
         return Optional.empty();
+    }
+
+    private static boolean isSameTargetPartitionJoin(MycatView left, RelColumnOrigin leftColumnOrigin, MycatLogicTable leftRelNode, MycatLogicTable rightRelNode) {
+        ShardingTable leftTableHandler = (ShardingTable) leftRelNode.logicTable();
+        SimpleColumnInfo lColumn = leftTableHandler.getColumns().get(leftColumnOrigin.getOriginColumnOrdinal());
+        CustomRuleFunction lFunction = leftTableHandler.getShardingFuntion();
+        LogicTableType rightTableType = rightRelNode.getTable().getType();
+        boolean inPartitionKey = isInPartitionKey(left, lFunction);
+        boolean sameTargetPartitionJoin = false;
+        if (rightTableType == LogicTableType.NORMAL) {
+            NormalTable rightTableHandler = (NormalTable) rightRelNode.logicTable();
+            {//partition key
+                if (DrdsSqlCompiler.RBO_PARTITION_KEY_JOIN && inPartitionKey
+                        && lFunction.isShardingPartitionKey(lColumn.getColumnName()) &&
+                        lFunction.isAllPartitionInTargetName(rightTableHandler.getDataNode().getTargetName())) {
+                    sameTargetPartitionJoin = true;
+                }
+            }
+        } else if (rightTableType == LogicTableType.GLOBAL) {
+            {//partition key
+                if (DrdsSqlCompiler.RBO_PARTITION_KEY_JOIN && inPartitionKey
+                        && lFunction.isShardingPartitionKey(lColumn.getColumnName())) {
+                    sameTargetPartitionJoin = true;
+                }
+            }
+        }
+        return sameTargetPartitionJoin;
+    }
+
+    private static boolean isErJoinEqualColumn(SimpleColumnInfo lColumn, CustomRuleFunction lFunction, SimpleColumnInfo rColumn, CustomRuleFunction rFunction) {
+        boolean erJoin;
+        erJoin = lFunction.isSameDistribution(rFunction)
+                &&
+                lFunction.isShardingDbKey(lColumn.getColumnName())
+                        ==
+                        rFunction.isShardingDbKey(rColumn.getColumnName())
+                &&
+                lFunction.isShardingTableKey(lColumn.getColumnName())
+                        ==
+                        rFunction.isShardingTableKey(rColumn.getColumnName());
+        return erJoin;
+    }
+
+    private static boolean isInPartitionKey(MycatView right, CustomRuleFunction rFunction) {
+        return right.getPredicateIndexCondition()
+                .filter(i -> i.getQueryType() == QueryType.PK_POINT_QUERY)
+                .map(i -> i.getIndexColumnNames().stream().anyMatch(c -> rFunction.isShardingPartitionKey(c))).orElse(false);
     }
 
 
@@ -922,7 +947,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
     }
 
     private static ServerConfig getServerConfig() {
-        return MetaClusterCurrent.exist(ServerConfig.class)?MetaClusterCurrent.wrapper(ServerConfig.class):new ServerConfig();
+        return MetaClusterCurrent.exist(ServerConfig.class) ? MetaClusterCurrent.wrapper(ServerConfig.class) : new ServerConfig();
     }
 
 
