@@ -477,6 +477,10 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
         if (!newConfig.containsPrototypeTargetName()) {
             throw new UnsupportedOperationException();
         }
+        if (!init && Objects.equals(this.original, newConfig)) {
+            LOGGER.info("=======================================config no changed===========================================");
+            return;
+        }
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(JsonUtil.toJson(this.original));
             LOGGER.debug("===========================================change to ===========================================");
@@ -541,8 +545,8 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
 
             Resource<SequenceGenerator> sequenceGenerator = getSequenceGenerator(sequenceConfigUpdateSet);
             resourceList.add(sequenceGenerator);
-            PrototypeService prototypeService ;
-            context.put(PrototypeService.class,  prototypeService =  new PrototypeService());
+            PrototypeService prototypeService;
+            context.put(PrototypeService.class, prototypeService = new PrototypeService());
 
             Resource<MetadataManager> metadataManager = getMetadataManager(schemaConfigUpdateSet, prototypeService);
             resourceList.add(metadataManager);
@@ -679,7 +683,7 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
         if (MetaClusterCurrent.exist(MetadataManager.class)) {
             if (schemaConfigUpdateSet.isEmpty()) {
                 return Resource.of(MetaClusterCurrent.wrapper(MetadataManager.class), true);
-            } else if (schemaConfigUpdateSet.getDelete().isEmpty()&&!schemaConfigUpdateSet.getCreate().isEmpty()){
+            } else if (schemaConfigUpdateSet.getDelete().isEmpty() && !schemaConfigUpdateSet.getCreate().isEmpty()) {
                 MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
                 for (LogicSchemaConfig logicSchemaConfig : schemaConfigUpdateSet.getCreate()) {
                     metadataManager.addSchema(logicSchemaConfig);
@@ -942,7 +946,7 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
         }
 
         LogicSchemaConfig mysql = orginal.get("mysql");
-        Map<String, NormalTableConfig> normalTables =mysql.getNormalTables();
+        Map<String, NormalTableConfig> normalTables = mysql.getNormalTables();
         normalTables.putIfAbsent("proc", NormalTableConfig.create("mysql", "proc",
                 "CREATE TABLE `mysql`.`proc` (\n" +
                         "  `db` varchar(64) DEFAULT NULL,\n" +
@@ -1037,7 +1041,7 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
         if (first.isPresent()) {
             LogicSchemaConfig logicSchemaConfig = first.get();
             Map<String, NormalProcedureConfig> normalProcedures = logicSchemaConfig.getNormalProcedures();
-            normalProcedures.put(pName,normalProcedureConfig);
+            normalProcedures.put(pName, normalProcedureConfig);
         }
     }
 
