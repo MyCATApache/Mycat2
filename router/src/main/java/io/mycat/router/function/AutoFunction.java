@@ -21,14 +21,14 @@ import io.mycat.Partition;
 import io.mycat.RangeVariable;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.range.IntEnumerator;
+import org.apache.spark.sql.sources.In;
 
 import java.text.MessageFormat;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class AutoFunction extends CustomRuleFunction {
     String name;
@@ -117,6 +117,9 @@ public abstract class AutoFunction extends CustomRuleFunction {
         boolean getTIndex = false;
         int tIndex = 0;
 
+        Optional<Iterable<Integer>> dbRange = Optional.empty();
+        Optional<Iterable<Integer>> tableRange = Optional.empty();
+
         Set<Map.Entry<String, RangeVariable>> entries = values.entrySet();
         for (Map.Entry<String, RangeVariable> e : entries) {
             RangeVariable rangeVariable = e.getValue();
@@ -133,6 +136,7 @@ public abstract class AutoFunction extends CustomRuleFunction {
                             }
                             break;
                         case RANGE:
+                            dbRange = getRange(rangeVariable, dbNum, finalDbFunction);
                         default:
                             continue;
                     }
@@ -147,6 +151,7 @@ public abstract class AutoFunction extends CustomRuleFunction {
                             getTIndex = true;
                             break;
                         case RANGE:
+                            tableRange = getRange(rangeVariable, tableNum, finalTableFunction);
                         default:
                             continue;
                     }
@@ -162,7 +167,45 @@ public abstract class AutoFunction extends CustomRuleFunction {
         if (getDbIndex) {
             return (List) scanOnlyDbIndex(dIndex);
         }
-        return (List) scanAll();
+        List<Partition> list = scanAll();
+        if (dbRange.isPresent() || tableRange.isPresent()) {
+            Stream<Partition> stream = list.stream();
+            if (dbRange.isPresent()) {
+                Iterable<Integer> integers = dbRange.get();
+                Set<Integer> set = toSet(integers);
+                stream = stream.filter(p -> set.contains(p.getDbIndex()));
+            }
+            if (tableRange.isPresent()) {
+                Iterable<Integer> integers = tableRange.get();
+                Set<Integer> set = toSet(integers);
+                stream = stream.filter(p -> set.contains(p.getTableIndex()));
+            }
+            list = stream.collect(Collectors.toList());
+        }
+        return list;
+    }
+
+    private Optional<Iterable<Integer>> getRange(RangeVariable rangeVariable, int size, ToIntFunction<Object> intFunction) {
+        Optional<Iterable<Integer>> dbRange = Optional.empty();
+        Object begin = rangeVariable.getBegin();
+        Object end = rangeVariable.getEnd();
+        if (begin != null && end != null) {
+            dbRange = IntEnumerator.ofInt(0, size, 1, true, size)
+                    .rangeClosed(intFunction.applyAsInt(begin), intFunction.applyAsInt(end));
+        }
+        return dbRange;
+    }
+
+    private Set<Integer> toSet(Iterable<Integer> integers) {
+        if (integers instanceof Set) {
+            return (Set<Integer>) integers;
+        }
+        HashSet<Integer> objects = new HashSet<>();
+        for (Integer integer : integers) {
+            objects.add(integer);
+        }
+
+        return objects;
     }
 
     public abstract List<Partition> scanAll();
