@@ -962,7 +962,7 @@ public class UserCaseTest implements MycatTest {
                     "  },\n" +
                     "  \"tableName\":\"sharding\"\n" +
                     "} */;");
-            execute(mycatConnection, "           INSERT INTO db1.sharding VALUES (null, 'test1', '2021-08-09', 2, 3, NULL);");
+            //execute(mycatConnection, "           INSERT INTO db1.sharding VALUES (null, 'test1', '2021-08-09', 2, 3, NULL);");
         }
     }
 
