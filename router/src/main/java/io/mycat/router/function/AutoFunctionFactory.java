@@ -54,6 +54,7 @@ public class AutoFunctionFactory {
     }
 
     public static final ImmutableSet<String> FLATTEN_MAPPING = ImmutableSet.of("MOD_HASH", "UNI_HASH", "RIGHT_SHIFT", "YYYYMM", "YYYYDD", "YYYYWEEK");
+    public static final ImmutableSet<String> ENUM_RANGE = ImmutableSet.of("MM", "DD", "WEEK", "MMDD", "YYYYDD", "YYYYMM", "YYYYWEEK");
 
     @SneakyThrows
     public static final CustomRuleFunction
@@ -63,6 +64,7 @@ public class AutoFunctionFactory {
 
         int dbNum = Integer.parseInt(properties.getOrDefault("dbNum", 1).toString());
         int tableNum = Integer.parseInt(properties.getOrDefault("tableNum", 1).toString());
+
 
         Integer storeNum = Optional.ofNullable(properties.get("storeNum"))
                 .map(i -> Integer.parseInt(i.toString()))
@@ -89,6 +91,13 @@ public class AutoFunctionFactory {
                         tableHandler.getSchemaName() + "_${dbIndex}",
                         tableHandler.getTableName() + ((!supportFlattenMapping(tableMethod, dbMethod)) ? "_${tableIndex}" : "_${index}")));
         final boolean flattenMapping = mappingFormat.contains("${index}") && supportFlattenMapping(tableMethod, dbMethod);
+
+        boolean dbEnum = Optional.ofNullable(dbMethod).map(db -> {
+            return ENUM_RANGE.contains(SQLUtils.normalize(db.getMethodName().toUpperCase()));
+        }).orElse(false);
+        boolean tableEnum = Optional.ofNullable(tableMethod).map(tb -> {
+            return ENUM_RANGE.contains(SQLUtils.normalize(tb.getMethodName().toUpperCase()));
+        }).orElse(false);
 
         if (dbMethod != null) {
             int num = dbNum;
@@ -441,6 +450,16 @@ public class AutoFunctionFactory {
                 public List<Partition> scanOnlyDbTableIndex(int dbIndex, int tableIndex) {
                     return scanOnlyTableIndex(tableIndex);
                 }
+
+                @Override
+                public boolean isShardingDbEnum() {
+                    return dbEnum;
+                }
+
+                @Override
+                public boolean isShardingTableEnum() {
+                    return tableEnum;
+                }
             };
         } else {
             Map<Integer, List<Partition>> dbIndexToNode = indexDataNodes.stream().collect(Collectors.groupingBy(k -> k.getDbIndex()));
@@ -475,6 +494,16 @@ public class AutoFunctionFactory {
                         }
                     }
                     return dataNodes;
+                }
+
+                @Override
+                public boolean isShardingDbEnum() {
+                    return dbEnum;
+                }
+
+                @Override
+                public boolean isShardingTableEnum() {
+                    return tableEnum;
                 }
             };
         }

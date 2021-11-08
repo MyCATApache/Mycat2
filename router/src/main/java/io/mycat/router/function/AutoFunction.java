@@ -329,4 +329,15 @@ public abstract class AutoFunction extends CustomRuleFunction {
         }
         return false;
     }
+
+    @Override
+    public boolean isShardingTargetEnum() {
+        switch (getShardingTableType()) {
+            case SHARDING_INSTANCE_SINGLE_TABLE:
+                return isShardingDbEnum();
+            case SINGLE_INSTANCE_SHARDING_TABLE:
+            case SHARDING_INSTANCE_SHARDING_TABLE:
+        }
+        return false;
+    }
 }
