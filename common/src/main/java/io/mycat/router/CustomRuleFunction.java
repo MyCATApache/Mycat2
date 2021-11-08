@@ -19,11 +19,9 @@ import io.mycat.Partition;
 import io.mycat.RangeVariable;
 import io.mycat.ShardingTableType;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
 
 /**
  * @author cjw
@@ -86,6 +84,18 @@ public abstract class CustomRuleFunction {
     public abstract boolean isShardingTableKey(String name);
 
     public abstract boolean isShardingTargetKey(String name);
+
+    public boolean isShardingDbEnum() {
+        return false;
+    }
+
+    public boolean isShardingTableEnum() {
+        return false;
+    }
+
+    public boolean isShardingTargetEnum() {
+        return false;
+    }
 
     public boolean isShardingPartitionKey(String name) {
         switch (getShardingTableType()) {

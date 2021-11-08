@@ -136,7 +136,9 @@ public abstract class AutoFunction extends CustomRuleFunction {
                             }
                             break;
                         case RANGE:
-                            dbRange = getRange(rangeVariable, dbNum, finalDbFunction);
+                            if (isShardingDbEnum()){
+                                dbRange = getRange(rangeVariable, dbNum, finalDbFunction);
+                            }
                         default:
                             continue;
                     }
@@ -151,7 +153,9 @@ public abstract class AutoFunction extends CustomRuleFunction {
                             getTIndex = true;
                             break;
                         case RANGE:
-                            tableRange = getRange(rangeVariable, tableNum, finalTableFunction);
+                            if (isShardingTableEnum()){
+                                tableRange = getRange(rangeVariable, tableNum, finalTableFunction);
+                            }
                         default:
                             continue;
                     }

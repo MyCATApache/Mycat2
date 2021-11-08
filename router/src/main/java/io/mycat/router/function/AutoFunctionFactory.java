@@ -88,7 +88,7 @@ public class AutoFunctionFactory {
                 String.join(sep, "c${targetIndex}",
                         tableHandler.getSchemaName() + "_${dbIndex}",
                         tableHandler.getTableName() + ((!supportFlattenMapping(tableMethod, dbMethod)) ? "_${tableIndex}" : "_${index}")));
-        final boolean flattenMapping = mappingFormat.contains("${index}");
+        final boolean flattenMapping = mappingFormat.contains("${index}") && supportFlattenMapping(tableMethod, dbMethod);
 
         if (dbMethod != null) {
             int num = dbNum;
@@ -376,12 +376,12 @@ public class AutoFunctionFactory {
         final boolean finalFlattenMapping = flattenMapping;
         final ToIntFunction<Object> finalDbFunction = dbFunction;
         final ToIntFunction<Object> finalTableFunction = tableFunction;
-        List<Partition> indexDataNodes =  Optional
+        List<Partition> indexDataNodes = Optional
                 .ofNullable(tableHandler.dataNodes())
                 .map(i -> new ArrayList<>(i))
                 .orElse(new ArrayList<>());
 
-        if (indexDataNodes.isEmpty()){
+        if (indexDataNodes.isEmpty()) {
             List<int[]> seq = new ArrayList<>();
             int tableCount = 0;
             for (int dbIndex = 0; dbIndex < dbNum; dbIndex++) {
