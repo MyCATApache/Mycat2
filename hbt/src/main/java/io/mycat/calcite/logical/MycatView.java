@@ -242,10 +242,9 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
                 MycatRel mycatProject = createMycatProject(relNode, getProjectStringList(projects, tableScan.getRowType()));
 
-                if (!RelOptUtil.areRowTypesEqual(orginalRowType, mycatProject.getRowType(), false)) {
-                    System.out.println();
+                if (RelOptUtil.areRowTypesEqual(orginalRowType, mycatProject.getRowType(), false)) {
+                    tableArrayList.add(mycatProject);
                 }
-                tableArrayList.add(mycatProject);
                 continue;
             }
         }
@@ -259,7 +258,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             String name = orginalRowType.getFieldList().get(project).getName();
             RelDataTypeField field = indexTableScanRowType.getField(name, false, false);
             if (field == null) {
-                System.out.println();
+                throw new IllegalArgumentException("can not find field:"+name);
             } else {
                 int index = field.getIndex();
                 newProject.add(index);
