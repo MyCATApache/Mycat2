@@ -21,8 +21,6 @@ import io.mycat.Partition;
 import io.mycat.RangeVariable;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.range.IntEnumerator;
-import org.apache.spark.sql.sources.In;
 
 import java.text.MessageFormat;
 import java.util.*;
@@ -137,8 +135,10 @@ public abstract class AutoFunction extends CustomRuleFunction {
                             break;
                         case RANGE:
                             if (isShardingDbEnum()){
-                                dbRange = getRange(rangeVariable, dbNum, finalDbFunction);
+                                dbRange = getRange(rangeVariable, dbNum,dbMethod.getMethodName(), finalDbFunction);
+
                             }
+                            break;
                         default:
                             continue;
                     }
@@ -154,8 +154,10 @@ public abstract class AutoFunction extends CustomRuleFunction {
                             break;
                         case RANGE:
                             if (isShardingTableEnum()){
-                                tableRange = getRange(rangeVariable, tableNum, finalTableFunction);
+                                tableRange = getRange(rangeVariable, tableNum,tableMethod.getMethodName(), finalTableFunction);
+
                             }
+                            break;
                         default:
                             continue;
                     }
@@ -189,13 +191,12 @@ public abstract class AutoFunction extends CustomRuleFunction {
         return list;
     }
 
-    private Optional<Iterable<Integer>> getRange(RangeVariable rangeVariable, int size, ToIntFunction<Object> intFunction) {
+    public Optional<Iterable<Integer>> getRange(RangeVariable rangeVariable, int size, String name,ToIntFunction<Object> intFunction) {
         Optional<Iterable<Integer>> dbRange = Optional.empty();
         Object begin = rangeVariable.getBegin();
         Object end = rangeVariable.getEnd();
         if (begin != null && end != null) {
-            dbRange = IntEnumerator.ofInt(0, size, 1, true, size)
-                    .rangeClosed(intFunction.applyAsInt(begin), intFunction.applyAsInt(end));
+            dbRange = Optional.empty();
         }
         return dbRange;
     }

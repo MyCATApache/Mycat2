@@ -1,6 +1,7 @@
 package io.mycat.router.range;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,7 +12,10 @@ public class IntEnumerator extends Enumerator<Integer, Integer> {
 
     @Override
     public Optional<Iterable<Integer>> rangeClosed(Integer left, Integer right) {
-        int diff = right > left ? right - left : size - left + right;
+        if (left.equals(right)) {
+            return Optional.of(Collections.singleton(left));
+        }
+        int diff = right >= left ? right - left : size - left + right;
         if (diff > enumSize) {
             return Optional.empty();
         }

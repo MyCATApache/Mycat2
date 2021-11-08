@@ -526,22 +526,22 @@ public class AutoFunctionFactory {
         ToIntFunction<Object> tableFunction;
         switch (column1.getType()) {
             case NUMBER:
-                tableFunction = o -> mm(num, (Number) column1.normalizeValue(o));
+                tableFunction = o -> mm(num, column1.normalizeValue(o));
                 break;
             case STRING:
-                tableFunction = o -> mm(num, (String) column1.normalizeValue(o));
+                tableFunction = o -> mm(num, column1.normalizeValue(o));
                 break;
             case BLOB:
-                tableFunction = o -> mm(num, (byte[]) column1.normalizeValue(o));
+                tableFunction = o -> mm(num, column1.normalizeValue(o));
                 break;
             case TIME:
-                tableFunction = o -> mm(num, (Duration) column1.normalizeValue(o));
+                tableFunction = o -> mm(num, column1.normalizeValue(o));
                 break;
             case DATE:
-                tableFunction = o -> mm(num, (LocalDate) column1.normalizeValue(o));
+                tableFunction = o -> mm(num, column1.normalizeValue(o));
                 break;
             case TIMESTAMP:
-                tableFunction = o -> mm(num, (LocalDateTime) column1.normalizeValue(o));
+                tableFunction = o -> mm(num, column1.normalizeValue(o));
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + column1.getType());
@@ -554,22 +554,22 @@ public class AutoFunctionFactory {
         ToIntFunction<Object> tableFunction;
         switch (column1.getType()) {
             case NUMBER:
-                tableFunction = o -> dd(num, (Number) column1.normalizeValue(o));
+                tableFunction = o -> dd(num, column1.normalizeValue(o));
                 break;
             case STRING:
-                tableFunction = o -> dd(num, (String) column1.normalizeValue(o));
+                tableFunction = o -> dd(num, column1.normalizeValue(o));
                 break;
             case BLOB:
-                tableFunction = o -> dd(num, (byte[]) column1.normalizeValue(o));
+                tableFunction = o -> dd(num, column1.normalizeValue(o));
                 break;
             case TIME:
-                tableFunction = o -> dd(num, (Duration) column1.normalizeValue(o));
+                tableFunction = o -> dd(num, column1.normalizeValue(o));
                 break;
             case DATE:
-                tableFunction = o -> dd(num, (LocalDate) column1.normalizeValue(o));
+                tableFunction = o -> dd(num, column1.normalizeValue(o));
                 break;
             case TIMESTAMP:
-                tableFunction = o -> dd(num, (LocalDateTime) column1.normalizeValue(o));
+                tableFunction = o -> dd(num, column1.normalizeValue(o));
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + column1.getType());
@@ -582,22 +582,22 @@ public class AutoFunctionFactory {
         ToIntFunction<Object> tableFunction;
         switch (column1.getType()) {
             case NUMBER:
-                tableFunction = o -> mmdd(num, (Number) column1.normalizeValue(o));
+                tableFunction = o -> mmdd(num, column1.normalizeValue(o));
                 break;
             case STRING:
-                tableFunction = o -> mmdd(num, (String) column1.normalizeValue(o));
+                tableFunction = o -> mmdd(num, column1.normalizeValue(o));
                 break;
             case BLOB:
-                tableFunction = o -> mmdd(num, (byte[]) column1.normalizeValue(o));
+                tableFunction = o -> mmdd(num, column1.normalizeValue(o));
                 break;
             case TIME:
-                tableFunction = o -> mmdd(num, (Duration) column1.normalizeValue(o));
+                tableFunction = o -> mmdd(num, column1.normalizeValue(o));
                 break;
             case DATE:
-                tableFunction = o -> mmdd(num, (LocalDate) column1.normalizeValue(o));
+                tableFunction = o -> mmdd(num, column1.normalizeValue(o));
                 break;
             case TIMESTAMP:
-                tableFunction = o -> mmdd(num, (LocalDateTime) column1.normalizeValue(o));
+                tableFunction = o -> mmdd(num, column1.normalizeValue(o));
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + column1.getType());
@@ -610,22 +610,22 @@ public class AutoFunctionFactory {
         ToIntFunction<Object> tableFunction;
         switch (column1.getType()) {
             case NUMBER:
-                tableFunction = o -> week(num, (Number) column1.normalizeValue(o));
+                tableFunction = o -> week(num, column1.normalizeValue(o));
                 break;
             case STRING:
-                tableFunction = o -> week(num, (String) column1.normalizeValue(o));
+                tableFunction = o -> week(num, column1.normalizeValue(o));
                 break;
             case BLOB:
-                tableFunction = o -> week(num, (byte[]) column1.normalizeValue(o));
+                tableFunction = o -> week(num, column1.normalizeValue(o));
                 break;
             case TIME:
-                tableFunction = o -> week(num, (Duration) column1.normalizeValue(o));
+                tableFunction = o -> week(num, column1.normalizeValue(o));
                 break;
             case DATE:
-                tableFunction = o -> week(num, (LocalDate) column1.normalizeValue(o));
+                tableFunction = o -> week(num, column1.normalizeValue(o));
                 break;
             case TIMESTAMP:
-                tableFunction = o -> week(num, (LocalDateTime) column1.normalizeValue(o));
+                tableFunction = o -> week(num, column1.normalizeValue(o));
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + column1.getType());
@@ -672,16 +672,16 @@ public class AutoFunctionFactory {
                 dbFunction = o -> singleDivHash(num, (String) columnInfo.normalizeValue(o));
                 break;
             case BLOB:
-                dbFunction = o -> singleDivHash(num, (byte[]) columnInfo.normalizeValue(o));
+                dbFunction = o -> singleDivHash(num, columnInfo.normalizeValue(o));
                 break;
             case TIME:
-                dbFunction = o -> singleDivHash(num, (Duration) columnInfo.normalizeValue(o));
+                dbFunction = o -> singleDivHash(num, columnInfo.normalizeValue(o));
                 break;
             case DATE:
-                dbFunction = o -> singleDivHash(num, (LocalDate) columnInfo.normalizeValue(o));
+                dbFunction = o -> singleDivHash(num, columnInfo.normalizeValue(o));
                 break;
             case TIMESTAMP:
-                dbFunction = o -> singleDivHash(num, (LocalDateTime) columnInfo.normalizeValue(o));
+                dbFunction = o -> singleDivHash(num, columnInfo.normalizeValue(o));
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + columnInfo.getType());
@@ -700,16 +700,16 @@ public class AutoFunctionFactory {
                 dbFunction = o -> singleModHash(num, (String) columnInfo.normalizeValue(o));
                 break;
             case BLOB:
-                dbFunction = o -> singleModHash(num, (byte[]) columnInfo.normalizeValue(o));
+                dbFunction = o -> singleModHash(num, columnInfo.normalizeValue(o));
                 break;
             case TIME:
-                dbFunction = o -> singleModHash(num, (Duration) columnInfo.normalizeValue(o));
+                dbFunction = o -> singleModHash(num, columnInfo.normalizeValue(o));
                 break;
             case DATE:
-                dbFunction = o -> singleModHash(num, (LocalDate) columnInfo.normalizeValue(o));
+                dbFunction = o -> singleModHash(num, columnInfo.normalizeValue(o));
                 break;
             case TIMESTAMP:
-                dbFunction = o -> singleModHash(num, (LocalDateTime) columnInfo.normalizeValue(o));
+                dbFunction = o -> singleModHash(num, columnInfo.normalizeValue(o));
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + columnInfo.getType());
@@ -728,16 +728,16 @@ public class AutoFunctionFactory {
                 dbFunction = o -> singleRightShift(num, shift, (String) columnInfo.normalizeValue(o));
                 break;
             case BLOB:
-                dbFunction = o -> singleRightShift(num, shift, (byte[]) columnInfo.normalizeValue(o));
+                dbFunction = o -> singleRightShift(num, shift, columnInfo.normalizeValue(o));
                 break;
             case TIME:
-                dbFunction = o -> singleRightShift(num, shift, (Duration) columnInfo.normalizeValue(o));
+                dbFunction = o -> singleRightShift(num, shift, columnInfo.normalizeValue(o));
                 break;
             case DATE:
-                dbFunction = o -> singleRightShift(num, shift, (LocalDate) columnInfo.normalizeValue(o));
+                dbFunction = o -> singleRightShift(num, shift, columnInfo.normalizeValue(o));
                 break;
             case TIMESTAMP:
-                dbFunction = o -> singleRightShift(num, shift, (LocalDateTime) columnInfo.normalizeValue(o));
+                dbFunction = o -> singleRightShift(num, shift, columnInfo.normalizeValue(o));
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + columnInfo.getType());
@@ -756,16 +756,16 @@ public class AutoFunctionFactory {
                 dbFunction = o -> singleRangeHash(num, n, (String) column1.normalizeValue(o));
                 break;
             case BLOB:
-                dbFunction = o -> singleRangeHash(num, n, (byte[]) column1.normalizeValue(o));
+                dbFunction = o -> singleRangeHash(num, n, column1.normalizeValue(o));
                 break;
             case TIME:
-                dbFunction = o -> singleRangeHash(num, n, (Duration) column1.normalizeValue(o));
+                dbFunction = o -> singleRangeHash(num, n, column1.normalizeValue(o));
                 break;
             case DATE:
-                dbFunction = o -> singleRangeHash(num, n, (LocalDate) column1.normalizeValue(o));
+                dbFunction = o -> singleRangeHash(num, n, column1.normalizeValue(o));
                 break;
             case TIMESTAMP:
-                dbFunction = o -> singleRangeHash(num, n, (LocalDateTime) column1.normalizeValue(o));
+                dbFunction = o -> singleRangeHash(num, n, column1.normalizeValue(o));
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + column1.getType());
