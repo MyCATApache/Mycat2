@@ -21,12 +21,14 @@ import io.mycat.Partition;
 import io.mycat.RangeVariable;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
+import org.jetbrains.annotations.NotNull;
 
 import java.text.MessageFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public abstract class AutoFunction extends CustomRuleFunction {
     String name;
@@ -38,6 +40,7 @@ public abstract class AutoFunction extends CustomRuleFunction {
     private Set<String> tableKeys;
     final ToIntFunction<Object> finalDbFunction;
     final ToIntFunction<Object> finalTableFunction;
+    final int partitionSize;
 
     public AutoFunction(int dbNum,
                         int tableNum,
@@ -56,9 +59,10 @@ public abstract class AutoFunction extends CustomRuleFunction {
         this.tableKeys = tableKeys;
         this.finalDbFunction = finalDbFunction;
         this.finalTableFunction = finalTableFunction;
-
+        this.partitionSize = this.dbNum * this.tableNum;
         this.name = MessageFormat.format("dbNum:{0} tableNum:{1} dbMethod:{2} tableMethod:{3} storeNum:{4}",
                 dbNum, tableNum, extractKey(dbMethod), extractKey(tableMethod), storeNum);
+
     }
 
     private static String extractMethodText(SQLMethodInvokeExpr method) {
@@ -115,8 +119,8 @@ public abstract class AutoFunction extends CustomRuleFunction {
         boolean getTIndex = false;
         int tIndex = 0;
 
-        Optional<Iterable<Integer>> dbRange = Optional.empty();
-        Optional<Iterable<Integer>> tableRange = Optional.empty();
+        Optional<Set<Object>> dbRange = Optional.empty();
+        Optional<Set<Object>> tableRange = Optional.empty();
 
         Set<Map.Entry<String, RangeVariable>> entries = values.entrySet();
         for (Map.Entry<String, RangeVariable> e : entries) {
@@ -134,8 +138,8 @@ public abstract class AutoFunction extends CustomRuleFunction {
                             }
                             break;
                         case RANGE:
-                            if (isShardingDbEnum()){
-                                dbRange = getRange(rangeVariable, dbNum,dbMethod.getMethodName(), finalDbFunction);
+                            if (isShardingDbEnum()) {
+                                dbRange = getRange(rangeVariable, this.partitionSize, dbMethod.getMethodName(), finalDbFunction);
 
                             }
                             break;
@@ -153,8 +157,8 @@ public abstract class AutoFunction extends CustomRuleFunction {
                             getTIndex = true;
                             break;
                         case RANGE:
-                            if (isShardingTableEnum()){
-                                tableRange = getRange(rangeVariable, tableNum,tableMethod.getMethodName(), finalTableFunction);
+                            if (isShardingTableEnum()) {
+                                tableRange = getRange(rangeVariable, this.partitionSize, tableMethod.getMethodName(), finalTableFunction);
 
                             }
                             break;
@@ -173,32 +177,143 @@ public abstract class AutoFunction extends CustomRuleFunction {
         if (getDbIndex) {
             return (List) scanOnlyDbIndex(dIndex);
         }
-        List<Partition> list = scanAll();
+
         if (dbRange.isPresent() || tableRange.isPresent()) {
-            Stream<Partition> stream = list.stream();
-            if (dbRange.isPresent()) {
-                Iterable<Integer> integers = dbRange.get();
-                Set<Integer> set = toSet(integers);
-                stream = stream.filter(p -> set.contains(p.getDbIndex()));
+            List<Partition> res = new ArrayList<>();
+            if (dbRange.isPresent() && tableRange.isPresent()) {
+                Set<Object> dbSet = dbRange.get();
+                Set<Object> tableSet = tableRange.get();
+
+                if (dbKeys.equals(tableKeys)) {
+                    for (Object localDate : dbSet) {
+                        List<Partition> partitions = scanOnlyDbTableIndex(finalDbFunction.applyAsInt(localDate), finalTableFunction.applyAsInt(localDate));
+                        res.addAll(partitions);
+                    }
+                } else {
+                    for (Object outer : dbSet) {
+                        List<Partition> partitions = scanOnlyDbIndex(finalDbFunction.applyAsInt(outer));
+                        for (Object inner : tableSet) {
+                            int i = finalTableFunction.applyAsInt(inner);
+                            res.addAll(partitions.stream().filter(p->p.getTableIndex() == i).collect(Collectors.toList()));
+                        }
+                    }
+                }
+                return res;
+            } else if (dbRange.isPresent()) {
+                Set<Object> set = dbRange.get();
+                for (Object o : set) {
+                    res.addAll(scanOnlyDbIndex(finalDbFunction.applyAsInt(o)));
+                }
+                return res;
+            } else if (tableRange.isPresent()) {
+                Set<Object> set = tableRange.get();
+                for (Object o : set) {
+                    res.addAll(scanOnlyTableIndex(finalTableFunction.applyAsInt(o)));
+                }
+                return res;
             }
-            if (tableRange.isPresent()) {
-                Iterable<Integer> integers = tableRange.get();
-                Set<Integer> set = toSet(integers);
-                stream = stream.filter(p -> set.contains(p.getTableIndex()));
-            }
-            list = stream.collect(Collectors.toList());
         }
-        return list;
+        return scanAll();
     }
 
-    public Optional<Iterable<Integer>> getRange(RangeVariable rangeVariable, int size, String name,ToIntFunction<Object> intFunction) {
-        Optional<Iterable<Integer>> dbRange = Optional.empty();
+    public Optional<Set<Object>> getRange(RangeVariable rangeVariable, int limit, String name, ToIntFunction<Object> intFunction) {
+        Optional<Set<Object>> dbRange = Optional.empty();
         Object begin = rangeVariable.getBegin();
         Object end = rangeVariable.getEnd();
         if (begin != null && end != null) {
+            if ("MM".equalsIgnoreCase(name) || "YYYYMM".equalsIgnoreCase(name)) {
+                return enumMonthValue(limit, intFunction, begin, end);
+            } else if ("DD".equalsIgnoreCase(name) || "YYYYDD".equalsIgnoreCase(name) || "MMDD".equalsIgnoreCase(name)) {
+                return enumDayValue(limit, intFunction, begin, end);
+            } else if ("WEEK".equalsIgnoreCase(name) || "YYYYWEEK".equalsIgnoreCase(name)) {
+                return enumWeekValue(limit, intFunction, begin, end);
+            }
             dbRange = Optional.empty();
         }
         return dbRange;
+    }
+
+    @NotNull
+    public Optional<Set<Object>> enumWeekValue(int size, ToIntFunction<Object> intFunction, Object begin, Object end) {
+        if (begin instanceof LocalDate && end instanceof LocalDate) {
+            return enumWeekValue(size, intFunction, (LocalDate) begin, (LocalDate) end);
+        } else if (begin instanceof LocalDateTime && end instanceof LocalDateTime) {
+            return enumWeekValue(size, intFunction, ((LocalDateTime) begin).toLocalDate(), ((LocalDateTime) end).toLocalDate());
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    @NotNull
+    public Optional<Set<Object>> enumDayValue(int size, ToIntFunction<Object> intFunction, Object begin, Object end) {
+        if (begin instanceof LocalDate && end instanceof LocalDate) {
+            return enumDayValue(size, intFunction, (LocalDate) begin, (LocalDate) end);
+        } else if (begin instanceof LocalDateTime && end instanceof LocalDateTime) {
+            return enumDayValue(size, intFunction, ((LocalDateTime) begin).toLocalDate(), ((LocalDateTime) end).toLocalDate());
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    @NotNull
+    public Optional<Set<Object>> enumMonthValue(int size, ToIntFunction<Object> intFunction, Object begin, Object end) {
+        if (begin instanceof LocalDate && end instanceof LocalDate) {
+            return enumMonthValue(size, intFunction, (LocalDate) begin, (LocalDate) end);
+        } else if (begin instanceof LocalDateTime && end instanceof LocalDateTime) {
+            return enumMonthValue(size, intFunction, ((LocalDateTime) begin).toLocalDate(), ((LocalDateTime) end).toLocalDate());
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    @NotNull
+    public Optional<Set<Object>> enumMonthValue(int size, ToIntFunction<Object> intFunction, LocalDate begin, LocalDate end) {
+        Set<Object> res = new HashSet<>(12);
+
+        LocalDate cur = begin;
+        for (int i = 0; i < size && end.isAfter(cur)
+                && res.size() < size;//优化
+             i++) {
+            res.add((cur));
+            cur = cur.plusMonths(1);
+        }
+        if (end.isAfter(cur)) {
+            return Optional.empty();
+        }
+        return Optional.of(res);
+    }
+
+    @NotNull
+    private Optional<Set<Object>> enumDayValue(int size, ToIntFunction<Object> intFunction, LocalDate begin, LocalDate end) {
+        Set<Object> res = new HashSet<>(12);
+
+        LocalDate cur = begin;
+        for (int i = 0; i < size && end.isAfter(cur)
+                && res.size() < size;//优化
+             i++) {
+            res.add((cur));
+            cur = cur.plusDays(1);
+        }
+        if (end.isAfter(cur)) {
+            return Optional.empty();
+        }
+        return Optional.of(res);
+    }
+
+    @NotNull
+    public Optional<Set<Object>> enumWeekValue(int maxRange, ToIntFunction<Object> intFunction, LocalDate begin, LocalDate end) {
+        Set<Object> res = new HashSet<>(12);
+        LocalDate cur = begin;
+        for (int i = 0; i < maxRange && end.isAfter(cur)
+                && res.size() < maxRange;//优化
+             i++) {
+            res.add((cur));
+            cur = cur.plusWeeks(1);
+        }
+        if (end.isAfter(cur)) {
+            return Optional.empty();
+        }
+        return Optional.of(res);
     }
 
     private Set<Integer> toSet(Iterable<Integer> integers) {
