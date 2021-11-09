@@ -1,21 +1,24 @@
 /**
  * Copyright (C) <2021>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.runtime;
 
 import cn.mycat.vertx.xa.MySQLManager;
+import cn.mycat.vertx.xa.SavepointSqlConnection;
 import cn.mycat.vertx.xa.XaLog;
+import cn.mycat.vertx.xa.XaSqlConnection;
+import cn.mycat.vertx.xa.impl.LocalXaSqlConnection;
 import com.alibaba.druid.sql.SQLUtils;
 import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
@@ -106,16 +109,19 @@ public class MycatDataContextImpl implements MycatDataContext {
     public void switchTransaction(TransactionType transactionSessionType) {
         Objects.requireNonNull(transactionSessionType);
         TransactionSession transactionSession = null;
+        XaSqlConnection connection;
         switch (transactionSessionType) {
             case PROXY_TRANSACTION_TYPE:
-                transactionSession = new ProxyTransactionSession(() -> MetaClusterCurrent.wrapper(MySQLManager.class), MetaClusterCurrent.wrapper(XaLog.class));
+                connection = new LocalXaSqlConnection(() -> MetaClusterCurrent.wrapper(MySQLManager.class), MetaClusterCurrent.wrapper(XaLog.class));
                 break;
             case JDBC_TRANSACTION_TYPE:
-                transactionSession = new XaTransactionSession(() -> MetaClusterCurrent.wrapper(MySQLManager.class), MetaClusterCurrent.wrapper(XaLog.class));
+                connection = new XaTransactionSession(() -> MetaClusterCurrent.wrapper(MySQLManager.class), MetaClusterCurrent.wrapper(XaLog.class));
                 break;
             default:
                 throw new IllegalStateException("Unexpected transaction type: " + transactionSessionType);
         }
+        connection = new SavepointSqlConnection(connection);
+        transactionSession = new MycatXaTranscation(connection, transactionSessionType);
         if (this.transactionSession != null) {
             this.transactionSession.deliverTo(transactionSession);
 
@@ -259,7 +265,7 @@ public class MycatDataContextImpl implements MycatDataContext {
             case NET_WRITE_TIMEOUT:
                 return getNetWriteTimeout();
             case IS_READ_ONLY: {
-                return isReadOnly()?1:0;
+                return isReadOnly() ? 1 : 0;
             }
             case IS_IN_TRANSCATION: {
                 return isInTransaction() ? 1 : 0;
