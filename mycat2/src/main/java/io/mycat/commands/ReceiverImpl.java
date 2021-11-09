@@ -161,6 +161,33 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
+    public Future<Void> rollbackSavepoint(String name) {
+        count++;
+        boolean hasMoreResultSet = hasMoreResultSet();
+        return transactionSession.rollbackSavepoint(name)
+                .eventually((u) -> transactionSession.closeStatementState())
+                .flatMap(u -> session.writeOk(hasMoreResultSet));
+    }
+
+    @Override
+    public Future<Void> setSavepoint(String name) {
+        count++;
+        boolean hasMoreResultSet = hasMoreResultSet();
+        return transactionSession.createSavepoint(name)
+                .eventually((u) -> transactionSession.closeStatementState())
+                .flatMap(u -> session.writeOk(hasMoreResultSet));
+    }
+
+    @Override
+    public Future<Void> releaseSavepoint(String name) {
+        count++;
+        boolean hasMoreResultSet = hasMoreResultSet();
+        return transactionSession.releaseSavepoint(name)
+                .eventually((u) -> transactionSession.closeStatementState())
+                .flatMap(u -> session.writeOk(hasMoreResultSet));
+    }
+
+    @Override
     public Future<Void> execute(ExplainDetail detail) {
         boolean directPacket = false;
         boolean master = dataContext.isInTransaction() || !dataContext.isAutocommit() || detail.getExecuteType().isMaster();
@@ -391,4 +418,5 @@ public class ReceiverImpl implements Response {
             throw new UnsupportedOperationException();
         });
     }
+
 }

@@ -113,4 +113,10 @@ public interface Response {
      public Future<Void> sendVectorResultSet(Observable<VectorSchemaRoot> rootObservable);
 
      public Future<Void> proxyProcedure(String sql,String targetName);
+
+    public Future<Void> rollbackSavepoint(String name);
+
+    public Future<Void> setSavepoint(String name);
+
+    public Future<Void> releaseSavepoint(String name);
 }

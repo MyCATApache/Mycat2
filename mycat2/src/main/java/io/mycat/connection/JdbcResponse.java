@@ -199,6 +199,21 @@ public class JdbcResponse implements Response {
     }
 
     @Override
+    public Future<Void> rollbackSavepoint(String name) {
+        return null;
+    }
+
+    @Override
+    public Future<Void> setSavepoint(String name) {
+        return null;
+    }
+
+    @Override
+    public Future<Void> releaseSavepoint(String name) {
+        return null;
+    }
+
+    @Override
     public Future<Void> sendResultSet(Observable<MysqlPayloadObject> mysqlPacketObservable) {
         Iterable<MysqlPayloadObject> mysqlPayloadObjects = mysqlPacketObservable.blockingIterable();
         Iterator<MysqlPayloadObject> iterator = mysqlPayloadObjects.iterator();

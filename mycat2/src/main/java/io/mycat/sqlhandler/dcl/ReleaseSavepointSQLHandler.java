@@ -15,23 +15,22 @@
 package io.mycat.sqlhandler.dcl;
 
 import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.statement.SQLReleaseSavePointStatement;
 import com.alibaba.druid.sql.ast.statement.SQLRollbackStatement;
 import io.mycat.MycatDataContext;
+import io.mycat.Response;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.Response;
 import io.vertx.core.Future;
 
 
-public class RollbackSQLHandler extends AbstractSQLHandler<SQLRollbackStatement> {
+public class ReleaseSavepointSQLHandler extends AbstractSQLHandler<SQLReleaseSavePointStatement> {
 
     @Override
-    protected Future<Void> onExecute(SQLRequest<SQLRollbackStatement> request, MycatDataContext dataContext, Response response) {
-        SQLRollbackStatement ast = request.getAst();
-        if (ast.getTo() != null) {
-            String name = SQLUtils.normalize(ast.getTo().getSimpleName());
-            return response.rollbackSavepoint(name);
-        }
-        return response.rollback();
+    protected Future<Void> onExecute(SQLRequest<SQLReleaseSavePointStatement> request, MycatDataContext dataContext, Response response) {
+        SQLReleaseSavePointStatement ast = request.getAst();
+        SQLExpr name = ast.getName();
+        return response.releaseSavepoint(SQLUtils.normalize(name.toString()));
     }
 }

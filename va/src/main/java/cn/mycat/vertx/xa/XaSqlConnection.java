@@ -133,4 +133,16 @@ public interface XaSqlConnection {
     String getXid();
 
     void addCloseFuture(Future<Void> future);
+
+    public default Future<Void> createSavepoint(String name) {
+        return Future.succeededFuture();
+    }
+
+    public default Future<Void> rollbackSavepoint(String name) {
+        return Future.succeededFuture();
+    }
+
+    public default Future<Void> releaseSavepoint(String name) {
+        return Future.succeededFuture();
+    }
 }
