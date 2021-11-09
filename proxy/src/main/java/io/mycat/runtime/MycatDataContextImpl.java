@@ -18,6 +18,7 @@ import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.SavepointSqlConnection;
 import cn.mycat.vertx.xa.XaLog;
 import cn.mycat.vertx.xa.XaSqlConnection;
+import cn.mycat.vertx.xa.impl.LocalSqlConnection;
 import cn.mycat.vertx.xa.impl.LocalXaSqlConnection;
 import com.alibaba.druid.sql.SQLUtils;
 import io.mycat.*;
@@ -112,10 +113,10 @@ public class MycatDataContextImpl implements MycatDataContext {
         XaSqlConnection connection;
         switch (transactionSessionType) {
             case PROXY_TRANSACTION_TYPE:
-                connection = new LocalXaSqlConnection(() -> MetaClusterCurrent.wrapper(MySQLManager.class), MetaClusterCurrent.wrapper(XaLog.class));
+                connection = new LocalSqlConnection(() -> MetaClusterCurrent.wrapper(MySQLManager.class), MetaClusterCurrent.wrapper(XaLog.class));
                 break;
             case JDBC_TRANSACTION_TYPE:
-                connection = new XaTransactionSession(() -> MetaClusterCurrent.wrapper(MySQLManager.class), MetaClusterCurrent.wrapper(XaLog.class));
+                connection = new LocalXaSqlConnection(() -> MetaClusterCurrent.wrapper(MySQLManager.class), MetaClusterCurrent.wrapper(XaLog.class));
                 break;
             default:
                 throw new IllegalStateException("Unexpected transaction type: " + transactionSessionType);

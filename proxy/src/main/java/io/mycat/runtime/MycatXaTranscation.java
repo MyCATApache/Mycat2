@@ -92,6 +92,11 @@ public class MycatXaTranscation implements XaSqlConnection, TransactionSession {
     }
 
     @Override
+    public Future<Void> kill() {
+        return connection.kill();
+    }
+
+    @Override
     public Future<Void> openStatementState() {
         return connection.openStatementState();
     }

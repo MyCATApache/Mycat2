@@ -66,7 +66,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     @Override
     public Future<Void> begin() {
         if (inTranscation) {
-            LOGGER.warn("xa transaction occur nested transaction,xid:"+xid);
+            LOGGER.warn("xa transaction occur nested transaction,xid:" + xid);
             return Future.succeededFuture();
         }
         inTranscation = true;
@@ -355,24 +355,38 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
      *
      */
     public Future<Void> close() {
+        Function<NewMycatConnection,Future<Void>> consumer = newMycatConnection -> newMycatConnection.close();
+        return close(consumer);
+    }
+
+    private Future<Void> close(Function<NewMycatConnection, Future<Void>> consumer) {
         Future<Void> allFuture = CompositeFuture.join((List) closeList).mapEmpty();
         closeList.clear();
         if (inTranscation) {
-            allFuture = rollback();
+            allFuture = CompositeFuture.join(allFuture, rollback()).mapEmpty();
         }
         return allFuture.flatMap(unused -> {
             Future<Void> future = Future.succeededFuture();
             for (NewMycatConnection extraConnection : extraConnections) {
-                future = future.compose(unused2 -> extraConnection.close());
+                future = future.compose(unused2 -> consumer.apply(extraConnection));
             }
             future = future.onComplete(event -> extraConnections.clear());
             return future.onComplete(u -> executeTranscationConnection(c -> {
-                return c.close();
+                return consumer.apply(c);
             }).onComplete(c -> {
                 map.clear();
                 connectionState.clear();
             }));
         });
+    }
+
+    @Override
+    public Future<Void> kill() {
+        Function<NewMycatConnection,Future<Void>> consumer = newMycatConnection -> {
+             newMycatConnection.abandonConnection();
+             return Future.succeededFuture();
+        };
+        return close(consumer);
     }
 
 

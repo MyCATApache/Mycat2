@@ -94,6 +94,8 @@ public interface XaSqlConnection {
 
     public Future<Void> close();
 
+    public Future<Void> kill();
+
 
     /**
      * a sql runs before call it;

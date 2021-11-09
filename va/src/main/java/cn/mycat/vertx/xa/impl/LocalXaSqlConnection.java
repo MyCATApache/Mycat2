@@ -178,4 +178,18 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
         newMycatConnections.addAll(super.getExistedTranscationConnections());
         return  newMycatConnections;
     }
+
+    @Override
+    public Future<Void> kill() {
+        Future<Void> future = Future.succeededFuture();
+        if (isInTransaction()){
+            future = rollback();
+        }
+        return  future.flatMap(unused -> {
+            if (localSqlConnection != null){
+                localSqlConnection.abandonConnection();
+            }
+            return super.kill();
+        });
+    }
 }
