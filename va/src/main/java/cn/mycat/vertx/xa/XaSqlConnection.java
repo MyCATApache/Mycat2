@@ -21,12 +21,9 @@ import io.mycat.newquery.NewMycatConnection;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
-import io.vertx.core.impl.future.PromiseInternal;
-import io.vertx.sqlclient.SqlConnection;
 
+import java.util.List;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public interface XaSqlConnection {
     public static String XA_START = "XA START '%s';";
@@ -51,6 +48,8 @@ public interface XaSqlConnection {
     public Future<Void> begin();
 
     public Future<NewMycatConnection> getConnection(String targetName);
+
+    public List<NewMycatConnection> getExistedTranscationConnections();
 
     default public void rollback(Handler<AsyncResult<Void>> handler) {
         Future<Void> future = rollback();

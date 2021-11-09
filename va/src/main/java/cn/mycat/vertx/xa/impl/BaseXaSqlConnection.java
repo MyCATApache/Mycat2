@@ -25,10 +25,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
@@ -108,6 +105,11 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
             }
             return connection1;
         });
+    }
+
+    @Override
+    public List<NewMycatConnection> getExistedTranscationConnections() {
+        return new ArrayList<>(map.values());
     }
 
     /**

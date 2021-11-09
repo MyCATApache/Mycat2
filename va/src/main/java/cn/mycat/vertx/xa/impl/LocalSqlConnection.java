@@ -24,6 +24,7 @@ import io.vertx.core.Future;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -84,6 +85,11 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
                     }
                     return connection;
                 });
+    }
+
+    @Override
+    public List<NewMycatConnection> getExistedTranscationConnections() {
+        return new ArrayList<>(map.values());
     }
 
     @Override
