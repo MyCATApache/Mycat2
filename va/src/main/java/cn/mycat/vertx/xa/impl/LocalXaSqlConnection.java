@@ -22,6 +22,8 @@ import io.vertx.core.Future;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -164,5 +166,16 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
                 return Future.succeededFuture();
             }
         });
+    }
+
+    @Override
+    public List<NewMycatConnection> getExistedTranscationConnections() {
+        if (localSqlConnection == null){
+            return super.getExistedTranscationConnections();
+        }
+        ArrayList<NewMycatConnection>  newMycatConnections = new ArrayList<>();
+        newMycatConnections.add(localSqlConnection);
+        newMycatConnections.addAll(super.getExistedTranscationConnections());
+        return  newMycatConnections;
     }
 }

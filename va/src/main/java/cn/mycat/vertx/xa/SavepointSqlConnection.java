@@ -54,6 +54,10 @@ public class SavepointSqlConnection implements XaSqlConnection {
         });
     }
 
+    public List<String> getExistedSavepoints(){
+        return new ArrayList(savepoints);
+    }
+
     private Future<Void> execute(String sqls) {
         List<NewMycatConnection> existedTranscationConnections = this.connection.getExistedTranscationConnections();
         List<Future> futures = new ArrayList<>(existedTranscationConnections.size());
@@ -108,7 +112,7 @@ public class SavepointSqlConnection implements XaSqlConnection {
             return connectionFuture;
         } else {
             String sqls = savepoints.stream().map(name -> buildSavepointSql(name)).collect(Collectors.joining(";"));
-            return connectionFuture.flatMap(connection -> connection.update(sqls).mapEmpty());
+            return connectionFuture.flatMap(connection -> connection.update(sqls).map(unused->connection));
         }
 
     }
