@@ -12,33 +12,36 @@ import io.vertx.core.Future;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class SavepointSqlConnection implements XaSqlConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(SavepointSqlConnection.class);
     final XaSqlConnection connection;
-    protected final List<String> savepoints = new ArrayList<>();
+    protected final Set<String> savepoints = new HashSet<>();
+    protected final Set<NewMycatConnection> existed = Collections.newSetFromMap(new IdentityHashMap<>());
 
     public SavepointSqlConnection(XaSqlConnection connection) {
         this.connection = connection;
     }
 
+    @Override
     public Future<Void> createSavepoint(String name) {
-        savepoints.add(name);
+        boolean existed = savepoints.add(name);
         String sqls = buildSavepointSql(name);
         Future<Void> execute = execute(sqls);
         return check(execute);
     }
 
+    @Override
     public Future<Void> rollbackSavepoint(String name) {
         savepoints.remove(name);
         Future<Void> execute = execute(buildRollbackSavepointSql(name));
         return check(execute);
     }
 
+    @Override
     public Future<Void> releaseSavepoint(String name) {
         savepoints.remove(name);
         Future<Void> execute = execute(buildReleaseSavepointSql(name));
@@ -46,16 +49,20 @@ public class SavepointSqlConnection implements XaSqlConnection {
     }
 
     private Future<Void> check(Future<Void> execute) {
+//        return execute.recover(throwable -> {
+//            LOGGER.error("", throwable);
+//            return close().flatMap(unused -> {
+//                return (Future) Future.failedFuture(throwable);
+//            });
+//        });
         return execute.recover(throwable -> {
             LOGGER.error("", throwable);
-            return close().flatMap(unused -> {
-                return (Future)Future.failedFuture(throwable);
-            });
+            return Future.failedFuture(throwable);
         });
     }
 
-    public List<String> getExistedSavepoints(){
-        return new ArrayList(savepoints);
+    public Set<String> getExistedSavepoints() {
+        return new HashSet<>(savepoints);
     }
 
     private Future<Void> execute(String sqls) {
@@ -85,6 +92,7 @@ public class SavepointSqlConnection implements XaSqlConnection {
         statement.setName(new SQLIdentifierExpr(name));
         return statement.toString();
     }
+
     @Override
     public List<NewMycatConnection> getExistedTranscationConnections() {
         return connection.getExistedTranscationConnections();
@@ -112,19 +120,30 @@ public class SavepointSqlConnection implements XaSqlConnection {
             return connectionFuture;
         } else {
             String sqls = savepoints.stream().map(name -> buildSavepointSql(name)).collect(Collectors.joining(";"));
-            return connectionFuture.flatMap(connection -> connection.update(sqls).map(unused->connection));
+            return connectionFuture.flatMap(connection -> {
+                if (existed.add(connection)) {
+                    return connection.update(sqls).map(unused -> connection);
+                }
+                return Future.succeededFuture(connection);
+            });
         }
 
     }
 
     @Override
     public Future<Void> rollback() {
-        return connection.rollback().onComplete(voidAsyncResult -> savepoints.clear());
+        return connection.rollback().onComplete(voidAsyncResult -> {
+            savepoints.clear();
+            existed.clear();
+        });
     }
 
     @Override
     public Future<Void> commit() {
-        return connection.commit().onComplete(voidAsyncResult -> savepoints.clear());
+        return connection.commit().onComplete(voidAsyncResult -> {
+            savepoints.clear();
+            existed.clear();
+        });
     }
 
     @Override

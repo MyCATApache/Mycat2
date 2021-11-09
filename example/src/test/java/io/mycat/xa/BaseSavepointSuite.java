@@ -16,10 +16,11 @@ import org.junit.jupiter.api.Test;
 
 import java.util.function.BiFunction;
 
-public  abstract class BaseSavepointSuite extends XaTestSuite{
+public abstract class BaseSavepointSuite extends XaTestSuite {
     public BaseSavepointSuite(MySQLManager mySQLManager, BiFunction<MySQLManager, XaLog, XaSqlConnection> factory) throws Exception {
         super(mySQLManager, factory);
     }
+
     @Test
     public void baseSavepointCommit(VertxTestContext testContext) {
         XaSqlConnection baseXaSqlConnection = factory.apply(mySQLManager, xaLog);
@@ -38,6 +39,54 @@ public  abstract class BaseSavepointSuite extends XaTestSuite{
                         .toCompletionStage().toCompletableFuture().get();
                 ;
                 Assert.assertEquals("[]", savepointSqlConnection.getExistedSavepoints().toString());
+                testContext.completeNow();
+            }
+        });
+    }
+
+    @Test
+    @SneakyThrows
+    public void baseSavepointSavepointCommit(VertxTestContext testContext) {
+        mySQLManager.getConnection("ds1").flatMap(connection -> {
+            return connection.update("delete FROM `db1`.`travelrecord`").map(u -> connection);
+        }).flatMap(c -> c.close()).toCompletionStage().toCompletableFuture().get();
+        XaSqlConnection baseXaSqlConnection = factory.apply(mySQLManager, xaLog);
+        Assert.assertTrue(baseXaSqlConnection instanceof SavepointSqlConnection);
+
+        SavepointSqlConnection savepointSqlConnection = (SavepointSqlConnection) baseXaSqlConnection;
+
+        baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
+            @Override
+            @SneakyThrows
+            public void handle(AsyncResult<Void> event) {
+                Future<Void> sss = savepointSqlConnection.createSavepoint("sss");
+                sss.toCompletionStage().toCompletableFuture().get();
+                Assert.assertEquals("[sss]", savepointSqlConnection.getExistedSavepoints().toString());
+                NewMycatConnection ds1 = savepointSqlConnection.getConnection("ds1")
+                        .toCompletionStage().toCompletableFuture().get();
+
+                ds1.insert("insert into `db1`.`travelrecord` (`id`) values ('2')")
+                        .toCompletionStage().toCompletableFuture().get();
+
+                sss = savepointSqlConnection.createSavepoint("sss");
+                sss.toCompletionStage().toCompletableFuture().get();
+
+                RowSet objects = ds1.query("select * from `db1`.`travelrecord` where id = 2")
+                        .toCompletionStage().toCompletableFuture().get();
+                Assert.assertTrue(objects.size() > 0);
+
+
+                savepointSqlConnection.commit()
+                        .toCompletionStage().toCompletableFuture().get();
+
+                 ds1 = savepointSqlConnection.getConnection("ds1")
+                        .toCompletionStage().toCompletableFuture().get();
+
+                objects = ds1.query("select * from `db1`.`travelrecord` where id = 2")
+                        .toCompletionStage().toCompletableFuture().get();
+                Assert.assertTrue(objects.size() > 0);
+                Assert.assertEquals("[]", savepointSqlConnection.getExistedSavepoints().toString());
+                savepointSqlConnection.close();
                 testContext.completeNow();
             }
         });

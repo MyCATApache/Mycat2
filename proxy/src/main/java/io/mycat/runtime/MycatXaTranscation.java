@@ -126,4 +126,19 @@ public class MycatXaTranscation implements XaSqlConnection, TransactionSession {
     public void addCloseFuture(Future<Void> future) {
         connection.addCloseFuture(future);
     }
+
+    @Override
+    public Future<Void> createSavepoint(String name) {
+        return connection.createSavepoint(name);
+    }
+
+    @Override
+    public Future<Void> rollbackSavepoint(String name) {
+        return connection.rollbackSavepoint(name);
+    }
+
+    @Override
+    public Future<Void> releaseSavepoint(String name) {
+        return connection.releaseSavepoint(name);
+    }
 }
