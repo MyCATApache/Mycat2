@@ -77,19 +77,19 @@ public class SavepointSqlConnection implements XaSqlConnection {
 
     private String buildSavepointSql(String name) {
         SQLSavePointStatement statement = new SQLSavePointStatement(DbType.mysql);
-        statement.setName(new SQLIdentifierExpr(name));
+        statement.setName(new SQLIdentifierExpr("`"+name+"`"));
         return statement.toString();
     }
 
     private String buildRollbackSavepointSql(String name) {
         SQLRollbackStatement sqlRollbackStatement = new SQLRollbackStatement();
-        sqlRollbackStatement.setTo(new SQLIdentifierExpr(name));
+        sqlRollbackStatement.setTo(new SQLIdentifierExpr("`"+name+"`"));
         return sqlRollbackStatement.toString();
     }
 
     private String buildReleaseSavepointSql(String name) {
         SQLReleaseSavePointStatement statement = new SQLReleaseSavePointStatement(DbType.mysql);
-        statement.setName(new SQLIdentifierExpr(name));
+        statement.setName(new SQLIdentifierExpr("`"+name+"`"));
         return statement.toString();
     }
 
