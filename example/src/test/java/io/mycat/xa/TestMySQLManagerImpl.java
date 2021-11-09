@@ -56,10 +56,10 @@ public class TestMySQLManagerImpl extends AbstractMySQLManagerImpl {
     private DruidDataSource getMySQLPool(int port, String host, String database, String user, String password, int maxSize) {
         DruidDataSource druidDataSource = new DruidDataSource();
 
-        druidDataSource.setUrl("jdbc:mysql://" +host+
-                        ":" +port+
+        druidDataSource.setUrl("jdbc:mysql://" + host +
+                ":" + port +
                 "/"
-                +database+
+                + database +
                 "?characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true");
         druidDataSource.setUsername(user);
         druidDataSource.setPassword(password);
@@ -100,8 +100,16 @@ public class TestMySQLManagerImpl extends AbstractMySQLManagerImpl {
     }
 
     @Override
+    @SneakyThrows
+    public Connection getWriteableConnection(String name) {
+        DruidDataSource druidDataSource = nameMap.get(name);
+        if (druidDataSource == null) return null;
+        return druidDataSource.getConnection();
+    }
+
+    @Override
     public Future<Void> close() {
-        nameMap.values().forEach(c->c.close());
+        nameMap.values().forEach(c -> c.close());
         return Future.succeededFuture();
     }
 

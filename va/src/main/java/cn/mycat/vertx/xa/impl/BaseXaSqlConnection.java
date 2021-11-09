@@ -16,6 +16,7 @@
 package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.*;
+import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.newquery.SqlResult;
 import io.vertx.core.CompositeFuture;
@@ -25,9 +26,11 @@ import io.vertx.core.Promise;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 
+import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -155,10 +158,50 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                     inTranscation = false;
                     clearConnections().onComplete(promise);
                 } else {
-                    retryRollback(function).onComplete(promise);
+                    Set<String> targets = new HashSet<>(map.keySet());
+                    Future<Void> killFuture = kill();
+                    killFuture.flatMap((Function<Void, Future<Void>>) unused -> {
+                        try {
+                            if (tryRecovery(targets)) {
+                                return Future.succeededFuture();
+                            }
+                            String message = "xid:" +getXid() +" recovery fail";
+                            LOGGER.info(message);
+                            LOGGER.error(message);
+                            //@todo 注册调度中心,定时恢复
+                            return Future.failedFuture(message);
+                        }catch (Exception e) {
+                            LOGGER.error(e);
+                            return Future.failedFuture(e);
+                        }
+                    }).onComplete(promise);
                 }
             });
         });
+    }
+
+    private boolean tryRecovery(Set<String> targets) throws InterruptedException {
+        for (int tryCount = 0; tryCount < 3; tryCount++) {
+            HashMap<String, Connection> map = new HashMap<>();
+            try {
+                for (String target : targets) {
+                    Connection writeableConnection = mySQLManager().getWriteableConnection(target);
+                    map.put(target, writeableConnection);
+                }
+                log.readXARecoveryLog(map);
+                return true;
+            } catch (Exception e) {
+                LOGGER.error(e);
+            } finally {
+                map.values().forEach(c -> {
+                    if (c != null) {
+                        JdbcUtils.close(c);
+                    }
+                });
+            }
+            TimeUnit.SECONDS.sleep(1);
+        }
+        return false;
     }
 
     /**

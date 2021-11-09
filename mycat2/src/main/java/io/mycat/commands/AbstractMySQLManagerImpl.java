@@ -18,19 +18,22 @@ package io.mycat.commands;
 
 import cn.mycat.vertx.xa.MySQLManager;
 import io.mycat.ScheduleUtil;
-import io.vertx.core.Future;
-import io.vertx.sqlclient.SqlConnection;
+import io.vertx.core.impl.logging.Logger;
+import io.vertx.core.impl.logging.LoggerFactory;
 
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public  abstract class AbstractMySQLManagerImpl implements MySQLManager {
+public abstract class AbstractMySQLManagerImpl implements MySQLManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractMySQLManagerImpl.class);
 
     @Override
     public void setTimer(long delay, Runnable handler) {
         ScheduleUtil.getTimer().schedule(() -> {
-            handler.run();
-            return null;
+            try {
+                handler.run();
+            } catch (Exception e) {
+                LOGGER.error(e);
+            }
         }, delay, TimeUnit.MILLISECONDS);
     }
 }

@@ -19,14 +19,12 @@ package io.mycat.commands;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.NativeMycatServer;
 import io.mycat.config.DatasourceConfig;
-import io.mycat.config.MycatRouterConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.replica.InstanceType;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.sqlclient.SqlConnection;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 
@@ -69,6 +67,15 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
         }
         this.map = hashMap;
 
+    }
+    @Override
+    @SneakyThrows
+    public Connection getWriteableConnection(String name) {
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        Map<String, JdbcDataSource> datasourceInfo = jdbcConnectionManager.getDatasourceInfo();
+        JdbcDataSource jdbcDataSource = datasourceInfo.get(name);
+        if(jdbcDataSource == null)return null;
+        return jdbcDataSource.getDataSource().getConnection();
     }
 
     @NotNull

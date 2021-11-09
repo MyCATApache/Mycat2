@@ -179,7 +179,11 @@ public class XaLogImpl implements XaLog {
                 }
                 for (String target : targets) {
                     Connection connection = connectionMap.get(target);
-                    JdbcUtils.executeUpdate(connection, sql, Collections.emptyList());
+                    try {
+                        JdbcUtils.executeUpdate(connection, sql, Collections.emptyList());
+                    }catch (Exception e){
+                        LOGGER.error(e);//已经提交或者回滚了
+                    }
                     JdbcUtils.executeUpdate(connection, "delete from mycat.xa_log where xid = '" + xid + "'", Collections.emptyList());
                 }
             }

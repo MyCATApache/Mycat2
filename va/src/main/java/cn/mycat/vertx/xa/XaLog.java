@@ -16,8 +16,6 @@
 
 package cn.mycat.vertx.xa;
 
-import io.vertx.core.Future;
-
 import java.io.Closeable;
 import java.sql.Connection;
 import java.sql.SQLException;
