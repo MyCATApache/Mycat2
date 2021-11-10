@@ -85,7 +85,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         try {
             if (hints.size() == 1) {
                 String s = SqlHints.unWrapperHint(hints.get(0).getText());
-                if (s.startsWith("mycat:")) {
+                if (s.startsWith("mycat:")||s.startsWith("MYCAT:")) {
                     s = s.substring(6);
                     int bodyStartIndex = s.indexOf('{');
                     String cmd;
@@ -231,10 +231,10 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         return showTables(response, body, metadataManager, routerConfig);
                     }
                     if ("setSqlTimeFilter".equalsIgnoreCase(cmd)) {
-                        return setSqlTimeFilter(response, body,metadataManager);
+                        return setSqlTimeFilter(response, body, metadataManager);
                     }
                     if ("getSqlTimeFilter".equalsIgnoreCase(cmd)) {
-                        return getSqlTimeFilter(response, body,metadataManager);
+                        return getSqlTimeFilter(response, body, metadataManager);
                     }
                     if ("showClusters".equalsIgnoreCase(cmd)) {
                         Map map = JsonUtil.from(body, Map.class);
@@ -528,6 +528,20 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         DrdsSqlCompiler.RBO_MERGE_JOIN = body.contains("1");
                         return response.sendOk();
                     }
+                    if ("setDebug".equalsIgnoreCase(cmd)) {
+                        boolean contains = body.contains("1");
+                        dataContext.setDebug(contains);
+                        return response.sendOk();
+                    }
+                    if ("is".equalsIgnoreCase(cmd)) {
+                        ResultSetBuilder builder = ResultSetBuilder.create();
+                        builder.addColumnInfo("value", JDBCType.VARCHAR);
+                        if (body.contains("debug")) {
+                            boolean debug = dataContext.isDebug();
+                            builder.addObjectRowPayload(Arrays.asList(debug ? "1" : "0"));
+                        }
+                        return response.sendResultSet(builder.build());
+                    }
                     if ("setBkaJoinLeftRowCountLimit".equalsIgnoreCase(cmd)) {
                         DrdsSqlCompiler.BKA_JOIN_LEFT_ROW_COUNT_LIMIT = Long.parseLong(
                                 body.substring(1, body.length() - 1));
@@ -683,29 +697,32 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         });
         return response.sendResultSet(() -> builder.build());
     }
+
     private Future<Void> setSqlTimeFilter(Response response, String body, MetadataManager metadataManager) {
         Map map = JsonUtil.from(body, Map.class);
         Object value = map.get("value");
         if (value != null) {
-            long s =Long.parseLong( value.toString());
-            if(MetaClusterCurrent.exist(MycatSQLLogMonitor.class)){
+            long s = Long.parseLong(value.toString());
+            if (MetaClusterCurrent.exist(MycatSQLLogMonitor.class)) {
                 MycatSQLLogMonitor mycatSQLLogMonitor = MetaClusterCurrent.wrapper(MycatSQLLogMonitor.class);
                 mycatSQLLogMonitor.setSqlTimeFilter(s);
             }
         }
         return response.sendOk();
     }
+
     private Future<Void> getSqlTimeFilter(Response response, String body, MetadataManager metadataManager) {
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
-        resultSetBuilder.addColumnInfo("value",JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("value", JDBCType.VARCHAR);
         long sqlTimeFilter = -1;
-        if(MetaClusterCurrent.exist(MycatSQLLogMonitor.class)){
+        if (MetaClusterCurrent.exist(MycatSQLLogMonitor.class)) {
             MycatSQLLogMonitor mycatSQLLogMonitor = MetaClusterCurrent.wrapper(MycatSQLLogMonitor.class);
-             sqlTimeFilter = mycatSQLLogMonitor.getSqlTimeFilter();
+            sqlTimeFilter = mycatSQLLogMonitor.getSqlTimeFilter();
         }
         resultSetBuilder.addObjectRowPayload(Arrays.asList(sqlTimeFilter));
         return response.sendResultSet(resultSetBuilder.build());
     }
+
     private Future<Void> showTopology(Response response, String body, MetadataManager metadataManager) {
         Map map = JsonUtil.from(body, Map.class);
         TableHandler table = metadataManager.getTable((String) map.get("schemaName"),

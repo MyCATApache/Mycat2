@@ -141,6 +141,9 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     default public int getMergeUnionSize() {
         return ((Number) this.getProcessStateMap().getOrDefault("MERGE_UNION_SIZE", MetaClusterCurrent.exist(ServerConfig.class) ? MetaClusterCurrent.wrapper(ServerConfig.class).getMergeUnionSize() : 5)).intValue();
-
     }
+
+    boolean isDebug();
+
+    public void setDebug(boolean value);
 }

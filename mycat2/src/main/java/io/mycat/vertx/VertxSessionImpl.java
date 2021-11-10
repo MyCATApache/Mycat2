@@ -19,7 +19,6 @@ import io.mycat.MycatDataContext;
 import io.mycat.TransactionSession;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.session.ProcessState;
-import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.swapbuffer.PacketRequest;
 import io.mycat.swapbuffer.PacketResponse;
 import io.mycat.util.VertxUtil;
@@ -186,14 +185,15 @@ public class VertxSessionImpl implements VertxSession {
 
     @Override
     public Future<Void> directWriteEnd() {
+        Future<Void> future = Future.succeededFuture();
         if (mycatDataContext != null) {
             TransactionSession transactionSession = mycatDataContext.getTransactionSession();
             if (transactionSession != null) {
-                transactionSession.closeStatementState();
+                future= transactionSession.closeStatementState();
             }
         }
         this.socket.resume();
-        return Future.succeededFuture();
+        return future;
     }
 
     @Override

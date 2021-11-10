@@ -78,6 +78,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     private ObservableEmitter<AbstractWritePacket> emitter;
     private volatile Observable<AbstractWritePacket> observable;
     private Map<String, Object> processStateMap;
+    private boolean debug = false;
 
     public MycatDataContextImpl() {
         this.id = IDS.getAndIncrement();
@@ -448,5 +449,15 @@ public class MycatDataContextImpl implements MycatDataContext {
     @Override
     public void putProcessStateMap(Map<String, Object> map) {
         this.processStateMap = map;
+    }
+
+    @Override
+    public boolean isDebug() {
+        return debug;
+    }
+
+    @Override
+    public void setDebug(boolean value) {
+        this.debug = value;
     }
 }

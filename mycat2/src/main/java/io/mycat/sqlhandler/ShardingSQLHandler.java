@@ -15,31 +15,59 @@
 package io.mycat.sqlhandler;
 
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import io.mycat.*;
+import io.mycat.MycatDataContext;
+import io.mycat.Response;
+import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.DrdsRunnerHelper;
+import io.mycat.swapbuffer.MySQLSwapbufferBuilder;
+import io.mycat.swapbuffer.PacketRequest;
 import io.mycat.util.Pair;
+import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.JDBCType;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Optional;
 
 public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
     private final static Logger LOGGER = LoggerFactory.getLogger(ShardingSQLHandler.class);
+
     @Override
-    protected Future<Void> onExecute(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response){
+    protected Future<Void> onExecute(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response) {
+        Optional<Future<Void>> op = Optional.empty();
+        if (dataContext.isDebug()) {
+            op = testExample(request, dataContext, response);
+            if (op.isPresent()) return op.get();
+        }
         HackRouter hackRouter = new HackRouter(request.getAst(), dataContext);
         try {
             if (hackRouter.analyse()) {
                 Pair<String, String> plan = hackRouter.getPlan();
-                return response.proxySelect(Collections.singletonList(plan.getKey()),plan.getValue());
+                return response.proxySelect(Collections.singletonList(plan.getKey()), plan.getValue());
             } else {
-               return DrdsRunnerHelper.runOnDrds(dataContext,request.getAst(),response);
+                return DrdsRunnerHelper.runOnDrds(dataContext, request.getAst(), response);
             }
-        }catch (Throwable throwable){
-            LOGGER.error(request.getAst().toString(),throwable);
+        } catch (Throwable throwable) {
+            LOGGER.error(request.getAst().toString(), throwable);
             return Future.failedFuture(throwable);
         }
 
+    }
+
+    private Optional<Future<Void>> testExample(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response) {
+        String sqlString = request.getSqlString();
+        if (sqlString.equalsIgnoreCase("select swapbuffer")) {
+            ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+            resultSetBuilder.addColumnInfo("1", JDBCType.INTEGER);
+            resultSetBuilder.addObjectRowPayload(Arrays.asList(1, 2));
+            resultSetBuilder.addObjectRowPayload(Arrays.asList(3, 4));
+            MySQLSwapbufferBuilder mySQLSwapbufferBuilder = new MySQLSwapbufferBuilder(resultSetBuilder.build());
+            Observable<PacketRequest> sender = mySQLSwapbufferBuilder.build();
+            return Optional.of(response.swapBuffer(sender));
+        }
+        return Optional.empty();
     }
 }

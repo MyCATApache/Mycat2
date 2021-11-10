@@ -57,5 +57,18 @@ public interface PacketRequest {
 
     int offset();
 
-   default void close(){};
+    default void close() {
+    }
+
+    ;
+
+    public static PacketRequest of(byte[] bytes) {
+        return PacketRequestResponseJavaByteArrayImpl.wrap(bytes);
+    }
+
+    public static PacketRequest of(final ByteBuffer body,
+                                                final int offset,
+                                                final int length) {
+        return new PacketRequestByteBufferImpl(body, offset, length);
+    }
 }

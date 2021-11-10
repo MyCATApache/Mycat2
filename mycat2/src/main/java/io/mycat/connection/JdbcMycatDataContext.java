@@ -225,6 +225,16 @@ public class JdbcMycatDataContext implements MycatDataContext {
     }
 
     @Override
+    public boolean isDebug() {
+        return false;
+    }
+
+    @Override
+    public void setDebug(boolean value) {
+
+    }
+
+    @Override
     public <T> T unwrap(Class<T> iface) {
         return null;
     }

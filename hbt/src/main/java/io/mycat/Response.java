@@ -18,10 +18,8 @@ package io.mycat;
 
 import io.mycat.api.collector.*;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.swapbuffer.PacketMessageConsumer;
-import io.mycat.swapbuffer.PacketRequest;
-import io.mycat.swapbuffer.PacketResponse;
-import io.mycat.swapbuffer.SwapBufferUtil;
+import io.mycat.swapbuffer.*;
+import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.*;
 import io.vertx.core.Future;
 import org.apache.arrow.vector.VectorSchemaRoot;
@@ -109,6 +107,29 @@ public interface Response {
 
     public  Future<Void> swapBuffer(Observable<PacketRequest> sender,
                                     Emitter<PacketResponse> recycler);
+
+    public default  Future<Void> swapBuffer(Observable<PacketRequest> sender){
+        return swapBuffer(sender, new Emitter<PacketResponse>() {
+            @Override
+            public void onNext(@NonNull PacketResponse value) {
+                if ( value instanceof PacketRequestResponseJavaByteArrayImpl){
+                    value.close();
+                }else {
+                    throw new UnsupportedOperationException();
+                }
+            }
+
+            @Override
+            public void onError(@NonNull Throwable error) {
+
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
+        });
+    }
 
      public Future<Void> sendVectorResultSet(Observable<VectorSchemaRoot> rootObservable);
 
