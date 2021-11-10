@@ -75,9 +75,11 @@ public class RxBuiltInMethodImpl {
 
                                 @Override
                                 public void close() throws Exception {
-                                    while (iterator.hasNext()) {
-                                        iterator.next();
-                                    }
+                                    //如果数据源不能在下次查询或者在mycat返回结果集结束时候返回是否后端结果集
+                                    // 自动释放结果集,再此处帮助释放
+//                                    while (iterator.hasNext()) {
+//                                        iterator.next();
+//                                    }
                                 }
 
                                 @Override
