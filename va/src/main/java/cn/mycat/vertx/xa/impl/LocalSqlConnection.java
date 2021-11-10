@@ -134,8 +134,8 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
 
     private Future close(Function<NewMycatConnection, Future<Void>> consumer) {
         Future future = CompositeFuture.join((List) closeList);
-        if (isInTransaction()){
-            future =   CompositeFuture.join(future,rollback());
+        if (isInTransaction()) {
+            future = CompositeFuture.join(future, rollback());
         }
         closeList.clear();
         for (NewMycatConnection extraConnection : extraConnections) {
@@ -170,8 +170,18 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
     }
 
     @Override
+    public List<NewMycatConnection> getAllConnections() {
+        ArrayList<NewMycatConnection> resList = new ArrayList<>();
+        resList.addAll(map.values());
+        resList.addAll(extraConnections);
+        return resList;
+    }
+
+    @Override
     public Future<Void> closeStatementState() {
-        Future<Void> future = CompositeFuture.join((List) closeList).mapEmpty();
+        List<Future> stopResultSet = getAllConnections().stream().map(i -> i.abandonQuery()).collect(Collectors.toList());
+        Future<Void> future = CompositeFuture.join(stopResultSet).mapEmpty();
+        future = future.flatMap(unused -> CompositeFuture.join((List) closeList).mapEmpty());
         closeList.clear();
         for (NewMycatConnection extraConnection : extraConnections) {
             future = future.compose(unused -> extraConnection.close());

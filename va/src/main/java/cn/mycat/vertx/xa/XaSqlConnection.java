@@ -147,4 +147,6 @@ public interface XaSqlConnection {
     public default Future<Void> releaseSavepoint(String name) {
         return Future.succeededFuture();
     }
+
+    public List<NewMycatConnection> getAllConnections();
 }

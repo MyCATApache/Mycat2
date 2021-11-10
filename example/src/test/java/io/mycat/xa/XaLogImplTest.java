@@ -56,7 +56,6 @@ public class XaLogImplTest {
     private void forceClose(DruidPooledConnection mySQLConnection) throws SQLException {
         DruidPooledConnection mySQLConnection1 = mySQLConnection;
         mySQLConnection1.getConnection().close();
-        mySQLConnection1.abandond();
         mySQLConnection1.close();
     }
 

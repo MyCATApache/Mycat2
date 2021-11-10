@@ -48,6 +48,11 @@ public class SavepointSqlConnection implements XaSqlConnection {
         return check(execute);
     }
 
+    @Override
+    public List<NewMycatConnection> getAllConnections() {
+        return connection.getAllConnections();
+    }
+
     private Future<Void> check(Future<Void> execute) {
 //        return execute.recover(throwable -> {
 //            LOGGER.error("", throwable);

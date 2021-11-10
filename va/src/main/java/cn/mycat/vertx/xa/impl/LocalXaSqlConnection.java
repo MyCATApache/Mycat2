@@ -18,6 +18,7 @@ package cn.mycat.vertx.xa.impl;
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.XaLog;
 import io.mycat.newquery.NewMycatConnection;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
@@ -40,7 +41,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
     @Override
     public Future<Void> begin() {
         if (inTranscation) {
-            LOGGER.warn("local xa transaction occur nested transaction,xid:"+getXid());
+            LOGGER.warn("local xa transaction occur nested transaction,xid:" + getXid());
             return Future.succeededFuture();
         }
         inTranscation = true;
@@ -60,7 +61,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
         }
         if (inTranscation && localSqlConnection != null) {
             return super.commitXa((coordinatorLog) -> localSqlConnection.update(
-                    "REPLACE INTO mycat.xa_log (xid) VALUES('" + curXid + "');").mapEmpty())
+                            "REPLACE INTO mycat.xa_log (xid) VALUES('" + curXid + "');").mapEmpty())
                     .compose((Function<Void, Future<Void>>) o -> {
                         return localSqlConnection.update("commit;").compose(unused -> {
                             return localSqlConnection.update("delete from mycat.xa_log where xid = '" + curXid + "'").mapEmpty();
@@ -133,7 +134,11 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
 
     @Override
     public Future<Void> closeStatementState() {
-        return super.closeStatementState()
+        Future<Void> future = Future.succeededFuture();
+        if (localSqlConnection != null) {
+            future = localSqlConnection.abandonQuery();
+        }
+        return CompositeFuture.join(future, super.closeStatementState()
                 .flatMap(event -> {
                     if (!isInTransaction()) {
                         NewMycatConnection localSqlConnection = this.localSqlConnection;
@@ -147,7 +152,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
                     } else {
                         return Future.succeededFuture();
                     }
-                });
+                })).mapEmpty();
     }
 
     @Override
@@ -170,26 +175,36 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
 
     @Override
     public List<NewMycatConnection> getExistedTranscationConnections() {
-        if (localSqlConnection == null){
+        if (localSqlConnection == null) {
             return super.getExistedTranscationConnections();
         }
-        ArrayList<NewMycatConnection>  newMycatConnections = new ArrayList<>();
+        ArrayList<NewMycatConnection> newMycatConnections = new ArrayList<>();
         newMycatConnections.add(localSqlConnection);
         newMycatConnections.addAll(super.getExistedTranscationConnections());
-        return  newMycatConnections;
+        return newMycatConnections;
     }
 
     @Override
     public Future<Void> kill() {
         Future<Void> future = Future.succeededFuture();
-        if (isInTransaction()){
+        if (isInTransaction()) {
             future = rollback();
         }
-        return  future.flatMap(unused -> {
-            if (localSqlConnection != null){
+        return future.flatMap(unused -> {
+            if (localSqlConnection != null) {
                 localSqlConnection.abandonConnection();
             }
             return super.kill();
         });
+    }
+
+    @Override
+    public List<NewMycatConnection> getAllConnections() {
+        List<NewMycatConnection> allConnections = super.getAllConnections();
+        ArrayList<NewMycatConnection> resList = new ArrayList<>(allConnections.size() + 1);
+        if (localSqlConnection != null) {
+            resList.add(localSqlConnection);
+        }
+        return resList;
     }
 }

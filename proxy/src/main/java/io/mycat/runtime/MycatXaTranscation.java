@@ -146,4 +146,9 @@ public class MycatXaTranscation implements XaSqlConnection, TransactionSession {
     public Future<Void> releaseSavepoint(String name) {
         return connection.releaseSavepoint(name);
     }
+
+    @Override
+    public List<NewMycatConnection> getAllConnections() {
+        return connection.getAllConnections();
+    }
 }

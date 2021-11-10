@@ -95,7 +95,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                     int columnCount = mycatRowMetaData.getColumnCount();
                     collector.onColumnDef(mycatRowMetaData);
                     int columnLimit = columnCount + 1;
-                    while (!resultSet.isClosed() && resultSet.next()) {
+                    while (!isResultSetClosed() && resultSet.next()) {
                         Object[] objects = new Object[columnCount];
                         for (int i = 1, j = 0; i < columnLimit; i++, j++) {
                             objects[j] = resultSet.getObject(i);
@@ -116,7 +116,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                     int columnCount = mycatRowMetaData.getColumnCount();
                     collector.onColumnDef(mycatRowMetaData);
                     int columnLimit = columnCount + 1;
-                    while (!resultSet.isClosed() && resultSet.next()) {
+                    while (!isResultSetClosed() && resultSet.next()) {
                         Object[] objects = new Object[columnCount];
                         for (int i = 1, j = 0; i < columnLimit; i++, j++) {
                             objects[j] = resultSet.getObject(i);
@@ -131,6 +131,15 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
         } finally {
             collector.onComplete();
             resultSet = null;
+        }
+    }
+
+    private boolean isResultSetClosed() {
+        try {
+            return resultSet == null || resultSet.isClosed();
+        }catch (Exception ignored){
+            LOGGER.error("",ignored);
+            return true;
         }
     }
 
@@ -311,7 +320,6 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
         if (this.connection instanceof DruidPooledConnection) {
             DruidPooledConnection connection = (DruidPooledConnection) this.connection;
             JdbcUtils.close(connection.getConnection());
-            connection.abandond();
             JdbcUtils.close(connection);
         } else {
             JdbcUtils.close(this.connection);

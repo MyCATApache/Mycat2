@@ -165,12 +165,12 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                             if (tryRecovery(targets)) {
                                 return Future.succeededFuture();
                             }
-                            String message = "xid:" +getXid() +" recovery fail";
+                            String message = "xid:" + getXid() + " recovery fail";
                             LOGGER.info(message);
                             LOGGER.error(message);
                             //@todo 注册调度中心,定时恢复
                             return Future.failedFuture(message);
-                        }catch (Exception e) {
+                        } catch (Exception e) {
                             LOGGER.error(e);
                             return Future.failedFuture(e);
                         }
@@ -398,7 +398,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
      *
      */
     public Future<Void> close() {
-        Function<NewMycatConnection,Future<Void>> consumer = newMycatConnection -> newMycatConnection.close();
+        Function<NewMycatConnection, Future<Void>> consumer = newMycatConnection -> newMycatConnection.close();
         return close(consumer);
     }
 
@@ -425,9 +425,9 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
 
     @Override
     public Future<Void> kill() {
-        Function<NewMycatConnection,Future<Void>> consumer = newMycatConnection -> {
-             newMycatConnection.abandonConnection();
-             return Future.succeededFuture();
+        Function<NewMycatConnection, Future<Void>> consumer = newMycatConnection -> {
+            newMycatConnection.abandonConnection();
+            return Future.succeededFuture();
         };
         return close(consumer);
     }
@@ -435,7 +435,9 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
 
     @Override
     public Future<Void> closeStatementState() {
-        Future<Void> future = CompositeFuture.join((List) closeList).mapEmpty();
+        List<Future> stopResultSet = getAllConnections().stream().map(i -> i.abandonQuery()).collect(Collectors.toList());
+        Future<Void> future = CompositeFuture.join(stopResultSet).mapEmpty();
+        future = future.flatMap(unused -> CompositeFuture.join((List) closeList).mapEmpty());
         closeList.clear();
         return future.onComplete(event -> clearConnections().onComplete(unused -> {
             if (!inTranscation) {
@@ -452,6 +454,14 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     @Override
     public void addCloseFuture(Future<Void> future) {
         closeList.add(future);
+    }
+
+    @Override
+    public List<NewMycatConnection> getAllConnections() {
+        ArrayList<NewMycatConnection> resList = new ArrayList<>();
+        resList.addAll(map.values());
+        resList.addAll(extraConnections);
+        return resList;
     }
 
     /**
