@@ -37,7 +37,7 @@ public class MycatXaTranscation implements XaSqlConnection, TransactionSession {
 
     @Override
     public String resolveFinalTargetName(String targetName, boolean master, ReplicaBalanceType replicaBalanceType) {
-        return dataSourceNearness.getDataSourceByTargetName(targetName,master,replicaBalanceType);
+        return dataSourceNearness.getDataSourceByTargetName(targetName, master, replicaBalanceType);
 
     }
 

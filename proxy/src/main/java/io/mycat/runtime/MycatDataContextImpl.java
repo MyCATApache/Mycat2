@@ -411,11 +411,18 @@ public class MycatDataContextImpl implements MycatDataContext {
 
     @Override
     public void close() {
+        cancelFlag.set(true);
         if (transactionSession != null) {
-            transactionSession.closeStatementState();
             transactionSession.close();
         }
+    }
+
+    @Override
+    public void kill() {
         cancelFlag.set(true);
+        if (transactionSession != null) {
+            transactionSession.kill();
+        }
     }
 
     @Override

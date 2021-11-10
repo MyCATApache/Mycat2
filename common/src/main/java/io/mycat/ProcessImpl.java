@@ -108,7 +108,7 @@ public class ProcessImpl implements Process {
             holdThread.interrupt();
         }
         exit();
-        context.close();
+        context.kill();
     }
 
     @Override

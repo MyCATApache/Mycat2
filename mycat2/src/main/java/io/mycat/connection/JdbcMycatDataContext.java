@@ -180,6 +180,11 @@ public class JdbcMycatDataContext implements MycatDataContext {
     }
 
     @Override
+    public void kill() {
+
+    }
+
+    @Override
     public String resolveDatasourceTargetName(String targetName) {
         return null;
     }

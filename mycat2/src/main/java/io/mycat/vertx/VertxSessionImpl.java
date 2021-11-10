@@ -133,13 +133,13 @@ public class VertxSessionImpl implements VertxSession {
                 }
             }
         }
-        if (!close){
+        if (!close) {
             Future<Void> future = socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload)));
             if (end) {
                 this.socket.resume();
             }
             return VertxUtil.castPromise(future);
-        }else {
+        } else {
             return VertxUtil.castPromise(Future.failedFuture("session is closed"));
         }
     }
@@ -168,8 +168,13 @@ public class VertxSessionImpl implements VertxSession {
     }
 
     @Override
-    public Future<Void> close(boolean b, String quit) {
-        mycatDataContext.close();
+    public Future<Void> close(boolean normal, String quit) {
+        Future<Void> future;
+        if (normal) {
+            mycatDataContext.close();
+        } else {
+            mycatDataContext.kill();
+        }
         return socket.close();
     }
 

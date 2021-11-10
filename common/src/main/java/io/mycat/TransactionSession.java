@@ -51,6 +51,7 @@ public interface TransactionSession extends Dumpable {
     Future<Void> closeStatementState();
 
     Future<Void> close();
+
     String resolveFinalTargetName(String targetName, boolean master,ReplicaBalanceType replicaBalanceType);
 
     /**
@@ -73,4 +74,6 @@ public interface TransactionSession extends Dumpable {
     }
 
     TransactionType transactionType();
+
+    Future<Void> kill();
 }

@@ -155,7 +155,11 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     @Override
     public synchronized PromiseInternal<Void> close(boolean normal, String hint) {
         try {
-            dataContext.close();
+            if (normal){
+                dataContext.close();
+            }else {
+                dataContext.kill();
+            }
         } catch (Exception e) {
             LOGGER.error("", e);
         }

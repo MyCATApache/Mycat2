@@ -104,6 +104,8 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     void close();
 
+    void kill();
+
     //need catch exception
 //    void block(Runnable runnable);
 

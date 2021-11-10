@@ -121,7 +121,7 @@ public class VertxMycatServer implements MycatServer {
             for (VertxSession session : sessions) {
                 for (Long id : ids) {
                     if(session.getDataContext().getSessionId() == id){
-                        session.close();
+                        session.close(false,"kill");
                         count++;
                     }
                 }

@@ -174,7 +174,7 @@ public class SqlResultSetService implements Closeable, Dumpable {
                 observable = Observable.fromIterable(mysqlPayloadObjects);
                 return Optional.ofNullable(observable);
             } catch (Throwable t) {
-                context.close();
+                context.kill();
                 log.error("", t);
                 return Optional.empty();
             }
