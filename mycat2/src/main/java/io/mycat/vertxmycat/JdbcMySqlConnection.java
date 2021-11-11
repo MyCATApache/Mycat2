@@ -153,6 +153,7 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
                     return new VertxRowSetImpl<>();
             }
             Statement statement = rawConnection.createStatement();
+            setStreamFlag(statement);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("MycatMySQLManager targetName:{} sql:{} rawConnection:{}", targetName, sql, rawConnection);
             }
@@ -235,6 +236,7 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
                                 if (LOGGER.isDebugEnabled()) {
                                     LOGGER.debug("MycatMySQLManager targetName:{} sql:{}", targetName, sql);
                                 }
+                                setStreamFlag(statement);
                                 statement.execute(sql);
                                 ResultSet resultSet = statement.getResultSet();
                                 RowSetJdbcPreparedJdbcQuery.extracted(promise, statement, resultSet, collector);
@@ -261,5 +263,15 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
         public <U> Query<RowSet<U>> mapping(Function<Row, U> mapper) {
             throw new UnsupportedOperationException();
         }
+    }
+    @SneakyThrows
+    public static void setStreamFlag(Statement statement) {
+        if (statement.toString().contains("mysql")||statement.getClass().getName().contains("mysql")) {
+            statement.setFetchSize(Integer.MIN_VALUE);
+        }
+//        protected boolean createStreamingResultSet() {
+//            return ((this.query.getResultType() == Resultset.Type.FORWARD_ONLY) && (this.resultSetConcurrency == java.sql.ResultSet.CONCUR_READ_ONLY)
+//                    && (this.query.getResultFetchSize() == Integer.MIN_VALUE));
+//        }
     }
 }
