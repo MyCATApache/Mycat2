@@ -1,14 +1,19 @@
 package io.ordinate.engine.util;
 
+import com.google.common.collect.ImmutableList;
 import io.mycat.Datetimes;
+import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.resultset.ResultSetWriter;
+import io.ordinate.engine.builder.SchemaBuilder;
+import io.ordinate.engine.schema.FieldBuilder;
 import io.ordinate.engine.schema.InnerType;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.ObservableEmitter;
 import io.reactivex.rxjava3.core.ObservableOnSubscribe;
+import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.*;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
@@ -358,5 +363,56 @@ public class ResultWriterUtil {
             writer.addColumnInfo(field.getName(), innerType.getJdbcType(), field.isNullable(), innerType.isSigned());
         }
         return writer.build().getMetaData();
+    }
+
+    public static Schema resultSetColumnToVectorRowSchema(MycatRowMetaData mycatRowMetaData) {
+        int columnCount = mycatRowMetaData.getColumnCount();
+        ImmutableList.Builder<Field> builder = ImmutableList.builder();
+        for (int i = 0; i < columnCount; i++) {
+            String columnName = mycatRowMetaData.getColumnName(i);
+            int columnType = mycatRowMetaData.getColumnType(i);
+            boolean signed = mycatRowMetaData.isSigned(i);
+            boolean nullable = mycatRowMetaData.isNullable(i);
+            InnerType innerType = InnerType.fromJdbc(columnType);
+            if (!signed) {
+                innerType = innerType.toUnsigned();
+            }
+            Field field = FieldBuilder.of(columnName, innerType.getArrowType(), nullable).toArrow();
+            builder.add(field);
+        }
+        return new org.apache.arrow.vector.types.pojo.Schema(builder.build());
+    }
+
+    public static Observable<VectorSchemaRoot> convertToVector(RowBaseIterator rowBaseIterator) {
+        return Observable.create(emitter -> {
+            try {
+                RootAllocator rootAllocator = new RootAllocator(Long.MAX_VALUE);
+                MycatRowMetaData metaData = rowBaseIterator.getMetaData();
+                Schema schema = ResultWriterUtil.resultSetColumnToVectorRowSchema(metaData);
+                VectorSchemaRoot vectorSchemaRoot = VectorSchemaRoot.create(schema, rootAllocator);
+                int columnCount = metaData.getColumnCount();
+
+                List<FieldVector> fieldVectors = vectorSchemaRoot.getFieldVectors();
+                vectorSchemaRoot.allocateNew();
+                int rowId = 0;
+                while (rowBaseIterator.next()) {
+                    for (int i = 0; i < columnCount; i++) {
+                        FieldVector valueVectors = fieldVectors.get(i);
+                        Object object = rowBaseIterator.getObject(i);
+                        if (object == null) {
+                            SchemaBuilder.setVectorNull(valueVectors, rowId);
+                        } else {
+                            SchemaBuilder.setVector(valueVectors, rowId, object);
+                        }
+                    }
+                    rowId++;
+                }
+                vectorSchemaRoot.setRowCount(rowId);
+                emitter.onNext(vectorSchemaRoot);
+                emitter.onComplete();
+            } catch (Throwable e) {
+                emitter.tryOnError(e);
+            }
+        });
     }
 }

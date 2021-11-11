@@ -22,8 +22,10 @@ import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.swapbuffer.MySQLSwapbufferBuilder;
 import io.mycat.swapbuffer.PacketRequest;
 import io.mycat.util.Pair;
+import io.ordinate.engine.util.ResultWriterUtil;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
+import org.apache.arrow.vector.VectorSchemaRoot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +69,14 @@ public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             MySQLSwapbufferBuilder mySQLSwapbufferBuilder = new MySQLSwapbufferBuilder(resultSetBuilder.build());
             Observable<PacketRequest> sender = mySQLSwapbufferBuilder.build();
             return Optional.of(response.swapBuffer(sender));
+        }
+        if (sqlString.equalsIgnoreCase("select arrow")) {
+            ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+            resultSetBuilder.addColumnInfo("1", JDBCType.INTEGER);
+            resultSetBuilder.addObjectRowPayload(Arrays.asList(1, 2));
+            resultSetBuilder.addObjectRowPayload(Arrays.asList(3, 4));
+            Observable<VectorSchemaRoot> observable = ResultWriterUtil.convertToVector(resultSetBuilder.build());
+            return Optional.of(response.sendVectorResultSet(observable));
         }
         return Optional.empty();
     }

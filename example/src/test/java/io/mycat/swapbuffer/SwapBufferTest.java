@@ -24,5 +24,16 @@ public class SwapBufferTest implements MycatTest {
             System.out.println();
         }
     }
-
+    @Test
+    public void test2() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
+            execute(mycatConnection, "/*+mycat:setDebug{1}*/");
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, "/*+mycat:is{debug}*/");
+            Assert.assertEquals("[{value=1}]",maps.toString());
+            List<Map<String, Object>> maps2 = executeQuery(mycatConnection, "SELECT arrow");
+            Assert.assertEquals("[{1=1}, {1=3}]",maps2.toString());
+            execute(mycatConnection, "/*+mycat:setDebug{0}*/");
+            System.out.println();
+        }
+    }
 }

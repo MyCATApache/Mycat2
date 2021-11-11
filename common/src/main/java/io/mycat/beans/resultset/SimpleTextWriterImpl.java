@@ -53,43 +53,43 @@ public class SimpleTextWriterImpl implements ResultSetWriter {
 
     @Override
     public void addInt8(byte b) {
-        row[index] = new byte[]{b};
+        row[index] = String.valueOf(b).getBytes();
         index++;
     }
 
     @Override
     public void addInt16(short i) {
-        row[index] = ByteUtil.getBytes(i);
+        row[index] =  String.valueOf(i).getBytes();
         index++;
     }
 
     @Override
     public void addChar(char i) {
-        row[index] = ByteUtil.getBytes(i);
+        row[index] =  String.valueOf(i).getBytes();
         index++;
     }
 
     @Override
     public void addInt32(int i) {
-        row[index] = ByteUtil.getBytes(i);
+        row[index] = String.valueOf(i).getBytes();
         index++;
     }
 
     @Override
     public void addInt64(long l) {
-        row[index] = ByteUtil.getBytes(l);
+        row[index] =  String.valueOf(l).getBytes();
         index++;
     }
 
     @Override
     public void addFloat(float v) {
-        row[index] = ByteUtil.getBytes(v);
+        row[index] = String.valueOf(v).getBytes();
         index++;
     }
 
     @Override
     public void addDouble(double v) {
-        row[index] = ByteUtil.getBytes(v);
+        row[index] = String.valueOf(v).getBytes();
         index++;
     }
 
@@ -107,19 +107,19 @@ public class SimpleTextWriterImpl implements ResultSetWriter {
 
     @Override
     public void addUInt16(short c) {
-        row[index] = ByteUtil.getBytes(c);
+        row[index] = String.valueOf(c).getBytes();
         index++;
     }
 
     @Override
     public void addUInt32(int i) {
-        row[index] = ByteUtil.getBytes(i);
+        row[index] =String.valueOf(i).getBytes();
         index++;
     }
 
     @Override
     public void addUInt64(long l) {
-        row[index] = ByteUtil.getBytes(l);
+        row[index] = String.valueOf(l).getBytes();
         index++;
     }
 
@@ -143,7 +143,7 @@ public class SimpleTextWriterImpl implements ResultSetWriter {
 
     @Override
     public void addUInt8(byte b) {
-        row[index] = ByteUtil.getBytes(b);
+        row[index] =String.valueOf(b).getBytes();
         index++;
     }
 
