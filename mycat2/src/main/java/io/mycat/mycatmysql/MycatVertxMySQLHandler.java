@@ -504,11 +504,7 @@ public class MycatVertxMySQLHandler {
             @Override
             public void endVisit(SQLVariantRefExpr x) {
                 if ("?".equalsIgnoreCase(x.getName())) {
-                    SQLDataType sqlDataType = x.computeDataType();
                     JDBCType res = JDBCType.VARCHAR;
-                    if (sqlDataType != null) {
-                        res = JDBCType.valueOf(sqlDataType.jdbcType());
-                    }
                     paramsBuilder.addColumnInfo("", res);
                 }
                 super.endVisit(x);
