@@ -42,6 +42,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.JDBCType;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -170,7 +171,7 @@ public class MycatVertxMySQLHandler {
                 }
                 case MySQLCommandType.COM_STMT_EXECUTE: {
                     MycatDataContext dataContext = this.session.getDataContext();
-                    dataContext.getPrepareInfo();
+                    Map<Long, PreparedStatement> prepareInfo = dataContext.getPrepareInfo();
                     long statementId = readView.readFixInt(4);
                     byte flags = readView.readByte();
                     long iteration = readView.readFixInt(4);
@@ -180,17 +181,15 @@ public class MycatVertxMySQLHandler {
                     if (numParams > 0) {
                         nullMap = readView.readBytes((numParams + 7) / 8);
                     }
-                    int[] params = null;
-                    BindValue[] values = null;
+                    int[] params = prepareInfo.get(statementId).getParametersType();
+                    BindValue[] values = new BindValue[numParams];
 
                     boolean newParameterBoundFlag = !readView.readFinished() && readView.readByte() == 1;
                     if (newParameterBoundFlag) {
-                        params = new int[numParams];
                         for (int i = 0; i < numParams; i++) {
                             params[i] = (int) readView.readFixInt(2);
                         }
                     }
-                    values = new BindValue[numParams];
                     for (int i = 0; i < numParams; i++) {
                         BindValue bv = new BindValue();
                         bv.type = params[i];
