@@ -266,9 +266,9 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
     }
     @SneakyThrows
     public static void setStreamFlag(Statement statement) {
-        if (statement.toString().contains("mysql")||statement.getClass().getName().contains("mysql")) {
-            statement.setFetchSize(Integer.MIN_VALUE);
-        }
+//        if (statement.toString().contains("mysql")||statement.getClass().getName().contains("mysql")) {
+//            statement.setFetchSize(Integer.MIN_VALUE);
+//        }
 //        protected boolean createStreamingResultSet() {
 //            return ((this.query.getResultType() == Resultset.Type.FORWARD_ONLY) && (this.resultSetConcurrency == java.sql.ResultSet.CONCUR_READ_ONLY)
 //                    && (this.query.getResultFetchSize() == Integer.MIN_VALUE));
