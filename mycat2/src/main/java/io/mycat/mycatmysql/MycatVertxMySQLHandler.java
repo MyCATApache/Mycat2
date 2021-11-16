@@ -170,7 +170,7 @@ public class MycatVertxMySQLHandler {
                 }
                 case MySQLCommandType.COM_STMT_EXECUTE: {
                     MycatDataContext dataContext = this.session.getDataContext();
-                    dataContext.getPrepareInfo();
+                    Map<Long, PreparedStatement> prepareInfo = dataContext.getPrepareInfo();
                     long statementId = readView.readFixInt(4);
                     byte flags = readView.readByte();
                     long iteration = readView.readFixInt(4);
@@ -180,38 +180,34 @@ public class MycatVertxMySQLHandler {
                     if (numParams > 0) {
                         nullMap = readView.readBytes((numParams + 7) / 8);
                     }
-                    int[] params = null;
-                    BindValue[] values = null;
+                    int[] params = prepareInfo.get(statementId).getParametersType();
+                    BindValue[] values = new BindValue[numParams];
 
                     boolean newParameterBoundFlag = !readView.readFinished() && readView.readByte() == 1;
                     if (newParameterBoundFlag) {
-                        params = new int[numParams];
                         for (int i = 0; i < numParams; i++) {
                             params[i] = (int) readView.readFixInt(2);
                         }
-                        values = new BindValue[numParams];
-                        for (int i = 0; i < numParams; i++) {
-                            BindValue bv = new BindValue();
-                            bv.type = params[i];
-                            if ((nullMap[i / 8] & (1 << (i & 7))) != 0) {
-                                bv.isNull = true;
-                            } else {
-                                byte[] longData = getLongData(statementId, i, this.session);
-                                if (longData == null) {
-                                    ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
-                                    BindValueUtil.read(readView, bv, StandardCharsets.UTF_8,!serverConfig.isPstmtStringVal());
-                                    bv.isLongData = false;
-                                } else {
-                                    bv.value = longData;
-                                    bv.isLongData = true;
-                                }
-                            }
-                            values[i] = bv;
-                        }
-                        saveBindValue(statementId, values, this.session);
-                    } else {
-                        values = getLastBindValue(statementId, this.session);
                     }
+                    for (int i = 0; i < numParams; i++) {
+                        BindValue bv = new BindValue();
+                        bv.type = params[i];
+                        if ((nullMap[i / 8] & (1 << (i & 7))) != 0) {
+                            bv.isNull = true;
+                        } else {
+                            byte[] longData = getLongData(statementId, i, this.session);
+                            if (longData == null) {
+                                ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
+                                BindValueUtil.read(readView, bv, StandardCharsets.UTF_8, !serverConfig.isPstmtStringVal());
+                                bv.isLongData = false;
+                            } else {
+                                bv.value = longData;
+                                bv.isLongData = true;
+                            }
+                        }
+                        values[i] = bv;
+                    }
+                    saveBindValue(statementId, values, this.session);
                     promise = handlePrepareStatementExecute(statementId, flags, params, values,
                             this.session);
                     break;
@@ -522,7 +518,12 @@ public class MycatVertxMySQLHandler {
         MycatRowMetaData params = paramsBuilder.build().getMetaData();
         long stmtId = mycatDataContext.nextPrepareStatementId();
         Map<Long, io.mycat.PreparedStatement> statementMap = this.mycatDataContext.getPrepareInfo();
-        statementMap.put(stmtId, new io.mycat.PreparedStatement(stmtId, sqlStatement, params.getColumnCount()));
+        PreparedStatement preparedStatement = new PreparedStatement(stmtId, sqlStatement, params.getColumnCount());
+        for (int i = 0; i < params.getColumnCount(); i++) {
+            preparedStatement.getParametersType()[i] = MysqlDefs.FIELD_TYPE_STRING;
+        }
+
+        statementMap.put(stmtId, preparedStatement);
 
         DefaultPreparedOKPacket info = new DefaultPreparedOKPacket(stmtId, fields.getColumnCount(), params.getColumnCount(), session.getWarningCount());
 
