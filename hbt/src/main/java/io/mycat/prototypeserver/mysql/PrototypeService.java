@@ -3,11 +3,8 @@ package io.mycat.prototypeserver.mysql;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLDataType;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
-import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
-import com.github.jinahya.database.metadata.bind.Catalog;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
@@ -195,7 +192,7 @@ public class PrototypeService {
         if (sqlStatement instanceof MySqlShowWarningsStatement) {
             MySqlShowWarningsStatement
                     statement = (MySqlShowWarningsStatement) sqlStatement;
-            List<ColumnDefPacket> columnDefPacketList = getShowVariantsColumns();
+            List<ColumnDefPacket> columnDefPacketList = getShowWarningsColumns();
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showWarnings(statement));
             return Optional.of(mySQLResultSet);
@@ -1993,11 +1990,6 @@ public class PrototypeService {
             map.put(key, nameMap);
         }
         return (NameMap<NameMap<String>>) NameMap.immutableCopyOf(map);
-    }
-
-    static class Info {
-        List<Catalog> catalogList;
-        String name;
     }
 //
 //    @Nullable
