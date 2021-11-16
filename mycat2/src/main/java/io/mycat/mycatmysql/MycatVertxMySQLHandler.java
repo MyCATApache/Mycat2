@@ -505,11 +505,7 @@ public class MycatVertxMySQLHandler {
             @Override
             public void endVisit(SQLVariantRefExpr x) {
                 if ("?".equalsIgnoreCase(x.getName())) {
-                    SQLDataType sqlDataType = x.computeDataType();
                     JDBCType res = JDBCType.VARCHAR;
-                    if (sqlDataType != null) {
-                        res = JDBCType.valueOf(sqlDataType.jdbcType());
-                    }
                     paramsBuilder.addColumnInfo("", res);
                 }
                 super.endVisit(x);
@@ -519,7 +515,13 @@ public class MycatVertxMySQLHandler {
         MycatRowMetaData params = paramsBuilder.build().getMetaData();
         long stmtId = mycatDataContext.nextPrepareStatementId();
         Map<Long, io.mycat.PreparedStatement> statementMap = this.mycatDataContext.getPrepareInfo();
-        statementMap.put(stmtId, new io.mycat.PreparedStatement(stmtId, sqlStatement, params.getColumnCount()));
+
+        PreparedStatement preparedStatement = new PreparedStatement(stmtId, sqlStatement, params.getColumnCount());
+        for (int i = 0; i < params.getColumnCount(); i++) {
+            preparedStatement.getParametersType()[i] = MysqlDefs.FIELD_TYPE_STRING;
+        }
+
+        statementMap.put(stmtId, preparedStatement);
 
         DefaultPreparedOKPacket info = new DefaultPreparedOKPacket(stmtId, fields.getColumnCount(), params.getColumnCount(), session.getWarningCount());
 
