@@ -16,6 +16,7 @@ package io.mycat;
 
 import io.mycat.beans.mysql.MySQLVersion;
 import io.mycat.config.*;
+import io.mycat.exporter.PrometheusExporter;
 import io.mycat.monitor.MycatSQLLogMonitor;
 import io.mycat.monitor.MycatSQLLogMonitorImpl;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
@@ -116,7 +117,7 @@ public class MycatCore {
         context.put(this.mycatServer.getClass(), mycatServer);
         context.put(MycatServer.class, mycatServer);
         context.put(SqlRecorderRuntime.class, SqlRecorderRuntime.INSTANCE);
-        context.put(MycatSQLLogMonitor.class,new MycatSQLLogMonitorImpl(serverConfig.getServer().getMycatId(),serverConfig.getMonitor(),vertx));
+        context.put(MycatSQLLogMonitor.class, new MycatSQLLogMonitorImpl(serverConfig.getServer().getMycatId(), serverConfig.getMonitor(), vertx));
         ////////////////////////////////////////////tmp///////////////////////////////////
         MetaClusterCurrent.register(context);
 
@@ -214,6 +215,7 @@ public class MycatCore {
     public void startServer() throws Exception {
         metadataStorageManager.start();
         mycatServer.start();
+        new PrometheusExporter().run();
     }
 
     public static void main(String[] args) throws Exception {
