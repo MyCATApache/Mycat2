@@ -108,7 +108,7 @@ public class PrototypeService {
         if (sqlStatement instanceof MySqlShowCreateDatabaseStatement) {
             MySqlShowCreateDatabaseStatement statement = (MySqlShowCreateDatabaseStatement) sqlStatement;
 
-            List<ColumnDefPacket> columnDefPacketList = getShowTableStatusColumns();
+            List<ColumnDefPacket> columnDefPacketList = getShowCreateDatabaseColumns();
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showCreateDatabase(statement));
             return Optional.of(mySQLResultSet);
@@ -202,6 +202,41 @@ public class PrototypeService {
         }
         // SELECT `TABLE_NAME` FROM `INFORMATION_SCHEMA`.`TABLES` WHERE `TABLE_SCHEMA` = '1cloud_0' AND `TABLE_TYPE` = 'VIEW';
         return Optional.empty();
+    }
+
+    private List<ColumnDefPacket> getShowCreateDatabaseColumns() {
+        ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
+
+        String Catalog = "def";
+        String Database = "";
+        String Table = "";
+        String OriginalTable = "";
+        String Name = "Database";
+        String OriginalName = "";
+        int CharsetNumber = 33;
+        int Length = 192;
+        int Type = 253;
+        int Flags = 0x0001;
+        byte Decimals = 31;
+
+        columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
+
+
+        Catalog = "def";
+        Database = "";
+        Table = "";
+        OriginalTable = "";
+        Name = "Create Database";
+        OriginalName = "";
+        CharsetNumber = 33;
+        Length = 3072;
+        Type = 253;
+        Flags = 0x0001;
+        Decimals = 31;
+
+        columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
+
+        return columnDefPackets;
     }
 
     private List<ColumnDefPacket> getShowColumnsColumns() {
