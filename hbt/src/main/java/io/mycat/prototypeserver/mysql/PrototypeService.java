@@ -111,7 +111,7 @@ public class PrototypeService {
         if (sqlStatement instanceof MySqlShowCreateDatabaseStatement) {
             MySqlShowCreateDatabaseStatement statement = (MySqlShowCreateDatabaseStatement) sqlStatement;
 
-            List<ColumnDefPacket> columnDefPacketList = getShowTableStatusColumns();
+            List<ColumnDefPacket> columnDefPacketList = getShowCreateDatabaseColumns();
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showCreateDatabase(statement));
             return Optional.of(mySQLResultSet);
@@ -195,7 +195,7 @@ public class PrototypeService {
         if (sqlStatement instanceof MySqlShowWarningsStatement) {
             MySqlShowWarningsStatement
                     statement = (MySqlShowWarningsStatement) sqlStatement;
-            List<ColumnDefPacket> columnDefPacketList = getShowVariantsColumns();
+            List<ColumnDefPacket> columnDefPacketList = getShowWarningsColumns();
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showWarnings(statement));
             return Optional.of(mySQLResultSet);
@@ -206,6 +206,42 @@ public class PrototypeService {
         // SELECT `TABLE_NAME` FROM `INFORMATION_SCHEMA`.`TABLES` WHERE `TABLE_SCHEMA` = '1cloud_0' AND `TABLE_TYPE` = 'VIEW';
         return Optional.empty();
     }
+
+    private List<ColumnDefPacket> getShowCreateDatabaseColumns() {
+        ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
+
+        String Catalog = "def";
+        String Database = "";
+        String Table = "";
+        String OriginalTable = "";
+        String Name = "Database";
+        String OriginalName = "";
+        int CharsetNumber = 33;
+        int Length = 192;
+        int Type = 253;
+        int Flags = 0x0001;
+        byte Decimals = 31;
+
+        columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
+
+
+        Catalog = "def";
+        Database = "";
+        Table = "";
+        OriginalTable = "";
+        Name = "Create Database";
+        OriginalName = "";
+        CharsetNumber = 33;
+        Length = 3072;
+        Type = 253;
+        Flags = 0x0001;
+        Decimals = 31;
+
+        columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
+
+        return columnDefPackets;
+    }
+
 
     private List<ColumnDefPacket> getShowColumnsColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
@@ -435,7 +471,7 @@ public class PrototypeService {
         return columnDefPackets;
     }
 
-    private List<ColumnDefPacket> getShowVariantsColumns() {
+    public static List<ColumnDefPacket> getShowVariantsColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -470,7 +506,7 @@ public class PrototypeService {
         return columnDefPackets;
     }
 
-    private List<ColumnDefPacket> getShowProcedureStatusColumns() {
+    public static List<ColumnDefPacket> getShowProcedureStatusColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -633,7 +669,7 @@ public class PrototypeService {
         return columnDefPackets;
     }
 
-    private List<ColumnDefPacket> getShowIndexesColumns() {
+    public static List<ColumnDefPacket> getShowIndexesColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -841,7 +877,7 @@ public class PrototypeService {
         return columnDefPackets;
     }
 
-    private List<ColumnDefPacket> getShowErrorsColumns() {
+    public static List<ColumnDefPacket> getShowErrorsColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -890,7 +926,7 @@ public class PrototypeService {
         return columnDefPackets;
     }
 
-    private List<ColumnDefPacket> getShowWarningsColumns() {
+    public static List<ColumnDefPacket> getShowWarningsColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -1030,7 +1066,7 @@ public class PrototypeService {
     }
 
 
-    private List<ColumnDefPacket> getShowCreateFunctionColumns() {
+    public static List<ColumnDefPacket> getShowCreateFunctionColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -1198,7 +1234,7 @@ public class PrototypeService {
         return columnDefPackets;
     }
 
-    private List<ColumnDefPacket> getShowStatusColumns() {
+    public static List<ColumnDefPacket> getShowStatusColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -1384,7 +1420,7 @@ public class PrototypeService {
         return columnDefPackets;
     }
 
-    private List<ColumnDefPacket> getShowCreateTableColumns() {
+    public   static List<ColumnDefPacket> getShowCreateTableColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -1419,7 +1455,7 @@ public class PrototypeService {
         return columnDefPackets;
     }
 
-    private List<ColumnDefPacket> getShowTableStatusColumns() {
+    public List<ColumnDefPacket> getShowTableStatusColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -1450,21 +1486,6 @@ public class PrototypeService {
         Decimals = 0;
 
         columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
-
-        Catalog = "def";
-        Database = "";
-        Table = "TABLES";
-        OriginalTable = "";
-        Name = "Engine";
-        OriginalName = Name;
-        CharsetNumber = 33;
-        Length = 192;
-        Type = 253;
-        Flags = 0;
-        Decimals = 0;
-
-        columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
-
 
         Catalog = "def";
         Database = "";
@@ -1968,7 +1989,7 @@ public class PrototypeService {
 
 
     @NotNull
-    private ColumnDefPacket createColumn(String Catalog, String Database, String Table, String OriginalTable, String Name, String OriginalName, int CharsetNumber, int Length, int Type, int Flags, byte Decimals) {
+    public static ColumnDefPacket createColumn(String Catalog, String Database, String Table, String OriginalTable, String Name, String OriginalName, int CharsetNumber, int Length, int Type, int Flags, byte Decimals) {
         ColumnDefPacketImpl columnDefPacket = new ColumnDefPacketImpl();
         columnDefPacket.setColumnCatalog(Catalog.getBytes());
         columnDefPacket.setColumnSchema(Database.getBytes());
