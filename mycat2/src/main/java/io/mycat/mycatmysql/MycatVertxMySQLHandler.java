@@ -42,6 +42,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.JDBCType;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -170,7 +171,7 @@ public class MycatVertxMySQLHandler {
                 }
                 case MySQLCommandType.COM_STMT_EXECUTE: {
                     MycatDataContext dataContext = this.session.getDataContext();
-                    dataContext.getPrepareInfo();
+                    Map<Long, PreparedStatement> prepareInfo = dataContext.getPrepareInfo();
                     long statementId = readView.readFixInt(4);
                     byte flags = readView.readByte();
                     long iteration = readView.readFixInt(4);
@@ -180,17 +181,15 @@ public class MycatVertxMySQLHandler {
                     if (numParams > 0) {
                         nullMap = readView.readBytes((numParams + 7) / 8);
                     }
-                    int[] params = null;
-                    BindValue[] values = null;
+                    int[] params = prepareInfo.get(statementId).getParametersType();
+                    BindValue[] values = new BindValue[numParams];
 
                     boolean newParameterBoundFlag = !readView.readFinished() && readView.readByte() == 1;
                     if (newParameterBoundFlag) {
-                        params = new int[numParams];
                         for (int i = 0; i < numParams; i++) {
                             params[i] = (int) readView.readFixInt(2);
                         }
                     }
-                    values = new BindValue[numParams];
                     for (int i = 0; i < numParams; i++) {
                         BindValue bv = new BindValue();
                         bv.type = params[i];
@@ -506,11 +505,7 @@ public class MycatVertxMySQLHandler {
             @Override
             public void endVisit(SQLVariantRefExpr x) {
                 if ("?".equalsIgnoreCase(x.getName())) {
-                    SQLDataType sqlDataType = x.computeDataType();
                     JDBCType res = JDBCType.VARCHAR;
-                    if (sqlDataType != null) {
-                        res = JDBCType.valueOf(sqlDataType.jdbcType());
-                    }
                     paramsBuilder.addColumnInfo("", res);
                 }
                 super.endVisit(x);
@@ -520,7 +515,13 @@ public class MycatVertxMySQLHandler {
         MycatRowMetaData params = paramsBuilder.build().getMetaData();
         long stmtId = mycatDataContext.nextPrepareStatementId();
         Map<Long, io.mycat.PreparedStatement> statementMap = this.mycatDataContext.getPrepareInfo();
-        statementMap.put(stmtId, new io.mycat.PreparedStatement(stmtId, sqlStatement, params.getColumnCount()));
+
+        PreparedStatement preparedStatement = new PreparedStatement(stmtId, sqlStatement, params.getColumnCount());
+        for (int i = 0; i < params.getColumnCount(); i++) {
+            preparedStatement.getParametersType()[i] = MysqlDefs.FIELD_TYPE_STRING;
+        }
+
+        statementMap.put(stmtId, preparedStatement);
 
         DefaultPreparedOKPacket info = new DefaultPreparedOKPacket(stmtId, fields.getColumnCount(), params.getColumnCount(), session.getWarningCount());
 
