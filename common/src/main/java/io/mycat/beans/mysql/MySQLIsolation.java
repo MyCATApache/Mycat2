@@ -45,10 +45,14 @@ public enum MySQLIsolation {
     }
 
     public static MySQLIsolation parse(String name) {
+        name = name.trim();
         for (MySQLIsolation value : values()) {
             if (value.getText().equalsIgnoreCase(name)) {
                 return value;
             }
+        }
+        if (name.contains("=")){
+            return parse(name.replaceAll("="," "));
         }
         return null;
     }
@@ -85,7 +89,7 @@ public enum MySQLIsolation {
 
     public static Optional<MySQLIsolation> toMySQLIsolationFrom(String sql) {
         for (MySQLIsolation value : values()) {
-            if (value.getCmd() == sql) {
+            if (value.getCmd().equals(sql)) {
                 return Optional.of(value);
             }
         }
