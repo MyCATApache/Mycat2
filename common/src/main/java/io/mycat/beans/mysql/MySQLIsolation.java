@@ -45,6 +45,7 @@ public enum MySQLIsolation {
     }
 
     public static MySQLIsolation parse(String name) {
+        if (name == null)return null;
         name = name.trim();
         for (MySQLIsolation value : values()) {
             if (value.getText().equalsIgnoreCase(name)) {
