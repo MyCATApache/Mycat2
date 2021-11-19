@@ -294,7 +294,14 @@ public class SqlFunctionTest implements MycatTest {
     private void initShardingTable() throws Exception {
         Connection mycatConnection = getMySQLConnection(DB_MYCAT);
         execute(mycatConnection, RESET_CONFIG);
+
         Connection mysql3306 = getMySQLConnection(DB1);
+        Connection mysql3307 = getMySQLConnection(DB2);
+
+        JdbcUtils.execute(mysql3306,"drop table if exists db1_0.travelrecord_0");
+        JdbcUtils.execute(mysql3306,"drop table if exists db1_0.travelrecord_1");
+        JdbcUtils.execute(mysql3307,"drop table if exists db1_1.travelrecord_2");
+        JdbcUtils.execute(mysql3307,"drop table if exists db1_1.travelrecord_3");
 
         execute(mycatConnection, "DROP DATABASE db1");
 
@@ -330,10 +337,15 @@ public class SqlFunctionTest implements MycatTest {
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
                 + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
         execute(mycatConnection, "CREATE TABLE `company` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))");
-        execute(mysql3306, "CREATE TABLE if not exists db1.`travelrecord` (\n" +
-                "  `id` bigint NOT NULL AUTO_INCREMENT\n," +
-                "  `user_id` varchar(100) DEFAULT NULL" +
-                " , PRIMARY KEY (`id`) " +
+        execute(mysql3306, "CREATE TABLE db1.`travelrecord` (\n" +
+                "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                "  `traveldate` date DEFAULT NULL,\n" +
+                "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                "  `days` int DEFAULT NULL,\n" +
+                "  `blob` longblob,\n" +
+                "  PRIMARY KEY (`id`),\n" +
+                "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
         execute(mysql3306, "CREATE TABLE if not exists `company` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))");
 
@@ -359,6 +371,7 @@ public class SqlFunctionTest implements MycatTest {
 
         mycatConnection.close();
         mysql3306.close();
+        mysql3307.close();
     }
 
 

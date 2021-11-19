@@ -9,6 +9,7 @@ import io.mycat.router.function.IndexDataNode;
 import io.mycat.router.mycat1xfunction.PartitionByFileMap;
 import io.mycat.router.mycat1xfunction.PartitionByHotDate;
 import io.mycat.util.ByteUtil;
+import io.mycat.util.StringUtil;
 import io.vertx.core.json.Json;
 import org.apache.groovy.util.Maps;
 import org.junit.Assert;
@@ -1413,7 +1414,12 @@ public class UserCaseTest implements MycatTest {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
             List<Map<String, Object>> maps1 = executeQuery(mycatConnection, "select DATE_SUB(NOW(), INTERVAL 1 MONTH)");
             List<Map<String, Object>>  maps2 = executeQuery(mycatConnection, "select DATE_SUB(NOW(), INTERVAL '1' MONTH)");
-            Assert.assertEquals(maps1.get(0).values().toString(),maps2.get(0).values().toString());
+            String s1 = maps1.get(0).values().toString();
+            s1 = s1.substring(0,s1.length()-2);
+
+            String s2 = maps2.get(0).values().toString();
+            s2 = s2.substring(0,s2.length()-2);
+            Assert.assertEquals(s1,s2);
             System.out.println();
         }
     }

@@ -21,7 +21,7 @@ public class AlterTableTest implements MycatTest {
              Connection db1 = getMySQLConnection(DB1)) {
             execute(mycatConnection, RESET_CONFIG);
             JdbcUtils.execute(db1,
-                    "drop TABLE db1.`travelrecord2`");
+                    "drop TABLE if exists db1.`travelrecord2`");
 
             execute(mycatConnection, "CREATE DATABASE db1");
             execute(mycatConnection, "CREATE TABLE db1.`travelrecord2` (\n" +
@@ -90,6 +90,8 @@ public class AlterTableTest implements MycatTest {
                     .create("ds1",
                             DB2));
             execute(mycatConnection, CreateClusterHint.create("c0",
+                    Arrays.asList("ds0"), Collections.emptyList()));
+            execute(mycatConnection, CreateClusterHint.create("c1",
                     Arrays.asList("ds1"), Collections.emptyList()));
 
             execute(mycatConnection, "CREATE DATABASE db1");
@@ -173,9 +175,6 @@ public class AlterTableTest implements MycatTest {
             Assert.assertEquals(1,
                     getColumns(mycatConnection, "db1", "travelrecord2")
                             .getColumnCount());
-            Assert.assertEquals(1,
-                    getColumns(db1, "db1", "travelrecord2")
-                            .getColumnCount());
 
             JdbcUtils.execute(mycatConnection,
                     "ALTER TABLE db1.`travelrecord2`\n ADD COLUMN user_id varchar(30);");
@@ -200,7 +199,7 @@ public class AlterTableTest implements MycatTest {
                     "ALTER TABLE db1.`travelrecord2`\n DROP COLUMN user_id;");
 
             Assert.assertEquals(1,
-                    getColumns(db1, "db1", "travelrecord2")
+                    getColumns(db2, "db1_1", "travelrecord2_3")
                             .getColumnCount());
         }
     }

@@ -24,6 +24,12 @@ public class PushDownFunctionShardingTableTest implements MycatTest {
     @Before
     public void runBeforeTestMethod() throws Exception {
         initShardingTable();
+        try(Connection mycatConnection = getMySQLConnection(DB1);){
+            execute(mycatConnection, "CREATE DATABASE if not exists db1");
+            execute(mycatConnection, "CREATE TABLE if not exists db1.`travelrecord` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY " +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n");
+        }
     }
 
     private void initShardingTable() throws Exception {

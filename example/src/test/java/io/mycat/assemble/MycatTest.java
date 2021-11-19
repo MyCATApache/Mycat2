@@ -50,10 +50,10 @@ public interface MycatTest {
                 dataSource.setUsername(username);
                 dataSource.setPassword(password);
 
-                dataSource.setLoginTimeout(100);
+                dataSource.setLoginTimeout(100000);
                 dataSource.setCheckExecuteTime(true);
                 dataSource.setQueryTimeout(100);
-                dataSource.setMaxWait(TimeUnit.SECONDS.toMillis(10));
+                dataSource.setMaxWait(TimeUnit.SECONDS.toMillis(100));
                 return dataSource;
             }
         }).getConnection();
