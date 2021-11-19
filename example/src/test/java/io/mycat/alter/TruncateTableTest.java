@@ -21,7 +21,7 @@ public class TruncateTableTest implements MycatTest {
              Connection db1 = getMySQLConnection(DB1)) {
             execute(mycatConnection, RESET_CONFIG);
             JdbcUtils.execute(db1,
-                    "drop TABLE db1.`travelrecord2`");
+                    "drop TABLE if exists db1.`travelrecord2`");
             execute(mycatConnection, "CREATE DATABASE db1");
             execute(mycatConnection, "CREATE TABLE db1.`travelrecord2` (\n" +
                     "  `id` bigint(20) NOT NULL KEY " +
