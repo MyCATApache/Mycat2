@@ -3,7 +3,6 @@ package io.mycat.sqlhandler.config;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.KVObject;
 import io.mycat.util.JsonUtil;
-import io.vertx.core.json.Json;
 
 import java.util.*;
 import java.util.function.Function;
@@ -55,5 +54,9 @@ public class DbKVImpl<T extends KVObject> implements KV<T> {
         Config config = DbStorageManagerImpl.readConfig(datasourceConfig);
         Map<String, String> stringStringMap = config.config.getOrDefault(this.path, Collections.emptyMap());
         return (List) stringStringMap.values().stream().map(i -> JsonUtil.from(i, aClass)).collect(Collectors.toList());
+    }
+
+    public void syncAll(Map<String,Map<String,String>> config){
+        DbStorageManagerImpl.writeString(datasourceConfig,config);
     }
 }

@@ -13,6 +13,7 @@ import io.mycat.config.KVObject;
 import io.mycat.datasource.jdbc.DruidDatasourceProvider;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.util.JsonUtil;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.curator.shaded.com.google.common.io.Files;
@@ -28,6 +29,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class DbStorageManagerImpl extends AbstractStorageManagerImpl {
 
@@ -302,5 +305,21 @@ public class DbStorageManagerImpl extends AbstractStorageManagerImpl {
             rawConnection.commit();
             rawConnection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
         }
+    }
+
+    public Map<String, Map<String, String>> toMap() {
+        Map<String, Map<String, String>> map = readConfig(config).config;
+//        map.entrySet().stream().filter(i->i.getValue().isEmpty()).collect(Collectors.toList())
+//                .forEach(c->map.remove(c.getKey()));
+        return map;
+    }
+
+    @SneakyThrows
+    public void write(Map<String, Map<String, String>> map) {
+        try (Ds ds = Ds.create(config);
+             Connection rawConnection = ds.getConnection()) {
+            JdbcUtils.execute(rawConnection, "delete from mycat.config");
+        }
+        writeString(config, map);
     }
 }
