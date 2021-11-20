@@ -85,6 +85,16 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
     }
 
     @Override
+    public SqlConnection prepare(String s, PrepareOptions prepareOptions, Handler<AsyncResult<PreparedStatement>> handler) {
+        return null;
+    }
+
+    @Override
+    public Future<PreparedStatement> prepare(String s, PrepareOptions prepareOptions) {
+        return null;
+    }
+
+    @Override
     public Query<RowSet<Row>> query(String sql) {
         return new JdbcQuery(sql);
     }
@@ -92,6 +102,11 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
     @Override
     public PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
         return new RowSetJdbcPreparedJdbcQuery(targetName, sql, connection.unwrap(Connection.class));
+    }
+
+    @Override
+    public PreparedQuery<RowSet<Row>> preparedQuery(String s, PrepareOptions prepareOptions) {
+        return null;
     }
 
     @Override
@@ -193,6 +208,11 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
                     @Override
                     public boolean isArray() {
                         return false;
+                    }
+
+                    @Override
+                    public String typeName() {
+                        return null;
                     }
 
                     @Override

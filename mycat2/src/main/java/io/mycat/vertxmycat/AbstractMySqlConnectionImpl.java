@@ -26,6 +26,7 @@ import io.mycat.proxy.handler.backend.ResultSetHandler;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.resultset.TextConvertorImpl;
 import io.mycat.util.VertxUtil;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
@@ -61,6 +62,16 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
     @Override
     public Future<PreparedStatement> prepare(String sql) {
         return Future.succeededFuture(new MycatVertxPreparedStatement(sql, this));
+    }
+
+    @Override
+    public SqlConnection prepare(String s, PrepareOptions prepareOptions, Handler<AsyncResult<PreparedStatement>> handler) {
+        return null;
+    }
+
+    @Override
+    public Future<PreparedStatement> prepare(String s, PrepareOptions prepareOptions) {
+        return null;
     }
 
     @Override
@@ -192,6 +203,11 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
     @Override
     public PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
         return new RowSetMySqlPreparedTextQuery(sql, this);
+    }
+
+    @Override
+    public PreparedQuery<RowSet<Row>> preparedQuery(String s, PrepareOptions prepareOptions) {
+        return null;
     }
 
     @NotNull

@@ -104,6 +104,11 @@ public class RowSetJdbcPreparedJdbcQuery implements AbstractMySqlPreparedQuery<R
                     }
 
                     @Override
+                    public String typeName() {
+                        return null;
+                    }
+
+                    @Override
                     public JDBCType jdbcType() {
                         return JDBCType.valueOf(metaData.getColumnType(index));
                     }
@@ -220,6 +225,11 @@ public class RowSetJdbcPreparedJdbcQuery implements AbstractMySqlPreparedQuery<R
                     @Override
                     public boolean isArray() {
                         return false;
+                    }
+
+                    @Override
+                    public String typeName() {
+                        return null;
                     }
 
                     @Override
