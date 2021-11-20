@@ -90,7 +90,7 @@ public class AutoFunctionFactory {
                 String.join(sep, "c${targetIndex}",
                         tableHandler.getSchemaName() + "_${dbIndex}",
                         tableHandler.getTableName() + ((!supportFlattenMapping(tableMethod, dbMethod)) ? "_${tableIndex}" : "_${index}")));
-        final boolean flattenMapping = mappingFormat.contains("${index}") && supportFlattenMapping(tableMethod, dbMethod);
+        final boolean flattenMapping = mappingFormat.contains("${index}");
 
         boolean dbEnum = Optional.ofNullable(dbMethod).map(db -> {
             return ENUM_RANGE.contains(SQLUtils.normalize(db.getMethodName().toUpperCase()));
@@ -452,6 +452,11 @@ public class AutoFunctionFactory {
                 }
 
                 @Override
+                public boolean isFlattenMapping() {
+                    return true;
+                }
+
+                @Override
                 public boolean isShardingDbEnum() {
                     return dbEnum;
                 }
@@ -496,6 +501,10 @@ public class AutoFunctionFactory {
                     return dataNodes;
                 }
 
+                @Override
+                public boolean isFlattenMapping() {
+                    return false;
+                }
                 @Override
                 public boolean isShardingDbEnum() {
                     return dbEnum;
