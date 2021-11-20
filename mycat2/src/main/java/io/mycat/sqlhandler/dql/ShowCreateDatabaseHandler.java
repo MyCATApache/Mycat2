@@ -26,7 +26,7 @@ public class ShowCreateDatabaseHandler extends AbstractSQLHandler<MySqlShowCreat
         SQLCreateDatabaseStatement sqlCreateDatabaseStatement = new SQLCreateDatabaseStatement();
         sqlCreateDatabaseStatement.setDatabase(database);
         ArrayList<Object[]> objects = new ArrayList<>();
-        objects.add(new Object[]{"database", sqlCreateDatabaseStatement.toString()});
+        objects.add(new Object[]{database, sqlCreateDatabaseStatement.toString()});
         mySQLResultSet.setRows(objects);
         return response.sendResultSet(mySQLResultSet.build());
     }
