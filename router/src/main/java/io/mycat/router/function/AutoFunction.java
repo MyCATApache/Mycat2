@@ -456,4 +456,6 @@ public abstract class AutoFunction extends CustomRuleFunction {
         }
         return false;
     }
+
+    public abstract boolean isFlattenMapping();
 }

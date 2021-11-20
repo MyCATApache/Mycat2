@@ -14,6 +14,7 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.Json;
 import lombok.SneakyThrows;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.testng.Assert;
@@ -28,6 +29,7 @@ import java.util.Map;
 @net.jcip.annotations.NotThreadSafe
 public class MycatMonitorTest implements MycatTest {
     public static Vertx vertx;
+    boolean init = false;
 
     @BeforeClass
     public static void beforeClass() {
@@ -44,6 +46,23 @@ public class MycatMonitorTest implements MycatTest {
         }
     }
 
+
+    @Before
+    @SneakyThrows
+    public synchronized void before() {
+        if (!init) {
+            try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
+                execute(mycatConnection, "CREATE DATABASE db1");
+                execute(mycatConnection, "CREATE TABLE db1.`monitor` (\n" +
+                        "  `id` bigint(20) NOT NULL KEY " +
+                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
+            }
+            init = true;
+        }
+
+
+    }
+
     @Test
     @SneakyThrows
     public void test() {
@@ -51,7 +70,7 @@ public class MycatMonitorTest implements MycatTest {
         String url = MycatSQLLogMonitorImpl.SHOW_DB_MONITOR_URL;
         DatabaseInstanceEntry.DatabaseInstanceMap b = fetch(url, tClass);
         try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT);) {
-            String sql = " select * FROM `performance_schema`.`accounts`; ";
+            String sql = " select * FROM db1.`monitor`; ";
             for (int i = 0; i < 1000; i++) {
                 JdbcUtils.executeQuery(mySQLConnection, sql, Collections.emptyList());
             }
@@ -68,9 +87,9 @@ public class MycatMonitorTest implements MycatTest {
         String url = MycatSQLLogMonitorImpl.SHOW_INSTANCE_MONITOR_URL;
         InstanceEntry b = fetch(url, tClass);
         try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT);) {
-            String sql = " SHOW KEYS FROM `performance_schema`.`accounts`; ";
+            String sql = " select * FROM db1.`monitor`; ";
             for (int i = 0; i < 1000; i++) {
-                JdbcUtils.execute(mySQLConnection, sql);
+                executeQuery(mySQLConnection, sql);
             }
         }
         InstanceEntry f = fetch(url, tClass);
@@ -85,9 +104,9 @@ public class MycatMonitorTest implements MycatTest {
         String url = MycatSQLLogMonitorImpl.SHOW_RW_MONITOR_URL;
         RWEntry.RWEntryMap b = fetch(url, tClass);
         try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT);) {
-            String sql = " SHOW KEYS FROM `performance_schema`.`accounts`; ";
+            String sql = " select * FROM db1.`monitor`";
             for (int i = 0; i < 1000; i++) {
-                JdbcUtils.execute(mySQLConnection, sql);
+                executeQuery(mySQLConnection, sql);
             }
         }
         RWEntry.RWEntryMap f = fetch(url, tClass);

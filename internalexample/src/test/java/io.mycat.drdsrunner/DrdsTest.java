@@ -100,9 +100,9 @@ public abstract class DrdsTest implements MycatTest {
                         "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                         "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${tableIndex}\",\n" +
                         "\t\t\t\t\t\"tableNum\":\"2\",\n" +
-                        "\t\t\t\t\t\"tableMethod\":\"hash(id)\",\n" +
+                        "\t\t\t\t\t\"tableMethod\":\"mod_hash(id)\",\n" +
                         "\t\t\t\t\t\"storeNum\":2,\n" +
-                        "\t\t\t\t\t\"dbMethod\":\"hash(id)\"\n" +
+                        "\t\t\t\t\t\"dbMethod\":\"mod_hash(id)\"\n" +
                         "\t\t\t\t}", Map.class)).build());
                 logicSchemaConfig.getShardingTables().put("sharding", mainSharding);
 
@@ -122,9 +122,9 @@ public abstract class DrdsTest implements MycatTest {
                         "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                         "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/er_${tableIndex}\",\n" +
                         "\t\t\t\t\t\"tableNum\":\"2\",\n" +
-                        "\t\t\t\t\t\"tableMethod\":\"hash(id)\",\n" +
+                        "\t\t\t\t\t\"tableMethod\":\"mod_hash(id)\",\n" +
                         "\t\t\t\t\t\"storeNum\":2,\n" +
-                        "\t\t\t\t\t\"dbMethod\":\"hash(id)\"\n" +
+                        "\t\t\t\t\t\"dbMethod\":\"mod_hash(id)\"\n" +
                         "\t\t\t\t}", Map.class)).build());
                 logicSchemaConfig.getShardingTables().put("er", er);
 
@@ -139,14 +139,14 @@ public abstract class DrdsTest implements MycatTest {
                         "  PRIMARY KEY (`id`),\n" +
                         "  KEY `id` (`id`)\n" +
                         ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                        + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
+                        + " dbpartition by mod_hash(id) tbpartition by UNI_HASH(id) tbpartitions 2 dbpartitions 2;");
                 other_sharding.setFunction(ShardingFunction.builder().properties(JsonUtil.from("{\n" +
                         "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                         "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/other_sharding_${tableIndex}\",\n" +
                         "\t\t\t\t\t\"tableNum\":\"2\",\n" +
                         "\t\t\t\t\t\"tableMethod\":\"UNI_HASH(id)\",\n" +
                         "\t\t\t\t\t\"storeNum\":2,\n" +
-                        "\t\t\t\t\t\"dbMethod\":\"hash(id)\"\n" +
+                        "\t\t\t\t\t\"dbMethod\":\"mod_hash(id)\"\n" +
                         "\t\t\t\t}", Map.class)).build());
                 logicSchemaConfig.getShardingTables().put("other_sharding", other_sharding);
 
@@ -186,9 +186,9 @@ public abstract class DrdsTest implements MycatTest {
                             "\t\t\t\t\t\"dbNum\":\"2\",\n" +
                             "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${index}\",\n" +
                             "\t\t\t\t\t\"tableNum\":\"2\",\n" +
-                            "\t\t\t\t\t\"tableMethod\":\"hash(id)\",\n" +
+                            "\t\t\t\t\t\"tableMethod\":\"mod_hash(id)\",\n" +
                             "\t\t\t\t\t\"storeNum\":2,\n" +
-                            "\t\t\t\t\t\"dbMethod\":\"hash(id)\"\n" +
+                            "\t\t\t\t\t\"dbMethod\":\"mod_hash(id)\"\n" +
                             "\t\t\t\t}", Map.class)).build());
                     logicSchemaConfig.getShardingTables().put("seqSharding", seqMainSharding);
                 }
