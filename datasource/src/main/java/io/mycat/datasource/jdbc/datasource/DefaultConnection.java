@@ -98,7 +98,7 @@ public class DefaultConnection implements MycatConnection {
     }
 
 
-    public  void close() {
+    public void close() {
         try {
             if (!isClosed()) {
                 if (LOGGER.isDebugEnabled()) {
@@ -141,19 +141,19 @@ public class DefaultConnection implements MycatConnection {
     }
 
     public Observable<MysqlPayloadObject> executeQuery(MycatRowMetaData mycatRowMetaData, String sql) {
-            return (Observable.create(emitter -> {
-                try (Statement statement = connection.createStatement();
-                     RowBaseIterator rowBaseIterator = new JdbcRowBaseIterator(mycatRowMetaData, DefaultConnection.this, statement, statement.executeQuery(sql), null, sql);) {
-                    MycatRowMetaData metaData = rowBaseIterator.getMetaData();
-                    emitter.onNext(new MySQLColumnDef(metaData));
-                    while (rowBaseIterator.next()) {
-                        emitter.onNext(new MysqlObjectArrayRow(rowBaseIterator.getObjects()));
-                    }
-                    emitter.onComplete();
-                } catch (Throwable throwable) {
-                    emitter.onError(throwable);
+        return (Observable.create(emitter -> {
+            try (Statement statement = connection.createStatement();
+                 RowBaseIterator rowBaseIterator = new JdbcRowBaseIterator(mycatRowMetaData, DefaultConnection.this, statement, statement.executeQuery(sql), null, sql);) {
+                MycatRowMetaData metaData = rowBaseIterator.getMetaData();
+                emitter.onNext(new MySQLColumnDef(metaData));
+                while (rowBaseIterator.next()) {
+                    emitter.onNext(new MysqlObjectArrayRow(rowBaseIterator.getObjects()));
                 }
-            }));
+                emitter.onComplete();
+            } catch (Throwable throwable) {
+                emitter.onError(throwable);
+            }
+        }));
     }
 
     @Override
@@ -168,5 +168,18 @@ public class DefaultConnection implements MycatConnection {
     @Override
     public boolean isWrapperFor(Class<?> iface) {
         return unwrap(iface) != null;
+    }
+
+    public void deleteTable(String schemaName, String tableName) {
+        String dropTemplate = "drop table `%s`.`%s`";
+        executeUpdate(String.format(dropTemplate, schemaName, tableName), false);
+    }
+
+    public void createTable(String rewriteCreateTableSql) {
+        executeUpdate(rewriteCreateTableSql, false);
+    }
+
+    public void createDatabase(String schema) {
+        executeUpdate("CREATE DATABASE IF NOT EXISTS " + schema, false);
     }
 }
