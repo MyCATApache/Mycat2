@@ -20,8 +20,6 @@ public class MysqlVariableServiceImpl implements MysqlVariableService {
 
         this.globalVariables = new NameMap<Object>();
         this.sessionVariables = new NameMap<>();
-        globalVariables.put("tx_isolation", "REPEATABLE-READ");
-        globalVariables.put("transaction_isolation","REPEATABLE-READ");
 
         String prototype = MetadataManager.getPrototype();
 
@@ -67,6 +65,31 @@ public class MysqlVariableServiceImpl implements MysqlVariableService {
             globalVariables.put("time_zone", "SYSTEM");
             globalVariables.put("lower_case_table_names", "1");
             globalVariables.put("wait_timeout", "172800");
+
+
+            ////////////////////////////////////session/////////////////////////////////////////////////////////////////
+            sessionVariables.put("autocommit","1");
+
+            sessionVariables.put("sql_mode","STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION");
+
+            sessionVariables.put("time_zone","SYSTEM");
+
+            sessionVariables.put("transaction_isolation","REPEATABLE-READ");
+            sessionVariables.put("tx_isolation","REPEATABLE-READ");
+
+            sessionVariables.put("tx_read_only","0");
+            sessionVariables.put("transaction_read_only","0");
+
+
+            sessionVariables.put("max_execution_time","0");
+            sessionVariables.put("innodb_lock_wait_timeout","50");
+            sessionVariables.put("interactive_timeout","28800");
+
+
+            /////////////////////////////////////default////////////////////////////////////////////////////////////////
+            for (Map.Entry<String, Object> entry : sessionVariables.entrySet()) {
+                globalVariables.put(entry.getKey(),entry.getValue());
+            }
         }
 
     }

@@ -50,13 +50,13 @@ import java.util.stream.Stream;
  **/
 public class MetadataManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetadataManager.class);
-    final NameMap<SchemaHandler> schemaMap = new NameMap<>();
+    protected final NameMap<SchemaHandler> schemaMap = new NameMap<>();
     @Getter
     public final static String prototype = PrototypeService.PROTOTYPE;
 
     @Getter
     private final Map<String, List<ShardingTable>> erTableGroup = new HashMap<>();
-    private final  Map<String, Map<String, Partition>> targetTableGroup = new HashMap<>();
+    private final Map<String, Map<String, Partition>> targetTableGroup = new HashMap<>();
     private final PrototypeService prototypeService;
 
 
@@ -90,7 +90,7 @@ public class MetadataManager {
                     c.setTargetName(getPrototype());
                 }
             });
-            procedures.put(procedureName, new NormalProcedureHandler(procedureName,config));
+            procedures.put(procedureName, new NormalProcedureHandler(procedureName, config));
         }
     }
 
@@ -139,17 +139,8 @@ public class MetadataManager {
     }
 
     @SneakyThrows
-    public MetadataManager(Map<String, LogicSchemaConfig> schemaConfigs, PrototypeService prototypeService) {
+    public MetadataManager(PrototypeService prototypeService) {
         this.prototypeService = Objects.requireNonNull(prototypeService);
-        ///////////////////////////////////////////////////////////////
-        //更新新配置里面的信息
-
-        for (Map.Entry<String, LogicSchemaConfig> entry : schemaConfigs.entrySet()) {
-            String orignalSchemaName = entry.getKey();
-            LogicSchemaConfig value = entry.getValue();
-            String targetName = value.getTargetName();
-            addSchema(value);
-        }
     }
 
     public void recomputeERRelation() {
@@ -166,10 +157,10 @@ public class MetadataManager {
 
     @NotNull
     private Map<String, Map<String, Partition>> recomputeTargetMap() {
-        Map<String,Map<String,Partition>> resTargetMap = new HashMap<>();
+        Map<String, Map<String, Partition>> resTargetMap = new HashMap<>();
         Iterator<TableHandler> iterator = this.schemaMap.values().stream().map(i -> i.logicTables().values()).flatMap(i -> i.stream()).iterator();
 
-        while (iterator.hasNext()){
+        while (iterator.hasNext()) {
             TableHandler tableHandler = iterator.next();
             switch (tableHandler.getType()) {
                 case SHARDING:
@@ -284,7 +275,7 @@ public class MetadataManager {
             String procedureName = e.getKey();
             removeProcedure(schemaName, procedureName);
             NormalProcedureConfig normalProcedureConfig = e.getValue();
-           addProcedure(schemaName,procedureName,normalProcedureConfig);
+            addProcedure(schemaName, procedureName, normalProcedureConfig);
         }
     }
 
@@ -363,7 +354,7 @@ public class MetadataManager {
                     String schema = Objects.toString(datum.get(1));
                     String table = Objects.toString(datum.get(2));
 
-                    builder.add(new IndexDataNode(target, schema, table,0,indexCounter,indexCounter));
+                    builder.add(new IndexDataNode(target, schema, table, 0, indexCounter, indexCounter));
                 } else {
                     throw new UnsupportedOperationException("format must be " +
                             "target,schema,table" + " or " +
@@ -599,8 +590,8 @@ public class MetadataManager {
             for (ProcedureHandler procedureHandler : schemaHandler.procedures().values()) {
                 switch (procedureHandler.getType()) {
                     case NORMAL:
-                        NormalProcedureHandler normalProcedureHandler = (NormalProcedureHandler)procedureHandler;
-                        logicSchemaConfig. getNormalProcedures().put(normalProcedureHandler.getName(),normalProcedureHandler.getConfig());
+                        NormalProcedureHandler normalProcedureHandler = (NormalProcedureHandler) procedureHandler;
+                        logicSchemaConfig.getNormalProcedures().put(normalProcedureHandler.getName(), normalProcedureHandler.getConfig());
                         break;
                 }
             }
@@ -647,7 +638,7 @@ public class MetadataManager {
         return statement;
     }
 
-    public static String getPrototype(){
+    public static String getPrototype() {
         return prototype;
     }
 }

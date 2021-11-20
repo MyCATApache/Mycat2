@@ -14,15 +14,21 @@
  */
 package io.mycat.sqlhandler.dql;
 
+import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.SQLShowCreateTableStatement;
-import io.mycat.MycatDataContext;
+import io.mycat.*;
+import io.mycat.beans.mysql.packet.ColumnDefPacket;
+import io.mycat.prototypeserver.mysql.MySQLResultSet;
+import io.mycat.prototypeserver.mysql.PrototypeService;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.Response;
 import io.vertx.core.Future;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class ShowCreateTableSQLHandler extends AbstractSQLHandler<SQLShowCreateTableStatement> {
@@ -37,6 +43,20 @@ public class ShowCreateTableSQLHandler extends AbstractSQLHandler<SQLShowCreateT
             sqlPropertyExpr.setName(name.toString());
             ast.setName(sqlPropertyExpr);
         }
-        return onMetaService(ast,response);
+        List<ColumnDefPacket> showCreateTableColumns = PrototypeService.getShowCreateTableColumns();
+        MySQLResultSet mySQLResultSet = MySQLResultSet.create(showCreateTableColumns);
+        mySQLResultSet.setRows( showCreateTable(ast));
+        return response.sendResultSet(mySQLResultSet.build());
+    }
+    public List<Object[]> showCreateTable(SQLShowCreateTableStatement statement) {
+        SQLPropertyExpr sqlPropertyExpr = (SQLPropertyExpr) statement.getName();
+        String schemaName = SQLUtils.normalize(sqlPropertyExpr.getOwnerName());
+        String tableName = SQLUtils.normalize(sqlPropertyExpr.getSimpleName());
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        TableHandler tableHandler = metadataManager.getTable(schemaName, tableName);
+        String createTableSQL = tableHandler.getCreateTableSQL();
+        ArrayList<Object[]> objects = new ArrayList<>();
+        objects.add(new Object[]{tableName, createTableSQL});
+        return objects;
     }
 }

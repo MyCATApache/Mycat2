@@ -14,9 +14,12 @@
  */
 package io.mycat.sqlhandler.dql;
 
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
+import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.druid.sql.ast.statement.SQLShowTablesStatement;
+import com.alibaba.druid.sql.ast.statement.*;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
@@ -29,7 +32,11 @@ import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.plugin.javascript.navig.Array;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 
@@ -44,9 +51,28 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
         }
         SQLName database = ast.getDatabase();
         if (database == null) {
-           return response.sendError(new MycatException("NO DATABASES SELECTED"));
+            return response.sendError(new MycatException("NO DATABASES SELECTED"));
         }
-        return onMetaService(ast,response);
+        String sql = toNormalSQL(request.getAst());
+        return response.sendResultSet(runAsRowIterator(dataContext, sql));
+    }
+
+    private String toNormalSQL(SQLShowTablesStatement ast) {
+
+        SQLName database = ast.getDatabase();
+        SQLExpr like = ast.getLike();
+
+        // for mysql
+        boolean full = ast.isFull();
+        SQLExpr where = ast.getWhere();
+
+        List<String[]> strings = full ? Arrays.asList(new String[]{"TABLE_NAME", "Tables_in_" + SQLUtils.normalize(database.getSimpleName())},
+                new String[]{"TABLE_TYPE", "Table_type"}) : Collections.singletonList(new String[]{"TABLE_NAME", "Tables_in_" + SQLUtils.normalize(database.getSimpleName())});
+        return generateSimpleSQL(strings, "INFORMATION_SCHEMA", "TABLES", "TABLE_SCHEMA = '" + SQLUtils.normalize(database.getSimpleName()).toLowerCase()+ "'",
+                Optional.ofNullable(where).map(i -> i.toString()).orElse(null)
+                ,
+                Optional.ofNullable(like).map(i -> "TABLE_NAME like " + i.toString()).orElse(null)
+                ).toString();
     }
 
 

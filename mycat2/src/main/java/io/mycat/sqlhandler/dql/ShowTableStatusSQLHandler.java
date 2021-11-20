@@ -14,6 +14,8 @@
  */
 package io.mycat.sqlhandler.dql;
 
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowTableStatusStatement;
@@ -28,6 +30,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.JDBCType;
+import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * chenjunwen
@@ -46,9 +50,40 @@ public class ShowTableStatusSQLHandler extends AbstractSQLHandler<MySqlShowTable
         SQLName database = ast.getDatabase();
 
         if (database == null) {
-          return  response.sendError(new MycatException("NO DATABASES SELECTED"));
+            return response.sendError(new MycatException("NO DATABASES SELECTED"));
         }
-        return onMetaService(ast,response);
+        String sql = toNormalSQL(request.getAst());
+        return response.sendResultSet(runAsRowIterator(dataContext, sql));
+    }
+
+    private String toNormalSQL(MySqlShowTableStatusStatement ast) {
+        SQLName database = ast.getDatabase();
+        SQLName tableGroup = ast.getTableGroup();
+        SQLExpr like = ast.getLike();
+        SQLExpr where = ast.getWhere();
+
+        return generateSimpleSQL(Arrays.asList(
+                        new String[]{"TABLE_NAME","Name"},
+                        new String[]{"ENGINE","Engine"},
+                        new String[]{"VERSION","Version"},
+                        new String[]{"ROW_FORMAT","Row_format"},
+                        new String[]{"TABLE_ROWS","Rows"},
+                        new String[]{"AVG_ROW_LENGTH","Avg_row_length"},
+                        new String[]{"DATA_LENGTH","Data_length"},
+                        new String[]{"MAX_DATA_LENGTH","Max_data_length"},
+                        new String[]{"INDEX_LENGTH","Index_length"},
+                        new String[]{"DATA_FREE","Data_free"},
+                        new String[]{"AUTo_INCREMENT","Auto_increment"},
+                        new String[]{"CREATE_TIME","Create_time"},
+                        new String[]{"UPDATE_TIME","Update_time"},
+                        new String[]{"CHECK_TIME","Check_time"},
+                        new String[]{"TABLE_COLLATION","Collation"},
+                        new String[]{"CHECKSUM","Checksum"},
+                        new String[]{"CREATE_OPTIONS","Create_options"},
+                        new String[]{"TABLE_COMMENT","Comment"}),
+                "INFORMATION_SCHEMA", "TABLES", SQLUtils.toSQLExpr(" TABLES.TABLE_SCHEMA = '" + database.getSimpleName()+"'").toString(),
+                Optional.ofNullable( where).map(i->i.toString()).orElse(null),
+                Optional.ofNullable( like).map(i->"TABLE_NAME like"+i).orElse(null)).toString();
     }
 
     private void addColumns(ResultSetBuilder resultSetBuilder) {

@@ -137,7 +137,8 @@ public class GlobalTable implements GlobalTableHandler {
     @Override
     public void createPhysicalTables() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        List<Partition> partitions = (List) ImmutableList.builder().add((Partition) (new BackendTableInfo("prototype", getSchemaName(), getTableName()))).addAll(getGlobalDataNode()).build();
+        List<Partition> partitions = (List) ImmutableList.builder()
+                .addAll(getGlobalDataNode()).build();
         partitions.stream().parallel().forEach(node -> createPhysicalTable(jdbcConnectionManager, node, getCreateTableSQL()));
     }
 
@@ -145,15 +146,11 @@ public class GlobalTable implements GlobalTableHandler {
     @Override
     public void dropPhysicalTables() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        String dropTemplate = "drop table `%s`.`%s`";
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
-            connection.executeUpdate(String.format(dropTemplate, getSchemaName(), getTableName()), false);
+        for (Partition partition : getGlobalDataNode()) {
+            try (DefaultConnection connection = jdbcConnectionManager.getConnection(partition.getTargetName())) {
+                connection.deleteTable(getSchemaName(), getTableName());
+            }
         }
-//        for (DataNode node : getGlobalDataNode()) {
-//            try (DefaultConnection connection = jdbcConnectionManager.getConnection(node.getTargetName())) {
-//                connection.executeUpdate(String.format(dropTemplate,node.getSchema(),node.getTable()), false);
-//            }
-//        }
     }
 
     public Partition getDataNode() {

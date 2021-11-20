@@ -26,12 +26,12 @@ import org.slf4j.LoggerFactory;
  * @author Junwen Chen
  **/
 @Getter
-public class MycatLogicTable extends MycatTableBase implements AbstractMycatTable {
+public class MycatVisualTable extends MycatTableBase implements AbstractMycatTable {
     final TableHandler table;
     final Statistic statistic;
-    private static final Logger LOGGER = LoggerFactory.getLogger(MycatLogicTable.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatVisualTable.class);
 
-    public MycatLogicTable(TableHandler t) {
+    public MycatVisualTable(TableHandler t) {
         this.table = t;
         this.statistic = Statistics.createStatistic(table.getSchemaName(), table.getTableName(), table.getColumns());
     }
@@ -46,43 +46,29 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
         return statistic;
     }
 
-    public Distribution createDistribution() {
-        switch (table.getType()) {
-            case SHARDING:
-                ShardingTable shardingTableHandler = (ShardingTable) this.table;
-                return Distribution.of(shardingTableHandler);
-            case GLOBAL:
-                GlobalTable globalTableHandler = (GlobalTable) this.table;
-                return Distribution.of(globalTableHandler);
-            case NORMAL:
-                NormalTable normalTable = (NormalTable) this.table;
-                return Distribution.of(normalTable);
-        }
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public boolean isSharding() {
-        return table.getType() == LogicTableType.SHARDING;
+        return table.getType()== LogicTableType.SHARDING;
     }
 
     @Override
     public boolean isNormal() {
-        return table.getType() == LogicTableType.NORMAL;
+        return  table.getType()== LogicTableType.NORMAL;
     }
 
     @Override
     public boolean isCustom() {
-        return table.getType() == LogicTableType.CUSTOM;
+        return table.getType() ==LogicTableType.CUSTOM;
+    }
+
+    @Override
+    public Distribution createDistribution() {
+        return null;
     }
 
     @Override
     public boolean isBroadCast() {
-        return table.getType() == LogicTableType.GLOBAL;
-    }
-
-    @Override
-    public boolean isVisual() {
-        return table.getType() == LogicTableType.VISUAL;
+        return table.getType() ==LogicTableType.GLOBAL;
     }
 }

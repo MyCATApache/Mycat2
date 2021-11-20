@@ -94,7 +94,7 @@ public class PrototypeService {
             SQLShowColumnsStatement statement = (SQLShowColumnsStatement) sqlStatement;
             String database = SQLUtils.normalize(statement.getDatabase().getSimpleName());
             String table = SQLUtils.normalize(statement.getTable().getSimpleName());
-            List<ColumnDefPacket> columnDefPacketList =statement.isFull()? getShowFullColumnsColumns():getShowColumnsColumns();
+            List<ColumnDefPacket> columnDefPacketList = statement.isFull() ? getShowFullColumnsColumns() : getShowColumnsColumns();
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showColumns(statement));
             return Optional.of(mySQLResultSet);
@@ -207,7 +207,7 @@ public class PrototypeService {
         return Optional.empty();
     }
 
-    private List<ColumnDefPacket> getShowCreateDatabaseColumns() {
+    public static List<ColumnDefPacket> getShowCreateDatabaseColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -380,7 +380,6 @@ public class PrototypeService {
         Decimals = 0;
 
         columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
-
 
 
         Catalog = "def";
@@ -1420,7 +1419,7 @@ public class PrototypeService {
         return columnDefPackets;
     }
 
-    public   static List<ColumnDefPacket> getShowCreateTableColumns() {
+    public static List<ColumnDefPacket> getShowCreateTableColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -2218,7 +2217,8 @@ public class PrototypeService {
         if (!jdbcConnectionManagerOptional.isPresent()) {
             return Collections.emptyMap();
         }
-        try (DefaultConnection connection = jdbcConnectionManagerOptional.get().getConnection(targetName)) {
+        JdbcConnectionManager jdbcConnectionManager = jdbcConnectionManagerOptional.get();
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
             RowBaseIterator tableIterator = connection.executeQuery("show tables from " + schemaName);
             while (tableIterator.next()) {
                 tables.add(tableIterator.getString(0));

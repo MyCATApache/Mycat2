@@ -472,11 +472,6 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
         ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
         boolean init = isInit();
         MycatRouterConfig newConfig = this.newConfig;
-        defaultConfig(newConfig);
-        newConfig.fixPrototypeTargetName();
-        if (!newConfig.containsPrototypeTargetName()) {
-            throw new UnsupportedOperationException();
-        }
         if (!init && Objects.equals(this.original, newConfig)) {
             LOGGER.info("=======================================config no changed===========================================");
             return;
@@ -530,7 +525,7 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
             MetaClusterCurrent.register(ReplicaSelectorManager.class, replicaSelectorManager.get());
             MetaClusterCurrent.register(MySQLManager.class, mycatMySQLManager.get());
 
-            testPrototype(jdbcConnectionManager1);
+            //testPrototype(jdbcConnectionManager1);
 
             //////////////////////////////////////////////////////////////////////////////////////////////////////////
             resourceList.clear();
@@ -593,6 +588,10 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
                 DbPlanManagerPersistorImpl dbPlanManagerPersistor = new DbPlanManagerPersistorImpl();
                 dbPlanManagerPersistor.checkStore();
             }
+            QueryPlanner planner = MetaClusterCurrent.wrapper(QueryPlanner.class);
+//            planner.innerComputeMinCostCodeExecuterContext( DrdsRunnerHelper.preParse("select 1",null));
+//            planner.innerComputeMinCostCodeExecuterContext(DrdsRunnerHelper.preParse("select 'x'",null));
+//hotswap
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////
         } finally {
             if (!allSuccess) {
@@ -842,12 +841,12 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
         List<KV<UserConfig>> userKvs = Arrays.asList(storageManager.get(UserConfig.class));
 
 
-        schemaKvs.forEach(kv1 -> schemaConfigUpdateSet.execute(kv1));
-        clusterKvs.forEach(kv1 -> clusterConfigUpdateSet.execute(kv1));
-        datasourceKvs.forEach(kv1 -> datasourceConfigUpdateSet.execute(kv1));
-        sequenceKvs.forEach(kv1 -> sequenceConfigUpdateSet.execute(kv1));
-        sqlCacheKvs.forEach(kv1 -> sqlCacheConfigUpdateSet.execute(kv1));
-        userKvs.forEach(kv1 -> userConfigUpdateSet.execute(kv1));
+        schemaKvs.stream().parallel().forEach(kv1 -> schemaConfigUpdateSet.execute(kv1));
+        clusterKvs.stream().parallel().forEach(kv1 -> clusterConfigUpdateSet.execute(kv1));
+        datasourceKvs.stream().parallel().forEach(kv1 -> datasourceConfigUpdateSet.execute(kv1));
+        sequenceKvs.stream().parallel().forEach(kv1 -> sequenceConfigUpdateSet.execute(kv1));
+        sqlCacheKvs.stream().parallel().forEach(kv1 -> sqlCacheConfigUpdateSet.execute(kv1));
+        userKvs.stream().parallel().forEach(kv1 -> userConfigUpdateSet.execute(kv1));
     }
 
     @Override
@@ -893,11 +892,11 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
             }
         }
         routerConfig.fixPrototypeTargetName();
-        routerConfig.setSchemas(
-                new ArrayList<>(
-                        fix(routerConfig.getSchemas().stream().collect(Collectors.toMap(k -> k.getSchemaName(), v -> v))).values()
-                )
-        );
+//        routerConfig.setSchemas(
+//                new ArrayList<>(
+//                        fix(routerConfig.getSchemas().stream().collect(Collectors.toMap(k -> k.getSchemaName(), v -> v))).values()
+//                )
+//        );
     }
 
     @Override

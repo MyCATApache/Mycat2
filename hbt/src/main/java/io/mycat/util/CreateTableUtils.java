@@ -59,8 +59,8 @@ public class CreateTableUtils {
             for (String s : set) {
                 try (DefaultConnection connection = jdbcConnectionManager.getConnection(s)) {
                     if (InstanceType.valueOf(connection.getDataSource().getConfig().getInstanceType()).isWriteType()) {
-                        createDatabaseIfNotExist(connection, node);
-                        connection.executeUpdate(rewriteCreateTableSql(sql, node.getSchema(), node.getTable()), false);
+                        connection.createDatabase(node.getSchema());
+                        connection.createTable(rewriteCreateTableSql(sql, node.getSchema(), node.getTable()));
                     }
                 }
             }

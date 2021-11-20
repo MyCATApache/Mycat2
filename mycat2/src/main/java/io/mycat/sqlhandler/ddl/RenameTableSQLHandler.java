@@ -105,11 +105,12 @@ public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableSt
                     sqlStatement.setSchema(newSchemaName);
 
                     Set<Partition> partitions = new HashSet<>();
-                    partitions.add( new BackendTableInfo(metadataManager.getPrototype(), "", ""));
+                    // partitions.add( new BackendTableInfo(metadataManager.getPrototype(), "", ""));
 
-                    if (tableHandler.getType() == LogicTableType.GLOBAL){
+                    if (tableHandler.getType() == LogicTableType.NORMAL || tableHandler.getType() == LogicTableType.GLOBAL) {
                         partitions.addAll(getDataNodes(tableHandler));//更改所有节点
                     }
+
                     executeOnDataNodes(sqlRenameTableStatement, jdbcConnectionManager, partitions);
 
                     String newCreateTableSql = sqlStatement.toString();
@@ -118,7 +119,7 @@ public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableSt
                         if (newConfig instanceof NormalTableConfig) {
                             NormalTableConfig normalTableConfig = (NormalTableConfig) newConfig;
                             normalTableConfig.setCreateTableSQL(newCreateTableSql);
-                            normalTableConfig.setLocality(new NormalBackEndTableInfoConfig(metadataManager.getPrototype(),newSchemaName,newTableName));
+                            normalTableConfig.setLocality(new NormalBackEndTableInfoConfig(metadataManager.getPrototype(), newSchemaName, newTableName));
                             ops.putNormalTable(newSchemaName, newTableName, normalTableConfig);
                         } else if (newConfig instanceof GlobalTableConfig) {
                             GlobalTableConfig globalTableConfig = (GlobalTableConfig) newConfig;
@@ -139,14 +140,14 @@ public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableSt
                 return response.sendOk();
             } catch (Throwable throwable) {
                 return Future.failedFuture(throwable);
-            }finally {
+            } finally {
                 lock.release();
             }
         });
 
     }
 
-    private  static  MySqlRenameTableStatement cloneSql(MySqlRenameTableStatement mySqlRenameTableStatement) {
+    private static MySqlRenameTableStatement cloneSql(MySqlRenameTableStatement mySqlRenameTableStatement) {
         return (MySqlRenameTableStatement)
                 SQLUtils.parseSingleMysqlStatement(mySqlRenameTableStatement.toString());
     }

@@ -3,20 +3,22 @@ package io.mycat;
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.XaSqlConnection;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import hu.akarnokd.rxjava3.operators.Flowables;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.*;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.logical.MycatView;
-import io.mycat.calcite.rewriter.*;
+import io.mycat.calcite.rewriter.Distribution;
+import io.mycat.calcite.rewriter.ValueIndexCondition;
+import io.mycat.calcite.rewriter.ValuePredicateAnalyzer;
 import io.mycat.calcite.spm.ParamHolder;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
 import io.mycat.newquery.NewMycatConnection;
+import io.mycat.prototypeserver.mysql.VisualTableHandler;
 import io.mycat.querycondition.QueryType;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.util.VertxUtil;
@@ -28,7 +30,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
-import io.vertx.sqlclient.SqlConnection;
+import lombok.Getter;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
@@ -42,6 +44,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
+@Getter
 public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
     final Map<String, Future<NewMycatConnection>> transactionConnnectionMap = new HashMap<>();// int transaction
     final List<Future<NewMycatConnection>> connnectionFutureCollection = new LinkedList<>();//not int transaction
@@ -146,6 +149,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
     }
 
 
+    @Getter
     public static final class SqlMycatDataContextImpl extends AsyncMycatDataContextImpl {
 
         private DrdsSqlWithParams drdsSqlWithParams;
@@ -320,5 +324,14 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             }
             return res;
         }
+    }
+
+
+    @Override
+    public Observable<Object[]> getTableObservable(String schemaName, String tableName) {
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        TableHandler tableHandler = metadataManager.getTable(schemaName, tableName);
+        VisualTableHandler visualTableHandler = (VisualTableHandler) tableHandler;
+        return visualTableHandler.scanAll();
     }
 }

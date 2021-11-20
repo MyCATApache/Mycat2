@@ -63,25 +63,17 @@ public class MySQLCheckHandler extends AbstractSQLHandler<MySqlCheckTableStateme
             String schemaName = SQLUtils.normalize(table.getSchema());
             String tableName = SQLUtils.normalize(table.getTableName());
             TableHandler tableHandler = metadataManager.getTable(schemaName, tableName);
-            List<Map<String, Object>> prototypeColumnInfo = null;
-            try (DefaultConnection connection = jdbcConnectionManager.getConnection(metadataManager.getPrototype())) {
-                prototypeColumnInfo = JdbcUtils.executeQuery(connection.getRawConnection(),
-                        "show full columns from  " + table, Collections.emptyList());
-            } catch (Throwable throwable) {
-                throwables.add(throwable);
-            }
-            List<Map<String, Object>> curRrototypeColumnInfo = prototypeColumnInfo;
             Set<String> errorInfo = new HashSet<>();
             switch (tableHandler.getType()) {
                 case SHARDING: {
                     ShardingTableHandler shardingTableHandler = (ShardingTableHandler) tableHandler;
-                    errorInfo = check(metadataManager, jdbcConnectionManager, throwables, curRrototypeColumnInfo,
+                    errorInfo = check(metadataManager, jdbcConnectionManager, throwables,
                             shardingTableHandler.dataNodes().parallelStream());
                     break;
                 }
                 case GLOBAL: {
                     GlobalTableHandler globalTableHandler = (GlobalTableHandler) tableHandler;
-                    errorInfo = check(metadataManager, jdbcConnectionManager, throwables, curRrototypeColumnInfo,
+                    errorInfo = check(metadataManager, jdbcConnectionManager, throwables,
                             globalTableHandler.getGlobalDataNode().parallelStream());
                     break;
                 }
@@ -101,9 +93,10 @@ public class MySQLCheckHandler extends AbstractSQLHandler<MySqlCheckTableStateme
     }
 
     @NotNull
-    private Set<String> check(MetadataManager metadataManager, JdbcConnectionManager jdbcConnectionManager, List<Throwable> throwables, List<Map<String, Object>> curRrototypeColumnInfo, Stream<Partition> dataNodeStream) {
+    private Set<String> check(MetadataManager metadataManager, JdbcConnectionManager jdbcConnectionManager, List<Throwable> throwables,Stream<Partition> dataNodeStream) {
         Set<String> errorInfo;
         List<Each> eachColumnInfos = Collections.synchronizedList(new LinkedList<>());
+
         dataNodeStream.forEach(dataNode -> {
             try (DefaultConnection connection = jdbcConnectionManager.getConnection(dataNode.getTargetName())) {
                 eachColumnInfos.add(new Each(dataNode, JdbcUtils.executeQuery(connection.getRawConnection(),
@@ -112,6 +105,10 @@ public class MySQLCheckHandler extends AbstractSQLHandler<MySqlCheckTableStateme
                 throwables.add(throwable);
             }
         });
+        if (eachColumnInfos.isEmpty()||eachColumnInfos.size() == 1){
+            return Collections.emptySet();
+        }
+        List<Map<String, Object>> curRrototypeColumnInfo = eachColumnInfos.get(0).getInfo();
         errorInfo = eachColumnInfos.stream()
                 .filter(i -> !i.getInfo().equals(curRrototypeColumnInfo))
                 .map(i -> i.getPartition().getUniqueName()).collect(Collectors.toSet());

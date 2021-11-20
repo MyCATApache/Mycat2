@@ -13,6 +13,7 @@ import java.util.Map;
 
 public interface NewMycatDataContext extends DataContext {
 
+    Observable <Object[]> getTableObservable(String schmea,String table);
 
     Observable   <Object[]> getObservable(String node,
                                        org.apache.calcite.linq4j.function.Function1 function1,

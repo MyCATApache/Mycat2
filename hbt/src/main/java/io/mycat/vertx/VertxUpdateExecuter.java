@@ -28,6 +28,7 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import io.mycat.*;
+import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.ExecutorProvider;
 import io.mycat.calcite.logical.MycatView;
@@ -36,6 +37,7 @@ import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingIndexTable;
 import io.mycat.calcite.table.ShardingTable;
+import io.mycat.newquery.RowSet;
 import io.reactivex.rxjava3.core.Observable;
 import lombok.SneakyThrows;
 import org.apache.calcite.linq4j.Enumerable;
@@ -203,19 +205,14 @@ public class VertxUpdateExecuter {
                     AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext =
                             new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, codeExecuterContext, queryDrdsSqlWithParams);
 
-                    ArrayBindable bindable = MetaClusterCurrent.wrapper(ExecutorProvider.class).prepare(codeExecuterContext);
+                    RowBaseIterator bindable = MetaClusterCurrent.wrapper(ExecutorProvider.class).runAsObjectArray(sqlMycatDataContext);
 
-                    Object bindObservable = bindable.bindObservable(sqlMycatDataContext);
                     try {
-                        List<Object[]> objects;
-                        if (bindObservable instanceof Observable) {
-                            objects = ((Observable<Object[]>) bindObservable).toList().blockingGet();
-                        } else {
-                            objects = ((Enumerable<Object[]>) (Enumerable) bindObservable).toList();
+                        List<Object[]> list = new ArrayList<>();
+                        while (bindable.next()){
+                            list.add( bindable.getObjects());
                         }
-
-                        Object[][] list = Iterables.toArray(objects, Object[].class);
-                        if (list.length > 1000) {
+                        if (list.size() > 1000) {
                             throw new IllegalArgumentException("The number of update rows exceeds the limit.");
                         }
 

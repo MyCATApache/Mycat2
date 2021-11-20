@@ -16,16 +16,25 @@ package io.mycat.sqlhandler.dql;
 
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCreateFunctionStatement;
 import io.mycat.MycatDataContext;
+import io.mycat.Response;
+import io.mycat.beans.mysql.packet.ColumnDefPacket;
+import io.mycat.prototypeserver.mysql.MySQLResultSet;
+import io.mycat.prototypeserver.mysql.PrototypeService;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.Response;
 import io.vertx.core.Future;
+
+import java.util.Collections;
+import java.util.List;
 
 
 public class ShowCreateFunctionHanlder extends AbstractSQLHandler<com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCreateFunctionStatement> {
 
     @Override
     protected Future<Void> onExecute(SQLRequest<MySqlShowCreateFunctionStatement> request, MycatDataContext dataContext, Response response) {
-        return onMetaService(request.getAst(), response);
+        List<ColumnDefPacket> columnDefPacketList = PrototypeService. getShowCreateFunctionColumns();
+        MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
+        mySQLResultSet.setRows(Collections.emptyList());
+        return response.sendResultSet(mySQLResultSet.build());
     }
 }

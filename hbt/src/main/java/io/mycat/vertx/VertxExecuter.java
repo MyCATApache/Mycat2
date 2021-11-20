@@ -34,6 +34,7 @@ import io.mycat.*;
 import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlObjectArrayRow;
 import io.mycat.api.collector.MysqlPayloadObject;
+import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
@@ -217,19 +218,13 @@ public class VertxExecuter {
                         new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, codeExecuterContext, queryDrdsSqlWithParams);
 
                 ExecutorProvider executorProvider = MetaClusterCurrent.wrapper(ExecutorProvider.class);
-                ArrayBindable bindable = executorProvider.prepare(codeExecuterContext);
-
-                Object bindObservable = bindable.bindObservable(sqlMycatDataContext);
+                RowBaseIterator bindable = executorProvider.runAsObjectArray(sqlMycatDataContext);
                 try {
-                    List<Object[]> objects;
-                    if (bindObservable instanceof Observable) {
-                        objects = ((Observable<Object[]>) bindObservable).toList().blockingGet();
-                    } else {
-                        objects = ((Enumerable<Object[]>) (Enumerable) bindObservable).toList();
+                    List<Object[]> list = new ArrayList<>();
+                    while (bindable.next()){
+                        list.add(  bindable.getObjects());
                     }
-
-                    Object[][] list = Iterables.toArray(objects, Object[].class);
-                    if (list.length > 1000) {
+                    if (list.size() > 1000) {
                         throw new IllegalArgumentException("The number of update rows exceeds the limit.");
                     }
 
