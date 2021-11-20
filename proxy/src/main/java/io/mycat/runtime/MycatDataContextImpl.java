@@ -435,4 +435,12 @@ public class MycatDataContextImpl implements MycatDataContext {
     public void putProcessStateMap(Map<String, Object> map) {
         this.processStateMap = map;
     }
+
+    @Override
+    public String getDefaultSchema() {
+        if (!this.processStateMap.isEmpty()) {
+            return (String) this.processStateMap.getOrDefault("SCHEMA", defaultSchema);
+        }
+        return defaultSchema;
+    }
 }

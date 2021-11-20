@@ -1438,4 +1438,17 @@ public class UserCaseTest implements MycatTest {
             System.out.println();
         }
     }
+
+    @Test
+    public void case604() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
+            List<Map<String, Object>> maps1 = executeQuery(mycatConnection, "select DATABASE()");
+            List<Map<String, Object>> maps2 = executeQuery(mycatConnection, "/*+mycat:schema=ds2*/select DATABASE()");
+            List<Map<String, Object>> maps3 = executeQuery(mycatConnection, "select DATABASE()");
+            Assert.assertEquals(maps1,maps3);
+            Assert.assertTrue(maps2.toString().contains("ds2"));
+            Assert.assertNotEquals(maps1,maps2);
+            System.out.println();
+        }
+    }
 }
