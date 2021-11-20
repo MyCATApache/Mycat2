@@ -117,10 +117,14 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
     @SneakyThrows
     public synchronized void deleteBaseline(long baseline) {
         Optional<JdbcConnectionManager> managerOptional = getManagerOptional();
-        managerOptional.ifPresent(jdbcConnectionManager -> {
-            try (DefaultConnection connection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype());) {
-                JdbcUtils.executeUpdate(connection.getRawConnection(), "delete  FROM mycat.spm_baseline where id = ?", Arrays.asList(baseline));
-                JdbcUtils.executeUpdate(connection.getRawConnection(), "delete  FROM mycat.spm_plan where baseline_id = ?", Arrays.asList(baseline));
+        managerOptional.ifPresent(new Consumer<JdbcConnectionManager>() {
+            @Override
+            @SneakyThrows
+            public void accept(JdbcConnectionManager jdbcConnectionManager) {
+                try (DefaultConnection connection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype());) {
+                    JdbcUtils.executeUpdate(connection.getRawConnection(), "delete  FROM mycat.spm_baseline where id = ?", Arrays.asList(baseline));
+                    JdbcUtils.executeUpdate(connection.getRawConnection(), "delete  FROM mycat.spm_plan where baseline_id = ?", Arrays.asList(baseline));
+                }
             }
         });
 
