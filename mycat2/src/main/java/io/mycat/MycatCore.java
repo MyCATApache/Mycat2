@@ -192,6 +192,7 @@ public class MycatCore {
                 bottom = bottom.getParent();
             }
             path = bottom.toString();
+            System.setProperty(configResourceKeyName,path);
         }
         if (path == null) {
             throw new MycatException("can not find MYCAT_HOME");
