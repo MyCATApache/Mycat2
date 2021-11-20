@@ -17,13 +17,14 @@
 package io.mycat;
 
 import io.mycat.calcite.CodeExecuterContext;
+import lombok.Getter;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.schema.SchemaPlus;
 
 import java.util.List;
-
+@Getter
 public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
     protected final MycatDataContext context;
     protected final CodeExecuterContext codeExecuterContext;

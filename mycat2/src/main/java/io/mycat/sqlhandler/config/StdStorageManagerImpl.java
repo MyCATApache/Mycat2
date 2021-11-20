@@ -1,5 +1,6 @@
 package io.mycat.sqlhandler.config;
 
+import io.mycat.MycatException;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.KVObject;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 public class StdStorageManagerImpl implements StorageManager {
     final StorageManager fileStorageManager;
     private static final Logger LOGGER = LoggerFactory.getLogger(StdStorageManagerImpl.class);
+
     public StdStorageManagerImpl(StorageManager fileStorageManager) {
         this.fileStorageManager = fileStorageManager;
     }
@@ -62,47 +64,33 @@ public class StdStorageManagerImpl implements StorageManager {
     }
 
     public static void sync(StorageManager from, StorageManager to) {
-        for (Class registerClass : from.registerClasses()) {
-            KV fromKv = from.get(registerClass);
-            KV toKv = to.get(registerClass);
-            toKv.clear();
-            List<KVObject> values = fromKv.values();
-            for (KVObject value : values) {
-                toKv.put(value.keyName(), value);
-            }
-        }
+        to.write(from.toMap());
         boolean b = checkConfigConsistency(from, to);
         if (!b) {
-            throw new UnsupportedOperationException();
+            throw new MycatException("sync fail");
         }
     }
 
     private static boolean checkConfigConsistency(StorageManager from, StorageManager to) {
-//        boolean b = true;
-//        for (Class aClass : from.registerClasses()) {
-//            List left =(List) to.get(aClass).values().stream().sorted().collect(Collectors.toList());
-//            List right =(List) from.get(aClass).values().stream().sorted().collect(Collectors.toList());
-//
-//            if (left.size() != right.size()) {
-//                b = false;
-//            }
-//
-//            for (int i = 0;b&& i < left.size(); i++) {
-//                Object l = left.get(i);
-//                Object r = right.get(i);
-//                if (!l.equals(r)) {
-//                    b= false;
-//                }
-//            }
-//        }
-        return from.registerClasses().stream().parallel().allMatch(aClass -> {
-            Object toCollect = to.get(aClass).values().stream().sorted().collect(Collectors.toList());
-            Object fromCollect =  from.get(aClass).values().stream().sorted().collect(Collectors.toList());
-            if(toCollect .equals(fromCollect)){
-                return true;
+        //去掉大小为0的value
+        Map<String, Map<String, String>> fromMap = from.toMap()
+                .entrySet().stream().filter(i -> !i.getValue().isEmpty())
+                .collect(Collectors.toMap(k->k.getKey(),v->v.getValue()));
+        Map<String, Map<String, String>> toMap = to.toMap()
+                .entrySet().stream().filter(i -> !i.getValue().isEmpty())
+                .collect(Collectors.toMap(k->k.getKey(),v->v.getValue()));
+
+        return fromMap.equals(toMap)&& fromMap.entrySet().stream().allMatch(new Predicate<Map.Entry<String, Map<String, String>>>() {
+            @Override
+            public boolean test(Map.Entry<String, Map<String, String>> e) {
+                boolean equals = toMap.get(e.getKey()).equals(e.getValue());
+                if (equals) {
+                    return true;
+                } else {
+                    LOGGER.error("from {} \n to {}", fromMap, toMap);
+                    return false;
+                }
             }
-            LOGGER.error("from {} \n to {}",fromCollect,toCollect);
-            return false;
         });
     }
 
@@ -127,6 +115,16 @@ public class StdStorageManagerImpl implements StorageManager {
             return false;
         }
         return checkConfigConsistency(fileStorageManager, dbStorageManager);
+    }
+
+    @Override
+    public Map<String, Map<String, String>> toMap() {
+        return fileStorageManager.toMap();
+    }
+
+    @Override
+    public void write(Map<String, Map<String, String>> map) {
+        fileStorageManager.write(map);
     }
 
     @Override

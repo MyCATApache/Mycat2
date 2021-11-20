@@ -49,16 +49,14 @@ public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStat
                 String schema = SQLUtils.normalize(sqlCreateIndexStatement.getSchema());
                 String tableName = SQLUtils.normalize(sqlCreateIndexStatement.getTableName());
                 MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-
                 if (!sqlCreateIndexStatement.isGlobal()) {
-                    createLocalIndex(sqlCreateIndexStatement,
-                            table,
+                    SQLCreateIndexStatement clone = sqlCreateIndexStatement.clone();
+                    createLocalIndex(clone,
                             schema,
                             tableName,
                             metadataManager);
-                } else if (sqlCreateIndexStatement.getDbPartitionBy() != null) {
-                    createGlobalIndex(sqlCreateIndexStatement);
                 }
+                createGlobalIndex(sqlCreateIndexStatement);
                 return response.sendOk();
             } catch (Throwable throwable) {
                 return response.sendError(throwable);
@@ -93,11 +91,10 @@ public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStat
         CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(), schemaName, tableName, createTableStatement);
     }
 
-    private void createLocalIndex(SQLCreateIndexStatement sqlCreateIndexStatement, SQLExprTableSource table, String schema, String tableName, MetadataManager metadataManager) {
+    private void createLocalIndex(SQLCreateIndexStatement sqlCreateIndexStatement, String schema, String tableName, MetadataManager metadataManager) {
         JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         TableHandler tableHandler = metadataManager.getTable(schema, tableName);
         Collection<Partition> partitions = getDataNodes(tableHandler);
-        partitions.add(new BackendTableInfo(metadataManager.getPrototype(), schema, tableName));//add Prototype
-        executeOnDataNodes(sqlCreateIndexStatement, connectionManager, partitions, table);
+        executeOnDataNodes(sqlCreateIndexStatement, connectionManager, partitions, (SQLExprTableSource)sqlCreateIndexStatement.getTable());
     }
 }

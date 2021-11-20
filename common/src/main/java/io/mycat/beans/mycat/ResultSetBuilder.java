@@ -74,6 +74,9 @@ public class ResultSetBuilder {
     public void addObjectRowPayload(List row) {
         objectList.add(row.toArray());
     }
+    public void addObjectRowPayload(Object[] row) {
+        objectList.add(row);
+    }
 
     public RowBaseIterator build() {
         SimpleDefMycatRowMetaData mycatRowMetaData = new SimpleDefMycatRowMetaData(columnInfos);

@@ -16,16 +16,27 @@ package io.mycat.sqlhandler.dql;
 
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowProcedureStatusStatement;
 import io.mycat.MycatDataContext;
+import io.mycat.beans.mysql.packet.ColumnDefPacket;
+import io.mycat.prototypeserver.mysql.MySQLResultSet;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
 import io.vertx.core.Future;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+import static io.mycat.prototypeserver.mysql.PrototypeService.getShowProcedureStatusColumns;
 
 
 public class ShowProcedureStatusSQLHandler extends AbstractSQLHandler<MySqlShowProcedureStatusStatement> {
 
     @Override
     protected Future<Void> onExecute(SQLRequest<MySqlShowProcedureStatusStatement> request, MycatDataContext dataContext, Response response){
-        return onMetaService(request.getAst(),response);
+        List<ColumnDefPacket> columnDefPacketList = getShowProcedureStatusColumns();
+        MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
+        mySQLResultSet.setRows(Collections.emptyList());
+        return response.sendResultSet(mySQLResultSet.build());
     }
 }

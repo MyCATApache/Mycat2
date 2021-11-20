@@ -36,4 +36,8 @@ public interface AbstractMycatTable {
     public default boolean isCustom() {
         return false;
     }
+
+    public default boolean isVisual() {
+        return false;
+    }
 }

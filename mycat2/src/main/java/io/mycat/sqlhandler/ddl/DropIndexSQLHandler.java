@@ -27,11 +27,15 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
 import io.vertx.core.shareddata.Lock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatement> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DropIndexSQLHandler.class);
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLDropIndexStatement> request, MycatDataContext dataContext, Response response){
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
@@ -39,10 +43,11 @@ public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatemen
         return lockFuture.flatMap(lock -> {
             try{
                 SQLDropIndexStatement sqlDropIndexStatement = request.getAst();
+                sqlDropIndexStatement.setIfExists(true);
+
                 String indexName = SQLUtils.normalize(sqlDropIndexStatement.getIndexName().toString());
                 resolveSQLExprTableSource(sqlDropIndexStatement.getTableName(), dataContext);
                 SQLExprTableSource tableSource = sqlDropIndexStatement.getTableName();
-
 
                 String schema = SQLUtils.normalize(tableSource.getSchema());
                 String tableName = SQLUtils.normalize(tableSource.getTableName());
@@ -57,11 +62,18 @@ public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatemen
                 updateShardingTable = isUpdateShardingTable(indexName, sqlStatement, updateShardingTable);
                 if (!updateShardingTable){
                     Set<Partition> partitions = getDataNodes(table);
-                    partitions.add(new BackendTableInfo(metadataManager.getPrototype(),schema,tableName));//add Prototype
-                    executeOnDataNodes(sqlDropIndexStatement,jdbcConnectionManager, partitions,tableSource);
-                }else {
-                    CreateTableSQLHandler.INSTANCE.createTable(ImmutableMap.of(),schema,tableName,sqlStatement);
+                    try {
+                        executeOnDataNodes(sqlDropIndexStatement, jdbcConnectionManager, partitions, tableSource);
+                    }catch (Throwable e){
+                        LOGGER.error("",e);
+                    }
                 }
+//                List<MySqlTableIndex> mysqlIndexes = sqlStatement.getMysqlIndexes();
+//                mysqlIndexes.stream().filter(i->SQLUtils.nameEquals(sqlDropIndexStatement.getIndexName(),i.getName())).findFirst()
+//                        .ifPresent(c->mysqlIndexes.remove(c));
+                sqlStatement.apply(sqlDropIndexStatement);
+
+                CreateTableSQLHandler.INSTANCE.createTable(ImmutableMap.of(),schema,tableName,sqlStatement);
                 return response.sendOk();
             }catch (Throwable throwable){
                 return Future.failedFuture(throwable);

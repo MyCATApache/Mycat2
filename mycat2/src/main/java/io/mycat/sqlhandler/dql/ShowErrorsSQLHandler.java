@@ -16,16 +16,22 @@ package io.mycat.sqlhandler.dql;
 
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowErrorsStatement;
 import io.mycat.MycatDataContext;
+import io.mycat.Response;
+import io.mycat.prototypeserver.mysql.MySQLResultSet;
+import io.mycat.prototypeserver.mysql.PrototypeService;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.Response;
 import io.vertx.core.Future;
+
+import java.util.Collections;
 
 
 public class ShowErrorsSQLHandler extends AbstractSQLHandler<MySqlShowErrorsStatement> {
 
     @Override
-    protected Future<Void> onExecute(SQLRequest<MySqlShowErrorsStatement> request, MycatDataContext dataContext, Response response){
-        return onMetaService(request.getAst(),response);
+    protected Future<Void> onExecute(SQLRequest<MySqlShowErrorsStatement> request, MycatDataContext dataContext, Response response) {
+        MySQLResultSet mySQLResultSet = MySQLResultSet.create(PrototypeService.getShowErrorsColumns());
+        mySQLResultSet.setRows(Collections.emptyList());
+        return response.sendResultSet(mySQLResultSet.build());
     }
 }

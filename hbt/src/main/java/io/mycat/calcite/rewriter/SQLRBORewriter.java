@@ -142,9 +142,14 @@ public class SQLRBORewriter extends RelShuttleImpl {
     @NotNull
     public static final Optional<RelNode> view(TableScan scan) {
         AbstractMycatTable abstractMycatTable = scan.getTable().unwrap(AbstractMycatTable.class);
+        MycatLogicTable mycatLogicTable = (MycatLogicTable) abstractMycatTable;
         if (abstractMycatTable != null) {
+            if (abstractMycatTable.isVisual()){
+                TableHandler table = ((MycatLogicTable) abstractMycatTable).getTable();
+                MycatTableScan mycatTableScan = MycatTableScan.ofTable(scan);
+                return Optional.of(mycatTableScan);
+            }
             if (abstractMycatTable.isCustom()) {
-                MycatLogicTable mycatLogicTable = (MycatLogicTable) abstractMycatTable;
                 CustomTableHandlerWrapper customTableHandler = (CustomTableHandlerWrapper) mycatLogicTable.getTable();
                 QueryBuilder queryBuilder = customTableHandler.createQueryBuilder(scan.getCluster());
                 queryBuilder.setRowType(scan.getRowType());

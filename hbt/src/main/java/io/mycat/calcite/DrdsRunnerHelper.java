@@ -18,7 +18,6 @@ import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLType;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.plan.ObservableColocatedImplementor;
-import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.plan.PlanImplementor;
 import io.mycat.calcite.spm.*;
 import io.mycat.calcite.table.MycatLogicTable;
@@ -54,7 +53,6 @@ import java.sql.JDBCType;
 import java.util.*;
 
 public class DrdsRunnerHelper {
-
 
     public static DrdsSqlWithParams preParse(String sqlStatement, String defaultSchemaName) {
         return preParse(SQLUtils.parseSingleMysqlStatement(sqlStatement), defaultSchemaName);

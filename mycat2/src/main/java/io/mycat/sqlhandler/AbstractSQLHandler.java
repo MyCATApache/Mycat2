@@ -14,13 +14,17 @@
  */
 package io.mycat.sqlhandler;
 
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
+import com.alibaba.druid.sql.ast.statement.*;
 import com.mysql.cj.conf.ConnectionUrlParser;
 import com.mysql.cj.conf.HostInfo;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatErrorCode;
+import io.mycat.calcite.ExecutorProvider;
 import io.mycat.calcite.table.GlobalTableHandler;
 import io.mycat.calcite.table.NormalTableHandler;
 import io.mycat.config.DatasourceConfig;
@@ -36,6 +40,7 @@ import lombok.EqualsAndHashCode;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @EqualsAndHashCode
 public abstract class AbstractSQLHandler<Statement extends SQLStatement> implements SQLHandler<Statement> {
@@ -142,13 +147,33 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
         return new PrototypeService();
     }
 
-    public Future<Void> onMetaService(SQLStatement statement, Response response) {
-        PrototypeService prototypeService = getPrototypeService();
-        Optional<MySQLResultSet> mySQLResultSet = prototypeService.handleSql(statement);
-        if (mySQLResultSet.isPresent()) {
-            RowBaseIterator rowBaseIterator = mySQLResultSet.get().build();
-            return response.sendResultSet(rowBaseIterator);
-        }
-        return response.proxySelectToPrototype(statement.toString());
+    public static String generateSimpleSQL(List<String[]> projects, String schema, String table, SQLExpr where, SQLExpr like) {
+        return generateSimpleSQL(projects, schema, table, null, Optional.ofNullable(where).map(i -> i.toString()).orElse(null), Optional.ofNullable(like).map(i -> i.toString()).orElse(null));
     }
+
+
+    public static String generateSimpleSQL(List<String[]> projects, String schema, String table, SQLExpr where0, SQLExpr where, SQLExpr like) {
+        return generateSimpleSQL(projects, schema, table, Optional.ofNullable(where0).map(i -> i.toString()).orElse(null), Optional.ofNullable(where).map(i -> i.toString()).orElse(null), Optional.ofNullable(like).map(i -> i.toString()).orElse(null));
+    }
+
+    public static String generateSimpleSQL(List<String[]> projects, String schema, String table, String where, String like) {
+        return generateSimpleSQL(projects, schema, table, null, where, like);
+    }
+
+    public static String generateSimpleSQL(List<String[]> projects, String schema, String table, String where0, String where, String like) {
+        String s = Optional.ofNullable(where0).orElse(" true ");
+        if (like != null) {
+            s +=" and "+ like;
+        }
+        String sql = "select *" + " from (select " +
+                projects.stream().map(i -> "" + i[0] + "" + " as " + i[1] + "").collect(Collectors.joining(",")) + "  from `" + schema + "`.`" + table + "` where " +s
+                +") where " + Optional.ofNullable(where).orElse(" true ");
+        return sql;
+    }
+
+    public static RowBaseIterator runAsRowIterator(MycatDataContext dataContext, String sql) {
+        ExecutorProvider executorProvider = MetaClusterCurrent.wrapper(ExecutorProvider.class);
+        return executorProvider.runAsObjectArray(dataContext, sql);
+    }
+
 }

@@ -180,11 +180,9 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
 
     @Override
     public void close() {
-        ScheduleUtil.getTimer().schedule(() -> {
-            for (JdbcDataSource value : dataSourceMap.values()) {
-                value.close();
-            }
-        }, 3, TimeUnit.SECONDS);
+        for (JdbcDataSource value : dataSourceMap.values()) {
+            value.close();
+        }
 
     }
 

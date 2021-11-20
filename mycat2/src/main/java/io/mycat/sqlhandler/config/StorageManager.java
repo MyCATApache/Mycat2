@@ -5,6 +5,7 @@ import io.mycat.config.KVObject;
 import lombok.SneakyThrows;
 
 import java.util.Collection;
+import java.util.Map;
 
 public interface StorageManager extends ConfigReporter {
     void register(Class aClass);
@@ -26,4 +27,8 @@ public interface StorageManager extends ConfigReporter {
     void syncToNet();
 
     boolean checkConfigConsistency();
+
+    public  Map<String, Map<String,String>> toMap();
+
+    public void write(Map<String, Map<String, String>> map);
 }

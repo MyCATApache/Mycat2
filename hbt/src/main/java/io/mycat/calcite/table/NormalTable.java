@@ -113,8 +113,7 @@ public class NormalTable implements NormalTableHandler {
     public void createPhysicalTables() {
         normalizeCreateTableSQLToMySQL(NormalTable.this.getCreateTableSQL()).ifPresent(sql -> {
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-            Stream.of(new BackendTableInfo("prototype", getSchemaName(), getTableName()), getDataNode())
-                    .parallel()
+            Stream.of(getDataNode())
                     .forEach(node ->
                             createPhysicalTable(jdbcConnectionManager, node, sql));
         });
@@ -124,9 +123,9 @@ public class NormalTable implements NormalTableHandler {
     @Override
     public void dropPhysicalTables() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        String dropTemplate = "drop table `%s`.`%s`";
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
-            connection.executeUpdate(String.format(dropTemplate, getSchemaName(), getTableName()), false);
+        Partition dataNode = getDataNode();
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection(dataNode.getTargetName())) {
+            connection.deleteTable(dataNode.getSchema(),dataNode.getTable());
         }
 //        for (DataNode node :Collections.singleton(getDataNode())) {
 //            try (DefaultConnection connection = jdbcConnectionManager.getConnection(node.getTargetName())) {

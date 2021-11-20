@@ -14,18 +14,39 @@
  */
 package io.mycat.sqlhandler.dql;
 
+import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCharacterSetStatement;
 import io.mycat.MycatDataContext;
+import io.mycat.Response;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.Response;
 import io.vertx.core.Future;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 
 public class ShowCharacterSetSQLHandler extends AbstractSQLHandler<MySqlShowCharacterSetStatement> {
 
     @Override
     protected Future<Void> onExecute(SQLRequest<MySqlShowCharacterSetStatement> request, MycatDataContext dataContext, Response response) {
-        return onMetaService(request.getAst(),response);
+        String sql = toNormalSQL(request.getAst());
+        return response.sendResultSet(runAsRowIterator(dataContext, sql));
+    }
+
+    private String toNormalSQL(MySqlShowCharacterSetStatement ast) {
+        SQLExpr where = ast.getWhere();
+        SQLExpr pattern = ast.getPattern();
+        List<String[]> projects = Arrays.asList(
+                new String[]{"CHARACTER_SET_NAME", "Charset"},//utf8
+                new String[]{"DESCRIPTION", "Description"},//UTF-8 Unicode
+                new String[]{"DEFAULT_COLLATE_NAME", "Default_collection"},//utf8mb4_0900_ai_ci
+                new String[]{"MAXLEN", "Maxlen"});//4
+        return generateSimpleSQL(projects,
+                "information_schema", "CHARACTER_SETS",
+                Optional.ofNullable(where).map(i -> i.toString()).orElse(null),
+                Optional.ofNullable(pattern).map(i -> "CHARACTER_SET_NAME like " + i).orElse(null))
+                .toString();
     }
 }

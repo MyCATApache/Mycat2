@@ -105,7 +105,7 @@ public enum MycatdbCommand {
             sqlHandlers.add(new DropTableSQLHandler());
             sqlHandlers.add(new DropViewSQLHandler());
             sqlHandlers.add(new RenameTableSQLHandler());
-
+            sqlHandlers.add(new ShowCreateDatabaseHandler());
             //explain
             sqlHandlers.add(new ExplainSQLHandler());
 
@@ -124,12 +124,14 @@ public enum MycatdbCommand {
             sqlHandlers.add(new ShowStatusSQLHandler());
             sqlHandlers.add(new ShowTablesSQLHandler());
             sqlHandlers.add(new ShowTableStatusSQLHandler());
+            sqlHandlers.add(new ShowTriggersSQLHandler());
             sqlHandlers.add(new ShowVariantsSQLHandler());
             sqlHandlers.add(new ShowWarningsSQLHandler());
             sqlHandlers.add(new ShowCreateFunctionHanlder());
             sqlHandlers.add(new CreateTableSQLHandler());
             sqlHandlers.add(new CreateSequenceHandler());
             sqlHandlers.add(new DropSequenceSQLHandler());
+            sqlHandlers.add(new ShowFunctionStatusHandler());
             //Analyze
             sqlHandlers.add(new AnalyzeHanlder());
             sqlHandlers.add(new DropIndexSQLHandler());
@@ -448,6 +450,7 @@ public enum MycatdbCommand {
                     return instance.execute(request, dataContext, receiver);
                 } else {
                     if (sqlStatement instanceof MySqlShowStatement) {
+                        logger.warn("ignore SQL prototype statement:{}", sqlStatement);
                         return receiver.proxySelectToPrototype(sqlStatement.toString());
                     } else {
                         logger.warn("ignore SQL statement:{}", sqlStatement);

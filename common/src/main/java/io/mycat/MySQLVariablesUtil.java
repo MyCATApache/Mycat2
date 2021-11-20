@@ -31,6 +31,8 @@ public class MySQLVariablesUtil {
             dataContext.setVariable(MycatDataContextEnum.CHARSET_SET_RESULT, value);
         } else if (target.contains("read_only")) {
             dataContext.setVariable(MycatDataContextEnum.IS_READ_ONLY, toInt(value));
+        } else if (target.contains("transaction_isolation") || target.contains("tx_isolation")) {
+            dataContext.setVariable(MycatDataContextEnum.IS_READ_ONLY, toInt(value));
         }
     }
 
@@ -50,6 +52,8 @@ public class MySQLVariablesUtil {
             return dataContext.getVariable(MycatDataContextEnum.IS_READ_ONLY);
         } else if (target.contains("current_user")) {
             return dataContext.getUser().getUserName();
+        } else if (target.contains("transaction_isolation") || target.contains("tx_isolation")) {
+            dataContext.getVariable(MycatDataContextEnum.ISOLATION);
         }
         //todo
 //        Map<String, Object> map = RootHelper.INSTANCE.getConfigProvider().globalVariables();

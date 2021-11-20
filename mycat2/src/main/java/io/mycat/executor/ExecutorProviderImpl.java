@@ -1,10 +1,17 @@
 package io.mycat.executor;
 
 import io.mycat.AsyncMycatDataContextImpl;
+import io.mycat.DrdsSqlWithParams;
+import io.mycat.MycatDataContext;
 import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlObjectArrayRow;
 import io.mycat.api.collector.MysqlPayloadObject;
+import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.*;
+import io.mycat.calcite.resultset.CalciteRowMetaData;
+import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.spm.Plan;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.CompositeFuture;
@@ -25,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.StringReader;
+import java.util.Iterator;
 
 public class ExecutorProviderImpl implements ExecutorProvider {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutorProviderImpl.class);
@@ -47,8 +55,37 @@ public class ExecutorProviderImpl implements ExecutorProvider {
     }
 
     @Override
-    public ArrayBindable prepare(CodeExecuterContext codeExecuterContext) {
-        return getArrayBindable(codeExecuterContext);
+    public RowBaseIterator runAsObjectArray(MycatDataContext context, String sqlStatement) {
+        DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(sqlStatement, context.getDefaultSchema());
+        Plan plan = DrdsRunnerHelper.getPlan(drdsSql);
+        CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
+        ArrayBindable bindable1 = getArrayBindable(codeExecuterContext);
+        AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSql);
+        MycatRowMetaData metaData = plan.getMetaData();
+        Object bindObservable = bindable1.bindObservable(sqlMycatDataContext);
+        Observable<Object[]> observable;
+        if (bindObservable instanceof Observable) {
+            observable = (Observable) bindObservable;
+        } else {
+            Enumerable<Object[]> enumerable = (Enumerable) bindObservable;
+            observable = toObservable(sqlMycatDataContext, enumerable);
+        }
+        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+        Iterator<Object[]> iterator = observable.blockingIterable().iterator();
+        while (iterator.hasNext()){
+            Object[] row = iterator.next();
+            resultSetBuilder.addObjectRowPayload(row);
+        }
+        return resultSetBuilder.build(metaData);
+    }
+
+    @Override
+    public RowBaseIterator runAsObjectArray(AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext) {
+        CodeExecuterContext codeExecuterContext = sqlMycatDataContext.getCodeExecuterContext();
+        MycatRel mycatRel = codeExecuterContext.getMycatRel();
+        CalciteRowMetaData calciteRowMetaData = new CalciteRowMetaData(mycatRel.getRowType().getFieldList());
+        ArrayBindable bindable1 = getArrayBindable(codeExecuterContext);
+        return new EnumeratorRowIterator(calciteRowMetaData, bindable1.bind(sqlMycatDataContext).enumerator());
     }
 
     @NotNull
@@ -83,7 +120,7 @@ public class ExecutorProviderImpl implements ExecutorProvider {
             cbe.setDebuggingInformation(true, true, true);
         }
         String code = codeContext.getCode();
-        if (LOGGER.isDebugEnabled()){
+        if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(code);
         }
         return (ArrayBindable) cbe.createInstance(new StringReader(code));

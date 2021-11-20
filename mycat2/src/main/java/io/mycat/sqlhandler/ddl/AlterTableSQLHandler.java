@@ -51,7 +51,6 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
                 MySqlCreateTableStatement createTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(tableHandler.getCreateTableSQL());
                 JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                 Set<Partition> partitions = getDataNodes(tableHandler);
-                partitions.add(new BackendTableInfo(metadataManager.getPrototype(), schema, tableName));//add Prototype
                 executeOnDataNodes(sqlAlterTableStatement, connectionManager, partitions);
                 CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(), schema, tableName, createTableStatement);
                 return response.sendOk();

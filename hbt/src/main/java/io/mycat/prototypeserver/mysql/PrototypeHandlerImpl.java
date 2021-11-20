@@ -11,6 +11,7 @@ import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataManager;
 import io.mycat.MysqlVariableService;
 import io.mycat.TableHandler;
+import io.mycat.calcite.PrepareExecutor;
 import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;

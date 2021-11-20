@@ -187,7 +187,8 @@ public class ShardingTable implements ShardingTableHandler {
     @Override
     public void createPhysicalTables() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        List<Partition> partitions = (List) ImmutableList.builder().add((Partition) (new BackendTableInfo("prototype", getSchemaName(), getTableName()))).addAll(getBackends()).build();
+        List<Partition> partitions = (List) ImmutableList.builder()
+                .addAll(getBackends()).build();
         partitions.stream().parallel().forEach(node -> CreateTableUtils.createPhysicalTable(jdbcConnectionManager, node, getCreateTableSQL()));
 
         for (ShardingIndexTable indexTable : getIndexTables()) {
@@ -198,34 +199,13 @@ public class ShardingTable implements ShardingTableHandler {
 
     @Override
     public void dropPhysicalTables() {
-
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        String dropTemplate = "drop table `%s`.`%s`";
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
-            connection.executeUpdate(String.format(dropTemplate, getSchemaName(), getTableName()), false);
-        }
+        getBackends().stream().parallel().forEach(c -> {
+            try(DefaultConnection connection = jdbcConnectionManager.getConnection(c.getTargetName())){
+                connection.deleteTable(c.getSchema(),c.getTable());
+            }
+        });
     }
-
-////    @Override
-//    public Function<MySqlInsertStatement, Iterable<TextUpdateInfo>> insertHandler() {
-//        return s -> {
-//            List<TextUpdateInfo> collect = MetadataManager.routeInsertFlat(getSchemaName(), s.toString())
-//                    .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).collect(Collectors.toList());
-//            return collect;
-//        };
-//    }
-//
-////    @Override
-//    public Function<MySqlUpdateStatement, Iterable<TextUpdateInfo>> updateHandler() {
-//        return (s)-> ()->MetadataManager.INSTANCE.rewriteSQL(getSchemaName(), s.toString())
-//                .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).iterator();
-//    }
-//
-////    @Override
-//    public Function<MySqlDeleteStatement, Iterable<TextUpdateInfo>> deleteHandler() {
-//        return s ->()-> MetadataManager.INSTANCE.rewriteSQL(getSchemaName(), s.toString())
-//                .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).iterator();
-//    }
 
     @Override
     public LogicTableType getType() {

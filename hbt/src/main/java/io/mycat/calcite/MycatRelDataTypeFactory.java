@@ -46,6 +46,9 @@ public class MycatRelDataTypeFactory implements JavaTypeFactory {
 
             @Override
             public Type getJavaClass(RelDataType type) {
+                if (type.getSqlTypeName()== SqlTypeName.OTHER){
+                 return String.class;
+                }
                 return super.getJavaClass(type);
             }
         };
