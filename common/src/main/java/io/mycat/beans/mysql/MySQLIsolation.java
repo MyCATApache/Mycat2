@@ -45,6 +45,7 @@ public enum MySQLIsolation {
     }
 
     public static MySQLIsolation parse(String name) {
+        if (name == null) return null;
         name = name.trim();
         for (MySQLIsolation value : values()) {
             if (value.getText().equalsIgnoreCase(name)) {
@@ -89,10 +90,25 @@ public enum MySQLIsolation {
 
     public static Optional<MySQLIsolation> toMySQLIsolationFrom(String sql) {
         for (MySQLIsolation value : values()) {
-            if (value.getCmd().equals(sql)) {
+            if (value.getCmd().equalsIgnoreCase(sql)) {
                 return Optional.of(value);
             }
         }
         return Optional.empty();
+    }
+
+    public String getSessionText(){
+        switch (this) {
+            case READ_UNCOMMITTED:
+                return "READ-UNCOMMITTED";
+            case READ_COMMITTED:
+                return "READ-COMMITTED";
+            case REPEATED_READ:
+                return "REPEATABLE-READ";
+            case SERIALIZABLE:
+                return "SERIALIZABLE";
+            default:
+                throw new IllegalStateException("Unexpected value: " + this);
+        }
     }
 }
