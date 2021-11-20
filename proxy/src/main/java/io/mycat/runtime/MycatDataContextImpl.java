@@ -460,4 +460,12 @@ public class MycatDataContextImpl implements MycatDataContext {
     public void setDebug(boolean value) {
         this.debug = value;
     }
+
+    @Override
+    public String getDefaultSchema() {
+        if (!this.processStateMap.isEmpty()) {
+            return (String) this.processStateMap.getOrDefault("SCHEMA", defaultSchema);
+        }
+        return defaultSchema;
+    }
 }

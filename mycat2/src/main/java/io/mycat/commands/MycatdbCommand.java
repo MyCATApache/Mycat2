@@ -385,6 +385,12 @@ public enum MycatdbCommand {
                             map.put("TARGET", arguments.stream().map(i -> SQLUtils.toSQLString(i.getValue())).collect(Collectors.toList()));
                             continue;
                         }
+                        case "SCHEMA": {
+                            List<MycatHint.Argument> arguments = function.getArguments();
+                            arguments.stream().map(i -> SQLUtils.toSQLString(i.getValue())).findFirst()
+                                    .ifPresent(s -> map.put("SCHEMA", SQLUtils.normalize(s)));
+                            continue;
+                        }
                     }
                 }
                 return map;
