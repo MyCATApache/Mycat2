@@ -3,11 +3,8 @@ package io.mycat.prototypeserver.mysql;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLDataType;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
-import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
-import com.github.jinahya.database.metadata.bind.Catalog;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
@@ -94,7 +91,7 @@ public class PrototypeService {
             SQLShowColumnsStatement statement = (SQLShowColumnsStatement) sqlStatement;
             String database = SQLUtils.normalize(statement.getDatabase().getSimpleName());
             String table = SQLUtils.normalize(statement.getTable().getSimpleName());
-            List<ColumnDefPacket> columnDefPacketList = statement.isFull() ? getShowFullColumnsColumns() : getShowColumnsColumns();
+            List<ColumnDefPacket> columnDefPacketList =statement.isFull()? getShowFullColumnsColumns():getShowColumnsColumns();
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showColumns(statement));
             return Optional.of(mySQLResultSet);
@@ -207,7 +204,7 @@ public class PrototypeService {
         return Optional.empty();
     }
 
-    public static List<ColumnDefPacket> getShowCreateDatabaseColumns() {
+    private List<ColumnDefPacket> getShowCreateDatabaseColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -241,7 +238,6 @@ public class PrototypeService {
 
         return columnDefPackets;
     }
-
 
     private List<ColumnDefPacket> getShowColumnsColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
@@ -382,6 +378,7 @@ public class PrototypeService {
         columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
 
 
+
         Catalog = "def";
         Database = "";
         Table = "COLUMNS";
@@ -470,7 +467,7 @@ public class PrototypeService {
         return columnDefPackets;
     }
 
-    public static List<ColumnDefPacket> getShowVariantsColumns() {
+    private List<ColumnDefPacket> getShowVariantsColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -505,7 +502,7 @@ public class PrototypeService {
         return columnDefPackets;
     }
 
-    public static List<ColumnDefPacket> getShowProcedureStatusColumns() {
+    private List<ColumnDefPacket> getShowProcedureStatusColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -668,7 +665,7 @@ public class PrototypeService {
         return columnDefPackets;
     }
 
-    public static List<ColumnDefPacket> getShowIndexesColumns() {
+    private List<ColumnDefPacket> getShowIndexesColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -876,7 +873,7 @@ public class PrototypeService {
         return columnDefPackets;
     }
 
-    public static List<ColumnDefPacket> getShowErrorsColumns() {
+    private List<ColumnDefPacket> getShowErrorsColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -925,7 +922,7 @@ public class PrototypeService {
         return columnDefPackets;
     }
 
-    public static List<ColumnDefPacket> getShowWarningsColumns() {
+    private List<ColumnDefPacket> getShowWarningsColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -1065,7 +1062,7 @@ public class PrototypeService {
     }
 
 
-    public static List<ColumnDefPacket> getShowCreateFunctionColumns() {
+    private List<ColumnDefPacket> getShowCreateFunctionColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -1233,7 +1230,7 @@ public class PrototypeService {
         return columnDefPackets;
     }
 
-    public static List<ColumnDefPacket> getShowStatusColumns() {
+    private List<ColumnDefPacket> getShowStatusColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -1419,7 +1416,7 @@ public class PrototypeService {
         return columnDefPackets;
     }
 
-    public static List<ColumnDefPacket> getShowCreateTableColumns() {
+    private List<ColumnDefPacket> getShowCreateTableColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -1454,7 +1451,7 @@ public class PrototypeService {
         return columnDefPackets;
     }
 
-    public List<ColumnDefPacket> getShowTableStatusColumns() {
+    private List<ColumnDefPacket> getShowTableStatusColumns() {
         ArrayList<ColumnDefPacket> columnDefPackets = new ArrayList<>();
 
         String Catalog = "def";
@@ -1485,6 +1482,21 @@ public class PrototypeService {
         Decimals = 0;
 
         columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
+
+        Catalog = "def";
+        Database = "";
+        Table = "TABLES";
+        OriginalTable = "";
+        Name = "Engine";
+        OriginalName = Name;
+        CharsetNumber = 33;
+        Length = 192;
+        Type = 253;
+        Flags = 0;
+        Decimals = 0;
+
+        columnDefPackets.add(createColumn(Catalog, Database, Table, OriginalTable, Name, OriginalName, CharsetNumber, Length, Type, Flags, Decimals));
+
 
         Catalog = "def";
         Database = "";
@@ -1988,7 +2000,7 @@ public class PrototypeService {
 
 
     @NotNull
-    public static ColumnDefPacket createColumn(String Catalog, String Database, String Table, String OriginalTable, String Name, String OriginalName, int CharsetNumber, int Length, int Type, int Flags, byte Decimals) {
+    private ColumnDefPacket createColumn(String Catalog, String Database, String Table, String OriginalTable, String Name, String OriginalName, int CharsetNumber, int Length, int Type, int Flags, byte Decimals) {
         ColumnDefPacketImpl columnDefPacket = new ColumnDefPacketImpl();
         columnDefPacket.setColumnCatalog(Catalog.getBytes());
         columnDefPacket.setColumnSchema(Database.getBytes());
@@ -2013,11 +2025,6 @@ public class PrototypeService {
             map.put(key, nameMap);
         }
         return (NameMap<NameMap<String>>) NameMap.immutableCopyOf(map);
-    }
-
-    static class Info {
-        List<Catalog> catalogList;
-        String name;
     }
 //
 //    @Nullable
@@ -2217,8 +2224,7 @@ public class PrototypeService {
         if (!jdbcConnectionManagerOptional.isPresent()) {
             return Collections.emptyMap();
         }
-        JdbcConnectionManager jdbcConnectionManager = jdbcConnectionManagerOptional.get();
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
+        try (DefaultConnection connection = jdbcConnectionManagerOptional.get().getConnection(targetName)) {
             RowBaseIterator tableIterator = connection.executeQuery("show tables from " + schemaName);
             while (tableIterator.next()) {
                 tables.add(tableIterator.getString(0));

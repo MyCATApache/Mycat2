@@ -48,6 +48,7 @@ public class SqlResultCollectingPrepareJdbcQuery<R> implements AbstractMySqlPrep
             @Override
             public void handle(Promise<SqlResult<R>> promise) {
                 try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+                    JdbcMySqlConnection.setStreamFlag(preparedStatement);
                     if (tuple.size()>0) {
                         RowSetJdbcPreparedJdbcQuery.setParams(tuple, preparedStatement);
                     }

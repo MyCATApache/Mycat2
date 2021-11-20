@@ -42,6 +42,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.JDBCType;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -198,7 +199,7 @@ public class MycatVertxMySQLHandler {
                             byte[] longData = getLongData(statementId, i, this.session);
                             if (longData == null) {
                                 ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
-                                BindValueUtil.read(readView, bv, StandardCharsets.UTF_8, !serverConfig.isPstmtStringVal());
+                                BindValueUtil.read(readView, bv, StandardCharsets.UTF_8,!serverConfig.isPstmtStringVal());
                                 bv.isLongData = false;
                             } else {
                                 bv.value = longData;
@@ -514,6 +515,7 @@ public class MycatVertxMySQLHandler {
         MycatRowMetaData params = paramsBuilder.build().getMetaData();
         long stmtId = mycatDataContext.nextPrepareStatementId();
         Map<Long, io.mycat.PreparedStatement> statementMap = this.mycatDataContext.getPrepareInfo();
+
         PreparedStatement preparedStatement = new PreparedStatement(stmtId, sqlStatement, params.getColumnCount());
         for (int i = 0; i < params.getColumnCount(); i++) {
             preparedStatement.getParametersType()[i] = MysqlDefs.FIELD_TYPE_STRING;
