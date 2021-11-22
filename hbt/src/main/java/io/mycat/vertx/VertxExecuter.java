@@ -654,7 +654,7 @@ public class VertxExecuter {
                     }
 
                     @Override
-                    public void onError(Exception e) {
+                    public void onError(Throwable e) {
                         emitter.onError(e);
                     }
                 });
@@ -691,7 +691,7 @@ public class VertxExecuter {
                     }
 
                     @Override
-                    public void onError(Exception e) {
+                    public void onError(Throwable e) {
                         emitter.onError(e);
                     }
                 });

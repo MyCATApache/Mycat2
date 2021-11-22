@@ -21,7 +21,7 @@ public class MysqlCollectorImpl implements MysqlCollector {
     }
 
     @Override
-    public void onError(Exception e) {
+    public void onError(Throwable e) {
 
     }
 }

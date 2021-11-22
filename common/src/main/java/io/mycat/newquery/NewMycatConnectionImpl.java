@@ -76,7 +76,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                     }
 
                     @Override
-                    public void onError(Exception e) {
+                    public void onError(Throwable e) {
                         rowSetPromise.fail(e);
                     }
                 });

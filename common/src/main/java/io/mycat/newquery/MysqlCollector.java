@@ -8,5 +8,5 @@ public interface MysqlCollector {
     void onColumnDef(MycatRowMetaData mycatRowMetaData);
     void onRow(Object[] row);
     void onComplete();
-    void onError(Exception e);
+    void onError(Throwable e);
 }
