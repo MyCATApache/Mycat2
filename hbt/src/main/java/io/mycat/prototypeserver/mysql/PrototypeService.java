@@ -2193,19 +2193,35 @@ public class PrototypeService {
         return Optional.empty();
     }
 
-    public List<SimpleColumnInfo> getColumnInfo(String sql) {
+    public List<SimpleColumnInfo> getColumnInfo(String sql, String schema, String table) {
         String prototypeServer = MetadataManager.getPrototype();
-        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-        MycatRowMetaData mycatRowMetaData = null;
-        if (sqlStatement instanceof MySqlCreateTableStatement) {
-            mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData((MySqlCreateTableStatement) sqlStatement);
-        }
-        if (sqlStatement instanceof SQLCreateViewStatement) {
+        try {
+            SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+            MycatRowMetaData mycatRowMetaData = null;
+            if (sqlStatement instanceof MySqlCreateTableStatement) {
+                mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData((MySqlCreateTableStatement) sqlStatement);
+            }
+            if (sqlStatement instanceof SQLCreateViewStatement) {
+                Optional<JdbcConnectionManager> prototypeConnectionManagerOptional = getPrototypeConnectionManager();
+                if (!prototypeConnectionManagerOptional.isPresent()) return Collections.emptyList();
+                if (schema == null || table == null) {
+                    schema = ((SQLCreateViewStatement) sqlStatement).getSchema();
+                    table = ((SQLCreateViewStatement) sqlStatement).getName().getSimpleName();
+                }
+                mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(prototypeConnectionManagerOptional.get(), prototypeServer, schema, table);
+            }
+            return CalciteConvertors.getColumnInfo(Objects.requireNonNull(mycatRowMetaData));
+        } catch (Exception e) {
+            LOGGER.error("", e);
             Optional<JdbcConnectionManager> prototypeConnectionManagerOptional = getPrototypeConnectionManager();
             if (!prototypeConnectionManagerOptional.isPresent()) return Collections.emptyList();
-            mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(prototypeConnectionManagerOptional.get(), prototypeServer, (SQLCreateViewStatement) sqlStatement);
+            MycatRowMetaData mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(prototypeConnectionManagerOptional.get(), prototypeServer, schema, table);
+            return CalciteConvertors.getColumnInfo(Objects.requireNonNull(mycatRowMetaData));
         }
-        return CalciteConvertors.getColumnInfo(Objects.requireNonNull(mycatRowMetaData));
+    }
+
+    public List<SimpleColumnInfo> getColumnInfo(String sql) {
+        return getColumnInfo(sql, null, null);
     }
 
 

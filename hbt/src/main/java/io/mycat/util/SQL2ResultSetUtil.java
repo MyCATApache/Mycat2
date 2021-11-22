@@ -41,12 +41,12 @@ public class SQL2ResultSetUtil {
     @SneakyThrows
     public static MycatRowMetaData getMycatRowMetaData(JdbcConnectionManager jdbcConnectionManager,
                                                        String prototypeServer,
-                                                       SQLCreateViewStatement mySqlCreateTableStatement) {
+                                                       String schema,String table) {
         try(DefaultConnection connection = jdbcConnectionManager.getConnection(prototypeServer)){
             Connection rawConnection = connection.getRawConnection();
             try(Statement statement = rawConnection.createStatement()){
                 statement.setMaxRows(0);
-                ResultSet resultSet = statement.executeQuery("select * from "+mySqlCreateTableStatement.getTableSource()+" where 0");
+                ResultSet resultSet = statement.executeQuery("select * from "+schema+"."+table+" where 0");
                 resultSet.next();
                 return new CopyMycatRowMetaData(new JdbcRowMetaData(resultSet.getMetaData()));
             }
