@@ -5,5 +5,6 @@ public enum LogicTableType {
     GLOBAL,
     NORMAL,
     CUSTOM,
-    VISUAL
+    VISUAL,
+    VIEW
 }
