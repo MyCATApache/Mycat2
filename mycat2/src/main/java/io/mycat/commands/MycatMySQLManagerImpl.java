@@ -48,7 +48,7 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
                 case NATIVE:
                 case NATIVE_JDBC:
                     if (nativeServer) {
-                        MycatDatasourcePool nativeDatasourcePool = createNativeDatasourcePool(name);
+                        MycatDatasourcePool nativeDatasourcePool = createNativeDatasourcePool(datasource,name);
                         futureList.add(nativeDatasourcePool.getConnection()
                                 .flatMap(c -> c.close().map(nativeDatasourcePool))
                                 .recover(throwable -> Future.succeededFuture(createJdbcDatasourcePool(name))));
@@ -79,9 +79,8 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
     }
 
     @NotNull
-    private MycatDatasourcePool createNativeDatasourcePool(String name) {
-        NativeDatasourcePoolImpl nativeDatasourcePool = new NativeDatasourcePoolImpl(name);
-        return nativeDatasourcePool;
+    private MycatDatasourcePool createNativeDatasourcePool(DatasourceConfig datasource, String targetName) {
+       return new VertxMySQLDatasourcePoolImpl(datasource,targetName);
     }
 
     @NotNull

@@ -47,4 +47,11 @@ public class NativeDatasourcePoolImpl extends AbstractMycatDatasourcePool {
         MySQLDatasourcePool sqlDatasourcePool = nativeMycatServer.getDatasource(targetName);
         return sqlDatasourcePool.currentSessionCount();
     }
+
+    @Override
+    public void close() {
+        NativeMycatServer nativeMycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
+        MySQLDatasourcePool sqlDatasourcePool = nativeMycatServer.getDatasource(targetName);
+        sqlDatasourcePool.close();
+    }
 }

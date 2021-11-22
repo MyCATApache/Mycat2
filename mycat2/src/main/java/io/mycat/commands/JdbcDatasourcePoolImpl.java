@@ -80,4 +80,9 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
         JdbcDataSource jdbcDataSource = jdbcConnectionManager.getDatasourceInfo().get(targetName);
         return jdbcDataSource.getUsedCount();
     }
+
+    @Override
+    public void close() {
+
+    }
 }

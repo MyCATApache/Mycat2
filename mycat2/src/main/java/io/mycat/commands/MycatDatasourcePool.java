@@ -10,5 +10,6 @@ public interface MycatDatasourcePool {
     public abstract Integer getAvailableNumber();
     public abstract Integer getUsedNumber();
     public String getTargetName();
+    public void close();
 
 }
