@@ -6,13 +6,8 @@ import io.mycat.api.collector.MysqlObjectArrayRow;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.calcite.resultset.EnumeratorRowIterator;
-import io.mycat.calcite.spm.Plan;
-import io.reactivex.rxjava3.annotations.NonNull;
+import io.mycat.beans.mycat.ResultSetBuilder;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.ObservableEmitter;
-import io.reactivex.rxjava3.core.ObservableOnSubscribe;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import lombok.Getter;
@@ -21,6 +16,8 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Iterator;
 
 @Getter
 public class PrepareExecutor {
@@ -51,8 +48,15 @@ public class PrepareExecutor {
         throw new UnsupportedOperationException();
     }
     public RowBaseIterator asRowBaseIterator( AsyncMycatDataContextImpl newMycatDataContext){
-        Enumerable<Object[]> bind = bindable1.bind(newMycatDataContext);
-        return new EnumeratorRowIterator(mycatRowMetaData, bind.enumerator());
+        Observable<Object[]> bind = asObservableObjectArray(newMycatDataContext);
+        Iterable<Object[]> objects = bind.blockingIterable();
+        Iterator<Object[]> iterator = objects.iterator();
+        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+        while (iterator.hasNext()){
+            Object[] row = iterator.next();
+            resultSetBuilder.addObjectRowPayload(row);
+        }
+        return resultSetBuilder.build(mycatRowMetaData);
     }
 
     public  Observable<MysqlPayloadObject> asMysqlPayloadObjectObservable(AsyncMycatDataContextImpl newMycatDataContext){

@@ -51,7 +51,9 @@ public class ExecutorProviderImpl implements ExecutorProvider {
 
         }
         ArrayBindable bindable1 = getArrayBindable(codeExecuterContext);
-        return PrepareExecutor.of(PrepareExecutorType.OBJECT, bindable1, plan.getMetaData());
+        PrepareExecutor prepareExecutor = PrepareExecutor.of(PrepareExecutorType.OBJECT, bindable1, plan.getMetaData());
+        codeExecuterContext.bindable = prepareExecutor;
+        return prepareExecutor;
     }
 
     @Override
