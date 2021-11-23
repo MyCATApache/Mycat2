@@ -81,7 +81,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
         AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSqlWithParams);
         ExecutorProvider executorProvider = MetaClusterCurrent.wrapper(ExecutorProvider.class);
         PrepareExecutor prepare = executorProvider.prepare(plan);
-        Observable<Object[]> observable1 = prepare.asObservableObjectArray(sqlMycatDataContext);
+        Observable<MysqlPayloadObject> observable1 = prepare.asMysqlPayloadObjectObservable(sqlMycatDataContext);
         Observable observable = mapToTimeoutObservable(observable1, drdsSqlWithParams);
         switch (prepare.getType()) {
             case ARROW: {
