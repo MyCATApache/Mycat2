@@ -269,6 +269,7 @@ public class MysqlMetadataManager extends MetadataManager {
             resList.add(new Object[]{"basedir", System.getProperty("MYCAT_HOME")});
             resList.add(new Object[]{"big_tables", "0"});
             resList.add(new Object[]{"big_tables", "*"});
+            resList.add(new Object[]{"lower_case_table_names","1"});
             return Observable.fromIterable(resList);
         }
     });
