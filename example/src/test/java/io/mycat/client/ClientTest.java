@@ -32,6 +32,21 @@ public class ClientTest implements MycatTest {
         }
     }
     @Test
+    public void testDBeaver() throws Exception {
+        /**
+         *
+
+         SELECT *
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = 'db1'
+         AND TABLE_NAME = 'www'
+         ORDER BY ORDINAL_POSITION
+
+         *
+         *
+         */
+    }
+    @Test
     public void tesVertx() throws Exception {
         MySQLConnectOptions connectOptions = new MySQLConnectOptions()
                 .setPort(8066)
