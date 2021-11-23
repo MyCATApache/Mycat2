@@ -9,10 +9,8 @@ import org.apache.calcite.runtime.ArrayBindable;
 public interface ExecutorProvider {
 
 
-    PrepareExecutor prepare(AsyncMycatDataContextImpl newMycatDataContext,
+    PrepareExecutor prepare(
                             Plan plan);
 
     public  RowBaseIterator runAsObjectArray(MycatDataContext context, String sqlStatement);
-
-    RowBaseIterator runAsObjectArray(AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext);
 }

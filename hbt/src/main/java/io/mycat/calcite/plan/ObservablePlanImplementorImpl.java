@@ -80,8 +80,9 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
     public Future<Void> executeQuery(Plan plan) {
         AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSqlWithParams);
         ExecutorProvider executorProvider = MetaClusterCurrent.wrapper(ExecutorProvider.class);
-        PrepareExecutor prepare = executorProvider.prepare(sqlMycatDataContext,plan);
-        Observable observable = mapToTimeoutObservable(prepare.getExecutor(), drdsSqlWithParams);
+        PrepareExecutor prepare = executorProvider.prepare(plan);
+        Observable<Object[]> observable1 = prepare.asObservableObjectArray(sqlMycatDataContext);
+        Observable observable = mapToTimeoutObservable(observable1, drdsSqlWithParams);
         switch (prepare.getType()) {
             case ARROW: {
                 Observable<VectorSchemaRoot> executor = observable;

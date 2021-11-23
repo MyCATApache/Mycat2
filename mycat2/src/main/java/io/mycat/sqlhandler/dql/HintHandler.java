@@ -140,7 +140,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         DrdsSqlCompiler drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
                         Plan plan = drdsRunner.doHbt(hbt);
                         AsyncMycatDataContextImpl.HbtMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.HbtMycatDataContextImpl(dataContext, plan.getCodeExecuterContext());
-                        Observable<MysqlPayloadObject> rowObservable = MetaClusterCurrent.wrapper(ExecutorProvider.class).prepare(sqlMycatDataContext, plan).getExecutor();
+                        Observable<MysqlPayloadObject> rowObservable = MetaClusterCurrent.wrapper(ExecutorProvider.class).prepare( plan).asMysqlPayloadObjectObservable(sqlMycatDataContext);
                         return response.sendResultSet(rowObservable);
                     }
                     if ("createSqlCache".equalsIgnoreCase(cmd)) {

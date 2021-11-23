@@ -39,11 +39,10 @@ public class ExecutorProviderImpl implements ExecutorProvider {
     public static final ExecutorProviderImpl INSTANCE = new ExecutorProviderImpl();
 
     @Override
-    public PrepareExecutor prepare(AsyncMycatDataContextImpl newMycatDataContext,
-                                   Plan plan) {
+    public PrepareExecutor prepare(Plan plan) {
         CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
-        Object bindable = codeExecuterContext.bindable;
-        if (bindable != null) return (PrepareExecutor) bindable;
+        PrepareExecutor bindable = codeExecuterContext.bindable;
+        if (bindable != null) return bindable;
 
         try {
 
@@ -51,48 +50,17 @@ public class ExecutorProviderImpl implements ExecutorProvider {
             LOGGER.error("", exception);
 
         }
-        return getPrepareExecutor(newMycatDataContext, plan, codeExecuterContext);
+        ArrayBindable bindable1 = getArrayBindable(codeExecuterContext);
+        return PrepareExecutor.of(PrepareExecutorType.OBJECT, bindable1, plan.getMetaData());
     }
 
     @Override
     public RowBaseIterator runAsObjectArray(MycatDataContext context, String sqlStatement) {
         DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(sqlStatement, context.getDefaultSchema());
         Plan plan = DrdsRunnerHelper.getPlan(drdsSql);
-        CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
-        ArrayBindable bindable1 = getArrayBindable(codeExecuterContext);
         AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSql);
-        MycatRowMetaData metaData = plan.getMetaData();
-        Object bindObservable = bindable1.bindObservable(sqlMycatDataContext);
-        Observable<Object[]> observable;
-        if (bindObservable instanceof Observable) {
-            observable = (Observable) bindObservable;
-        } else {
-            Enumerable<Object[]> enumerable = (Enumerable) bindObservable;
-            observable = toObservable(sqlMycatDataContext, enumerable);
-        }
-        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
-        Iterator<Object[]> iterator = observable.blockingIterable().iterator();
-        while (iterator.hasNext()){
-            Object[] row = iterator.next();
-            resultSetBuilder.addObjectRowPayload(row);
-        }
-        return resultSetBuilder.build(metaData);
-    }
+        return prepare(plan).asRowBaseIterator(sqlMycatDataContext);
 
-    @Override
-    public RowBaseIterator runAsObjectArray(AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext) {
-        CodeExecuterContext codeExecuterContext = sqlMycatDataContext.getCodeExecuterContext();
-        MycatRel mycatRel = codeExecuterContext.getMycatRel();
-        CalciteRowMetaData calciteRowMetaData = new CalciteRowMetaData(mycatRel.getRowType().getFieldList());
-        ArrayBindable bindable1 = getArrayBindable(codeExecuterContext);
-        return new EnumeratorRowIterator(calciteRowMetaData, bindable1.bind(sqlMycatDataContext).enumerator());
-    }
-
-    @NotNull
-    public PrepareExecutor getPrepareExecutor(AsyncMycatDataContextImpl newMycatDataContext, Plan plan, CodeExecuterContext codeExecuterContext) {
-        ArrayBindable bindable1 = getArrayBindable(codeExecuterContext);
-        Observable<MysqlPayloadObject> mysqlPayloadObjectObservable = getMysqlPayloadObjectObservable(bindable1, newMycatDataContext, plan);
-        return PrepareExecutor.of(PrepareExecutorType.OBJECT, mysqlPayloadObjectObservable);
     }
 
     @NotNull
@@ -147,58 +115,4 @@ public class ExecutorProviderImpl implements ExecutorProvider {
         };
     }
 
-    @NotNull
-    public static Observable<MysqlPayloadObject> getMysqlPayloadObjectObservable(
-            ArrayBindable bindable,
-            AsyncMycatDataContextImpl newMycatDataContext,
-            Plan plan) {
-        Observable<MysqlPayloadObject> rowObservable = Observable.<MysqlPayloadObject>create(emitter -> {
-            emitter.onNext(new MySQLColumnDef(plan.getMetaData()));
-            try {
-
-                Object bindObservable;
-                bindObservable = bindable.bindObservable(newMycatDataContext);
-                Observable<Object[]> observable;
-                if (bindObservable instanceof Observable) {
-                    observable = (Observable) bindObservable;
-                } else {
-                    Enumerable<Object[]> enumerable = (Enumerable) bindObservable;
-                    observable = toObservable(newMycatDataContext, enumerable);
-                }
-                observable.subscribe(objects -> emitter.onNext(new MysqlObjectArrayRow(objects)),
-                        throwable -> {
-                            newMycatDataContext.endFuture()
-                                    .onComplete(event -> emitter.onError(throwable));
-                        }, () -> {
-                            CompositeFuture compositeFuture = newMycatDataContext.endFuture();
-                            compositeFuture.onSuccess(event -> emitter.onComplete());
-                            compositeFuture.onFailure(event -> emitter.onError(event));
-                        });
-            } catch (Throwable throwable) {
-                CompositeFuture compositeFuture = newMycatDataContext.endFuture();
-                compositeFuture.onComplete(event -> emitter.onError(throwable));
-            }
-        });
-        return rowObservable;
-    }
-
-    @NotNull
-    private static Observable<Object[]> toObservable(AsyncMycatDataContextImpl context, Enumerable<Object[]> enumerable) {
-        Observable<Object[]> observable;
-        observable = Observable.create(emitter1 -> {
-            Future future;
-            try (Enumerator<Object[]> enumerator = enumerable.enumerator()) {
-                while (enumerator.moveNext()) {
-                    emitter1.onNext(enumerator.current());
-                }
-                future = Future.succeededFuture();
-            } catch (Throwable throwable) {
-                future = Future.failedFuture(throwable);
-            }
-            CompositeFuture.join(future, context.endFuture())
-                    .onSuccess(event -> emitter1.onComplete())
-                    .onFailure(event -> emitter1.onError(event));
-        });
-        return observable;
-    }
 }

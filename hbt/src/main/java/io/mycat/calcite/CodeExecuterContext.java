@@ -45,7 +45,7 @@ public class CodeExecuterContext implements Serializable {
     Map<String, Object> varContext;
     MycatRel mycatRel;
     CodeContext codeContext;
-    public transient Object bindable;
+    public transient PrepareExecutor bindable;
 
     public CodeExecuterContext(Map<RexNode, RexNode> constantMap,
                                Map<String, MycatRelDatasourceSourceInfo> relContext,

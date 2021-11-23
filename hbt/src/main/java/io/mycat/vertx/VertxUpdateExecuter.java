@@ -202,10 +202,7 @@ public class VertxUpdateExecuter {
                     ////////////////////////////////////////index-scan////////////////////////////////////////////////////////////
                     Objects.requireNonNull(shardingTable.getPrimaryKey()," need primary key");
 
-                    AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext =
-                            new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, codeExecuterContext, queryDrdsSqlWithParams);
-
-                    RowBaseIterator bindable = MetaClusterCurrent.wrapper(ExecutorProvider.class).runAsObjectArray(sqlMycatDataContext);
+                    RowBaseIterator bindable = MetaClusterCurrent.wrapper(ExecutorProvider.class).runAsObjectArray(context,sqlSelectStatement.toString());
 
                     try {
                         List<Object[]> list = new ArrayList<>();

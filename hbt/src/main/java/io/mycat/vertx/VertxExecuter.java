@@ -214,11 +214,9 @@ public class VertxExecuter {
                 if (shardingTable.getIndexTables().isEmpty()) {
                     return res;
                 }
-                AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext =
-                        new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, codeExecuterContext, queryDrdsSqlWithParams);
 
                 ExecutorProvider executorProvider = MetaClusterCurrent.wrapper(ExecutorProvider.class);
-                RowBaseIterator bindable = executorProvider.runAsObjectArray(sqlMycatDataContext);
+                RowBaseIterator bindable = executorProvider.runAsObjectArray(context,sqlSelectStatement.toString());
                 try {
                     List<Object[]> list = new ArrayList<>();
                     while (bindable.next()){
