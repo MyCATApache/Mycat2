@@ -381,6 +381,9 @@ public class MetadataManager implements MysqlVariableService {
                                 Collections.singletonList(new BackendTableInfo(targetName, schemaName, tableName))),
                         normalBackEndTableInfoConfig)));
             } catch (Throwable e) {
+                res.put(tableName, (new NormalTableConfig(
+                      null,
+                        normalBackEndTableInfoConfig)));
                 LOGGER.warn("", e);
             }
         });
