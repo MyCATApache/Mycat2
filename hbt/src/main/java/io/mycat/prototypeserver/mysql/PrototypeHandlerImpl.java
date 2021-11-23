@@ -288,7 +288,7 @@ public class PrototypeHandlerImpl implements PrototypeHandler {
     @Override
     public List<Object[]> showEngine(MySqlShowEnginesStatement statement) {
         ArrayList<List<Object>> objects = new ArrayList<>();
-        objects.add(Arrays.asList("InnoDB", "DRFAULT", "Supports transactions, row-level locking, foreign keys and encryption for tables"));
+        objects.add(Arrays.asList("InnoDB", "DEFAULT", "Supports transactions, row-level locking, foreign keys and encryption for tables"));
         objects.add(Arrays.asList("CSV", "YES", "Stores tables as CSV files"));
         objects.add(Arrays.asList("MRG_MyISAM", "YES", "Collection of identical MyISAM tables"));
         objects.add(Arrays.asList("MEMORY", "YES", "Hash based, stored in memory, useful for temporary tables"));
