@@ -42,7 +42,7 @@ public class ShowEnginesSQLHandler extends AbstractSQLHandler<MySqlShowEnginesSt
         resultSetBuilder.addColumnInfo("Support", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("Comment", JDBCType.VARCHAR);
 
-        resultSetBuilder.addObjectRowPayload(Arrays.asList("InnoDB","DRFAULT","Supports transactions, row-level locking, foreign keys and encryption for tables"));
+        resultSetBuilder.addObjectRowPayload(Arrays.asList("InnoDB","DEFAULT","Supports transactions, row-level locking, foreign keys and encryption for tables"));
         resultSetBuilder.addObjectRowPayload(Arrays.asList("CSV","YES","Stores tables as CSV files"));
         resultSetBuilder.addObjectRowPayload(Arrays.asList("MRG_MyISAM","YES","Collection of identical MyISAM tables"));
         resultSetBuilder.addObjectRowPayload(Arrays.asList("MEMORY","YES","Hash based, stored in memory, useful for temporary tables"));
