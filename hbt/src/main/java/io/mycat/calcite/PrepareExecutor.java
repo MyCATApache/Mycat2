@@ -23,16 +23,14 @@ import java.util.Iterator;
 public class PrepareExecutor {
    final PrepareExecutorType type;
    final  ArrayBindable bindable1;
-   final MycatRowMetaData mycatRowMetaData;
 
-    public PrepareExecutor(PrepareExecutorType type, ArrayBindable executor, MycatRowMetaData mycatRowMetaData) {
+    public PrepareExecutor(PrepareExecutorType type, ArrayBindable executor) {
         this.type = type;
         this.bindable1 = executor;
-        this.mycatRowMetaData = mycatRowMetaData;
     }
 
-    public static  PrepareExecutor of(PrepareExecutorType type, ArrayBindable executor, MycatRowMetaData mycatRowMetaData){
-        return new PrepareExecutor(type,executor,mycatRowMetaData);
+    public static  PrepareExecutor of(PrepareExecutorType type, ArrayBindable executor){
+        return new PrepareExecutor(type,executor);
     }
 
    public Observable<Object[]> asObservableObjectArray( AsyncMycatDataContextImpl newMycatDataContext){
@@ -44,10 +42,10 @@ public class PrepareExecutor {
          return toObservable(newMycatDataContext, enumerable);
        }
    }
-    public Observable<VectorSchemaRoot> asObservableVector( AsyncMycatDataContextImpl newMycatDataContext){
+    public Observable<VectorSchemaRoot> asObservableVector( AsyncMycatDataContextImpl newMycatDataContext,MycatRowMetaData mycatRowMetaData){
         throw new UnsupportedOperationException();
     }
-    public RowBaseIterator asRowBaseIterator( AsyncMycatDataContextImpl newMycatDataContext){
+    public RowBaseIterator asRowBaseIterator( AsyncMycatDataContextImpl newMycatDataContext,MycatRowMetaData mycatRowMetaData){
         Observable<Object[]> bind = asObservableObjectArray(newMycatDataContext);
         Iterable<Object[]> objects = bind.blockingIterable();
         Iterator<Object[]> iterator = objects.iterator();
@@ -59,7 +57,7 @@ public class PrepareExecutor {
         return resultSetBuilder.build(mycatRowMetaData);
     }
 
-    public  Observable<MysqlPayloadObject> asMysqlPayloadObjectObservable(AsyncMycatDataContextImpl newMycatDataContext){
+    public  Observable<MysqlPayloadObject> asMysqlPayloadObjectObservable(AsyncMycatDataContextImpl newMycatDataContext,MycatRowMetaData mycatRowMetaData){
         return getMysqlPayloadObjectObservable(bindable1, newMycatDataContext, mycatRowMetaData);
     }
 

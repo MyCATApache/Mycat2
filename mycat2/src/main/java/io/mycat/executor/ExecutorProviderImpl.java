@@ -51,7 +51,7 @@ public class ExecutorProviderImpl implements ExecutorProvider {
 
         }
         ArrayBindable bindable1 = getArrayBindable(codeExecuterContext);
-        PrepareExecutor prepareExecutor = PrepareExecutor.of(PrepareExecutorType.OBJECT, bindable1, plan.getMetaData());
+        PrepareExecutor prepareExecutor = PrepareExecutor.of(PrepareExecutorType.OBJECT, bindable1);
         codeExecuterContext.bindable = prepareExecutor;
         return prepareExecutor;
     }
@@ -61,7 +61,7 @@ public class ExecutorProviderImpl implements ExecutorProvider {
         DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(sqlStatement, context.getDefaultSchema());
         Plan plan = DrdsRunnerHelper.getPlan(drdsSql);
         AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSql);
-        return prepare(plan).asRowBaseIterator(sqlMycatDataContext);
+        return prepare(plan).asRowBaseIterator(sqlMycatDataContext,plan.getMetaData());
 
     }
 
