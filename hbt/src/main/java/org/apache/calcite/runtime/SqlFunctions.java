@@ -643,6 +643,10 @@ public class SqlFunctions {
     return b0.equals(b1);
   }
 
+  public static boolean eq(String b0, String b1) {
+    return b0.equalsIgnoreCase(b1);
+  }
+
   /** SQL <code>=</code> operator applied to String values with a certain Comparator. */
   public static boolean eq(String s0, String s1, Comparator<String> comparator) {
     return comparator.compare(s0, s1) == 0;
