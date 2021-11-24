@@ -167,7 +167,8 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
         }
         String sql = "select *" + " from (select " +
                 projects.stream().map(i -> "" + i[0] + "" + " as " + i[1] + "").collect(Collectors.joining(",")) + "  from `" + schema + "`.`" + table + "` where " +s
-                +") where " + Optional.ofNullable(where).orElse(" true ");
+                +") " +table+
+                " where " + Optional.ofNullable(where).orElse(" true ");
         return sql;
     }
 

@@ -43,13 +43,13 @@ public class ShowCollationSQLHandler extends AbstractSQLHandler<MySqlShowCollati
         SQLExpr pattern = ast.getPattern();
 
         return generateSimpleSQL(Arrays.asList(
-                        new String[]{"COLLATION_NAME","Collection"},//utf8_general_ci
-                        new String[]{"CHARACTER_SET_NAME","Charset"},//utf8
+                        new String[]{"COLLATION_NAME","`Collation`"},//utf8_general_ci
+                        new String[]{"CHARACTER_SET_NAME","`Charset`"},//utf8
                         new String[]{"ID","Id"},//209
-                        new String[]{"IS_DEFAULT","Default"},//YES
-                        new String[]{"IS_COMPILED","Complied"},//YES
-                        new String[]{"SORTLEN","Sortlen"},//8
-                        new String[]{"PAD_ATTRIBUTE","Pad_attribute"}//PAD SPACE
+                        new String[]{"IS_DEFAULT","`Default`"},//YES
+                        new String[]{"IS_COMPILED","`Complied`"},//YES
+                        new String[]{"SORTLEN","`Sortlen`"},//8
+                        new String[]{"PAD_ATTRIBUTE","`Pad_attribute`"}//PAD SPACE
                 ),
                 "information_schema","Collations",
                 Optional.ofNullable(where).map(i->i.toString()).orElse(null),
