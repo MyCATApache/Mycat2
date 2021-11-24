@@ -18,6 +18,7 @@ package io.mycat.calcite.table;
 
 import io.mycat.ProcedureHandler;
 import io.mycat.TableHandler;
+import io.mycat.ViewHandler;
 import io.mycat.util.NameMap;
 
 import java.util.Map;
@@ -30,4 +31,6 @@ public interface SchemaHandler {
     String defaultTargetName();
 
     NameMap<ProcedureHandler> procedures();
+
+    NameMap<ViewHandler> views();
 }

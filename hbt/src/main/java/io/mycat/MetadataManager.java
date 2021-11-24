@@ -19,8 +19,8 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLHexExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
+import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.ImmutableList;
 import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.calcite.rewriter.Distribution;
@@ -42,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -58,7 +59,6 @@ public class MetadataManager {
     private final Map<String, List<ShardingTable>> erTableGroup = new HashMap<>();
     private final Map<String, Map<String, Partition>> targetTableGroup = new HashMap<>();
     private final PrototypeService prototypeService;
-
 
     public void removeSchema(String schemaName) {
         schemaMap.remove(schemaName);
@@ -277,8 +277,38 @@ public class MetadataManager {
             NormalProcedureConfig normalProcedureConfig = e.getValue();
             addProcedure(schemaName, procedureName, normalProcedureConfig);
         }
+        for (Map.Entry<String, ViewConfig> e : value.getViews().entrySet()) {
+            String viewName = e.getKey();
+            removeView(schemaName,viewName);
+            ViewConfig viewConfig = e.getValue();
+            addView(schemaName, viewName, viewConfig);
+        }
     }
 
+    public void addView(String schemaNameArg, String viewName, ViewConfig viewConfig) {
+        String createViewSQL = viewConfig.getCreateViewSQL();
+        SQLCreateViewStatement sqlStatement =(SQLCreateViewStatement) SQLUtils.parseSingleMysqlStatement(createViewSQL);
+        List<String> columns = sqlStatement.getColumns().stream().map(i->SQLUtils.normalize(i.toString())).collect(Collectors.toList());
+        SQLSelect query = sqlStatement.getSubQuery();
+        query.accept(new MySqlASTVisitorAdapter(){
+            @Override
+            public boolean visit(SQLExprTableSource x) {
+                String schemaName = x.getSchema();
+                if (schemaName == null) {
+                    x.setSchema(schemaNameArg);
+                }
+                return super.visit(x);
+            }
+        });
+        String subQuery = query.toString();
+        SchemaHandler schemaHandler = schemaMap.get(schemaNameArg);
+        schemaHandler.views().put(viewName,ViewHandlerImpl.create(schemaNameArg,viewName,columns,subQuery));
+    }
+
+    public void removeView(String schemaName,String viewName) {
+        SchemaHandler schemaHandler = schemaMap.get(schemaName);
+        schemaHandler.views().remove(viewName);
+    }
 
     private void addCustomTable(String schemaName,
                                 String tableName,

@@ -22,6 +22,7 @@ import io.mycat.calcite.plan.PlanImplementor;
 import io.mycat.calcite.spm.*;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.SchemaHandler;
+import io.mycat.util.NameMap;
 import io.mycat.util.VertxUtil;
 import io.vertx.core.Future;
 import lombok.SneakyThrows;
@@ -300,10 +301,10 @@ public class DrdsRunnerHelper {
     }
 
 
-    public static SchemaPlus convertRoSchemaPlus(DrdsConst config) {
+    public static SchemaPlus convertRoSchemaPlus(NameMap< SchemaHandler> schemaHandlers) {
         SchemaPlus plus = CalciteSchema.createRootSchema(false).plus();
         List<MycatSchema> schemas = new ArrayList<>();
-        for (Map.Entry<String, SchemaHandler> entry : config.schemas().entrySet()) {
+        for (Map.Entry<String, SchemaHandler> entry : schemaHandlers.entrySet()) {
             String schemaName = entry.getKey();
             SchemaHandler schemaHandler = entry.getValue();
             Map<String, Table> logicTableMap = new HashMap<>();
@@ -311,7 +312,7 @@ public class DrdsRunnerHelper {
                 MycatLogicTable logicTable = new MycatLogicTable(tableHandler);
                 logicTableMap.put(logicTable.getTable().getTableName(), logicTable);
             }
-            MycatSchema schema = MycatSchema.create(config, schemaName, logicTableMap);
+            MycatSchema schema = MycatSchema.create(schemaName,logicTableMap);
             plus.add(schemaName, schema);
             schemas.add(schema);
         }

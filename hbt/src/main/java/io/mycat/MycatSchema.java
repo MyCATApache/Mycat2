@@ -24,21 +24,17 @@ import java.util.Map;
 @Data
 public class MycatSchema extends AbstractSchema {
     private final String schemaName;
-    private final DrdsConst drdsConst;
     private final Map<String, Table> mycatTableMap;
 
-    public MycatSchema(DrdsConst drdsConst,
-                       String schemaName,
+    public MycatSchema(String schemaName,
                        Map<String, Table> mycatTableMap) {
         this.schemaName = schemaName;
-        this.drdsConst = drdsConst;
         this.mycatTableMap = mycatTableMap;
     }
 
-    public  static MycatSchema create(DrdsConst drdsConst,
-                                      String schemaName,
+    public  static MycatSchema create(String schemaName,
                                       Map<String, Table> mycatTableMap){
-        return new MycatSchema(drdsConst,schemaName,mycatTableMap);
+        return new MycatSchema(schemaName,mycatTableMap);
     }
 
     @SneakyThrows

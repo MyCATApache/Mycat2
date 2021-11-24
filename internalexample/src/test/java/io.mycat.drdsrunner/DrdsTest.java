@@ -193,6 +193,18 @@ public abstract class DrdsTest implements MycatTest {
                     logicSchemaConfig.getShardingTables().put("seqSharding", seqMainSharding);
                 }
 
+                {
+                    ViewConfig viewConfig = new ViewConfig();
+                    viewConfig.setCreateViewSQL("create view testView as select id from normal;");
+                    logicSchemaConfig.getViews().put("testView",viewConfig);
+                }
+
+                {
+                    ViewConfig viewConfig = new ViewConfig();
+                    viewConfig.setCreateViewSQL("create view testView2 (rename_id) as select id from normal;");
+                    logicSchemaConfig.getViews().put("testView2",viewConfig);
+                }
+
 
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("ds0", DB1));
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("ds1", DB2));

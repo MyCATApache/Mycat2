@@ -32,7 +32,10 @@ import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatProject;
 import io.mycat.calcite.physical.MycatTopN;
 import io.mycat.calcite.physical.MycatUpdateRel;
-import io.mycat.calcite.rewriter.*;
+import io.mycat.calcite.rewriter.MatierialRewriter;
+import io.mycat.calcite.rewriter.MycatAggDistinctRule;
+import io.mycat.calcite.rewriter.OptimizationContext;
+import io.mycat.calcite.rewriter.SQLRBORewriter;
 import io.mycat.calcite.rules.*;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.spm.PlanImpl;
@@ -42,6 +45,7 @@ import io.mycat.hbt.SchemaConvertor;
 import io.mycat.hbt.ast.base.Schema;
 import io.mycat.hbt.parser.HBTParser;
 import io.mycat.hbt.parser.ParseNode;
+import io.mycat.util.NameMap;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.calcite.jdbc.CalciteSchema;
@@ -64,8 +68,9 @@ import org.apache.calcite.rel.rules.AggregateExpandDistinctAggregatesRule;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.MultiJoin;
 import org.apache.calcite.rel.rules.MycatHepJoinClustering;
-import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.*;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -85,9 +90,9 @@ import static io.mycat.DrdsExecutorCompiler.getCodeExecuterContext;
 @Getter
 public class DrdsSqlCompiler {
     private final static Logger log = LoggerFactory.getLogger(DrdsSqlCompiler.class);
-    private final SchemaPlus schemas;
     private final DrdsConst config;
-    private final CalciteCatalogReader catalogReader;
+    private final SchemaPlus schemas;
+    private CalciteCatalogReader catalogReader;
 
     public static boolean RBO_PARTITION_KEY_JOIN = true;
     public static boolean RBO_MERGE_JOIN = true;
@@ -95,10 +100,53 @@ public class DrdsSqlCompiler {
     public static long BKA_JOIN_LEFT_ROW_COUNT_LIMIT = 1000;
 
     public DrdsSqlCompiler(DrdsConst config) {
-        this.schemas = DrdsRunnerHelper.convertRoSchemaPlus(config);
         this.config = config;
+
+        NameMap<SchemaHandler> schemas = config.schemas();
+        boolean hasView = schemas.values().stream().anyMatch(i -> !i.views().keySet().isEmpty());
+
+        SchemaPlus firstSchema = DrdsRunnerHelper.convertRoSchemaPlus(schemas);
+        SchemaPlus resultSchema;
+
+        if (hasView){
+            resultSchema   = CalciteSchema.createRootSchema(false).plus();
+            for (Map.Entry<String, SchemaHandler> entry : config.schemas().entrySet()) {
+                String schemaName = entry.getKey();
+                SchemaHandler schemaHandler = entry.getValue();
+                Map<String, Table> logicTableMap = new HashMap<>();
+                for (TableHandler tableHandler : schemaHandler.logicTables().values()) {
+                    MycatLogicTable logicTable = new MycatLogicTable(tableHandler);
+                    logicTableMap.put(logicTable.getTable().getTableName(), logicTable);
+                }
+                for (ViewHandler v : schemaHandler.views().values()) {
+                    String viewSql = v.getViewSql();
+
+                    RelDataType resRowType;
+                    RelNodeContext relRoot = getRelRoot(firstSchema, DrdsRunnerHelper.preParse(viewSql, v.getSchemaName()));
+                    RelDataType rowType = relRoot.getRoot().rel.getRowType();
+                    List<String> columnList = Optional.ofNullable(v.getColumns()).orElse(Collections.emptyList());
+                    if (columnList.isEmpty()) {
+                        resRowType = rowType;
+                    } else {
+                        final ArrayList<RelDataTypeField> list = new ArrayList<>(rowType.getFieldCount());
+                        for (int i = 0; i < rowType.getFieldCount(); i++) {
+                            list.add(new RelDataTypeFieldImpl(columnList.get(i), i, rowType.getFieldList().get(i).getType()));
+                        }
+                        resRowType = new RelRecordType(StructKind.FULLY_QUALIFIED, list);
+                    }
+                    MycatViewTable mycatViewTable = new MycatViewTable(v, resRowType);
+                    logicTableMap.put(v.getViewName(), mycatViewTable);
+                }
+                MycatSchema schema = MycatSchema.create(schemaName, logicTableMap);
+                resultSchema.add(schemaName, schema);
+            }
+        }else {
+            resultSchema  = firstSchema;
+        }
+
+        this.schemas = resultSchema;
         this.catalogReader = new CalciteCatalogReader(CalciteSchema
-                .from(this.schemas),
+                .from(resultSchema),
                 ImmutableList.of(),
                 MycatCalciteSupport.TypeFactory,
                 MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig());
@@ -112,7 +160,6 @@ public class DrdsSqlCompiler {
         ParseNode statement = hbtParser.statement();
         SchemaConvertor schemaConvertor = new SchemaConvertor();
         Schema originSchema = schemaConvertor.transforSchema(statement);
-        SchemaPlus plus = this.schemas;
 
         RelOptCluster cluster = newCluster();
         RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(cluster, catalogReader);
@@ -325,7 +372,7 @@ public class DrdsSqlCompiler {
         SqlValidator validator = DrdsRunnerHelper.getSqlValidator(drdsSql, catalogReader);
         RelOptCluster cluster = newCluster();
         SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(
-                NOOP_EXPANDER,
+                new ViewExpander(),
                 validator,
                 catalogReader,
                 cluster,
@@ -529,7 +576,7 @@ public class DrdsSqlCompiler {
         builder.addGroupBegin().addRuleInstance(CoreRules.PROJECT_MERGE).addGroupEnd().addMatchOrder(HepMatchOrder.ARBITRARY);
         builder.addGroupBegin()
                 .addRuleCollection(LocalRules.RBO_RULES)
-                .addRuleInstance( MycatAggDistinctRule.Config.DEFAULT.toRule())
+                .addRuleInstance(MycatAggDistinctRule.Config.DEFAULT.toRule())
                 .addGroupEnd().addMatchOrder(HepMatchOrder.BOTTOM_UP);
         builder.addMatchLimit(1024);
         HepPlanner planner = new HepPlanner(builder.build());
@@ -592,6 +639,16 @@ public class DrdsSqlCompiler {
         return relOptCluster;
     }
 
-    private static final RelOptTable.ViewExpander NOOP_EXPANDER = (rowType, queryString, schemaPath, viewPath) -> null;
+    private class ViewExpander implements RelOptTable.ViewExpander {
+
+        @Override
+        public RelRoot expandView(RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath) {
+            SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(queryString);
+            DrdsSql drdsSql = new DrdsSql(queryString, false, Collections.emptyList(), Collections.emptyList());
+            MycatCalciteMySqlNodeVisitor mycatCalciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
+            sqlStatement.accept(mycatCalciteMySqlNodeVisitor);
+            return getRelRoot(schemas, drdsSql).getRoot();
+        }
+    }
 
 }

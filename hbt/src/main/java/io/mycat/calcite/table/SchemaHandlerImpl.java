@@ -18,6 +18,7 @@ package io.mycat.calcite.table;
 
 import io.mycat.ProcedureHandler;
 import io.mycat.TableHandler;
+import io.mycat.ViewHandler;
 import io.mycat.util.NameMap;
 
 public class SchemaHandlerImpl implements SchemaHandler {
@@ -25,6 +26,7 @@ public class SchemaHandlerImpl implements SchemaHandler {
     private String name;
     final String defaultTargetName;
     final NameMap<ProcedureHandler> procedureMap = new NameMap<>();
+    final NameMap<ViewHandler> viewMap = new NameMap<>();
 
     public SchemaHandlerImpl(String name,String defaultTargetName) {
         this.name = name;
@@ -49,5 +51,10 @@ public class SchemaHandlerImpl implements SchemaHandler {
     @Override
     public NameMap<ProcedureHandler> procedures() {
         return procedureMap;
+    }
+
+    @Override
+    public NameMap<ViewHandler> views() {
+        return viewMap;
     }
 }
