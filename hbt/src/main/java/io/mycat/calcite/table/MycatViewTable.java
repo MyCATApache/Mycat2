@@ -55,8 +55,8 @@ public class MycatViewTable extends AbstractTable implements TranslatableTable {
     public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
         try {
             final RelRoot root =
-                    context.expandView(this.relDataType, sql, ImmutableList.of(getSchemaName()), ImmutableList.of(getSchemaName(),getTableName()));
-            final RelNode rel = RelOptUtil.createCastRel(root.rel, this.relDataType, true);
+                    context.expandView(relOptTable.getRowType(), sql, ImmutableList.of(getSchemaName()), ImmutableList.of(getSchemaName(),getTableName()));
+            final RelNode rel = RelOptUtil.createCastRel(root.rel, relOptTable.getRowType(), true);
             // Expand any views
             final RelNode rel2 = rel.accept(
                     new RelShuttleImpl() {
