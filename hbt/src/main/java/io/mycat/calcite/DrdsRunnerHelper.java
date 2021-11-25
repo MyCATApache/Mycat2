@@ -84,7 +84,7 @@ public class DrdsRunnerHelper {
                         }
                     } else if (selectItem.getExpr() instanceof SQLIdentifierExpr) {
                         columnNodes.add(SQLUtils.normalize(((SQLIdentifierExpr) selectItem.getExpr()).getName()));
-                    }else {
+                    } else {
                         StringBuilder sbText = new StringBuilder();
                         selectItem.output(sbText);
                         columnNodes.add(sbText.toString().replaceAll(" ", ""));
@@ -106,8 +106,7 @@ public class DrdsRunnerHelper {
                 params,
                 hints,
                 complex);
-        String string = sb.toString();
-        return new DrdsSqlWithParams(string,
+        return new DrdsSqlWithParams(params.isEmpty() ? sqlStatement.toString() : sb.toString(),
                 params,
                 complex.getValue(), getTypes(params), alias, hints);
     }
@@ -174,7 +173,7 @@ public class DrdsRunnerHelper {
         return new DrdsSqlWithParams(baseline.getSql(),
                 Collections.emptyList(),
                 false,
-                constraint.getParamTypes(),Collections.emptyList(),Collections.emptyList());
+                constraint.getParamTypes(), Collections.emptyList(), Collections.emptyList());
     }
 
 
@@ -240,12 +239,12 @@ public class DrdsRunnerHelper {
                     ParamHolder paramHolder = ParamHolder.CURRENT_THREAD_LOCAL.get();
                     if (sqlTypeName == null) {
                         List<SqlTypeName> curTypes = paramHolder.getTypes();
-                        if (curTypes!=null&&curTypes.size() > index) {
+                        if (curTypes != null && curTypes.size() > index) {
                             sqlTypeName = curTypes.get(index);
                         }
                     }
                     if (sqlTypeName == null) {
-                        List<Object> contextParams =paramHolder.getParams();
+                        List<Object> contextParams = paramHolder.getParams();
                         if (contextParams != null && contextParams.size() > index) {
                             Object o = contextParams.get(index);
                             if (o instanceof Number) {
@@ -349,7 +348,7 @@ public class DrdsRunnerHelper {
         PlanImpl plan;
         ParamHolder paramHolder = ParamHolder.CURRENT_THREAD_LOCAL.get();
         try {
-            paramHolder .setData(drdsSqlWithParams.getParams(),drdsSqlWithParams.getTypeNames());
+            paramHolder.setData(drdsSqlWithParams.getParams(), drdsSqlWithParams.getTypeNames());
             CodeExecuterContext codeExecuterContext = planner.innerComputeMinCostCodeExecuterContext(drdsSqlWithParams);
             plan = new PlanImpl(codeExecuterContext.getMycatRel(), codeExecuterContext, drdsSqlWithParams.getAliasList());
         } finally {

@@ -511,7 +511,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             boolean canPushDown = false;
             for (Integer integer : groupSet) {
                 RelColumnOrigin columnOrigin = metadataQuery.getColumnOrigin(input, integer);
-                if (columnOrigin == null || !columnOrigin.isDerived()) {
+                if (columnOrigin == null || columnOrigin.isDerived()) {
                     continue;
                 }
                 MycatLogicTable mycatLogicTable = columnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
@@ -544,7 +544,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
             if (bestExp instanceof Aggregate) {
                 Aggregate mergeAgg = (Aggregate) bestExp;
-                if (mergeAgg.getInput() instanceof Union) {
+                if (mergeAgg.getInput() instanceof Union && mergeAgg.getInput(0).getInput(0) instanceof Aggregate) {
                     MycatView multiView = view.changeTo(
                             mergeAgg.getInput(0).getInput(0),
                             dataNodeInfo);
@@ -905,7 +905,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             Optional<QueryBuilder> builder = queryBuilder
                     .project(
                             ImmutableIntList.identity(
-                                    project.getRowType().getFieldCount())
+                                            project.getRowType().getFieldCount())
                                     .toIntArray());
             if (builder.isPresent()) {
                 return builder.get();
