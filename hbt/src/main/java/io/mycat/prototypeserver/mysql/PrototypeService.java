@@ -8,6 +8,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
 import com.github.jinahya.database.metadata.bind.Catalog;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.beans.mycat.CopyMycatRowMetaData;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mysql.MySQLType;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
@@ -17,7 +18,6 @@ import io.mycat.config.NormalTableConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.util.CalciteConvertors;
-import io.mycat.util.MycatSQLExprTableSourceUtil;
 import io.mycat.util.NameMap;
 import io.mycat.util.SQL2ResultSetUtil;
 import io.vertx.core.Future;
@@ -2125,65 +2125,31 @@ public class PrototypeService {
                 String targetSchemaTable = backendTableInfo.getTargetSchemaTable();
                 try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
                     String sql = "SHOW CREATE TABLE " + targetSchemaTable;
+                    SQLStatement sqlStatement = null;
                     try (RowBaseIterator rowBaseIterator = connection.executeQuery(sql)) {
-                        while (rowBaseIterator.next()) {
-                            String string = rowBaseIterator.getString(1);
-                            SQLStatement sqlStatement = null;
-                            try {
-                                sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
-                            } catch (Throwable e) {
+                        rowBaseIterator.next();
+                        String string = rowBaseIterator.getString(1);
+                        sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
 
-                            }
-                            if (sqlStatement == null) {
-                                try {
-                                    string = string.substring(0, string.lastIndexOf(')') + 1);
-                                    sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
-                                } catch (Throwable e) {
-
-                                }
-                            }
-                            if (sqlStatement instanceof MySqlCreateTableStatement) {
-                                MySqlCreateTableStatement sqlStatement1 = (MySqlCreateTableStatement) sqlStatement;
-
-                                sqlStatement1.setTableName(SQLUtils.normalize(tableName));
-                                sqlStatement1.setSchema(SQLUtils.normalize(schemaName));//顺序不能颠倒
-                                return Optional.of(sqlStatement1.toString());
-                            }
-                            if (sqlStatement instanceof SQLCreateViewStatement) {
-                                SQLCreateViewStatement sqlStatement1 = (SQLCreateViewStatement) sqlStatement;
-                                SQLExprTableSource sqlExprTableSource = sqlStatement1.getTableSource();
-                                if (!SQLUtils.nameEquals(sqlExprTableSource.getTableName(), tableName) ||
-                                        !SQLUtils.nameEquals(sqlExprTableSource.getSchema(), (schemaName))) {
-                                    MycatSQLExprTableSourceUtil.setSqlExprTableSource(schemaName, tableName, sqlExprTableSource);
-                                    return Optional.of(sqlStatement1.toString());
-                                } else {
-                                    return Optional.of(string);
-                                }
-                            }
-
+                        if (sqlStatement instanceof MySqlCreateTableStatement) {
+                            MySqlCreateTableStatement sqlStatement1 = (MySqlCreateTableStatement) sqlStatement;
+                            sqlStatement1.setTableName(SQLUtils.normalize(tableName));
+                            sqlStatement1.setSchema(SQLUtils.normalize(schemaName));//顺序不能颠倒
+                            return Optional.of(sqlStatement1.toString());
                         }
                     } catch (Exception e) {
                         LOGGER.error("", e);
                     }
-                    try (RowBaseIterator rowBaseIterator = connection.executeQuery("select * from " + targetSchemaTable + " where 0 limit 0")) {
-                        MycatRowMetaData metaData = rowBaseIterator.getMetaData();
-                        MySqlCreateTableStatement mySqlCreateTableStatement = new MySqlCreateTableStatement();
-                        mySqlCreateTableStatement.setTableName(tableName);
-                        mySqlCreateTableStatement.setSchema(schemaName);
-                        int columnCount = metaData.getColumnCount();
-                        for (int i = 0; i < columnCount; i++) {
-                            int columnType = metaData.getColumnType(i);
-                            String type = SQLDataType.Constants.VARCHAR;
-                            for (MySQLType value : MySQLType.values()) {
-                                if (value.getJdbcType() == columnType) {
-                                    type = value.getName();
-                                }
-                            }
-                            mySqlCreateTableStatement.addColumn(metaData.getColumnName(i), type);
+                    if (sqlStatement == null) {
+                        try (RowBaseIterator rowBaseIterator = connection.executeQuery("select * from " + targetSchemaTable + " where 0 limit 0")) {
+                            MycatRowMetaData metaData = rowBaseIterator.getMetaData();
+                            String createTableSql = generateSql(schemaName, tableName, metaData);
+                            return Optional.of(createTableSql);
                         }
-                        return Optional.of(mySqlCreateTableStatement.toString());
-
                     }
+                    return Optional.of(schemaName);
+                } catch (Exception e) {
+                    LOGGER.error("", e);
                 }
             } catch (Throwable e) {
                 LOGGER.error("can not get create table sql from:" + backend.getTargetName() + backend.getTargetSchemaTable(), e);
@@ -2193,31 +2159,60 @@ public class PrototypeService {
         return Optional.empty();
     }
 
+    public static String generateSql(String schemaName, String tableName, MycatRowMetaData metaData) {
+        MySqlCreateTableStatement mySqlCreateTableStatement = new MySqlCreateTableStatement();
+        mySqlCreateTableStatement.setTableName(tableName);
+        mySqlCreateTableStatement.setSchema(schemaName);
+        int columnCount = metaData.getColumnCount();
+        for (int i = 0; i < columnCount; i++) {
+            int columnType = metaData.getColumnType(i);
+            String type = SQLDataType.Constants.VARCHAR;
+            for (MySQLType value : MySQLType.values()) {
+                if (value.getJdbcType() == columnType) {
+                    type = value.getName();
+                }
+            }
+            mySqlCreateTableStatement.addColumn(metaData.getColumnName(i), type);
+        }
+        String createTableSql = mySqlCreateTableStatement.toString();
+        return createTableSql;
+    }
+
     public List<SimpleColumnInfo> getColumnInfo(String sql, String schema, String table) {
-        String prototypeServer = MetadataManager.getPrototype();
         try {
             SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
             MycatRowMetaData mycatRowMetaData = null;
+            Optional<JdbcConnectionManager> prototypeConnectionManagerOptional = getPrototypeConnectionManager();
+            if (!prototypeConnectionManagerOptional.isPresent()) return Collections.emptyList();
             if (sqlStatement instanceof MySqlCreateTableStatement) {
                 mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData((MySqlCreateTableStatement) sqlStatement);
             }
             if (sqlStatement instanceof SQLCreateViewStatement) {
-                Optional<JdbcConnectionManager> prototypeConnectionManagerOptional = getPrototypeConnectionManager();
-                if (!prototypeConnectionManagerOptional.isPresent()) return Collections.emptyList();
                 if (schema == null || table == null) {
                     schema = ((SQLCreateViewStatement) sqlStatement).getSchema();
                     table = ((SQLCreateViewStatement) sqlStatement).getName().getSimpleName();
                 }
-                mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(prototypeConnectionManagerOptional.get(), prototypeServer, schema, table);
+                mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(prototypeConnectionManagerOptional.get(), MetadataManager.getPrototype(), schema, table);
+            } else if (sqlStatement instanceof SQLSelectStatement) {
+                JdbcConnectionManager jdbcConnectionManager = prototypeConnectionManagerOptional.get();
+                try (DefaultConnection connection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype())) {
+                    RowBaseIterator baseIterator = connection.executeQuery(sql);
+                    mycatRowMetaData = new CopyMycatRowMetaData(baseIterator.getMetaData());
+                }
             }
             return CalciteConvertors.getColumnInfo(Objects.requireNonNull(mycatRowMetaData));
         } catch (Exception e) {
             LOGGER.error("", e);
-            Optional<JdbcConnectionManager> prototypeConnectionManagerOptional = getPrototypeConnectionManager();
-            if (!prototypeConnectionManagerOptional.isPresent()) return Collections.emptyList();
-            MycatRowMetaData mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(prototypeConnectionManagerOptional.get(), prototypeServer, schema, table);
-            return CalciteConvertors.getColumnInfo(Objects.requireNonNull(mycatRowMetaData));
+            return getSimpleColumnInfos(schema, table);
         }
+    }
+
+    @NotNull
+    public List<SimpleColumnInfo> getSimpleColumnInfos(String schema, String table) {
+        Optional<JdbcConnectionManager> prototypeConnectionManagerOptional = getPrototypeConnectionManager();
+        if (!prototypeConnectionManagerOptional.isPresent()) return Collections.emptyList();
+        MycatRowMetaData mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(prototypeConnectionManagerOptional.get(), MetadataManager.getPrototype(), schema, table);
+        return CalciteConvertors.getColumnInfo(Objects.requireNonNull(mycatRowMetaData));
     }
 
     public List<SimpleColumnInfo> getColumnInfo(String sql) {

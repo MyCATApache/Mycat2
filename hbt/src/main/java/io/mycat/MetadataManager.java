@@ -625,6 +625,10 @@ public class MetadataManager {
                         break;
                 }
             }
+            for (ViewHandler viewHandler:schemaHandler.views().values()){
+                ViewConfig config = viewHandler.getConfig();
+                logicSchemaConfig.getViews().put(viewHandler.getViewName(),config);
+            }
         }
         return schemaConfigs;
     }

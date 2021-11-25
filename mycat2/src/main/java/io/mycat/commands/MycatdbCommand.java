@@ -101,6 +101,7 @@ public enum MycatdbCommand {
             sqlHandlers.add(new CreateIndexSQLHandler());
             sqlHandlers.add(new CreateTableSQLHandler());
             sqlHandlers.add(new CreateViewSQLHandler());
+            sqlHandlers.add(new DropViewSQLHandler());
             sqlHandlers.add(new DropDatabaseSQLHandler());
             sqlHandlers.add(new DropTableSQLHandler());
             sqlHandlers.add(new DropViewSQLHandler());

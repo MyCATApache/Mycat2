@@ -14,25 +14,47 @@
  */
 package io.mycat.sqlhandler.ddl;
 
+import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.statement.SQLDropViewStatement;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import io.mycat.LockService;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
+import io.mycat.config.MycatRouterConfigOps;
 import io.mycat.sqlhandler.AbstractSQLHandler;
+import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
 import io.vertx.core.Future;
 import io.vertx.core.shareddata.Lock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 
 
 public class DropViewSQLHandler extends AbstractSQLHandler<SQLDropViewStatement> {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(DropViewSQLHandler.class);
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLDropViewStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
+        SQLDropViewStatement ast = request.getAst();
+        SQLExprTableSource sqlExprTableSource = ast.getTableSources().get(0);
+        resolveSQLExprTableSource(sqlExprTableSource, dataContext);
         Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
         return lockFuture.flatMap(lock -> {
-            lock.release();
+
+            String schemaName = Optional.ofNullable(sqlExprTableSource.getSchema()).orElse(dataContext.getDefaultSchema());
+            schemaName = SQLUtils.normalize(schemaName);
+
+            String viewName = SQLUtils.normalize(sqlExprTableSource.getTableName());
+
+            try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+                ops.removeView(schemaName, viewName);
+                ops.commit();
+            } catch (Throwable throwable) {
+                return Future.failedFuture(throwable);
+            }
             return response.sendOk();
         });
     }

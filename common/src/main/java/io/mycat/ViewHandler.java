@@ -1,5 +1,7 @@
 package io.mycat;
 
+import io.mycat.config.ViewConfig;
+
 import java.util.List;
 
 public interface ViewHandler {
@@ -11,4 +13,6 @@ public interface ViewHandler {
     public List<String> getColumns() ;
 
     public String getViewSql() ;
+
+    public ViewConfig getConfig();
 }
