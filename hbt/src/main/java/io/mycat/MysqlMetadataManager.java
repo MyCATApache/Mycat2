@@ -484,7 +484,7 @@ public class MysqlMetadataManager extends MetadataManager {
             String TABLE_NAME;
             String TABLE_TYPE = "BASE TABLE";
             String ENGINE = "InnoDB";
-            long VERSION = 10;
+            Long VERSION = 10L;
             String ROW_FORMAT = "Compact";
             long TABLE_ROWS = 0;
             long AVG_ROW_LENGTH  = 0;
@@ -506,6 +506,57 @@ public class MysqlMetadataManager extends MetadataManager {
             for (TableHandler table : tables) {
                 TABLE_SCHEMA = table.getSchemaName().toLowerCase();
                 TABLE_NAME = table.getTableName().toLowerCase();
+
+                resList.add(new Object[]{
+                        TABLE_CATALOG,
+                        TABLE_SCHEMA,
+                        TABLE_NAME,
+                        TABLE_TYPE,
+                        ENGINE,
+                        VERSION,
+                        ROW_FORMAT,
+                        TABLE_ROWS,
+                        AVG_ROW_LENGTH,
+                        DATA_LENGTH,
+                        MAX_DATA_LENGTH,
+                        INDEX_LENGTH,
+                        DATA_FREE,
+                        AUTO_INCREMENT,
+                        CREATE_TIME,
+                        UPDATE_TIME,
+                        CHECK_TIME,
+                        TABLE_COLLATION,
+                        CHECKSUM,
+                        CREATE_OPTIONS,
+                        TABLE_COMMENT
+                });
+            }
+
+             TABLE_CATALOG = "def";
+
+             TABLE_TYPE = "VIEW";
+             ENGINE = null;
+             VERSION = null;
+             ROW_FORMAT = null;
+             TABLE_ROWS = 0;
+             AVG_ROW_LENGTH  = 0;
+             DATA_LENGTH  = 0;
+             MAX_DATA_LENGTH = 0;
+             INDEX_LENGTH = 0;
+             DATA_FREE = 0;
+             AUTO_INCREMENT = 0;
+             CREATE_TIME = null;
+             UPDATE_TIME = null;
+             CHECK_TIME = null;
+             TABLE_COLLATION = "utf8mb4_bin";
+             CHECKSUM = 0;
+             CREATE_OPTIONS = null;
+             TABLE_COMMENT = null;
+
+            List<ViewHandler> views = metadataManager.getSchemaMap().entrySet().stream().flatMap(i -> i.getValue().views().values().stream()).collect(Collectors.toList());
+            for (ViewHandler table : views) {
+                TABLE_SCHEMA = table.getSchemaName().toLowerCase();
+                TABLE_NAME = table.getViewName().toLowerCase();
 
                 resList.add(new Object[]{
                         TABLE_CATALOG,
