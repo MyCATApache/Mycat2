@@ -108,8 +108,8 @@ public class DrdsSqlCompiler {
         SchemaPlus firstSchema = DrdsRunnerHelper.convertRoSchemaPlus(schemas);
         SchemaPlus resultSchema;
 
-        if (hasView){
-            resultSchema   = CalciteSchema.createRootSchema(false).plus();
+        if (hasView) {
+            resultSchema = CalciteSchema.createRootSchema(false).plus();
             for (Map.Entry<String, SchemaHandler> entry : config.schemas().entrySet()) {
                 String schemaName = entry.getKey();
                 SchemaHandler schemaHandler = entry.getValue();
@@ -140,8 +140,8 @@ public class DrdsSqlCompiler {
                 MycatSchema schema = MycatSchema.create(schemaName, logicTableMap);
                 resultSchema.add(schemaName, schema);
             }
-        }else {
-            resultSchema  = firstSchema;
+        } else {
+            resultSchema = firstSchema;
         }
 
         this.schemas = resultSchema;
@@ -379,19 +379,29 @@ public class DrdsSqlCompiler {
                 MycatCalciteSupport.config.getConvertletTable(),
                 MycatCalciteSupport.sqlToRelConverterConfig);
 
-        SQLStatement sqlStatement = drdsSql.getParameterizedStatement();
         MycatCalciteMySqlNodeVisitor mycatCalciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
-        sqlStatement.accept(mycatCalciteMySqlNodeVisitor);
-        SqlNode sqlNode = mycatCalciteMySqlNodeVisitor.getSqlNode();
-        SqlNode validated = validator.validate(sqlNode);
-        RelDataType parameterRowType = validator.getParameterRowType(sqlNode);
         RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(sqlToRelConverter.getCluster(), catalogReader);
 
-        RelRoot root = sqlToRelConverter.convertQuery(validated, false, true);
-//        root = root.withRel(propagateRelHints(root.rel,validator,sqlToRelConverter));
-        RelNode newRelNode = RelDecorrelator.decorrelateQuery(root.rel, relBuilder);
+        SQLStatement sqlStatement = null;
+        SqlNode sqlNode = null;
+        SqlNode validated = null;
+        RelDataType parameterRowType = null;
+        RelRoot root = null;
+        RelNode decorRelNode = null;
+        try {
+            sqlStatement = drdsSql.getParameterizedStatement();
+            mycatCalciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
+            sqlStatement.accept(mycatCalciteMySqlNodeVisitor);
+            sqlNode = mycatCalciteMySqlNodeVisitor.getSqlNode();
+            validated = validator.validate(sqlNode);
+            parameterRowType = validator.getParameterRowType(sqlNode);
+            root = sqlToRelConverter.convertQuery(validated, false, true);
+            decorRelNode = RelDecorrelator.decorrelateQuery(root.rel, relBuilder);
+        } catch (Throwable throwable) {
+            log.error("sqlStatement:{} sqlNode:{} validated:{} root:{} newRelNode:{}", sqlStatement, sqlNode, validated, root, decorRelNode);
+        }
 
-        return new RelNodeContext(root.withRel(newRelNode), sqlToRelConverter, validator, relBuilder, catalogReader, parameterRowType);
+        return new RelNodeContext(root.withRel(decorRelNode), sqlToRelConverter, validator, relBuilder, catalogReader, parameterRowType);
     }
 
 //    private MycatRel planUpdate(LogicalTableModify tableModify,
