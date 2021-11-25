@@ -129,7 +129,7 @@ public class JdbcDataSource implements MycatDataSource {
                     methodList.get(0).invoke(i);
                 }
             } catch (Throwable e) {
-                LOGGER.warn("试图关闭数据源失败:{} ,{}", getName(), e);
+                LOGGER.error("试图关闭数据源失败:{} ,{}", getName(), e);
             }
         });
     }
