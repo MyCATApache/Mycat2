@@ -3,7 +3,9 @@ package io.mycat.client;
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.util.JdbcUtils;
 import com.zaxxer.hikari.HikariDataSource;
+import io.mycat.DrdsSqlWithParams;
 import io.mycat.assemble.MycatTest;
+import io.mycat.calcite.DrdsRunnerHelper;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.PoolOptions;
@@ -51,6 +53,8 @@ public class ClientTest implements MycatTest {
          *
          *
          */
+        DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse("SELECT @@global.character_set_server, @@global.collation_server", null);
+        Assert.assertEquals("select @@global.character_set_server, @@global.collation_server",drdsSqlWithParams.getParameterizedSql());
         try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT)) {
 //            Statement statement = mySQLConnection.createStatement();
 //            ResultSet resultSet = statement.executeQuery("SELECT * FROM `information_schema`.`CHARACTER_SETS` LIMIT 0, 1000; ");

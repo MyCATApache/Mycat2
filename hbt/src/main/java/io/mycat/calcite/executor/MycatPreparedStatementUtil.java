@@ -175,8 +175,10 @@ public class MycatPreparedStatementUtil {
 //                | VisitorFeature.OutputParameterizedQuesUnMergeValuesList.mask
                         | VisitorFeature.OutputParameterized.mask
         );
-        if (inputParameters != null) {
+        if (inputParameters != null && !inputParameters.isEmpty()) {
             parameterVisitor.setInputParameters(inputParameters);
+        } else {
+            parameterVisitor.setInputParameters(null);
         }
 
         sqlStatement.accept(parameterVisitor);
