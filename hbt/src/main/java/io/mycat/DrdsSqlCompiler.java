@@ -397,11 +397,11 @@ public class DrdsSqlCompiler {
             parameterRowType = validator.getParameterRowType(sqlNode);
             root = sqlToRelConverter.convertQuery(validated, false, true);
             decorRelNode = RelDecorrelator.decorrelateQuery(root.rel, relBuilder);
+            return new RelNodeContext(root.withRel(decorRelNode), sqlToRelConverter, validator, relBuilder, catalogReader, parameterRowType);
         } catch (Throwable throwable) {
             log.error("sqlStatement:{} sqlNode:{} validated:{} root:{} newRelNode:{}", sqlStatement, sqlNode, validated, root, decorRelNode);
+            throw throwable;
         }
-
-        return new RelNodeContext(root.withRel(decorRelNode), sqlToRelConverter, validator, relBuilder, catalogReader, parameterRowType);
     }
 
 //    private MycatRel planUpdate(LogicalTableModify tableModify,
