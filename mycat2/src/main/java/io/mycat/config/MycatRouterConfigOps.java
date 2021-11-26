@@ -648,7 +648,16 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
         }
         if (MetaClusterCurrent.exist(MySQLManager.class)) {
             MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
-            mySQLManager.close();
+            boolean success = false;
+            try{
+                MycatMySQLManagerImpl newMycatMySQLManager = new MycatMySQLManagerImpl(datasourceConfigUpdateSet.getTargetAsList());
+                success = true;
+                return Resource.of(newMycatMySQLManager, false);
+            }finally {
+                if (success){
+                    mySQLManager.close();
+                }
+            }
         }
         return Resource.of(new MycatMySQLManagerImpl(datasourceConfigUpdateSet.getTargetAsList()), false);
     }
