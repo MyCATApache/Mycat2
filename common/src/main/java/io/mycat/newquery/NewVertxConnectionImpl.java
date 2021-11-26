@@ -110,8 +110,11 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
         public void handle(PreparedStatement preparedStatement) {
 
             // Create a cursor
-            cursor = preparedStatement.cursor(Tuple.of(params));
-
+            if (params.isEmpty()){
+                cursor = preparedStatement.cursor();
+            }else {
+                cursor = preparedStatement.cursor(Tuple.of(params));
+            }
             // Read 50 rows
             cursor.read(8192, ar2 -> {
                 if (ar2.succeeded()) {
@@ -239,9 +242,13 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
         List<ColumnDefinition> columnDescriptors = null;
         Cursor cursor = null;
         MysqlCollector collector;
+        private String sql;
+        List<Object> params;
 
-        public CursorHandler(MysqlCollector collector) {
+        public CursorHandler(MysqlCollector collector, String sql, List<Object> params) {
             this.collector = collector;
+            this.sql = sql;
+            this.params = params;
         }
 
         public Future<Void> close() {
@@ -255,7 +262,12 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
         public void handle(PreparedStatement preparedStatement) {
 
             // Create a cursor
-            cursor = preparedStatement.cursor(Tuple.of(18));
+            if (params.isEmpty()){
+                cursor = preparedStatement.cursor();
+            }else {
+                cursor = preparedStatement.cursor(Tuple.of(params));
+            }
+
 
             // Read 50 rows
             cursor.read(8192, ar2 -> {
@@ -399,7 +411,7 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
     @Override
     public void prepareQuery(String sql, List<Object> params, MysqlCollector collector) {
         Future<PreparedStatement> preparedStatementFuture = mySQLConnection.prepare(sql);
-        this.cursorHandler = new CursorHandler(collector);
+        this.cursorHandler = new CursorHandler(collector,sql,params);
         preparedStatementFuture.onSuccess(cursorHandler)
                 .onFailure(throwable -> collector.onError(throwable));
     }

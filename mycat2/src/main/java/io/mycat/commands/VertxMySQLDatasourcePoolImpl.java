@@ -57,9 +57,10 @@ public class VertxMySQLDatasourcePoolImpl extends AbstractMycatDatasourcePool {
                 .setPort(hostInfo.getPort())
                 .setHost(hostInfo.getHost())
                 .setDatabase(hostInfo.getDatabase())
-                .setUser(hostInfo.getUser())
-                .setPassword(hostInfo.getPassword())
-                .setCollation("utf8mb4")
+                .setUser(config.getUser())
+                .setPassword(config.getPassword())
+//                .setCollation("utf8mb4")
+                .setCharset("utf8")
                 .setUseAffectedRows(true);
         PoolOptions poolOptions = new PoolOptions()
                 .setMaxSize(config.getMaxCon())
