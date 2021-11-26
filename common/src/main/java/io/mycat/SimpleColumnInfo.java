@@ -44,7 +44,7 @@ public class SimpleColumnInfo {
     final boolean nullable;
     final boolean autoIncrement;
     final boolean primaryKey;
-    final boolean indexKey;
+    final boolean uniqueKey;
     /**
      * 是否是分片键
      */
@@ -64,7 +64,7 @@ public class SimpleColumnInfo {
     final int id;
 
 
-    public SimpleColumnInfo(@NonNull String columnName, int precision, int scale, @NonNull JDBCType jdbcType, boolean nullable, boolean autoIncrement, boolean primaryKey, boolean indexKey, int id) {
+    public SimpleColumnInfo(@NonNull String columnName, int precision, int scale, @NonNull JDBCType jdbcType, boolean nullable, boolean autoIncrement, boolean primaryKey, boolean uniqueKey, int id) {
         this.columnName = columnName;
         this.precision = precision;
         this.scale = scale;
@@ -92,7 +92,7 @@ public class SimpleColumnInfo {
         this.nullable = nullable;
         this.autoIncrement = autoIncrement;
         this.primaryKey = primaryKey;
-        this.indexKey = indexKey || primaryKey;
+        this.uniqueKey = uniqueKey;
         this.id = id;
     }
 
@@ -101,7 +101,7 @@ public class SimpleColumnInfo {
      *
      * @return true =是索引列
      */
-    public boolean isIndexKey() {
+    public boolean isUniqueKey() {
         for (IndexInfo indexInfo : indexKeyList) {
             for (SimpleColumnInfo indexInfoIndex : indexInfo.getIndexes()) {
                 if (indexInfoIndex == this) {
@@ -302,6 +302,6 @@ public class SimpleColumnInfo {
     }
 
     public boolean isUnique(){
-        return primaryKey;
+        return primaryKey||uniqueKey;
     }
 }

@@ -42,9 +42,7 @@ public class LocalFilter  extends Filter implements LocalRel {
     }
     static final RelFactories.FilterFactory FILTER_FACTORY =
             (input, condition, variablesSet) -> {
-                Preconditions.checkArgument(variablesSet.isEmpty(),
-                        "JdbcFilter does not allow variables");
-                return new JdbcRules.JdbcFilter(input.getCluster(),
+                return new LocalFilter(input.getCluster(),
                         input.getTraitSet(), input, condition);
             };
 }

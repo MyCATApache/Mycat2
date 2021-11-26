@@ -199,4 +199,14 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
     public boolean isShardingTargetKey(String name) {
         return isShardingTableKey(name);
     }
+
+    @Override
+    public int requireShardingKeyCount() {
+        return 1;
+    }
+
+    @Override
+    public boolean requireShardingKeys(Set<String> shardingKeys) {
+        return shardingKeys.contains(columnName);
+    }
 }

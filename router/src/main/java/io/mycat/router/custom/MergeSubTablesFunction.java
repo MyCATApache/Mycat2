@@ -246,4 +246,14 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
 
         return super.isSameDistribution(customRuleFunction);
     }
+
+    @Override
+    public int requireShardingKeyCount() {
+        return 1;
+    }
+
+    @Override
+    public boolean requireShardingKeys(Set<String> shardingKeys) {
+        return shardingKeys.contains(columnName);
+    }
 }

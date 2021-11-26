@@ -19,9 +19,7 @@ import io.mycat.Partition;
 import io.mycat.RangeVariable;
 import io.mycat.ShardingTableType;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author cjw
@@ -175,5 +173,29 @@ public abstract class CustomRuleFunction {
             }
         }
         return maybePartition;
+    }
+
+    public abstract int requireShardingKeyCount();
+
+    public abstract boolean requireShardingKeys(Set<String> shardingKeys);
+
+    public Map<String, Object> getColumnInfo(String shardingKey) {
+
+        boolean isShardingDbKey = isShardingDbKey(shardingKey);
+
+        boolean isShardingTableKey = isShardingTableKey(shardingKey);
+
+        boolean isShardingTargetKey = isShardingTargetKey(shardingKey);
+
+        boolean isShardingPartitionKey = isShardingPartitionKey(shardingKey);
+
+        HashMap<String, Object> res = new HashMap<>(5);
+        res.put("isShardingDbKey", isShardingDbKey);
+        res.put("isShardingTableKey", isShardingTableKey);
+        res.put("isShardingTargetKey", isShardingTargetKey);
+        res.put("isShardingPartitionKey", isShardingPartitionKey);
+        res.put("requireShardingKeyCount",requireShardingKeyCount());
+
+        return res;
     }
 }

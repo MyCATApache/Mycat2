@@ -194,7 +194,7 @@ public abstract class AutoFunction extends CustomRuleFunction {
                         List<Partition> partitions = scanOnlyDbIndex(finalDbFunction.applyAsInt(outer));
                         for (Object inner : tableSet) {
                             int i = finalTableFunction.applyAsInt(inner);
-                            res.addAll(partitions.stream().filter(p->p.getTableIndex() == i).collect(Collectors.toList()));
+                            res.addAll(partitions.stream().filter(p -> p.getTableIndex() == i).collect(Collectors.toList()));
                         }
                     }
                 }
@@ -458,4 +458,29 @@ public abstract class AutoFunction extends CustomRuleFunction {
     }
 
     public abstract boolean isFlattenMapping();
+
+    @Override
+    public int requireShardingKeyCount() {
+        if (dbKeys.isEmpty() || tableKeys.isEmpty()) {
+            return 1;
+        } else {
+            return 2;
+        }
+    }
+
+    @Override
+    public boolean requireShardingKeys(Set<String> shardingKeys) {
+        if(shardingKeys.stream().anyMatch(c->isShardingPartitionKey(c))){
+            return true;
+        }
+        if (dbKeys.isEmpty() && !tableKeys.isEmpty()) {
+            return tableKeys.stream().anyMatch(c -> shardingKeys.contains(c));
+        }
+        if (!dbKeys.isEmpty() && tableKeys.isEmpty()) {
+            return dbKeys.stream().anyMatch(c -> shardingKeys.contains(c));
+        }
+        return dbKeys.stream().anyMatch(c -> shardingKeys.contains(c)) &&
+                tableKeys.stream().anyMatch(c -> shardingKeys.contains(c));
+
+    }
 }

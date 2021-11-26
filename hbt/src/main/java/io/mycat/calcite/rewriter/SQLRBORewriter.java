@@ -23,12 +23,14 @@ import io.mycat.calcite.localrel.LocalRules;
 import io.mycat.calcite.localrel.LocalSort;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatHashAggregate;
+import io.mycat.calcite.physical.MycatProject;
 import io.mycat.calcite.physical.MycatSortMergeJoin;
 import io.mycat.calcite.rules.MycatMergeJoinRule;
 import io.mycat.calcite.table.*;
 import io.mycat.config.ServerConfig;
 import io.mycat.querycondition.QueryType;
 import io.mycat.router.CustomRuleFunction;
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.NameMap;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.plan.hep.HepPlanner;
@@ -53,6 +55,7 @@ import org.jetbrains.annotations.NotNull;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 public class SQLRBORewriter extends RelShuttleImpl {
@@ -144,7 +147,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         AbstractMycatTable abstractMycatTable = scan.getTable().unwrap(AbstractMycatTable.class);
         MycatLogicTable mycatLogicTable = (MycatLogicTable) abstractMycatTable;
         if (abstractMycatTable != null) {
-            if (abstractMycatTable.isVisual()){
+            if (abstractMycatTable.isVisual()) {
                 TableHandler table = ((MycatLogicTable) abstractMycatTable).getTable();
                 MycatTableScan mycatTableScan = MycatTableScan.ofTable(scan);
                 return Optional.of(mycatTableScan);
@@ -529,27 +532,27 @@ public class SQLRBORewriter extends RelShuttleImpl {
         } else {
             ImmutableBitSet groupSet = aggregate.getGroupSet();
             RelMetadataQuery metadataQuery = aggregate.getCluster().getMetadataQuery();
-            boolean canPushDown = false;
+            IdentityHashMap<MycatLogicTable, Set<String>> shardingKeysMap = new IdentityHashMap<>();
             for (Integer integer : groupSet) {
                 RelColumnOrigin columnOrigin = metadataQuery.getColumnOrigin(input, integer);
-                if (columnOrigin == null || !columnOrigin.isDerived()) {
+                if (columnOrigin == null || columnOrigin.isDerived()) {
                     continue;
                 }
                 MycatLogicTable mycatLogicTable = columnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
-                if (!mycatLogicTable.isSharding()) {
+                if (mycatLogicTable == null || !mycatLogicTable.isSharding()) {
                     continue;
                 }
-                SimpleColumnInfo simpleColumnInfo = mycatLogicTable.getTable().getColumns().get(columnOrigin.getOriginColumnOrdinal());
+                ShardingTableHandler tableHandler = (ShardingTableHandler) mycatLogicTable.getTable();
+                SimpleColumnInfo simpleColumnInfo = tableHandler.getColumns().get(columnOrigin.getOriginColumnOrdinal());
                 if (simpleColumnInfo.isShardingKey()) {
-                    canPushDown = true;
-                    break;
+                    Set<String> shardingKeySet = shardingKeysMap.computeIfAbsent(mycatLogicTable, s -> new HashSet<>());
+                    shardingKeySet.add(simpleColumnInfo.getColumnName());
+                    if (tableHandler.function().requireShardingKeys(shardingKeySet)) {
+                        input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
+                        return Optional.of(view.changeTo(input, dataNodeInfo));
+                    }
                 }
             }
-            if (canPushDown) {
-                input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
-                return Optional.of(view.changeTo(input, dataNodeInfo));
-            }
-
 
             RelNode backup = input;
             if (!(input instanceof Union)) {
@@ -565,7 +568,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
             if (bestExp instanceof Aggregate) {
                 Aggregate mergeAgg = (Aggregate) bestExp;
-                if (mergeAgg.getInput() instanceof Union) {
+                if (mergeAgg.getInput() instanceof Union && mergeAgg.getInput(0).getInput(0) instanceof Aggregate) {
                     MycatView multiView = view.changeTo(
                             mergeAgg.getInput(0).getInput(0),
                             dataNodeInfo);
@@ -580,9 +583,36 @@ public class SQLRBORewriter extends RelShuttleImpl {
                     return Optional.of(mycatHashAggregate);
                 }
             }
-            return Optional.empty();
+            {
+                return splitAggregate(view, aggregate);
+            }
         }
     }
+    
+    private static Optional<RelNode> splitAggregate(MycatView viewNode, Aggregate aggregate) {
+
+        AggregatePushContext aggregateContext  = AggregatePushContext.split(aggregate);
+
+        MycatView newView = viewNode.changeTo(
+                LogicalAggregate.create(viewNode.getRelNode(),
+                        aggregate.getHints(),
+                        aggregate.getGroupSet(),
+                        aggregate.getGroupSets(),
+                        aggregateContext.getPartialAggregateCallList()));
+
+        Aggregate globalAggregateRelNode = aggregate.copy(aggregate.getTraitSet(), newView,
+                aggregate.getGroupSet(),
+                aggregate.getGroupSets(),
+                aggregateContext.getGlobalAggregateCallList());
+
+        MycatProject projectRelNode = MycatProject.create(globalAggregateRelNode,
+                aggregateContext.getProjectExprList(),
+                aggregate.getRowType());
+
+        return RexUtil.isIdentity(projectRelNode.getProjects(), projectRelNode.getInput().getRowType()) ?
+                Optional.of(globalAggregateRelNode) : Optional.of(projectRelNode);
+    }
+
 
     public static RelNode view(List<RelNode> inputs, LogicalUnion union) {
         if (union.all) {
@@ -763,62 +793,156 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
             RexNode conditions = left.getCondition().orElse(null);
             RelMetadataQuery metadataQuery = join.getCluster().getMetadataQuery();
+
+
+            IdentityHashMap<TableHandler, Set<String>> keysMap = new IdentityHashMap<>();
+            IdentityHashMap<RelColumnOrigin, RelColumnOrigin> equals = new IdentityHashMap<>();
+
             for (IntPair pair : pairs) {
+
                 RelColumnOrigin leftColumnOrigin = metadataQuery.getColumnOrigin(left.getRelNode(), pair.source);
                 RelColumnOrigin rightColumnOrigin = metadataQuery.getColumnOrigin(right.getRelNode(), pair.target);
 
-                if (leftColumnOrigin != null && !leftColumnOrigin.isDerived() && rightColumnOrigin != null && !rightColumnOrigin.isDerived()) {
-                    MycatLogicTable leftRelNode = leftColumnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
-                    MycatLogicTable rightRelNode = rightColumnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
-                    LogicTableType leftTableType = leftRelNode.getTable().getType();
-                    LogicTableType rightTableType = rightRelNode.getTable().getType();
+                if (leftColumnOrigin == null || rightColumnOrigin == null) {
+                    continue;
+                }
+                MycatLogicTable leftLogicTable = leftColumnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
+                MycatLogicTable rightLogicTable = rightColumnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
 
-                    boolean erJoin = false;
-                    boolean sameTargetPartitionJoin = false;
+                if (!leftColumnOrigin.isDerived()
+                        && !rightColumnOrigin.isDerived()) {
 
-                    if (leftTableType == LogicTableType.SHARDING) {
-                        ShardingTable leftTableHandler = (ShardingTable) leftRelNode.logicTable();
-                        SimpleColumnInfo lColumn = leftTableHandler.getColumns().get(leftColumnOrigin.getOriginColumnOrdinal());
-                        CustomRuleFunction lFunction = leftTableHandler.getShardingFuntion();
+                    TableHandler leftTableHandler = leftLogicTable.getTable();
 
-                        boolean inPartitionKey = isInPartitionKey(left, lFunction);
+                    keysMap.computeIfAbsent(leftTableHandler, mycatLogicTable -> new HashSet<>())
+                            .add(leftTableHandler.getColumns().get(leftColumnOrigin.getOriginColumnOrdinal()).getColumnName());
 
-                        if (rightTableType == LogicTableType.SHARDING) {
+                    TableHandler rightTableHandler = rightLogicTable.getTable();
 
-                            ShardingTable rightTableHandler = (ShardingTable) rightRelNode.logicTable();
-                            SimpleColumnInfo rColumn = rightTableHandler.getColumns().get(rightColumnOrigin.getOriginColumnOrdinal());
-                            CustomRuleFunction rFunction = rightTableHandler.getShardingFuntion();
-                            erJoin = isErJoinEqualColumn(lColumn, lFunction, rColumn, rFunction);
+                    keysMap.computeIfAbsent(rightTableHandler, mycatLogicTable -> new HashSet<>())
+                            .add(rightTableHandler.getColumns().get(rightColumnOrigin.getOriginColumnOrdinal()).getColumnName());
 
-                            {//partition key
-                                if (DrdsSqlCompiler.RBO_PARTITION_KEY_JOIN && inPartitionKey) {
-                                    if (lFunction.isShardingPartitionKey(lColumn.getColumnName()) ==
-                                            rFunction.isShardingPartitionKey(rColumn.getColumnName()) &&
-                                            Distribution.isTargetPartitionJoin(lFunction, rFunction)) {
-                                        sameTargetPartitionJoin |= true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (leftTableType == LogicTableType.SHARDING) {
-                        if (rightTableType == LogicTableType.GLOBAL || rightTableType == LogicTableType.NORMAL) {
-                            sameTargetPartitionJoin |= isSameTargetPartitionJoin(left, leftColumnOrigin, leftRelNode, rightRelNode);
-                        }
-                    }else if (leftTableType == LogicTableType.GLOBAL || leftTableType == LogicTableType.NORMAL) {
-                        if (rightTableType == LogicTableType.SHARDING) {
-                            sameTargetPartitionJoin |= isSameTargetPartitionJoin(right, leftColumnOrigin, rightRelNode, rightRelNode);
-                        }
-                    }
-                    if (erJoin || sameTargetPartitionJoin) {
-                        return left.getDistribution().join(right.getDistribution())
-                                .map(distribution -> MycatView.ofCondition(join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())), distribution,
-                                        conditions));
-                    }
+                    equals.put(leftColumnOrigin, rightColumnOrigin);
+                }
+            }
+            boolean allHitPartition = keysMap.entrySet().stream().allMatch(shardingTableHandlerSetEntry -> {
+                TableHandler tableHandler = shardingTableHandlerSetEntry.getKey();
+                switch (tableHandler.getType()) {
+                    case SHARDING:
+                        CustomRuleFunction function = ((ShardingTableHandler) tableHandler).function();
+                        Set<String> columns = shardingTableHandlerSetEntry.getValue();
+                        return function.requireShardingKeys(shardingTableHandlerSetEntry.getValue()) ||
+                                columns.stream().anyMatch(function::isShardingPartitionKey);//保证命中分区
+                    case GLOBAL:
+                    case NORMAL:
+                        return true;
+                    case CUSTOM:
+                    case VISUAL:
+                    case VIEW:
+                    default:
+                        return false;
+                }
+            });
+            if (allHitPartition) {
+
+                //erjoin
+                boolean pushDown = isErJoin(equals);
+                if (!pushDown) {
+                    pushDown = isSameTargetPartitionJoin(left, equals);
+                }
+
+                if (!pushDown) {
+                    pushDown = isSameTargetPartitionGlobalOrNormalJoin(left, right, equals);
+                }
+                if (pushDown) {
+                    return left.getDistribution().join(right.getDistribution())
+                            .map(distribution -> MycatView.ofCondition(join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())), distribution,
+                                    conditions));
                 }
             }
         }
         return Optional.empty();
+    }
+
+    private static boolean isSameTargetPartitionGlobalOrNormalJoin(MycatView left, MycatView right, IdentityHashMap<RelColumnOrigin, RelColumnOrigin> equals) {
+        return equals.entrySet().stream().anyMatch(entry -> {
+            RelColumnOrigin leftColumnOrigin = entry.getKey();
+            RelColumnOrigin rightColumnOrigin = entry.getValue();
+
+            MycatLogicTable leftRelNode = leftColumnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
+            MycatLogicTable rightRelNode = rightColumnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
+            LogicTableType leftTableType = leftRelNode.getTable().getType();
+            LogicTableType rightTableType = rightRelNode.getTable().getType();
+
+            if (leftTableType == LogicTableType.SHARDING) {
+                if (rightTableType == LogicTableType.GLOBAL || rightTableType == LogicTableType.NORMAL) {
+                    return isSameTargetPartitionJoin(left, leftColumnOrigin, leftRelNode, rightRelNode);
+                }
+            } else if (leftTableType == LogicTableType.GLOBAL || leftTableType == LogicTableType.NORMAL) {
+                if (rightTableType == LogicTableType.SHARDING) {
+                    return isSameTargetPartitionJoin(right, leftColumnOrigin, rightRelNode, rightRelNode);
+                }
+            }
+            return false;
+        });
+    }
+
+    private static boolean isSameTargetPartitionJoin(MycatView leftView, IdentityHashMap<RelColumnOrigin, RelColumnOrigin> equals) {
+        return equals.entrySet().stream().anyMatch(entry -> {
+            RelColumnOrigin leftColumnOrigin = entry.getKey();
+            RelColumnOrigin rightColumnOrigin = entry.getValue();
+
+            MycatLogicTable leftRelNode = leftColumnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
+            MycatLogicTable rightRelNode = rightColumnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
+            LogicTableType leftTableType = leftRelNode.getTable().getType();
+            LogicTableType rightTableType = rightRelNode.getTable().getType();
+
+            if (leftTableType == LogicTableType.SHARDING) {
+                ShardingTable leftTableHandler = (ShardingTable) leftRelNode.logicTable();
+                SimpleColumnInfo lColumn = leftTableHandler.getColumns().get(leftColumnOrigin.getOriginColumnOrdinal());
+                CustomRuleFunction lFunction = leftTableHandler.getShardingFuntion();
+                if (isInPartitionKey(leftView, lFunction)) {
+                    if (rightTableType == LogicTableType.SHARDING) {
+                        ShardingTable rightTableHandler = (ShardingTable) rightRelNode.logicTable();
+                        SimpleColumnInfo rColumn = rightTableHandler.getColumns().get(rightColumnOrigin.getOriginColumnOrdinal());
+                        CustomRuleFunction rFunction = rightTableHandler.getShardingFuntion();
+                        return Distribution.isTargetPartitionJoin(lFunction, rFunction);
+                    }
+                    return false;
+                } else {
+                    return false;
+                }
+            }
+            return false;
+        });
+    }
+
+    private static boolean isErJoin(IdentityHashMap<RelColumnOrigin, RelColumnOrigin> equals) {
+        return equals.entrySet().stream().allMatch(entry -> {
+            RelColumnOrigin leftColumnOrigin = entry.getKey();
+            RelColumnOrigin rightColumnOrigin = entry.getValue();
+
+            MycatLogicTable leftRelNode = leftColumnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
+            MycatLogicTable rightRelNode = rightColumnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
+            LogicTableType leftTableType = leftRelNode.getTable().getType();
+            LogicTableType rightTableType = rightRelNode.getTable().getType();
+
+            if (leftTableType == LogicTableType.SHARDING) {
+                ShardingTable leftTableHandler = (ShardingTable) leftRelNode.logicTable();
+                SimpleColumnInfo lColumn = leftTableHandler.getColumns().get(leftColumnOrigin.getOriginColumnOrdinal());
+                CustomRuleFunction lFunction = leftTableHandler.getShardingFuntion();
+
+                if (rightTableType == LogicTableType.SHARDING) {
+                    ShardingTable rightTableHandler = (ShardingTable) rightRelNode.logicTable();
+                    SimpleColumnInfo rColumn = rightTableHandler.getColumns().get(rightColumnOrigin.getOriginColumnOrdinal());
+                    CustomRuleFunction rFunction = rightTableHandler.getShardingFuntion();
+                    if (lFunction.isSameDistribution(rFunction)) {
+                        return lFunction.getColumnInfo(lColumn.getColumnName()).equals(rFunction.getColumnInfo(rColumn.getColumnName()));
+                    }
+                }
+            }
+            return false;
+        });
     }
 
     private static boolean isSameTargetPartitionJoin(MycatView left, RelColumnOrigin leftColumnOrigin, MycatLogicTable leftRelNode, MycatLogicTable rightRelNode) {
@@ -863,9 +987,14 @@ public class SQLRBORewriter extends RelShuttleImpl {
     }
 
     private static boolean isInPartitionKey(MycatView right, CustomRuleFunction rFunction) {
-        return right.getPredicateIndexCondition()
-                .filter(i -> i.getQueryType() == QueryType.PK_POINT_QUERY)
-                .map(i -> i.getIndexColumnNames().stream().anyMatch(c -> rFunction.isShardingPartitionKey(c))).orElse(false);
+        boolean hasPartition = right.getPredicateIndexCondition().stream().filter(i -> i.getQueryType() == QueryType.PK_POINT_QUERY)
+                .anyMatch(i -> i.getIndexColumnNames().stream().anyMatch(c -> rFunction.isShardingPartitionKey(c)));
+        if (hasPartition) {
+            return true;
+        }
+        return rFunction.requireShardingKeys(right.getPredicateIndexCondition().stream()
+                .filter(i -> i.getQueryType() == QueryType.PK_POINT_QUERY).flatMap(i -> i.getIndexColumnNames().stream()).collect(Collectors.toSet()));
+
     }
 
 

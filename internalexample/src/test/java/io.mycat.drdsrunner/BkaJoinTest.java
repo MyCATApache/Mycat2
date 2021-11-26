@@ -63,7 +63,7 @@ public class BkaJoinTest extends DrdsTest {
         Assert.assertEquals(
                 "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=addressname}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=addressname0}]",
                 explain.getColumnInfo());
-        Assert.assertEquals("MycatView(distribution=[[db1.normal, db1.normal2]]) ", explain.dumpPlan());
+        Assert.assertEquals("MycatView(distribution=[[db1.normal, db1.normal2]])", explain.dumpPlan());
 //        Assert.assertEquals("[SpecificSql(relNode=MycatView(distribution=[normalTables=db1.normal,db1.normal2]) , parameterizedSql=SELECT *  FROM db1.normal      INNER JOIN db1.normal2 ON (`normal`.`id` = `normal2`.`id`), sqls=[Each(targetName=prototype, sql=SELECT * FROM db1.normal     INNER JOIN db1.normal2 ON (`normal`.`id` = `normal2`.`id`))])]",
 //                explain.specificSql().toString());
     }
@@ -88,7 +88,7 @@ public class BkaJoinTest extends DrdsTest {
                 "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=addressname}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}]",
                 explain.getColumnInfo());
         String dumpPlan = explain.dumpPlan();
-        Assert.assertEquals("MycatView(distribution=[[db1.global, db1.normal]]) ",dumpPlan);
+        Assert.assertEquals("MycatView(distribution=[[db1.global, db1.normal]])",dumpPlan);
 //        Assert.assertEquals("[SpecificSql(relNode=MycatView(distribution=[normalTables=db1.normal,globalTables=db1.global]) , parameterizedSql=SELECT *  FROM db1.normal      INNER JOIN db1.global ON (`normal`.`id` = `global`.`id`), sqls=[Each(targetName=prototype, sql=SELECT * FROM db1.normal     INNER JOIN db1.global ON (`normal`.`id` = `global`.`id`))])]",
 //                explain.specificSql().toString());
     }
@@ -116,7 +116,7 @@ public class BkaJoinTest extends DrdsTest {
         Assert.assertEquals(
                 "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}]",
                 explain.getColumnInfo());
-        Assert.assertEquals("MycatView(distribution=[[db1.sharding]]) ", explain.dumpPlan());
+        Assert.assertEquals("MycatView(distribution=[[db1.sharding]])", explain.dumpPlan());
 //        Assert.assertEquals(
 //                "[SpecificSql(relNode=MycatView(distribution=[shardingTables=db1.sharding]) , parameterizedSql=SELECT *  FROM db1.sharding, sqls=[Each(targetName=c0, sql=(SELECT *     FROM db1_0.sharding_0     UNION ALL     SELECT *     FROM db1_0.sharding_1)), Each(targetName=c1, sql=(SELECT *     FROM db1_1.sharding_0     UNION ALL     SELECT *     FROM db1_1.sharding_1))])]",
 //                explain.specificSql().toString());
@@ -129,7 +129,7 @@ public class BkaJoinTest extends DrdsTest {
         Assert.assertEquals(
                 "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
                 explain.getColumnInfo());
-        Assert.assertEquals("MycatView(distribution=[[db1.sharding, db1.sharding]]) ", explain.dumpPlan());
+        Assert.assertEquals("MycatView(distribution=[[db1.sharding, db1.sharding]])", explain.dumpPlan());
 //        Assert.assertEquals("[SpecificSql(relNode=MycatView(distribution=[shardingTables=db1.sharding,db1.sharding]) , parameterizedSql=SELECT *  FROM db1.sharding      INNER JOIN db1.sharding AS `sharding0` ON (`sharding`.`id` = `sharding0`.`id`), sqls=[Each(targetName=c0, sql=(SELECT *     FROM db1_0.sharding_0         INNER JOIN db1_0.sharding_0 AS `sharding_00` ON (`sharding_0`.`id` = `sharding_00`.`id`)     UNION ALL     SELECT *     FROM db1_0.sharding_1         INNER JOIN db1_0.sharding_1 AS `sharding_10` ON (`sharding_1`.`id` = `sharding_10`.`id`))), Each(targetName=c1, sql=(SELECT *     FROM db1_1.sharding_0         INNER JOIN db1_1.sharding_0 AS `sharding_00` ON (`sharding_0`.`id` = `sharding_00`.`id`)     UNION ALL     SELECT *     FROM db1_1.sharding_1         INNER JOIN db1_1.sharding_1 AS `sharding_10` ON (`sharding_1`.`id` = `sharding_10`.`id`)))])]",
 //                explain.specificSql().toString());
     }
@@ -226,7 +226,7 @@ public class BkaJoinTest extends DrdsTest {
         Assert.assertEquals(
                 "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}]",
                 explain.getColumnInfo());
-        Assert.assertEquals("MycatView(distribution=[[db1.global, db1.sharding]]) ", explain.dumpPlan());
+        Assert.assertEquals("MycatView(distribution=[[db1.global, db1.sharding]])", explain.dumpPlan());
 //        Assert.assertEquals(
 //                "[SpecificSql(relNode=MycatView(distribution=[shardingTables=db1.sharding,globalTables=db1.global]) , parameterizedSql=SELECT *  FROM db1.sharding      INNER JOIN db1.global ON (`sharding`.`id` = `global`.`id`), sqls=[Each(targetName=c0, sql=(SELECT *     FROM db1_0.sharding_0         INNER JOIN db1.global ON (`sharding_0`.`id` = `global`.`id`)     UNION ALL     SELECT *     FROM db1_0.sharding_1         INNER JOIN db1.global AS `global0` ON (`sharding_1`.`id` = `global0`.`id`))), Each(targetName=c1, sql=(SELECT *     FROM db1_1.sharding_0         INNER JOIN db1.global ON (`sharding_0`.`id` = `global`.`id`)     UNION ALL     SELECT *     FROM db1_1.sharding_1         INNER JOIN db1.global AS `global0` ON (`sharding_1`.`id` = `global0`.`id`)))])]",
 //                explain.specificSql().toString());
@@ -238,7 +238,7 @@ public class BkaJoinTest extends DrdsTest {
         Assert.assertEquals(
                 "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
                 explain.getColumnInfo());
-        Assert.assertEquals("MycatView(distribution=[[db1.er, db1.sharding]], conditions=[=($0, CAST(?0):BIGINT NOT NULL)]) ", explain.dumpPlan());
+        Assert.assertEquals("MycatView(distribution=[[db1.er, db1.sharding]], conditions=[=($0, CAST(?0):BIGINT NOT NULL)])", explain.dumpPlan());
         System.out.println(explain.specificSql());
 //        Assert.assertEquals(
 //                "[SpecificSql(relNode=MycatView(distribution=[shardingTables=db1.sharding], conditions=[=(CAST($0):DECIMAL(19, 0), ?0)]) , parameterizedSql=SELECT *  FROM db1.sharding  WHERE (CAST(`id` AS decimal) = ?), sqls=[Each(targetName=c0, sql=SELECT * FROM db1_0.sharding_1 WHERE (CAST(`id` AS decimal) = ?))]), SpecificSql(relNode=MycatView(distribution=[shardingTables=db1.er], conditions=[=(CAST($0):DECIMAL(19, 0), ?0)]) , parameterizedSql=SELECT *  FROM db1.er  WHERE (CAST(`id` AS decimal) = ?), sqls=[Each(targetName=c0, sql=SELECT * FROM db1_0.er_1 WHERE (CAST(`id` AS decimal) = ?))])]",
@@ -251,7 +251,7 @@ public class BkaJoinTest extends DrdsTest {
         Assert.assertEquals(
                 "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
                 explain.getColumnInfo());
-        Assert.assertEquals("MycatView(distribution=[[db1.er, db1.sharding]]) ", explain.dumpPlan());
+        Assert.assertEquals("MycatView(distribution=[[db1.er, db1.sharding]])", explain.dumpPlan());
         System.out.println(explain.specificSql());
 //        Assert.assertEquals(
 //                "[SpecificSql(relNode=MycatView(distribution=[shardingTables=db1.sharding,db1.er]) , parameterizedSql=SELECT *  FROM db1.sharding      INNER JOIN db1.er ON (`sharding`.`id` = `er`.`id`), sqls=[Each(targetName=c0, sql=(SELECT *     FROM db1_0.sharding_0         INNER JOIN db1_0.er_0 ON (`sharding_0`.`id` = `er_0`.`id`)     UNION ALL     SELECT *     FROM db1_0.sharding_1         INNER JOIN db1_0.er_1 ON (`sharding_1`.`id` = `er_1`.`id`))), Each(targetName=c1, sql=(SELECT *     FROM db1_1.sharding_0         INNER JOIN db1_1.er_0 ON (`sharding_0`.`id` = `er_0`.`id`)     UNION ALL     SELECT *     FROM db1_1.sharding_1         INNER JOIN db1_1.er_1 ON (`sharding_1`.`id` = `er_1`.`id`)))])]",
@@ -265,7 +265,7 @@ public class BkaJoinTest extends DrdsTest {
         Assert.assertEquals(
                 "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}, {columnType=BIGINT, nullable=false, columnName=id1}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}]",
                 explain.getColumnInfo());
-        Assert.assertTrue(explain.dumpPlan().contains("MycatView(distribution=[[db1.er, db1.global, db1.sharding]]) "));
+        Assert.assertTrue(explain.dumpPlan().contains("MycatView(distribution=[[db1.er, db1.global, db1.sharding]])"));
         System.out.println(explain.specificSql());
 //        Assert.assertEquals(
 //                "[SpecificSql(relNode=MycatView(distribution=[shardingTables=db1.sharding,db1.er,globalTables=db1.global]) , parameterizedSql=SELECT *  FROM db1.sharding      INNER JOIN db1.er ON (`sharding`.`id` = `er`.`id`)      INNER JOIN db1.global ON (`er`.`id` = `global`.`id`), sqls=[Each(targetName=c0, sql=(SELECT *     FROM db1_0.sharding_0         INNER JOIN db1_0.er_0 ON (`sharding_0`.`id` = `er_0`.`id`)         INNER JOIN db1.global ON (`er_0`.`id` = `global`.`id`)     UNION ALL     SELECT *     FROM db1_0.sharding_1         INNER JOIN db1_0.er_1 ON (`sharding_1`.`id` = `er_1`.`id`)         INNER JOIN db1.global AS `global0` ON (`er_1`.`id` = `global0`.`id`))), Each(targetName=c1, sql=(SELECT *     FROM db1_1.sharding_0         INNER JOIN db1_1.er_0 ON (`sharding_0`.`id` = `er_0`.`id`)         INNER JOIN db1.global ON (`er_0`.`id` = `global`.`id`)     UNION ALL     SELECT *     FROM db1_1.sharding_1         INNER JOIN db1_1.er_1 ON (`sharding_1`.`id` = `er_1`.`id`)         INNER JOIN db1.global AS `global0` ON (`er_1`.`id` = `global0`.`id`)))])]",
@@ -278,7 +278,7 @@ public class BkaJoinTest extends DrdsTest {
         Assert.assertEquals(
                 "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}, {columnType=BIGINT, nullable=false, columnName=id1}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
                 explain.getColumnInfo());
-        Assert.assertTrue(explain.dumpPlan().contains("MycatView(distribution=[[db1.er, db1.global, db1.sharding]]) "));
+        Assert.assertTrue(explain.dumpPlan().contains("MycatView(distribution=[[db1.er, db1.global, db1.sharding]])"));
         System.out.println(explain.specificSql());
 //        Assert.assertEquals(
 //                "[SpecificSql(relNode=MycatView(distribution=[shardingTables=db1.sharding,globalTables=db1.global]) , parameterizedSql=SELECT *  FROM db1.sharding      INNER JOIN db1.global ON (`sharding`.`id` = `global`.`id`), sqls=[Each(targetName=c0, sql=(SELECT *     FROM db1_0.sharding_0         INNER JOIN db1.global ON (`sharding_0`.`id` = `global`.`id`)     UNION ALL     SELECT *     FROM db1_0.sharding_1         INNER JOIN db1.global AS `global0` ON (`sharding_1`.`id` = `global0`.`id`))), Each(targetName=c1, sql=(SELECT *     FROM db1_1.sharding_0         INNER JOIN db1.global ON (`sharding_0`.`id` = `global`.`id`)     UNION ALL     SELECT *     FROM db1_1.sharding_1         INNER JOIN db1.global AS `global0` ON (`sharding_1`.`id` = `global0`.`id`)))]), SpecificSql(relNode=MycatView(distribution=[shardingTables=db1.er]) , parameterizedSql=SELECT *  FROM db1.er, sqls=[Each(targetName=c0, sql=(SELECT *     FROM db1_0.er_0     UNION ALL     SELECT *     FROM db1_0.er_1)), Each(targetName=c1, sql=(SELECT *     FROM db1_1.er_0     UNION ALL     SELECT *     FROM db1_1.er_1))])]",
@@ -291,7 +291,7 @@ public class BkaJoinTest extends DrdsTest {
         Assert.assertEquals(
                 "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}, {columnType=BIGINT, nullable=false, columnName=id1}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
                 explain.getColumnInfo());
-        Assert.assertTrue(explain.dumpPlan().contains("MycatView(distribution=[[db1.er, db1.global, db1.sharding]]) "));
+        Assert.assertTrue(explain.dumpPlan().contains("MycatView(distribution=[[db1.er, db1.global, db1.sharding]])"));
         System.out.println(explain.specificSql());
     }
 
@@ -311,7 +311,7 @@ public class BkaJoinTest extends DrdsTest {
         Assert.assertEquals(
                 "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=user_id}, {columnType=DATE, nullable=true, columnName=traveldate}, {columnType=DECIMAL, nullable=true, columnName=fee}, {columnType=BIGINT, nullable=true, columnName=days}, {columnType=VARBINARY, nullable=true, columnName=blob}, {columnType=BIGINT, nullable=false, columnName=id1}, {columnType=VARCHAR, nullable=true, columnName=user_id0}, {columnType=DATE, nullable=true, columnName=traveldate0}, {columnType=DECIMAL, nullable=true, columnName=fee0}, {columnType=BIGINT, nullable=true, columnName=days0}, {columnType=VARBINARY, nullable=true, columnName=blob0}]",
                 explain.getColumnInfo());
-        Assert.assertTrue(explain.dumpPlan().contains("MycatView(distribution=[[db1.er, db1.global, db1.sharding]]) "));
+        Assert.assertTrue(explain.dumpPlan().contains("MycatView(distribution=[[db1.er, db1.global, db1.sharding]])"));
         System.out.println(explain.specificSql());
 //        Assert.assertEquals(
 //                "[SpecificSql(relNode=MycatView(distribution=[shardingTables=db1.sharding,globalTables=db1.global]) , parameterizedSql=SELECT *  FROM db1.global      INNER JOIN db1.sharding ON (`global`.`id` = `sharding`.`id`), sqls=[Each(targetName=c0, sql=(SELECT *     FROM db1.global         INNER JOIN db1_0.sharding_0 ON (`global`.`id` = `sharding_0`.`id`)     UNION ALL     SELECT *     FROM db1.global AS `global0`         INNER JOIN db1_0.sharding_1 ON (`global0`.`id` = `sharding_1`.`id`))), Each(targetName=c1, sql=(SELECT *     FROM db1.global         INNER JOIN db1_1.sharding_0 ON (`global`.`id` = `sharding_0`.`id`)     UNION ALL     SELECT *     FROM db1.global AS `global0`         INNER JOIN db1_1.sharding_1 ON (`global0`.`id` = `sharding_1`.`id`)))]), SpecificSql(relNode=MycatView(distribution=[shardingTables=db1.er]) , parameterizedSql=SELECT *  FROM db1.er, sqls=[Each(targetName=c0, sql=(SELECT *     FROM db1_0.er_0     UNION ALL     SELECT *     FROM db1_0.er_1)), Each(targetName=c1, sql=(SELECT *     FROM db1_1.er_0     UNION ALL     SELECT *     FROM db1_1.er_1))])]",
@@ -325,7 +325,7 @@ public class BkaJoinTest extends DrdsTest {
         Assert.assertEquals(
                 "[{columnType=BIGINT, nullable=false, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=companyname}, {columnType=BIGINT, nullable=true, columnName=addressid}, {columnType=BIGINT, nullable=false, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=addressname}]",
                 explain.getColumnInfo());
-        Assert.assertEquals("MycatView(distribution=[[db1.global, db1.normal]]) ", explain.dumpPlan());
+        Assert.assertEquals("MycatView(distribution=[[db1.global, db1.normal]])", explain.dumpPlan());
 //        Assert.assertEquals(
 //                "[SpecificSql(relNode=MycatView(distribution=[normalTables=db1.normal,globalTables=db1.global]) , parameterizedSql=SELECT *  FROM db1.global      INNER JOIN db1.normal ON (`global`.`id` = `normal`.`id`), sqls=[Each(targetName=prototype, sql=SELECT * FROM db1.global     INNER JOIN db1.normal ON (`global`.`id` = `normal`.`id`))])]",
 //                explain.specificSql().toString());

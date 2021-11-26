@@ -48,18 +48,14 @@ public class LocalAggregate extends Aggregate implements LocalRel {
 
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        return super.computeSelfCost(planner, mq).multiplyBy(.9);
+        return super.computeSelfCost(planner, mq).multiplyBy(.5);
     }
     public static final RelFactories.AggregateFactory AGGREGATE_FACTORY =
             (input, hints, groupSet, groupSets, aggCalls) -> {
                 final RelOptCluster cluster = input.getCluster();
                 final RelTraitSet traitSet = cluster.traitSetOf(
                         requireNonNull(input.getConvention(), "input.getConvention()"));
-                try {
-                    return new JdbcRules.JdbcAggregate(cluster, traitSet, input, groupSet,
-                            groupSets, aggCalls);
-                } catch (InvalidRelException e) {
-                    throw new AssertionError(e);
-                }
+                return new LocalAggregate(cluster, traitSet,hints, input, groupSet,
+                        groupSets, aggCalls);
             };
 }

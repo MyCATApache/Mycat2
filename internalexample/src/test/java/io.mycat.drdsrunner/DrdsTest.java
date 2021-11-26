@@ -106,6 +106,29 @@ public abstract class DrdsTest implements MycatTest {
                         "\t\t\t\t}", Map.class)).build());
                 logicSchemaConfig.getShardingTables().put("sharding", mainSharding);
 
+                ShardingTableConfig distinctSharding = new ShardingTableConfig();
+                distinctSharding.setCreateTableSQL("CREATE TABLE db1.`distinct_sharding` (\n" +
+                        "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                        "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                        "  `traveldate` date DEFAULT NULL,\n" +
+                        "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                        "  `days` int DEFAULT NULL,\n" +
+                        "  `blob` longblob,\n" +
+                        "  PRIMARY KEY (`user_id`),\n" +
+                        "  UNIQUE KEY `unique_day` (`days`),"+
+                        "  KEY `id` (`id`)\n" +
+                        ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
+                        + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
+                distinctSharding.setFunction(ShardingFunction.builder().properties(JsonUtil.from("{\n" +
+                        "\t\t\t\t\t\"dbNum\":\"2\",\n" +
+                        "\t\t\t\t\t\"mappingFormat\":\"c${targetIndex}/db1_${dbIndex}/sharding_${tableIndex}\",\n" +
+                        "\t\t\t\t\t\"tableNum\":\"2\",\n" +
+                        "\t\t\t\t\t\"tableMethod\":\"mod_hash(id)\",\n" +
+                        "\t\t\t\t\t\"storeNum\":2,\n" +
+                        "\t\t\t\t\t\"dbMethod\":\"mod_hash(id)\"\n" +
+                        "\t\t\t\t}", Map.class)).build());
+                logicSchemaConfig.getShardingTables().put("distinct_sharding", distinctSharding);
+
                 ShardingTableConfig er = new ShardingTableConfig();
                 er.setCreateTableSQL("CREATE TABLE db1.`er` (\n" +
                         "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
