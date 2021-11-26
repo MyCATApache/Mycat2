@@ -26,12 +26,13 @@ import org.slf4j.LoggerFactory;
  * @author Junwen Chen
  **/
 @Getter
-public class MycatVisualTable extends MycatTableBase implements AbstractMycatTable {
+public class MycatVisualTable extends MycatLogicTable implements AbstractMycatTable {
     final TableHandler table;
     final Statistic statistic;
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatVisualTable.class);
 
     public MycatVisualTable(TableHandler t) {
+        super(t);
         this.table = t;
         this.statistic = Statistics.createStatistic(table.getSchemaName(), table.getTableName(), table.getColumns());
     }

@@ -35,8 +35,7 @@ import java.util.List;
 public class SQL2ResultSetUtil {
 
     public static MycatRowMetaData getMycatRowMetaData(MySqlCreateTableStatement mySqlCreateTableStatement) {
-        String tableName = mySqlCreateTableStatement.getTableSource().computeAlias();
-        return new MycatRowMetaDataImpl(mySqlCreateTableStatement.getColumnDefinitions(), mySqlCreateTableStatement.getMysqlIndexes(),"", tableName);
+        return new MycatRowMetaDataImpl(mySqlCreateTableStatement);
     }
     @SneakyThrows
     public static MycatRowMetaData getMycatRowMetaData(JdbcConnectionManager jdbcConnectionManager,

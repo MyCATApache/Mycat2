@@ -41,7 +41,7 @@ public class Explain {
 //        return dumpPlan;
 //    }
     public String dumpPlan() {
-        return plan.dumpPlan().replaceAll("\r"," ").replaceAll("\n"," ");
+        return plan.dumpPlan().replaceAll("\r"," ").replaceAll("\n"," ").trim();
     }
 //    public  List<SpecificSql> specificSql() {
 //        return plan.specificSql(drdsSql);

@@ -80,7 +80,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     final RelNode relNode;
     final Distribution distribution;
     final RexNode condition;
-    IndexCondition indexCondition = null;
+    List<IndexCondition> indexConditions = null;
 
     public MycatView(RelTraitSet relTrait, RelNode input, Distribution dataNode) {
         this(relTrait, input, dataNode, null);
@@ -258,7 +258,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             String name = orginalRowType.getFieldList().get(project).getName();
             RelDataTypeField field = indexTableScanRowType.getField(name, false, false);
             if (field == null) {
-                throw new IllegalArgumentException("can not find field:"+name);
+                throw new IllegalArgumentException("can not find field:" + name);
             } else {
                 int index = field.getIndex();
                 newProject.add(index);
@@ -310,31 +310,23 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         return (MycatRel) project;
     }
 
-    public Optional<IndexCondition> getPredicateIndexCondition() {
+    public List<IndexCondition> getPredicateIndexCondition() {
 
-        if (indexCondition != null) {
-            return Optional.of(indexCondition);
+        if (indexConditions != null) {
+            return indexConditions;
         }
         if (this.distribution.getShardingTables().isEmpty() || condition == null) {
-            return Optional.empty();
+            return Collections.emptyList();
         }
         ShardingTable shardingTable = this.distribution.getShardingTables().get(0);
         PredicateAnalyzer predicateAnalyzer = new PredicateAnalyzer(shardingTable.keyMetas(), shardingTable.getLogicTable().getFieldNames());
         Map<QueryType, List<IndexCondition>> queryTypeListMap = predicateAnalyzer.translateMatch(condition);
-        Collection<List<IndexCondition>> values = queryTypeListMap.values();
-        if (values.isEmpty()) {
-            return Optional.empty();
+        indexConditions = ImmutableList.copyOf(queryTypeListMap.values().stream().flatMap(i -> i.stream()).sorted().collect(Collectors.toList()));
+        if (indexConditions.isEmpty()) {
+            indexConditions = Collections.emptyList();
+            return indexConditions;
         }
-        return values.stream().flatMap(i -> i.stream()).findFirst();
-    }
-
-    public boolean isBetter(MycatView otherView) {
-        Optional<IndexCondition> leftPredicateIndexCondition = getPredicateIndexCondition();
-        Optional<IndexCondition> rightPredicateIndexCondition = otherView.getPredicateIndexCondition();
-        if (leftPredicateIndexCondition.isPresent() && rightPredicateIndexCondition.isPresent()) {
-            return leftPredicateIndexCondition.get().compareTo(rightPredicateIndexCondition.get()) > 0;
-        }
-        return false;
+        return indexConditions;
     }
 
     public static MycatView ofCondition(RelNode input,
@@ -513,10 +505,10 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                 if (offsetValue != null && fetchValue != null) return fetchValue - offsetValue;
             }
         }
-        Optional<IndexCondition> conditionOptional = getPredicateIndexCondition();
+        List<IndexCondition> conditionOptional = getPredicateIndexCondition();
         double v = relNode.estimateRowCount(mq);
-        if (conditionOptional.isPresent()) {
-            IndexCondition indexCondition = conditionOptional.get();
+        if (!conditionOptional.isEmpty()) {
+            IndexCondition indexCondition = conditionOptional.get(0);
             QueryType queryType = indexCondition.getQueryType();
             double factor = queryType.factor();
             switch (queryType) {
@@ -555,9 +547,9 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             case BROADCAST:
                 break;
             case SHARDING:
-                Optional<IndexCondition> predicateIndexConditionOptional = getPredicateIndexCondition();
-                if (predicateIndexConditionOptional.isPresent()) {
-                    IndexCondition indexCondition = predicateIndexConditionOptional.get();
+                List<IndexCondition> predicateIndexConditionOptional = getPredicateIndexCondition();
+                if (!predicateIndexConditionOptional.isEmpty()) {
+                    IndexCondition indexCondition = predicateIndexConditionOptional.get(0);
                     switch (indexCondition.getQueryType()) {
                         case PK_POINT_QUERY:
                             v = 1;
