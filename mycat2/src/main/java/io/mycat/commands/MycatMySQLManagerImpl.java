@@ -42,13 +42,13 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
         boolean nativeServer = MetaClusterCurrent.exist(NativeMycatServer.class);
         ConcurrentHashMap<String, MycatDatasourcePool> hashMap = new ConcurrentHashMap<>();
         List<Future<MycatDatasourcePool>> futureList = new ArrayList<>();
-        for (DatasourceConfig datasource :datasourceConfigs) {
+        for (DatasourceConfig datasource : datasourceConfigs) {
             String name = datasource.getName();
             switch (datasource.computeType()) {
                 case NATIVE:
                 case NATIVE_JDBC:
                     if (nativeServer) {
-                        MycatDatasourcePool nativeDatasourcePool = createNativeDatasourcePool(datasource,name);
+                        MycatDatasourcePool nativeDatasourcePool = createNativeDatasourcePool(datasource, name);
                         futureList.add(nativeDatasourcePool.getConnection()
                                 .flatMap(c -> c.close().map(nativeDatasourcePool))
                                 .recover(throwable -> Future.succeededFuture(createJdbcDatasourcePool(name))));
@@ -68,19 +68,20 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
         this.map = hashMap;
 
     }
+
     @Override
     @SneakyThrows
     public Connection getWriteableConnection(String name) {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         Map<String, JdbcDataSource> datasourceInfo = jdbcConnectionManager.getDatasourceInfo();
         JdbcDataSource jdbcDataSource = datasourceInfo.get(name);
-        if(jdbcDataSource == null)return null;
+        if (jdbcDataSource == null) return null;
         return jdbcDataSource.getDataSource().getConnection();
     }
 
     @NotNull
     private MycatDatasourcePool createNativeDatasourcePool(DatasourceConfig datasource, String targetName) {
-       return new VertxMySQLDatasourcePoolImpl(datasource,targetName);
+        return new VertxMySQLDatasourcePoolImpl(datasource, targetName);
     }
 
     @NotNull
@@ -124,6 +125,7 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
 
     @Override
     public Future<Void> close() {
+        map.values().forEach(c -> c.close());
         return Future.succeededFuture();
     }
 
