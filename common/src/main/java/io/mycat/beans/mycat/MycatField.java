@@ -51,7 +51,7 @@ public class MycatField {
         int columnFlags = 0;
         int columnLength = 255;
         int columnCharsetSet = 0x21;
-        boolean decimal = false;
+
         if (!nullable) {
             columnFlags |= MySQLFieldsType.NOT_NULL_FLAG;
         }
@@ -97,7 +97,6 @@ public class MycatField {
                 break;
             case DECIMAL:
                 mysqlColumnType = MySQLFieldsType.FIELD_TYPE_DECIMAL;
-                decimal = true;
                 break;
             case DATE:
                 columnFlags = MySQLFieldsType.FIELD_TYPE_DATE;
@@ -143,7 +142,7 @@ public class MycatField {
         columnDefPacket.setColumnType(mysqlColumnType);
         columnDefPacket.setColumnFlags(columnFlags);
         columnDefPacket.setColumnLength(columnLength);
-        columnDefPacket.setColumnDecimals(decimal?(byte) 1:0);
+        columnDefPacket.setColumnDecimals(scale);
         columnDefPacket.setColumnCharsetSet(columnCharsetSet);
         return columnDefPacket;
     }
