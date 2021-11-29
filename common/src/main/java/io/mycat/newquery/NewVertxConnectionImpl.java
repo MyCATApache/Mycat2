@@ -1,5 +1,10 @@
 package io.mycat.newquery;
 
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLReplaceable;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.ImmutableList;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
@@ -32,6 +37,8 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -43,6 +50,8 @@ import java.util.List;
 import java.util.Optional;
 
 public class NewVertxConnectionImpl implements NewMycatConnection {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NewVertxConnectionImpl.class);
+
     MySQLConnectionImpl mySQLConnection;
     CursorHandler cursorHandler = null;
 
@@ -52,6 +61,7 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
 
     @Override
     public Future<RowSet> query(String sql, List<Object> params) {
+        LOGGER.debug("sql:{}",sql);
         Future<RowSet> future = Future.future(new Handler<Promise<RowSet>>() {
             @Override
             public void handle(Promise<RowSet> rowSetPromise) {
@@ -309,7 +319,7 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
                                     if (rowValue == null) {
                                         objects[i] = null;
                                     } else if (rowValue instanceof String) {
-
+                                        objects[i] = rowValue;
                                     } else if (rowValue instanceof Buffer) {
                                         objects[i] = ((Buffer) rowValue).getBytes();
                                     } else {
@@ -369,6 +379,7 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
                                 }
                                 case DATETIME:
                                     objects[i] = row.getValue(i);
+                                    break;
                                 case YEAR:
                                 case TIMESTAMP:
                                 case BIT: {
@@ -410,6 +421,7 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
 
     @Override
     public void prepareQuery(String sql, List<Object> params, MysqlCollector collector) {
+        LOGGER.debug("sql:{}",sql);
         Future<PreparedStatement> preparedStatementFuture = mySQLConnection.prepare(sql);
         this.cursorHandler = new CursorHandler(collector,sql,params);
         preparedStatementFuture.onSuccess(cursorHandler)
@@ -478,7 +490,29 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
 
     @Override
     public Future<SqlResult> update(String sql, List<Object> params) {
-        return this.mySQLConnection.preparedQuery(sql).execute(Tuple.tuple(params)).map(rows -> {
+        LOGGER.debug("sql:{}",sql);
+        if (!sql.equals("begin")){
+            SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+            sqlStatement.accept(new MySqlASTVisitorAdapter() {
+                int index;
+
+                @Override
+                public void endVisit(SQLVariantRefExpr x) {
+                    if ("?".equalsIgnoreCase(x.getName())) {
+                        if (index < params.size()) {
+                            Object value = params.get(index++);
+                            SQLReplaceable parent = (SQLReplaceable) x.getParent();
+                            parent.replace(x, io.mycat.PreparedStatement.fromJavaObject(value));
+                        }
+                    }
+                    super.endVisit(x);
+                }
+            });
+            sql = sqlStatement.toString();
+        }
+
+        Query<io.vertx.sqlclient.RowSet<Row>> preparedStatementFuture = this.mySQLConnection.query(sql);
+       return preparedStatementFuture.execute().map(rows -> {
             int affectRows = rows.rowCount();
             long insertId = Optional.ofNullable(rows.property(MySQLClient.LAST_INSERTED_ID)).orElse(0L);
             return SqlResult.of(affectRows, insertId);
@@ -492,13 +526,18 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
 
     @Override
     public void abandonConnection() {
-        mySQLConnection.resetConnection().onComplete(voidAsyncResult -> mySQLConnection.close());
+        Future<Void> abandonQuery = abandonQuery();
+        abandonQuery.onComplete(unused -> mySQLConnection.resetConnection()
+                .onComplete(voidAsyncResult -> mySQLConnection.close()));
+
     }
 
     @Override
     public Future<Void> abandonQuery() {
         if (cursorHandler != null) {
-            return cursorHandler.close();
+            Future<Void> closeFuture = cursorHandler.close();
+            cursorHandler = null;
+            return closeFuture;
         } else {
             return Future.succeededFuture();
         }

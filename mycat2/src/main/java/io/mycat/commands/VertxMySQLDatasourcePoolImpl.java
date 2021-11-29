@@ -59,6 +59,7 @@ public class VertxMySQLDatasourcePoolImpl extends AbstractMycatDatasourcePool {
                 .setDatabase(hostInfo.getDatabase())
                 .setUser(config.getUser())
                 .setPassword(config.getPassword())
+                .setCachePreparedStatements(true)
 //                .setCollation("utf8mb4")
                 .setCharset("utf8")
                 .setUseAffectedRows(true);
