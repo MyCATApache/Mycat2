@@ -28,7 +28,7 @@ public class NewMariadbConnectionPool implements MycatDatasourcePool{
         String scheme = connectionUrlParser.getScheme();
         MariadbConnectionConfiguration factoryConfig = MariadbConnectionConfiguration
                 .builder()
-                .host(datasourceConfig.getUrl())
+                .host(hostInfo.getHost())
                 .port(hostInfo.getPort())
                 .username(datasourceConfig.getUser())
                 .password(datasourceConfig.getPassword())
