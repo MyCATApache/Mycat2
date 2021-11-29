@@ -1,13 +1,13 @@
 package io.mycat.beans.mycat;
 
 import io.mycat.beans.mysql.MySQLFieldsType;
-import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import io.vertx.mysqlclient.impl.protocol.ColumnDefinition;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.data.Numeric;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.BitSet;
 import java.util.List;
 
 import static java.sql.ResultSetMetaData.columnNoNulls;
@@ -142,7 +143,7 @@ public enum MycatDataType {
     }
 
     @NotNull
-    private static MycatField getMycatField(String name, String columnClassName, boolean signed, boolean nullable, int columnType, int scale, int precision) {
+    public static MycatField getMycatField(String name, String columnClassName, boolean signed, boolean nullable, int columnType, int scale, int precision) {
         MycatDataType mycatDataType = null;
         switch (JDBCType.valueOf(columnType)) {
             case BIT:
@@ -276,12 +277,17 @@ public enum MycatDataType {
     public Object convert(Object[] resultSet, MycatField[] mycatFields, int columnIndex) {
         MycatField mycatField = mycatFields[columnIndex];
         Object o = resultSet[columnIndex];
+        return convert(mycatField, o);
+    }
+
+    @Nullable
+    public Object convert(MycatField mycatField, Object o) {
         if (mycatField.isNullable() && o == null) return null;
         return mycatField.getMycatDataType().fromValue(o);
     }
 
     @SneakyThrows
-    private Object fromValue(Object o) {
+    public Object fromValue(Object o) {
         switch (this) {
             case BOOLEAN:
                 if (o == Boolean.TRUE || o == Boolean.FALSE) return o;
@@ -309,6 +315,9 @@ public enum MycatDataType {
                 }
                 if (o instanceof byte[]) {
                     return ByteBuffer.wrap((byte[]) o).getLong();
+                }
+                if (o instanceof BitSet) {
+                    return ((BitSet) o).toLongArray()[0];
                 }
                 break;
             case TINYINT:
@@ -418,6 +427,9 @@ public enum MycatDataType {
                     LocalTime time = (LocalTime) o;
                     return Duration.ofHours(time.getHour()).plusMinutes(time.getMinute()).plusSeconds(time.getSecond());
                 }
+                if (o instanceof Duration) {
+                    return o;
+                }
                 break;
             case YEAR:
                 if (o instanceof Number) {
@@ -432,6 +444,9 @@ public enum MycatDataType {
                 if (o instanceof byte[]) {
                     return o;
                 }
+                if (o instanceof ByteBuffer) {
+                    return ((ByteBuffer) o).array();
+                }
                 break;
             case VARCHAR:
             case CHAR:
@@ -443,17 +458,20 @@ public enum MycatDataType {
                 }
                 if (o instanceof Clob) {
                     Clob clob = (Clob) o;
-                    return String.valueOf(clob.getSubString(1,(int)clob.length()));
+                    return String.valueOf(clob.getSubString(1, (int) clob.length()));
                 }
                 break;
-
             case BINARY:
                 if (o instanceof Blob) {
-                    return ((Blob) o).getBytes(1, (int)((Blob) o).length());
+                    return ((Blob) o).getBytes(1, (int) ((Blob) o).length());
                 }
                 if (o instanceof byte[]) {
                     return ((byte[]) o);
                 }
+                if (o instanceof ByteBuffer) {
+                    return ((ByteBuffer) o).array();
+                }
+                break;
             case FLOAT:
                 if (o instanceof Float) {
                     return o;
@@ -467,5 +485,53 @@ public enum MycatDataType {
                 break;
         }
         throw new UnsupportedOperationException();
+    }
+
+    public JDBCType getSignedJdbcType() {
+        switch (this) {
+            case BOOLEAN:
+                return JDBCType.BOOLEAN;
+            case BIT:
+                return JDBCType.BIT;
+            case TINYINT:
+                return JDBCType.TINYINT;
+            case SHORT:
+            case UNSIGNED_TINYINT:
+                return JDBCType.SMALLINT;
+            case UNSIGNED_SHORT:
+            case INT:
+                return JDBCType.INTEGER;
+            case UNSIGNED_INT:
+            case LONG:
+                return JDBCType.BIGINT;
+            case UNSIGNED_LONG:
+                return JDBCType.NUMERIC;
+            case DOUBLE:
+                return JDBCType.DOUBLE;
+            case DECIMAL:
+                return JDBCType.DECIMAL;
+            case DATE:
+                return JDBCType.DATE;
+            case DATETIME:
+                return JDBCType.TIMESTAMP;
+            case TIME:
+                return JDBCType.TIME;
+            case YEAR:
+                return JDBCType.SMALLINT;
+            case CHAR_BINARY:
+                return JDBCType.VARCHAR;
+            case CHAR:
+                return JDBCType.CHAR;
+            case VARCHAR_BINARY:
+                return JDBCType.VARCHAR;
+            case VARCHAR:
+                return JDBCType.VARCHAR;
+            case BINARY:
+                return JDBCType.BINARY;
+            case FLOAT:
+                return JDBCType.FLOAT;
+            default:
+                throw new IllegalStateException("Unexpected value: " + this);
+        }
     }
 }

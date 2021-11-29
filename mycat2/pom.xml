@@ -12,6 +12,13 @@
     <artifactId>mycat2</artifactId>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/io.r2dbc/r2dbc-pool -->
+        <dependency>
+            <groupId>io.r2dbc</groupId>
+            <artifactId>r2dbc-pool</artifactId>
+            <version>0.9.0.M2</version>
+        </dependency>
+
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>executor</artifactId>
