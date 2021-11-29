@@ -12,11 +12,11 @@
     <artifactId>common</artifactId>
 
     <dependencies>
-        <dependency>
-            <groupId>org.mariadb</groupId>
-            <artifactId>r2dbc-mariadb</artifactId>
-            <version>1.0.3</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.mariadb</groupId>-->
+<!--            <artifactId>r2dbc-mariadb</artifactId>-->
+<!--            <version>1.0.3</version>-->
+<!--        </dependency>-->
         <!-- https://mvnrepository.com/artifact/io.r2dbc/r2dbc-pool -->
 <!--        <dependency>-->
 <!--            <groupId>io.r2dbc</groupId>-->
