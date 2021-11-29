@@ -55,6 +55,7 @@ import org.jetbrains.annotations.NotNull;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 
@@ -588,10 +589,10 @@ public class SQLRBORewriter extends RelShuttleImpl {
             }
         }
     }
-    
+
     private static Optional<RelNode> splitAggregate(MycatView viewNode, Aggregate aggregate) {
 
-        AggregatePushContext aggregateContext  = AggregatePushContext.split(aggregate);
+        AggregatePushContext aggregateContext = AggregatePushContext.split(aggregate);
 
         MycatView newView = viewNode.changeTo(
                 LogicalAggregate.create(viewNode.getRelNode(),
@@ -614,12 +615,12 @@ public class SQLRBORewriter extends RelShuttleImpl {
     }
 
 
-    public static RelNode view(List<RelNode> inputs, LogicalUnion union) {
+    public static RelNode view(List<RelNode> inputs, Union union) {
         if (union.all) {
             List<RelNode> children = new ArrayList<>();
             for (RelNode input : inputs) {
                 if (input instanceof LogicalUnion) {
-                    LogicalUnion bottomUnion = (LogicalUnion) input;
+                    Union bottomUnion = (Union) input;
                     if (bottomUnion.all) {
                         children.addAll(bottomUnion.getInputs());
                     } else {
@@ -629,7 +630,51 @@ public class SQLRBORewriter extends RelShuttleImpl {
                     children.add(input);
                 }
             }
-            return union.copy(union.getTraitSet(), children);
+            inputs = children;
+
+            List<MycatView> inputViews = new LinkedList<>();
+            List<RelNode> newViews = new ArrayList<>();
+
+            List<RelNode> others = new ArrayList<>();
+
+            for (RelNode input : inputs) {
+                if (input instanceof MycatView) {
+                    inputViews.add((MycatView) input);
+                } else {
+                    others.add(input);
+                }
+            }
+            if (inputViews.size() > 1) {
+                MycatView left = inputViews.get(0);
+                List<MycatView> matchViews = new ArrayList<>();
+                matchViews.add(left);
+                List<MycatView> failViews = new ArrayList<>();
+                Distribution distribution = null;
+                for (MycatView right : inputViews.subList(1, inputViews.size())) {
+                    Optional<Distribution> distributionOptional = left.getDistribution().join(right.getDistribution());
+                    if (distributionOptional.isPresent()) {
+                        distribution = distributionOptional.get();
+                        matchViews.add(right);
+                        continue;
+                    }
+                    failViews.add(right);
+                }
+                if (distribution != null) {
+                    newViews.add(left.changeTo(union.copy(union.getTraitSet(),
+                                    (List) matchViews.stream().map(i -> i.getRelNode()).collect(Collectors.toList())),
+                            distribution)
+                    );
+                }else {
+                    newViews.addAll(matchViews);
+                }
+                newViews.addAll(failViews);
+            } else {
+                newViews.addAll(inputViews);
+            }
+            inputs = (List) ImmutableList.builder().addAll(newViews).addAll(others).build();
+        }
+        if (inputs.size() == 1) {
+            return inputs.get(0);
         }
         return union.copy(union.getTraitSet(), inputs);
     }

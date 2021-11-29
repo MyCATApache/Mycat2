@@ -14,6 +14,7 @@ import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalTableScan;
+import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.logical.ToLogicalConverter;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
@@ -22,6 +23,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+
+import static io.mycat.calcite.rewriter.SQLRBORewriter.view;
 
 public class LocalRules {
     public static final RelBuilderFactory LOCAL_BUILDER =
@@ -42,7 +45,8 @@ public class LocalRules {
             LocalRules.AggViewRule.DEFAULT_CONFIG.toRule(),
             LocalRules.SortViewRule.DEFAULT_CONFIG.toRule(),
             LocalRules.JoinViewRule.DEFAULT_CONFIG.toRule(),
-            LocalRules.CalcViewRule.DEFAULT_CONFIG.toRule()
+            LocalRules.CalcViewRule.DEFAULT_CONFIG.toRule(),
+            LocalRules.UnionAllViewRule.DEFAULT_CONFIG.toRule()
     );
 
     public static final List<RelOptRule> CBO_RULES = ImmutableList.of(
@@ -114,7 +118,7 @@ public class LocalRules {
         public void onMatch(RelOptRuleCall call) {
             Filter filter = call.rel(0);
             MycatView view = call.rel(1);
-            SQLRBORewriter.view(view, LocalFilter.create(filter, view)).ifPresent(new Consumer<RelNode>() {
+            view(view, LocalFilter.create(filter, view)).ifPresent(new Consumer<RelNode>() {
                 @Override
                 public void accept(RelNode res) {
                     call.transformTo(normalize(res));
@@ -150,7 +154,7 @@ public class LocalRules {
         public void onMatch(RelOptRuleCall call) {
             Filter filter = call.rel(0);
             MycatView view = call.rel(1);
-            SQLRBORewriter.view(view, LocalFilter.create(filter, view)).ifPresent(new Consumer<RelNode>() {
+            view(view, LocalFilter.create(filter, view)).ifPresent(new Consumer<RelNode>() {
                 @Override
                 public void accept(RelNode res) {
                     switch (view.getDistribution().type()) {
@@ -218,7 +222,7 @@ public class LocalRules {
         public void onMatch(RelOptRuleCall call) {
             Project project = call.rel(0);
             MycatView view = call.rel(1);
-            SQLRBORewriter.view(view, LocalProject.create(project, view)).ifPresent(res -> {
+            view(view, LocalProject.create(project, view)).ifPresent(res -> {
                 call.transformTo(normalize(res));
             });
         }
@@ -359,7 +363,7 @@ public class LocalRules {
         public void onMatch(RelOptRuleCall call) {
             Calc calc = call.rel(0);
             MycatView input = call.rel(1);
-            SQLRBORewriter.view(input, LocalCalc.create(calc, input)).ifPresent(res -> {
+            view(input, LocalCalc.create(calc, input)).ifPresent(res -> {
                 call.transformTo(normalize(res));
             });
         }
@@ -375,6 +379,46 @@ public class LocalRules {
                         b0.operand(Calc.class).oneInput(b1 -> b1.operand(MycatView.class).noInputs()))
                         .withDescription("CalcViewRule")
                         .as(CalcViewRule.Config.class);
+            }
+        }
+    }
+
+    public static class UnionAllViewRule extends RelRule<UnionAllViewRule.Config> {
+
+        public static final Config DEFAULT_CONFIG = Config.EMPTY.as(UnionAllViewRule.Config.class).withOperandFor();
+
+        public UnionAllViewRule(Config config) {
+            super(config);
+        }
+
+        @Override
+        public void onMatch(RelOptRuleCall call) {
+            Union union = call.rel(0);
+            MycatView left = call.rel(1);
+            MycatView right = call.rel(2);
+            List<RelNode> inputs = ImmutableList.of(left, right);
+            RelNode view = view(inputs, LogicalUnion.create(inputs, union.all));
+            if (view.getInputs().size()==2&&view.getInput(0) == left && view.getInput(1) == right) {
+                return;
+            }
+            call.transformTo(view);
+        }
+
+        public interface Config extends RelRule.Config {
+            @Override
+            default UnionAllViewRule toRule() {
+                return new UnionAllViewRule(this);
+            }
+
+            default UnionAllViewRule.Config withOperandFor() {
+                return withOperandSupplier(b0 ->
+                        b0.operand(Union.class).predicate(union -> {
+                                    return union.all;
+                                })
+                                .inputs(b1 -> b1.operand(MycatView.class).noInputs(),
+                                        b1 -> b1.operand(MycatView.class).noInputs()))
+                        .withDescription("UnionAllViewRule")
+                        .as(UnionAllViewRule.Config.class);
             }
         }
     }
