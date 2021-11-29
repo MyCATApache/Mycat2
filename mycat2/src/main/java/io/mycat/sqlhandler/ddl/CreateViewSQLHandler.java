@@ -67,7 +67,7 @@ public class CreateViewSQLHandler extends AbstractSQLHandler<SQLCreateViewStatem
                 List<String> aliasList = Optional.ofNullable(ast.getColumns()).orElse(Collections.emptyList()).stream().map(i -> SQLUtils.normalize(i.toString())).collect(Collectors.toList());
 
                 HackRouter hackRouter = new HackRouter(sqlSelectStatement, dataContext);
-                boolean distSql = hackRouter.analyse();
+                boolean distSql = !hackRouter.analyse();
                 try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                     if (!distSql) {
                         Pair<String, String> plan = hackRouter.getPlan();
