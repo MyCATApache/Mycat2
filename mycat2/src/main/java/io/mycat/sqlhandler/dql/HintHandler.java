@@ -538,6 +538,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         builder.addColumnInfo("value", JDBCType.VARCHAR);
                         if (body.contains("debug")) {
                             boolean debug = dataContext.isDebug();
+                            DrdsSqlCompiler.DEBUG = debug;
                             builder.addObjectRowPayload(Arrays.asList(debug ? "1" : "0"));
                         }
                         return response.sendResultSet(builder.build());
