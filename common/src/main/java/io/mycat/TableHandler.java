@@ -15,12 +15,14 @@
 package io.mycat;
 
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public interface TableHandler {
+public interface TableHandler extends Comparable<TableHandler> {
 
     public LogicTableType getType();
 
@@ -30,7 +32,7 @@ public interface TableHandler {
 
     String getCreateTableSQL();
 
-    default SimpleColumnInfo getPrimaryKey(){
+    default SimpleColumnInfo getPrimaryKey() {
         return getColumns().stream()
                 .filter(SimpleColumnInfo::isPrimaryKey)
                 .findFirst().orElse(null);
@@ -38,7 +40,7 @@ public interface TableHandler {
 
     List<SimpleColumnInfo> getColumns();
 
-    Map<String,IndexInfo> getIndexes();
+    Map<String, IndexInfo> getIndexes();
 
     SimpleColumnInfo getColumnByName(String name);
 
@@ -56,5 +58,8 @@ public interface TableHandler {
 
     void dropPhysicalTables();
 
-
+    @Override
+    default int compareTo(@NotNull TableHandler o) {
+        return this.getUniqueName().compareTo(o.getUniqueName());
+    }
 }
