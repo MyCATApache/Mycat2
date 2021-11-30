@@ -18,9 +18,9 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.*;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatConvention;
-import io.mycat.calcite.localrel.MycatAggregateUnionTransposeRule;
 import io.mycat.calcite.localrel.LocalRules;
 import io.mycat.calcite.localrel.LocalSort;
+import io.mycat.calcite.localrel.MycatAggregateUnionTransposeRule;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatHashAggregate;
 import io.mycat.calcite.physical.MycatProject;
@@ -32,7 +32,10 @@ import io.mycat.querycondition.QueryType;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.NameMap;
-import org.apache.calcite.plan.*;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptListener;
+import org.apache.calcite.plan.RelOptSchema;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelCollation;
@@ -43,7 +46,10 @@ import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.*;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -51,16 +57,17 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.IntPair;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.*;
-import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 
 public class SQLRBORewriter extends RelShuttleImpl {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(SQLRBORewriter.class);
 
     public static RelBuilder relbuilder(RelOptCluster cluster, RelOptSchema schema) {
         return LocalRules.LOCAL_BUILDER.create(cluster, schema);
@@ -341,7 +348,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             RelNode accept = i.accept(this);
             inputs.add(accept);
         }
-        return view(inputs, union);
+        return view(inputs, union).orElse(union.copy(union.getTraitSet(), inputs));
     }
 
     @Override
@@ -615,68 +622,102 @@ public class SQLRBORewriter extends RelShuttleImpl {
     }
 
 
-    public static RelNode view(List<RelNode> inputs, Union union) {
-        if (union.all) {
-            List<RelNode> children = new ArrayList<>();
-            for (RelNode input : inputs) {
-                if (input instanceof LogicalUnion) {
-                    Union bottomUnion = (Union) input;
-                    if (bottomUnion.all) {
-                        children.addAll(bottomUnion.getInputs());
-                    } else {
-                        children.add(bottomUnion);
+    public static Optional<RelNode> view(List<RelNode> inputs, Union union) {
+        List<RelNode> backup = new ArrayList<>(inputs);
+        List<RelNode> children = new ArrayList<>();
+        for (RelNode input : inputs) {
+            if (input instanceof LogicalUnion) {
+                Union bottomUnion = (Union) input;
+                children.addAll(bottomUnion.getInputs());
+            } else {
+                children.add(input);
+            }
+        }
+        inputs = children;
+
+        List<MycatView> inputViews = new LinkedList<>();
+        List<RelNode> newViews = new ArrayList<>();
+
+        List<RelNode> others = new ArrayList<>();
+
+        for (RelNode input : inputs) {
+            if (input instanceof MycatView) {
+                MycatView curView = (MycatView) input;
+                if (curView.getDistribution().type() == Distribution.Type.SHARDING) {
+                    if (!unionAllInPartitonKey(curView)) {
+                        return Optional.empty();
                     }
-                } else {
-                    children.add(input);
                 }
+                inputViews.add((MycatView) input);
+            } else {
+                others.add(input);
             }
-            inputs = children;
-
-            List<MycatView> inputViews = new LinkedList<>();
-            List<RelNode> newViews = new ArrayList<>();
-
-            List<RelNode> others = new ArrayList<>();
-
-            for (RelNode input : inputs) {
-                if (input instanceof MycatView) {
-                    inputViews.add((MycatView) input);
-                } else {
-                    others.add(input);
-                }
-            }
-            if (inputViews.size() > 1) {
-                MycatView left = inputViews.get(0);
-                List<MycatView> matchViews = new ArrayList<>();
-                matchViews.add(left);
-                List<MycatView> failViews = new ArrayList<>();
-                Distribution distribution = null;
-                for (MycatView right : inputViews.subList(1, inputViews.size())) {
-                    Optional<Distribution> distributionOptional = left.getDistribution().join(right.getDistribution());
-                    if (distributionOptional.isPresent()) {
-                        distribution = distributionOptional.get();
+        }
+        if (inputViews.isEmpty()) {
+            return Optional.empty();
+        }
+        if (inputViews.size() > 1) {
+            MycatView left = inputViews.get(0);
+            List<MycatView> matchViews = new ArrayList<>();
+            matchViews.add(left);
+            List<MycatView> failViews = new ArrayList<>();
+            Distribution distribution = null;
+            for (MycatView right : inputViews.subList(1, inputViews.size())) {
+                Optional<Distribution> distributionOptional = left.getDistribution().join(right.getDistribution());
+                if (distributionOptional.isPresent()) {
+                    distribution = distributionOptional.get();
+                    Distribution.Type type = distribution.type();
+                    if (type == Distribution.Type.PHY || type == Distribution.Type.BROADCAST) {
+                        matchViews.add(right);
+                        continue;
+                    } else if (type == Distribution.Type.SHARDING &&
+                            unionAllInPartitonKey(left) &&
+                            unionAllInPartitonKey(right)) {
                         matchViews.add(right);
                         continue;
                     }
-                    failViews.add(right);
                 }
-                if (distribution != null) {
-                    newViews.add(left.changeTo(union.copy(union.getTraitSet(),
-                                    (List) matchViews.stream().map(i -> i.getRelNode()).collect(Collectors.toList())),
-                            distribution)
-                    );
-                }else {
-                    newViews.addAll(matchViews);
-                }
-                newViews.addAll(failViews);
-            } else {
-                newViews.addAll(inputViews);
+                failViews.add(right);
             }
-            inputs = (List) ImmutableList.builder().addAll(newViews).addAll(others).build();
+            if (distribution != null) {
+                newViews.add(left.changeTo(union.copy(union.getTraitSet(),
+                                (List) matchViews.stream().map(i -> i.getRelNode()).collect(Collectors.toList())),
+                        distribution)
+                );
+            } else {
+                newViews.addAll(matchViews);
+            }
+            newViews.addAll(failViews);
+        } else {
+            newViews.addAll(inputViews);
         }
+
+        inputs = (List) ImmutableList.builder().addAll(newViews).addAll(others).build();
         if (inputs.size() == 1) {
-            return inputs.get(0);
+            return Optional.of(inputs.get(0));
         }
-        return union.copy(union.getTraitSet(), inputs);
+        if (backup.equals(inputs)) {
+            return Optional.empty();
+        }
+        return Optional.of(union.copy(union.getTraitSet(), inputs));
+    }
+
+    private static boolean unionAllInPartitonKey(MycatView mycatView) {
+        boolean isInPartitionKey;
+        switch (mycatView.getDistribution().type()) {
+            case BROADCAST:
+            case PHY:
+                isInPartitionKey = true;
+                break;
+            case SHARDING:
+                ShardingTable shardingTable = mycatView.getDistribution().getShardingTables().get(0);
+                isInPartitionKey = isInPartitionKey(mycatView, shardingTable.getShardingFuntion());
+                break;
+            default:
+                isInPartitionKey = false;
+                break;
+        }
+        return isInPartitionKey;
     }
 
     public static RelNode correlate(RelNode left, RelNode right, LogicalCorrelate correlate) {
@@ -813,6 +854,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
             return sb.toString();
         }
+
     }
 
 

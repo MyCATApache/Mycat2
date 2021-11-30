@@ -1,6 +1,5 @@
 package io.mycat.drdsrunner;
 
-import io.mycat.DrdsConst;
 import io.mycat.DrdsExecutorCompiler;
 import io.mycat.DrdsSqlCompiler;
 import io.mycat.DrdsSqlWithParams;
@@ -9,18 +8,11 @@ import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.rewriter.OptimizationContext;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.spm.PlanImpl;
-import io.mycat.calcite.spm.SpecificSql;
-import io.mycat.calcite.table.SchemaHandler;
-import io.mycat.util.NameMap;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
@@ -69,5 +61,18 @@ public class UnionAllTest extends DrdsTest {
                 explain.getColumnInfo());
         Assert.assertEquals("MycatUnion(all=[true])   MycatView(distribution=[[db1.normal]])   MycatView(distribution=[[db1.sharding]])", explain.dumpPlan());
     }
-
+    @Test
+    public void testSelectShardingSharding2() throws Exception {
+        Explain explain = parse("select 1 from db1.sharding where id = 1 union all select 1 from db1.sharding where id = 1 ");
+        Assert.assertEquals("[{columnType=INTEGER, nullable=false, columnName=1}]",
+                explain.getColumnInfo());
+        Assert.assertEquals("MycatView(distribution=[[db1.sharding]], conditions=[=($0, CAST(?1):BIGINT NOT NULL)])", explain.dumpPlan());
+    }
+    @Test
+    public void testSelectShardingSharding3() throws Exception {
+        Explain explain = parse("select 1 from db1.sharding union all select 1 from db1.sharding");
+        Assert.assertEquals("[{columnType=INTEGER, nullable=false, columnName=1}]",
+                explain.getColumnInfo());
+        Assert.assertEquals("MycatUnion(all=[true])   MycatView(distribution=[[db1.sharding]])   MycatView(distribution=[[db1.sharding]])", explain.dumpPlan());
+    }
 }

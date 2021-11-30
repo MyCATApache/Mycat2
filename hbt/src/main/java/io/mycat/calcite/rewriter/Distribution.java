@@ -24,6 +24,8 @@ import io.mycat.router.CustomRuleFunction;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
@@ -33,6 +35,7 @@ import java.util.stream.Stream;
 @EqualsAndHashCode
 @Getter
 public class Distribution {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Distribution.class);
 
     List<ShardingTable> shardingTables;
     List<GlobalTable> globalTables;
@@ -97,9 +100,9 @@ public class Distribution {
 
     public List<String> toNameList() {
         ArrayList<TableHandler> tableHandlers = new ArrayList<>();
-        tableHandlers.addAll(shardingTables);
-        tableHandlers.addAll(globalTables);
-        tableHandlers.addAll(normalTables);
+        tableHandlers.addAll(shardingTables.stream().distinct().sorted().collect(Collectors.toList()));
+        tableHandlers.addAll(globalTables.stream().distinct().sorted().collect(Collectors.toList()));
+        tableHandlers.addAll(normalTables.stream().distinct().sorted().collect(Collectors.toList()));
         return tableHandlers.stream().map(i -> (i.getSchemaName() + "." + i.getTableName())).sorted().collect(Collectors.toList());
     }
 
@@ -120,13 +123,21 @@ public class Distribution {
         return Type.SHARDING;
     }
 
+    public boolean retainAll(List left, List right) {
+        left = new ArrayList(left);
+        right = new ArrayList(right);
+        return left.retainAll(right);
+    }
+
     public Optional<Distribution> join(Distribution arg) {
         switch (arg.type()) {
             case PHY:
                 switch (this.type()) {
                     case PHY:
-                        if (this.normalTables.get(0).getDataNode().getTargetName()
-                                .equals(arg.normalTables.get(0).getDataNode().getTargetName())) {
+                        NormalTable leftNormalTable = this.normalTables.get(0);
+                        NormalTable rightNormalTable = arg.normalTables.get(0);
+                        if (leftNormalTable.getDataNode().getTargetName()
+                                .equals(rightNormalTable.getDataNode().getTargetName())) {
                             return Optional.of(
                                     new Distribution(this.shardingTables,
                                             this.globalTables,
@@ -172,8 +183,10 @@ public class Distribution {
                                         merge(this.globalTables, arg.globalTables),
                                         merge(this.normalTables, arg.normalTables)));
                     case SHARDING:
-                        CustomRuleFunction leftShardingFuntion = this.shardingTables.get(0).getShardingFuntion();
-                        CustomRuleFunction rightShardingFuntion = arg.shardingTables.get(0).getShardingFuntion();
+                        ShardingTable leftShardingTable = this.shardingTables.get(0);
+                        ShardingTable rightShardingTable = arg.shardingTables.get(0);
+                        CustomRuleFunction leftShardingFuntion = leftShardingTable.getShardingFuntion();
+                        CustomRuleFunction rightShardingFuntion = rightShardingTable.getShardingFuntion();
                         if (leftShardingFuntion.isSameDistribution(rightShardingFuntion) ||
                                 isTargetPartitionJoin(leftShardingFuntion, rightShardingFuntion)) {
                             return Optional.of(
@@ -317,8 +330,7 @@ public class Distribution {
         if (!normalTables.isEmpty()) {
             StringBuilder builder = new StringBuilder();
             builder.append("normalTables=")
-                    .append(normalTables
-                            .stream()
+                    .append(normalTables.stream().distinct().sorted()
                             .map(i ->
                                     i.getSchemaName() + "." + i.getTableName()).sorted().collect(Collectors.joining(","))
 
@@ -329,8 +341,7 @@ public class Distribution {
         if (!shardingTables.isEmpty()) {
             StringBuilder builder = new StringBuilder();
             builder.append("shardingTables=")
-                    .append(shardingTables
-                            .stream()
+                    .append(shardingTables.stream().distinct().sorted()
                             .map(i -> i.getSchemaName() + "." + i.getTableName()).sorted().collect(Collectors.joining(","))
                     );
             each.add(builder.toString());
@@ -338,8 +349,7 @@ public class Distribution {
         if (!globalTables.isEmpty()) {
             StringBuilder builder = new StringBuilder();
             builder.append("globalTables=")
-                    .append(globalTables
-                            .stream()
+                    .append(globalTables.stream().distinct().sorted()
                             .map(i ->
                                     i.getSchemaName() + "." + i.getTableName()).sorted().collect(Collectors.joining(","))
                     );
@@ -358,7 +368,7 @@ public class Distribution {
         if (ldistribution.type() == Distribution.Type.SHARDING && rdistribution.type() == Distribution.Type.PHY) {
             asBroadcast = ldistribution.getShardingTables().get(0).function().isAllPartitionInTargetName(rdistribution.getNormalTables().get(0).getDataNode().getTargetName());
         } else if (ldistribution.type() == Distribution.Type.PHY && rdistribution.type() == Distribution.Type.SHARDING) {
-            asBroadcast = canAsBroadcast(rdistribution,ldistribution);
+            asBroadcast = canAsBroadcast(rdistribution, ldistribution);
         }
         return asBroadcast;
     }

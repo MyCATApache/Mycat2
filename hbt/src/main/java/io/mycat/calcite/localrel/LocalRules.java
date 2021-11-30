@@ -397,11 +397,8 @@ public class LocalRules {
             MycatView left = call.rel(1);
             MycatView right = call.rel(2);
             List<RelNode> inputs = ImmutableList.of(left, right);
-            RelNode view = view(inputs, LogicalUnion.create(inputs, union.all));
-            if (view.getInputs().size()==2&&view.getInput(0) == left && view.getInput(1) == right) {
-                return;
-            }
-            call.transformTo(view);
+            Optional<RelNode> viewOptional = view(inputs, LogicalUnion.create(inputs, union.all));
+            viewOptional.ifPresent(relNode -> call.transformTo(relNode));
         }
 
         public interface Config extends RelRule.Config {

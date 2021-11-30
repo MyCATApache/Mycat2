@@ -24,9 +24,6 @@ public abstract class VisualTableHandler implements TableHandler {
 
     public static VisualTableHandler createByMySQL(String sql, Supplier< Observable<Object[]> > rowsProvider){
         SQLStatement sqlStatement1 = SQLUtils.parseSingleMysqlStatement(sql);
-        if (!(sqlStatement1 instanceof MySqlCreateTableStatement)){
-            System.out.println();
-        }
         MySqlCreateTableStatement sqlStatement = (MySqlCreateTableStatement)sqlStatement1;
         String schema = SQLUtils.normalize(sqlStatement.getSchema()).toLowerCase();
         String tableName =  SQLUtils.normalize(sqlStatement.getTableName()).toLowerCase();
