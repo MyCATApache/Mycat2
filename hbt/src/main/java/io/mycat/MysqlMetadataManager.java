@@ -28,7 +28,7 @@ public class MysqlMetadataManager extends MetadataManager {
     public static final NameMap<String> PERFORMANCE_SCHEMA_INFO = NameMap.immutableCopyOf(CreateMySQLSQLSet.getFieldValue(PerformanceSchema.class));
     public static final NameMap<String> MYSQL_SCHEMA_INFO = NameMap.immutableCopyOf(CreateMySQLSQLSet.getFieldValue(MysqlSchema.class));
 
-    public static final VisualTableHandler CHARACTER_SETS_TABLE_HANDLER = VisualTableHandler.createByMySQL(createCHARACTER_SETSTableSQL(),
+    public static final VisualTableHandler CHARACTER_SETS_TABLE_HANDLER = VisualTableHandler.createByMySQL(CHARACTER_SETS(),
             () -> Observable.fromArray(
                     new Object[]{"utf8", "utf8_bin", "UTF-8 Unicode", 3},
                     new Object[]{"utf8mb4", "utf8mb4_bin", "UTF-8 Unicode", 4},
@@ -36,18 +36,18 @@ public class MysqlMetadataManager extends MetadataManager {
                     new Object[]{"latin1", "latin1_bin", "Latin1", 1},
                     new Object[]{"binary", "binary", "binary", 1}
             ));
-    public static final VisualTableHandler COLLATIONS_TABLE_HANDLER = VisualTableHandler.createByMySQL(createCOLLATIONSTableSQL(), () -> {
+    public static final VisualTableHandler COLLATIONS_TABLE_HANDLER = VisualTableHandler.createByMySQL(COLLATIONS(), () -> {
         List<Object[]> list = Collections.singletonList(new Object[]{"utf8mb4_bin", "utf8mb4", 46, "Yes", "Yes", 1,"PAD SPACE"});
         return Observable.fromIterable(list);
     });
 
     public static final VisualTableHandler COLLATION_CHARACTER_SET_APPLICABILITY_TABLE_HANDLER =
-            VisualTableHandler.createByMySQL(createCOLLATION_CHARACTER_SET_APPLICABILITYTableSQL(), () -> {
+            VisualTableHandler.createByMySQL(COLLATION_CHARACTER_SET_APPLICABILITY(), () -> {
                 List<Object[]> list = Collections.singletonList(new Object[]{"utf8mb4_bin", "utf8mb4"});
                 return Observable.fromIterable(list);
             });
     public static final VisualTableHandler COLUMNS_TABLE_HANDLER =
-            VisualTableHandler.createByMySQL(createColumnsTableSQL(), new Supplier<Observable<Object[]>>() {
+            VisualTableHandler.createByMySQL(COLUMNS(), new Supplier<Observable<Object[]>>() {
                 @Override
                 public Observable<Object[]> get() {
                     ArrayList<Object[]> objects = new ArrayList<>();
@@ -188,19 +188,19 @@ public class MysqlMetadataManager extends MetadataManager {
                 }
             });
 
-    public static final VisualTableHandler EVENTS_TABLE_HANDLER = VisualTableHandler.createByMySQL(createEVENTSTableSQL(), () -> Observable.empty());
+    public static final VisualTableHandler EVENTS_TABLE_HANDLER = VisualTableHandler.createByMySQL(EVENTS(), () -> Observable.empty());
 
-    public static final VisualTableHandler COLUMN_STATISTICS_TABLE_HANDLER = VisualTableHandler.createByMySQL(createCOLUMN_STATISTICSTableSQL(), () -> Observable.empty());
+    public static final VisualTableHandler COLUMN_STATISTICS_TABLE_HANDLER = VisualTableHandler.createByMySQL(COLUMN_STATISTICS(), () -> Observable.empty());
 
-    public static final VisualTableHandler FILE_TABLE_HANDLER = VisualTableHandler.createByMySQL(createFileTableSQL(), () -> Observable.empty());
-    public static final VisualTableHandler INNODB_DATAFILES_TABLE_HANDLER = VisualTableHandler.createByMySQL(createDATAFILESTableSQL(), () -> Observable.empty());
-    public static final VisualTableHandler INNODB_FIELDS_TABLE_HANDLER = VisualTableHandler.createByMySQL(createINNODB_FIELDSTableSQL(), () -> Observable.empty());
+    public static final VisualTableHandler FILE_TABLE_HANDLER = VisualTableHandler.createByMySQL(FILE_TABLE(), () -> Observable.empty());
+    public static final VisualTableHandler INNODB_DATAFILES_TABLE_HANDLER = VisualTableHandler.createByMySQL(DATAFILES(), () -> Observable.empty());
+    public static final VisualTableHandler INNODB_FIELDS_TABLE_HANDLER = VisualTableHandler.createByMySQL(INNODB_FIELDS(), () -> Observable.empty());
     public static final VisualTableHandler ENGINES_TABLE_HANDLER = VisualTableHandler.createByMySQL(INFORMATION_SCHEMA_INFO.get("ENGINES"),
             () -> Observable.fromIterable(Collections.singletonList(
                     new Object[]{"InnoDB", "DEFAULT", "Supports transactions, row-level locking, and foreign keys", "YES", "YES", "YES"})));
-    public static final VisualTableHandler KEY_COLUMN_USAGE_TABLE_HANDLER = VisualTableHandler.createByMySQL(createKEY_COLUMN_USAGETableSQL(),
+    public static final VisualTableHandler KEY_COLUMN_USAGE_TABLE_HANDLER = VisualTableHandler.createByMySQL(KEY_COLUMN_USAGE(),
             () -> Observable.empty());
-    public static final VisualTableHandler PARTITIONS_TABLE_HANDLER = VisualTableHandler.createByMySQL(createPARTITIONSTableSQL(),
+    public static final VisualTableHandler PARTITIONS_TABLE_HANDLER = VisualTableHandler.createByMySQL(PARTITIONS(),
             () -> Observable.empty());
     public static final VisualTableHandler PROCESSLIST_TABLE_HANDLER = VisualTableHandler.createByMySQL(INFORMATION_SCHEMA_INFO.get("PROCESSLIST"), () -> {
         long ID;
@@ -233,7 +233,7 @@ public class MysqlMetadataManager extends MetadataManager {
         }
         return Observable.fromIterable(resList);
     });
-    public static final VisualTableHandler SCHEMATA_TABLE_HANDLER = VisualTableHandler.createByMySQL(createSCHEMATATableSQL(), new Supplier<Observable<Object[]>>() {
+    public static final VisualTableHandler SCHEMATA_TABLE_HANDLER = VisualTableHandler.createByMySQL(SCHEMATA_TABLE(), new Supplier<Observable<Object[]>>() {
         @Override
         public Observable<Object[]> get() {
 
@@ -256,7 +256,7 @@ public class MysqlMetadataManager extends MetadataManager {
             return Observable.fromIterable(resList);
         }
     });
-    public static final VisualTableHandler SESSION_VARIABLES_TABLE_HANDLER = VisualTableHandler.createByMySQL(createSessionVariablesTableSQL(), new Supplier<Observable<Object[]>>() {
+    public static final VisualTableHandler SESSION_VARIABLES_TABLE_HANDLER = VisualTableHandler.createByMySQL(SESSION_VARIABLES(), new Supplier<Observable<Object[]>>() {
         @Override
         public Observable<Object[]> get() {
             ArrayList<Object[]> resList = new ArrayList<>();
@@ -273,14 +273,14 @@ public class MysqlMetadataManager extends MetadataManager {
             return Observable.fromIterable(resList);
         }
     });
-    public static final VisualTableHandler GLOBAL_VARIABLES_TABLE_HANDLER = VisualTableHandler.createByMySQL(createGlobalVariablesTableSQL(), new Supplier<Observable<Object[]>>() {
+    public static final VisualTableHandler GLOBAL_VARIABLES_TABLE_HANDLER = VisualTableHandler.createByMySQL(GLOBAL_VARIABLES(), new Supplier<Observable<Object[]>>() {
         @Override
         public Observable<Object[]> get() {
             ArrayList<Object[]> resList = new ArrayList<>();
             return Observable.fromIterable(resList);
         }
     });
-    private static String createSessionVariablesTableSQL() {
+    private static String SESSION_VARIABLES() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("SESSION_VARIABLES");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -288,7 +288,7 @@ public class MysqlMetadataManager extends MetadataManager {
         createEVENTSTableSQL.addColumn("VARIABLE_VALUE ", "varchar(1024)");
         return createEVENTSTableSQL.toString();
     }
-    private static String createGlobalVariablesTableSQL() {
+    private static String GLOBAL_VARIABLES() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("GLOBAL_VARIABLES");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -297,7 +297,7 @@ public class MysqlMetadataManager extends MetadataManager {
         return createEVENTSTableSQL.toString();
     }
 
-    public static final VisualTableHandler STATISTICS_TABLE_HANDLER = VisualTableHandler.createByMySQL(createStatisticsTableSQL(), new Supplier<Observable<Object[]>>() {
+    public static final VisualTableHandler STATISTICS_TABLE_HANDLER = VisualTableHandler.createByMySQL(STATISTICS(), new Supplier<Observable<Object[]>>() {
         @Override
         public Observable<Object[]> get() {
             ArrayList<Object[]> resList = new ArrayList<>();
@@ -360,7 +360,7 @@ public class MysqlMetadataManager extends MetadataManager {
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement("ALTER TABLE t_order ADD UNIQUE GLOBAL INDEX `g_i_buyer` (`buyer_id`) COVERING (`order_snapshot`) dbpartition by hash(`buyer_id`);");
         System.out.println();
     }
-    public static final VisualTableHandler TABLES_CONSTRAINTS_TABLE_HANDLER = VisualTableHandler.createByMySQL(createTableConstraintsTableSQL(), new Supplier<Observable<Object[]>>() {
+    public static final VisualTableHandler TABLES_CONSTRAINTS_TABLE_HANDLER = VisualTableHandler.createByMySQL(TABLES_CONSTARAINTS(), new Supplier<Observable<Object[]>>() {
         @Override
         public Observable<Object[]> get() {
             ArrayList<Object[]> resList = new ArrayList<>();
@@ -374,7 +374,7 @@ public class MysqlMetadataManager extends MetadataManager {
             return Observable.fromIterable(resList);
         }
     });
-    public static final VisualTableHandler VIEW_TABLE_HANDLER = VisualTableHandler.createByMySQL(createViewTableSQL(), new Supplier<Observable<Object[]>>() {
+    public static final VisualTableHandler VIEW_TABLE_HANDLER = VisualTableHandler.createByMySQL(VIEW(), new Supplier<Observable<Object[]>>() {
         @Override
         public Observable<Object[]> get() {
             ArrayList<Object[]> resList = new ArrayList<>();
@@ -383,7 +383,7 @@ public class MysqlMetadataManager extends MetadataManager {
             return Observable.fromIterable(resList);
         }
     });
-    public static final VisualTableHandler ROUTINES_TABLE_HANDLER = VisualTableHandler.createByMySQL(createROUTINESTableSQL(), new Supplier<Observable<Object[]>>() {
+    public static final VisualTableHandler ROUTINES_TABLE_HANDLER = VisualTableHandler.createByMySQL(ROUTINES(), new Supplier<Observable<Object[]>>() {
         @Override
         public Observable<Object[]> get() {
             ArrayList<Object[]> resList = new ArrayList<>();
@@ -392,7 +392,7 @@ public class MysqlMetadataManager extends MetadataManager {
             return Observable.fromIterable(resList);
         }
     });
-    public static final VisualTableHandler TRIGGERS_TABLE_HANDLER = VisualTableHandler.createByMySQL(createTRIGGERSTableSQL(), new Supplier<Observable<Object[]>>() {
+    public static final VisualTableHandler TRIGGERS_TABLE_HANDLER = VisualTableHandler.createByMySQL(TRIGGERS(), new Supplier<Observable<Object[]>>() {
         @Override
         public Observable<Object[]> get() {
             ArrayList<Object[]> resList = new ArrayList<>();
@@ -403,7 +403,7 @@ public class MysqlMetadataManager extends MetadataManager {
     });
 
 
-    private static String createViewTableSQL() {
+    private static String VIEW() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("views");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -420,7 +420,7 @@ public class MysqlMetadataManager extends MetadataManager {
         return createEVENTSTableSQL.toString();
     }
 
-    public static final VisualTableHandler VIEWS_HANDLER = VisualTableHandler.createByMySQL(createTableConstraintsTableSQL(), new Supplier<Observable<Object[]>>() {
+    public static final VisualTableHandler VIEWS_HANDLER = VisualTableHandler.createByMySQL(TABLES_CONSTARAINTS(), new Supplier<Observable<Object[]>>() {
         @Override
         public Observable<Object[]> get() {
             ArrayList<Object[]> resList = new ArrayList<>();
@@ -435,7 +435,7 @@ public class MysqlMetadataManager extends MetadataManager {
         }
     });
 
-    private static String createTableConstraintsTableSQL() {
+    private static String TABLES_CONSTARAINTS() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("table_constraints");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -448,7 +448,7 @@ public class MysqlMetadataManager extends MetadataManager {
         return createEVENTSTableSQL.toString();
     }
 
-    private static String createTablesTableSQL() {
+    private static String TABLES() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("TABLES");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -475,7 +475,7 @@ public class MysqlMetadataManager extends MetadataManager {
         createEVENTSTableSQL.addColumn("TABLE_COMMENT", "varchar(2048)");
         return createEVENTSTableSQL.toString();
     }
-    public static final VisualTableHandler TABLES_TABLE_HANDLER = VisualTableHandler.createByMySQL(createTablesTableSQL(), new Supplier<Observable<Object[]>>() {
+    public static final VisualTableHandler TABLES_TABLE_HANDLER = VisualTableHandler.createByMySQL(TABLES(), new Supplier<Observable<Object[]>>() {
         @Override
         public Observable<Object[]> get() {
             ArrayList<Object[]> resList = new ArrayList<>();
@@ -701,7 +701,7 @@ public class MysqlMetadataManager extends MetadataManager {
     }
 
 
-    private static String createCHARACTER_SETSTableSQL() {
+    private static String CHARACTER_SETS() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("CHARACTER_SETS");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -712,7 +712,7 @@ public class MysqlMetadataManager extends MetadataManager {
         return createEVENTSTableSQL.toString();
     }
 
-    private static String createSCHEMATATableSQL() {
+    private static String SCHEMATA_TABLE() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("SCHEMATA");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -724,7 +724,7 @@ public class MysqlMetadataManager extends MetadataManager {
         return createEVENTSTableSQL.toString();
     }
 
-    private static String createStatisticsTableSQL() {
+    private static String STATISTICS() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("statistics");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -751,7 +751,7 @@ public class MysqlMetadataManager extends MetadataManager {
     }
 
 
-    private static String createEVENTSTableSQL() {
+    private static String EVENTS() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("EVENTS");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -782,7 +782,7 @@ public class MysqlMetadataManager extends MetadataManager {
         return createEVENTSTableSQL.toString();
     }
 
-    private static String createCOLLATION_CHARACTER_SET_APPLICABILITYTableSQL() {
+    private static String COLLATION_CHARACTER_SET_APPLICABILITY() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("COLLATION_CHARACTER_SET_APPLICABILITY");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -791,7 +791,7 @@ public class MysqlMetadataManager extends MetadataManager {
         return createEVENTSTableSQL.toString();
     }
 
-    private static String createCOLLATIONSTableSQL() {
+    private static String COLLATIONS() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("COLLATIONS");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -805,7 +805,7 @@ public class MysqlMetadataManager extends MetadataManager {
         return createEVENTSTableSQL.toString();
     }
 
-    private static String createCOLUMN_STATISTICSTableSQL() {
+    private static String COLUMN_STATISTICS() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("COLUMN_STATISTICS");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -816,7 +816,7 @@ public class MysqlMetadataManager extends MetadataManager {
         return createEVENTSTableSQL.toString();
     }
 
-    private static String createColumnsTableSQL() {
+    private static String COLUMNS() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("COLUMNS");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -874,7 +874,7 @@ public class MysqlMetadataManager extends MetadataManager {
         return createEVENTSTableSQL.toString();
     }
 
-    private static String createFileTableSQL() {
+    private static String FILE_TABLE() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("FILES");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -904,7 +904,7 @@ public class MysqlMetadataManager extends MetadataManager {
         return createEVENTSTableSQL.toString();
     }
 
-    private static String createDATAFILESTableSQL() {
+    private static String DATAFILES() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("DATAFILES");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -913,7 +913,7 @@ public class MysqlMetadataManager extends MetadataManager {
         return createEVENTSTableSQL.toString();
     }
 
-    private static String createINNODB_FIELDSTableSQL() {
+    private static String INNODB_FIELDS() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("DATAFILES");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -923,7 +923,7 @@ public class MysqlMetadataManager extends MetadataManager {
         return createEVENTSTableSQL.toString();
     }
 
-    private static String createKEY_COLUMN_USAGETableSQL() {
+    private static String KEY_COLUMN_USAGE() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("key_column_usage");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -942,7 +942,7 @@ public class MysqlMetadataManager extends MetadataManager {
         return createEVENTSTableSQL.toString();
     }
 
-    private static String createPARTITIONSTableSQL() {
+    private static String PARTITIONS() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("partitions");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -978,7 +978,7 @@ public class MysqlMetadataManager extends MetadataManager {
 
         return createEVENTSTableSQL.toString();
     }
-    private static String createROUTINESTableSQL() {
+    private static String ROUTINES() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("ROUTINES");
         createEVENTSTableSQL.setSchema("information_schema");
@@ -1020,7 +1020,7 @@ public class MysqlMetadataManager extends MetadataManager {
         createEVENTSTableSQL.addColumn("DATABASE_COLLATION", "varchar(64)");
         return createEVENTSTableSQL.toString();
     }
-    private static String createTRIGGERSTableSQL() {
+    private static String TRIGGERS() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("TRIGGERS");
         createEVENTSTableSQL.setSchema("information_schema");
