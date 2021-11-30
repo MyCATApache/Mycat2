@@ -5,6 +5,7 @@ import io.mycat.monitor.InstanceEntry;
 import io.mycat.monitor.MycatSQLLogMonitorImpl;
 import io.mycat.monitor.RWEntry;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;

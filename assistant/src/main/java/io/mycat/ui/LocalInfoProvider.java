@@ -166,7 +166,7 @@ public class LocalInfoProvider implements InfoProvider {
             list.add(new BackendTableInfo(target.getTargetName(), schemaName, tableName));
         }
 
-        metadataManager.addGlobalTable(schemaName, tableName, globalTableConfig, metadataManager.getPrototype(), list);
+        metadataManager.addGlobalTable(schemaName, tableName, globalTableConfig, list);
     }
 
     @Override

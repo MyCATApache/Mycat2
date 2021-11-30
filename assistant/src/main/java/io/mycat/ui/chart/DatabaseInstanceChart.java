@@ -83,9 +83,9 @@ public class DatabaseInstanceChart extends Application {
             Future<DatabaseInstanceEntry.DatabaseInstanceMap> instanceEntryFuture = monitorService.fetchDBEntry();
             instanceEntryFuture.onSuccess(databaseInstanceEntry -> {
                 LinkedList<String[]> objects = new LinkedList<>();
-                for (Map.Entry<String, DatabaseInstanceEntry.DatabaseInstanceEntry2> entry : databaseInstanceEntry.getDatabaseInstanceMap().entrySet()) {
+                for (Map.Entry<String, DatabaseInstanceEntry.DatabaseInstanceEntryViewEntry> entry : databaseInstanceEntry.getDatabaseInstanceMap().entrySet()) {
                     String key = entry.getKey();
-                    DatabaseInstanceEntry.DatabaseInstanceEntry2 value = entry.getValue();
+                    DatabaseInstanceEntry.DatabaseInstanceEntryViewEntry value = entry.getValue();
 
                     long qpsSum = value.qps;
                     long con = value.con;
