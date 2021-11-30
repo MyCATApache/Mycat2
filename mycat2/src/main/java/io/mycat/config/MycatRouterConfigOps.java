@@ -1093,7 +1093,13 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
         if (first.isPresent()) {
             LogicSchemaConfig logicSchemaConfig = first.get();
             Map<String, ViewConfig> views = logicSchemaConfig.getViews();
-            views.remove(viewName);
+            Optional<String> viewNameOptional = views.keySet().stream().filter(v -> v.equalsIgnoreCase(viewName)).findFirst();
+            viewNameOptional.ifPresent(s -> views.remove(s));
+            if (!viewNameOptional.isPresent()){
+                Map<String, NormalTableConfig> normalTables = logicSchemaConfig.getNormalTables();
+                Optional<String> tableNameOptional = normalTables.keySet().stream().filter(v -> v.equalsIgnoreCase(viewName)).findFirst();
+                tableNameOptional.ifPresent(s -> normalTables.remove(s));
+            }
         }
     }
 }

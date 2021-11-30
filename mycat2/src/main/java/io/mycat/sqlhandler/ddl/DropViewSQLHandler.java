@@ -43,18 +43,22 @@ public class DropViewSQLHandler extends AbstractSQLHandler<SQLDropViewStatement>
         resolveSQLExprTableSource(sqlExprTableSource, dataContext);
         Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
         return lockFuture.flatMap(lock -> {
+            try {
+                String schemaName = Optional.ofNullable(sqlExprTableSource.getSchema()).orElse(dataContext.getDefaultSchema());
+                schemaName = SQLUtils.normalize(schemaName);
 
-            String schemaName = Optional.ofNullable(sqlExprTableSource.getSchema()).orElse(dataContext.getDefaultSchema());
-            schemaName = SQLUtils.normalize(schemaName);
+                String viewName = SQLUtils.normalize(sqlExprTableSource.getTableName());
 
-            String viewName = SQLUtils.normalize(sqlExprTableSource.getTableName());
-
-            try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
-                ops.removeView(schemaName, viewName);
-                ops.commit();
-            } catch (Throwable throwable) {
-                return Future.failedFuture(throwable);
+                try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+                    ops.removeView(schemaName, viewName);
+                    ops.commit();
+                } catch (Throwable throwable) {
+                    return Future.failedFuture(throwable);
+                }
+            }finally {
+                lock.release();
             }
+
             return response.sendOk();
         });
     }
