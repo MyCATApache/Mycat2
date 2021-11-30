@@ -140,7 +140,7 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
     public void putProcessStateMap(Map<String, Object> map);
 
     default public int getMergeUnionSize() {
-        return ((Number) this.getProcessStateMap().getOrDefault("MERGE_UNION_SIZE", MetaClusterCurrent.exist(ServerConfig.class) ? MetaClusterCurrent.wrapper(ServerConfig.class).getMergeUnionSize() : 5)).intValue();
+        return ((Number) this.getProcessStateMap().getOrDefault("MERGE_UNION_SIZE", MetaClusterCurrent.exist(ServerConfig.class) ? MetaClusterCurrent.wrapper(ServerConfig.class).getMergeUnionSize() : -1)).intValue();
     }
 
     boolean isDebug();

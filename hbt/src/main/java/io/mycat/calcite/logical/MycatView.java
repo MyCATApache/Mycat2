@@ -395,7 +395,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             SqlNode sqlSelectStatement = MycatCalciteSupport.INSTANCE.sqlTemplateApply(sqlTemplate, params, nodeMap);
             return (ImmutableMultimap.of(targetName, sqlSelectStatement.toSqlString(dialect)));
         }
-        if (mergeUnionSize == 0 || isMergeSort()) {
+        if (mergeUnionSize < 1 || isMergeSort()) {
             ImmutableMultimap.Builder<String, SqlString> builder = ImmutableMultimap.builder();
             dataNodes.forEach(m -> {
                 String targetName = m.getTargetName();
