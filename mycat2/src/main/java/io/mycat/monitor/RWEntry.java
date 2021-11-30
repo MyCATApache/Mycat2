@@ -51,6 +51,9 @@ public class RWEntry implements LogEntry {
     }
 
     public static RWEntryMap snapshot() {
+        if ((!MetaClusterCurrent.exist(ReplicaSelectorManager.class)) || (!MetaClusterCurrent.exist(MycatRouterConfig.class))) {
+            return new RWEntryMap();
+        }
         ReplicaSelectorManager replicaSelectorManager = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
         MycatRouterConfig routerConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
         Map<String, ClusterConfig> clusterConfigMap = routerConfig.getClusters().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
@@ -81,13 +84,10 @@ public class RWEntry implements LogEntry {
                     if (physicsInstance == null) {
                         break;
                     } else {
-                        if (physicsInstance.isAlive()) {
-
-                        } else {
+                        if (!physicsInstance.isAlive()) {
                             break;
                         }
                     }
-
                 }
                 status = i == dsNames.size();
             } else {
