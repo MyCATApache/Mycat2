@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.21-aplha</version>
+        <version>1.21-release</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -46,7 +46,7 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>mycat2</artifactId>
-            <version>1.21-aplha</version>
+            <version>1.21-release</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
