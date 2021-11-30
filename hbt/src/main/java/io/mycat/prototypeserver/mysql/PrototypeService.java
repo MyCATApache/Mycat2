@@ -26,6 +26,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.ResultSetMetaData;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
@@ -2143,7 +2144,7 @@ public class PrototypeService {
                     if (sqlStatement == null) {
                         try (RowBaseIterator rowBaseIterator = connection.executeQuery("select * from " + targetSchemaTable + " where 0 limit 0")) {
                             MycatRowMetaData metaData = rowBaseIterator.getMetaData();
-                            String createTableSql = generateSql(schemaName, tableName, metaData);
+                            String createTableSql = generateSql(schemaName, tableName, metaData.metaData());
                             return Optional.of(createTableSql);
                         }
                     }
@@ -2159,20 +2160,14 @@ public class PrototypeService {
         return Optional.empty();
     }
 
-    public static String generateSql(String schemaName, String tableName, MycatRowMetaData metaData) {
+    @SneakyThrows
+    public static String generateSql(String schemaName, String tableName, ResultSetMetaData metaData) {
         MySqlCreateTableStatement mySqlCreateTableStatement = new MySqlCreateTableStatement();
         mySqlCreateTableStatement.setTableName(tableName);
         mySqlCreateTableStatement.setSchema(schemaName);
         int columnCount = metaData.getColumnCount();
         for (int i = 0; i < columnCount; i++) {
-            int columnType = metaData.getColumnType(i);
-            String type = SQLDataType.Constants.VARCHAR;
-            for (MySQLType value : MySQLType.values()) {
-                if (value.getJdbcType() == columnType) {
-                    type = value.getName();
-                }
-            }
-            mySqlCreateTableStatement.addColumn(metaData.getColumnName(i), type);
+            mySqlCreateTableStatement.addColumn(metaData.getColumnLabel(i + 1), metaData.getColumnTypeName(i + 1));
         }
         String createTableSql = mySqlCreateTableStatement.toString();
         return createTableSql;

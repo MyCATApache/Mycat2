@@ -80,7 +80,7 @@ public class CreateViewSQLHandler extends AbstractSQLHandler<SQLCreateViewStatem
                             if (!aliasList.isEmpty()) {
                                 metaData = RenameMycatRowMetaData.of(metaData, aliasList);
                             }
-                            String createTableSql = PrototypeService.generateSql(schemaName, viewName, metaData);
+                            String createTableSql = PrototypeService.generateSql(schemaName, viewName, metaData.metaData());
                             ops.putNormalTable(schemaName, viewName, (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(createTableSql));
                             statement.close();
                             try {
