@@ -2179,20 +2179,21 @@ public class PrototypeService {
             MycatRowMetaData mycatRowMetaData = null;
             if (sqlStatement instanceof MySqlCreateTableStatement) {
                 mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData((MySqlCreateTableStatement) sqlStatement);
-            }
-            Optional<JdbcConnectionManager> prototypeConnectionManagerOptional = getPrototypeConnectionManager();
-            if (!prototypeConnectionManagerOptional.isPresent()) return Collections.emptyList();
-            if (sqlStatement instanceof SQLCreateViewStatement) {
-                if (schema == null || table == null) {
-                    schema = ((SQLCreateViewStatement) sqlStatement).getSchema();
-                    table = ((SQLCreateViewStatement) sqlStatement).getName().getSimpleName();
-                }
-                mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(prototypeConnectionManagerOptional.get(), MetadataManager.getPrototype(), schema, table);
-            } else if (sqlStatement instanceof SQLSelectStatement) {
-                JdbcConnectionManager jdbcConnectionManager = prototypeConnectionManagerOptional.get();
-                try (DefaultConnection connection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype())) {
-                    RowBaseIterator baseIterator = connection.executeQuery(sql);
-                    mycatRowMetaData = new CopyMycatRowMetaData(baseIterator.getMetaData());
+            }else {
+                Optional<JdbcConnectionManager> prototypeConnectionManagerOptional = getPrototypeConnectionManager();
+                if (!prototypeConnectionManagerOptional.isPresent()) return Collections.emptyList();
+                if (sqlStatement instanceof SQLCreateViewStatement) {
+                    if (schema == null || table == null) {
+                        schema = ((SQLCreateViewStatement) sqlStatement).getSchema();
+                        table = ((SQLCreateViewStatement) sqlStatement).getName().getSimpleName();
+                    }
+                    mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(prototypeConnectionManagerOptional.get(), MetadataManager.getPrototype(), schema, table);
+                } else if (sqlStatement instanceof SQLSelectStatement) {
+                    JdbcConnectionManager jdbcConnectionManager = prototypeConnectionManagerOptional.get();
+                    try (DefaultConnection connection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype())) {
+                        RowBaseIterator baseIterator = connection.executeQuery(sql);
+                        mycatRowMetaData = new CopyMycatRowMetaData(baseIterator.getMetaData());
+                    }
                 }
             }
             return CalciteConvertors.getColumnInfo(Objects.requireNonNull(mycatRowMetaData));
@@ -2201,6 +2202,7 @@ public class PrototypeService {
             return getSimpleColumnInfos(schema, table);
         }
     }
+
 
     @NotNull
     public List<SimpleColumnInfo> getSimpleColumnInfos(String schema, String table) {
