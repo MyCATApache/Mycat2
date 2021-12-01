@@ -21,6 +21,7 @@ public class MycatField {
         this.nullable = nullable;
     }
 
+
     public MycatField(String name, MycatDataType mycatDataType, boolean nullable, int scale, int precision) {
         this.name = name;
         this.mycatDataType = mycatDataType;

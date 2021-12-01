@@ -1,6 +1,8 @@
 package io.mycat.calcite.localrel;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.beans.mycat.MycatRelDataType;
+import io.mycat.calcite.MycatRelDataTypeUtil;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
@@ -31,5 +33,9 @@ public class LocalCalc extends Calc implements LocalRel  {
     @Override
     public LocalCalc copy(RelTraitSet traitSet, RelNode child, RexProgram program) {
         return new LocalCalc(getCluster(),traitSet,getHints(),child,program);
+    }
+    @Override
+    public MycatRelDataType getMycatRelDataType() {
+        return MycatRelDataTypeUtil.getMycatRelDataType(getRowType());
     }
 }

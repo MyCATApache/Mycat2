@@ -1,5 +1,6 @@
 package io.mycat.calcite.localrel;
 
+import io.mycat.beans.mycat.MycatRelDataType;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -51,4 +52,9 @@ public class LocalUnion extends Union implements LocalRel {
                         throw new AssertionError("unknown: " + kind);
                 }
             };
+
+    @Override
+    public MycatRelDataType getMycatRelDataType() {
+        return ((LocalRel) getInput(0)).getMycatRelDataType();
+    }
 }

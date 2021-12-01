@@ -1,5 +1,6 @@
 package io.mycat.calcite.localrel;
 
+import io.mycat.beans.mycat.MycatRelDataType;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -42,4 +43,9 @@ public class LocalSort extends Sort implements LocalRel{
                 throw new UnsupportedOperationException("LocalSort");
             };
 
+    @Override
+    public MycatRelDataType getMycatRelDataType() {
+        LocalRel input = (LocalRel)getInput();
+        return input.getMycatRelDataType();
+    }
 }

@@ -1,5 +1,7 @@
 package io.mycat.calcite.localrel;
 
+import io.mycat.beans.mycat.MycatRelDataType;
+import io.mycat.calcite.MycatRelDataTypeUtil;
 import org.apache.calcite.adapter.jdbc.JdbcRules;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -30,9 +32,11 @@ public class LocalAggregate extends Aggregate implements LocalRel {
                              List<AggregateCall> aggCalls) {
         super(cluster, traitSet.replace(LocalConvention.INSTANCE), hints, input, groupSet, groupSets, aggCalls);
     }
+
     public static LocalAggregate create(Aggregate aggregate, RelNode input) {
         return new LocalAggregate(aggregate.getCluster(), aggregate.getTraitSet(), aggregate.getHints(), input, aggregate.getGroupSet(), aggregate.getGroupSets(), aggregate.getAggCallList());
     }
+
     public LocalAggregate(RelInput input) {
         super(input);
     }
@@ -43,19 +47,25 @@ public class LocalAggregate extends Aggregate implements LocalRel {
                                ImmutableBitSet groupSet,
                                List<ImmutableBitSet> groupSets,
                                List<AggregateCall> aggCalls) {
-        return new LocalAggregate(getCluster(),traitSet,getHints(),input,groupSet,groupSets,aggCalls);
+        return new LocalAggregate(getCluster(), traitSet, getHints(), input, groupSet, groupSets, aggCalls);
     }
 
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         return super.computeSelfCost(planner, mq).multiplyBy(.5);
     }
+
     public static final RelFactories.AggregateFactory AGGREGATE_FACTORY =
             (input, hints, groupSet, groupSets, aggCalls) -> {
                 final RelOptCluster cluster = input.getCluster();
                 final RelTraitSet traitSet = cluster.traitSetOf(
                         requireNonNull(input.getConvention(), "input.getConvention()"));
-                return new LocalAggregate(cluster, traitSet,hints, input, groupSet,
+                return new LocalAggregate(cluster, traitSet, hints, input, groupSet,
                         groupSets, aggCalls);
             };
+
+    @Override
+    public MycatRelDataType getMycatRelDataType() {
+        return MycatRelDataTypeUtil.getMycatRelDataType(getRowType());
+    }
 }

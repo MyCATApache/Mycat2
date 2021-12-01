@@ -534,4 +534,18 @@ public enum MycatDataType {
                 throw new IllegalStateException("Unexpected value: " + this);
         }
     }
+
+    public static MycatDataType fromJdbc(JDBCType jdbcType, boolean signed) {
+        for (MycatDataType value : values()) {
+            if (signed) {
+                if (value.getSignedJdbcType() == jdbcType) {
+                    return value;
+                }
+            } else {
+                throw new UnsupportedOperationException();
+            }
+
+        }
+        throw new UnsupportedOperationException();
+    }
 }
