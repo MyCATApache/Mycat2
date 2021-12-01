@@ -2177,11 +2177,11 @@ public class PrototypeService {
         try {
             SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
             MycatRowMetaData mycatRowMetaData = null;
-            Optional<JdbcConnectionManager> prototypeConnectionManagerOptional = getPrototypeConnectionManager();
-            if (!prototypeConnectionManagerOptional.isPresent()) return Collections.emptyList();
             if (sqlStatement instanceof MySqlCreateTableStatement) {
                 mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData((MySqlCreateTableStatement) sqlStatement);
             }
+            Optional<JdbcConnectionManager> prototypeConnectionManagerOptional = getPrototypeConnectionManager();
+            if (!prototypeConnectionManagerOptional.isPresent()) return Collections.emptyList();
             if (sqlStatement instanceof SQLCreateViewStatement) {
                 if (schema == null || table == null) {
                     schema = ((SQLCreateViewStatement) sqlStatement).getSchema();
