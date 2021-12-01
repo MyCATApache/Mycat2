@@ -2141,14 +2141,14 @@ public class PrototypeService {
                     } catch (Exception e) {
                         LOGGER.error("", e);
                     }
-                    if (sqlStatement == null) {
+                    if (sqlStatement == null||!(sqlStatement instanceof SQLCreateTableStatement)) {
                         try (RowBaseIterator rowBaseIterator = connection.executeQuery("select * from " + targetSchemaTable + " where 0 limit 0")) {
                             MycatRowMetaData metaData = rowBaseIterator.getMetaData();
                             String createTableSql = generateSql(schemaName, tableName, metaData.metaData());
                             return Optional.of(createTableSql);
                         }
                     }
-                    return Optional.of(schemaName);
+                    return Optional.empty();
                 } catch (Exception e) {
                     LOGGER.error("", e);
                 }
@@ -2204,6 +2204,7 @@ public class PrototypeService {
 
     @NotNull
     public List<SimpleColumnInfo> getSimpleColumnInfos(String schema, String table) {
+        Objects.requireNonNull(schema);
         Optional<JdbcConnectionManager> prototypeConnectionManagerOptional = getPrototypeConnectionManager();
         if (!prototypeConnectionManagerOptional.isPresent()) return Collections.emptyList();
         MycatRowMetaData mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(prototypeConnectionManagerOptional.get(), MetadataManager.getPrototype(), schema, table);
