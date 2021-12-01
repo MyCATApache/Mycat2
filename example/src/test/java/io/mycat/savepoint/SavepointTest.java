@@ -4,10 +4,13 @@ import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.assemble.MycatTest;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
+import io.mycat.prototypeserver.mysql.PrototypeService;
 import lombok.SneakyThrows;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
@@ -20,7 +23,7 @@ import java.util.function.Consumer;
 @net.jcip.annotations.NotThreadSafe
 public class SavepointTest implements MycatTest {
     boolean init = false;
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(SavepointTest.class);
     @Before
     public void before() throws Exception {
         if (!init) {
@@ -90,6 +93,8 @@ public class SavepointTest implements MycatTest {
                 try {
                     execute(mycatConnection,"RELEASE SAVEPOINT "+savepoint.getSavepointName());
                 }catch (SQLException exception){
+                    System.out.println("Savepoint fail :"+exception);
+                    LOGGER.error("Savepoint fail :"+exception);
                     Assert.assertTrue(exception.getMessage().contains("SAVEPOINT"));
                 }
 
