@@ -147,4 +147,7 @@ public class MycatField {
         columnDefPacket.setColumnCharsetSet(columnCharsetSet);
         return columnDefPacket;
     }
+    public MycatField rename(String newName){
+        return of(newName,mycatDataType,nullable,scale,precision);
+    }
 }

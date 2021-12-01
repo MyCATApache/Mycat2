@@ -4,21 +4,20 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.beans.mycat.MycatRelDataType;
 import io.mycat.calcite.MycatRelDataTypeUtil;
 import io.mycat.calcite.rules.ProjectRemoveRule;
-import org.apache.calcite.plan.*;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
-import org.apache.calcite.util.Pair;
 
 import java.util.List;
 import java.util.Objects;
@@ -65,7 +64,7 @@ public class LocalProject extends Project implements LocalRel {
     public MycatRelDataType getMycatRelDataType() {
         MycatRelDataType inputRelDataType = ((LocalRel) getInput()).getMycatRelDataType();
         if (ProjectRemoveRule.isTrivial(this)) {
-            return inputRelDataType;
+            return inputRelDataType.rename(getRowType().getFieldNames());
         }
         return MycatRelDataTypeUtil.getMycatRelDataType(getRowType());
     }

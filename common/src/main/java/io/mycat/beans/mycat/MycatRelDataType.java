@@ -22,4 +22,21 @@ public class MycatRelDataType {
         builder.addAll(right.fieldList);
         return of(builder.build());
     }
+
+    public MycatRelDataType rename(List<String> names){
+        if (fieldList.size() != names.size()){
+            throw new IllegalArgumentException();
+        }
+        ImmutableList.Builder<MycatField> builder = ImmutableList.builder();
+        for (int i = 0; i < fieldList.size(); i++) {
+            MycatField mycatField = fieldList.get(i);
+            String newName = names.get(i);
+            if (newName.equals(mycatField.getName())){
+                builder.add(mycatField);
+            }else {
+                builder.add(mycatField.rename(newName));
+            }
+        }
+       return MycatRelDataType.of(builder.build());
+    }
 }
