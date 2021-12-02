@@ -136,9 +136,6 @@ public class MycatCore {
             Files.createDirectory(this.baseDirectory);
             initConfig = true;
         }
-        if (Files.list(this.baseDirectory).noneMatch(Files::isDirectory)) {
-            initConfig = true;
-        }
 
         FileStorageManagerImpl fileStorageManager = new FileStorageManagerImpl(this.baseDirectory);
         StdStorageManagerImpl storageManager = new StdStorageManagerImpl(fileStorageManager);
