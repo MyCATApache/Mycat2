@@ -26,12 +26,12 @@ public class SavepointTest implements MycatTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(SavepointTest.class);
     @Before
     public void before() throws Exception {
-        if (!init) {
+//        if (!init) {
             try (Connection connection = getMySQLConnection(DB_MYCAT)) {
                 JdbcUtils.execute(connection, "/*+ mycat:readXARecoveryLog{} */;");
             }
-            init = true;
-        }
+//            init = true;
+//        }
     }
 
     @Test
