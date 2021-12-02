@@ -1451,4 +1451,47 @@ public class UserCaseTest implements MycatTest {
             System.out.println();
         }
     }
+
+    @Test
+    public void case605() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
+            execute(mycatConnection, RESET_CONFIG);
+            addC0(mycatConnection);
+            execute(mycatConnection, "create database db1");
+            execute(mycatConnection,"use db1");
+            execute(mycatConnection,"CREATE TABLE `float_test` (\n" +
+                    "  `value` float DEFAULT '0' \n" +
+                    ") ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;");
+
+            deleteData(mycatConnection,"db1","float_test");
+            execute(mycatConnection,"\n" +
+                    "INSERT INTO `db1`.`float_test`(`value`) VALUES (20.2);\n");
+
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, "select * from db1.float_test;");
+            Assert.assertTrue(maps.toString().contains("20.2"));
+            System.out.println();
+        }
+    }
+
+
+    @Test
+    public void case6052() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
+            execute(mycatConnection, RESET_CONFIG);
+            addC0(mycatConnection);
+            execute(mycatConnection, "create database db1");
+            execute(mycatConnection,"use db1");
+            execute(mycatConnection,"CREATE TABLE `float_test` (\n" +
+                    "  `value` float DEFAULT '0' \n" +
+                    ") ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8  dbpartition by mod_hash(value) dbpartitions 16;");
+
+            deleteData(mycatConnection,"db1","float_test");
+            execute(mycatConnection,"\n" +
+                    "INSERT INTO `db1`.`float_test`(`value`) VALUES (20.2);\n");
+
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, "select * from db1.float_test;");
+            Assert.assertTrue(maps.toString().contains("20.2"));
+            System.out.println();
+        }
+    }
 }

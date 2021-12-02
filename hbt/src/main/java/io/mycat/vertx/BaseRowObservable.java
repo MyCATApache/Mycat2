@@ -151,7 +151,16 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                 }
 
                 case FLOAT:
-                case REAL:
+                case REAL:{
+                    Numeric numeric = row.getNumeric(columnIndex);
+                    if (numeric == null) {
+                        value = null;
+                    } else {
+                        value = numeric.floatValue();
+                    }
+                    break;
+                }
+
                 case DOUBLE: {
                     Numeric numeric = row.getNumeric(columnIndex);
                     if (numeric == null) {
