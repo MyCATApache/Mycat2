@@ -1,13 +1,18 @@
 package io.mycat.calcite.executor;
 
 import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.ast.*;
-import com.alibaba.druid.sql.ast.expr.*;
+import com.alibaba.druid.sql.ast.SQLCommentHint;
+import com.alibaba.druid.sql.ast.SQLLimit;
+import com.alibaba.druid.sql.ast.SQLOrderBy;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLAggregateExpr;
+import com.alibaba.druid.sql.ast.expr.SQLInSubQueryExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIntervalExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLSelectGroupByClause;
+import com.alibaba.druid.sql.ast.statement.SQLWithSubqueryClause;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
 import com.alibaba.druid.sql.visitor.VisitorFeature;
 import com.google.common.collect.ImmutableList;
@@ -166,6 +171,17 @@ public class MycatPreparedStatementUtil {
                     this.parameterized = true;
                 }
             }
+
+            @Override
+            public boolean visit(SQLWithSubqueryClause x) {
+                try {
+                    this.parameterized = false;
+                    return super.visit(x);
+                } finally {
+                    this.parameterized = true;
+                }
+            }
+
         };
         parameterVisitor.setShardingSupport(false);
         parameterVisitor.setFeatures(VisitorFeature.OutputParameterizedQuesUnMergeInList.mask |
