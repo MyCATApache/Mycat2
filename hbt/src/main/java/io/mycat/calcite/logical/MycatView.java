@@ -867,8 +867,14 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     @Override
     public MycatRelDataType getMycatRelDataTypeByCalcite() {
-        LocalRel relNode = (LocalRel)getRelNode();
+        LocalRel relNode = (LocalRel) getRelNode();
         return relNode.getMycatRelDataType();
     }
 
+    public boolean canNotPushdown() {
+        return isMergeAgg() || isMergeSort();
+    }
+    public boolean allowPushdown() {
+        return !canNotPushdown();
+    }
 }

@@ -137,7 +137,9 @@ public class LocalRules {
 
             default UniversalFilterViewRule.Config withOperandFor() {
                 return withOperandSupplier(b0 ->
-                        b0.operand(Filter.class).oneInput(b1 -> b1.operand(MycatView.class).noInputs()))
+                        b0.operand(Filter.class).oneInput(b1 -> b1.operand(MycatView.class)
+                                .predicate(m -> m.allowPushdown())
+                                .noInputs()))
                         .withDescription("UniversalFilterViewRule")
                         .as(UniversalFilterViewRule.Config.class);
             }
@@ -203,7 +205,10 @@ public class LocalRules {
 
             default PrimaryShardingTableFilterViewRule.Config withOperandFor() {
                 return withOperandSupplier(b0 ->
-                        b0.operand(Filter.class).oneInput(b1 -> b1.operand(MycatView.class).noInputs()))
+                        b0.operand(Filter.class)
+                                .oneInput(b1 -> b1.operand(MycatView.class)
+                                        .predicate(m -> m.allowPushdown())
+                                        .noInputs()))
                         .withDescription("PrimaryShardingTableFilterViewRule")
                         .as(PrimaryShardingTableFilterViewRule.Config.class);
             }
@@ -236,7 +241,9 @@ public class LocalRules {
 
             default ProjectViewRule.Config withOperandFor() {
                 return withOperandSupplier(b0 ->
-                        b0.operand(Project.class).oneInput(b1 -> b1.operand(MycatView.class).noInputs()))
+                        b0.operand(Project.class)
+                                .oneInput(b1 -> b1.operand(MycatView.class)
+                                        .predicate(m -> m.allowPushdown()).noInputs()))
                         .withDescription("ProjectViewRule")
                         .as(ProjectViewRule.Config.class);
             }
@@ -273,7 +280,9 @@ public class LocalRules {
 
             default JoinViewRule.Config withOperandFor() {
                 return withOperandSupplier(b0 ->
-                        b0.operand(Join.class).inputs(b1 -> b1.operand(MycatView.class).noInputs(), b2 -> b2.operand(MycatView.class).noInputs()))
+                        b0.operand(Join.class)
+                                .inputs(b1 -> b1.operand(MycatView.class).predicate(m -> m.allowPushdown()).noInputs(),
+                                        b2 -> b2.operand(MycatView.class).predicate(m -> m.allowPushdown()).noInputs()))
                         .withDescription("JoinViewRule")
                         .as(JoinViewRule.Config.class);
             }
@@ -308,7 +317,10 @@ public class LocalRules {
 
             default AggViewRule.Config withOperandFor() {
                 return withOperandSupplier(b0 ->
-                        b0.operand(Aggregate.class).oneInput(b1 -> b1.operand(MycatView.class).noInputs()))
+                        b0.operand(Aggregate.class)
+                                .oneInput(b1 -> b1.operand(MycatView.class)
+                                        .predicate(m -> m.allowPushdown())
+                                        .noInputs()))
                         .withDescription("AggViewRule")
                         .as(AggViewRule.Config.class);
             }
@@ -344,7 +356,10 @@ public class LocalRules {
 
             default SortViewRule.Config withOperandFor() {
                 return withOperandSupplier(b0 ->
-                        b0.operand(Sort.class).oneInput(b1 -> b1.operand(MycatView.class).noInputs()))
+                        b0.operand(Sort.class)
+                                .oneInput(b1 -> b1.operand(MycatView.class)
+                                        .predicate(m -> m.allowPushdown())
+                                        .noInputs()))
                         .withDescription("SortViewRule")
                         .as(SortViewRule.Config.class);
             }
@@ -376,7 +391,9 @@ public class LocalRules {
 
             default CalcViewRule.Config withOperandFor() {
                 return withOperandSupplier(b0 ->
-                        b0.operand(Calc.class).oneInput(b1 -> b1.operand(MycatView.class).noInputs()))
+                        b0.operand(Calc.class)
+                                .oneInput(b1 -> b1.operand(MycatView.class)
+                                        .predicate(m -> m.allowPushdown()).noInputs()))
                         .withDescription("CalcViewRule")
                         .as(CalcViewRule.Config.class);
             }
@@ -412,8 +429,8 @@ public class LocalRules {
                         b0.operand(Union.class).predicate(union -> {
                                     return union.all;
                                 })
-                                .inputs(b1 -> b1.operand(MycatView.class).noInputs(),
-                                        b1 -> b1.operand(MycatView.class).noInputs()))
+                                .inputs(b1 -> b1.operand(MycatView.class).predicate(m -> m.allowPushdown()).noInputs(),
+                                        b1 -> b1.operand(MycatView.class).predicate(m -> m.allowPushdown()).noInputs()))
                         .withDescription("UnionAllViewRule")
                         .as(UnionAllViewRule.Config.class);
             }
