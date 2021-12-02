@@ -72,7 +72,7 @@ public class ResultSetMapping {
                                 row[rowIndex] = TextConvertorImpl.getBytes(((Time) o).toLocalTime());
                             } else if (o instanceof String) {
                                 row[rowIndex] = ((String) o).getBytes();
-                            }  else {
+                            } else {
                                 LOGGER.error(" unsupport type:{}  value:{}", o.getClass(), o);
                                 throw new UnsupportedOperationException();
                             }
@@ -93,13 +93,12 @@ public class ResultSetMapping {
                             }
                             break;
                         }
-                        case Types.BIT:
-                        {
+                        case Types.BIT: {
                             Object o = objects[columnIndex];
                             if (o == null) {
                                 row[rowIndex] = null;
                             } else if (o instanceof Boolean) {
-                                row[rowIndex] = ((Boolean) o).booleanValue()?new byte[]{1}:new byte[]{0};
+                                row[rowIndex] = ((Boolean) o).booleanValue() ? new byte[]{1} : new byte[]{0};
                             } else if (o instanceof Number) {
                                 row[rowIndex] = new byte[]{((Number) o).byteValue()};
                             } else {
@@ -121,11 +120,39 @@ public class ResultSetMapping {
                                 } else {
                                     row[rowIndex] = TextConvertorImpl.ZERO;
                                 }
-                            }else if (o instanceof String) {
+                            } else if (o instanceof String) {
                                 row[rowIndex] = ((String) o).getBytes();
-                            }  else {
+                            } else {
                                 LOGGER.error(" unsupport type:{}  value:{}", o.getClass(), o);
                                 throw new UnsupportedOperationException();
+                            }
+                            break;
+                        }
+                        case Types.REAL:
+                        case Types.FLOAT:
+                        case Types.DOUBLE: {
+                            Object o = objects[columnIndex];
+                            if (o == null) {
+                                row[rowIndex] = null;
+                            } else {
+                                if (o instanceof Float) {
+
+                                    Float aFloat = (Float) o;
+                                    if (aFloat.longValue() == aFloat.floatValue()) {
+                                        row[rowIndex] = Objects.toString(aFloat.longValue()).getBytes();
+                                    } else {
+                                        row[rowIndex] = Objects.toString(aFloat).getBytes();
+                                    }
+                                } else if (o instanceof Double) {
+                                    Double aDouble = (Double) o;
+                                    if (aDouble.longValue() == aDouble.doubleValue()) {
+                                        row[rowIndex] = Objects.toString(aDouble.longValue()).getBytes();
+                                    } else {
+                                        row[rowIndex] = Objects.toString(aDouble).getBytes();
+                                    }
+                                } else {
+                                    row[rowIndex] = Objects.toString(o).getBytes();
+                                }
                             }
                             break;
                         }
