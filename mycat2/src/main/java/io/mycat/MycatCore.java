@@ -136,6 +136,9 @@ public class MycatCore {
             Files.createDirectory(this.baseDirectory);
             initConfig = true;
         }
+        if (!Files.exists((this.baseDirectory.resolve("server.json")))){
+            initConfig = true;
+        }
 
         FileStorageManagerImpl fileStorageManager = new FileStorageManagerImpl(this.baseDirectory);
         StdStorageManagerImpl storageManager = new StdStorageManagerImpl(fileStorageManager);
