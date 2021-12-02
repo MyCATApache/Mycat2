@@ -2,6 +2,8 @@ package io.mycat.calcite.localrel;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import io.mycat.beans.mycat.MycatRelDataType;
+import io.mycat.calcite.MycatRelDataTypeUtil;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -59,5 +61,10 @@ public class LocalJoin extends Join implements LocalRel {
             (left, right, correlationId, requiredColumns, joinType) -> {
                 throw new UnsupportedOperationException("LocalCorrelate");
             };
-
+    @Override
+    public MycatRelDataType getMycatRelDataType() {
+        LocalRel left = (LocalRel) getLeft();
+        LocalRel right =  (LocalRel)getRight();
+        return left.getMycatRelDataType().join(right.getMycatRelDataType());
+    }
 }

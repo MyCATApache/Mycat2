@@ -1,5 +1,7 @@
 package io.mycat.calcite.localrel;
 
+import io.mycat.beans.mycat.MycatRelDataType;
+import io.mycat.calcite.MycatRelDataTypeUtil;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -39,5 +41,9 @@ public class LocalWindow extends Window implements LocalRel {
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         return super.computeSelfCost(planner, mq).multiplyBy(.9);
+    }
+    @Override
+    public MycatRelDataType getMycatRelDataType() {
+        return MycatRelDataTypeUtil.getMycatRelDataType(getRowType());
     }
 }

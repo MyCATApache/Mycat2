@@ -1,6 +1,7 @@
 package io.mycat.calcite.localrel;
 
 import com.google.common.base.Preconditions;
+import io.mycat.beans.mycat.MycatRelDataType;
 import org.apache.calcite.adapter.jdbc.JdbcRules;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -14,7 +15,7 @@ import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 
-public class LocalFilter  extends Filter implements LocalRel {
+public class LocalFilter extends Filter implements LocalRel {
     protected LocalFilter(RelOptCluster cluster, RelTraitSet traits, RelNode child, RexNode condition) {
         super(cluster, traits.replace(LocalConvention.INSTANCE), child, condition);
     }
@@ -26,23 +27,31 @@ public class LocalFilter  extends Filter implements LocalRel {
     public static LocalFilter create(Filter filter, RelNode input) {
         return new LocalFilter(filter.getCluster(), filter.getTraitSet(), input, filter.getCondition());
     }
-    public static LocalFilter create(RexNode condition,RelNode input) {
+
+    public static LocalFilter create(RexNode condition, RelNode input) {
         return new LocalFilter(input.getCluster(), input.getTraitSet(), input, condition);
     }
 
 
     @Override
     public LocalFilter copy(RelTraitSet traitSet, RelNode input, RexNode condition) {
-        return new LocalFilter(getCluster(),traitSet,input,condition);
+        return new LocalFilter(getCluster(), traitSet, input, condition);
     }
+
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         RelOptCost relOptCost = super.computeSelfCost(planner, mq).multiplyBy(.9);
         return relOptCost;
     }
+
     static final RelFactories.FilterFactory FILTER_FACTORY =
             (input, condition, variablesSet) -> {
                 return new LocalFilter(input.getCluster(),
                         input.getTraitSet(), input, condition);
             };
+
+    @Override
+    public MycatRelDataType getMycatRelDataType() {
+        return ((LocalRel) getInput()).getMycatRelDataType();
+    }
 }

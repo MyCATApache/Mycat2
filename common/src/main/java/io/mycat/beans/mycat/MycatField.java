@@ -21,6 +21,7 @@ public class MycatField {
         this.nullable = nullable;
     }
 
+
     public MycatField(String name, MycatDataType mycatDataType, boolean nullable, int scale, int precision) {
         this.name = name;
         this.mycatDataType = mycatDataType;
@@ -145,5 +146,8 @@ public class MycatField {
         columnDefPacket.setColumnDecimals(scale);
         columnDefPacket.setColumnCharsetSet(columnCharsetSet);
         return columnDefPacket;
+    }
+    public MycatField rename(String newName){
+        return of(newName,mycatDataType,nullable,scale,precision);
     }
 }

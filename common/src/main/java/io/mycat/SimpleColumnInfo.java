@@ -14,6 +14,8 @@
  */
 package io.mycat;
 
+import io.mycat.beans.mycat.MycatDataType;
+import io.mycat.beans.mycat.MycatField;
 import io.mycat.router.CustomRuleFunction;
 import lombok.*;
 
@@ -301,7 +303,12 @@ public class SimpleColumnInfo {
         final CustomRuleFunction function;
     }
 
-    public boolean isUnique(){
-        return primaryKey||uniqueKey;
+    public boolean isUnique() {
+        return primaryKey || uniqueKey;
     }
+
+    public MycatField toMycatField() {
+        return MycatField.of(columnName, MycatDataType.fromJdbc(getJdbcType(), true), true);
+    }
+
 }

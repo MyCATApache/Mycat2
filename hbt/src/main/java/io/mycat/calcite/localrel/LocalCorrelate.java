@@ -1,6 +1,7 @@
 package io.mycat.calcite.localrel;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.beans.mycat.MycatRelDataType;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
@@ -14,10 +15,11 @@ import org.apache.calcite.rel.logical.LogicalCorrelate;
 import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.util.ImmutableBitSet;
 
-public class LocalCorrelate  extends Correlate  implements LocalRel {
+public class LocalCorrelate extends Correlate implements LocalRel {
     protected LocalCorrelate(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, JoinRelType joinType) {
         super(cluster, traitSet.replace(LocalConvention.INSTANCE), left, right, correlationId, requiredColumns, joinType);
     }
+
     public LocalCorrelate(RelInput input) {
         this(input.getCluster(), input.getTraitSet(), input.getInputs().get(0),
                 input.getInputs().get(1),
@@ -29,13 +31,20 @@ public class LocalCorrelate  extends Correlate  implements LocalRel {
     public static LocalCorrelate create(Correlate correlate, RelNode left, RelNode right) {
         return new LocalCorrelate(correlate.getCluster(), correlate.getTraitSet(), left, right, correlate.getCorrelationId(), correlate.getRequiredColumns(), correlate.getJoinType());
     }
+
     @Override
     public LocalCorrelate copy(RelTraitSet traitSet, RelNode left, RelNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, JoinRelType joinType) {
-        return new  LocalCorrelate(getCluster(),traitSet,left,right,correlationId,requiredColumns,joinType);
+        return new LocalCorrelate(getCluster(), traitSet, left, right, correlationId, requiredColumns, joinType);
     }
+
     static final RelFactories.CorrelateFactory CORRELATE_FACTORY =
             (left, right, correlationId, requiredColumns, joinType) -> {
                 throw new UnsupportedOperationException("LocalCorrelate");
             };
 
+    @Override
+    public MycatRelDataType getMycatRelDataType() {
+        LocalRel left = (LocalRel) getLeft();
+        return left.getMycatRelDataType();
+    }
 }

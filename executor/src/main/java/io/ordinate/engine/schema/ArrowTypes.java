@@ -35,7 +35,7 @@ public class ArrowTypes {
 
     public static final ArrowType.FloatingPoint FLOAT_TYPE = new ArrowType.FloatingPoint(FloatingPointPrecision.SINGLE);
     public static final ArrowType.FloatingPoint DOUBLE_TYPE = new ArrowType.FloatingPoint(FloatingPointPrecision.DOUBLE);
-    public static final ArrowType.Decimal DECIMAL_TYPE = new ArrowType.Decimal(0,0,16);
+    public static final ArrowType.Decimal DECIMAL_TYPE =  ArrowType.Decimal.createDecimal(0,0,16);
     public static final ArrowType.Utf8 STRING_TYPE = new ArrowType.Utf8();
     public static final ArrowType.Binary BINARY_TYPE = new ArrowType.Binary();
 
@@ -43,4 +43,8 @@ public class ArrowTypes {
     public static final ArrowType TIME_MILLI_TYPE = Types.MinorType.TIMEMILLI.getType();
     public static final ArrowType DATE_TYPE = Types.MinorType.DATEDAY.getType();
     public static final ArrowType DATETIME_MILLI_TYPE = Types.MinorType.TIMESTAMPMICRO.getType();
+
+    public static void main(String[] args) {
+        ArrowType.Int uint64Type = ArrowTypes.UINT64_TYPE;
+    }
 }

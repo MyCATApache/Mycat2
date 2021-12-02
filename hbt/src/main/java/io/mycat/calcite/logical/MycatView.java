@@ -19,11 +19,9 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import io.mycat.*;
+import io.mycat.beans.mycat.MycatRelDataType;
 import io.mycat.calcite.*;
-import io.mycat.calcite.localrel.LocalFilter;
-import io.mycat.calcite.localrel.LocalProject;
-import io.mycat.calcite.localrel.LocalTableScan;
-import io.mycat.calcite.localrel.ToLocalConverter;
+import io.mycat.calcite.localrel.*;
 import io.mycat.calcite.physical.MycatHashJoin;
 import io.mycat.calcite.physical.MycatMergeSort;
 import io.mycat.calcite.physical.MycatProject;
@@ -866,4 +864,11 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         }
         return implementViewStream(implementor, pref);
     }
+
+    @Override
+    public MycatRelDataType getMycatRelDataTypeByCalcite() {
+        LocalRel relNode = (LocalRel)getRelNode();
+        return relNode.getMycatRelDataType();
+    }
+
 }
