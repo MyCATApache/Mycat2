@@ -302,7 +302,10 @@ public class LocalRules {
 
             default AggViewRule.Config withOperandFor() {
                 return withOperandSupplier(b0 ->
-                        b0.operand(Aggregate.class).oneInput(b1 -> b1.operand(MycatView.class).noInputs()))
+                        b0.operand(Aggregate.class)
+                                .oneInput(b1 -> b1.operand(MycatView.class)
+                                        .predicate(m -> !m.isMergeSort() && !m.isMergeAgg())
+                                        .noInputs()))
                         .withDescription("AggViewRule")
                         .as(AggViewRule.Config.class);
             }
@@ -338,7 +341,9 @@ public class LocalRules {
 
             default SortViewRule.Config withOperandFor() {
                 return withOperandSupplier(b0 ->
-                        b0.operand(Sort.class).oneInput(b1 -> b1.operand(MycatView.class).noInputs()))
+                        b0.operand(Sort.class).oneInput(b1 -> b1.operand(MycatView.class)
+                                .predicate(m -> !m.isMergeSort() && !m.isMergeAgg())
+                                .noInputs()))
                         .withDescription("SortViewRule")
                         .as(SortViewRule.Config.class);
             }
