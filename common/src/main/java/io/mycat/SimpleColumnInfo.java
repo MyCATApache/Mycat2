@@ -84,6 +84,8 @@ public class SimpleColumnInfo {
                 break;
             case FLOAT:
             case REAL:
+                jdbcType = JDBCType.FLOAT;
+                break;
             case DOUBLE:
                 jdbcType = JDBCType.DOUBLE;
                 break;

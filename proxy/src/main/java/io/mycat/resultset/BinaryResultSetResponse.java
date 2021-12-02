@@ -98,7 +98,7 @@ public class BinaryResultSetResponse extends AbstractMycatResultSetResponse {
             case Types.NUMERIC://MysqlDefs.FIELD_TYPE_DECIMAL n
                 value = convertToInt16((Number) object);
                 break;
-
+            case Types.FLOAT:
             case Types.REAL://MysqlDefs.FIELD_TYPE_FLOAT 4
                 value = convertToFloat32((Number) object);
                 break;

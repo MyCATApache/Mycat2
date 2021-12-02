@@ -1458,10 +1458,27 @@ public class UserCaseTest implements MycatTest {
             deleteData(mycatConnection,"db1","float_test");
             execute(mycatConnection,"\n" +
                     "INSERT INTO `db1`.`float_test`(`value`) VALUES (20.2);\n");
-
+            execute(mycatConnection,"\n" +
+                    "INSERT INTO `db1`.`float_test`(`value`) VALUES (500);\n");
             List<Map<String, Object>> maps = executeQuery(mycatConnection, "select * from db1.float_test;");
-            Assert.assertTrue(maps.toString().contains("20.2"));
-            System.out.println();
+            Assert.assertTrue(maps.toString().equals("[{value=20.2}, {value=500.0}]"));
+        }
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
+            execute(mycatConnection, RESET_CONFIG);
+            addC0(mycatConnection);
+            execute(mycatConnection, "create database db1");
+            execute(mycatConnection,"use db1");
+            execute(mycatConnection,"CREATE TABLE `float_test` (\n" +
+                    "  `value` float DEFAULT '0' \n" +
+                    ") ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;");
+
+            deleteData(mycatConnection,"db1","float_test");
+            execute(mycatConnection,"\n" +
+                    "INSERT INTO `db1`.`float_test`(`value`) VALUES (20.2);\n");
+            execute(mycatConnection,"\n" +
+                    "INSERT INTO `db1`.`float_test`(`value`) VALUES (500);\n");
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, "select * from db1.float_test;");
+            Assert.assertTrue(maps.toString().equals("[{value=20.2}, {value=500.0}]"));
         }
     }
 
@@ -1480,9 +1497,28 @@ public class UserCaseTest implements MycatTest {
             deleteData(mycatConnection,"db1","float_test");
             execute(mycatConnection,"\n" +
                     "INSERT INTO `db1`.`float_test`(`value`) VALUES (20.2);\n");
-
+            execute(mycatConnection,"\n" +
+                    "INSERT INTO `db1`.`float_test`(`value`) VALUES (500);\n");
             List<Map<String, Object>> maps = executeQuery(mycatConnection, "select * from db1.float_test;");
-            Assert.assertTrue(maps.toString().contains("20.2"));
+            Assert.assertTrue(maps.toString().equals("[{value=20.2}, {value=500.0}]"));
+            System.out.println();
+        }
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
+            execute(mycatConnection, RESET_CONFIG);
+            addC0(mycatConnection);
+            execute(mycatConnection, "create database db1");
+            execute(mycatConnection,"use db1");
+            execute(mycatConnection,"CREATE TABLE `float_test` (\n" +
+                    "  `value` float DEFAULT '0' \n" +
+                    ") ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8  dbpartition by mod_hash(value) dbpartitions 16;");
+
+            deleteData(mycatConnection,"db1","float_test");
+            execute(mycatConnection,"\n" +
+                    "INSERT INTO `db1`.`float_test`(`value`) VALUES (20.2);\n");
+            execute(mycatConnection,"\n" +
+                    "INSERT INTO `db1`.`float_test`(`value`) VALUES (500);\n");
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, "select * from db1.float_test;");
+            Assert.assertTrue(maps.toString().equals("[{value=20.2}, {value=500.0}]"));
             System.out.println();
         }
     }
