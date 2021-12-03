@@ -5893,10 +5893,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     @Override public SqlNode visit(SqlIdentifier id) {
       // First check for builtin functions which don't have
       // parentheses, like "LOCALTIME".
-      final SqlCall call = validator.makeNullaryCall(id);
-      if (call != null) {
-        return call.accept(this);
-      }
+//      final SqlCall call = validator.makeNullaryCall(id);
+//      if (call != null) {
+//        return call.accept(this);
+//      }
       final SqlIdentifier fqId = getScope().fullyQualify(id).identifier;
       SqlNode expandedExpr = expandDynamicStar(id, fqId);
       validator.setOriginal(expandedExpr, id);

@@ -1522,4 +1522,35 @@ public class UserCaseTest implements MycatTest {
             System.out.println();
         }
     }
+
+    @Test
+    public void case611() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
+            execute(mycatConnection, RESET_CONFIG);
+            addC0(mycatConnection);
+            execute(mycatConnection, "create database db1");
+            execute(mycatConnection,"use db1");
+            execute(mycatConnection,"CREATE TABLE `tag` (\n" +
+                    "  `id` bigint(20) NOT NULL,\n" +
+                    "  `name` varchar(255) DEFAULT NULL,\n" +
+                    "  `description` varchar(255) DEFAULT NULL,\n" +
+                    "  `projectid` bigint(20) DEFAULT NULL,\n" +
+                    "  `masterid` bigint(20) DEFAULT NULL,\n" +
+                    "  `appid` varchar(255) DEFAULT NULL,\n" +
+                    "  `user` varchar(255) DEFAULT NULL,\n" +
+                    "  `tag` varchar(255) DEFAULT NULL,\n" +
+                    "  `ct` datetime(6) DEFAULT NULL,\n" +
+                    "  `ut` datetime(6) DEFAULT NULL,\n" +
+                    "  `deleted` tinyint(1) DEFAULT NULL,\n" +
+                    "  `userid` int(11) DEFAULT NULL,\n" +
+                    "  PRIMARY KEY (`id`) USING BTREE\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPACT  dbpartition by mod_hash(projectid) dbpartitions 16;");
+
+            deleteData(mycatConnection,"db1","tag");
+            execute(mycatConnection,"\n" +
+                    "INSERT INTO `db1`.`tag`(`id`,`user`,projectid,masterid) VALUES (20,'`````````',1,33538260487639040);\n");
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, "SELECT `id`,`name`,`description`,`projectid`,`masterid`,`appid`,`user`,`userid`,`tag`,`ct`,`ut`,`deleted` FROM `tag` WHERE `masterid`= 33538260487639040 ORDER BY `ct` DESC;");
+            Assert.assertTrue(maps.toString().contains("`````````"));
+        }
+    }
 }
