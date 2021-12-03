@@ -131,6 +131,9 @@ public class MycatViewIndexViewRule extends RelRule<MycatViewIndexViewRule.Confi
         default MycatViewIndexViewRule.Config withOperandFor() {
             return withOperandSupplier(b0 ->
                     b0.operand(MycatView.class).predicate(mycatView -> {
+                        if (!mycatView.allowPushdown()){
+                            return false;
+                        }
                         List<ShardingTable> shardingTables = mycatView.getDistribution().getShardingTables();
                         if (!shardingTables.isEmpty()) {
                             if (!shardingTables.get(0).getIndexTables().isEmpty()) {

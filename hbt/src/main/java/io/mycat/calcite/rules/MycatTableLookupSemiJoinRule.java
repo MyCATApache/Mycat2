@@ -178,7 +178,7 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
         MycatTableLookupSemiJoinRule.Config DEFAULT = EMPTY
                 .as(MycatTableLookupSemiJoinRule.Config.class)
                 .withOperandFor(b0 ->
-                        b0.operand(Join.class).inputs(b1 -> b1.operand(RelNode.class).anyInputs(), b1 -> b1.operand(MycatView.class).noInputs()))
+                        b0.operand(Join.class).inputs(b1 -> b1.operand(RelNode.class).anyInputs(), b1 -> b1.operand(MycatView.class).predicate(m->((MycatView)m).allowPushdown()).noInputs()))
                 .withDescription("MycatTableLookupSemiJoinRule")
                 .as(MycatTableLookupSemiJoinRule.Config.class);
 

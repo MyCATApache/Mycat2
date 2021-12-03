@@ -104,7 +104,7 @@ public class MycatValuesJoinRule extends RelRule<MycatValuesJoinRule.Config> {
         MycatValuesJoinRule.Config DEFAULT = EMPTY
                 .as(MycatValuesJoinRule.Config.class)
                 .withOperandFor(b0 ->
-                        b0.operand(Join.class).inputs(b1 -> b1.operand(MycatRel.class).anyInputs(), b1 -> b1.operand(MycatView.class).noInputs()))
+                        b0.operand(Join.class).inputs(b1 -> b1.operand(MycatRel.class).anyInputs(), b1 -> b1.operand(MycatView.class).predicate(m->((MycatView)m).allowPushdown()).noInputs()))
                 .withDescription("MycatValuesJoinRule")
                 .as(MycatValuesJoinRule.Config.class);
 

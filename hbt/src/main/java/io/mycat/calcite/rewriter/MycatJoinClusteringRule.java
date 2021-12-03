@@ -52,8 +52,8 @@ public class MycatJoinClusteringRule extends RelRule<MycatJoinClusteringRule.Con
         default MycatJoinClusteringRule.Config withOperandFor(Class<? extends Join> joinClass) {
             return withOperandSupplier(b0 ->
                     b0.operand(joinClass).inputs(
-                            b2 -> b2.operand(MycatView.class).anyInputs(),
-                            b3 -> b3.operand(MycatView.class).anyInputs()))
+                            b2 -> b2.operand(MycatView.class).predicate(m->m.allowPushdown()).anyInputs(),
+                            b3 -> b3.operand(MycatView.class).predicate(m->m.allowPushdown()).anyInputs()))
                     .as(MycatJoinClusteringRule.Config.class);
         }
     }

@@ -84,7 +84,7 @@ public class MycatTableLookupCombineRule extends RelRule<MycatTableLookupCombine
                 .withOperandFor(b0 ->
                         b0.operand(Join.class).inputs(b1 -> b1.operand(MycatSQLTableLookup.class)
                                         .predicate(i -> i.getType() == MycatSQLTableLookup.Type.NONE).anyInputs(),
-                                b1 -> b1.operand(MycatView.class).noInputs()))
+                                b1 -> b1.operand(MycatView.class).predicate(m->((MycatView)m).allowPushdown()).noInputs()))
                 .withDescription("MycatTableLookupCombineRule")
                 .as(MycatTableLookupCombineRule.Config.class);
 

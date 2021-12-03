@@ -57,7 +57,7 @@ public abstract class MycatSingleViewRule extends RelRule<MycatSingleViewRule.Co
     public interface Config extends RelRule.Config {
         default MycatSingleViewRule.Config withOperandFor(Class<? extends SingleRel> up) {
             return withOperandSupplier(b0 ->
-                    b0.operand(up).oneInput(b1 -> b1.operand(MycatView.class).noInputs()))
+                    b0.operand(up).oneInput(b1 -> b1.operand(MycatView.class).predicate(m->m.allowPushdown()).noInputs()))
                     .withDescription("MycatSingleViewRule_" + up.getName())
                     .as(MycatSingleViewRule.Config.class);
         }

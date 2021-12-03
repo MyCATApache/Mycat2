@@ -30,7 +30,6 @@ import io.mycat.calcite.rewriter.IndexCondition;
 import io.mycat.calcite.rewriter.PredicateAnalyzer;
 import io.mycat.calcite.spm.ParamHolder;
 import io.mycat.calcite.table.*;
-import io.mycat.config.ServerConfig;
 import io.mycat.querycondition.QueryType;
 import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.DataContext;
@@ -68,7 +67,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -871,10 +869,10 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         return relNode.getMycatRelDataType();
     }
 
-    public boolean canNotPushdown() {
+    public boolean banPushdown() {
         return isMergeAgg() || isMergeSort();
     }
     public boolean allowPushdown() {
-        return !canNotPushdown();
+        return !banPushdown();
     }
 }

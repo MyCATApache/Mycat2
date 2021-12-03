@@ -104,13 +104,13 @@ public class MycatJoinTableLookupTransposeRule extends RelRule<MycatJoinTableLoo
         MycatJoinTableLookupTransposeRule.Config DEFAULT_LEFT = EMPTY
                 .as(MycatJoinTableLookupTransposeRule.Config.class)
                 .withOperandFor(b0 ->
-                        b0.operand(Join.class).inputs(b1 -> b1.operand(MycatSQLTableLookup.class).anyInputs(), b1 -> b1.operand(MycatView.class).noInputs()))
+                        b0.operand(Join.class).inputs(b1 -> b1.operand(MycatSQLTableLookup.class).anyInputs(), b1 -> b1.operand(MycatView.class).predicate(m->((MycatView)m).allowPushdown()).noInputs()))
                 .withDescription("MycatJoinTableLookupLeftTransposeRule")
                 .as(MycatJoinTableLookupTransposeRule.Config.class);
         MycatJoinTableLookupTransposeRule.Config DEFAULT_RIGHT = EMPTY
                 .as(MycatJoinTableLookupTransposeRule.Config.class)
                 .withOperandFor(b0 ->
-                        b0.operand(Join.class).inputs(b1 -> b1.operand(MycatView.class).noInputs(), b1 -> b1.operand(MycatSQLTableLookup.class).anyInputs()))
+                        b0.operand(Join.class).inputs(b1 -> b1.operand(MycatView.class).predicate(m->((MycatView)m).allowPushdown()).noInputs(), b1 -> b1.operand(MycatSQLTableLookup.class).anyInputs()))
                 .withDescription("MycatJoinTableLookupRightTransposeRule")
                 .as(MycatJoinTableLookupTransposeRule.Config.class);
 

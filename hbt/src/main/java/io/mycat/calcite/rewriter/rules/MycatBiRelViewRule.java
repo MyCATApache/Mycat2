@@ -34,7 +34,7 @@ public abstract class MycatBiRelViewRule extends RelRule<MycatBiRelViewRule.Conf
         default MycatBiRelViewRule.Config withOperandFor(Class<? extends BiRel> up) {
             return withOperandSupplier(b0 ->
                     b0.operand(up).inputs(b1 -> b1.operand(MycatView.class).noInputs(),
-                            b1 -> b1.operand(MycatView.class).anyInputs()))
+                            b1 -> b1.operand(MycatView.class).predicate(m->m.allowPushdown()).anyInputs()))
                     .withDescription("MycatBiRelViewRule_" + up.getName())
                     .as(MycatBiRelViewRule.Config.class);
         }

@@ -63,8 +63,8 @@ public  class MycatProjectJoinClusteringRule extends RelRule<MycatProjectJoinClu
                 return withOperandSupplier(b0 ->
                         b0.operand(LogicalProject.class)
                                 .oneInput(j->j.operand(joinClass).inputs(
-                                        b1 -> b1.operand(MycatView.class).anyInputs(),
-                                        b2 -> b2.operand(MycatView.class).anyInputs())))
+                                        b1 -> b1.operand(MycatView.class).predicate(m->m.allowPushdown()).anyInputs(),
+                                        b2 -> b2.operand(MycatView.class).predicate(m->m.allowPushdown()).anyInputs())))
                         .as(MycatProjectJoinClusteringRule.Config.class);
             }
         }

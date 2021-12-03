@@ -111,13 +111,13 @@ public class MycatExtraSortRule extends RelRule<MycatExtraSortRule.Config> {
                             .as(MycatExtraSortRule.Config.class)
                             .withOperandFor(b0 -> b0.operand(up).inputs(b1 -> {
                                 if (ln == MycatView.class){
-                                    return b1.operand(ln).noInputs();
+                                    return b1.operand(ln).predicate(m->((MycatView)m).allowPushdown()).noInputs();
                                 }else {
                                     return b1.operand(ln).anyInputs();
                                 }
                             }, b1 -> {
                                 if (rn == MycatView.class){
-                                    return b1.operand(rn).noInputs();
+                                    return b1.operand(rn).predicate(m->((MycatView)m).allowPushdown()).noInputs();
                                 }else {
                                     return b1.operand(rn).anyInputs();
                                 }

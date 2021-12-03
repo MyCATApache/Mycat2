@@ -98,7 +98,7 @@ public class MycatAggDistinctRule extends RelRule<MycatAggDistinctRule.Config> {
             return withOperandSupplier(b0 ->
                     b0.operand(Aggregate.class)
                             .oneInput(i -> i.operand(Aggregate.class).predicate(rel -> rel.getAggCallList().isEmpty() && !rel.getGroupSet().isEmpty())
-                                    .oneInput(j -> j.operand(MycatView.class).predicate(rel -> rel.isMergeAgg()).noInputs())))
+                                    .oneInput(j -> j.operand(MycatView.class).predicate(rel -> rel.allowPushdown()).noInputs())))
                     .withDescription("MycatAggDistinctRule")
                     .as(MycatAggDistinctRule.Config.class);
         }
