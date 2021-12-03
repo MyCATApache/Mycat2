@@ -34,6 +34,7 @@ public class MySQLVersion {
     public static byte[] SERVER_VERSION = SERVER_VERSION_STRING.getBytes();
 
     public static void setServerVersion(String version) {
+        SERVER_VERSION_STRING = version;
         SERVER_VERSION = version.getBytes();
     }
 }
