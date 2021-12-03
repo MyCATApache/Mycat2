@@ -243,7 +243,8 @@ public class LocalRules {
                 return withOperandSupplier(b0 ->
                         b0.operand(Project.class)
                                 .oneInput(b1 -> b1.operand(MycatView.class)
-                                        .predicate(m -> m.allowPushdown()).noInputs()))
+//                                        .predicate(m -> !m.isMergeSort())
+                                        .noInputs()))
                         .withDescription("ProjectViewRule")
                         .as(ProjectViewRule.Config.class);
             }

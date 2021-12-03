@@ -457,7 +457,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         if (input instanceof MycatView) {
             dataNodeInfo = ((MycatView) input).getDistribution();
             view = (MycatView) original;
-            if (view.banPushdown()){
+            if (view.banPushdown()) {
                 return Optional.empty();
             }
             input = ((MycatView) input).getRelNode();
@@ -538,7 +538,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         if (input instanceof MycatView) {
             dataNodeInfo = ((MycatView) input).getDistribution();
             view = (MycatView) original;
-            if (view.banPushdown()){
+            if (view.banPushdown()) {
                 return Optional.empty();
             }
             input = ((MycatView) input).getRelNode();
@@ -620,7 +620,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                         aggregate.getGroupSets(),
                         aggregateContext.getPartialAggregateCallList()));
 
-        Aggregate globalAggregateRelNode = aggregate.copy(aggregate.getTraitSet(), newView,
+        LogicalAggregate globalAggregateRelNode = LogicalAggregate.create(newView,aggregate.getHints(),
                 aggregate.getGroupSet(),
                 aggregate.getGroupSets(),
                 aggregateContext.getGlobalAggregateCallList());
@@ -1231,11 +1231,10 @@ public class SQLRBORewriter extends RelShuttleImpl {
         if (input instanceof MycatView) {
             dataNodeInfo = ((MycatView) input).getDistribution();
             mycatView = (MycatView) original;
-            if (mycatView.banPushdown()) {
+            input = ((MycatView) input).getRelNode();
+            if (mycatView.banPushdown() && !(input instanceof Aggregate)) {
                 return Optional.empty();
             }
-            input = ((MycatView) input).getRelNode();
-
             if (project.containsOver()) {
                 if (dataNodeInfo.type() == Distribution.Type.PHY || (dataNodeInfo.type() == Distribution.Type.BROADCAST)) {
                     input = project.copy(project.getTraitSet(), ImmutableList.of(input));

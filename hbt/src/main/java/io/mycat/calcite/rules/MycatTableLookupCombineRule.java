@@ -36,7 +36,7 @@ public class MycatTableLookupCombineRule extends RelRule<MycatTableLookupCombine
         }
         MycatView inneRightMycatView = (MycatView) left.getRight();
         MycatView outerRightmycatView = (MycatView) right;
-        if (outerRightmycatView.isMergeSort() || outerRightmycatView.isMergeAgg()) {
+        if (outerRightmycatView.banPushdown()) {
             return;
         }
         JoinRelType joinType = join.getJoinType();

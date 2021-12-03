@@ -98,7 +98,7 @@ public class DrdsSqlCompiler {
     public static boolean RBO_MERGE_JOIN = true;
     public static boolean RBO_BKA_JOIN = true;
     public static long BKA_JOIN_LEFT_ROW_COUNT_LIMIT = 1000;
-    public static boolean DEBUG = false;
+    public static boolean DEBUG = log.isDebugEnabled();
     public DrdsSqlCompiler(DrdsConst config) {
         this.config = config;
 

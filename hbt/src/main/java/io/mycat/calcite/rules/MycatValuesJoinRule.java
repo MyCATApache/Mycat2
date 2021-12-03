@@ -56,7 +56,7 @@ public class MycatValuesJoinRule extends RelRule<MycatValuesJoinRule.Config> {
             return;
         }
         MycatView mycatView = (MycatView) right;
-        if (mycatView.isMergeSort() || mycatView.isMergeAgg()) {
+        if (mycatView.banPushdown()) {
             return;
         }
         JoinRelType joinType = join.getJoinType();

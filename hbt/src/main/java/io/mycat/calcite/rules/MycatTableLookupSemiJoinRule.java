@@ -72,7 +72,7 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
             return;
         }
         MycatView mycatView = (MycatView) right;
-        if (mycatView.isMergeSort() || mycatView.isMergeAgg()) {
+        if (mycatView.banPushdown()) {
             return;
         }
         JoinRelType joinType = join.getJoinType();
