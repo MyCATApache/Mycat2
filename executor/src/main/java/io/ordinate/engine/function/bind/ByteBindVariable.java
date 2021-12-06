@@ -48,7 +48,7 @@ import io.ordinate.engine.record.Record;
 import java.util.Collections;
 import java.util.List;
 
-public class ByteBindVariable extends ByteFunction implements ScalarFunction {
+public class ByteBindVariable extends ByteFunction implements ScalarFunction , BindVariable {
     byte value;
     boolean isNull;
     @Override
@@ -64,5 +64,17 @@ public class ByteBindVariable extends ByteFunction implements ScalarFunction {
     @Override
     public boolean isNull(Record rec) {
         return isNull;
+    }
+
+    @Override
+    public void setObject(Object o) {
+        if (o == null) {
+            isNull = true;
+            return;
+        }if (o instanceof Number) {
+            value = ((Number) o).byteValue();
+        }else {
+            throw new UnsupportedOperationException();
+        }
     }
 }

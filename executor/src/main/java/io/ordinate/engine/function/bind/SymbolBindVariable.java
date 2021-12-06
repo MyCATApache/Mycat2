@@ -48,7 +48,7 @@ import io.ordinate.engine.function.ScalarFunction;
 import java.util.Collections;
 import java.util.List;
 
-public class SymbolBindVariable extends SymbolFunction implements ScalarFunction {
+public class SymbolBindVariable extends SymbolFunction implements ScalarFunction , BindVariable {
     String value;
     boolean isNull;
     @Override
@@ -69,5 +69,19 @@ public class SymbolBindVariable extends SymbolFunction implements ScalarFunction
     @Override
     public boolean isNull(Record rec) {
         return isNull;
+    }
+
+    @Override
+    public void setObject(Object o) {
+        if (o == null) {
+            isNull = true;
+            return;
+        }else if (o instanceof CharSequence) {
+            value = o.toString();
+        }else if (o instanceof byte[]) {
+            value = new String((byte[])o);
+        }else {
+            throw new UnsupportedOperationException();
+        }
     }
 }

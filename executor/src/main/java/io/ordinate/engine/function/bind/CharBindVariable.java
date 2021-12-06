@@ -48,7 +48,7 @@ import io.ordinate.engine.record.Record;
 import java.util.Collections;
 import java.util.List;
 
-public class CharBindVariable extends CharFunction implements ScalarFunction {
+public class CharBindVariable extends CharFunction implements ScalarFunction , BindVariable {
     char value;
     boolean isNull;
     @Override
@@ -64,5 +64,19 @@ public class CharBindVariable extends CharFunction implements ScalarFunction {
     @Override
     public boolean isNull(Record rec) {
         return isNull;
+    }
+
+    @Override
+    public void setObject(Object o) {
+        if (o == null) {
+            isNull = true;
+            return;
+        } else if (o instanceof Character) {
+            value =(char) ((Character) o);
+        }else if (o instanceof Number) {
+            value =(char) ((Number) o).shortValue();
+        }else {
+            throw new UnsupportedOperationException();
+        }
     }
 }

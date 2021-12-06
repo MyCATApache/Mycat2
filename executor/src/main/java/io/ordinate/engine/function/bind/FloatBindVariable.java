@@ -48,7 +48,7 @@ import io.ordinate.engine.record.Record;
 import java.util.Collections;
 import java.util.List;
 
-public class FloatBindVariable extends FloatFunction implements ScalarFunction {
+public class FloatBindVariable extends FloatFunction implements ScalarFunction , BindVariable {
     float value;
     boolean isNull;
     @Override
@@ -65,4 +65,16 @@ public class FloatBindVariable extends FloatFunction implements ScalarFunction {
     public boolean isNull(Record rec) {
         return isNull;
     }
+    @Override
+    public void setObject(Object o) {
+        if (o == null) {
+            isNull = true;
+            return;
+        }else if (o instanceof Number) {
+            value = ((Number) o).floatValue();
+        }else {
+            throw new UnsupportedOperationException();
+        }
+    }
+
 }

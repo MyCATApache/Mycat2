@@ -49,9 +49,10 @@ import io.ordinate.engine.function.Function;
 import java.util.Collections;
 import java.util.List;
 
-public class BinaryBindVariable extends BinarySequenceFunction implements ScalarFunction {
+public class BinaryBindVariable extends BinarySequenceFunction implements ScalarFunction, BindVariable {
     BinarySequence value;
     boolean isNull;
+
     @Override
     public List<Function> getArgs() {
         return Collections.emptyList();
@@ -70,5 +71,17 @@ public class BinaryBindVariable extends BinarySequenceFunction implements Scalar
     @Override
     public boolean isNull(Record rec) {
         return isNull;
+    }
+
+    @Override
+    public void setObject(Object o) {
+        if (o == null) {
+            isNull = true;
+            return;
+        }else if (o instanceof byte[]) {
+            value = BinarySequence.of((byte[]) o);
+        }else {
+            throw new UnsupportedOperationException();
+        }
     }
 }

@@ -45,10 +45,14 @@ import io.ordinate.engine.function.Function;
 import io.ordinate.engine.record.Record;
 import io.ordinate.engine.function.DatetimeFunction;
 
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
-public class TimestampBindVariable extends DatetimeFunction implements ScalarFunction {
+public class TimestampBindVariable extends DatetimeFunction implements ScalarFunction, BindVariable  {
     long value;
     boolean isNull;
     @Override
@@ -65,4 +69,19 @@ public class TimestampBindVariable extends DatetimeFunction implements ScalarFun
     public boolean isNull(Record rec) {
         return isNull;
     }
+
+    @Override
+    public void setObject(Object o) {
+        if (o == null) {
+            isNull = true;
+            return;
+        }else if (o instanceof LocalDateTime) {
+            o = java.sql.Timestamp.valueOf((LocalDateTime)o);
+        } else if (o instanceof Timestamp) {
+            value = ((Timestamp) o).getTime();
+        }else {
+            throw new UnsupportedOperationException();
+        }
+    }
+
 }

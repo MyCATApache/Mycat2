@@ -48,7 +48,7 @@ import io.ordinate.engine.record.Record;
 import java.util.Collections;
 import java.util.List;
 
-public class DoubleBindVariable extends DoubleFunction implements ScalarFunction {
+public class DoubleBindVariable extends DoubleFunction implements ScalarFunction , BindVariable {
     double value;
     boolean isNull;
 
@@ -65,5 +65,17 @@ public class DoubleBindVariable extends DoubleFunction implements ScalarFunction
     @Override
     public boolean isNull(Record rec) {
         return isNull;
+    }
+
+    @Override
+    public void setObject(Object o) {
+        if (o == null) {
+            isNull = true;
+            return;
+        }else if (o instanceof Number) {
+            value =(char) ((Number) o).doubleValue();
+        }else {
+            throw new UnsupportedOperationException();
+        }
     }
 }

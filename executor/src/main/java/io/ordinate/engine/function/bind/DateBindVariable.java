@@ -48,7 +48,7 @@ import io.ordinate.engine.record.Record;
 import java.util.Collections;
 import java.util.List;
 
-public class DateBindVariable extends DateFunction implements ScalarFunction {
+public class DateBindVariable extends DateFunction implements ScalarFunction, BindVariable  {
     long value;
     boolean isNull;
     @Override
@@ -64,5 +64,17 @@ public class DateBindVariable extends DateFunction implements ScalarFunction {
     @Override
     public boolean isNull(Record rec) {
         return isNull;
+    }
+
+    @Override
+    public void setObject(Object o) {
+        if (o == null) {
+            isNull = true;
+            return;
+        }else if (o instanceof Number) {
+            value = ((Number) o).longValue();
+        }else {
+            throw new UnsupportedOperationException();
+        }
     }
 }

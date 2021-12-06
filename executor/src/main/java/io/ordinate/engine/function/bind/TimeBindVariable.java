@@ -45,10 +45,12 @@ import io.ordinate.engine.function.TimeFunction;
 import io.ordinate.engine.record.Record;
 import io.ordinate.engine.function.ScalarFunction;
 
+import java.time.LocalDate;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
-public class TimeBindVariable extends TimeFunction implements ScalarFunction {
+public class TimeBindVariable extends TimeFunction implements ScalarFunction , BindVariable {
     long value;
     boolean isNull;
     @Override
@@ -64,5 +66,19 @@ public class TimeBindVariable extends TimeFunction implements ScalarFunction {
     @Override
     public boolean isNull(Record rec) {
         return isNull;
+    }
+
+    @Override
+    public void setObject(Object o) {
+        if (o == null) {
+            isNull = true;
+            return;
+        }else if (o instanceof LocalDate) {
+            o = java.sql.Date.valueOf((LocalDate)o);
+        }else if (o instanceof Date) {
+            value = ((Date) o).getTime();
+        }else {
+            throw new UnsupportedOperationException();
+        }
     }
 }

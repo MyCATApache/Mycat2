@@ -51,7 +51,7 @@ import java.util.Collections;
 import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
-public class IntBindVariable extends IntFunction implements ScalarFunction {
+public class IntBindVariable extends IntFunction implements ScalarFunction, BindVariable  {
    public int value;
     boolean isNull;
     @Override
@@ -67,5 +67,17 @@ public class IntBindVariable extends IntFunction implements ScalarFunction {
     @Override
     public boolean isNull(Record rec) {
         return isNull;
+    }
+
+    @Override
+    public void setObject(Object o) {
+        if (o == null) {
+            isNull = true;
+            return;
+        }else if (o instanceof Number) {
+            value = ((Number) o).intValue();
+        }else {
+            throw new UnsupportedOperationException();
+        }
     }
 }

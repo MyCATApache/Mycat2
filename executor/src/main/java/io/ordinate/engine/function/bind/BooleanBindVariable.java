@@ -40,6 +40,7 @@
 
 package io.ordinate.engine.function.bind;
 
+import io.ordinate.engine.function.BinarySequence;
 import io.ordinate.engine.function.ScalarFunction;
 import io.ordinate.engine.function.Function;
 import io.ordinate.engine.record.Record;
@@ -48,7 +49,7 @@ import io.ordinate.engine.function.BooleanFunction;
 import java.util.Collections;
 import java.util.List;
 
-public class BooleanBindVariable extends BooleanFunction implements ScalarFunction {
+public class BooleanBindVariable extends BooleanFunction implements ScalarFunction, BindVariable  {
    int value;
     boolean isNull;
     @Override
@@ -64,5 +65,21 @@ public class BooleanBindVariable extends BooleanFunction implements ScalarFuncti
     @Override
     public boolean isNull(Record rec) {
         return isNull;
+    }
+
+    @Override
+    public void setObject(Object o) {
+        if (o == null) {
+            isNull = true;
+            return;
+        }
+        if (o instanceof Number) {
+            value = ((Number) o).intValue();
+        }else if (o instanceof Boolean) {
+            value = (Boolean) o ?1:0;
+        }else {
+            throw new UnsupportedOperationException();
+
+        }
     }
 }
