@@ -21,6 +21,7 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.resultset.ResultSetWriter;
 import io.mycat.beans.resultset.SimpleBinaryWriterImpl;
 import io.mycat.beans.resultset.SimpleTextWriterImpl;
+import io.mycat.calcite.PrepareExecutor;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.newquery.RowSet;
 import io.mycat.newquery.SqlResult;
@@ -353,23 +354,17 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public Future<Void> sendVectorResultSet(Observable<VectorSchemaRoot> rootObservable) {
-        Observable<MysqlPayloadObject> mysqlPacketObservable = rootObservable.flatMap(new io.reactivex.rxjava3.functions.Function<VectorSchemaRoot, ObservableSource<? extends MysqlPayloadObject>>() {
-
+    public Future<Void> sendVectorResultSet(PrepareExecutor.ArrowObservable rootObservable) {
+        MycatRowMetaData mycatRowMetaData = rootObservable.getMycatRowMetaData();
+        class Writer implements io.reactivex.rxjava3.functions.Function<VectorSchemaRoot, ObservableSource<? extends MysqlPayloadObject>> {
             InnerType[] types = null;
 
             @Override
             public ObservableSource<? extends MysqlPayloadObject> apply(VectorSchemaRoot vectorRowBatch) throws Throwable {
                 int rowCount = vectorRowBatch.getRowCount();
-                ArrayList<MysqlPayloadObject> objects;
+                ArrayList<MysqlPayloadObject> objects = new ArrayList<>(rowCount);
                 if (types == null) {
                     types = SchemaBuilder.getInnerTypes(vectorRowBatch);
-                    MycatRowMetaData rowMetaData = ResultWriterUtil.vectorRowBatchToResultSetColumn(vectorRowBatch.getSchema());
-                    MySQLColumnDef mySQLColumnDef = MySQLColumnDef.of(rowMetaData);
-                    objects = new ArrayList<>(rowCount + 1);
-                    objects.add(mySQLColumnDef);
-                } else {
-                    objects = new ArrayList<>(rowCount);
                 }
                 for (int rowId = 0; rowId < rowCount; rowId++) {
                     ResultSetWriter newWriter = binary ? new SimpleBinaryWriterImpl() : new SimpleTextWriterImpl();
@@ -378,13 +373,16 @@ public class ReceiverImpl implements Response {
                 }
                 return Observable.fromIterable(objects);
             }
-        });
+        };
+        Writer writer = new Writer();
+        Observable<MysqlPayloadObject> mysqlPacketObservable = Observable.concat(Observable.fromArray(MySQLColumnDef.of(mycatRowMetaData)), rootObservable.getObservable().flatMap(writer));
         return sendResultSet(mysqlPacketObservable);
     }
 
+
     @Override
     public Future<Void> proxyProcedure(String sql, String targetName) {
-         targetName = dataContext.resolveDatasourceTargetName(targetName, true);
+        targetName = dataContext.resolveDatasourceTargetName(targetName, true);
         XaSqlConnection transactionSession = (XaSqlConnection) dataContext.getTransactionSession();
         Future<NewMycatConnection> mySQLManagerConnection = transactionSession.getConnection(targetName);
         Future<List<Object>> objectFuture = mySQLManagerConnection.flatMap(newMycatConnection -> {
