@@ -458,7 +458,7 @@ public class MysqlMetadataManager extends MetadataManager {
         createEVENTSTableSQL.addColumn("TABLE_TYPE", "varchar(64)");
         createEVENTSTableSQL.addColumn("ENGINE", "varchar(64)");
         createEVENTSTableSQL.addColumn("VERSION", "bigint(21)");
-        createEVENTSTableSQL.addColumn("ROW_FORMAT", "bigint(18)");
+        createEVENTSTableSQL.addColumn("ROW_FORMAT", "varchar(64)");
         createEVENTSTableSQL.addColumn("TABLE_ROWS", "bigint(21)");
         createEVENTSTableSQL.addColumn("AVG_ROW_LENGTH", "bigint(21)");
         createEVENTSTableSQL.addColumn("DATA_LENGTH", "bigint(21)");
