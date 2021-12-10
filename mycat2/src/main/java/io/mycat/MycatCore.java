@@ -73,7 +73,7 @@ public class MycatCore {
             Class.forName("com.alibaba.druid.sql.visitor.SQLASTOutputVisitor", initialize, classLoader);
             Class.forName("com.alibaba.druid.sql.parser.SQLExprParser", initialize, classLoader);
             Class.forName("org.apache.calcite.rel.core.Project", initialize, classLoader);
-            Class.forName("oshi.util.platform.windows.PerfCounterQuery", initialize, classLoader);
+            //Class.forName("oshi.util.platform.windows.PerfCounterQuery", initialize, classLoader);
             Class.forName("io.mycat.datasource.jdbc.datasource.JdbcConnectionManager", initialize, classLoader);
             Class.forName("org.apache.calcite.sql.SqlUtil", initialize, classLoader);
             Class.forName("org.apache.calcite.plan.RelOptUtil", initialize, classLoader);
