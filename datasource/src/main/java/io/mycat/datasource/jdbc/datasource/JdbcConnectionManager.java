@@ -197,7 +197,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                 IOExecutor vertx = MetaClusterCurrent.wrapper(IOExecutor.class);
                 vertx.executeBlocking(promise -> {
                     try {
-                       // heartbeat(heartBeatStrategy);
+                        heartbeat(heartBeatStrategy);
                     } catch (Exception e) {
                         heartBeatStrategy.onException(e);
                     } finally {

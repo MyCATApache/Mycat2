@@ -30,6 +30,7 @@ public class MHAHeartBeatStrategy extends HeartBeatStrategy {
     public static String READ_ONLY_SQL =
             "SELECT TRUE AS `READ_ONLY` FROM performance_schema.global_variables WHERE variable_name IN ('read_only', 'super_read_only') AND VARIABLE_VALUE = 'ON' LIMIT 1) ";
     public static final String MASTER_SLAVE_HEARTBEAT_SQL = "show slave status";
+
     public List<String> getSqls() {
         return Arrays.asList(
                 READ_ONLY_SQL,
@@ -38,12 +39,12 @@ public class MHAHeartBeatStrategy extends HeartBeatStrategy {
     }
 
     @Override
-    public void process(List<List<Map<String, Object>>> resultList,boolean readonly) {
+    public void process(List<List<Map<String, Object>>> resultList, boolean readonly) {
         DatasourceStatus datasourceStatus = new DatasourceStatus();
-        boolean master = !("1".equalsIgnoreCase(Objects.toString(  resultList.get(0).get(0).getOrDefault("READ_ONLY", null))));
+        boolean master = !readonly && !("1".equalsIgnoreCase(Objects.toString(resultList.get(0).get(0).getOrDefault("READ_ONLY", null))));
         if (!resultList.isEmpty()) {
             List<Map<String, Object>> result = resultList.get(1);
-            if (!result.isEmpty()){
+            if (!result.isEmpty()) {
                 Map<String, Object> resultResult = result.get(0);
                 String Slave_IO_Running =
                         resultResult != null ? (String) resultResult.get("Slave_IO_Running") : null;
@@ -76,7 +77,7 @@ public class MHAHeartBeatStrategy extends HeartBeatStrategy {
 
     @Override
     public void onException(Throwable e) {
-        heartbeatFlow.setStatus(new DatasourceStatus(),DatasourceEnum.ERROR_STATUS);
+        heartbeatFlow.setStatus(new DatasourceStatus(), DatasourceEnum.ERROR_STATUS);
     }
 
     public MHAHeartBeatStrategy() {

@@ -41,12 +41,12 @@ public class MySQLMasterSlaveBeatStrategy extends HeartBeatStrategy {
         return Collections.singletonList(GlobalConst.MASTER_SLAVE_HEARTBEAT_SQL);
     }
 
-    public void process(List<List<Map<String, Object>>> resultList,boolean readonly) {
+    public void process(List<List<Map<String, Object>>> resultList, boolean readonly) {
         DatasourceStatus datasourceStatus = new DatasourceStatus();
 
         datasourceStatus.setMaster(heartbeatFlow.getInstance().isMaster());
 
-        if (this.heartbeatFlow.getInstance().isMaster()) {
+        if (this.heartbeatFlow.getInstance().isMaster() && !readonly) {
             if (resultList.size() > 0) {
                 datasourceStatus.setDbSynStatus(DbSynEnum.DB_SYN_NORMAL);
                 heartbeatFlow.setStatus(datasourceStatus, DatasourceEnum.OK_STATUS);
@@ -55,7 +55,7 @@ public class MySQLMasterSlaveBeatStrategy extends HeartBeatStrategy {
         }
         if (!resultList.isEmpty()) {
             List<Map<String, Object>> result = resultList.get(0);
-            if (!result.isEmpty()){
+            if (!result.isEmpty()) {
                 Map<String, Object> resultResult = result.get(0);
                 String Slave_IO_Running =
                         resultResult != null ? (String) resultResult.get("Slave_IO_Running") : null;
@@ -87,7 +87,7 @@ public class MySQLMasterSlaveBeatStrategy extends HeartBeatStrategy {
 
     @Override
     public void onException(Throwable e) {
-        heartbeatFlow.setStatus(new DatasourceStatus(),DatasourceEnum.ERROR_STATUS);
+        heartbeatFlow.setStatus(new DatasourceStatus(), DatasourceEnum.ERROR_STATUS);
     }
 
     public MySQLMasterSlaveBeatStrategy() {
