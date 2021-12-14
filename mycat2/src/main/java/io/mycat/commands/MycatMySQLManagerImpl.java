@@ -16,6 +16,7 @@
  */
 package io.mycat.commands;
 
+import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.NativeMycatServer;
 import io.mycat.config.DatasourceConfig;
@@ -116,6 +117,10 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
                         .orElse(InstanceType.READ_WRITE)
                         .isWriteType()) {
                     Connection connection = jdbcDataSource.getDataSource().getConnection();
+                    if (connection.isReadOnly()){
+                        JdbcUtils.close(connection);
+                        continue;
+                    }
                     map.put(string, connection);
                 }
             }
