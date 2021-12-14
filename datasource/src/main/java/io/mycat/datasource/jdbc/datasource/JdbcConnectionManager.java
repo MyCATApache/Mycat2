@@ -208,8 +208,10 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
 
             private void heartbeat(HeartBeatStrategy heartBeatStrategy) {
                 DefaultConnection connection = null;
+                boolean readOnly = false;
                 try {
                     connection = getConnection(datasource);
+                    readOnly = connection.connection.isReadOnly();
                     ArrayList<List<Map<String, Object>>> resultList = new ArrayList<>();
                     List<String> sqls = heartBeatStrategy.getSqls();
                     for (String sql : sqls) {
@@ -222,7 +224,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                             return;
                         }
                     }
-                    heartBeatStrategy.process(resultList);
+                    heartBeatStrategy.process(resultList,readOnly);
                 } catch (Throwable e) {
                     heartBeatStrategy.onException(e);
                     LOGGER.error("", e);

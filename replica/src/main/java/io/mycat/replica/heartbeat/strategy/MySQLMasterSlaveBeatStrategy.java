@@ -41,7 +41,7 @@ public class MySQLMasterSlaveBeatStrategy extends HeartBeatStrategy {
         return Collections.singletonList(GlobalConst.MASTER_SLAVE_HEARTBEAT_SQL);
     }
 
-    public void process(List<List<Map<String, Object>>> resultList) {
+    public void process(List<List<Map<String, Object>>> resultList,boolean readonly) {
         DatasourceStatus datasourceStatus = new DatasourceStatus();
 
         datasourceStatus.setMaster(heartbeatFlow.getInstance().isMaster());

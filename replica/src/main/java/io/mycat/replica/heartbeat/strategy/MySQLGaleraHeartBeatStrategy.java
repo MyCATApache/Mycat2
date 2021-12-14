@@ -37,7 +37,7 @@ public class MySQLGaleraHeartBeatStrategy extends HeartBeatStrategy {
     }
 
     @Override
-    public void process(List<List<Map<String, Object>>> resultList) {
+    public void process(List<List<Map<String, Object>>> resultList,boolean readonly) {
         if (!resultList.isEmpty()){
             List<Map<String, Object>> result = resultList.get(0);
 

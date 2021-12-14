@@ -38,7 +38,7 @@ public class MHAHeartBeatStrategy extends HeartBeatStrategy {
     }
 
     @Override
-    public void process(List<List<Map<String, Object>>> resultList) {
+    public void process(List<List<Map<String, Object>>> resultList,boolean readonly) {
         DatasourceStatus datasourceStatus = new DatasourceStatus();
         boolean master = !("1".equalsIgnoreCase(Objects.toString(  resultList.get(0).get(0).getOrDefault("READ_ONLY", null))));
         if (!resultList.isEmpty()) {
