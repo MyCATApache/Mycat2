@@ -203,8 +203,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
                         s -> jdbcConnectionManager.getConnection(
                                 jdbcDataSource,
                                 autocommit,
-                                transactionIsolation,
-                                readOnly));
+                                transactionIsolation));
                 res.put(jdbcDataSource, defaultConnection1);
             }
         }
