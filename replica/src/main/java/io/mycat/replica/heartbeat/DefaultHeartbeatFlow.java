@@ -88,7 +88,7 @@ public class DefaultHeartbeatFlow extends HeartbeatFlow {
                     replicaSelector.addWriteDataSource(datasouceName);
                     replicaSelector.removeReadDataSource(datasouceName);
                 }else {
-                    replicaSelector.removeReadDataSource(datasouceName);
+                    replicaSelector.addReadDataSource(datasouceName);
                     replicaSelector.removeWriteDataSource(datasouceName);
                 }
                 replicaSelector
