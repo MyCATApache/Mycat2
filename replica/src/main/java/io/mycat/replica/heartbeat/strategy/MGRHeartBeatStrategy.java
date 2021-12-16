@@ -41,12 +41,12 @@ public class MGRHeartBeatStrategy extends HeartBeatStrategy {
     }
 
     @Override
-    public void process(List<List<Map<String, Object>>> resultList) {
+    public void process(List<List<Map<String, Object>>> resultList, boolean readonly) {
         DatasourceStatus datasourceStatus = new DatasourceStatus();
         Map<String, Object> result = resultList.get(0).get(0);
-        boolean master = !("1".equalsIgnoreCase(Objects.toString( result.getOrDefault("READ_ONLY", null))));
+        boolean master = !readonly && !("1".equalsIgnoreCase(Objects.toString(result.getOrDefault("READ_ONLY", null))));
         double behind;
-        if (!"ONLINE".equalsIgnoreCase(Objects.toString(result.getOrDefault("MEMBER_STATE","OFFLINE")))) {
+        if (!"ONLINE".equalsIgnoreCase(Objects.toString(result.getOrDefault("MEMBER_STATE", "OFFLINE")))) {
             heartbeatFlow.setStatus(datasourceStatus, DatasourceEnum.ERROR_STATUS);
             return;
         }
@@ -67,7 +67,7 @@ public class MGRHeartBeatStrategy extends HeartBeatStrategy {
 
     @Override
     public void onException(Throwable e) {
-        heartbeatFlow.setStatus(new DatasourceStatus(),DatasourceEnum.ERROR_STATUS);
+        heartbeatFlow.setStatus(new DatasourceStatus(), DatasourceEnum.ERROR_STATUS);
     }
 
     public MGRHeartBeatStrategy() {
@@ -75,5 +75,9 @@ public class MGRHeartBeatStrategy extends HeartBeatStrategy {
 
     public MGRHeartBeatStrategy(HeartbeatFlow heartbeatFlow) {
         super(heartbeatFlow);
+    }
+
+    public static void main(String[] args) {
+        System.out.println(CHECK_SQL);
     }
 }

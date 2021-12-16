@@ -299,8 +299,7 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo, Closeable, Re
     }
 
     public synchronized void removeWriteDataSource(String dataSource) {
-        PhysicsInstance physicsInstance = Objects.requireNonNull(datasourceMap.get(dataSource));
-        writeDataSourceList.remove(physicsInstance);
+        writeDataSourceList.removeIf(i->i.getName().equals(dataSource));
     }
 
 
@@ -309,7 +308,6 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo, Closeable, Re
         if (!writeDataSourceList.contains(physicsInstance)) {
             writeDataSourceList.add(physicsInstance);
         }
-
     }
 
     public synchronized void addReadDataSource(String dataSource) {
@@ -317,11 +315,10 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo, Closeable, Re
         if (!readDataSource.contains(physicsInstance)) {
             readDataSource.add(physicsInstance);
         }
-
     }
 
     public synchronized void removeReadDataSource(String dataSource) {
-        readDataSource.remove(Objects.requireNonNull(datasourceMap.get(dataSource)));
+        readDataSource.removeIf(i->i.getName().equals(dataSource));
     }
 
 }

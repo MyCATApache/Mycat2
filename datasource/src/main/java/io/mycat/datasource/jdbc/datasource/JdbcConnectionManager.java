@@ -102,11 +102,11 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
     }
 
     public DefaultConnection getConnection(String name) {
-        return getConnection(name, true, Connection.TRANSACTION_REPEATABLE_READ, false);
+        return getConnection(name, true, Connection.TRANSACTION_REPEATABLE_READ);
     }
 
     public DefaultConnection getConnection(String name, Boolean autocommit,
-                                           int transactionIsolation, boolean readOnly) {
+                                           int transactionIsolation) {
         final JdbcDataSource key = dataSourceMap.computeIfAbsent(name, s -> {
             ReplicaSelectorManager replicaSelector = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
             JdbcDataSource jdbcDataSource = dataSourceMap.get(replicaSelector.getDatasourceNameByReplicaName(s, true, null));
@@ -117,7 +117,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         try {
             DatasourceConfig config = key.getConfig();
             connection = key.getDataSource().getConnection();
-            defaultConnection = new DefaultConnection(connection, key, autocommit, transactionIsolation, readOnly, this);
+            defaultConnection = new DefaultConnection(connection, key, autocommit, transactionIsolation, this);
             LOGGER.debug("get connection:{} {}", name, defaultConnection);
             if (config.isInitSqlsGetConnection()) {
                 if (config.getInitSqls() != null && !config.getInitSqls().isEmpty()) {
@@ -197,7 +197,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                 IOExecutor vertx = MetaClusterCurrent.wrapper(IOExecutor.class);
                 vertx.executeBlocking(promise -> {
                     try {
-                       // heartbeat(heartBeatStrategy);
+                        heartbeat(heartBeatStrategy);
                     } catch (Exception e) {
                         heartBeatStrategy.onException(e);
                     } finally {
@@ -208,8 +208,10 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
 
             private void heartbeat(HeartBeatStrategy heartBeatStrategy) {
                 DefaultConnection connection = null;
+                boolean readOnly = false;
                 try {
                     connection = getConnection(datasource);
+                    readOnly = connection.connection.isReadOnly();
                     ArrayList<List<Map<String, Object>>> resultList = new ArrayList<>();
                     List<String> sqls = heartBeatStrategy.getSqls();
                     for (String sql : sqls) {
@@ -222,7 +224,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                             return;
                         }
                     }
-                    heartBeatStrategy.process(resultList);
+                    heartBeatStrategy.process(resultList,readOnly);
                 } catch (Throwable e) {
                     heartBeatStrategy.onException(e);
                     LOGGER.error("", e);

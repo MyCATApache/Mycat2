@@ -26,7 +26,11 @@ public interface CommonSQLCallback {
 
     List<String> getSqls();
 
-    void process(List<List<Map<String, Object>> >resultSetList);
+    default void process(List<List<Map<String, Object>>> resultSetList) {
+        process(resultSetList,false);
+    }
+
+    void process(List<List<Map<String, Object>>> resultSetList, boolean readonly);
 
     void onException(Throwable e);
 }

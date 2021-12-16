@@ -77,6 +77,7 @@ import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BinaryOperator;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 
@@ -589,25 +590,33 @@ public class SqlFunctions {
   /** SQL {@code LIKE} function. */
   public static boolean like(String s, String pattern) {
     final String regex = Like.sqlToRegexLike(pattern, null);
-    return Pattern.matches(regex, s);
+    Pattern p = Pattern.compile(regex,Pattern.CASE_INSENSITIVE);
+    Matcher m = p.matcher(s);
+    return m.matches();
   }
 
   /** SQL {@code LIKE} function with escape. */
   public static boolean like(String s, String pattern, String escape) {
     final String regex = Like.sqlToRegexLike(pattern, escape);
-    return Pattern.matches(regex, s);
+    Pattern p = Pattern.compile(regex,Pattern.CASE_INSENSITIVE);
+    Matcher m = p.matcher(s);
+    return m.matches();
   }
 
   /** SQL {@code SIMILAR} function. */
   public static boolean similar(String s, String pattern) {
     final String regex = Like.sqlToRegexSimilar(pattern, null);
-    return Pattern.matches(regex, s);
+    Pattern p = Pattern.compile(regex,Pattern.CASE_INSENSITIVE);
+    Matcher m = p.matcher(s);
+    return m.matches();
   }
 
   /** SQL {@code SIMILAR} function with escape. */
   public static boolean similar(String s, String pattern, String escape) {
     final String regex = Like.sqlToRegexSimilar(pattern, escape);
-    return Pattern.matches(regex, s);
+    Pattern p = Pattern.compile(regex,Pattern.CASE_INSENSITIVE);
+    Matcher m = p.matcher(s);
+    return m.matches();
   }
 
   public static boolean posixRegex(String s, String regex, Boolean caseSensitive) {

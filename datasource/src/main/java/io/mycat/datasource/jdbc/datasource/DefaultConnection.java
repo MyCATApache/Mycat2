@@ -45,7 +45,7 @@ public class DefaultConnection implements MycatConnection {
     @SneakyThrows
     public DefaultConnection(Connection connection, JdbcDataSource dataSource,
                              Boolean autocommit,
-                             int transactionIsolation, boolean readOnly, ConnectionManager connectionManager) {
+                             int transactionIsolation,ConnectionManager connectionManager) {
         this.connection = connection;
         this.jdbcDataSource = dataSource;
         this.connectionManager = connectionManager;

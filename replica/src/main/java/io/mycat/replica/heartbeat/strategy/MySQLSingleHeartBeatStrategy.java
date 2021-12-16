@@ -36,7 +36,7 @@ public class MySQLSingleHeartBeatStrategy extends HeartBeatStrategy {
   }
 
   @Override
-  public void process(List<List<Map<String, Object>>> resultSetList) {
+  public void process(List<List<Map<String, Object>>> resultSetList,boolean readonly) {
     this.heartbeatFlow.setStatus(new DatasourceStatus(),DatasourceEnum.OK_STATUS);
   }
 
