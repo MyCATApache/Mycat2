@@ -356,6 +356,10 @@ public enum MycatdbCommand {
                             map.put("EXECUTE_TIMEOUT", time);
                             continue;
                         }
+                        case "VECTOR": {
+                            map.put("VECTOR",null);
+                            continue;
+                        }
                         case "MASTER": {
                             map.put("REP_BALANCE_TYPE", ReplicaBalanceType.MASTER);
                             continue;
