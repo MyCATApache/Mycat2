@@ -284,6 +284,7 @@ public class ReceiverImpl implements Response {
     }
 
 
+
     protected boolean hasMoreResultSet() {
         return count < this.stmtSize;
     }
@@ -354,17 +355,23 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public Future<Void> sendVectorResultSet(PrepareExecutor.ArrowObservable rootObservable) {
-        MycatRowMetaData mycatRowMetaData = rootObservable.getMycatRowMetaData();
-        class Writer implements io.reactivex.rxjava3.functions.Function<VectorSchemaRoot, ObservableSource<? extends MysqlPayloadObject>> {
+    public Future<Void> sendVectorResultSet(Observable<VectorSchemaRoot> rootObservable) {
+        Observable<MysqlPayloadObject> mysqlPacketObservable = rootObservable.flatMap(new io.reactivex.rxjava3.functions.Function<VectorSchemaRoot, ObservableSource<? extends MysqlPayloadObject>>() {
+
             InnerType[] types = null;
 
             @Override
             public ObservableSource<? extends MysqlPayloadObject> apply(VectorSchemaRoot vectorRowBatch) throws Throwable {
                 int rowCount = vectorRowBatch.getRowCount();
-                ArrayList<MysqlPayloadObject> objects = new ArrayList<>(rowCount);
+                ArrayList<MysqlPayloadObject> objects;
                 if (types == null) {
                     types = SchemaBuilder.getInnerTypes(vectorRowBatch);
+                    MycatRowMetaData rowMetaData = ResultWriterUtil.vectorRowBatchToResultSetColumn(vectorRowBatch.getSchema());
+                    MySQLColumnDef mySQLColumnDef = MySQLColumnDef.of(rowMetaData);
+                    objects = new ArrayList<>(rowCount + 1);
+                    objects.add(mySQLColumnDef);
+                } else {
+                    objects = new ArrayList<>(rowCount);
                 }
                 for (int rowId = 0; rowId < rowCount; rowId++) {
                     ResultSetWriter newWriter = binary ? new SimpleBinaryWriterImpl() : new SimpleTextWriterImpl();
@@ -373,9 +380,7 @@ public class ReceiverImpl implements Response {
                 }
                 return Observable.fromIterable(objects);
             }
-        };
-        Writer writer = new Writer();
-        Observable<MysqlPayloadObject> mysqlPacketObservable = Observable.concat(Observable.fromArray(MySQLColumnDef.of(mycatRowMetaData)), rootObservable.getObservable().flatMap(writer));
+        });
         return sendResultSet(mysqlPacketObservable);
     }
 
