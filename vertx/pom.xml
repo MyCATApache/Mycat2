@@ -14,12 +14,12 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-sql-client</artifactId>
-            <version>4.2.1</version>
+            <version>4.2.2</version>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-mysql-client</artifactId>
-            <version>4.2.1</version>
+            <version>4.2.2</version>
         </dependency>
     </dependencies>
 
