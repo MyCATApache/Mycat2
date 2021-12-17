@@ -10,7 +10,6 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.parser.ParserException;
 import com.alibaba.druid.support.calcite.CalciteSqlBasicCall;
-import com.alibaba.druid.support.calcite.TDDLSqlSelect;
 import com.alibaba.druid.util.FnvHash;
 import com.google.common.collect.ImmutableList;
 import io.mycat.MycatException;
@@ -1873,7 +1872,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 return false;
             }
             case "STR_TO_DATE": {
-                this.sqlNode = SecToDateFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                this.sqlNode = StrToDateFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "MONTHNAME": {

@@ -5,14 +5,15 @@ import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.MycatConvention;
 import io.mycat.calcite.MycatEnumerableRelImplementor;
 import io.mycat.calcite.MycatRel;
-import io.mycat.calcite.logical.MycatView;
-import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.IndexCondition;
+import lombok.Getter;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysType;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
-import org.apache.calcite.linq4j.tree.*;
-import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelInput;
@@ -25,6 +26,7 @@ import org.apache.calcite.runtime.NewMycatDataContext;
 import java.lang.reflect.Method;
 import java.util.Optional;
 
+@Getter
 public class MycatTableScan extends AbstractRelNode implements MycatRel {
     final RelNode relNode;
     final RexNode condition;
