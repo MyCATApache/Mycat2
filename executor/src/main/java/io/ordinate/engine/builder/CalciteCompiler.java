@@ -18,19 +18,23 @@
 package io.ordinate.engine.builder;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.beans.mycat.MycatRelDataType;
+import io.mycat.calcite.MycatRelDataTypeUtil;
+import io.mycat.calcite.logical.MycatView;
+import io.mycat.calcite.table.MycatTableScan;
+import io.ordinate.engine.factory.FactoryUtil;
 import io.ordinate.engine.function.Function;
 import io.ordinate.engine.function.IntFunction;
 import io.ordinate.engine.function.aggregate.AccumulatorFunction;
+import io.ordinate.engine.function.aggregate.any.AnyAccumulator;
 import io.ordinate.engine.function.bind.VariableParameterFunction;
+import io.ordinate.engine.function.column.ColumnFunction;
 import io.ordinate.engine.function.constant.IntConstant;
-import io.ordinate.engine.physicalplan.PhysicalPlan;
-import io.ordinate.engine.physicalplan.ValuesPlan;
+import io.ordinate.engine.physicalplan.*;
 import io.ordinate.engine.schema.InnerType;
-import io.questdb.std.Misc;
-import io.questdb.std.NumericException;
-import io.questdb.std.datetime.microtime.TimestampFormatUtils;
-import io.questdb.std.datetime.microtime.Timestamps;
-import io.questdb.std.str.CharSink;
+import io.ordinate.engine.vector.VectorExpression;
+import lombok.Getter;
+import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.calcite.linq4j.JoinType;
 import org.apache.calcite.rel.RelCollation;
@@ -39,6 +43,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
@@ -49,34 +54,12 @@ import org.apache.calcite.util.ImmutableBitSet;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.questdb.std.datetime.microtime.Timestamps.isLeapYear;
-
+@Getter
 public class CalciteCompiler {
-    ExecuteCompiler executeCompiler=new ExecuteCompiler();
-    RexConverter rexConverter = new RexConverter(executeCompiler);
-    Map<String, List<Object[]>> tableSource = new HashMap<>();
+    static ExecuteCompiler executeCompiler = new ExecuteCompiler();
+    final RexConverter rexConverter = new RexConverter();
 
-   public void registerTable(String name, List<Object[]> physicalPlan){
-        tableSource.put(name,physicalPlan);
-    }
-    public static void main(String[] args) throws NumericException {
-//        long l1 = TimestampFormatUtils.parseUTCTimestamp(Timestamp.valueOf(LocalDateTime.now()).toLocalDateTime().toString());
-        long l = Timestamps.toMicros(2021, isLeapYear(2021), 9, 18, 16, 1);
-        l = l + 9999991;
-        CharSink sink = Misc.getThreadLocalBuilder();
-        TimestampFormatUtils.USEC_UTC_FORMAT.format(l, null, "", sink);
-        String s = sink.toString();
-        System.out.println(s);
-//        long l = Long.MAX_VALUE / (31556736 * 1000000L);
-//        System.out.println(l);
-//        CalciteCompiler calciteCompiler = new CalciteCompiler();
-//        RexConverter rexConverter = new RexConverter();
-//        ExecuteCompiler executeCompiler = new ExecuteCompiler();
-//        RelNode relNode = LogicalValues.create();
-
-    }
-
-    public CalciteCompiler convert(RelNode relNode) {
+    public PhysicalPlan convert(RelNode relNode) {
         if (relNode instanceof Values) {
             Values values = (Values) relNode;
             return convertValues(values);
@@ -99,41 +82,71 @@ public class CalciteCompiler {
             Correlate correlate = (Correlate) relNode;
             return convertCorrelate(correlate);
         } else if (relNode instanceof Sort) {
-            Sort sort = (Sort) relNode;
-            convert(sort.getInput());
-            if (sort.isEnforcer()) {
-                convertEnforce(sort);
-                return this;
-            } else if (sort.collation.getFieldCollations().isEmpty()){
-                convertLimit(sort.offset, sort.fetch);
-                return this;
+            return convertTopN((Sort) relNode);
+        } else if (relNode instanceof MycatTableScan) {
+            return new VisualTablePlanImpl((MycatTableScan) relNode);
+        } else if (relNode instanceof MycatView) {
+            MycatView mycatView = (MycatView) relNode;
+            RelNode viewRelNode = mycatView.getRelNode();
+            IntFunction fetchFunction = null;
+            IntFunction offsetFunction = null;
+            if (viewRelNode instanceof Sort){
+                Sort sort = (Sort) viewRelNode;
+                RexNode fetch = sort.fetch;
+                RexNode offset = sort.offset;
+
+
+
+                if (offset!=null){
+                    offsetFunction =(IntFunction) rexConverter.convertRex(offset, null);
+                }
+                if (fetch!=null){
+                    if(fetch.isA(SqlKind.PLUS)){
+                        offset = ((RexCall) fetch).getOperands().get(0);
+                        offsetFunction =(IntFunction) rexConverter.convertRex(offset, null);
+
+                        fetch = ((RexCall) fetch).getOperands().get(1);
+                        fetchFunction =(IntFunction) rexConverter.convertRex(fetch, null);
+                    }else {
+                        fetchFunction =(IntFunction) rexConverter.convertRex(fetch, null);
+                    }
+                }
             }
-            convertEnforce(sort);
-            convertLimit(sort.offset, sort.fetch);
-            return this;
-        }else if (relNode instanceof TableScan){
-            List<String> qualifiedName = relNode.getTable().getQualifiedName();
-            String name = String.join(".", qualifiedName);
-            List<Object[]> physicalPlan = tableSource.get(name);
-            RelDataType rowType = relNode.getRowType();
-            List<InnerType> innerTypes = RexConverter.convertColumnTypeList(rowType);
-            Schema schema = SchemaBuilder.ofInnerTypes(innerTypes);
-            executeCompiler.stack.push(ValuesPlan.create(schema,physicalPlan));
-            return this;
+            return new MycatViewPlan(mycatView,offsetFunction,fetchFunction);
         }
         throw new UnsupportedOperationException();
     }
 
-    private CalciteCompiler convertLimit(RexNode offset, RexNode fetch) {
-        IntFunction offsetFunction = Optional.ofNullable(offset).map(i -> {
-            return (IntFunction) rexConverter.convertRex(offset);
-        }).orElse(IntConstant.newInstance(0));
-        IntFunction fetchFunction =  Optional.ofNullable(fetch).map((i)->(IntFunction) rexConverter.convertRex(fetch)).orElse(IntConstant.newInstance(Integer.MAX_VALUE));
-        executeCompiler.limit(offsetFunction,fetchFunction);
-        return this;
+    public PhysicalPlan convertTopN(Sort relNode) {
+        PhysicalPlan physicalPlan = convert(relNode.getInput());
+        return convertTopN(relNode, physicalPlan);
     }
 
-    private CalciteCompiler convertEnforce(Sort sort) {
+    public PhysicalPlan convertTopN(Sort relNode, PhysicalPlan physicalPlan) {
+        if (relNode.isEnforcer()) {
+            return convertEnforce(physicalPlan, relNode);
+        } else if (relNode.collation.getFieldCollations().isEmpty()) {
+            return convertLimit(physicalPlan, relNode.offset, relNode.fetch);
+        }
+        physicalPlan = convertEnforce(physicalPlan, relNode);
+        return convertLimit(physicalPlan, relNode.offset, relNode.fetch);
+    }
+
+    public PhysicalPlan convertLimit(PhysicalPlan input, RexNode offset, RexNode fetch) {
+        IntFunction offsetFunction = Optional.ofNullable(offset).map(i -> {
+            return (IntFunction) rexConverter.convertRex(offset, input.schema());
+        }).orElse(IntConstant.newInstance(0));
+        IntFunction fetchFunction = Optional.ofNullable(fetch).map((i) -> (IntFunction) rexConverter.convertRex(fetch, input.schema())).orElse(IntConstant.newInstance(Integer.MAX_VALUE));
+        return LimitPlan.create(input, offsetFunction, fetchFunction);
+    }
+
+    public static PhysicalPlan convertEnforce(PhysicalPlan input, Sort sort) {
+        List<PhysicalSortProperty> physicalSortProperties = getPhysicalSortProperties(sort);
+
+        return SortPlan.create(input, physicalSortProperties);
+    }
+
+    public static List<PhysicalSortProperty> getPhysicalSortProperties(Sort sort) {
         RelCollation collation = sort.collation;
         List<PhysicalSortProperty> physicalSortProperties = new ArrayList<>();
         List<RelDataTypeField> fieldList = sort.getRowType().getFieldList();
@@ -164,20 +177,18 @@ public class CalciteCompiler {
             }
             SqlTypeName sqlTypeName = fieldList.get(fieldIndex).getType().getSqlTypeName();
             InnerType innerType = RexConverter.convertColumnType(sqlTypeName);
-            physicalSortProperties.add(PhysicalSortProperty.of(fieldIndex, sortOptions,innerType));
+            physicalSortProperties.add(PhysicalSortProperty.of(fieldIndex, sortOptions, innerType));
         }
-
-        executeCompiler.sort(physicalSortProperties);
-        return this;
+        return physicalSortProperties;
     }
 
-    private CalciteCompiler convertCorrelate(Correlate correlate) {
-        convert(correlate.getLeft());
-        convert(correlate.getRight());
+    public CorrelateJoinPlan convertCorrelate(Correlate correlate) {
+        PhysicalPlan left = convert(correlate.getLeft());
+        PhysicalPlan right = convert(correlate.getRight());
 
         CorrelationId correlationId = correlate.getCorrelationId();
         List<Integer> requireList = correlate.getRequiredColumns().asList();
-        Map<CorrelationKey, List<VariableParameterFunction>> map = rexConverter.variableParameterFunctionMap;
+        Map<CorrelationKey, List<VariableParameterFunction>> map = rexConverter.getVariableParameterFunctionMap();
         List<Map.Entry<CorrelationKey, List<VariableParameterFunction>>> entryList = map.entrySet().stream().filter(i -> i.getKey().correlationId.getId() == correlationId.getId()).collect(Collectors.toList());
 
 
@@ -191,25 +202,33 @@ public class CalciteCompiler {
             }
 
         }
-        executeCompiler.correlate(JoinType.valueOf(correlate.getJoinType().name()), targetMap);
-        return this;
+        return new CorrelateJoinPlan(left, right, JoinType.valueOf(correlate.getJoinType().name()), targetMap);
     }
 
-    private CalciteCompiler convertUnion(Union union) {
+    public PhysicalPlan convertUnion(Union union) {
+        List<PhysicalPlan> inputs = new ArrayList<>();
         for (RelNode input : union.getInputs()) {
-            convert(input);
+            inputs.add(convert(input));
         }
-        this.executeCompiler.unionAll(union.all, union.getInputs().size());
-        return this;
+        return executeCompiler.unionAll(union.all, inputs);
     }
 
-    private CalciteCompiler convertAggregate(Aggregate aggregate) {
-        convert(aggregate.getInput());
-        ImmutableList<ImmutableBitSet> groupSets = aggregate.getGroupSets();
+    public PhysicalPlan convertAggregate(Aggregate aggregate) {
+
+        PhysicalPlan input = convert(aggregate.getInput());
+        List<Integer> groupSet = aggregate.getGroupSet().asList();
         List<AggregateCall> aggCallList = aggregate.getAggCallList();
-        GroupKeys[] groupKeys = groupSets.stream().map(i -> GroupKeys.of(i.toArray())).toArray(n -> new GroupKeys[n]);
-        AccumulatorFunction[] accumulatorFunctions = new AccumulatorFunction[aggCallList.size()];
+        GroupKeys[] groupSets = aggregate.getGroupSets().stream().map(i -> GroupKeys.of(i.toArray())).toArray(n -> new GroupKeys[n]);
+        AccumulatorFunction[] accumulatorFunctions = new AccumulatorFunction[groupSet.size() + aggCallList.size()];
+
         int index = 0;
+        for (Integer integer : groupSet) {
+            accumulatorFunctions[index] = ExecuteCompiler.anyValue(input,integer);
+            index++;
+        }
+
+
+        index = groupSet.size();
         for (AggregateCall aggregateCall : aggCallList) {
             List<Integer> argList = aggregateCall.getArgList();
             SqlKind kind = aggregateCall.getAggregation().kind;
@@ -217,7 +236,8 @@ public class CalciteCompiler {
             switch (kind) {
                 case SUM:
                 case SUM0: {
-                    accumulatorFunction = executeCompiler.sum(argList.get(0));
+                    Integer integer = argList.get(0);
+                    accumulatorFunction = executeCompiler.sum(input, integer);
                     break;
                 }
                 case AVG: {
@@ -228,7 +248,7 @@ public class CalciteCompiler {
                     boolean distinct = aggregateCall.isDistinct();
                     if (distinct) {
                         //todo check
-                        accumulatorFunction = executeCompiler.countDistinct(argList.get(0));
+                        accumulatorFunction = executeCompiler.countDistinct(input, argList.get(0));
                     } else {
                         if (argList.size() == 0) {
                             accumulatorFunction = executeCompiler.count();
@@ -239,15 +259,15 @@ public class CalciteCompiler {
                     break;
                 }
                 case ANY_VALUE: {
-                    accumulatorFunction = executeCompiler.anyValue(argList.get(0));
+                    accumulatorFunction = executeCompiler.anyValue(input, argList.get(0));
                     break;
                 }
                 case MAX: {
-                    accumulatorFunction = executeCompiler.max(argList.get(0));
+                    accumulatorFunction = executeCompiler.max(input, argList.get(0));
                     break;
                 }
                 case MIN: {
-                    accumulatorFunction = executeCompiler.min(argList.get(0));
+                    accumulatorFunction = executeCompiler.min(input, argList.get(0));
                     break;
                 }
             }
@@ -255,44 +275,89 @@ public class CalciteCompiler {
             accumulatorFunctions[index] = accumulatorFunction;
             ++index;
         }
-        executeCompiler.agg(ExecuteCompiler.AggImpl.HASH, Arrays.asList(groupKeys), Arrays.asList(accumulatorFunctions));
+        int slotOriginalSize = input.schema().getFields().size();
+        int slotInc = slotOriginalSize;
+        Map<Integer, Map<InnerType, Integer>> indexToTypeMap = new HashMap<>();
+        List<Field> fieldList = input.schema().getFields();
+        for (AccumulatorFunction accumulatorFunction : accumulatorFunctions) {
+            InnerType aggInputType = accumulatorFunction.getInputType();
+            InnerType aggOutputType = accumulatorFunction.getOutputType();
+            int aggInputIndex = accumulatorFunction.getInputColumnIndex();
+            InnerType aggInputSourceType = InnerType.from(fieldList.get(aggInputIndex).getType());
+            Function column = ExecuteCompiler.column(aggInputIndex, input.schema());
+            Map<InnerType, Integer> indexSlot = indexToTypeMap
+                    .computeIfAbsent(aggInputIndex, integer -> {
+                        HashMap<InnerType, Integer> map = new HashMap<>();
+                        map.put(aggInputSourceType, integer);
+                        return map;
+                    });
+            if (aggInputType != null) {
+                if (!indexSlot.containsValue(aggInputIndex)) {
+                    indexSlot.put(aggInputType, aggInputIndex);
+                } else {
+                    accumulatorFunction.setInputColumnIndex(slotInc);
+                    indexSlot.put(aggInputType, slotInc);
+                    slotInc++;
+                }
+            }
+        }
+        Function[] exprs = new Function[slotInc];
+        for (int i = 0; i < slotOriginalSize; i++) {
+            exprs[i] = ExecuteCompiler.column(i, input.schema());
+        }
+        if (slotInc > slotOriginalSize) {
+            for (Map.Entry<Integer, Map<InnerType, Integer>> e1 : indexToTypeMap.entrySet()) {
+                for (Map.Entry<InnerType, Integer> e2 : e1.getValue().entrySet()) {
+                    Integer inIndex = e1.getKey();
+                    Integer outIndex = e2.getValue();
+                    if (exprs[outIndex] == null) {
+                        exprs[outIndex] = (ExecuteCompiler.cast(ExecuteCompiler.column(inIndex, input.schema()), e2.getKey()));
+                    }
+                }
+            }
+        }
 
-        return this;
+        input = executeCompiler.project(input, exprs);
+
+        return executeCompiler.agg(input, ExecuteCompiler.AggImpl.HASH,Arrays.asList(groupSets), Arrays.asList(accumulatorFunctions));
+
     }
 
-    private CalciteCompiler convertJoin(Join join) {
+    public PhysicalPlan convertJoin(Join join) {
         JoinRelType joinType = join.getJoinType();
-        convert(join.getLeft());
-        convert(join.getRight());
-        executeCompiler.startJoin();
-        executeCompiler.crossJoin(JoinType.valueOf(joinType.name()), ExecuteCompiler.JoinImpl.HASH, rexConverter.convertRex(join.getCondition()));
-        return this;
+        PhysicalPlan left = convert(join.getLeft());
+        PhysicalPlan right = convert(join.getRight());
+        Schema createjoinSchema = executeCompiler.createJoinSchema(left, right);
+        return executeCompiler.crossJoin(
+                left,
+                right,
+                JoinType.valueOf(joinType.name()),
+                ExecuteCompiler.JoinImpl.HASH,
+                rexConverter.convertRex(join.getCondition(), createjoinSchema));
     }
 
-    private CalciteCompiler convertProject(Project project) {
-        convert(project.getInput());
+    public PhysicalPlan convertProject(Project project) {
+        PhysicalPlan input = convert(project.getInput());
         List<RexNode> projects = project.getProjects();
 
         int index = 0;
         Function[] functions = new Function[projects.size()];
         for (RexNode rexNode : projects) {
-            Function function = rexConverter.convertRex(rexNode);
+            Function function = rexConverter.convertRex(rexNode, input.schema());
             functions[index] = function;
             index++;
         }
-        executeCompiler.project(functions);
-        return this;
+        return executeCompiler.project(input, functions);
     }
 
-    private CalciteCompiler convertFilter(Filter filter) {
-        convert(filter.getInput());
+    public PhysicalPlan convertFilter(Filter filter) {
+        PhysicalPlan input = convert(filter.getInput());
         RexNode condition = filter.getCondition();
-        Function function = rexConverter.convertRex(condition);
-        executeCompiler.filter(function);
-        return this;
+        Function function = rexConverter.convertRex(condition, input.schema());
+        return executeCompiler.filter(input, function);
     }
 
-    public CalciteCompiler convertValues(Values values) {
+    public PhysicalPlan convertValues(Values values) {
         ImmutableList<ImmutableList<RexLiteral>> tuples = values.getTuples();
 
         ArrayList<Function[]> rowList = new ArrayList<>();
@@ -307,11 +372,9 @@ public class CalciteCompiler {
             }
             rowList.add(functions);
         }
-        executeCompiler.values(rowList);
-        return this;
-    }
-
-    public PhysicalPlan build() {
-        return executeCompiler.build();
+        RelDataType rowType = values.getRowType();
+        MycatRelDataType mycatRelDataType = MycatRelDataTypeUtil.getMycatRelDataType(rowType);
+        Schema schema = FactoryUtil.toArrowSchema(mycatRelDataType);
+        return executeCompiler.values(rowList,schema);
     }
 }

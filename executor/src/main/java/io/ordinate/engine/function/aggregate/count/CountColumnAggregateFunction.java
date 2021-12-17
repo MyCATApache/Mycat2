@@ -15,8 +15,9 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.ordinate.engine.function.aggregate;
+package io.ordinate.engine.function.aggregate.count;
 
+import io.ordinate.engine.function.aggregate.LongAccumulator;
 import io.ordinate.engine.schema.InnerType;
 import io.ordinate.engine.record.Record;
 import io.questdb.cairo.ArrayColumnTypes;
@@ -25,15 +26,17 @@ import io.questdb.cairo.map.MapValue;
 
 public class CountColumnAggregateFunction implements LongAccumulator {
     private int inputColumn;
+    private InnerType innerType;
     protected int valueIndex;
 
-    public CountColumnAggregateFunction(int inputColumn) {
+    public CountColumnAggregateFunction(int inputColumn,InnerType innerType) {
         this.inputColumn = inputColumn;
+        this.innerType = innerType;
     }
 
     @Override
     public String name() {
-        return "count(int64)";
+        return "countColumn()";
     }
 
     @Override
@@ -44,7 +47,6 @@ public class CountColumnAggregateFunction implements LongAccumulator {
 
     @Override
     public void computeNext(MapValue resultValue, Record record) {
-        record.getLong(inputColumn);
         if (record.isNull(inputColumn)) {
             return;
         }
@@ -63,18 +65,27 @@ public class CountColumnAggregateFunction implements LongAccumulator {
     }
 
     @Override
-    public void init(int columnIndex) {
-        this.inputColumn = columnIndex;
-    }
-
-
-    @Override
     public int getInputColumnIndex() {
         return inputColumn;
     }
 
     @Override
+    public InnerType getOutputType() {
+        return getType();
+    }
+
+    @Override
+    public InnerType getInputType() {
+        return innerType;
+    }
+
+    @Override
     public InnerType getType() {
         return InnerType.INT64_TYPE;
+    }
+
+    @Override
+    public void setInputColumnIndex(int index) {
+        this.inputColumn = index;
     }
 }

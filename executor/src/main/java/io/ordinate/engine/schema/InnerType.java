@@ -49,7 +49,7 @@ public enum InnerType {
     UINT64_TYPE(ArrowTypes.INT64_TYPE, UInt8Vector.class, long.class, "uint64", false, JDBCType.INTEGER),
 
     TIME_MILLI_TYPE(ArrowTypes.TIME_MILLI_TYPE, TimeMilliVector.class, long.class, "time", false, JDBCType.TIME),
-    DATE_TYPE(ArrowTypes.DATE_TYPE, DateDayVector.class, int.class, "date", false, JDBCType.DATE),
+    DATE_TYPE(ArrowTypes.DATE_TYPE, DateMilliVector.class, int.class, "date", false, JDBCType.DATE),
     DATETIME_MILLI_TYPE(ArrowTypes.DATETIME_MILLI_TYPE, TimeStampMilliVector.class, long.class, "datetime", false, JDBCType.TIMESTAMP),
     SYMBOL_TYPE(null, null, String.class, "symbol", false, JDBCType.VARCHAR),
     OBJECT_TYPE(null, null, Object.class, "object", false, JDBCType.JAVA_OBJECT),

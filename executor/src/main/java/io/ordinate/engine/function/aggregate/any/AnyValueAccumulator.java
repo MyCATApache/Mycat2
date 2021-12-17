@@ -15,7 +15,7 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.ordinate.engine.function.aggregate;
+package io.ordinate.engine.function.aggregate.any;
 
 import io.ordinate.engine.function.BinarySequence;
 import io.ordinate.engine.schema.InnerType;
@@ -26,6 +26,7 @@ import io.questdb.cairo.map.MapValue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class AnyValueAccumulator implements AnyAccumulator {
     final InnerType type;
@@ -237,18 +238,28 @@ public class AnyValueAccumulator implements AnyAccumulator {
     }
 
     @Override
-    public void init(int columnIndex) {
-        this.inputColumnIndex = columnIndex;
-    }
-
-    @Override
     public int getInputColumnIndex() {
         return this.inputColumnIndex;
     }
 
     @Override
+    public InnerType getOutputType() {
+        return type;
+    }
+
+    @Override
+    public InnerType getInputType() {
+        return type;
+    }
+
+    @Override
     public InnerType getType() {
         return type;
+    }
+
+    @Override
+    public void setInputColumnIndex(int index) {
+        this.inputColumnIndex = index;
     }
 
 

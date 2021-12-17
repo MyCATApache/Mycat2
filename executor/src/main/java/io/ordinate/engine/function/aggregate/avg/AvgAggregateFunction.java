@@ -15,8 +15,9 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.ordinate.engine.function.aggregate;
+package io.ordinate.engine.function.aggregate.avg;
 
+import io.ordinate.engine.function.aggregate.DoubleAccumulator;
 import io.ordinate.engine.schema.InnerType;
 import io.ordinate.engine.record.Record;
 import io.questdb.cairo.ArrayColumnTypes;
@@ -76,17 +77,28 @@ public class AvgAggregateFunction implements DoubleAccumulator {
     }
 
     @Override
-    public void init(int columnIndex) {
-        this.columnIndex = columnIndex;
+    public int getInputColumnIndex() {
+        return columnIndex;
     }
 
     @Override
-    public int getInputColumnIndex() {
-        return columnIndex;
+    public InnerType getOutputType() {
+        return InnerType.DOUBLE_TYPE;
+    }
+
+    @Override
+    public InnerType getInputType() {
+        return InnerType.DOUBLE_TYPE;
     }
 
     @Override
     public InnerType getType() {
         return InnerType.DOUBLE_TYPE;
     }
+
+    @Override
+    public void setInputColumnIndex(int index) {
+        this.columnIndex = index;
+    }
+
 }

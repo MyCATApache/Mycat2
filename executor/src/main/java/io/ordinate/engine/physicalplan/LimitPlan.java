@@ -71,8 +71,11 @@ public class LimitPlan implements PhysicalPlan {
                 }
                 if (offset > 0) {
                     if (root.getRowCount() > offset) {
-                        offsetBox.setValue(0);
-                        return root.slice((int) offset);
+                      try {
+                          return root.slice((int) offset);
+                      } finally {
+                          offsetBox.setValue(0);
+                      }
                     }
                     offsetBox.subtract(root.getRowCount());
                     root.clear();

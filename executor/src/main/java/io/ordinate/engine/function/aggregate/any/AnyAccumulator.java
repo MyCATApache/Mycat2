@@ -15,7 +15,9 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.ordinate.engine.function.aggregate;
+package io.ordinate.engine.function.aggregate.any;
+
+import io.ordinate.engine.function.aggregate.AccumulatorFunction;
 
 public interface AnyAccumulator extends AccumulatorFunction<Object> {
 }

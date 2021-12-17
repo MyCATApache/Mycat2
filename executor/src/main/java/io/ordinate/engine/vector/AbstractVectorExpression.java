@@ -23,15 +23,9 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 
 public abstract class AbstractVectorExpression implements VectorExpression {
     final ArrowType outputType;
-    final int id;
 
-    public AbstractVectorExpression(ArrowType outputType, int id) {
+    public AbstractVectorExpression(ArrowType outputType) {
         this.outputType = outputType;
-        this.id = id;
-    }
-    @Override
-    public int getOutputId() {
-        return id;
     }
 
     public ArrowType getType(){

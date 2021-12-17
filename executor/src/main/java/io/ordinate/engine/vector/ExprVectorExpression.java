@@ -19,7 +19,9 @@
 
 package io.ordinate.engine.vector;
 
+import io.ordinate.engine.function.BinarySequence;
 import io.ordinate.engine.function.Function;
+import io.ordinate.engine.function.column.ColumnFunction;
 import io.ordinate.engine.record.Record;
 import lombok.Getter;
 import org.apache.arrow.vector.*;
@@ -33,8 +35,8 @@ public class ExprVectorExpression extends AbstractVectorExpression {
     private Function function;
 
 
-    public ExprVectorExpression(Function function, int id) {
-        super(function.getType().getArrowType(), id);
+    public ExprVectorExpression(Function function) {
+        super(function.getType().getArrowType());
         this.function = function;
     }
 
@@ -117,7 +119,28 @@ public class ExprVectorExpression extends AbstractVectorExpression {
                 break;
             }
             case FLOAT_TYPE:
+            {
+                Float4Vector valueVector = (Float4Vector) outputVector;
+                if (function.isNullableConstant()) {
+                    for (int i = 0; i < rowCount; i++) {
+                        record.setPosition(i);
+                        float value = function.getFloat(record);
+                        boolean isNull = function.isNull(record);
+                        if (isNull) {
+                            valueVector.setNull(i);
+                        } else {
+                            valueVector.set(i, value);
+                        }
+                    }
+                } else {
+                    for (int i = 0; i < rowCount; i++) {
+                        record.setPosition(i);
+                        float value = function.getFloat(record);
+                        valueVector.set(i, value);
+                    }
+                }
                 break;
+            }
             case DOUBLE_TYPE:
             {
                 Float8Vector valueVector = (Float8Vector) outputVector;
@@ -142,9 +165,51 @@ public class ExprVectorExpression extends AbstractVectorExpression {
                 break;
             }
             case STRING_TYPE:
+            {
+                VarCharVector valueVector = (VarCharVector) outputVector;
+                if (function.isNullableConstant()) {
+                    for (int i = 0; i < rowCount; i++) {
+                        record.setPosition(i);
+                        CharSequence value = function.getString(record);
+                        boolean isNull = function.isNull(record);
+                        if (isNull) {
+                            valueVector.setNull(i);
+                        } else {
+                            valueVector.setSafe(i, (value.toString().getBytes()));
+                        }
+                    }
+                } else {
+                    for (int i = 0; i < rowCount; i++) {
+                        record.setPosition(i);
+                        CharSequence value = function.getString(record);
+                        valueVector.set(i, value.toString().getBytes());
+                    }
+                }
                 break;
+            }
             case BINARY_TYPE:
+            {
+                VarBinaryVector valueVector = (VarBinaryVector) outputVector;
+                if (function.isNullableConstant()) {
+                    for (int i = 0; i < rowCount; i++) {
+                        record.setPosition(i);
+                        BinarySequence value = function.getBinary(record);
+                        boolean isNull = function.isNull(record);
+                        if (isNull) {
+                            valueVector.setNull(i);
+                        } else {
+                            valueVector.setSafe(i, (value.getBytes()));
+                        }
+                    }
+                } else {
+                    for (int i = 0; i < rowCount; i++) {
+                        record.setPosition(i);
+                        BinarySequence value = function.getBinary(record);
+                        valueVector.set(i, value.getBytes());
+                    }
+                }
                 break;
+            }
             case UINT8_TYPE:
                 break;
             case UINT16_TYPE:
@@ -154,14 +219,74 @@ public class ExprVectorExpression extends AbstractVectorExpression {
             case UINT64_TYPE:
                 break;
             case TIME_MILLI_TYPE:
+            {
+                TimeMilliVector valueVector = (TimeMilliVector) outputVector;
+                if (function.isNullableConstant()) {
+                    for (int i = 0; i < rowCount; i++) {
+                        record.setPosition(i);
+                        int value = (int)function.getTime(record);
+                        boolean isNull = function.isNull(record);
+                        if (isNull) {
+                            valueVector.setNull(i);
+                        } else {
+                            valueVector.set(i, (value));
+                        }
+                    }
+                } else {
+                    for (int i = 0; i < rowCount; i++) {
+                        record.setPosition(i);
+                        int value = (int)function.getTime(record);
+                        valueVector.set(i, value);
+                    }
+                }
                 break;
+            }
             case DATE_TYPE:
+            {
+                DateMilliVector valueVector = (DateMilliVector) outputVector;
+                if (function.isNullableConstant()) {
+                    for (int i = 0; i < rowCount; i++) {
+                        record.setPosition(i);
+                        long value = function.getDate(record);
+                        boolean isNull = function.isNull(record);
+                        if (isNull) {
+                            valueVector.setNull(i);
+                        } else {
+                            valueVector.set(i, value);
+                        }
+                    }
+                } else {
+                    for (int i = 0; i < rowCount; i++) {
+                        record.setPosition(i);
+                        long value = function.getDate(record);
+                        valueVector.set(i, value);
+                    }
+                }
                 break;
+            }
             case DATETIME_MILLI_TYPE:
+            {
+                TimeStampMilliVector valueVector = (TimeStampMilliVector) outputVector;
+                if (function.isNullableConstant()) {
+                    for (int i = 0; i < rowCount; i++) {
+                        record.setPosition(i);
+                        long value = function.getDatetime(record);
+                        boolean isNull = function.isNull(record);
+                        if (isNull) {
+                            valueVector.setNull(i);
+                        } else {
+                            valueVector.setSafe(i, (value));
+                        }
+                    }
+                } else {
+                    for (int i = 0; i < rowCount; i++) {
+                        record.setPosition(i);
+                        long value = function.getDatetime(record);
+                        valueVector.set(i, value);
+                    }
+                }
                 break;
-        }
-        for (int r = 0; r < rowCount; r++) {
-
+            }
         }
     }
 
@@ -173,5 +298,10 @@ public class ExprVectorExpression extends AbstractVectorExpression {
     @Override
     public List<ArrowType> argTypes() {
         return null;
+    }
+
+    @Override
+    public boolean isColumn() {
+        return function instanceof ColumnFunction;
     }
 }

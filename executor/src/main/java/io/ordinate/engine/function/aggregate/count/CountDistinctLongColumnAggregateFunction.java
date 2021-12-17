@@ -15,9 +15,10 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.ordinate.engine.function.aggregate;
+package io.ordinate.engine.function.aggregate.count;
 
 import com.carrotsearch.hppc.LongHashSet;
+import io.ordinate.engine.function.aggregate.LongAccumulator;
 import io.ordinate.engine.schema.InnerType;
 import io.ordinate.engine.record.Record;
 import io.questdb.cairo.ArrayColumnTypes;
@@ -82,14 +83,18 @@ public class CountDistinctLongColumnAggregateFunction implements LongAccumulator
     }
 
     @Override
-    public void init(int columnIndex) {
-        this.inputColumn = columnIndex;
-    }
-
-
-    @Override
     public int getInputColumnIndex() {
         return inputColumn;
+    }
+
+    @Override
+    public InnerType getOutputType() {
+        return InnerType.INT64_TYPE;
+    }
+
+    @Override
+    public InnerType getInputType() {
+        return InnerType.INT64_TYPE;
     }
 
     @Override
@@ -111,5 +116,10 @@ public class CountDistinctLongColumnAggregateFunction implements LongAccumulator
     @Override
     public boolean isNull(Record rec) {
         return false;
+    }
+
+    @Override
+    public void setInputColumnIndex(int index) {
+        this.inputColumn = index;
     }
 }

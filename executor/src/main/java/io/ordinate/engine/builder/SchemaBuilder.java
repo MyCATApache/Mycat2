@@ -153,9 +153,11 @@ public class SchemaBuilder {
     public static void setVector(FieldVector vector, int index, Object value) {
         if (value == null) {
             if (vector instanceof BaseFixedWidthVector) {
-                ((BaseFixedWidthVector) vector).setNull(index);
+                BaseFixedWidthVector baseFixedWidthVector = (BaseFixedWidthVector) vector;
+                baseFixedWidthVector.setNull(index);
             } else if (vector instanceof BaseVariableWidthVector) {
-                ((BaseVariableWidthVector) vector).setNull(index);
+                BaseVariableWidthVector baseVariableWidthVector = (BaseVariableWidthVector) vector;
+                baseVariableWidthVector.setNull(index);
             }
             return;
         }
@@ -164,13 +166,16 @@ public class SchemaBuilder {
         if (type == ArrowTypes.INT8_TYPE) {
             TinyIntVector valueVectors = (TinyIntVector) vector;
 
-            valueVectors.set(index, (Integer) (value));
+            valueVectors.set(index, ((Number) (value)).intValue());
         } else if (type == ArrowTypes.INT16_TYPE) {
             SmallIntVector valueVectors = (SmallIntVector) vector;
-            valueVectors.set(index, (Integer) (value));
+            valueVectors.set(index,  ((Number) (value)).intValue());
         } else if (type == ArrowTypes.INT32_TYPE) {
             IntVector valueVectors = (IntVector) vector;
-            valueVectors.set(index, (Integer) (value));
+            if (value instanceof String){
+                value = Long.parseLong(((String) value));
+            }
+            valueVectors.set(index, ((Number) (value)).intValue());
         } else if (type == ArrowTypes.INT64_TYPE) {
             BigIntVector valueVectors = (BigIntVector) vector;
             valueVectors.set(index, (Long) (value));
@@ -183,11 +188,11 @@ public class SchemaBuilder {
         } else if (type == ArrowTypes.STRING_TYPE) {
             VarCharVector valueVectors = (VarCharVector) vector;
             if (value instanceof String) {
-                valueVectors.set(index, new Text((String) value));
+                valueVectors.setSafe(index, new Text((String) value));
             } else if (value instanceof byte[]) {
-                valueVectors.set(index, new Text((byte[]) value));
+                valueVectors.setSafe(index, new Text((byte[]) value));
             } else if (value instanceof Text) {
-                valueVectors.set(index, (Text) value);
+                valueVectors.setSafe(index, (Text) value);
             } else {
                 throw new UnsupportedOperationException();
             }

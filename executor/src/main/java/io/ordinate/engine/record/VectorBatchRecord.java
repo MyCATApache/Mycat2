@@ -24,11 +24,12 @@ public class VectorBatchRecord implements Record {
     VectorSchemaRoot vectorSchemaRoot;
     int index = 0;
     boolean isNull;
+
     public VectorBatchRecord(VectorSchemaRoot vectorSchemaRoot) {
         this.vectorSchemaRoot = vectorSchemaRoot;
     }
 
-    public void setPosition(int value){
+    public void setPosition(int value) {
         this.index = value;
     }
 
@@ -40,15 +41,15 @@ public class VectorBatchRecord implements Record {
     @Override
     public long getLong(int columnIndex) {
         FieldVector vector = this.vectorSchemaRoot.getVector(columnIndex);
-        BaseFixedWidthVector nullVector = (BaseFixedWidthVector)vector;
-        BaseIntVector valueVector = (BaseIntVector)vector;
-        if (isNull = nullVector.isNull(index))return 0;
+        BaseFixedWidthVector nullVector = (BaseFixedWidthVector) vector;
+        BaseIntVector valueVector = (BaseIntVector) vector;
+        if (isNull = nullVector.isNull(index)) return 0;
         return valueVector.getValueAsLong(index);
     }
 
     @Override
     public byte getByte(int columnIndex) {
-        return ((TinyIntVector)this.vectorSchemaRoot.getVector(columnIndex)).get(index);
+        return ((TinyIntVector) this.vectorSchemaRoot.getVector(columnIndex)).get(index);
     }
 
     @Override
@@ -78,25 +79,31 @@ public class VectorBatchRecord implements Record {
 
     @Override
     public CharSequence getString(int columnIndex) {
-        return null;
+        FieldVector vector = this.vectorSchemaRoot.getVector(columnIndex);
+        byte[] bytes = ((VarCharVector) vector).get(index);
+        return new String(bytes);
     }
 
     @Override
     public CharSequence getSymbol(int columnIndex) {
-        return null;
+        return getString(columnIndex);
     }
 
     @Override
     public float getFloat(int columnIndex) {
-        return 0;
+        FieldVector vector = this.vectorSchemaRoot.getVector(columnIndex);
+        BaseFixedWidthVector nullVector = (BaseFixedWidthVector) vector;
+        Float4Vector valueVector = (Float4Vector) vector;
+        if (isNull = nullVector.isNull(index)) return 0;
+        return valueVector.get(index);
     }
 
     @Override
     public double getDouble(int columnIndex) {
         FieldVector vector = this.vectorSchemaRoot.getVector(columnIndex);
-        BaseFixedWidthVector nullVector = (BaseFixedWidthVector)vector;
-        FloatingPointVector valueVector = (FloatingPointVector)vector;
-        if (isNull = nullVector.isNull(index))return 0;
+        BaseFixedWidthVector nullVector = (BaseFixedWidthVector) vector;
+        FloatingPointVector valueVector = (FloatingPointVector) vector;
+        if (isNull = nullVector.isNull(index)) return 0;
         return valueVector.getValueAsDouble(index);
     }
 
@@ -107,8 +114,7 @@ public class VectorBatchRecord implements Record {
 
     @Override
     public boolean isNull(int columnIndex) {
-        if (isNull)return true;
-        return   this.vectorSchemaRoot.getVector(columnIndex).isNull(index);
+        return this.vectorSchemaRoot.getVector(columnIndex).isNull(index);
     }
 
     @Override
