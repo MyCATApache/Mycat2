@@ -17,56 +17,54 @@
 
 package io.ordinate.engine.function.time;
 
-import io.mycat.calcite.sqlfunction.datefunction.MonthFunction;
-import io.ordinate.engine.builder.EngineConfiguration;
-import io.ordinate.engine.function.Function;
-import io.ordinate.engine.function.FunctionFactory;
-import io.ordinate.engine.function.IntFunction;
-import io.ordinate.engine.function.UnaryFunction;
-import io.ordinate.engine.record.Record;
-import io.questdb.std.datetime.microtime.Timestamps;
 
-import java.sql.Date;
-import java.time.LocalDate;
+import io.ordinate.engine.builder.EngineConfiguration;
+import io.ordinate.engine.function.*;
+import io.ordinate.engine.record.Record;
+import io.ordinate.engine.schema.InnerType;
+import io.questdb.std.datetime.microtime.Timestamps;
+import io.questdb.std.datetime.millitime.Dates;
+
 import java.util.List;
 
-public class MonthOfYearFunctionFactory implements FunctionFactory {
+public class DayAddFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "month(date):int32";
+        return "DATE_ADD(date,time):date";
     }
 
     @Override
     public Function newInstance(List<Function> args, EngineConfiguration configuration) {
-        return new Func(args.get(0));
+        return new DateAddFunction(args);
     }
 
-    private static final class Func extends IntFunction implements UnaryFunction {
-
-        private final Function arg;
+    class DateAddFunction extends DateFunction {
+        List<Function> args;
         boolean isNull;
 
-        public Func(Function arg) {
-            this.arg = arg;
+        public DateAddFunction(List<Function> args) {
+            this.args = args;
         }
 
         @Override
-        public Function getArg() {
-            return arg;
+        public List<Function> getArgs() {
+            return args;
         }
 
         @Override
-        public boolean isNull(Record rec) {
-            return isNull;
-        }
+        public long getDate(Record rec) {
+            Function one = args.get(0);
+            Function two = args.get(1);
 
-        @Override
-        public int getInt(Record rec) {
-            final long value = arg.getDatetime(rec);
-            isNull = arg.isNull(rec);
+            long date = one.getDate(rec);
+            long time = two.getTime(rec);
+
+            isNull = one.isNull(rec) || two.isNull(rec);
             if (isNull) return 0;
-            LocalDate localDate = new Date(value).toLocalDate();
-            return MonthFunction.month(localDate);
+            long l = date + time;
+            return l;
         }
     }
+
+    ;
 }

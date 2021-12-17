@@ -17,23 +17,21 @@
 
 package io.ordinate.engine.function.time;
 
-import io.mycat.calcite.sqlfunction.datefunction.MonthFunction;
-import io.ordinate.engine.builder.EngineConfiguration;
-import io.ordinate.engine.function.Function;
-import io.ordinate.engine.function.FunctionFactory;
-import io.ordinate.engine.function.IntFunction;
-import io.ordinate.engine.function.UnaryFunction;
-import io.ordinate.engine.record.Record;
-import io.questdb.std.datetime.microtime.Timestamps;
 
-import java.sql.Date;
-import java.time.LocalDate;
+import io.mycat.calcite.sqlfunction.datefunction.MicrosecondFunction;
+import io.ordinate.engine.builder.EngineConfiguration;
+import io.ordinate.engine.function.*;
+import io.ordinate.engine.function.cast.CastStringToTimeFunctionFactory;
+import io.ordinate.engine.record.Record;
+import org.apache.calcite.mycat.MycatBuiltInMethodImpl;
+
+import java.time.Duration;
 import java.util.List;
 
-public class MonthOfYearFunctionFactory implements FunctionFactory {
+public class MicrosecondFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "month(date):int32";
+        return "MICROSECOND():long";
     }
 
     @Override
@@ -41,9 +39,10 @@ public class MonthOfYearFunctionFactory implements FunctionFactory {
         return new Func(args.get(0));
     }
 
-    private static final class Func extends IntFunction implements UnaryFunction {
+    private static final class Func extends LongFunction implements UnaryFunction {
 
         private final Function arg;
+
         boolean isNull;
 
         public Func(Function arg) {
@@ -61,12 +60,22 @@ public class MonthOfYearFunctionFactory implements FunctionFactory {
         }
 
         @Override
-        public int getInt(Record rec) {
-            final long value = arg.getDatetime(rec);
-            isNull = arg.isNull(rec);
-            if (isNull) return 0;
-            LocalDate localDate = new Date(value).toLocalDate();
-            return MonthFunction.month(localDate);
+        public long getLong(Record rec) {
+            Function arg = this.arg;
+            if (arg instanceof CastStringToTimeFunctionFactory.Func) {
+                arg = ((CastStringToTimeFunctionFactory.Func) this.arg).getArg();
+            }
+            if (arg instanceof StringFunction) {
+                final CharSequence value = arg.getString(rec);
+                isNull = arg.isNull(rec);
+                if (value == null) return 0;
+                if (isNull) return 0;
+                String s = value.toString();
+                Duration localDate = MycatBuiltInMethodImpl.stringToTime(s);
+                return MicrosecondFunction.microsecond(localDate);
+            }
+
+            throw new UnsupportedOperationException();
         }
     }
 }

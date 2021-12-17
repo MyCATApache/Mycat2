@@ -17,23 +17,23 @@
 
 package io.ordinate.engine.function.time;
 
-import io.mycat.calcite.sqlfunction.datefunction.MonthFunction;
-import io.ordinate.engine.builder.EngineConfiguration;
-import io.ordinate.engine.function.Function;
-import io.ordinate.engine.function.FunctionFactory;
-import io.ordinate.engine.function.IntFunction;
-import io.ordinate.engine.function.UnaryFunction;
-import io.ordinate.engine.record.Record;
-import io.questdb.std.datetime.microtime.Timestamps;
 
-import java.sql.Date;
-import java.time.LocalDate;
+import io.mycat.calcite.sqlfunction.datefunction.MicrosecondFunction;
+import io.mycat.calcite.sqlfunction.datefunction.MinuteFunction;
+import io.ordinate.engine.builder.EngineConfiguration;
+import io.ordinate.engine.function.*;
+import io.ordinate.engine.function.cast.CastStringToTimeFunctionFactory;
+import io.ordinate.engine.record.Record;
+import org.apache.calcite.mycat.MycatBuiltInMethodImpl;
+
+import java.sql.Time;
+import java.time.Duration;
 import java.util.List;
 
-public class MonthOfYearFunctionFactory implements FunctionFactory {
+public class MinuteFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "month(date):int32";
+        return "minute(time):long";
     }
 
     @Override
@@ -41,9 +41,10 @@ public class MonthOfYearFunctionFactory implements FunctionFactory {
         return new Func(args.get(0));
     }
 
-    private static final class Func extends IntFunction implements UnaryFunction {
+    private static final class Func extends LongFunction implements UnaryFunction {
 
         private final Function arg;
+
         boolean isNull;
 
         public Func(Function arg) {
@@ -61,12 +62,12 @@ public class MonthOfYearFunctionFactory implements FunctionFactory {
         }
 
         @Override
-        public int getInt(Record rec) {
-            final long value = arg.getDatetime(rec);
+        public long getLong(Record rec) {
+            Function arg = this.arg;
+            final long value = arg.getTime(rec);
             isNull = arg.isNull(rec);
             if (isNull) return 0;
-            LocalDate localDate = new Date(value).toLocalDate();
-            return MonthFunction.month(localDate);
+            return new Time(value).toLocalTime().getMinute();
         }
     }
 }

@@ -17,23 +17,21 @@
 
 package io.ordinate.engine.function.time;
 
-import io.mycat.calcite.sqlfunction.datefunction.MonthFunction;
+
+import io.mycat.calcite.sqlfunction.datefunction.LastDayFunction;
 import io.ordinate.engine.builder.EngineConfiguration;
-import io.ordinate.engine.function.Function;
-import io.ordinate.engine.function.FunctionFactory;
-import io.ordinate.engine.function.IntFunction;
-import io.ordinate.engine.function.UnaryFunction;
+import io.ordinate.engine.function.*;
 import io.ordinate.engine.record.Record;
-import io.questdb.std.datetime.microtime.Timestamps;
 
 import java.sql.Date;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 
-public class MonthOfYearFunctionFactory implements FunctionFactory {
+public class LastDayFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "month(date):int32";
+        return "last_day(date):int32";
     }
 
     @Override
@@ -41,9 +39,10 @@ public class MonthOfYearFunctionFactory implements FunctionFactory {
         return new Func(args.get(0));
     }
 
-    private static final class Func extends IntFunction implements UnaryFunction {
+    private static final class Func extends DateFunction implements UnaryFunction {
 
         private final Function arg;
+
         boolean isNull;
 
         public Func(Function arg) {
@@ -61,12 +60,15 @@ public class MonthOfYearFunctionFactory implements FunctionFactory {
         }
 
         @Override
-        public int getInt(Record rec) {
-            final long value = arg.getDatetime(rec);
+        public long getDate(Record rec) {
+            final long value = arg.getDate(rec);
             isNull = arg.isNull(rec);
-            if (isNull) return 0;
-            LocalDate localDate = new Date(value).toLocalDate();
-            return MonthFunction.month(localDate);
+            if (isNull){
+                return 0;
+            }
+
+            LocalDate localDate = LastDayFunction.lastDay(new Date(value).toLocalDate());
+            return Date.valueOf(localDate).getTime();
         }
     }
 }

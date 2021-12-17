@@ -17,23 +17,21 @@
 
 package io.ordinate.engine.function.time;
 
-import io.mycat.calcite.sqlfunction.datefunction.MonthFunction;
+import io.mycat.calcite.sqlfunction.datefunction.YearWeekFunction;
 import io.ordinate.engine.builder.EngineConfiguration;
 import io.ordinate.engine.function.Function;
 import io.ordinate.engine.function.FunctionFactory;
 import io.ordinate.engine.function.IntFunction;
 import io.ordinate.engine.function.UnaryFunction;
 import io.ordinate.engine.record.Record;
-import io.questdb.std.datetime.microtime.Timestamps;
 
 import java.sql.Date;
-import java.time.LocalDate;
 import java.util.List;
 
-public class MonthOfYearFunctionFactory implements FunctionFactory {
+public class YearWeekFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "month(date):int32";
+        return "yearweek(date)";
     }
 
     @Override
@@ -44,9 +42,10 @@ public class MonthOfYearFunctionFactory implements FunctionFactory {
     private static final class Func extends IntFunction implements UnaryFunction {
 
         private final Function arg;
-        boolean isNull;
+        private boolean isNull;
 
         public Func(Function arg) {
+            super();
             this.arg = arg;
         }
 
@@ -62,11 +61,10 @@ public class MonthOfYearFunctionFactory implements FunctionFactory {
 
         @Override
         public int getInt(Record rec) {
-            final long value = arg.getDatetime(rec);
+            final long value = arg.getDate(rec);
             isNull = arg.isNull(rec);
             if (isNull) return 0;
-            LocalDate localDate = new Date(value).toLocalDate();
-            return MonthFunction.month(localDate);
+            return YearWeekFunction.yearWeek(new Date(value).toLocalDate());
         }
     }
 }

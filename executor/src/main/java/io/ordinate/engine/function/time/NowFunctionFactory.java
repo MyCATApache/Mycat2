@@ -17,56 +17,39 @@
 
 package io.ordinate.engine.function.time;
 
-import io.mycat.calcite.sqlfunction.datefunction.MonthFunction;
+
+import io.mycat.calcite.sqlfunction.datefunction.LastDayFunction;
 import io.ordinate.engine.builder.EngineConfiguration;
-import io.ordinate.engine.function.Function;
-import io.ordinate.engine.function.FunctionFactory;
-import io.ordinate.engine.function.IntFunction;
-import io.ordinate.engine.function.UnaryFunction;
+import io.ordinate.engine.function.*;
 import io.ordinate.engine.record.Record;
-import io.questdb.std.datetime.microtime.Timestamps;
 
 import java.sql.Date;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
-public class MonthOfYearFunctionFactory implements FunctionFactory {
+public class NowFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "month(date):int32";
+        return "now():datetime";
     }
 
     @Override
     public Function newInstance(List<Function> args, EngineConfiguration configuration) {
-        return new Func(args.get(0));
+        return new Func();
     }
 
-    private static final class Func extends IntFunction implements UnaryFunction {
+    private static final class Func extends DatetimeFunction {
 
-        private final Function arg;
-        boolean isNull;
 
-        public Func(Function arg) {
-            this.arg = arg;
+        public Func() {
         }
 
-        @Override
-        public Function getArg() {
-            return arg;
-        }
 
         @Override
-        public boolean isNull(Record rec) {
-            return isNull;
-        }
-
-        @Override
-        public int getInt(Record rec) {
-            final long value = arg.getDatetime(rec);
-            isNull = arg.isNull(rec);
-            if (isNull) return 0;
-            LocalDate localDate = new Date(value).toLocalDate();
-            return MonthFunction.month(localDate);
+        public long getDatetime(Record rec) {
+            return System.currentTimeMillis();
         }
     }
 }

@@ -17,23 +17,20 @@
 
 package io.ordinate.engine.function.time;
 
-import io.mycat.calcite.sqlfunction.datefunction.MonthFunction;
+import io.mycat.calcite.sqlfunction.datefunction.DayOfWeekFunction;
+import io.mycat.calcite.sqlfunction.datefunction.FromDaysFunction;
 import io.ordinate.engine.builder.EngineConfiguration;
-import io.ordinate.engine.function.Function;
-import io.ordinate.engine.function.FunctionFactory;
-import io.ordinate.engine.function.IntFunction;
-import io.ordinate.engine.function.UnaryFunction;
+import io.ordinate.engine.function.*;
 import io.ordinate.engine.record.Record;
-import io.questdb.std.datetime.microtime.Timestamps;
 
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
 
-public class MonthOfYearFunctionFactory implements FunctionFactory {
+public class FromDaysFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "month(date):int32";
+        return "FROM_DAYS(long):date";
     }
 
     @Override
@@ -41,7 +38,7 @@ public class MonthOfYearFunctionFactory implements FunctionFactory {
         return new Func(args.get(0));
     }
 
-    private static final class Func extends IntFunction implements UnaryFunction {
+    private static final class Func extends DateFunction implements UnaryFunction {
 
         private final Function arg;
         boolean isNull;
@@ -61,12 +58,12 @@ public class MonthOfYearFunctionFactory implements FunctionFactory {
         }
 
         @Override
-        public int getInt(Record rec) {
-            final long value = arg.getDatetime(rec);
+        public long getDate(Record rec) {
+            long aLong = arg.getLong(rec);
             isNull = arg.isNull(rec);
             if (isNull) return 0;
-            LocalDate localDate = new Date(value).toLocalDate();
-            return MonthFunction.month(localDate);
+            LocalDate localDate = FromDaysFunction.fromDays(aLong);
+            return Date.valueOf(localDate).getTime();
         }
     }
 }

@@ -17,23 +17,24 @@
 
 package io.ordinate.engine.function.time;
 
+
+import io.mycat.calcite.sqlfunction.datefunction.MicrosecondFunction;
 import io.mycat.calcite.sqlfunction.datefunction.MonthFunction;
+import io.mycat.calcite.sqlfunction.datefunction.MonthNameFunction;
 import io.ordinate.engine.builder.EngineConfiguration;
-import io.ordinate.engine.function.Function;
-import io.ordinate.engine.function.FunctionFactory;
-import io.ordinate.engine.function.IntFunction;
-import io.ordinate.engine.function.UnaryFunction;
+import io.ordinate.engine.function.*;
+import io.ordinate.engine.function.cast.CastStringToTimeFunctionFactory;
 import io.ordinate.engine.record.Record;
-import io.questdb.std.datetime.microtime.Timestamps;
+import org.apache.calcite.mycat.MycatBuiltInMethodImpl;
 
 import java.sql.Date;
-import java.time.LocalDate;
+import java.time.Duration;
 import java.util.List;
 
-public class MonthOfYearFunctionFactory implements FunctionFactory {
+public class MonthNameFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "month(date):int32";
+        return "monthname(date):string";
     }
 
     @Override
@@ -41,9 +42,10 @@ public class MonthOfYearFunctionFactory implements FunctionFactory {
         return new Func(args.get(0));
     }
 
-    private static final class Func extends IntFunction implements UnaryFunction {
+    private static final class Func extends StringFunction implements UnaryFunction {
 
         private final Function arg;
+
         boolean isNull;
 
         public Func(Function arg) {
@@ -61,12 +63,11 @@ public class MonthOfYearFunctionFactory implements FunctionFactory {
         }
 
         @Override
-        public int getInt(Record rec) {
-            final long value = arg.getDatetime(rec);
+        public String getString(Record rec) {
+            long date = arg.getDate(rec);
             isNull = arg.isNull(rec);
-            if (isNull) return 0;
-            LocalDate localDate = new Date(value).toLocalDate();
-            return MonthFunction.month(localDate);
+            if (isNull) return null;
+            return MonthNameFunction.monthName(new Date(date).toLocalDate());
         }
     }
 }

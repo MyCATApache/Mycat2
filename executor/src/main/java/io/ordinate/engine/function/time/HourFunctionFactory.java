@@ -17,7 +17,8 @@
 
 package io.ordinate.engine.function.time;
 
-import io.mycat.calcite.sqlfunction.datefunction.MonthFunction;
+
+import io.mycat.util.DateUtil;
 import io.ordinate.engine.builder.EngineConfiguration;
 import io.ordinate.engine.function.Function;
 import io.ordinate.engine.function.FunctionFactory;
@@ -26,14 +27,15 @@ import io.ordinate.engine.function.UnaryFunction;
 import io.ordinate.engine.record.Record;
 import io.questdb.std.datetime.microtime.Timestamps;
 
-import java.sql.Date;
-import java.time.LocalDate;
+import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.LocalTime;
 import java.util.List;
 
-public class MonthOfYearFunctionFactory implements FunctionFactory {
+public class HourFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "month(date):int32";
+        return "hour(time):int32";
     }
 
     @Override
@@ -44,6 +46,7 @@ public class MonthOfYearFunctionFactory implements FunctionFactory {
     private static final class Func extends IntFunction implements UnaryFunction {
 
         private final Function arg;
+
         boolean isNull;
 
         public Func(Function arg) {
@@ -62,11 +65,10 @@ public class MonthOfYearFunctionFactory implements FunctionFactory {
 
         @Override
         public int getInt(Record rec) {
-            final long value = arg.getDatetime(rec);
+            final long value = arg.getTime(rec);
             isNull = arg.isNull(rec);
             if (isNull) return 0;
-            LocalDate localDate = new Date(value).toLocalDate();
-            return MonthFunction.month(localDate);
+            return (int) Duration.ofMillis(value).toHours();
         }
     }
 }
