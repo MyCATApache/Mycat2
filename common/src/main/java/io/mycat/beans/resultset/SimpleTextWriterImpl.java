@@ -24,8 +24,8 @@ public class SimpleTextWriterImpl implements ResultSetWriter {
 
     @Override
     public void addFlagNull(boolean value) {
-        row[index] = value ? null : row[index];
-
+        row[index] = null;
+        index++;
     }
 
     @Override
@@ -34,15 +34,9 @@ public class SimpleTextWriterImpl implements ResultSetWriter {
     }
 
     @Override
-    public void endNullMap() {
-        index = 0;
-    }
-
-
-    @Override
-    public void addBoolean(int i) {
+    public void addBoolean(boolean i) {
         byte[] res;
-        if (i > 0) {
+        if (i) {
             res = new byte[]{1};
         } else {
             res = new byte[]{0};
@@ -59,13 +53,13 @@ public class SimpleTextWriterImpl implements ResultSetWriter {
 
     @Override
     public void addInt16(short i) {
-        row[index] =  String.valueOf(i).getBytes();
+        row[index] = String.valueOf(i).getBytes();
         index++;
     }
 
     @Override
     public void addChar(char i) {
-        row[index] =  String.valueOf(i).getBytes();
+        row[index] = String.valueOf(i).getBytes();
         index++;
     }
 
@@ -77,7 +71,7 @@ public class SimpleTextWriterImpl implements ResultSetWriter {
 
     @Override
     public void addInt64(long l) {
-        row[index] =  String.valueOf(l).getBytes();
+        row[index] = String.valueOf(l).getBytes();
         index++;
     }
 
@@ -113,7 +107,7 @@ public class SimpleTextWriterImpl implements ResultSetWriter {
 
     @Override
     public void addUInt32(int i) {
-        row[index] =String.valueOf(i).getBytes();
+        row[index] = String.valueOf(i).getBytes();
         index++;
     }
 
@@ -143,7 +137,7 @@ public class SimpleTextWriterImpl implements ResultSetWriter {
 
     @Override
     public void addUInt8(byte b) {
-        row[index] =String.valueOf(b).getBytes();
+        row[index] = String.valueOf(b).getBytes();
         index++;
     }
 

@@ -1,9 +1,11 @@
 package io.mycat.beans.mycat;
 
 import com.google.common.collect.ImmutableList;
+import lombok.Getter;
 
 import java.util.List;
 
+@Getter
 public class MycatRelDataType {
     final List<MycatField> fieldList;
 
