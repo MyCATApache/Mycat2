@@ -41,6 +41,7 @@
 package io.ordinate.engine.function.constant;
 
 import io.ordinate.engine.function.TimeFunction;
+import io.ordinate.engine.record.Record;
 
 public class TimeConstant extends TimeFunction implements ConstantFunction {
     final long value;
@@ -49,5 +50,10 @@ public class TimeConstant extends TimeFunction implements ConstantFunction {
     }
     public static TimeConstant newInstance(long value) {
         return new TimeConstant(value);
+    }
+
+    @Override
+    public long getTime(Record rec) {
+        return value;
     }
 }
