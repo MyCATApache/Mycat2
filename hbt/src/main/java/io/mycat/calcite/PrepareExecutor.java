@@ -4,7 +4,9 @@ import io.mycat.AsyncMycatDataContextImpl;
 import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlObjectArrayRow;
 import io.mycat.api.collector.MysqlPayloadObject;
+import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.beans.mycat.ResultSetBuilder;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -15,6 +17,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Iterator;
 import java.util.Objects;
 
 @Getter
@@ -109,5 +112,25 @@ public class PrepareExecutor {
                     .onFailure(event -> emitter1.onError(event));
         });
         return observable;
+    }
+    public Observable<Object[]> asObservableObjectArray( AsyncMycatDataContextImpl newMycatDataContext){
+        Object bindObservable = arrayBindable.bindObservable(newMycatDataContext);
+        if (bindObservable instanceof Observable) {
+            return (Observable) bindObservable;
+        } else {
+            Enumerable<Object[]> enumerable = (Enumerable) bindObservable;
+            return toObservable(newMycatDataContext, enumerable);
+        }
+    }
+    public RowBaseIterator asRowBaseIterator(AsyncMycatDataContextImpl newMycatDataContext, MycatRowMetaData mycatRowMetaData){
+        Observable<Object[]> bind = asObservableObjectArray(newMycatDataContext);
+        Iterable<Object[]> objects = bind.blockingIterable();
+        Iterator<Object[]> iterator = objects.iterator();
+        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+        while (iterator.hasNext()){
+            Object[] row = iterator.next();
+            resultSetBuilder.addObjectRowPayload(row);
+        }
+        return resultSetBuilder.build(mycatRowMetaData);
     }
 }

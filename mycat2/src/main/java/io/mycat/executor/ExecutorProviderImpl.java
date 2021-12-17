@@ -3,6 +3,7 @@ package io.mycat.executor;
 import io.mycat.AsyncMycatDataContextImpl;
 import io.mycat.DrdsSqlWithParams;
 import io.mycat.MycatDataContext;
+import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.*;
@@ -89,24 +90,8 @@ public class ExecutorProviderImpl implements ExecutorProvider {
         Plan plan = DrdsRunnerHelper.getPlan(drdsSql);
         AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSql);
         PrepareExecutor prepareExecutor = prepare(plan);
-        PrepareExecutor.ArrowObservable arrowObservable = prepareExecutor.asObservableVector(sqlMycatDataContext, plan.getMetaData());
-        Iterable<VectorSchemaRoot> vectorSchemaRoots = arrowObservable.getObservable().blockingIterable();
-        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
-        for (VectorSchemaRoot vectorSchemaRoot : vectorSchemaRoots) {
-            int rowCount = vectorSchemaRoot.getRowCount();
-            List<FieldVector> fieldVectors = vectorSchemaRoot.getFieldVectors();
-            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-                Object[] rows = new Object[fieldVectors.size()];
-                for (int columnIndex = 0; columnIndex < fieldVectors.size(); columnIndex++) {
-                    FieldVector fieldVector = fieldVectors.get(columnIndex);
-                    rows[columnIndex] = fieldVector.getObject(rowIndex);
-                }
-                resultSetBuilder.addObjectRowPayload(rows);
-            }
-        }
-
-        return resultSetBuilder.build(plan.getMetaData());
-
+        RowBaseIterator baseIterator = prepareExecutor.asRowBaseIterator(sqlMycatDataContext, plan.getMetaData());
+       return baseIterator;
     }
 
     @NotNull
