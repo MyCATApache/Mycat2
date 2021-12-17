@@ -23,6 +23,7 @@ import io.ordinate.engine.record.VectorBatchRecord;
 import io.ordinate.engine.schema.InnerType;
 import io.ordinate.engine.vector.VectorContext;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -134,6 +135,10 @@ public interface Function {
         throw new UnsupportedOperationException();
     }
 
+    default BigDecimal getDecimal(Record rec) {
+        throw new UnsupportedOperationException();
+    }
+
     default int getInt(Record rec) {
         throw new UnsupportedOperationException();
     }
@@ -207,5 +212,78 @@ public interface Function {
         throw new UnsupportedOperationException();
     }
 
-
+    public default Object getAsObject(Record rec) {
+        Object res;
+        switch (getType()) {
+            case BOOLEAN_TYPE:
+                res = getBooleanType(rec);
+                break;
+            case INT8_TYPE:
+                res = getInt8Type(rec);
+                break;
+            case INT16_TYPE:
+                res = getInt16Type(rec);
+                break;
+            case CHAR_TYPE:
+                res = getCharType(rec);
+                break;
+            case INT32_TYPE:
+                res = getInt32Type(rec);
+                break;
+            case INT64_TYPE:
+                res = getInt64Type(rec);
+                break;
+            case FLOAT_TYPE:
+                res = getFloatType(rec);
+                break;
+            case DOUBLE_TYPE:
+                res = getDoubleType(rec);
+                break;
+            case DECIMAL_TYPE:
+                res = getDecimal(rec);
+                break;
+            case STRING_TYPE:
+                res = getString(rec);
+                break;
+            case BINARY_TYPE:
+                res = getBinary(rec);
+                break;
+            case UINT8_TYPE:
+                res = getUInt8Type(rec);
+                break;
+            case UINT16_TYPE:
+                res = getUInt16Type(rec);
+                break;
+            case UINT32_TYPE:
+                res = getUInt32Type(rec);
+                break;
+            case UINT64_TYPE:
+                res = getUInt64Type(rec);
+                break;
+            case TIME_MILLI_TYPE:
+                res = getTime(rec);
+                break;
+            case DATE_TYPE:
+                res = getDate(rec);
+                break;
+            case DATETIME_MILLI_TYPE:
+                res = getDatetime(rec);
+                break;
+            case SYMBOL_TYPE:
+                res = getSymbol(rec);
+                break;
+            case OBJECT_TYPE:
+                res = getSymbolType(rec);
+                break;
+            case NULL_TYPE:
+                res = null;
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + getType());
+        }
+        if(isNull(rec)){
+            res = null;
+        }
+        return res;
+    }
 }
