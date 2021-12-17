@@ -82,7 +82,9 @@ public class PreparedStatement {
         if (o == null) {
             return new SQLNullExpr();
         }
-
+        if (o instanceof Boolean) {
+            return new SQLNumberExpr((Boolean) o ? 1 : 0);
+        }
         if (o instanceof String) {
             return new SQLCharExpr((String) o);
         }
@@ -96,7 +98,7 @@ public class PreparedStatement {
         }
         if (o instanceof LocalDate) {
             o = java.sql.Date.valueOf((LocalDate) o);
-            return fromJavaObject(o,timeZone);
+            return fromJavaObject(o, timeZone);
         }
 
         if (o instanceof Date) {
@@ -107,7 +109,7 @@ public class PreparedStatement {
             return new SQLHexExpr(s);
         }
         if (o instanceof Byte) {
-            String s = HexFormatUtil.bytesToHexString(new byte[]{(Byte)o});
+            String s = HexFormatUtil.bytesToHexString(new byte[]{(Byte) o});
             return new SQLHexExpr(s);
         }
 

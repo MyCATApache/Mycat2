@@ -213,6 +213,9 @@ public class SimpleColumnInfo {
                 if (o instanceof Number) {
                     return o;
                 }
+                if (o instanceof Boolean) {
+                    return ((Boolean) o).booleanValue()?1:0;
+                }
                 throw new IllegalArgumentException();
             case STRING:
                 return Objects.toString(o);
