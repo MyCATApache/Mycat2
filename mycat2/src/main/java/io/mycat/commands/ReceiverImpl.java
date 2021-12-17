@@ -354,8 +354,8 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public Future<Void> sendVectorResultSet(PrepareExecutor.ArrowObservable rootObservable) {
-        MycatRowMetaData mycatRowMetaData = rootObservable.getMycatRowMetaData();
+    public Future<Void> sendVectorResultSet(MycatRowMetaData mycatRowMetaData,
+                                            Observable<VectorSchemaRoot> rootObservable) {
         class Writer implements io.reactivex.rxjava3.functions.Function<VectorSchemaRoot, ObservableSource<? extends MysqlPayloadObject>> {
             InnerType[] types = null;
 
@@ -375,7 +375,9 @@ public class ReceiverImpl implements Response {
             }
         };
         Writer writer = new Writer();
-        Observable<MysqlPayloadObject> mysqlPacketObservable = Observable.concat(Observable.fromArray(MySQLColumnDef.of(mycatRowMetaData)), rootObservable.getObservable().flatMap(writer));
+        Observable<MySQLColumnDef> mySQLColumnDefObservable = Observable.fromArray(MySQLColumnDef.of(mycatRowMetaData));
+        Observable<MysqlPayloadObject> mysqlPayloadObjectObservable = rootObservable.flatMap(writer);
+        Observable<MysqlPayloadObject> mysqlPacketObservable = Observable.concat(mySQLColumnDefObservable, mysqlPayloadObjectObservable);
         return sendResultSet(mysqlPacketObservable);
     }
 

@@ -189,7 +189,8 @@ public class JdbcResponse implements Response {
     }
 
     @Override
-    public Future<Void> sendVectorResultSet(Observable<VectorSchemaRoot> rootObservable) {
+    public Future<Void> sendVectorResultSet(MycatRowMetaData mycatRowMetaData,
+                                            Observable<VectorSchemaRoot> observable) {
         return null;
     }
 
