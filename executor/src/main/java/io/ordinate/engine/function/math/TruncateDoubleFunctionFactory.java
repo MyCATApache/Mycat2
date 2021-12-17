@@ -18,47 +18,50 @@
 package io.ordinate.engine.function.math;
 
 
-import io.ordinate.engine.function.IntFunction;
-import io.ordinate.engine.function.UnaryFunction;
+import io.mycat.calcite.sqlfunction.mathfunction.TruncateFunction;
 import io.ordinate.engine.builder.EngineConfiguration;
-import io.ordinate.engine.function.FunctionFactory;
-import io.ordinate.engine.record.Record;
+import io.ordinate.engine.function.DoubleFunction;
 import io.ordinate.engine.function.Function;
+import io.ordinate.engine.function.FunctionFactory;
+import io.ordinate.engine.function.UnaryFunction;
+import io.ordinate.engine.record.Record;
+import org.apache.calcite.runtime.SqlFunctions;
 
+import java.math.BigDecimal;
 import java.util.List;
 
-public class AbsIntFunctionFactory implements FunctionFactory {
+public class TruncateDoubleFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "abs(int32)";
+        return "TRUNCATE(double,int)";
     }
 
     @Override
     public Function newInstance(List<Function> args, EngineConfiguration configuration) {
-        return new AbsIntFunction(args.get(0));
+        return new TanDoubleFunction(args);
     }
 
-    private static class AbsIntFunction extends IntFunction implements UnaryFunction {
-        private final Function arg;
+    private static class TanDoubleFunction extends DoubleFunction{
+        private final List<Function> args;
         boolean isNull;
-
-        public AbsIntFunction(Function arg) {
+        public TanDoubleFunction(List<Function> args) {
             super();
-            this.arg = arg;
+            this.args = args;
         }
 
         @Override
-        public Function getArg() {
-            return arg;
+        public List<Function> getArgs() {
+            return args;
         }
 
-
         @Override
-        public int getInt(Record rec) {
-            int value = arg.getInt(rec);
-            isNull = arg.isNull(rec);
+        public double getDouble(Record rec) {
+            Function one = args.get(0);
+            Function two = args.get(1);
+            isNull = one.isNull(rec)||two.isNull(rec);
             if (isNull) return 0;
-            return Math.abs(value);
+            BigDecimal bigDecimal = SqlFunctions.struncate(BigDecimal.valueOf(one.getDouble(rec)), two.getInt(rec));
+            return bigDecimal.doubleValue();
         }
 
         @Override

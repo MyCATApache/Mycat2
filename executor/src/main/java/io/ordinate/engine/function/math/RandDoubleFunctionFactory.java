@@ -18,52 +18,54 @@
 package io.ordinate.engine.function.math;
 
 
-import io.ordinate.engine.function.IntFunction;
-import io.ordinate.engine.function.UnaryFunction;
 import io.ordinate.engine.builder.EngineConfiguration;
-import io.ordinate.engine.function.FunctionFactory;
-import io.ordinate.engine.record.Record;
+import io.ordinate.engine.function.DoubleFunction;
 import io.ordinate.engine.function.Function;
+import io.ordinate.engine.function.FunctionFactory;
+import io.ordinate.engine.function.UnaryFunction;
+import io.ordinate.engine.record.Record;
 
 import java.util.List;
+import java.util.Random;
 
-public class AbsIntFunctionFactory implements FunctionFactory {
+public class RandDoubleFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "abs(int32)";
+        return "rand()";
     }
 
     @Override
     public Function newInstance(List<Function> args, EngineConfiguration configuration) {
-        return new AbsIntFunction(args.get(0));
+        return new RandDoubleFunction(args);
     }
 
-    private static class AbsIntFunction extends IntFunction implements UnaryFunction {
-        private final Function arg;
-        boolean isNull;
-
-        public AbsIntFunction(Function arg) {
+    private static class RandDoubleFunction extends DoubleFunction {
+        private final List<Function> args;
+        public RandDoubleFunction(List<Function> args) {
             super();
-            this.arg = arg;
+            this.args = args;
         }
 
         @Override
-        public Function getArg() {
-            return arg;
+        public List<Function> getArgs() {
+            return this.args ;
         }
 
-
         @Override
-        public int getInt(Record rec) {
-            int value = arg.getInt(rec);
-            isNull = arg.isNull(rec);
-            if (isNull) return 0;
-            return Math.abs(value);
+        public double getDouble(Record rec) {
+            if (this.args.isEmpty()){
+                Random rand = new Random(0);
+                return rand.nextDouble();
+            }
+            Function function = this.args.get(0);
+            long aLong = function.getLong(rec);
+            Random rand = new Random(aLong);
+            return rand.nextDouble();
         }
 
         @Override
         public boolean isNull(Record rec) {
-            return isNull;
+            return false;
         }
     }
 }

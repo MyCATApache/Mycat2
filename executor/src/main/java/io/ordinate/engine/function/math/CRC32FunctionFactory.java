@@ -18,31 +18,29 @@
 package io.ordinate.engine.function.math;
 
 
-import io.ordinate.engine.function.IntFunction;
-import io.ordinate.engine.function.UnaryFunction;
+import io.mycat.calcite.sqlfunction.mathfunction.CRC32Function;
 import io.ordinate.engine.builder.EngineConfiguration;
-import io.ordinate.engine.function.FunctionFactory;
+import io.ordinate.engine.function.*;
 import io.ordinate.engine.record.Record;
-import io.ordinate.engine.function.Function;
 
 import java.util.List;
 
-public class AbsIntFunctionFactory implements FunctionFactory {
+public class CRC32FunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "abs(int32)";
+        return "crc32(string)";
     }
 
     @Override
     public Function newInstance(List<Function> args, EngineConfiguration configuration) {
-        return new AbsIntFunction(args.get(0));
+        return new CRC32Function(args.get(0));
     }
 
-    private static class AbsIntFunction extends IntFunction implements UnaryFunction {
+    private static class CRC32Function extends LongFunction implements UnaryFunction {
         private final Function arg;
         boolean isNull;
 
-        public AbsIntFunction(Function arg) {
+        public CRC32Function(Function arg) {
             super();
             this.arg = arg;
         }
@@ -52,13 +50,12 @@ public class AbsIntFunctionFactory implements FunctionFactory {
             return arg;
         }
 
-
         @Override
-        public int getInt(Record rec) {
-            int value = arg.getInt(rec);
+        public long getLong(Record rec) {
+            CharSequence argString = arg.getString(rec);
             isNull = arg.isNull(rec);
             if (isNull) return 0;
-            return Math.abs(value);
+            return io.mycat.calcite.sqlfunction.mathfunction.CRC32Function.crc32(argString.toString());
         }
 
         @Override

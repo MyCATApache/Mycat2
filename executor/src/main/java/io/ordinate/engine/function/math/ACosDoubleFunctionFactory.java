@@ -18,31 +18,28 @@
 package io.ordinate.engine.function.math;
 
 
-import io.ordinate.engine.function.IntFunction;
-import io.ordinate.engine.function.UnaryFunction;
 import io.ordinate.engine.builder.EngineConfiguration;
-import io.ordinate.engine.function.FunctionFactory;
+import io.ordinate.engine.function.*;
 import io.ordinate.engine.record.Record;
-import io.ordinate.engine.function.Function;
 
 import java.util.List;
 
-public class AbsIntFunctionFactory implements FunctionFactory {
+public class ACosDoubleFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "abs(int32)";
+        return "acos(double)";
     }
 
     @Override
     public Function newInstance(List<Function> args, EngineConfiguration configuration) {
-        return new AbsIntFunction(args.get(0));
+        return new ACosDoubleFunction(args.get(0));
     }
 
-    private static class AbsIntFunction extends IntFunction implements UnaryFunction {
+    private static class ACosDoubleFunction extends DoubleFunction implements UnaryFunction {
         private final Function arg;
         boolean isNull;
 
-        public AbsIntFunction(Function arg) {
+        public ACosDoubleFunction(Function arg) {
             super();
             this.arg = arg;
         }
@@ -52,13 +49,12 @@ public class AbsIntFunctionFactory implements FunctionFactory {
             return arg;
         }
 
-
         @Override
-        public int getInt(Record rec) {
-            int value = arg.getInt(rec);
+        public double getDouble(Record rec) {
+            double aDouble = arg.getDouble(rec);
             isNull = arg.isNull(rec);
             if (isNull) return 0;
-            return Math.abs(value);
+            return Math.acos(aDouble);
         }
 
         @Override
