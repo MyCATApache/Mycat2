@@ -26,6 +26,7 @@ import io.ordinate.engine.record.Record;
 import io.questdb.std.datetime.microtime.Timestamps;
 
 
+import java.sql.Date;
 import java.util.List;
 
 public class YearFunctionFactory implements FunctionFactory {
@@ -38,6 +39,7 @@ public class YearFunctionFactory implements FunctionFactory {
     public Function newInstance(List<Function> args, EngineConfiguration configuration) {
         return new Func(args.get(0));
     }
+
     private static final class Func extends IntFunction implements UnaryFunction {
 
         private final Function arg;
@@ -60,10 +62,10 @@ public class YearFunctionFactory implements FunctionFactory {
 
         @Override
         public int getInt(Record rec) {
-            final long value = arg.getDatetime(rec);
+            final long value = arg.getDate(rec);
             isNull = arg.isNull(rec);
-            if (isNull)return 0;
-            return Timestamps.getYear(value);
+            if (isNull) return 0;
+            return new Date(value).toLocalDate().getYear();
         }
     }
 }

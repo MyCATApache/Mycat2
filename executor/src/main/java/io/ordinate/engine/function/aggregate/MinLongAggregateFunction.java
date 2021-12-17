@@ -54,6 +54,8 @@ public class MinLongAggregateFunction implements LongAccumulator {
         }
     }
 
+
+
     @Override
     public void allocContext(ArrayColumnTypes columnTypes) {
         stackIndex = columnTypes.getColumnCount();
@@ -65,9 +67,15 @@ public class MinLongAggregateFunction implements LongAccumulator {
         return rec.getLong(stackIndex);
     }
 
+
     @Override
-    public void init(int columnIndex) {
-        this.columnIndex = columnIndex;
+    public InnerType getOutputType() {
+        return InnerType.INT64_TYPE;
+    }
+
+    @Override
+    public InnerType getInputType() {
+        return InnerType.INT64_TYPE;
     }
 
     @Override
@@ -78,5 +86,10 @@ public class MinLongAggregateFunction implements LongAccumulator {
     @Override
     public InnerType getType() {
         return InnerType.INT64_TYPE;
+    }
+
+    @Override
+    public void setInputColumnIndex(int index) {
+        this.columnIndex = index;
     }
 }

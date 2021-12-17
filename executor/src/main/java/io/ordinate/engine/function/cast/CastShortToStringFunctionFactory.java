@@ -52,13 +52,14 @@ import java.util.List;
 public class CastShortToStringFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return null;
+        return "cast(int16)";
     }
 
     @Override
     public Function newInstance(List<Function> args, EngineConfiguration configuration) {
         return new Func(args.get(0));
     }
+
     private static class Func extends StringFunction implements UnaryFunction {
         private final Function arg;
 
@@ -76,5 +77,5 @@ public class CastShortToStringFunctionFactory implements FunctionFactory {
         public CharSequence getString(Record rec) {
             return String.valueOf(arg.getShort(rec));
         }
-      }
+    }
 }

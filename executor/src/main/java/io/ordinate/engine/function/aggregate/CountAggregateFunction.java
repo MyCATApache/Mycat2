@@ -57,14 +57,20 @@ public class CountAggregateFunction implements LongAccumulator {
         return rec.getLong(valueIndex);
     }
 
-    @Override
-    public void init(int columnIndex) {
-        this.valueIndex = columnIndex;
-    }
 
     @Override
     public int getInputColumnIndex() {
         return 0;
+    }
+
+    @Override
+    public InnerType getOutputType() {
+        return InnerType.INT64_TYPE;
+    }
+
+    @Override
+    public InnerType getInputType() {
+        return InnerType.INT64_TYPE;
     }
 
     @Override
@@ -78,7 +84,7 @@ public class CountAggregateFunction implements LongAccumulator {
     }
 
     @Override
-    public AggregateVectorExpression toAggregateVectorExpression() {
-      return null;
+    public void setInputColumnIndex(int index) {
+
     }
 }

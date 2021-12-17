@@ -159,8 +159,8 @@ public class FooRecordSink implements RecordSink {
                 }
 
                 case DATE_TYPE: {
-                    DateDayVector dateDayVector = (DateDayVector) vector;
-                    dateDayVector.set(rowId, (int) record.getDate(columnIndex));
+                    DateMilliVector dateDayVector = (DateMilliVector) vector;
+                    dateDayVector.set(rowId, record.getDate(columnIndex));
                     break;
                 }
                 case DATETIME_MILLI_TYPE: {

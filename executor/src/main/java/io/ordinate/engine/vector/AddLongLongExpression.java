@@ -31,13 +31,13 @@ public class AddLongLongExpression extends AbstractVectorExpression {
 
     private List<VectorExpression> children;
 
-    public AddLongLongExpression(int id, List<VectorExpression> children) {
-        super(ArrowTypes.INT64_TYPE,id);
+    public AddLongLongExpression( List<VectorExpression> children) {
+        super(ArrowTypes.INT64_TYPE);
         this.children = children;
     }
 
-    public static AddLongLongExpression of(int id,List<VectorExpression> vExpressions){
-        return new AddLongLongExpression(id,vExpressions);
+    public static AddLongLongExpression of(List<VectorExpression> vExpressions){
+        return new AddLongLongExpression(vExpressions);
     }
 
     @Override

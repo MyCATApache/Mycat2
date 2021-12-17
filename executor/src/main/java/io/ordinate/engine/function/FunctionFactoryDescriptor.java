@@ -41,13 +41,25 @@ public class FunctionFactoryDescriptor {
         int endIndex = signature.lastIndexOf(")");
         name = signature.substring(0, startIndex - 1);
         String argsText = signature.substring(startIndex, endIndex);
-        List<InnerType> args = Arrays.stream(argsText.split(",")).map(i -> getArgType(i.trim())).collect(Collectors.toList());
+        List<InnerType> args = Arrays.stream(argsText.split(",")).filter(i->!i.isEmpty()).map(i -> getArgType(i.trim())).collect(Collectors.toList());
         argTypes = args.stream().map(t -> getArgType(t.getAlias())).collect(Collectors.toList());
         int tailEndIndex = signature.lastIndexOf(":");
         type = tailEndIndex != -1 ? getArgType(signature.substring(tailEndIndex + 1)) : null;
     }
 
     public InnerType getArgType(String argType) {
+        if (argType.equals("int")){
+            argType = "int32";
+        }
+        if (argType.equals("short")){
+            argType = "int16";
+        }
+        if (argType.equals("long")){
+            argType = "int64";
+        }
+        if (argType.equals("byte")){
+            argType = "int8";
+        }
         for (InnerType value : InnerType.values()) {
             if (value.getAlias().equalsIgnoreCase(argType)) {
                 return value;

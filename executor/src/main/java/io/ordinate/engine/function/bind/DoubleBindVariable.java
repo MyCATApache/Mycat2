@@ -73,7 +73,7 @@ public class DoubleBindVariable extends DoubleFunction implements ScalarFunction
             isNull = true;
             return;
         }else if (o instanceof Number) {
-            value =(char) ((Number) o).doubleValue();
+            value =((Number) o).doubleValue();
         }else {
             throw new UnsupportedOperationException();
         }

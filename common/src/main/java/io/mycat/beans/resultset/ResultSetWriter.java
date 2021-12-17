@@ -19,9 +19,7 @@ public interface ResultSetWriter {
 
     public void startNewRow(int value);
 
-    public void endNullMap();
-
-    public void addBoolean(int value);
+    public void addBoolean(boolean value);
 
     public void addInt8(byte value);
 

@@ -43,7 +43,7 @@ package io.ordinate.engine.function.column;
 import io.ordinate.engine.function.IntFunction;
 import io.ordinate.engine.record.Record;
 
-public class IntColumn extends IntFunction implements ColumnFunction {
+public class IntColumn extends IntFunction implements ColumnFunction{
     private final int columnIndex;
     boolean isNull;
     public IntColumn(int columnIndex) {

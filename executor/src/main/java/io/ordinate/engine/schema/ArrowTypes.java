@@ -41,8 +41,8 @@ public class ArrowTypes {
 
 
     public static final ArrowType TIME_MILLI_TYPE = Types.MinorType.TIMEMILLI.getType();
-    public static final ArrowType DATE_TYPE = Types.MinorType.DATEDAY.getType();
-    public static final ArrowType DATETIME_MILLI_TYPE = Types.MinorType.TIMESTAMPMICRO.getType();
+    public static final ArrowType DATE_TYPE = Types.MinorType.DATEMILLI.getType();
+    public static final ArrowType DATETIME_MILLI_TYPE = Types.MinorType.TIMESTAMPMILLI.getType();
 
     public static void main(String[] args) {
         ArrowType.Int uint64Type = ArrowTypes.UINT64_TYPE;

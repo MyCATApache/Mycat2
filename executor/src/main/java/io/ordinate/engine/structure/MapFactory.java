@@ -166,6 +166,7 @@ public class MapFactory {
     public static void main(String[] args) {
         Map map = MapFactory.createMap(InnerType.STRING_TYPE);
         MapKey mapKey = map.withKey();
+        mapKey.putInt(1);
         MapValue value = mapKey.findValue();
         boolean b = mapKey.notFound();
         mapKey.putStr("aaa");

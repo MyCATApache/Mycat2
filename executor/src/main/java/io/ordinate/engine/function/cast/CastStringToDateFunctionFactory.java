@@ -40,6 +40,7 @@
 
 package io.ordinate.engine.function.cast;
 
+import io.mycat.util.DateUtil;
 import io.ordinate.engine.builder.EngineConfiguration;
 import io.ordinate.engine.function.FunctionFactory;
 import io.ordinate.engine.function.DateFunction;
@@ -47,9 +48,14 @@ import io.ordinate.engine.function.Function;
 import io.ordinate.engine.function.UnaryFunction;
 import io.ordinate.engine.function.Numbers;
 import io.ordinate.engine.record.Record;
+import io.questdb.std.datetime.millitime.Dates;
+import lombok.SneakyThrows;
+import org.apache.calcite.mycat.MycatBuiltInMethodImpl;
 
 
+import java.sql.Date;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.List;
 
 public class CastStringToDateFunctionFactory implements FunctionFactory {
@@ -78,11 +84,14 @@ public class CastStringToDateFunctionFactory implements FunctionFactory {
         }
 
         @Override
+        @SneakyThrows
         public long getDate(Record rec) {
             final CharSequence value = arg.getString(rec);
             isNull = arg.isNull(rec);
             if (isNull)return 0;
-            return Timestamp.parse(value.toString());
+            String s = value.toString();
+            LocalDate localDate = MycatBuiltInMethodImpl.stringToDate(s);
+            return Date.valueOf(localDate).getTime();
         }
 
         @Override

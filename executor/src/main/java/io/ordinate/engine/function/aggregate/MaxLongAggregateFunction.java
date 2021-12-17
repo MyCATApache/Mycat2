@@ -47,9 +47,9 @@ public class MaxLongAggregateFunction implements LongAccumulator {
         long value = record.getLong(columnIndex);
         boolean isNull = record.isNull(columnIndex);
         if (!isNull) {
-            double old = resultValue.getLong(columnIndex);
+            long old = resultValue.getLong(stackIndex);
             if (old < value) {
-                resultValue.putDouble(stackIndex, value);
+                resultValue.putLong(stackIndex, value);
             }
         }
     }
@@ -61,12 +61,7 @@ public class MaxLongAggregateFunction implements LongAccumulator {
     @Override
     public void allocContext(ArrayColumnTypes columnTypes) {
         stackIndex = columnTypes.getColumnCount();
-        columnTypes.add(ColumnType.DOUBLE);
-    }
-
-    @Override
-    public void init(int columnIndex) {
-        this.columnIndex = columnIndex;
+        columnTypes.add(ColumnType.LONG);
     }
 
     @Override
@@ -75,7 +70,22 @@ public class MaxLongAggregateFunction implements LongAccumulator {
     }
 
     @Override
+    public InnerType getOutputType() {
+        return InnerType.INT64_TYPE;
+    }
+
+    @Override
+    public InnerType getInputType() {
+        return InnerType.INT64_TYPE;
+    }
+
+    @Override
     public InnerType getType() {
         return InnerType.INT64_TYPE;
+    }
+
+    @Override
+    public void setInputColumnIndex(int index) {
+        this.columnIndex = index;
     }
 }

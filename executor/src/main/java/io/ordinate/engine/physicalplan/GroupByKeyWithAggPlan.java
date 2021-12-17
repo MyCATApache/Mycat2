@@ -53,19 +53,19 @@ public class GroupByKeyWithAggPlan implements PhysicalPlan {
     final Schema schema;
     FunctionSink functionSink;
     RecordSink outputSink;
-    public GroupByKeyWithAggPlan(PhysicalPlan input, GroupKeys[] groupByKeys, AccumulatorFunction[] accumulators, Schema schema) {
+
+    public GroupByKeyWithAggPlan(PhysicalPlan input,GroupKeys[] groupByKeys, AccumulatorFunction[] accumulators, Schema schema) {
         this.physicalPlan = input;
         this.groupByKeys = groupByKeys;
         this.accumulators = accumulators;
         this.schema = schema;
-
         this.functions = new io.ordinate.engine.function.Function[accumulators.length];
-
-        for (int i = 0; i < accumulators.length; i++) {
+        for(int i = 0; i < accumulators.length; ++i) {
             this.functions[i] = accumulators[i];
         }
-        functionSink= RecordSinkFactory.INSTANCE.buildFunctionSink(functions);
-        outputSink= RecordSinkFactory.INSTANCE.buildRecordSink(getIntTypes());
+
+        this.functionSink = RecordSinkFactory.INSTANCE.buildFunctionSink(this.functions);
+        outputSink = RecordSinkFactory.INSTANCE.buildRecordSink(getIntTypes());
     }
 
     @Override
@@ -84,19 +84,19 @@ public class GroupByKeyWithAggPlan implements PhysicalPlan {
         InnerType[] innerTypes = schema().getFields().stream().map(i -> InnerType.from(i.getType())).toArray(n -> new InnerType[n]);
 
 
-        if (groupByKeys.length>0) {
+        if (groupByKeys.length > 0) {
             ColumnTypes arrayColumnTypes = RecordUtil.getArrayColumnTypes(accumulators);
-            Map map = MapFactory.createMap2(innerTypes,arrayColumnTypes);
+            Map map = MapFactory.createMap2(innerTypes, arrayColumnTypes);
             RecordSink[] recordSinks = buildRecordSink(fields);
 
 
-            return physicalPlan.execute(rootContext).reduce(map, (map12, input) -> {
+            return physicalPlan.execute(rootContext).reduce(map, (mapKey, input) -> {
                 int rowCount = input.getRowCount();
                 VectorBatchRecord record = new VectorBatchRecord(input);
                 for (RecordSink recordSink : recordSinks) {
                     for (int rowId = 0; rowId < rowCount; rowId++) {
                         record.setPosition(rowId);
-                        MapKey key = map12.withKey();
+                        MapKey key = mapKey.withKey();
                         RecordSetter recordSinkSPI = RecordSinkFactory.INSTANCE.getRecordSinkSPI(key);
                         recordSink.copy(record, recordSinkSPI);
                         MapValue value = key.createValue();
@@ -112,7 +112,7 @@ public class GroupByKeyWithAggPlan implements PhysicalPlan {
                     }
                 }
                 physicalPlan.eachFree(input);
-                return map12;
+                return mapKey;
             }).map(map1 -> {
                 int size = (int) map1.size();
                 VectorSchemaRoot output = rootContext.getVectorSchemaRoot(schema(), size);
@@ -121,20 +121,21 @@ public class GroupByKeyWithAggPlan implements PhysicalPlan {
                 int index = 0;
                 while (cursor.hasNext()) {
                     Record record = cursor.getRecord();
-                    functionSink.copy(functions, RecordUtil.wrapAsAggRecord(record), index++, output);
+                    functionSink.copy(accumulators, RecordUtil.wrapAsAggRecord(record), index++, output);
                 }
                 output.setRowCount(index);
                 return output;
             }).toObservable().doOnComplete(() -> map.close());
-        }else {
-            SimpleMapValue mapValue = new SimpleMapValue( RecordUtil.getContextSize(accumulators));
+        } else {
+            SimpleMapValue mapValue = new SimpleMapValue(RecordUtil.getContextSize(accumulators));
             return physicalPlan.execute(rootContext).reduce(mapValue, new BiFunction<SimpleMapValue, VectorSchemaRoot, SimpleMapValue>() {
                 AtomicBoolean first = new AtomicBoolean(true);
+
                 @Override
                 public SimpleMapValue apply(SimpleMapValue simpleMapValue, VectorSchemaRoot root) throws Throwable {
                     int rowCount = root.getRowCount();
                     VectorBatchRecord record = new VectorBatchRecord(root);
-                    if (first.compareAndSet(true,false)){
+                    if (first.compareAndSet(true, false)) {
                         record.setPosition(0);
                         for (AccumulatorFunction accumulator : accumulators) {
                             accumulator.computeFirst(mapValue, record);
@@ -145,7 +146,7 @@ public class GroupByKeyWithAggPlan implements PhysicalPlan {
                                 accumulator.computeNext(mapValue, record);
                             }
                         }
-                    }else {
+                    } else {
                         for (int i = 0; i < rowCount; i++) {
                             record.setPosition(i);
                             for (AccumulatorFunction accumulator : accumulators) {
@@ -162,7 +163,7 @@ public class GroupByKeyWithAggPlan implements PhysicalPlan {
                 public VectorSchemaRoot apply(SimpleMapValue simpleMapValue) throws Throwable {
                     VectorSchemaRoot vectorSchemaRoot = rootContext.getVectorSchemaRoot(schema(), 1);
                     vectorSchemaRoot.setRowCount(1);
-                    functionSink.copy(accumulators,RecordUtil.wrapAsAggRecord(simpleMapValue),0,vectorSchemaRoot);
+                    functionSink.copy(accumulators, RecordUtil.wrapAsAggRecord(simpleMapValue), 0, vectorSchemaRoot);
                     return vectorSchemaRoot;
                 }
             }).toObservable();

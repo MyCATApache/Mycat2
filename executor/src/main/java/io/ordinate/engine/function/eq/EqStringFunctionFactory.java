@@ -57,8 +57,9 @@ public class EqStringFunctionFactory implements FunctionFactory {
 
     @Override
     public Function newInstance(List<Function> args, EngineConfiguration configuration) {
-        return new Func((ScalarFunction)args.get(0),(ScalarFunction)args.get(1));
+        return new Func((ScalarFunction) args.get(0), (ScalarFunction) args.get(1));
     }
+
     private static class Func extends NegatableBooleanFunction implements BinaryArgFunction {
         private final ScalarFunction left;
         private final ScalarFunction right;
@@ -70,7 +71,24 @@ public class EqStringFunctionFactory implements FunctionFactory {
 
         @Override
         public int getInt(Record rec) {
-            return (negated != (Objects.equals(left.getString(rec) ,right.getString(rec))))?1:0;
+            CharSequence leftString = left.getString(rec);
+            CharSequence rightString = right.getString(rec);
+            boolean equals;
+            if (leftString != null && rightString != null) {
+                equals = leftString.toString().equalsIgnoreCase(rightString.toString());
+            }else {
+                equals = Objects.equals(leftString, rightString);
+            }
+            if (equals) {
+                if (!negated) {
+                    return 1;
+                }
+            } else {
+                if (negated) {
+                    return 1;
+                }
+            }
+            return 0;
         }
 
         @Override

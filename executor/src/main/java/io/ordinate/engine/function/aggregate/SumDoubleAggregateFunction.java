@@ -57,18 +57,28 @@ public class SumDoubleAggregateFunction implements DoubleAccumulator {
     }
 
     @Override
-    public void init(int columnIndex) {
-        this.columnIndex = columnIndex;
-    }
-
-    @Override
     public int getInputColumnIndex() {
         return columnIndex;
     }
 
     @Override
+    public InnerType getOutputType() {
+        return null;
+    }
+
+    @Override
+    public InnerType getInputType() {
+       return InnerType.DOUBLE_TYPE;
+    }
+
+    @Override
     public InnerType getType() {
         return InnerType.DOUBLE_TYPE;
+    }
+
+    @Override
+    public void setInputColumnIndex(int index) {
+        this.columnIndex = index;
     }
 
     @Override

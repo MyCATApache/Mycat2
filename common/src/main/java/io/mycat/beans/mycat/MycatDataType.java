@@ -536,6 +536,12 @@ public enum MycatDataType {
     }
 
     public static MycatDataType fromJdbc(JDBCType jdbcType, boolean signed) {
+        if (jdbcType == JDBCType.LONGVARBINARY){
+            return MycatDataType.BINARY;
+        }
+        if (jdbcType == JDBCType.VARBINARY){
+            return MycatDataType.BINARY;
+        }
         for (MycatDataType value : values()) {
             if (signed) {
                 if (value.getSignedJdbcType() == jdbcType) {

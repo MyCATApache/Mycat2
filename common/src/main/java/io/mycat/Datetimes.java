@@ -17,30 +17,31 @@
 
 package io.mycat;
 
-import io.questdb.std.datetime.microtime.Timestamps;
+import io.mycat.util.DateUtil;
 
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import static com.mysql.cj.protocol.a.MysqlTextValueDecoder.TIME_STR_LEN_MAX_WITH_MICROS;
+
 public class Datetimes {
 
     public static LocalDateTime toJavaLocalDateTime(long value) {
-        final int year = Timestamps.getYear(value);
-        final boolean isLeap = Timestamps.isLeapYear(year);
-        final int month = Timestamps.getMonthOfYear(value, year, isLeap);
-        final int dayOfMonth = Timestamps.getDayOfMonth(value, year, month, isLeap);
-        final int hourOfDay = Timestamps.getHourOfDay(value);
-        final int minuteOfHour = Timestamps.getMinuteOfHour(value);
-        final int secondOfMinute = Timestamps.getSecondOfMinute(value);
-        final int millisOfSecond = Timestamps.getMillisOfSecond(value);
+        Timestamp timestamp = new Timestamp(value);
+//        final int year = DateUtil.getYear(timestamp);
+//        final int month = DateUtil.getMonth(timestamp);
+//        final int dayOfMonth =  DateUtil.getDay(timestamp);
+//        final int hourOfDay =  DateUtil.getHour(timestamp);
+//        final int minuteOfHour = DateUtil.getMinute(timestamp);
+//        final int secondOfMinute =  DateUtil.getSecond(timestamp);
+//        final int millisOfSecond =  DateUtil.getSecond(timestamp);
 
-        return LocalDateTime
-                .of(year, month, dayOfMonth, hourOfDay,
-                        minuteOfHour, secondOfMinute, millisOfSecond * 1000);
+        return timestamp.toLocalDateTime();
     }
 
     public static Timestamp toJavaTimestamp(long value) {
@@ -50,14 +51,14 @@ public class Datetimes {
 
     public static String toMySQLResultDatetimeText(long value) {
 
-        final int year = Timestamps.getYear(value);
-        final boolean isLeap = Timestamps.isLeapYear(year);
-        final int month = Timestamps.getMonthOfYear(value, year, isLeap);
-        final int dayOfMonth = Timestamps.getDayOfMonth(value, year, month, isLeap);
-        final int hour = Timestamps.getHourOfDay(value);
-        final int minute = Timestamps.getMinuteOfHour(value);
-        final int second = Timestamps.getSecondOfMinute(value);
-        final int millisOfSecond = Timestamps.getMillisOfSecond(value);
+        Timestamp timestamp = new Timestamp(value);
+        final int year =  DateUtil.getYear(timestamp);
+        final int month = DateUtil.getMonth(timestamp);
+        final int dayOfMonth = DateUtil.getDay(timestamp);
+        final int hour = DateUtil.getHour(timestamp);
+        final int minute = DateUtil.getMinute(timestamp);
+        final int second =  DateUtil.getSecond(timestamp);
+        final int millisOfSecond = DateUtil.getMicroSecond(timestamp);
 
         if (millisOfSecond == 0) {
             return String.format("%04d-%02d-%02d %02d:%02d:%02d",
@@ -86,10 +87,10 @@ public class Datetimes {
     }
 
     public static String toMySQLResultDateText(long value) {
-        final int year = Timestamps.getYear(value);
-        final boolean isLeap = Timestamps.isLeapYear(year);
-        final int month = Timestamps.getMonthOfYear(value, year, isLeap);
-        final int dayOfMonth = Timestamps.getDayOfMonth(value, year, month, isLeap);
+        Date date = new Date(value);
+        final int year =DateUtil.getYear(date);
+        final int month = DateUtil.getMonth(date);
+        final int dayOfMonth = DateUtil.getDay(date);
 
         return String.format("%04d-%02d-%02d",
                 year,
@@ -99,17 +100,7 @@ public class Datetimes {
     }
 
     public static LocalDate toJavaLocalDate(long value) {
-        final int year = Timestamps.getYear(value);
-        final boolean isLeap = Timestamps.isLeapYear(year);
-        final int month = Timestamps.getMonthOfYear(value, year, isLeap);
-        int dayOfMonth = Timestamps.getDayOfMonth(value, year, month, isLeap);
-        int hourOfDay = Timestamps.getHourOfDay(value);
-        int minuteOfHour = Timestamps.getMinuteOfHour(value);
-        int secondOfMinute = Timestamps.getSecondOfMinute(value);
-        int millisOfSecond = Timestamps.getMillisOfSecond(value);
-
-        LocalDate localDate = LocalDate.of(year, month, dayOfMonth);
-        return localDate;
+        return new Date(value).toLocalDate();
     }
 
     public static LocalTime toJavaLocalTime(long value) {
@@ -118,11 +109,9 @@ public class Datetimes {
 //        final int month = Timestamps.getMonthOfYear(value, year, isLeap);
 //        int dayOfMonth = Timestamps.getDayOfMonth(value, year, month, isLeap);
 //        int hourOfDay = Timestamps.getHourOfDay(value);
-        int minuteOfHour = Timestamps.getMinuteOfHour(value);
-        int secondOfMinute = Timestamps.getSecondOfMinute(value);
-        int millisOfSecond = Timestamps.getMillisOfSecond(value);
+        Time time = new Time(value);
 
-        return LocalTime.of(minuteOfHour, secondOfMinute, millisOfSecond * 1000);
+        return time.toLocalTime();
     }
 
     public static Time toJavaTime(long value) {
@@ -131,14 +120,17 @@ public class Datetimes {
     }
 
     public static String toMySQLResultTimeText(long value) {
-        int hour = Timestamps.getHourOfDay(value);
-        int minute = Timestamps.getMinuteOfHour(value);
-        int second = Timestamps.getSecondOfMinute(value);
-        int millisOfSecond = Timestamps.getMillisOfSecond(value);
-        if (millisOfSecond == 0) {
-            return String.format("%02d:%02d:%02d", hour, minute, second);
+        Duration duration = Duration.ofMillis(value);
+        LocalTime localTime = LocalTime.MIN.plus(Duration.ofMillis(value));
+        int hour =localTime.getHour();
+        int minute = localTime.getMinute();
+        int second = localTime.getSecond();
+        int millisOfSecond = duration.getNano();
+        String v = localTime.toString();
+        if(v.length()>TIME_STR_LEN_MAX_WITH_MICROS){
+            System.out.println();
         }
-        return String.format("%02d:%02d:%02d.%09d", hour, minute, second, millisOfSecond);
+        return v;
     }
 
 }
