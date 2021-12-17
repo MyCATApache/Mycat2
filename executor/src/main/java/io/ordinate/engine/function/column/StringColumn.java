@@ -49,7 +49,7 @@ import io.ordinate.engine.function.StringFunction;
 import java.util.Collections;
 import java.util.List;
 
-public class StringColumn extends StringFunction implements ScalarFunction {
+public class StringColumn extends StringFunction implements ScalarFunction ,ColumnFunction {
     private final int columnIndex;
     boolean isNull;
     public StringColumn(int columnIndex) {
@@ -58,6 +58,11 @@ public class StringColumn extends StringFunction implements ScalarFunction {
 
     public static Function newInstance(int index) {
         return new StringColumn(index);
+    }
+
+    @Override
+    public int getColumnIndex() {
+        return columnIndex;
     }
 
     @Override

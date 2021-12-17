@@ -49,13 +49,20 @@ import java.util.Collections;
 import java.util.List;
 
 
-public class ShortColumn extends ShortFunction implements ScalarFunction {
+public class ShortColumn extends ShortFunction implements ScalarFunction, ColumnFunction {
+    @Override
+    public int getColumnIndex() {
+        return columnIndex;
+    }
+
     @Override
     public List<Function> getArgs() {
         return Collections.emptyList();
     }
+
     private final int columnIndex;
     boolean isNull;
+
     public ShortColumn(int columnIndex) {
         this.columnIndex = columnIndex;
     }
@@ -66,8 +73,8 @@ public class ShortColumn extends ShortFunction implements ScalarFunction {
 
     @Override
     public short getShort(Record rec) {
-         isNull = rec.isNull(columnIndex);
-        if (isNull){
+        isNull = rec.isNull(columnIndex);
+        if (isNull) {
             return 0;
         }
         return rec.getShort(columnIndex);

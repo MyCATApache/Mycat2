@@ -48,7 +48,7 @@ import io.ordinate.engine.record.Record;
 import java.util.Collections;
 import java.util.List;
 
-public class DoubleColumn extends FloatFunction implements ScalarFunction {
+public class DoubleColumn extends FloatFunction implements ScalarFunction ,ColumnFunction{
     private final int columnIndex;
     boolean isNull;
     public DoubleColumn(int columnIndex) {
@@ -58,7 +58,10 @@ public class DoubleColumn extends FloatFunction implements ScalarFunction {
     public static Function newInstance(int index) {
         return new FloatColumn(index);
     }
-
+    @Override
+    public int getColumnIndex() {
+        return columnIndex;
+    }
     @Override
     public List<Function> getArgs() {
         return Collections.emptyList();
@@ -80,5 +83,10 @@ public class DoubleColumn extends FloatFunction implements ScalarFunction {
             return 0;
         }
         return rec.getDouble(columnIndex);
+    }
+
+    @Override
+    public boolean isNull(Record rec) {
+        return isNull;
     }
 }

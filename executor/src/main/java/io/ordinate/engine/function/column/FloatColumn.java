@@ -48,13 +48,16 @@ import io.ordinate.engine.record.Record;
 import java.util.Collections;
 import java.util.List;
 
-public class FloatColumn extends FloatFunction implements ScalarFunction {
+public class FloatColumn extends FloatFunction implements ScalarFunction ,ColumnFunction{
     private final int columnIndex;
     boolean isNull;
     public FloatColumn(int columnIndex) {
         this.columnIndex = columnIndex;
     }
-
+    @Override
+    public int getColumnIndex() {
+        return columnIndex;
+    }
     public static Function newInstance(int index) {
         return new FloatColumn(index);
     }
