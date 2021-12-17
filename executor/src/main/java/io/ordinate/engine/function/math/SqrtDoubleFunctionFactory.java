@@ -61,7 +61,7 @@ public class SqrtDoubleFunctionFactory implements FunctionFactory {
         public double getDouble(Record rec) {
             final double value = arg.getDouble(rec);
             isNull = arg.isNull(rec);
-            if (isNull)return 0;
+            if (isNull) return 0;
             return Math.sqrt(value);
         }
 

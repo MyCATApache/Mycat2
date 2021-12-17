@@ -26,12 +26,12 @@ import java.util.List;
 public class DivDoubleFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "*(double,double)";
+        return "/(double,double)";
     }
 
     @Override
     public Function newInstance(List<Function> args, EngineConfiguration configuration) {
-        return new DivDoubleFunc((ScalarFunction)args.get(0), (ScalarFunction)args.get(1));
+        return new DivDoubleFunc((ScalarFunction) args.get(0), (ScalarFunction) args.get(1));
     }
 
     private static class DivDoubleFunc extends DoubleFunction implements BinaryArgFunction {
@@ -49,7 +49,8 @@ public class DivDoubleFunctionFactory implements FunctionFactory {
         public double getDouble(Record rec) {
             final double left = this.left.getDouble(rec);
             final double right = this.right.getDouble(rec);
-            isNull = this.left.isNull(rec)||this.right.isNull(rec);
+            isNull = this.left.isNull(rec) || this.right.isNull(rec);
+            if (isNull) return 0;
             return left / right;
         }
 

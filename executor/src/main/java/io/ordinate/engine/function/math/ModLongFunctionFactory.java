@@ -18,47 +18,44 @@
 package io.ordinate.engine.function.math;
 
 
-import io.ordinate.engine.function.IntFunction;
-import io.ordinate.engine.function.UnaryFunction;
 import io.ordinate.engine.builder.EngineConfiguration;
-import io.ordinate.engine.function.FunctionFactory;
+import io.ordinate.engine.function.*;
 import io.ordinate.engine.record.Record;
-import io.ordinate.engine.function.Function;
 
 import java.util.List;
 
-public class AbsIntFunctionFactory implements FunctionFactory {
+public class ModLongFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "abs(int32)";
+        return "mod(double)";
     }
 
     @Override
     public Function newInstance(List<Function> args, EngineConfiguration configuration) {
-        return new AbsIntFunction(args.get(0));
+        return new LnDoubleFunction(args);
     }
 
-    private static class AbsIntFunction extends IntFunction implements UnaryFunction {
-        private final Function arg;
+    private static class LnDoubleFunction extends LongFunction {
+        private final List<Function> args;
         boolean isNull;
 
-        public AbsIntFunction(Function arg) {
+        public LnDoubleFunction(List<Function> args) {
             super();
-            this.arg = arg;
+            this.args = args;
         }
 
         @Override
-        public Function getArg() {
-            return arg;
+        public List<Function> getArgs() {
+            return args;
         }
 
-
         @Override
-        public int getInt(Record rec) {
-            int value = arg.getInt(rec);
-            isNull = arg.isNull(rec);
+        public long getLong(Record rec) {
+            Function one = args.get(0);
+            Function two = args.get(1);
+            isNull = one.isNull(rec) || two.isNull(rec);
             if (isNull) return 0;
-            return Math.abs(value);
+            return Math.floorMod(one.getLong(rec), two.getLong(rec));
         }
 
         @Override

@@ -18,47 +18,43 @@
 package io.ordinate.engine.function.math;
 
 
-import io.ordinate.engine.function.IntFunction;
-import io.ordinate.engine.function.UnaryFunction;
 import io.ordinate.engine.builder.EngineConfiguration;
-import io.ordinate.engine.function.FunctionFactory;
-import io.ordinate.engine.record.Record;
+import io.ordinate.engine.function.DoubleFunction;
 import io.ordinate.engine.function.Function;
+import io.ordinate.engine.function.FunctionFactory;
+import io.ordinate.engine.function.UnaryFunction;
+import io.ordinate.engine.record.Record;
 
 import java.util.List;
 
-public class AbsIntFunctionFactory implements FunctionFactory {
+public class PowerDoubleFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "abs(int32)";
+        return "power(double,double)";
     }
 
     @Override
     public Function newInstance(List<Function> args, EngineConfiguration configuration) {
-        return new AbsIntFunction(args.get(0));
+        return new PowerDoubleFunction(args);
     }
 
-    private static class AbsIntFunction extends IntFunction implements UnaryFunction {
-        private final Function arg;
+    private static class PowerDoubleFunction extends DoubleFunction {
+        private final List<Function> args;
         boolean isNull;
 
-        public AbsIntFunction(Function arg) {
+        public PowerDoubleFunction(List<Function> args) {
             super();
-            this.arg = arg;
-        }
-
-        @Override
-        public Function getArg() {
-            return arg;
+            this.args = args;
         }
 
 
         @Override
-        public int getInt(Record rec) {
-            int value = arg.getInt(rec);
-            isNull = arg.isNull(rec);
+        public double getDouble(Record rec) {
+            Function one = args.get(0);
+            Function two = args.get(1);
+            isNull = one.isNull(rec) || two.isNull(rec);
             if (isNull) return 0;
-            return Math.abs(value);
+            return Math.pow(one.getDouble(rec), two.getDouble(rec));
         }
 
         @Override
