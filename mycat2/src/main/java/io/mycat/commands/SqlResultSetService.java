@@ -163,7 +163,7 @@ public class SqlResultSetService implements Closeable, Dumpable {
                 XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
                 AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSql);
                 PrepareExecutor prepare = MetaClusterCurrent.wrapper(ExecutorProvider.class).prepare(plan);
-                Observable<MysqlPayloadObject> observable = prepare.asMysqlPayloadObjectObservable(sqlMycatDataContext,plan.getMetaData());
+                Observable<MysqlPayloadObject> observable = prepare.getMysqlPayloadObjectObservable(prepare.getArrayBindable(),sqlMycatDataContext,plan.getMetaData());
                 observable = observable.doOnTerminate(new Action() {
                     @Override
                     public void run() throws Throwable {
