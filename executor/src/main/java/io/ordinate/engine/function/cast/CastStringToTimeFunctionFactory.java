@@ -41,18 +41,23 @@
 package io.ordinate.engine.function.cast;
 
 import io.ordinate.engine.builder.EngineConfiguration;
-import io.ordinate.engine.function.FunctionFactory;
-import io.ordinate.engine.function.Function;
-import io.ordinate.engine.function.StringFunction;
-import io.ordinate.engine.function.UnaryFunction;
+import io.ordinate.engine.function.*;
 import io.ordinate.engine.record.Record;
+import lombok.SneakyThrows;
+import org.apache.calcite.mycat.MycatBuiltInMethodImpl;
 
+import java.sql.Date;
+import java.sql.Time;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
-public class CastShortToStringFunctionFactory implements FunctionFactory {
+public class CastStringToTimeFunctionFactory implements FunctionFactory {
+
     @Override
     public String getSignature() {
-        return "cast(int16)";
+        return "cast(string):time";
     }
 
     @Override
@@ -60,9 +65,9 @@ public class CastShortToStringFunctionFactory implements FunctionFactory {
         return new Func(args.get(0));
     }
 
-    private static class Func extends StringFunction implements UnaryFunction {
+    public static class Func extends TimeFunction implements UnaryFunction {
         private final Function arg;
-
+        boolean isNull;
 
         public Func(Function arg) {
             this.arg = arg;
@@ -74,8 +79,18 @@ public class CastShortToStringFunctionFactory implements FunctionFactory {
         }
 
         @Override
-        public CharSequence getString(Record rec) {
-            return String.valueOf(arg.getShort(rec));
+        public long getTime(Record rec) {
+            final CharSequence value = arg.getString(rec);
+            isNull = arg.isNull(rec);
+            if (isNull) return 0;
+            String s = value.toString();
+            Duration time = io.mycat.calcite.sqlfunction.datefunction.TimeFunction.time(s);
+            return time.toMillis();
+        }
+
+        @Override
+        public boolean isNull(Record rec) {
+            return isNull;
         }
     }
 }

@@ -46,6 +46,7 @@ import io.ordinate.engine.function.Function;
 import io.ordinate.engine.function.Numbers;
 import io.ordinate.engine.record.Record;
 import io.ordinate.engine.function.AbstractUnaryDatetimeFunction;
+import org.apache.calcite.mycat.MycatBuiltInMethodImpl;
 
 
 import java.sql.Timestamp;
@@ -73,7 +74,7 @@ public class CastStringToDatetimeFunctionFactory implements FunctionFactory {
             final CharSequence value = arg.getString(rec);
             isNull = arg.isNull(rec);
             if (isNull)return 0;
-            return Timestamp.parse(value.toString());
+            return Timestamp.valueOf(MycatBuiltInMethodImpl.stringToTimestamp(value.toString())).getTime();
         }
 
         @Override

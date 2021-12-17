@@ -40,19 +40,20 @@
 
 package io.ordinate.engine.function.cast;
 
+
 import io.ordinate.engine.builder.EngineConfiguration;
-import io.ordinate.engine.function.FunctionFactory;
+import io.ordinate.engine.function.DoubleFunction;
 import io.ordinate.engine.function.Function;
-import io.ordinate.engine.function.StringFunction;
+import io.ordinate.engine.function.FunctionFactory;
 import io.ordinate.engine.function.UnaryFunction;
 import io.ordinate.engine.record.Record;
 
 import java.util.List;
 
-public class CastShortToStringFunctionFactory implements FunctionFactory {
+public class CastTimeToDoubleFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "cast(int16)";
+        return "cast(time):double";
     }
 
     @Override
@@ -60,9 +61,10 @@ public class CastShortToStringFunctionFactory implements FunctionFactory {
         return new Func(args.get(0));
     }
 
-    private static class Func extends StringFunction implements UnaryFunction {
-        private final Function arg;
 
+    private static class Func extends DoubleFunction implements UnaryFunction {
+        private final Function arg;
+        boolean isNull;
 
         public Func(Function arg) {
             this.arg = arg;
@@ -74,8 +76,16 @@ public class CastShortToStringFunctionFactory implements FunctionFactory {
         }
 
         @Override
-        public CharSequence getString(Record rec) {
-            return String.valueOf(arg.getShort(rec));
+        public double getDouble(Record rec) {
+            final long value = arg.getTime(rec);
+            isNull = arg.isNull(rec);
+            if (isNull) return 0;
+            return value;
+        }
+
+        @Override
+        public boolean isNull(Record rec) {
+            return isNull;
         }
     }
 }

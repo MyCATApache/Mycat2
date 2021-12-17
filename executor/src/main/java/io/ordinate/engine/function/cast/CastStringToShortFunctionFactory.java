@@ -52,7 +52,7 @@ import java.util.List;
 public class CastStringToShortFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return null;
+        return "cast(string)";
     }
 
     @Override

@@ -80,7 +80,7 @@ public class CastDatetimeToDateFunctionFactory implements FunctionFactory {
             final long value = arg.getDatetime(rec);
             isNull = arg.isNull(rec);
             if (isNull) return 0;
-            return  value / 1000L;
+            return  value;
         }
 
         @Override

@@ -52,7 +52,7 @@ import java.util.List;
 public class CastDoubleToDateFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return null;
+        return "cast(double)";
     }
 
     @Override
