@@ -1519,6 +1519,8 @@ public class UserCaseTest implements MycatTest {
                     "INSERT INTO `db1`.`float_test`(`value`) VALUES (500);\n");
             List<Map<String, Object>> maps = executeQuery(mycatConnection, "select * from db1.float_test;");
             Assert.assertTrue(maps.toString().equals("[{value=20.2}, {value=500.0}]"));
+            execute(mycatConnection,"\n" +
+                    "INSERT INTO `db1`.`float_test`(`value`) VALUES (true),(false);\n");
             System.out.println();
         }
     }

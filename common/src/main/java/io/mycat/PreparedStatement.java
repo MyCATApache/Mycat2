@@ -82,7 +82,9 @@ public class PreparedStatement {
         if (o == null) {
             return new SQLNullExpr();
         }
-
+        if (o instanceof Boolean) {
+            return new SQLNumberExpr((Boolean) o ? 1 : 0);
+        }
         if (o instanceof String) {
             return new SQLCharExpr((String) o);
         }
