@@ -23,12 +23,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SecToDateFunction extends MycatDateFunction {
-    public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(SecToDateFunction.class,
+public class StrToDateFunction extends MycatDateFunction {
+    public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(StrToDateFunction.class,
             "strToDate");
-    public static SecToDateFunction INSTANCE = new SecToDateFunction();
+    public static StrToDateFunction INSTANCE = new StrToDateFunction();
 
-    public SecToDateFunction() {
+    public StrToDateFunction() {
         super("STR_TO_DATE",
                 scalarFunction
         );
