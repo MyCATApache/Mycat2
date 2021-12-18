@@ -63,7 +63,7 @@ public class SavepointTest implements MycatTest {
                 execute(mycatConnection, "INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('9999999999');");
                 Savepoint savepoint = mycatConnection.setSavepoint();
                 execute(mycatConnection, "INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('1');");
-                execute(mycatConnection,"RELEASE SAVEPOINT "+savepoint.getSavepointName());
+                execute(mycatConnection,"RELEASE SAVEPOINT '"+savepoint.getSavepointName()+"'");
                 try {
                     mycatConnection.rollback(savepoint);
                 }catch (SQLException exception){
@@ -91,7 +91,7 @@ public class SavepointTest implements MycatTest {
                 execute(mycatConnection, "INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('1');");
                 mycatConnection.rollback(savepoint);
                 try {
-                    execute(mycatConnection,"RELEASE SAVEPOINT "+savepoint.getSavepointName());
+                    execute(mycatConnection,"RELEASE SAVEPOINT '"+savepoint.getSavepointName()+"'");
                 }catch (SQLException exception){
                     System.out.println("Savepoint fail :"+exception);
                     LOGGER.error("Savepoint fail :"+exception);
