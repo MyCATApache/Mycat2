@@ -18,33 +18,23 @@ package io.mycat.commands;
 
 import com.mysql.cj.conf.ConnectionUrlParser;
 import com.mysql.cj.conf.HostInfo;
-import io.mycat.MetaClusterCurrent;
 import io.mycat.config.DatasourceConfig;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.monitor.DatabaseInstanceEntry;
 import io.mycat.monitor.InstanceMonitor;
-import io.mycat.monitor.ThreadMycatConnectionImplWrapper;
 import io.mycat.newquery.NewMycatConnection;
-import io.mycat.newquery.NewMycatConnectionImpl;
 import io.mycat.newquery.NewVertxConnectionImpl;
-import io.mycat.util.JsonUtil;
 import io.vertx.core.Future;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.mysqlclient.MySQLAuthenticationPlugin;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
-import io.vertx.mysqlclient.SslMode;
 import io.vertx.mysqlclient.impl.MySQLConnectionImpl;
 import io.vertx.mysqlclient.impl.MySQLPoolImpl;
 import io.vertx.sqlclient.PoolOptions;
-import io.vertx.sqlclient.SqlConnection;
-
-import java.util.Map;
-import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class VertxMySQLDatasourcePoolImpl extends AbstractMycatDatasourcePool {
+    private static final Logger LOGGER = LoggerFactory.getLogger(VertxMySQLDatasourcePoolImpl.class);
+
     final MySQLPoolImpl mySQLPool;
     final DatasourceConfig config;
 
@@ -67,13 +57,39 @@ public class VertxMySQLDatasourcePoolImpl extends AbstractMycatDatasourcePool {
                 .setMaxSize(config.getMaxCon())
                 .setIdleTimeout((int) config.getIdleTimeout());
 
-        this.mySQLPool = (MySQLPoolImpl)MySQLPool.pool(connectOptions, poolOptions);
+        this.mySQLPool = (MySQLPoolImpl) MySQLPool.pool(connectOptions, poolOptions);
 
     }
 
     @Override
     public Future<NewMycatConnection> getConnection() {
-       return mySQLPool.getConnection().map(sqlConnection -> new NewVertxConnectionImpl((MySQLConnectionImpl)sqlConnection));
+        LOGGER.debug("getConnection");
+        return mySQLPool.getConnection().map(sqlConnection -> {
+            DatabaseInstanceEntry stat = DatabaseInstanceEntry.stat(targetName);
+            stat.plusCon();
+            stat.plusQps();
+            return new NewVertxConnectionImpl((MySQLConnectionImpl) sqlConnection) {
+                long start;
+
+                @Override
+                public void onSend() {
+                    start = System.currentTimeMillis();
+                }
+
+                @Override
+                public void onRev() {
+                    long end = System.currentTimeMillis();
+                    InstanceMonitor.plusPrt(end - start);
+                }
+
+                @Override
+                public Future<Void> close() {
+
+                    stat.decCon();
+                    return super.close();
+                }
+            };
+        });
     }
 
     @Override

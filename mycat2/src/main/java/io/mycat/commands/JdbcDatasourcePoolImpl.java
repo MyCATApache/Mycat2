@@ -57,8 +57,7 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
                 @Override
                 public Future<Void> close() {
                     stat.decCon();
-                    connection.close();
-                    return Future.succeededFuture();
+                    return super.close();
                 }
             };
             return Future.succeededFuture(new ThreadMycatConnectionImplWrapper(stat,newMycatConnection));
