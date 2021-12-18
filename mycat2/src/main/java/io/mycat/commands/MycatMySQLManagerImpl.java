@@ -56,7 +56,7 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
                         break;
                     }
                 case JDBC:
-                    hashMap.put(name,createNativeDatasourcePool(datasource, name));
+                    hashMap.put(name,createJdbcDatasourcePool(name));
                     break;
 
             }
