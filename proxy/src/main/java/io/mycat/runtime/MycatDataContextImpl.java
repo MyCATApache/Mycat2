@@ -77,7 +77,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     private final AtomicLong prepareStatementIds = new AtomicLong(0);
     private ObservableEmitter<AbstractWritePacket> emitter;
     private volatile Observable<AbstractWritePacket> observable;
-    private Map<String, Object> processStateMap;
+    private Map<String, Object> processStateMap = new HashMap<>();
     private boolean debug = false;
 
     public MycatDataContextImpl() {
