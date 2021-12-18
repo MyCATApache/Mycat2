@@ -16,6 +16,7 @@ package io.mycat;
 
 import io.mycat.beans.mysql.MySQLVersion;
 import io.mycat.calcite.ExecutorProvider;
+import io.mycat.commands.MycatMySQLManagerImpl;
 import io.mycat.config.*;
 import io.mycat.executor.ExecutorProviderImpl;
 import io.mycat.exporter.SqlRecorderRuntime;
@@ -99,7 +100,7 @@ public class MycatCore {
         MySQLVersion.setServerVersion(serverConfig.getServer().getServerVersion());
         String datasourceProvider = Optional.ofNullable(serverConfig.getDatasourceProvider()).orElse(io.mycat.datasource.jdbc.DruidDatasourceProvider.class.getCanonicalName());
         ThreadPoolExecutorConfig workerPool = serverConfig.getServer().getWorkerPool();
-
+        MycatMySQLManagerImpl.FORCE_NATIVE_DATASOURCE = "native".equalsIgnoreCase(System.getProperty("server", ""));
 
         VertxOptions vertxOptions = new VertxOptions();
         vertxOptions.setWorkerPoolSize(workerPool.getMaxPoolSize());
@@ -136,7 +137,7 @@ public class MycatCore {
             Files.createDirectory(this.baseDirectory);
             initConfig = true;
         }
-        if (!Files.exists((this.baseDirectory.resolve("server.json")))){
+        if (!Files.exists((this.baseDirectory.resolve("server.json")))) {
             initConfig = true;
         }
 
@@ -192,7 +193,7 @@ public class MycatCore {
                 bottom = bottom.getParent();
             }
             path = bottom.toString();
-            System.setProperty(configResourceKeyName,path);
+            System.setProperty(configResourceKeyName, path);
         }
         if (path == null) {
             throw new MycatException("can not find MYCAT_HOME");

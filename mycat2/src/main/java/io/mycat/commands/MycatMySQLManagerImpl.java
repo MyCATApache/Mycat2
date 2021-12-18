@@ -34,29 +34,41 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import static io.mycat.config.DatasourceConfig.DatasourceType.NATIVE_JDBC;
+
 public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
+    public static boolean FORCE_NATIVE_DATASOURCE = false;
 
     private final ConcurrentHashMap<String, MycatDatasourcePool> map;
 
     @SneakyThrows
     public MycatMySQLManagerImpl(List<DatasourceConfig> datasourceConfigs) {
-        boolean nativeServer = MetaClusterCurrent.exist(NativeMycatServer.class);
         ConcurrentHashMap<String, MycatDatasourcePool> hashMap = new ConcurrentHashMap<>();
         List<Future<MycatDatasourcePool>> futureList = new ArrayList<>();
         for (DatasourceConfig datasource : datasourceConfigs) {
             String name = datasource.getName();
-            switch (datasource.computeType()) {
+            DatasourceConfig.DatasourceType datasourceType = datasource.computeType();
+            if (FORCE_NATIVE_DATASOURCE) {
+                switch (datasourceType) {
+                    case NATIVE:
+                    case NATIVE_JDBC:
+                        break;
+                    case JDBC:
+                        datasourceType = NATIVE_JDBC;
+                        break;
+                }
+            }
+
+            switch (datasourceType) {
                 case NATIVE:
                 case NATIVE_JDBC:
-                    if (nativeServer) {
-                        MycatDatasourcePool nativeDatasourcePool = createNativeDatasourcePool(datasource, name);
-                        futureList.add(nativeDatasourcePool.getConnection()
-                                .flatMap(c -> c.close().map(nativeDatasourcePool))
-                                .recover(throwable -> Future.succeededFuture(createJdbcDatasourcePool(name))));
-                        break;
-                    }
+                    MycatDatasourcePool nativeDatasourcePool = createNativeDatasourcePool(datasource, name);
+                    futureList.add(nativeDatasourcePool.getConnection()
+                            .flatMap(c -> c.close().map(nativeDatasourcePool))
+                            .recover(throwable -> Future.succeededFuture(createJdbcDatasourcePool(name))));
+                    break;
                 case JDBC:
-                    hashMap.put(name,createJdbcDatasourcePool(name));
+                    hashMap.put(name, createJdbcDatasourcePool(name));
                     break;
 
             }
@@ -117,7 +129,7 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
                         .orElse(InstanceType.READ_WRITE)
                         .isWriteType()) {
                     Connection connection = jdbcDataSource.getDataSource().getConnection();
-                    if (connection.isReadOnly()){
+                    if (connection.isReadOnly()) {
                         JdbcUtils.close(connection);
                         continue;
                     }
