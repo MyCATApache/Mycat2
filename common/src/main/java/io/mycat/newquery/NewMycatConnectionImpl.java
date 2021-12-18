@@ -107,7 +107,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                     }
                 }
             } else {
-                try (PreparedStatement statement = connection.prepareStatement(sql,ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);) {
+                try (PreparedStatement statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);) {
                     setStreamFlag(statement);
                     int limit = params.size() + 1;
                     for (int i = 1; i < limit; i++) {
@@ -140,7 +140,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     @SneakyThrows
     private void setStreamFlag(Statement statement) {
-        if (statement.toString().contains("mysql")||statement.getClass().getName().contains("mysql")) {
+        if (statement.toString().contains("mysql") || statement.getClass().getName().contains("mysql")) {
             statement.setFetchSize(Integer.MIN_VALUE);
         }
 //        protected boolean createStreamingResultSet() {
@@ -185,7 +185,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                                 }
                             }
                         } else {
-                            try (PreparedStatement statement = connection.prepareStatement(sql,ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
+                            try (PreparedStatement statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
                                 setStreamFlag(statement);
                                 int limit = params.size() + 1;
                                 for (int i = 1; i < limit; i++) {
@@ -221,32 +221,40 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
         try {
             ArrayList<Object> resultSetList = new ArrayList<>();
             CallableStatement callableStatement = connection.prepareCall(sql);
-            boolean firstExecuteRes = callableStatement.execute();
-            int updateCount = callableStatement.getUpdateCount();
-            if (firstExecuteRes) {
-                ResultSet resultSet = callableStatement.getResultSet();//获取第一个resultSet
-                MycatRowMetaData metaData = getJdbcRowMetaData(resultSet.getMetaData());
-                List<Object[]> objects = new ArrayList<>();
-                while (resultSet.next()) {
-                    int columnCount = metaData.getColumnCount();
-                    Object[] row = new Object[columnCount];
-                    for (int i = 0; i < columnCount; i++) {
-                        row[i] = resultSet.getObject(i + 1);
+            boolean moreResults = true;
+            int updateCount = 0;
+            callableStatement.execute();
+            while (moreResults && updateCount != -1) {
+                updateCount = callableStatement.getUpdateCount();
+                if (updateCount == -1) {
+                    ResultSet resultSet = callableStatement.getResultSet();
+                    if (resultSet == null) {
+                        break;
                     }
-                    objects.add(row);
+                    MycatRowMetaData metaData = getJdbcRowMetaData(resultSet.getMetaData());
+                    List<Object[]> objects = new ArrayList<>();
+                    while (resultSet.next()) {
+                        int columnCount = metaData.getColumnCount();
+                        Object[] row = new Object[columnCount];
+                        for (int i = 0; i < columnCount; i++) {
+                            row[i] = resultSet.getObject(i + 1);
+                        }
+                        objects.add(row);
+                    }
+                    RowSet rowSet = new RowSet(metaData, objects);
+                    resultSetList.add(rowSet);
+                } else {
+                    resultSetList.add(new long[]{
+                            updateCount, getLastInsertId(callableStatement)
+                    });
                 }
-//                LOGGER.info("call {}",sql);
-//                for (Object[] object : objects) {
-//                    LOGGER.info(Arrays.toString(object));
-//                }
-                RowSet rowSet = new RowSet(metaData, objects);
-                resultSetList.add(rowSet);
-            } else {
-                resultSetList.add(new long[]{updateCount, 0});
+                moreResults = callableStatement.getMoreResults();
+
             }
+
             return Future.succeededFuture(resultSetList);
-        } catch (Throwable throwable) {
-            return Future.failedFuture(throwable);
+        } catch (Exception exception) {
+            return Future.failedFuture(exception);
         }
     }
 
