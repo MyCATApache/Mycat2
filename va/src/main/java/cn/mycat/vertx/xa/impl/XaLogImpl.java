@@ -154,7 +154,12 @@ public class XaLogImpl implements XaLog {
             for (Map.Entry<String, Connection> connectionEntry : connectionMap.entrySet()) {
                 String targetName = connectionEntry.getKey();
                 Connection connectionEntryValue = connectionEntry.getValue();
-                List<Map<String, Object>> maps = JdbcUtils.executeQuery(connectionEntryValue, "XA RECOVER", Collections.emptyList());
+                List<Map<String, Object>> maps = Collections.emptyList();
+                try {
+                    maps = JdbcUtils.executeQuery(connectionEntryValue, "XA RECOVER", Collections.emptyList());
+                } catch (Throwable throwable) {
+                    LOGGER.warn(throwable);
+                }
                 for (Map<String, Object> map : maps) {
                     Set<String> targetNameSet = xid_targets.computeIfAbsent((String) map.get("data"), (s) -> new ConcurrentHashSet<>());
                     targetNameSet.add(targetName);
@@ -181,7 +186,7 @@ public class XaLogImpl implements XaLog {
                     Connection connection = connectionMap.get(target);
                     try {
                         JdbcUtils.executeUpdate(connection, sql, Collections.emptyList());
-                    }catch (Exception e){
+                    } catch (Exception e) {
                         LOGGER.error(e);//已经提交或者回滚了
                     }
                     JdbcUtils.executeUpdate(connection, "delete from mycat.xa_log where xid = '" + xid + "'", Collections.emptyList());
