@@ -66,12 +66,12 @@ public class FactoryUtil {
                 case TIME:
                     innerType = InnerType.TIME_MILLI_TYPE;
                     break;
-                case CHAR_BINARY:
                 case CHAR:
-                case VARCHAR_BINARY:
                 case VARCHAR:
-                case BINARY:
                     innerType = InnerType.STRING_TYPE;
+                    break;
+                case BINARY:
+                    innerType = InnerType.BINARY_TYPE;
                     break;
                 case FLOAT:
                     innerType = InnerType.FLOAT_TYPE;
