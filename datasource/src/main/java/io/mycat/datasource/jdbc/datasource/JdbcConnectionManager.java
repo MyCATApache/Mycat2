@@ -16,7 +16,10 @@ package io.mycat.datasource.jdbc.datasource;
 
 
 import com.alibaba.druid.util.JdbcUtils;
-import io.mycat.*;
+import io.mycat.ConnectionManager;
+import io.mycat.IOExecutor;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.MycatException;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
@@ -27,14 +30,12 @@ import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.xml.dtd.impl.Base;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -50,22 +51,24 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         this(datasources, createDatasourceProvider(customerDatasourceProvider));
     }
 
-    public void register(ReplicaSelectorManager replicaSelector){
+    public void register(ReplicaSelectorManager replicaSelector) {
 
         for (ClusterConfig replica : replicaSelector.getConfig()) {
             String replicaName = replica.getName();
             for (String datasource : replica.allDatasources()) {
-                putHeartFlow(replicaSelector,replicaName, datasource);
+                putHeartFlow(replicaSelector, replicaName, datasource);
             }
         }
     }
 
     private static DatasourceProvider createDatasourceProvider(String customerDatasourceProvider) {
-        ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
         String defaultDatasourceProvider = Optional.ofNullable(customerDatasourceProvider).orElse(DruidDatasourceProvider.class.getName());
         try {
             DatasourceProvider o = (DatasourceProvider) Class.forName(defaultDatasourceProvider)
                     .getDeclaredConstructor().newInstance();
+            ServerConfig serverConfig = MetaClusterCurrent.exist(ServerConfig.class) ?
+                    MetaClusterCurrent.wrapper(ServerConfig.class) :
+                    new ServerConfig();
             o.init(serverConfig);
             return o;
         } catch (Exception e) {
@@ -190,7 +193,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         return Collections.unmodifiableMap(dataSourceMap);
     }
 
-    private void putHeartFlow(ReplicaSelectorManager replicaSelector,String replicaName, String datasource) {
+    private void putHeartFlow(ReplicaSelectorManager replicaSelector, String replicaName, String datasource) {
         replicaSelector.putHeartFlow(replicaName, datasource, new Consumer<HeartBeatStrategy>() {
             @Override
             public void accept(HeartBeatStrategy heartBeatStrategy) {
@@ -224,7 +227,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                             return;
                         }
                     }
-                    heartBeatStrategy.process(resultList,readOnly);
+                    heartBeatStrategy.process(resultList, readOnly);
                 } catch (Throwable e) {
                     heartBeatStrategy.onException(e);
                     LOGGER.error("", e);
