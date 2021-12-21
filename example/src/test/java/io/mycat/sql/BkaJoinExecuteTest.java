@@ -29,9 +29,11 @@ public class BkaJoinExecuteTest implements MycatTest {
             execute(mycatConnection,"/*+ mycat:setSortMergeJoin{0} */;");
             execute(mycatConnection,"/*+ mycat:setBkaJoinLeftRowCountLimit{8000000} */;");
 
+
+
             try {
                 //first
-                sql = "/*+ mycat:no_hash_join() */ select * from db1.sharding s inner join db1.normal e on s.id = e.id order by s.id";
+                sql = "/*+ mycat:use_bka_join() */ select * from db1.sharding s inner join db1.normal e on s.id = e.id order by s.id";
                 explain = explain(mycatConnection, sql);
                 s = executeQueryAsText(mycatConnection, sql);
                 Assert.assertEquals(true, explain.contains("MycatSQLTableLookup"));
@@ -39,14 +41,14 @@ public class BkaJoinExecuteTest implements MycatTest {
                         s);
 
                 //second
-                sql = "/*+ mycat:no_hash_join() */select * from db1.sharding s inner join db1.normal e on s.id = e.id inner join db1.global g on s.id = g.id order by s.id";
+                sql = "/*+ mycat:use_bka_join(s,e) */select * from db1.sharding s inner join db1.normal e on s.id = e.id inner join db1.global g on s.id = g.id order by s.id";
                 explain = explain(mycatConnection, sql);
                 s = executeQueryAsText(mycatConnection, sql);
                 Assert.assertEquals(true, explain.contains("MycatSQLTableLookup"));
                 Assert.assertEquals("[{id=1, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=1, companyname=Intel, addressid=1, id1=1, companyname0=Intel, addressid0=1}, {id=2, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=2, companyname=IBM, addressid=2, id1=2, companyname0=IBM, addressid0=2}, {id=3, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=3, companyname=Dell, addressid=3, id1=3, companyname0=Dell, addressid0=3}]",
                         s);
 
-                sql = "/*+ mycat:no_hash_join() */select * from db1.normal s inner join db1.sharding e on s.id = e.id inner join db1.global g on s.id = g.id order by s.id";
+                sql = "/*+ mycat:use_bka_join(s,e) */select * from db1.normal s inner join db1.sharding e on s.id = e.id inner join db1.global g on s.id = g.id order by s.id";
                 explain = explain(mycatConnection, sql);
                 s = executeQueryAsText(mycatConnection, sql);
                 Assert.assertEquals(true, explain.contains("MycatSQLTableLookup"));
@@ -73,6 +75,13 @@ public class BkaJoinExecuteTest implements MycatTest {
 
     private void initShardingTable() throws Exception {
         Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+        Connection db1 = getMySQLConnection(DB1);
+        Connection db2 = getMySQLConnection(DB2);
+        execute(db1,"DROP TABLE if exists db1_0.sharding_0");
+        execute(db1,"DROP TABLE if exists db1_0.sharding_1");
+        execute(db2,"DROP TABLE if exists db1_1.sharding_2");
+        execute(db2,"DROP TABLE if exists db1_1.sharding_3");
+
         execute(mycatConnection, RESET_CONFIG);
 
         execute(mycatConnection, "DROP DATABASE db1");
@@ -107,6 +116,9 @@ public class BkaJoinExecuteTest implements MycatTest {
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
                 + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
+
+
+
         execute(mycatConnection, "CREATE TABLE `normal` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))");
         execute(mycatConnection, "CREATE TABLE `global` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`)) broadcast");
 
@@ -128,5 +140,7 @@ public class BkaJoinExecuteTest implements MycatTest {
         execute(mycatConnection, "INSERT INTO `db1`.`global` (id,`companyname`,`addressid`) VALUES (3,'Dell',3)");
 
         mycatConnection.close();
+        db1.close();
+        db2.close();
     }
 }
