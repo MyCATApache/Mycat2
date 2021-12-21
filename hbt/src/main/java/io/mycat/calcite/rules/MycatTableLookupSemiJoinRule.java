@@ -57,9 +57,10 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
 
         RelMetadataQuery metadataQuery = cluster.getMetadataQuery();
         RelHint lastJoinHint = HintTools.getLastJoinHint(join.getHints());
-        if (lastJoinHint != null && "use_bka_join".equalsIgnoreCase(lastJoinHint.hintName)) {
-
-        } else {
+        if (lastJoinHint == null){
+            return;
+        }
+        if (!"use_bka_join".equalsIgnoreCase(lastJoinHint.hintName)) {
             double leftRowCount = Optional.ofNullable(metadataQuery.getRowCount(left)).orElse(0.0);
             if (leftRowCount > BKA_JOIN_LEFT_ROW_COUNT_LIMIT) {
                 return;
