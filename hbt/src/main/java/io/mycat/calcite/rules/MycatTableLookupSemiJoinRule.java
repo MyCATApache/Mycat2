@@ -6,6 +6,7 @@ import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatSQLTableLookup;
 import io.mycat.calcite.rewriter.Distribution;
+import io.mycat.calcite.table.ShardingTable;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
@@ -57,9 +58,13 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
 
         RelMetadataQuery metadataQuery = cluster.getMetadataQuery();
         RelHint lastJoinHint = HintTools.getLastJoinHint(join.getHints());
+//        if (lastJoinHint == null){
+//            return;
+//        }
+        boolean hint = false;
         if (lastJoinHint != null && "use_bka_join".equalsIgnoreCase(lastJoinHint.hintName)) {
-
-        } else {
+            hint = true;
+        }else {
             double leftRowCount = Optional.ofNullable(metadataQuery.getRowCount(left)).orElse(0.0);
             if (leftRowCount > BKA_JOIN_LEFT_ROW_COUNT_LIMIT) {
                 return;
@@ -74,6 +79,9 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
         MycatView mycatView = (MycatView) right;
         if (mycatView.banPushdown()) {
             return;
+        }
+        if (!hint) {
+            if (!isGisView(mycatView)) return;
         }
         JoinRelType joinType = join.getJoinType();
         switch (joinType) {
@@ -160,7 +168,21 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
         }
     }
 
-    public static void extractedTrimJoinLeftKeys(Join join, ImmutableList.Builder<RelDataTypeField> listBuilder, Map<Integer, Integer> oldToNew) {
+    private boolean isGisView(MycatView mycatView) {
+        if (mycatView.getCondition().isPresent()) {
+            if (mycatView.getDistribution().type() == Distribution.Type.SHARDING) {
+                ShardingTable shardingTable = mycatView.getDistribution().getShardingTables().get(0);
+                return !shardingTable.getIndexTables().isEmpty();
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    public static void extractedTrimJoinLeftKeys(Join
+                                                         join, ImmutableList.Builder<RelDataTypeField> listBuilder, Map<Integer, Integer> oldToNew) {
         int index = 0;
         for (Integer integer : join.analyzeCondition().leftSet()) {
             RelDataTypeField relDataTypeField = join.getInputs().get(0).getRowType().getFieldList().get(integer);
@@ -178,7 +200,7 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
         MycatTableLookupSemiJoinRule.Config DEFAULT = EMPTY
                 .as(MycatTableLookupSemiJoinRule.Config.class)
                 .withOperandFor(b0 ->
-                        b0.operand(Join.class).inputs(b1 -> b1.operand(RelNode.class).anyInputs(), b1 -> b1.operand(MycatView.class).predicate(m->((MycatView)m).allowPushdown()).noInputs()))
+                        b0.operand(Join.class).inputs(b1 -> b1.operand(RelNode.class).anyInputs(), b1 -> b1.operand(MycatView.class).predicate(m -> ((MycatView) m).allowPushdown()).noInputs()))
                 .withDescription("MycatTableLookupSemiJoinRule")
                 .as(MycatTableLookupSemiJoinRule.Config.class);
 
