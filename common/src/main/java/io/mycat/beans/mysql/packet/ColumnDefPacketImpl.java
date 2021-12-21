@@ -83,7 +83,7 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
             this.columnTable = new byte[]{};
             this.columnNextLength = 0xC;
             this.columnType = MySQLFieldsType.fromJdbcType(jdbcColumnType);
-            this.columnLength = resultSetMetaData.getColumnType(columnIndex) == JDBCType.BIT.getVendorTypeNumber() ? 1 : this.columnName.length;
+            this.columnLength = resultSetMetaData.getColumnType(columnIndex) == JDBCType.BIT.getVendorTypeNumber() ? 1 : 255;
             this.columnDecimals = (byte) resultSetMetaData.getScale(columnIndex);
             if (!resultSetMetaData.isNullable(columnIndex)) {
                 this.columnFlags |= MySQLFieldsType.NOT_NULL_FLAG;
@@ -150,7 +150,7 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
         columnDefPacket.setColumnOrgName(def.getName().getBytes());
         columnDefPacket.setColumnNextLength(0xC);
         columnDefPacket.setColumnCharsetSet(def.getCollationId());
-        columnDefPacket.setColumnLength(256);
+        columnDefPacket.setColumnLength(255);
         columnDefPacket.setColumnType(def.getFieldType());
         columnDefPacket.setColumnFlags(def.getFieldDetailFlag());
         columnDefPacket.setColumnDecimals(def.getDecimals());
