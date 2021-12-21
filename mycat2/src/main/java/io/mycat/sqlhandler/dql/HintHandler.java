@@ -20,6 +20,7 @@ import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.ExecutorProvider;
+import io.mycat.calcite.PrepareExecutor;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.spm.*;
 import io.mycat.calcite.table.GlobalTable;
@@ -31,6 +32,7 @@ import io.mycat.commands.SqlResultSetService;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.executor.ExecutorProviderImpl;
 import io.mycat.exporter.SqlRecorderRuntime;
 import io.mycat.monitor.MycatSQLLogMonitor;
 import io.mycat.monitor.SqlEntry;
@@ -54,6 +56,7 @@ import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
+import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.csv.QuoteMode;
@@ -140,8 +143,9 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         DrdsSqlCompiler drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
                         Plan plan = drdsRunner.doHbt(hbt);
                         AsyncMycatDataContextImpl.HbtMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.HbtMycatDataContextImpl(dataContext, plan.getCodeExecuterContext());
-                        Observable<MysqlPayloadObject> rowObservable = MetaClusterCurrent.wrapper(ExecutorProvider.class).prepare( plan).asMysqlPayloadObjectObservable(sqlMycatDataContext,plan.getMetaData());
-                        return response.sendResultSet(rowObservable);
+                        ArrayBindable arrayBindable = MetaClusterCurrent.wrapper(ExecutorProvider.class).prepare(plan).getArrayBindable();
+                        Observable<MysqlPayloadObject> mysqlPayloadObjectObservable = PrepareExecutor.getMysqlPayloadObjectObservable(arrayBindable, sqlMycatDataContext, plan.getMetaData());
+                        return response.sendResultSet(mysqlPayloadObjectObservable);
                     }
                     if ("createSqlCache".equalsIgnoreCase(cmd)) {
                         MycatRouterConfigOps ops = ConfigUpdater.getOps();

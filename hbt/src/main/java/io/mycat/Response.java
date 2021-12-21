@@ -18,6 +18,7 @@ package io.mycat;
 
 import io.mycat.api.collector.*;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.calcite.PrepareExecutor;
 import io.mycat.swapbuffer.*;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.*;
@@ -102,19 +103,19 @@ public interface Response {
 
     public default Future<Void> swapBuffer(PacketMessageConsumer messageConsumer, Observable<PacketRequest> sender,
                                            Emitter<PacketResponse> recycler) {
-       return SwapBufferUtil.consume(messageConsumer, sender, recycler);
+        return SwapBufferUtil.consume(messageConsumer, sender, recycler);
     }
 
-    public  Future<Void> swapBuffer(Observable<PacketRequest> sender,
-                                    Emitter<PacketResponse> recycler);
+    public Future<Void> swapBuffer(Observable<PacketRequest> sender,
+                                   Emitter<PacketResponse> recycler);
 
-    public default  Future<Void> swapBuffer(Observable<PacketRequest> sender){
+    public default Future<Void> swapBuffer(Observable<PacketRequest> sender) {
         return swapBuffer(sender, new Emitter<PacketResponse>() {
             @Override
             public void onNext(@NonNull PacketResponse value) {
-                if ( value instanceof PacketRequestResponseJavaByteArrayImpl){
+                if (value instanceof PacketRequestResponseJavaByteArrayImpl) {
                     value.close();
-                }else {
+                } else {
                     throw new UnsupportedOperationException();
                 }
             }
@@ -131,9 +132,10 @@ public interface Response {
         });
     }
 
-     public Future<Void> sendVectorResultSet(Observable<VectorSchemaRoot> rootObservable);
+    public Future<Void> sendVectorResultSet(MycatRowMetaData mycatRowMetaData,
+                                            Observable<VectorSchemaRoot> observable);
 
-     public Future<Void> proxyProcedure(String sql,String targetName);
+    public Future<Void> proxyProcedure(String sql, String targetName);
 
     public Future<Void> rollbackSavepoint(String name);
 

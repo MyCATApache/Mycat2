@@ -22,6 +22,7 @@ import org.apache.calcite.util.NameMap;
 import org.reflections.Reflections;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class FunctionFactoryCache {
     final NameMap<ArrayList<FunctionFactoryDescriptor>> map = new NameMap<>();
@@ -56,7 +57,7 @@ public class FunctionFactoryCache {
     public List<FunctionFactoryDescriptor> getListByName(String name) {
         NavigableMap<String, ArrayList<FunctionFactoryDescriptor>> range = map.range(name, false);
         if (range.isEmpty()) return Collections.emptyList();
-        return range.get(name);
+        return range.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
     }
 
     public Optional<FunctionFactoryDescriptor> getListFullName(String name) {

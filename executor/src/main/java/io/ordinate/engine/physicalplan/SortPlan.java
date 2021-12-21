@@ -22,6 +22,8 @@ import io.ordinate.engine.builder.SortOptions;
 import io.ordinate.engine.record.RootContext;
 import io.ordinate.engine.builder.PhysicalSortProperty;
 import io.reactivex.rxjava3.core.Observable;
+import it.unimi.dsi.fastutil.ints.IntArrays;
+import it.unimi.dsi.fastutil.ints.IntComparator;
 import lombok.Getter;
 import org.apache.arrow.algorithm.sort.*;
 import org.apache.arrow.memory.BufferAllocator;
@@ -30,6 +32,7 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,7 +41,7 @@ public class SortPlan implements PhysicalPlan {
     final PhysicalPlan input;
     private List<PhysicalSortProperty> physicalSortProperties;
 
-    public static SortPlan create(PhysicalPlan input, List<PhysicalSortProperty> physicalSortProperties){
+    public static SortPlan create(PhysicalPlan input, List<PhysicalSortProperty> physicalSortProperties) {
         return new SortPlan(input, physicalSortProperties);
     }
 
@@ -60,7 +63,7 @@ public class SortPlan implements PhysicalPlan {
     @Override
     public Observable<VectorSchemaRoot> execute(RootContext rootContext) {
         return input.execute(rootContext).reduce((root, root2) -> {
-            NLJoinPlan.merge(root,root2);
+            NLJoinPlan.merge(root, root2);
             root2.close();
             return root;
         }).map(input -> {
@@ -68,13 +71,15 @@ public class SortPlan implements PhysicalPlan {
             int columnCount = schema().getFields().size();
             BufferAllocator rootAllocator = rootContext.getRootAllocator();
             try {
-                IntVector indexes = lexQuickSort(rootAllocator,input, physicalSortProperties.stream().map(i -> i.evaluateToSortColumn(input)).collect(Collectors.toList()));
+                List<SortColumn> collect = physicalSortProperties.stream().map(i -> i.evaluateToSortColumn(input)).collect(Collectors.toList());
+                int[] indexes = lexQuickSort(rootAllocator, input, collect);
                 VectorSchemaRoot output = rootContext.getVectorSchemaRoot(schema(), rowCount);
                 for (int targetIndex = 0; targetIndex < rowCount; targetIndex++) {
-                    int sourceIndex = indexes.get(targetIndex);
+                    int sourceIndex = indexes[targetIndex];
                     for (int columnIndex = 0; columnIndex < columnCount; columnIndex++) {
-                        output.getFieldVectors().get(columnIndex)
-                                .copyFrom(sourceIndex, targetIndex, input.getFieldVectors().get(columnIndex));
+                        FieldVector from = input.getFieldVectors().get(columnIndex);
+                        FieldVector to = output.getFieldVectors().get(columnIndex);
+                        to.copyFrom(sourceIndex, targetIndex, from);
                     }
                 }
                 output.setRowCount(rowCount);
@@ -101,28 +106,35 @@ public class SortPlan implements PhysicalPlan {
         }
     }
 
-    public IntVector lexQuickSort(BufferAllocator allocator, VectorSchemaRoot input, List<SortColumn> physicalSortExprs) {
+    public int[] lexQuickSort(BufferAllocator allocator, VectorSchemaRoot input, List<SortColumn> physicalSortExprs) {
         VectorValueComparator[] comparators = physicalSortExprs.stream().map(p -> buildCompare(p)).toArray(size -> new VectorValueComparator[size]);
         CompositeVectorComparator compositeVectorComparator = new CompositeVectorComparator(comparators);
         int valueCount = physicalSortExprs.get(0).values.getValueCount();
-        IntVector valueVectors = new IntVector("", allocator);
-        valueVectors.setInitialCapacity(valueCount);
-        valueVectors.allocateNew(valueCount);
-        valueVectors.setValueCount(valueCount);
-        for (int index = 0; index < valueCount; index++) {
-            valueVectors.set(index, index);
-        }
 
-        FixedWidthInPlaceVectorSorter fixedWidthInPlaceVectorSorter = new FixedWidthInPlaceVectorSorter();
-        fixedWidthInPlaceVectorSorter.sortInPlace(valueVectors, compositeVectorComparator);
-        return valueVectors;
+        int[] indexes =new int[valueCount];
+        for (int i = 0; i <valueCount; i++) {
+            indexes[i]=i;
+        }
+        IntArrays.quickSort(indexes, new IntComparator() {
+            @Override
+            public int compare(Integer o1, Integer o2) {
+                return compositeVectorComparator.compare(o1,o2);
+            }
+
+            @Override
+            public int compare(int i, int i1) {
+                return compositeVectorComparator.compare(i,i1);
+            }
+        });
+        return indexes;
     }
+
 
     private VectorValueComparator buildCompare(SortColumn p) {
         FieldVector values = p.getValues();
         SortOptions options = p.getOptions();
         VectorValueComparator<FieldVector> defaultComparator = DefaultVectorComparators.createDefaultComparator(values);
-        defaultComparator.attachVectors(values,values);
+        defaultComparator.attachVectors(values, values);
         return new VectorValueComparator() {
             @Override
             public int getValueWidth() {
@@ -148,15 +160,15 @@ public class SortPlan implements PhysicalPlan {
                     if (isNull1 && isNull2) {
                         return 0;
                     } else if (isNull1) {
-                        if(options.nullsFirst){
+                        if (options.nullsFirst) {
                             return -1;       // null1 is smaller
-                        }else {
+                        } else {
                             return 1;
                         }
                     } else {
-                        if(options.nullsFirst){
+                        if (options.nullsFirst) {
                             return 1;       // null2 is smaller
-                        }else {
+                        } else {
                             return -1;
                         }
                     }
@@ -166,8 +178,11 @@ public class SortPlan implements PhysicalPlan {
 
             @Override
             public int compareNotNull(int index1, int index2) {
-
-               return defaultComparator.compareNotNull(index1,index2);
+                int res = defaultComparator.compareNotNull(index1, index2);
+                if(options.descending){
+                    return res < 0 ? 1 : -1;
+                }
+                return res;
             }
 
             @Override

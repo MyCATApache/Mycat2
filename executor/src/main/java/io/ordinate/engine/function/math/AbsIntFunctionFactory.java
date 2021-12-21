@@ -41,6 +41,7 @@ public class AbsIntFunctionFactory implements FunctionFactory {
     private static class AbsIntFunction extends IntFunction implements UnaryFunction {
         private final Function arg;
         boolean isNull;
+
         public AbsIntFunction(Function arg) {
             super();
             this.arg = arg;
@@ -56,12 +57,13 @@ public class AbsIntFunctionFactory implements FunctionFactory {
         public int getInt(Record rec) {
             int value = arg.getInt(rec);
             isNull = arg.isNull(rec);
+            if (isNull) return 0;
             return Math.abs(value);
         }
 
         @Override
         public boolean isNull(Record rec) {
-            return super.isNull(rec);
+            return isNull;
         }
     }
 }

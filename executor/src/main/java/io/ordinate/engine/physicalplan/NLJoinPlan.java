@@ -264,14 +264,14 @@ public class NLJoinPlan implements PhysicalPlan {
 
             @Override
             public long getDate(int columnIndex) {
-                DateDayVector vector = getFieldVector(columnIndex);
+                DateMilliVector vector = getFieldVector(columnIndex);
                 int position = getPosition(columnIndex);
                 if (vector.isNull(position)) {
                     isNull = true;
                     return 0;
                 } else {
                     isNull = false;
-                    return vector.get(position) * 1000L;
+                    return vector.get(position);
                 }
             }
 

@@ -41,53 +41,59 @@ public class FooFunctionSink implements FunctionSink{
                     }
                     break;
                 }
-                case INT8_TYPE:
+                case INT8_TYPE:{
+                    int value = function.getByte(inputRecord);
+                    boolean isNull = function.isNull(inputRecord);
+                    setInt(rowId, output, columnId, value, isNull);
+                    break;
+                }
                 case UINT8_TYPE: {
                     int value = function.getInt(inputRecord);
                     boolean isNull = function.isNull(inputRecord);
-                    TinyIntVector tinyIntVector = (TinyIntVector) output.getVector(columnId);
-                    if (isNull) {
-                        tinyIntVector.setNull(rowId);
-                    } else {
-                        tinyIntVector.set(rowId, value);
-                    }
+                    setInt(rowId, output, columnId, value, isNull);
                     break;
                 }
-                case CHAR_TYPE:
-                case INT16_TYPE:
+                case CHAR_TYPE:{
+                    int value = function.getInt(inputRecord);
+                    boolean isNull = function.isNull(inputRecord);
+                    setInt(rowId, output, columnId, value, isNull);
+                    break;
+                }
+                case INT16_TYPE:{
+                    int value = function.getInt(inputRecord);
+                    boolean isNull = function.isNull(inputRecord);
+                    setInt(rowId, output, columnId, value, isNull);
+                    break;
+                }
                 case UINT16_TYPE: {
                     int value = function.getInt(inputRecord);
                     boolean isNull = function.isNull(inputRecord);
-                    SmallIntVector smallIntVector = (SmallIntVector) output.getVector(columnId);
-                    if (isNull) {
-                        smallIntVector.setNull(rowId);
-                    } else {
-                        smallIntVector.set(rowId, value);
-                    }
+                    setInt(rowId, output, columnId, value, isNull);
                     break;
                 }
-                case INT32_TYPE:
+                case INT32_TYPE: {
+                    int value = function.getInt(inputRecord);
+                    boolean isNull = function.isNull(inputRecord);
+                    setInt(rowId, output, columnId, value, isNull);
+                    break;
+                }
                 case UINT32_TYPE: {
                     int value = function.getInt(inputRecord);
                     boolean isNull = function.isNull(inputRecord);
-                    IntVector intVector = (IntVector) vector;
-                    if (isNull) {
-                        intVector.setNull(rowId);
-                    } else {
-                        intVector.set(rowId, value);
-                    }
+                    setInt(rowId, output, columnId, value, isNull);
                     break;
                 }
-                case INT64_TYPE:
-                case UINT64_TYPE: {
+                case INT64_TYPE:{
                     long value = function.getLong(inputRecord);
                     boolean isNull = function.isNull(inputRecord);
                     BigIntVector bigIntVector = (BigIntVector) output.getVector(columnId);
-                    if (isNull) {
-                        bigIntVector.setNull(rowId);
-                    } else {
-                        bigIntVector.set(rowId, value);
-                    }
+                    setInt(rowId, output, columnId, value, isNull);
+                    break;
+                }
+                case UINT64_TYPE: {
+                    long value = function.getLong(inputRecord);
+                    boolean isNull = function.isNull(inputRecord);
+                    setInt(rowId, output, columnId, value, isNull);
                     break;
                 }
                 case FLOAT_TYPE: {
@@ -175,5 +181,15 @@ public class FooFunctionSink implements FunctionSink{
             columnId++;
         }
 
+    }
+
+    private void setInt(int rowId, VectorSchemaRoot output, int columnId, long value, boolean isNull) {
+        BaseIntVector outputVector = (BaseIntVector) output.getVector(columnId);
+        if (isNull) {
+            BaseFixedWidthVector baseFixedWidthVector = (BaseFixedWidthVector) outputVector;
+            baseFixedWidthVector.setNull(rowId);
+        } else {
+            outputVector.setWithPossibleTruncate(rowId, value);
+        }
     }
 }

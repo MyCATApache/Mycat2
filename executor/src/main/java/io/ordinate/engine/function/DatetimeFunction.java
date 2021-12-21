@@ -55,6 +55,6 @@ public abstract class DatetimeFunction implements ScalarFunction {
     }
     @Override
     public InnerType getType() {
-        return InnerType.TIME_MILLI_TYPE;
+        return InnerType.DATETIME_MILLI_TYPE;
     }
 }

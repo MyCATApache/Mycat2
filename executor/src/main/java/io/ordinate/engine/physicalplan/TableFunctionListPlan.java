@@ -34,15 +34,20 @@ public class TableFunctionListPlan implements PhysicalPlan {
     final Schema schema;
     final FunctionSink functionSink;
 
-    public static TableFunctionListPlan create( List<Function[]> functionList) {
-        return new TableFunctionListPlan(functionList);
+    public static TableFunctionListPlan create(List<Function[]> functionList, Schema schema) {
+        return new TableFunctionListPlan(functionList, schema);
     }
 
-    public TableFunctionListPlan( List<Function[]> functionList) {
+    public TableFunctionListPlan(List<Function[]> functionList, Schema schema) {
         this.functionList = functionList;
 
-        schema = SchemaBuilder.of(      this.functionList .get(0));
-        functionSink = RecordSinkFactory.INSTANCE.buildFunctionSink( this.functionList .get(0));
+        this.schema = schema;
+
+        if (!this.functionList.isEmpty()) {
+            functionSink = RecordSinkFactory.INSTANCE.buildFunctionSink(this.functionList.get(0));
+        }else {
+            functionSink = null;
+        }
     }
 
     @Override
@@ -64,7 +69,7 @@ public class TableFunctionListPlan implements PhysicalPlan {
             functionSink.copy(functions, null, index, vectorSchemaRoot);
             index++;
         }
-
+        vectorSchemaRoot.setRowCount(functionList.size());
 
         return Observable.fromArray(vectorSchemaRoot);
     }

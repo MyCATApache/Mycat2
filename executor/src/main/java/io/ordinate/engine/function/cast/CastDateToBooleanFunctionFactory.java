@@ -52,7 +52,7 @@ import java.util.List;
 public class CastDateToBooleanFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "cast(Mt)";
+        return "cast(date)";
     }
 
     @Override
@@ -64,6 +64,7 @@ public class CastDateToBooleanFunctionFactory implements FunctionFactory {
     private static class Func extends BooleanFunction implements UnaryFunction {
         private final Function arg;
         private boolean isNull;
+
         public Func(Function arg) {
             this.arg = arg;
         }
@@ -77,8 +78,8 @@ public class CastDateToBooleanFunctionFactory implements FunctionFactory {
         public int getInt(Record rec) {
             long date = arg.getDate(rec);
             isNull = arg.isNull(rec);
-            if (isNull)return 0;
-            return date > 1?1:0;
+            if (isNull) return 0;
+            return date > 0 ? 1 : 0;
         }
 
         @Override

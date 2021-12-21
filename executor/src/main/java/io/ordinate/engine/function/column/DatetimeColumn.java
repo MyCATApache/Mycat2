@@ -49,14 +49,21 @@ import java.util.Collections;
 import java.util.List;
 
 
-public class DatetimeColumn extends DatetimeFunction implements ScalarFunction {
+public class DatetimeColumn extends DatetimeFunction implements ScalarFunction, ColumnFunction {
     private final int columnIndex;
     boolean isNull;
+
     public DatetimeColumn(int columnIndex) {
         this.columnIndex = columnIndex;
     }
+
     public static DatetimeColumn newInstance(int columnIndex) {
         return new DatetimeColumn(columnIndex);
+    }
+
+    @Override
+    public int getColumnIndex() {
+        return columnIndex;
     }
 
     @Override
@@ -66,8 +73,8 @@ public class DatetimeColumn extends DatetimeFunction implements ScalarFunction {
 
     @Override
     public long getDatetime(Record rec) {
-         isNull = rec.isNull(columnIndex);
-        if (isNull){
+        isNull = rec.isNull(columnIndex);
+        if (isNull) {
             return 0;
         }
         return rec.getDatetime(columnIndex);

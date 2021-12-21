@@ -17,50 +17,78 @@
 
 package io.ordinate.engine.builder;
 
+import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.sqlfunction.datefunction.ExtractFunction;
 import io.ordinate.engine.function.Function;
+import io.ordinate.engine.function.StringFunction;
 import io.ordinate.engine.function.bind.IndexedParameterLinkFunction;
+import io.ordinate.engine.function.bind.SessionVariable;
+import io.ordinate.engine.function.bind.SessionVariableFunction;
 import io.ordinate.engine.function.bind.VariableParameterFunction;
+import io.ordinate.engine.function.constant.SymbolConstant;
 import io.ordinate.engine.schema.InnerType;
 import lombok.Getter;
+import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.calcite.avatica.util.TimeUnit;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.IntervalSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.NlsString;
+import org.checkerframework.checker.units.qual.C;
+import org.checkerframework.checker.units.qual.Time;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Period;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Getter
 public class RexConverter {
-    ExecuteCompiler executeCompiler;
+    ExecuteCompiler executeCompiler = new ExecuteCompiler();
 
-    public RexConverter(ExecuteCompiler executeCompiler) {
-        this.executeCompiler = executeCompiler;
+    public RexConverter() {
+
     }
 
     Map<CorrelationKey, List<VariableParameterFunction>> variableParameterFunctionMap = new HashMap<>();
+    Map<Integer, IndexedParameterLinkFunction> indexedParameterLinkFunctionMap = new HashMap<>();
+    List<SessionVariable> sessionVariableFunctionMap = new ArrayList<>();
 
     public Function visitDynamicParam(RexDynamicParam inputParam) {
         IndexedParameterLinkFunction indexedParameterLinkFunction = executeCompiler.newIndexVariable(inputParam.getIndex(), convertColumnType(inputParam.getType()));
-        return indexedParameterLinkFunction;
+        indexedParameterLinkFunctionMap.put(indexedParameterLinkFunction.getVariableIndex(), indexedParameterLinkFunction);
+        return indexedParameterLinkFunction.getBase();
     }
 
-    public Function convertRex(RexNode rexNode) {
+    public Function convertRex(RexNode rexNode, Schema schema) {
         if (rexNode instanceof RexDynamicParam) {
             return visitDynamicParam((RexDynamicParam) rexNode);
         } else if (rexNode instanceof RexInputRef) {
-            return convertRexInputRefToFunction((RexInputRef) rexNode);
+            return convertRexInputRefToFunction((RexInputRef) rexNode, schema);
         } else if (rexNode instanceof RexLiteral) {
             return convertToFunction((RexLiteral) rexNode);
         } else if (rexNode instanceof RexCall) {
             RexCall rexCall = (RexCall) rexNode;
-            List<Function> childrens = rexCall.getOperands().stream().map(i -> convertRex(i)).collect(Collectors.toList());
+            if (rexCall.op == ExtractFunction.INSTANCE) {
+                RexLiteral rex = (RexLiteral) rexCall.getOperands().get(0);
+                TimeUnitRange flag = (TimeUnitRange) rex.getValueAs(TimeUnitRange.class);
+                TimeUnit startUnit = flag.startUnit;
+                TimeUnit endUnit = flag.endUnit;
+
+                RexNode param = rexCall.getOperands().get(1);
+                Function function = convertRex(param, schema);
+                Function call = ExecuteCompiler.call(startUnit.name(), function);
+                return Objects.requireNonNull(call);
+            }
+            List<Function> childrens = rexCall.getOperands().stream().map(i -> convertRex(i, schema)).collect(Collectors.toList());
             return convertToFunction(rexCall, childrens);
         } else if (rexNode instanceof RexCorrelVariable) {
             throw new UnsupportedOperationException();
@@ -83,9 +111,9 @@ public class RexConverter {
         throw new UnsupportedOperationException();
     }
 
-    public Function convertRexInputRefToFunction(RexInputRef rexInputRef) {
+    public Function convertRexInputRefToFunction(RexInputRef rexInputRef, Schema schema) {
         int index = rexInputRef.getIndex();
-        return executeCompiler.column(index);
+        return executeCompiler.column(index, schema);
     }
 
     public Function convertToFunction(RexLiteral literal) {
@@ -149,6 +177,8 @@ public class RexConverter {
             case INTERVAL_YEAR:
             case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:
+                Period period = literal.getValueAs(Period.class);
+                return executeCompiler.makePeriodLiteral(period);
             case INTERVAL_DAY:
             case INTERVAL_DAY_HOUR:
             case INTERVAL_DAY_MINUTE:
@@ -159,13 +189,15 @@ public class RexConverter {
             case INTERVAL_MINUTE:
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
-                throw new UnsupportedOperationException();
+                Duration duration = literal.getValueAs(Duration.class);
+                return executeCompiler.makeTimeLiteral(duration);
             case CHAR:
                 return executeCompiler.makeCharLiteral(value);
             case BINARY:
                 return executeCompiler.makeBinaryLiteral(value);
             case SYMBOL:
-                break;
+                Comparable value1 = literal.getValue();
+                return executeCompiler.makeSymbolLiteral(null);
             case ANY:
             case MULTISET:
             case ARRAY:
@@ -179,7 +211,7 @@ public class RexConverter {
             case DYNAMIC_STAR:
             case GEOMETRY:
             default:
-                throw new UnsupportedOperationException();
+
         }
         throw new UnsupportedOperationException();
     }
@@ -266,8 +298,25 @@ public class RexConverter {
             case OTHER:
             case OTHER_FUNCTION:
             default:
-                throw new IllegalArgumentException("Unsupported Calcite expression type! " +
-                        call.op.kind.toString());
+                String callName = call.op.getName().toUpperCase();
+                if (callName.contains("SESSIONVALUE")) {
+                    Function function = aeOperands.get(0);
+                    StringFunction stringFunction = (StringFunction) function;
+                    String name = stringFunction.getString(null).toString();
+                    SessionVariableFunction sessionVariableFunction = ExecuteCompiler.newSessionVariable(name);
+                    sessionVariableFunctionMap.add(sessionVariableFunction);
+                    ae = sessionVariableFunction;
+                } else {
+                    ae = executeCompiler.call(callName, aeOperands);
+                    if (ae == null) {
+                        throw new IllegalArgumentException("Unsupported Calcite expression type! " +
+                                call.op.kind.toString());
+                    }
+                    if (ae instanceof SessionVariable) {
+                        sessionVariableFunctionMap.add((SessionVariable) ae);
+                    }
+
+                }
         }
         Objects.requireNonNull(ae);
         return ae;

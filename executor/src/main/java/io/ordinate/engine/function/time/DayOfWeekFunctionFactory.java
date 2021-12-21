@@ -17,6 +17,7 @@
 
 package io.ordinate.engine.function.time;
 
+import io.mycat.calcite.sqlfunction.datefunction.DayOfWeekFunction;
 import io.ordinate.engine.builder.EngineConfiguration;
 import io.ordinate.engine.function.Function;
 import io.ordinate.engine.function.FunctionFactory;
@@ -25,12 +26,13 @@ import io.ordinate.engine.function.UnaryFunction;
 import io.ordinate.engine.record.Record;
 import io.questdb.std.datetime.microtime.Timestamps;
 
+import java.sql.Date;
 import java.util.List;
 
-public class DayOfWeekFunctionFactory  implements FunctionFactory {
+public class DayOfWeekFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "DayOfWeek(date):int64";
+        return "DayOfWeek(date):int";
     }
 
     @Override
@@ -62,7 +64,7 @@ public class DayOfWeekFunctionFactory  implements FunctionFactory {
             final long value = arg.getDatetime(rec);
             isNull = arg.isNull(rec);
             if (isNull) return 0;
-            return Timestamps.getDayOfWeek(value);
+            return DayOfWeekFunction.dayOfWeek(new Date(value).toLocalDate());
         }
     }
 }

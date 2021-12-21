@@ -22,11 +22,13 @@ import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.jetbrains.annotations.NotNull;
 
-public class RootContext {
+public class RootContext<T> {
     RootAllocator rootAllocator;
+    T context;
 
-    public RootContext() {
-        rootAllocator = new RootAllocator(Long.MAX_VALUE);
+    public RootContext( T context) {
+        this.context = context;
+        this.rootAllocator = new RootAllocator(Long.MAX_VALUE);
     }
 
     public RootAllocator getRootAllocator() {
@@ -45,7 +47,11 @@ public class RootContext {
     public VectorSchemaRoot getVectorSchemaRoot(Schema schema, int size) {
         VectorSchemaRoot root = VectorSchemaRoot.create(schema, rootAllocator);
         root.allocateNew();
-      //  root.setRowCount(size);
+        //  root.setRowCount(size);
         return root;
+    }
+
+    public T getContext() {
+        return context;
     }
 }

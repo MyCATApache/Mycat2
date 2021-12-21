@@ -357,7 +357,7 @@ public enum MycatCalciteSupport implements Context {
                             SecondFunction.INSTANCE,
                             SecToTimeFunction.INSTANCE,
 
-                            SecToDateFunction.INSTANCE,
+                            StrToDateFunction.INSTANCE,
                             SubTimeFunction.INSTANCE,
                             SysDateFunction.INSTANCE,
                             TimeDiff2Function.INSTANCE,

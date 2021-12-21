@@ -50,7 +50,7 @@ import java.util.Collections;
 import java.util.List;
 
 
-public class TimeColumn extends TimeFunction implements ScalarFunction {
+public class TimeColumn extends TimeFunction implements ScalarFunction ,ColumnFunction {
     private final int columnIndex;
     boolean isNull;
     public TimeColumn(int columnIndex) {
@@ -58,6 +58,11 @@ public class TimeColumn extends TimeFunction implements ScalarFunction {
     }
     public static TimeColumn newInstance(int columnIndex) {
         return new TimeColumn(columnIndex);
+    }
+
+    @Override
+    public int getColumnIndex() {
+        return columnIndex;
     }
 
     @Override

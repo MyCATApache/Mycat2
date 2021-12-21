@@ -52,7 +52,7 @@ import java.util.List;
 public class CastShortToFloatFunctionFactory implements FunctionFactory {
     @Override
     public String getSignature() {
-        return "cast(int6):float";
+        return "cast(int16):float";
     }
 
     @Override

@@ -17,8 +17,10 @@ package io.mycat.sqlhandler;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.Response;
+import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.DrdsRunnerHelper;
+import io.mycat.calcite.PrepareExecutor;
 import io.mycat.swapbuffer.MySQLSwapbufferBuilder;
 import io.mycat.swapbuffer.PacketRequest;
 import io.mycat.util.Pair;
@@ -75,8 +77,9 @@ public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             resultSetBuilder.addColumnInfo("1", JDBCType.INTEGER);
             resultSetBuilder.addObjectRowPayload(Arrays.asList(1, 2));
             resultSetBuilder.addObjectRowPayload(Arrays.asList(3, 4));
+            RowBaseIterator rowBaseIterator = resultSetBuilder.build();
             Observable<VectorSchemaRoot> observable = ResultWriterUtil.convertToVector(resultSetBuilder.build());
-            return Optional.of(response.sendVectorResultSet(observable));
+            return Optional.of(response.sendVectorResultSet(rowBaseIterator.getMetaData(),observable));
         }
         return Optional.empty();
     }

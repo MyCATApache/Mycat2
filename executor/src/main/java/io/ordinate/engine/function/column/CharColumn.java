@@ -48,11 +48,17 @@ import io.ordinate.engine.record.Record;
 import java.util.Collections;
 import java.util.List;
 
-public class CharColumn extends CharFunction implements ScalarFunction {
+public class CharColumn extends CharFunction implements ScalarFunction, ColumnFunction {
     private final int columnIndex;
+    boolean isNull;
 
     public CharColumn(int columnIndex) {
         this.columnIndex = columnIndex;
+    }
+
+    @Override
+    public int getColumnIndex() {
+        return columnIndex;
     }
 
     @Override
@@ -66,10 +72,15 @@ public class CharColumn extends CharFunction implements ScalarFunction {
 
     @Override
     public char getChar(Record rec) {
-        boolean isNull = rec.isNull(columnIndex);
-        if (isNull){
+        isNull = rec.isNull(columnIndex);
+        if (isNull) {
             return 0;
         }
         return rec.getChar(columnIndex);
+    }
+
+    @Override
+    public boolean isNull(Record rec) {
+        return isNull;
     }
 }

@@ -17,6 +17,7 @@
 
 package io.ordinate.engine.function.time;
 
+import io.mycat.calcite.sqlfunction.datefunction.DayOfYearFunction;
 import io.ordinate.engine.builder.EngineConfiguration;
 import io.ordinate.engine.function.Function;
 import io.ordinate.engine.function.FunctionFactory;
@@ -25,6 +26,7 @@ import io.ordinate.engine.function.UnaryFunction;
 import io.ordinate.engine.record.Record;
 import io.questdb.std.datetime.microtime.Timestamps;
 
+import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -60,15 +62,12 @@ public class DayOfYearFunctionFactory implements FunctionFactory {
 
         @Override
         public int getInt(Record rec) {
-            final long value = arg.getDatetime(rec);
+            final long value = arg.getDate(rec);
             isNull = arg.isNull(rec);
             if (isNull)return 0;
 
-            int year = Timestamps.getYear(value);
-            boolean leapYear = Timestamps.isLeapYear(year);
-            int monthOfYear = Timestamps.getMonthOfYear(value, year,leapYear );
-            int dayOfMonth = Timestamps.getDayOfMonth(value, year, monthOfYear, leapYear);
-            return LocalDate.of(year,monthOfYear,dayOfMonth).getDayOfYear();
+            LocalDate localDate = new Date(value).toLocalDate();
+            return DayOfYearFunction.dayOfYear(localDate);
         }
     }
 }

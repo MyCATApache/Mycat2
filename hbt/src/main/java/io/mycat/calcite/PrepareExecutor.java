@@ -18,47 +18,44 @@ import org.apache.calcite.runtime.ArrayBindable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Iterator;
+import java.util.Objects;
 
 @Getter
 public class PrepareExecutor {
-   final PrepareExecutorType type;
-   final  ArrayBindable bindable1;
-
-    public PrepareExecutor(PrepareExecutorType type, ArrayBindable executor) {
-        this.type = type;
-        this.bindable1 = executor;
+    ArrowBindable arrowBindable = null;
+    ArrayBindable arrayBindable = null;
+    public static interface ArrowBindable {
+        ArrowObservable apply(AsyncMycatDataContextImpl newMycatDataContext, MycatRowMetaData mycatRowMetaData);
     }
 
-    public static  PrepareExecutor of(PrepareExecutorType type, ArrayBindable executor){
-        return new PrepareExecutor(type,executor);
-    }
+    @Getter
+    public static class ArrowObservable {
+        MycatRowMetaData mycatRowMetaData;
+        Observable<VectorSchemaRoot> observable;
 
-   public Observable<Object[]> asObservableObjectArray( AsyncMycatDataContextImpl newMycatDataContext){
-       Object bindObservable = bindable1.bindObservable(newMycatDataContext);
-       if (bindObservable instanceof Observable) {
-           return (Observable) bindObservable;
-       } else {
-           Enumerable<Object[]> enumerable = (Enumerable) bindObservable;
-         return toObservable(newMycatDataContext, enumerable);
-       }
-   }
-    public Observable<VectorSchemaRoot> asObservableVector( AsyncMycatDataContextImpl newMycatDataContext,MycatRowMetaData mycatRowMetaData){
-        throw new UnsupportedOperationException();
-    }
-    public RowBaseIterator asRowBaseIterator( AsyncMycatDataContextImpl newMycatDataContext,MycatRowMetaData mycatRowMetaData){
-        Observable<Object[]> bind = asObservableObjectArray(newMycatDataContext);
-        Iterable<Object[]> objects = bind.blockingIterable();
-        Iterator<Object[]> iterator = objects.iterator();
-        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
-        while (iterator.hasNext()){
-            Object[] row = iterator.next();
-            resultSetBuilder.addObjectRowPayload(row);
+        public ArrowObservable(MycatRowMetaData mycatRowMetaData, Observable<VectorSchemaRoot> observable) {
+            this.mycatRowMetaData = mycatRowMetaData;
+            this.observable = Objects.requireNonNull(observable);
         }
-        return resultSetBuilder.build(mycatRowMetaData);
+
+        public static ArrowObservable of(MycatRowMetaData mycatRowMetaData,
+                                         Observable<VectorSchemaRoot> observable) {
+            return new ArrowObservable(mycatRowMetaData, observable);
+        }
     }
 
-    public  Observable<MysqlPayloadObject> asMysqlPayloadObjectObservable(AsyncMycatDataContextImpl newMycatDataContext,MycatRowMetaData mycatRowMetaData){
-        return getMysqlPayloadObjectObservable(bindable1, newMycatDataContext, mycatRowMetaData);
+    public PrepareExecutor( ArrowBindable arrowBindable, ArrayBindable arrayBindable ) {
+        this.arrowBindable = arrowBindable;
+        this.arrayBindable = arrayBindable;
+    }
+
+    public static PrepareExecutor of(ArrowBindable arrowBindable, ArrayBindable arrayBindable ) {
+        return new PrepareExecutor(arrowBindable, arrayBindable);
+    }
+
+
+    public ArrowObservable asObservableVector(AsyncMycatDataContextImpl newMycatDataContext, MycatRowMetaData mycatRowMetaData) {
+        return arrowBindable.apply(newMycatDataContext, mycatRowMetaData);
     }
 
 
@@ -115,5 +112,25 @@ public class PrepareExecutor {
                     .onFailure(event -> emitter1.onError(event));
         });
         return observable;
+    }
+    public Observable<Object[]> asObservableObjectArray( AsyncMycatDataContextImpl newMycatDataContext){
+        Object bindObservable = arrayBindable.bindObservable(newMycatDataContext);
+        if (bindObservable instanceof Observable) {
+            return (Observable) bindObservable;
+        } else {
+            Enumerable<Object[]> enumerable = (Enumerable) bindObservable;
+            return toObservable(newMycatDataContext, enumerable);
+        }
+    }
+    public RowBaseIterator asRowBaseIterator(AsyncMycatDataContextImpl newMycatDataContext, MycatRowMetaData mycatRowMetaData){
+        Observable<Object[]> bind = asObservableObjectArray(newMycatDataContext);
+        Iterable<Object[]> objects = bind.blockingIterable();
+        Iterator<Object[]> iterator = objects.iterator();
+        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+        while (iterator.hasNext()){
+            Object[] row = iterator.next();
+            resultSetBuilder.addObjectRowPayload(row);
+        }
+        return resultSetBuilder.build(mycatRowMetaData);
     }
 }

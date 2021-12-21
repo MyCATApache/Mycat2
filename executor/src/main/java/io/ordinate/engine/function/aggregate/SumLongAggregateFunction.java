@@ -61,13 +61,18 @@ public class SumLongAggregateFunction implements LongAccumulator {
     }
 
     @Override
-    public void init(int columnIndex) {
-        this.columnIndex = columnIndex;
+    public int getInputColumnIndex() {
+        return columnIndex;
     }
 
     @Override
-    public int getInputColumnIndex() {
-        return columnIndex;
+    public InnerType getOutputType() {
+        return null;
+    }
+
+    @Override
+    public InnerType getInputType() {
+        return null;
     }
 
     @Override
@@ -114,6 +119,11 @@ public class SumLongAggregateFunction implements LongAccumulator {
             }
 
         };
+    }
+
+    @Override
+    public void setInputColumnIndex(int index) {
+        this.columnIndex = index;
     }
 
     @Override

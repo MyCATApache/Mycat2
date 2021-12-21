@@ -52,7 +52,7 @@ import java.util.Collections;
 import java.util.List;
 
 
-public class BinaryColumn extends BinarySequenceFunction implements ScalarFunction {
+public class BinaryColumn extends BinarySequenceFunction implements ScalarFunction,ColumnFunction {
     private final int columnIndex;
     boolean isNull;
     @Override
@@ -67,7 +67,10 @@ public class BinaryColumn extends BinarySequenceFunction implements ScalarFuncti
     public static BinaryColumn newInstance(int columnIndex) {
         return new BinaryColumn(columnIndex);
     }
-
+    @Override
+    public int getColumnIndex() {
+        return columnIndex;
+    }
     @Override
     public BinarySequence getBinary(Record rec) {
         isNull = rec.isNull(columnIndex);

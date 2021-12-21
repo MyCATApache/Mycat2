@@ -15,9 +15,12 @@ public interface NewMycatDataContext extends DataContext {
 
     Observable <Object[]> getTableObservable(String schmea,String table);
 
+    public List<Observable<Object[]>> getObservableList(String node);
+
     Observable   <Object[]> getObservable(String node,
                                        org.apache.calcite.linq4j.function.Function1 function1,
                                        java.util.Comparator comparator, int offset, int fetch);
+
 
     Observable <Object[]> getObservable(String node);
 

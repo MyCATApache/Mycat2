@@ -28,6 +28,7 @@ import io.mycat.vertx.VertxUpdateExecuter;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
 import org.apache.arrow.vector.VectorSchemaRoot;
+import org.apache.calcite.runtime.ArrayBindable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +56,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
     public Future<Void> executeUpdate(Plan plan) {
         MycatUpdateRel mycatRel = (MycatUpdateRel) plan.getMycatRel();
         Collection<VertxExecuter.EachSQL> eachSQLS = VertxUpdateExecuter.explainUpdate(drdsSqlWithParams, context);
-        Future<long[]> future = VertxExecuter.simpleUpdate(context, mycatRel.isInsert(),true, mycatRel.isGlobal(), eachSQLS);
+        Future<long[]> future = VertxExecuter.simpleUpdate(context, mycatRel.isInsert(), true, mycatRel.isGlobal(), eachSQLS);
         return future.eventually(u -> context.getTransactionSession().closeStatementState())
                 .flatMap(result -> response.sendOk(result[0], result[1]));
     }
@@ -67,9 +68,9 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
         assert !insertSqls.isEmpty();
         Future<long[]> future;
         if (insertSqls.size() > 1) {
-            future = VertxExecuter.simpleUpdate(context, true,true, mycatRel.isGlobal(), VertxExecuter.rewriteInsertBatchedStatements(insertSqls));
+            future = VertxExecuter.simpleUpdate(context, true, true, mycatRel.isGlobal(), VertxExecuter.rewriteInsertBatchedStatements(insertSqls));
         } else {
-            future = VertxExecuter.simpleUpdate(context, true,false, mycatRel.isGlobal(), insertSqls);
+            future = VertxExecuter.simpleUpdate(context, true, false, mycatRel.isGlobal(), insertSqls);
         }
         return future.eventually(u -> context.getTransactionSession().closeStatementState())
                 .flatMap(result -> response.sendOk(result[0], result[1]));
@@ -80,27 +81,25 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
     public Future<Void> executeQuery(Plan plan) {
         AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSqlWithParams);
         ExecutorProvider executorProvider = MetaClusterCurrent.wrapper(ExecutorProvider.class);
+
         PrepareExecutor prepare = executorProvider.prepare(plan);
-        Observable<MysqlPayloadObject> observable1 = prepare.asMysqlPayloadObjectObservable(sqlMycatDataContext,plan.getMetaData());
-        Observable observable = mapToTimeoutObservable(observable1, drdsSqlWithParams);
-        switch (prepare.getType()) {
-            case ARROW: {
-                Observable<VectorSchemaRoot> executor = observable;
-                return response.sendVectorResultSet(executor);
-            }
-            case OBJECT: {
-                Observable<MysqlPayloadObject> executor = observable;
-                return response.sendResultSet(executor);
-            }
-            default:
-                throw new IllegalStateException("Unexpected value: " + prepare.getType());
+        if (context.getProcessStateMap().containsKey("VECTOR")) {
+            PrepareExecutor.ArrowObservable observable1 = prepare.asObservableVector(sqlMycatDataContext, plan.getMetaData());
+            return response.sendVectorResultSet(observable1.getMycatRowMetaData(),observable1.getObservable());
+        } else {
+            ArrayBindable arrayBindable = prepare.getArrayBindable();
+            Observable<MysqlPayloadObject> observable1 = PrepareExecutor
+                    .getMysqlPayloadObjectObservable(arrayBindable,sqlMycatDataContext,plan.getMetaData());
+            Observable observable = mapToTimeoutObservable(observable1, drdsSqlWithParams);
+            Observable<MysqlPayloadObject> executor = observable;
+            return response.sendResultSet(executor);
         }
     }
 
-    public <T> Observable<T> mapToTimeoutObservable(Observable<T> observable, DrdsSqlWithParams drdsSqlWithParams){
+    public <T> Observable<T> mapToTimeoutObservable(Observable<T> observable, DrdsSqlWithParams drdsSqlWithParams) {
         Optional<Long> timeout = drdsSqlWithParams.getTimeout();
         if (timeout.isPresent()) {
-          return observable.timeout(timeout.get(), TimeUnit.MILLISECONDS);
+            return observable.timeout(timeout.get(), TimeUnit.MILLISECONDS);
         }
         return observable;
     }

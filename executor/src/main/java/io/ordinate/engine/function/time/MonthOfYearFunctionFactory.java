@@ -17,6 +17,7 @@
 
 package io.ordinate.engine.function.time;
 
+import io.mycat.calcite.sqlfunction.datefunction.MonthFunction;
 import io.ordinate.engine.builder.EngineConfiguration;
 import io.ordinate.engine.function.Function;
 import io.ordinate.engine.function.FunctionFactory;
@@ -25,6 +26,8 @@ import io.ordinate.engine.function.UnaryFunction;
 import io.ordinate.engine.record.Record;
 import io.questdb.std.datetime.microtime.Timestamps;
 
+import java.sql.Date;
+import java.time.LocalDate;
 import java.util.List;
 
 public class MonthOfYearFunctionFactory implements FunctionFactory {
@@ -62,9 +65,8 @@ public class MonthOfYearFunctionFactory implements FunctionFactory {
             final long value = arg.getDatetime(rec);
             isNull = arg.isNull(rec);
             if (isNull) return 0;
-            final int year = Timestamps.getYear(value);
-            final boolean isLeap = Timestamps.isLeapYear(year);
-            return Timestamps.getMonthOfYear(value, year, isLeap);
+            LocalDate localDate = new Date(value).toLocalDate();
+            return MonthFunction.month(localDate);
         }
     }
 }

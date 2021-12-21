@@ -25,8 +25,6 @@ import java.util.List;
 
 public interface VectorExpression {
 
-    int getOutputId();
-
     void eval(VectorContext ctx);
 
     String signature();
@@ -35,7 +33,11 @@ public interface VectorExpression {
 
     List<ArrowType> argTypes();
 
-    default boolean isNullable(){
+    default boolean isNullable() {
+        return false;
+    }
+
+    default boolean isColumn() {
         return false;
     }
 }

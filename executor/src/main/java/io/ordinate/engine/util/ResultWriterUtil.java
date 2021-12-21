@@ -20,6 +20,7 @@ import org.apache.arrow.vector.types.pojo.Schema;
 
 import java.sql.Date;
 import java.sql.Time;
+import java.util.Iterator;
 import java.util.List;
 
 public class ResultWriterUtil {
@@ -170,17 +171,12 @@ public class ResultWriterUtil {
         newWriter.startNewRow(fieldCount);
         for (int fieldId = 0; fieldId < fieldCount; fieldId++) {
             FieldVector vector = vectorRowBatch.getVector(fieldId);
-            newWriter.addFlagNull(vector.isNull(rowId));
-        }
-        newWriter.endNullMap();
-        for (int fieldId = 0; fieldId < fieldCount; fieldId++) {
-            FieldVector vector = vectorRowBatch.getVector(fieldId);
             InnerType type = types[fieldId];
             if (!vector.isNull(rowId)) {
                 switch (type) {
                     case BOOLEAN_TYPE: {
                         BitVector bitVector = (BitVector) vector;
-                        newWriter.addBoolean(getJdbcBooleanValue(rowId, bitVector));
+                        newWriter.addBoolean(getJdbcBooleanValue(rowId, bitVector)>0);
                         break;
                     }
                     case INT8_TYPE: {
@@ -266,7 +262,7 @@ public class ResultWriterUtil {
                     case DATETIME_MILLI_TYPE: {
 
                         TimeStampMilliVector datetimeMilliVector = (TimeStampMilliVector) vector;
-                        newWriter.addDatetime(getjavaDatetimeMilliValueAsLong(rowId, datetimeMilliVector));
+                        newWriter.addDatetime(getJavaDatetimeMilliValueAsLong(rowId, datetimeMilliVector));
                         break;
                     }
                     case SYMBOL_TYPE:
@@ -279,11 +275,13 @@ public class ResultWriterUtil {
                         throw new UnsupportedOperationException();
                     }
                 }
+            }else {
+                newWriter.addFlagNull(true);
             }
         }
     }
 
-    private static long getjavaDatetimeMilliValueAsLong(int rowId, TimeStampMilliVector datetimeMilliVector) {
+    private static long getJavaDatetimeMilliValueAsLong(int rowId, TimeStampMilliVector datetimeMilliVector) {
         return datetimeMilliVector.get(rowId);
     }
 
@@ -399,6 +397,39 @@ public class ResultWriterUtil {
                     for (int i = 0; i < columnCount; i++) {
                         FieldVector valueVectors = fieldVectors.get(i);
                         Object object = rowBaseIterator.getObject(i);
+                        if (object == null) {
+                            SchemaBuilder.setVectorNull(valueVectors, rowId);
+                        } else {
+                            SchemaBuilder.setVector(valueVectors, rowId, object);
+                        }
+                    }
+                    rowId++;
+                }
+                vectorSchemaRoot.setRowCount(rowId);
+                emitter.onNext(vectorSchemaRoot);
+                emitter.onComplete();
+            } catch (Throwable e) {
+                emitter.tryOnError(e);
+            }
+        });
+    }
+
+    public static Observable<VectorSchemaRoot> convertToVector(Schema schema, Observable<Object[]> observable) {
+        return Observable.create(emitter -> {
+            try {
+                RootAllocator rootAllocator = new RootAllocator(Long.MAX_VALUE);
+                VectorSchemaRoot vectorSchemaRoot = VectorSchemaRoot.create(schema, rootAllocator);
+                int columnCount = schema.getFields().size();
+
+                List<FieldVector> fieldVectors = vectorSchemaRoot.getFieldVectors();
+                vectorSchemaRoot.allocateNew();
+                int rowId = 0;
+                Iterator<Object[]> rowBaseIterator = observable.blockingIterable().iterator();
+                while (rowBaseIterator.hasNext()) {
+                    Object[] objects = rowBaseIterator.next();
+                    for (int i = 0; i < columnCount; i++) {
+                        FieldVector valueVectors = fieldVectors.get(i);
+                        Object object = objects[(i)];
                         if (object == null) {
                             SchemaBuilder.setVectorNull(valueVectors, rowId);
                         } else {

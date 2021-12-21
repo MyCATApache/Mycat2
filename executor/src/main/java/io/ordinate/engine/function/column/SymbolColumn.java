@@ -49,11 +49,16 @@ import io.ordinate.engine.record.Record;
 import java.util.Collections;
 import java.util.List;
 
-public class SymbolColumn extends SymbolFunction implements ScalarFunction {
+public class SymbolColumn extends SymbolFunction implements ScalarFunction,ColumnFunction  {
     private final int columnIndex;
     boolean isNull;
     public SymbolColumn(int columnIndex) {
         this.columnIndex = columnIndex;
+    }
+
+    @Override
+    public int getColumnIndex() {
+        return columnIndex;
     }
 
     @Override

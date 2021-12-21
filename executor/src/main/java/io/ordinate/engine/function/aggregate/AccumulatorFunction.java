@@ -48,6 +48,8 @@ import io.questdb.cairo.ArrayColumnTypes;
 import io.questdb.cairo.ColumnType;
 import io.questdb.cairo.map.MapValue;
 
+import java.util.Optional;
+
 public interface AccumulatorFunction<T> extends Function {
 
     String name();
@@ -128,11 +130,15 @@ public interface AccumulatorFunction<T> extends Function {
         return true;
     }
 
-    public void init(int columnIndex);
-
     public int getInputColumnIndex();
 
-    InnerType getType();
+    InnerType getOutputType();
+
+    InnerType getInputType();
+
+    default InnerType getType(){
+        return getOutputType();
+    }
 
     default AggregateVectorExpression toAggregateVectorExpression() {
         return null;
@@ -141,4 +147,6 @@ public interface AccumulatorFunction<T> extends Function {
     default boolean isVector() {
         return false;
     }
+
+    void setInputColumnIndex(int index);
 }

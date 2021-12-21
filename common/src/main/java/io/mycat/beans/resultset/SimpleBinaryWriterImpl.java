@@ -14,11 +14,124 @@
  */
 package io.mycat.beans.resultset;
 
-import io.mycat.MySQLPacketUtil;
+public class SimpleBinaryWriterImpl implements ResultSetWriter {
+    Object[] objects;
+    int index = 0;
+    @Override
+    public void addFlagNull(boolean value) {
+        objects[index] = value?null:objects[index];
+        index++;
+    }
 
-public class SimpleBinaryWriterImpl extends SimpleTextWriterImpl{
+    @Override
+    public void startNewRow(int value) {
+        objects = new Object[value];
+    }
+
+    @Override
+    public void addBoolean(boolean value) {
+        objects[index] =value;
+        index++;
+    }
+
+    @Override
+    public void addInt8(byte value) {
+        objects[index] =value;
+        index++;
+    }
+
+    @Override
+    public void addInt16(short value) {
+        objects[index] =value;
+        index++;
+    }
+
+    @Override
+    public void addChar(char value) {
+        objects[index] =value;
+        index++;
+    }
+
+    @Override
+    public void addInt32(int value) {
+        objects[index] =value;
+        index++;
+    }
+
+    @Override
+    public void addInt64(long value) {
+        objects[index] =value;
+        index++;
+    }
+
+    @Override
+    public void addFloat(float value) {
+        objects[index] =value;
+        index++;
+    }
+
+    @Override
+    public void addDouble(double value) {
+        objects[index] =value;
+        index++;
+    }
+
+    @Override
+    public void addString(byte[] value) {
+        objects[index] =value;
+        index++;
+    }
+
+    @Override
+    public void addBinary(byte[] value) {
+        objects[index] =value;
+        index++;
+    }
+
+    @Override
+    public void addUInt16(short value) {
+        objects[index] =value;
+        index++;
+    }
+
+    @Override
+    public void addUInt32(int value) {
+        objects[index] =value;
+        index++;
+    }
+
+    @Override
+    public void addUInt64(long value) {
+        objects[index] =value;
+        index++;
+    }
+
+    @Override
+    public void addDatetime(long value) {
+        objects[index] =value;
+        index++;
+    }
+
+    @Override
+    public void addDate(long value) {
+        objects[index] =value;
+        index++;
+    }
+
+    @Override
+    public void addTime(int value) {
+        objects[index] =value;
+        index++;
+    }
+
+    @Override
+    public void addUInt8(byte value) {
+        objects[index] =value;
+        index++;
+    }
+
     @Override
     public byte[] build() {
-        return MySQLPacketUtil.generateBinaryRow(row);
+       throw new UnsupportedOperationException();
     }
 }

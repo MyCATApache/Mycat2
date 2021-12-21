@@ -19,8 +19,10 @@ package io.ordinate.engine.physicalplan;
 
 import com.google.common.collect.ImmutableList;
 
+import io.ordinate.engine.function.column.ColumnFunction;
 import io.ordinate.engine.schema.FieldBuilder;
 import io.ordinate.engine.record.RootContext;
+import io.ordinate.engine.vector.ExprVectorExpression;
 import io.ordinate.engine.vector.VectorContext;
 import io.ordinate.engine.vector.VectorExpression;
 import io.reactivex.rxjava3.core.Observable;
@@ -61,43 +63,50 @@ public class ProjectionPlan implements PhysicalPlan {
         return input.execute(rootContext)
                 .subscribeOn(Schedulers.computation())
                 .map(input -> {
-            try{
-                int index = 0;
-                for (VectorExpression expr : exprs) {
-                    int finalIndex = index;
+                    try {
+                        int index = 0;
+                        for (VectorExpression expr : exprs) {
+                            int finalIndex = index;
 
-                    ArrowType type = expr.getType();
-                    vectorList[finalIndex]= FieldBuilder.of("", type, expr.isNullable()).toArrow().createVector(rootContext.getRootAllocator());
-                    vectorList[finalIndex].setInitialCapacity(input.getRowCount());
-                    vectorList[finalIndex].allocateNew();
-                    VectorContext vContext1 = new VectorContext() {
-                        @Override
-                        public VectorSchemaRoot getVectorSchemaRoot() {
-                            return input;
-                        }
+                            if (expr.isColumn()) {
+                                ExprVectorExpression exprVectorExpression = (ExprVectorExpression) expr;
+                                ColumnFunction columnFunction = (ColumnFunction) exprVectorExpression.getFunction();
+                                FieldVector vector = input.getVector(columnFunction.getColumnIndex());
+                                vectorList[finalIndex] = vector;
+                            } else {
+                                ArrowType type = expr.getType();
+                                vectorList[finalIndex] = FieldBuilder.of("", type, expr.isNullable()).toArrow().createVector(rootContext.getRootAllocator());
+                                vectorList[finalIndex].setInitialCapacity(input.getRowCount());
+                                vectorList[finalIndex].allocateNew();
+                                VectorContext vContext1 = new VectorContext() {
+                                    @Override
+                                    public VectorSchemaRoot getVectorSchemaRoot() {
+                                        return input;
+                                    }
 
-                        @Override
-                        public FieldVector getOutputVector() {
-                            return    vectorList[finalIndex];
-                        }
+                                    @Override
+                                    public FieldVector getOutputVector() {
+                                        return vectorList[finalIndex];
+                                    }
 
-                        @Override
-                        public int getRowCount() {
-                            return input.getRowCount();
+                                    @Override
+                                    public int getRowCount() {
+                                        return input.getRowCount();
+                                    }
+                                };
+                                expr.eval(vContext1);
+                                vectorList[index] = (vContext1.getOutputVector());
+                                vContext1.free();
+                            }
+                            index++;
                         }
-                    };
-                    expr.eval(vContext1);
-                    vectorList[index]=(vContext1.getOutputVector());
-                    vContext1.free();
-                    index++;
-                }
-                VectorSchemaRoot res = VectorSchemaRoot.of(vectorList);
-                res.setRowCount(input.getRowCount());
-                return res;
-            } finally {
-                ProjectionPlan.this.input.eachFree(input);
-            }
-        });
+                        VectorSchemaRoot res = VectorSchemaRoot.of(vectorList);
+                        res.setRowCount(input.getRowCount());
+                        return res;
+                    } finally {
+                        ProjectionPlan.this.input.eachFree(input);
+                    }
+                });
     }
 
     @Override

@@ -51,7 +51,7 @@ import java.util.Collections;
 import java.util.List;
 
 
-public class DateColumn extends DateFunction implements ScalarFunction {
+public class DateColumn extends DateFunction implements ScalarFunction,ColumnFunction {
     private final int columnIndex;
     boolean isNull;
     public DateColumn(int columnIndex) {
@@ -60,7 +60,10 @@ public class DateColumn extends DateFunction implements ScalarFunction {
     public static DateColumn newInstance(int columnIndex) {
         return new DateColumn(columnIndex);
     }
-
+    @Override
+    public int getColumnIndex() {
+        return columnIndex;
+    }
     @Override
     public List<Function> getArgs() {
         return Collections.emptyList();

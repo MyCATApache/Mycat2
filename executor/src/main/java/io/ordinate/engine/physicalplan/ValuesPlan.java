@@ -74,7 +74,8 @@ public class ValuesPlan implements PhysicalPlan {
                     for (int columnId = 0; columnId < columnSize; columnId++) {
                         FieldVector vector = vectorSchemaRoot.getVector(columnId);
                         for (int rowId = 0; rowId <rowCount; rowId++) {
-                            SchemaBuilder.setVector(vector,rowId,objects.get(rowId)[columnId]);
+                            Object o = objects.get(rowId)[columnId];
+                            SchemaBuilder.setVector(vector,rowId,o);
                         }
                     }
                     vectorSchemaRoot.setRowCount(rowCount);

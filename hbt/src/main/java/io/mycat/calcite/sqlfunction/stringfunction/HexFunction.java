@@ -19,6 +19,7 @@ package io.mycat.calcite.sqlfunction.stringfunction;
 import com.alibaba.druid.util.HexBin;
 import com.google.common.collect.ImmutableList;
 
+import io.questdb.std.BinarySequence;
 import org.apache.calcite.adapter.enumerable.RexImpTable;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.avatica.util.ByteString;
@@ -70,6 +71,10 @@ public class HexFunction extends MycatSqlDefinedFunction {
         }
         if (param0Value instanceof ByteString) {
             String result = HexBin.encode(((ByteString) param0Value).getBytes());
+            return result;
+        }
+        if (param0Value instanceof byte[]) {
+            String result = HexBin.encode((byte[])param0Value);
             return result;
         }
         throw new UnsupportedOperationException();
