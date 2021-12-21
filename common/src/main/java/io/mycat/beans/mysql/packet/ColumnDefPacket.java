@@ -16,10 +16,12 @@
  */
 package io.mycat.beans.mysql.packet;
 
+import io.mycat.beans.mysql.MySQLFieldsType;
+
 /**
  * @author jamie12221
- *  date 2019-05-07 13:58
- *
+ * date 2019-05-07 13:58
+ * <p>
  * 字段包
  **/
 public interface ColumnDefPacket {
@@ -106,5 +108,12 @@ public interface ColumnDefPacket {
     void setColumnDefaultValues(byte[] defaultValues);
 
     String toString();
+
+    default boolean isNullable() {
+        return (getColumnFlags() & MySQLFieldsType.NOT_NULL_FLAG) == 0;
+    }
+    default boolean isSigned() {
+        return (getColumnFlags() & MySQLFieldsType.UNSIGNED_FLAG) == 0;
+    }
 
 }

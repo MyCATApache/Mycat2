@@ -26,6 +26,7 @@ import io.mycat.util.StringUtil;
 import java.sql.JDBCType;
 import java.sql.ResultSetMetaData;
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * @author jamie12221 date 2019-05-07 13:58
@@ -96,7 +97,7 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
                 case CLOB: {
                     this.columnFlags |= MySQLFieldsType.BLOB_FLAG;
                     this.columnFlags |= MySQLFieldsType.BINARY_FLAG;
-                    this.columnCharsetSet |= CharsetMapping.MYSQL_COLLATION_INDEX_binary;
+                    this.columnCharsetSet = CharsetMapping.MYSQL_COLLATION_INDEX_binary;
                     break;
                 }
                 case TIMESTAMP: {
@@ -351,4 +352,24 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ColumnDefPacketImpl that = (ColumnDefPacketImpl) o;
+        return columnNextLength == that.columnNextLength && columnCharsetSet == that.columnCharsetSet && columnLength == that.columnLength && columnType == that.columnType && columnFlags == that.columnFlags && columnDecimals == that.columnDecimals && Arrays.equals(columnCatalog, that.columnCatalog) && Arrays.equals(columnSchema, that.columnSchema) && Arrays.equals(columnTable, that.columnTable) && Arrays.equals(columnOrgTable, that.columnOrgTable) && Arrays.equals(columnName, that.columnName) && Arrays.equals(columnOrgName, that.columnOrgName) && Arrays.equals(columnDefaultValues, that.columnDefaultValues);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(columnNextLength, columnCharsetSet, columnLength, columnType, columnFlags, columnDecimals);
+        result = 31 * result + Arrays.hashCode(columnCatalog);
+        result = 31 * result + Arrays.hashCode(columnSchema);
+        result = 31 * result + Arrays.hashCode(columnTable);
+        result = 31 * result + Arrays.hashCode(columnOrgTable);
+        result = 31 * result + Arrays.hashCode(columnName);
+        result = 31 * result + Arrays.hashCode(columnOrgName);
+        result = 31 * result + Arrays.hashCode(columnDefaultValues);
+        return result;
+    }
 }
