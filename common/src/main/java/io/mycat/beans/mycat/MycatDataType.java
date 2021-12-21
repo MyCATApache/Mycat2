@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -40,12 +39,13 @@ public enum MycatDataType {
     DATETIME,
     TIME,
     YEAR,
-    CHAR_BINARY,
+    //    CHAR_BINARY,
     CHAR,
-    VARCHAR_BINARY,
+    //    VARCHAR_BINARY,
     VARCHAR,
     BINARY,
-    FLOAT;
+    FLOAT,
+    NULL;
 
     public Class getJavaClass() {
         switch (this) {
@@ -76,13 +76,15 @@ public enum MycatDataType {
                 return LocalDateTime.class;
             case TIME:
                 return Duration.class;
-            case CHAR_BINARY:
             case BINARY:
-            case VARCHAR_BINARY:
                 return byte[].class;
             case CHAR:
             case VARCHAR:
                 return String.class;
+            case FLOAT:
+                return Float.class;
+            case NULL:
+                return Void.class;
             default:
                 throw new IllegalStateException("Unexpected value: " + this);
         }
@@ -113,12 +115,14 @@ public enum MycatDataType {
                 return Double.TYPE;
             case DECIMAL:
                 return BigDecimal.class;
-            case CHAR_BINARY:
             case BINARY:
-            case VARCHAR_BINARY:
             case CHAR:
             case VARCHAR:
                 return byte[].class;
+            case FLOAT:
+                return Float.class;
+            case NULL:
+                return Void.class;
             default:
                 throw new IllegalStateException("Unexpected value: " + this);
         }
@@ -187,7 +191,7 @@ public enum MycatDataType {
                 if (columnClassName.contains("char") || columnClassName.contains("str")) {
                     mycatDataType = CHAR;
                 } else {
-                    mycatDataType = CHAR_BINARY;
+                    mycatDataType = BINARY;
                 }
                 break;
             case LONGVARCHAR:
@@ -195,7 +199,7 @@ public enum MycatDataType {
                 if (columnClassName.contains("char") || columnClassName.contains("str")) {
                     mycatDataType = VARCHAR;
                 } else {
-                    mycatDataType = VARCHAR_BINARY;
+                    mycatDataType = BINARY;
                 }
                 break;
             case BOOLEAN:
@@ -218,6 +222,14 @@ public enum MycatDataType {
             case LONGVARBINARY:
                 mycatDataType = BINARY;
                 break;
+            case NULL:
+                mycatDataType = NULL;
+                break;
+            case CLOB:
+            case NCHAR:
+            case NVARCHAR:
+            case LONGNVARCHAR:
+            case NCLOB:
             case OTHER:
             case JAVA_OBJECT:
             case DISTINCT:
@@ -228,13 +240,12 @@ public enum MycatDataType {
             case ROWID:
             case SQLXML:
             case REF_CURSOR:
-                break;
             default:
                 mycatDataType = VARCHAR;
                 break;
         }
         MycatField mycatField;
-        if (mycatDataType == DECIMAL) {
+        if (mycatDataType == DECIMAL || mycatDataType == DOUBLE || mycatDataType == FLOAT) {
             mycatField = MycatField.of(name, mycatDataType, nullable, scale, precision);
         } else {
             mycatField = MycatField.of(name, mycatDataType, nullable);
@@ -372,7 +383,7 @@ public enum MycatDataType {
                     return ((Numeric) o).bigIntegerValue();
                 }
                 if (o instanceof Number) {
-                    return BigInteger.valueOf(((Number) o).longValue());
+                    return new BigInteger(((Number) o).toString());
                 }
 
                 break;
@@ -383,7 +394,7 @@ public enum MycatDataType {
                 if (o instanceof Number) {
                     return ((Number) o).doubleValue();
                 }
-                break;
+                return new BigDecimal(o.toString()).doubleValue();
             case DECIMAL:
                 if (o instanceof BigDecimal) {
                     return (BigDecimal) o;
@@ -397,7 +408,7 @@ public enum MycatDataType {
                 if (o instanceof Number) {
                     return new BigDecimal(o.toString());
                 }
-                break;
+                return new BigDecimal(o.toString());
             case DATE:
                 if (o instanceof Date) {
                     return ((Date) o).toLocalDate();
@@ -409,7 +420,7 @@ public enum MycatDataType {
                 if (o instanceof LocalDate) {
                     return o;
                 }
-                break;
+                throw new UnsupportedOperationException();
             case DATETIME:
                 if (o instanceof Timestamp) {
                     return ((Timestamp) o).toLocalDateTime();
@@ -417,7 +428,7 @@ public enum MycatDataType {
                 if (o instanceof LocalDateTime) {
                     return o;
                 }
-                break;
+                throw new UnsupportedOperationException();
             case TIME:
                 if (o instanceof Time) {
                     Time time = (Time) o;
@@ -435,19 +446,7 @@ public enum MycatDataType {
                 if (o instanceof Number) {
                     return ((Number) o).shortValue();
                 }
-                break;
-            case CHAR_BINARY:
-            case VARCHAR_BINARY:
-                if (o instanceof String) {
-                    return ((String) o).getBytes(StandardCharsets.UTF_8);
-                }
-                if (o instanceof byte[]) {
-                    return o;
-                }
-                if (o instanceof ByteBuffer) {
-                    return ((ByteBuffer) o).array();
-                }
-                break;
+                throw new UnsupportedOperationException();
             case VARCHAR:
             case CHAR:
                 if (o instanceof String) {
@@ -460,7 +459,7 @@ public enum MycatDataType {
                     Clob clob = (Clob) o;
                     return String.valueOf(clob.getSubString(1, (int) clob.length()));
                 }
-                break;
+                throw new UnsupportedOperationException();
             case BINARY:
                 if (o instanceof Blob) {
                     return ((Blob) o).getBytes(1, (int) ((Blob) o).length());
@@ -471,7 +470,7 @@ public enum MycatDataType {
                 if (o instanceof ByteBuffer) {
                     return ((ByteBuffer) o).array();
                 }
-                break;
+                throw new UnsupportedOperationException();
             case FLOAT:
                 if (o instanceof Float) {
                     return o;
@@ -482,7 +481,7 @@ public enum MycatDataType {
                 if (o instanceof Number) {
                     return ((Number) o).floatValue();
                 }
-                break;
+                throw new UnsupportedOperationException();
         }
         throw new UnsupportedOperationException();
     }
@@ -518,12 +517,8 @@ public enum MycatDataType {
                 return JDBCType.TIME;
             case YEAR:
                 return JDBCType.SMALLINT;
-            case CHAR_BINARY:
-                return JDBCType.VARCHAR;
             case CHAR:
                 return JDBCType.CHAR;
-            case VARCHAR_BINARY:
-                return JDBCType.VARCHAR;
             case VARCHAR:
                 return JDBCType.VARCHAR;
             case BINARY:
@@ -536,16 +531,70 @@ public enum MycatDataType {
     }
 
     public static MycatDataType fromJdbc(JDBCType jdbcType, boolean signed) {
-        for (MycatDataType value : values()) {
-            if (signed) {
-                if (value.getSignedJdbcType() == jdbcType) {
-                    return value;
-                }
-            } else {
-                throw new UnsupportedOperationException();
-            }
-
+        switch (jdbcType) {
+            case BIT:
+                return MycatDataType.BIT;
+            case TINYINT:
+                return signed ? MycatDataType.TINYINT : MycatDataType.UNSIGNED_TINYINT;
+            case SMALLINT:
+                return signed ? MycatDataType.SHORT : MycatDataType.UNSIGNED_SHORT;
+            case INTEGER:
+                return signed ? MycatDataType.INT : MycatDataType.UNSIGNED_INT;
+            case BIGINT:
+                return signed ? MycatDataType.LONG : MycatDataType.UNSIGNED_LONG;
+            case REAL:
+            case FLOAT:
+                return MycatDataType.FLOAT;
+            case DOUBLE:
+                return MycatDataType.DOUBLE;
+            case DECIMAL:
+            case NUMERIC:
+                return MycatDataType.DECIMAL;
+            case CHAR:
+                return MycatDataType.CHAR;
+            case VARCHAR:
+            case LONGVARCHAR:
+                return MycatDataType.VARCHAR;
+            case DATE:
+                return MycatDataType.DATE;
+            case TIME:
+                return MycatDataType.TIME;
+            case TIMESTAMP:
+                return MycatDataType.DATETIME;
+            case BINARY:
+            case VARBINARY:
+            case LONGVARBINARY:
+                return MycatDataType.BINARY;
+            case NULL:
+                return MycatDataType.NULL;
+            case OTHER:
+            case JAVA_OBJECT:
+            case DISTINCT:
+            case STRUCT:
+            case ARRAY:
+            case REF:
+            case DATALINK:
+                return MycatDataType.VARCHAR;
+            case BLOB:
+                return MycatDataType.BINARY;
+            case CLOB:
+                return MycatDataType.VARCHAR;
+            case BOOLEAN:
+                return MycatDataType.BOOLEAN;
+            case ROWID:
+            case NCHAR:
+            case NVARCHAR:
+            case LONGNVARCHAR:
+            case NCLOB:
+            case SQLXML:
+            case REF_CURSOR:
+                return MycatDataType.VARCHAR;
+            case TIME_WITH_TIMEZONE:
+                return MycatDataType.TIME;
+            case TIMESTAMP_WITH_TIMEZONE:
+                return MycatDataType.DATETIME;
+            default:
+                return MycatDataType.VARCHAR;
         }
-        throw new UnsupportedOperationException();
     }
 }

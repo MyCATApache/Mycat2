@@ -22,6 +22,7 @@ import lombok.SneakyThrows;
 import org.apache.arrow.adapter.jdbc.ArrowVectorIterator;
 import org.apache.arrow.adapter.jdbc.JdbcToArrowConfig;
 import org.apache.arrow.adapter.jdbc.JdbcToArrowConfigBuilder;
+import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -169,6 +170,8 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
 
                     JdbcToArrowConfigBuilder jdbcToArrowConfigBuilder = new JdbcToArrowConfigBuilder();
+                    RootAllocator rootAllocator = new RootAllocator();
+                    jdbcToArrowConfigBuilder.setAllocator(rootAllocator);
                     JdbcToArrowConfig jdbcToArrowConfig = jdbcToArrowConfigBuilder.build();
                     try {
                         if (params.isEmpty()) {

@@ -3,9 +3,13 @@ package io.mycat.beans.mycat;
 import com.mysql.cj.CharsetMapping;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.ToString;
 
 @Getter
+@EqualsAndHashCode
+@ToString
 public class MycatField {
     private final String name;
     private final MycatDataType mycatDataType;
@@ -112,16 +116,8 @@ public class MycatField {
             case YEAR:
                 mysqlColumnType = MySQLFieldsType.FIELD_TYPE_YEAR;
                 break;
-            case CHAR_BINARY:
-                mysqlColumnType = MySQLFieldsType.FIELD_TYPE_STRING;
-                columnCharsetSet = CharsetMapping.MYSQL_COLLATION_INDEX_binary;
-                break;
             case CHAR:
                 mysqlColumnType = MySQLFieldsType.FIELD_TYPE_STRING;
-                break;
-            case VARCHAR_BINARY:
-                mysqlColumnType = MySQLFieldsType.FIELD_TYPE_VAR_STRING;
-                columnCharsetSet = CharsetMapping.MYSQL_COLLATION_INDEX_binary;
                 break;
             case VARCHAR:
                 mysqlColumnType = MySQLFieldsType.FIELD_TYPE_VARCHAR;

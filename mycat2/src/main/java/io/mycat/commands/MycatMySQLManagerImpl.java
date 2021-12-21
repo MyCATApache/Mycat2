@@ -93,12 +93,12 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
     }
 
     @NotNull
-    private MycatDatasourcePool createNativeDatasourcePool(DatasourceConfig datasource, String targetName) {
+    public static MycatDatasourcePool createNativeDatasourcePool(DatasourceConfig datasource, String targetName) {
         return new VertxMySQLDatasourcePoolImpl(datasource, targetName);
     }
 
     @NotNull
-    private MycatDatasourcePool createJdbcDatasourcePool(String name) {
+    public static MycatDatasourcePool createJdbcDatasourcePool(String name) {
         JdbcDatasourcePoolImpl jdbcDatasourcePool = new JdbcDatasourcePoolImpl(name);
         return jdbcDatasourcePool;
     }

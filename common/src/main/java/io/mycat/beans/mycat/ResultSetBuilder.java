@@ -174,7 +174,7 @@ public class ResultSetBuilder {
 
         @Override
         public ResultSetMetaData metaData() {
-            throw new UnsupportedOperationException();
+            return null;
         }
     }
 

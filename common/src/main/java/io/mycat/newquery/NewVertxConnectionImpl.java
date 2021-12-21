@@ -372,7 +372,10 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
                 final long columnLength = columnDefinition.columnLength();
                 final DataType type = columnDefinition.type();
                 final int flags = columnDefinition.flags();
-                final byte decimals = columnDefinition.decimals();
+                 byte decimals = columnDefinition.decimals();
+                if (decimals == 31){
+                    decimals = 0;
+                }
                 ColumnDefPacketImpl mySQLFieldInfo = new ColumnDefPacketImpl();
 
                 mySQLFieldInfo.setColumnCatalog(catalog.getBytes());

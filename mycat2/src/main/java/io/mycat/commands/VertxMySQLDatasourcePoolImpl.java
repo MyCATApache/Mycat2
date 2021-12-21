@@ -36,14 +36,15 @@ public class VertxMySQLDatasourcePoolImpl extends AbstractMycatDatasourcePool {
     private static final Logger LOGGER = LoggerFactory.getLogger(VertxMySQLDatasourcePoolImpl.class);
 
     final MySQLPoolImpl mySQLPool;
-    final DatasourceConfig config;
+    final MySQLConnectOptions connectOptions;
+    final PoolOptions poolOptions;
 
     public VertxMySQLDatasourcePoolImpl(DatasourceConfig config, String targetName) {
         super(targetName);
-        this.config = config;
+
         ConnectionUrlParser connectionUrlParser = ConnectionUrlParser.parseConnectionString(config.getUrl());
         HostInfo hostInfo = connectionUrlParser.getHosts().get(0);
-        MySQLConnectOptions connectOptions = new MySQLConnectOptions()
+        connectOptions = new MySQLConnectOptions()
                 .setPort(hostInfo.getPort())
                 .setHost(hostInfo.getHost())
                 .setDatabase(hostInfo.getDatabase())
@@ -53,12 +54,25 @@ public class VertxMySQLDatasourcePoolImpl extends AbstractMycatDatasourcePool {
 //                .setCollation("utf8mb4")
                 .setCharset("utf8")
                 .setUseAffectedRows(true);
-        PoolOptions poolOptions = new PoolOptions()
+        poolOptions = new PoolOptions()
                 .setMaxSize(config.getMaxCon())
                 .setIdleTimeout((int) config.getIdleTimeout());
 
-        this.mySQLPool = (MySQLPoolImpl) MySQLPool.pool(connectOptions, poolOptions);
+        this.mySQLPool = getMySQLPool();
+    }
 
+    private MySQLPoolImpl getMySQLPool() {
+        return (MySQLPoolImpl) MySQLPool.pool(connectOptions, poolOptions);
+    }
+
+    public VertxMySQLDatasourcePoolImpl(
+            final MySQLConnectOptions connectOptions,
+            final PoolOptions poolOptions,
+            final String targetName) {
+        super(targetName);
+        this.connectOptions = connectOptions;
+        this.poolOptions = poolOptions;
+        this.mySQLPool = getMySQLPool();
     }
 
     @Override

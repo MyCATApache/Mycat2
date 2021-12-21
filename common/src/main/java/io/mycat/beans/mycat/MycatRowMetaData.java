@@ -37,7 +37,7 @@ public interface MycatRowMetaData extends Serializable {
 
     int getColumnDisplaySize(int column);
 
-    default int getColumnLength(int column){
+    default int getColumnLength(int column) {
         return 255;
     }
 
@@ -109,7 +109,30 @@ public interface MycatRowMetaData extends Serializable {
         return fields;
     }
 
-   public default String toJson(){
+    public default String toJson() {
         return null;
-   }
+    }
+
+    default public MycatRelDataType getMycatRelDataType() {
+        int columnCount = getColumnCount();
+        ResultSetMetaData resultSetMetaData = metaData();
+        if (resultSetMetaData != null) {
+            return MycatRelDataType.of(Arrays.asList(MycatDataType.from(resultSetMetaData)));
+        }
+        ArrayList<MycatField> mycatFields = new ArrayList<>(columnCount);
+        for (int i = 0; i < columnCount; i++) {
+            String columnName = getColumnName(i);
+            int scale = getScale(i);
+            int precision = getPrecision(i);
+            int columnType = getColumnType(i);
+            boolean nullable = isNullable(i);
+            boolean signed = isSigned(i);
+
+            MycatDataType mycatDataType = MycatDataType.fromJdbc(JDBCType.valueOf(columnType), signed);
+
+            MycatField mycatField = MycatField.of(columnName, mycatDataType, nullable, scale, precision);
+            mycatFields.add(mycatField);
+        }
+        return MycatRelDataType.of(mycatFields);
+    }
 }
