@@ -10,7 +10,11 @@ import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.data.Numeric;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
 import lombok.SneakyThrows;
+import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.*;
+import org.apache.arrow.vector.types.pojo.Field;
+import org.apache.avro.Schema;
+import org.apache.avro.SchemaBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -344,6 +348,52 @@ public enum MycatDataType {
                 return Float4Vector.class;
             case NULL:
                 return NullVector.class;
+            default:
+                throw new IllegalStateException("Unexpected value: " + this);
+        }
+    }
+
+    public FieldVector createFieldVector(Field field, BufferAllocator allocator) {
+        switch (this) {
+            case BOOLEAN:
+                return new BitVector(field, allocator);
+            case BIT:
+            case UNSIGNED_LONG:
+                return new UInt8Vector(field, allocator);
+            case TINYINT:
+                return new TinyIntVector(field, allocator);
+            case UNSIGNED_TINYINT:
+                return new UInt1Vector(field, allocator);
+            case YEAR:
+            case SHORT:
+                return new SmallIntVector(field, allocator);
+            case UNSIGNED_SHORT:
+                return new UInt2Vector(field, allocator);
+            case INT:
+                return new IntVector(field, allocator);
+            case UNSIGNED_INT:
+                return new UInt4Vector(field, allocator);
+            case LONG:
+                return new BigIntVector(field, allocator);
+            case DOUBLE:
+                return new Float8Vector(field, allocator);
+            case DECIMAL:
+                return new DecimalVector(field, allocator);
+            case DATE:
+                return new DateMilliVector(field, allocator);
+            case DATETIME:
+                return new TimeStampMilliVector(field, allocator);
+            case TIME:
+                return new TimeMilliVector(field, allocator);
+            case CHAR:
+            case VARCHAR:
+                return new VarCharVector(field, allocator);
+            case BINARY:
+                return new VarBinaryVector(field, allocator);
+            case FLOAT:
+                return new Float4Vector(field, allocator);
+            case NULL:
+                return new NullVector();
             default:
                 throw new IllegalStateException("Unexpected value: " + this);
         }
@@ -900,5 +950,6 @@ public enum MycatDataType {
                 return MycatDataType.VARCHAR;
         }
     }
+
 
 }
