@@ -374,6 +374,13 @@ public class AssembleTest implements MycatTest {
         executeQuery(mycatConnection, "select SESSION_USER()");
 
         executeQuery(mycatConnection, "select SESSION_USER()");
+
+        executeQuery(mycatConnection,"SELECT ACTION_ORDER, EVENT_OBJECT_TABLE, TRIGGER_NAME, EVENT_MANIPULATION, EVENT_OBJECT_TABLE\n" +
+                " , DEFINER, ACTION_STATEMENT, ACTION_TIMING\n" +
+                " FROM information_schema.triggers\n" +
+                " WHERE BINARY event_object_schema = 'test1'\n" +
+                " AND BINARY event_object_table = 'test1'\n" +
+                " ORDER BY event_object_table");
     }
 
     private void testProxyNormalTranscation(Connection mycatConnection) throws Exception {
