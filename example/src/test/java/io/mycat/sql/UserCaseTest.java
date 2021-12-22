@@ -998,8 +998,7 @@ public class UserCaseTest implements MycatTest {
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n" +
                     "dbpartition by mod_hash(id) dbpartitions 16;");
             String explain = explain(mycatConnection, "select * from db1.travelrecord where id = 3300000000");
-            Assert.assertTrue(explain.contains("MycatView(distribution=[[db1.travelrecord]], conditions=[=($0, CAST(?0):BIGINT NOT NULL)])\n" +
-                    "Each(targetName=c0, sql=SELECT * FROM db1_0.travelrecord_0 AS `travelrecord` WHERE (`travelrecord`.`id` = ?))"));
+            Assert.assertTrue(explain.contains("MycatView(distribution=[[db1.travelrecord]], conditions=[=($0, ?0)])"));
             explain = explain(mycatConnection, "select * from db1.travelrecord where id in(3300000000,1101000990)");
             Assert.assertTrue(explain.contains("db1_0.travelrecord_0"));
             Assert.assertTrue(explain.contains("db1_14.travelrecord_0"));
