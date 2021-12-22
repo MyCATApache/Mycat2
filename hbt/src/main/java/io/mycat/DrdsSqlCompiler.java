@@ -514,9 +514,9 @@ public class DrdsSqlCompiler {
             CoreRules.FILTER_PROJECT_TRANSPOSE,
             CoreRules.FILTER_SET_OP_TRANSPOSE,
             CoreRules.FILTER_PROJECT_TRANSPOSE,
-            CoreRules.FILTER_REDUCE_EXPRESSIONS,
+//            CoreRules.FILTER_REDUCE_EXPRESSIONS,
 //            CoreRules.JOIN_REDUCE_EXPRESSIONS,
-            CoreRules.PROJECT_REDUCE_EXPRESSIONS,
+//            CoreRules.PROJECT_REDUCE_EXPRESSIONS,
             CoreRules.FILTER_MERGE,
             CoreRules.JOIN_PUSH_EXPRESSIONS,
             CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES
@@ -535,7 +535,7 @@ public class DrdsSqlCompiler {
         });
         RelNode joinClustering = toMultiJoin(unAvg).map(relNode -> {
             HepProgramBuilder builder = new HepProgramBuilder();
-
+            builder.addMatchLimit(1024);
             builder.addGroupBegin();
             builder.addRuleInstance(MycatHepJoinClustering.Config.DEFAULT.toRule());
             builder.addGroupEnd();
@@ -571,6 +571,7 @@ public class DrdsSqlCompiler {
         }).orElse(unAvg);
 
         HepProgramBuilder builder = new HepProgramBuilder();
+        builder.addMatchLimit(1024);
         builder.addGroupBegin().addRuleCollection(ImmutableList.of(
                 AggregateExpandDistinctAggregatesRule.Config.DEFAULT.toRule(),
                 CoreRules.AGGREGATE_ANY_PULL_UP_CONSTANTS,
@@ -582,8 +583,11 @@ public class DrdsSqlCompiler {
                 CoreRules.PROJECT_FILTER_TRANSPOSE,
                 ProjectRemoveRule.Config.DEFAULT.toRule()
         )).addGroupEnd().addMatchOrder(HepMatchOrder.BOTTOM_UP);
+        builder.addMatchLimit(1024);
         builder.addGroupBegin().addRuleCollection(FILTER).addGroupEnd().addMatchOrder(HepMatchOrder.BOTTOM_UP);
+        builder.addMatchLimit(1024);
         builder.addGroupBegin().addRuleInstance(CoreRules.PROJECT_MERGE).addGroupEnd().addMatchOrder(HepMatchOrder.ARBITRARY);
+        builder.addMatchLimit(1024);
         builder.addGroupBegin()
                 .addRuleCollection(LocalRules.RBO_RULES)
                 .addRuleInstance(MycatAggDistinctRule.Config.DEFAULT.toRule())
