@@ -48,34 +48,34 @@ public class ExecutorProviderImpl implements ExecutorProvider {
 
         try {
 
-            return PrepareExecutor.of((newMycatDataContext, mycatRowMetaData) -> {
-                DrdsSqlWithParams drdsSql = newMycatDataContext.getDrdsSql();
-                CalciteCompiler mycatCalciteCompiler = new CalciteCompiler();
-                PhysicalPlan factory = mycatCalciteCompiler.convert(plan.getMycatRel());
-                RexConverter rexConverter = mycatCalciteCompiler.getRexConverter();
-                Map<Integer, IndexedParameterLinkFunction> indexedMap = rexConverter.getIndexedParameterLinkFunctionMap();
-                List<Object> params = drdsSql.getParams();
-                if (!indexedMap.isEmpty()) {
-                    for (int i = 0; i < params.size(); i++) {
-                        Object o = params.get(i);
-                        IndexedParameterLinkFunction indexedParameterLinkFunction = indexedMap.get(i);
-                        if (indexedParameterLinkFunction!=null){
-                            BindVariable base = (BindVariable) indexedParameterLinkFunction.getBase();
-                            base.setObject(o);
+            return codeExecuterContext.bindable = PrepareExecutor.of((newMycatDataContext, mycatRowMetaData) -> {
+                        DrdsSqlWithParams drdsSql = newMycatDataContext.getDrdsSql();
+                        CalciteCompiler mycatCalciteCompiler = new CalciteCompiler();
+                        PhysicalPlan factory = mycatCalciteCompiler.convert(plan.getMycatRel());
+                        RexConverter rexConverter = mycatCalciteCompiler.getRexConverter();
+                        Map<Integer, IndexedParameterLinkFunction> indexedMap = rexConverter.getIndexedParameterLinkFunctionMap();
+                        List<Object> params = drdsSql.getParams();
+                        if (!indexedMap.isEmpty()) {
+                            for (int i = 0; i < params.size(); i++) {
+                                Object o = params.get(i);
+                                IndexedParameterLinkFunction indexedParameterLinkFunction = indexedMap.get(i);
+                                if (indexedParameterLinkFunction != null) {
+                                    BindVariable base = (BindVariable) indexedParameterLinkFunction.getBase();
+                                    base.setObject(o);
+                                }
+                            }
                         }
-                    }
-                }
-                List<SessionVariable> sessionMap = rexConverter.getSessionVariableFunctionMap();
-                for (SessionVariable sessionVariable : sessionMap) {
-                    sessionVariable.setSession(newMycatDataContext.getContext());
-                }
-                AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext =
-                        new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(newMycatDataContext.getContext(), plan.getCodeExecuterContext(), drdsSql);
+                        List<SessionVariable> sessionMap = rexConverter.getSessionVariableFunctionMap();
+                        for (SessionVariable sessionVariable : sessionMap) {
+                            sessionVariable.setSession(newMycatDataContext.getContext());
+                        }
+                        AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext =
+                                new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(newMycatDataContext.getContext(), plan.getCodeExecuterContext(), drdsSql);
 
-                RootContext rootContext = new RootContext(sqlMycatDataContext);
-                Observable<VectorSchemaRoot> schemaRootObservable = factory.execute(rootContext);
-                return PrepareExecutor.ArrowObservable.of(mycatRowMetaData, schemaRootObservable);
-            },
+                        RootContext rootContext = new RootContext(sqlMycatDataContext);
+                        Observable<VectorSchemaRoot> schemaRootObservable = factory.execute(rootContext);
+                        return PrepareExecutor.ArrowObservable.of(mycatRowMetaData, schemaRootObservable);
+                    },
                     getArrayBindable(codeExecuterContext));
         } catch (Exception exception) {
             LOGGER.error("", exception);
@@ -91,7 +91,7 @@ public class ExecutorProviderImpl implements ExecutorProvider {
         AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSql);
         PrepareExecutor prepareExecutor = prepare(plan);
         RowBaseIterator baseIterator = prepareExecutor.asRowBaseIterator(sqlMycatDataContext, plan.getMetaData());
-       return baseIterator;
+        return baseIterator;
     }
 
     @NotNull
