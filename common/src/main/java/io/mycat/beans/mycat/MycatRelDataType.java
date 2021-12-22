@@ -8,6 +8,7 @@ import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.google.common.collect.ImmutableList;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.ToString;
 import org.apache.spark.sql.execution.columnar.DOUBLE;
 
@@ -22,6 +23,7 @@ import java.util.Objects;
 
 @EqualsAndHashCode
 @ToString
+@Getter
 public class MycatRelDataType {
     final List<MycatField> fieldList;
 
