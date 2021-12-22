@@ -145,10 +145,11 @@ public class DrdsRunnerHelper {
                 SqlTypeName sqlTypeName = null;
                 MySQLType[] mySQLTypes = MySQLType.values();
                 for (MySQLType value : mySQLTypes) {
-                    if (value.getJavaClass() == aClass) {
-                        sqlTypeName = (SqlTypeName.getNameForJdbcType(value.getJdbcType()));
+                    if (Long.class == aClass){
+                        sqlTypeName = SqlTypeName.BIGINT;
                         break;
                     }
+
                     if (Integer.class == aClass) {
                         sqlTypeName = SqlTypeName.INTEGER;
                         break;
@@ -159,6 +160,10 @@ public class DrdsRunnerHelper {
                     }
                     if (Byte.class == aClass) {
                         sqlTypeName = SqlTypeName.BINARY;
+                        break;
+                    }
+                    if (value.getJavaClass() == aClass) {
+                        sqlTypeName = (SqlTypeName.getNameForJdbcType(value.getJdbcType()));
                         break;
                     }
                 }
