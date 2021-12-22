@@ -1,11 +1,16 @@
 package io.mycat.beans.mycat;
 
+import com.google.flatbuffers.DoubleVector;
+import com.google.protobuf.Int32Value;
 import io.mycat.beans.mysql.MySQLFieldsType;
+import io.vertx.mysqlclient.impl.MySQLRowImpl;
 import io.vertx.mysqlclient.impl.protocol.ColumnDefinition;
 import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.data.Numeric;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
 import lombok.SneakyThrows;
+import org.apache.arrow.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,6 +24,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.BitSet;
 import java.util.List;
+import java.util.function.Function;
 
 import static java.sql.ResultSetMetaData.columnNoNulls;
 
@@ -297,6 +303,298 @@ public enum MycatDataType {
         return mycatField.getMycatDataType().fromValue(o);
     }
 
+    Class<? extends FieldVector> getFieldVector() {
+        switch (this) {
+            case BOOLEAN:
+                return BitVector.class;
+            case BIT:
+            case UNSIGNED_LONG:
+                return UInt8Vector.class;
+            case TINYINT:
+                return TinyIntVector.class;
+            case UNSIGNED_TINYINT:
+                return UInt1Vector.class;
+            case YEAR:
+            case SHORT:
+                return SmallIntVector.class;
+            case UNSIGNED_SHORT:
+                return UInt2Vector.class;
+            case INT:
+                return IntVector.class;
+            case UNSIGNED_INT:
+                return UInt4Vector.class;
+            case DOUBLE:
+                return Float8Vector.class;
+            case LONG:
+                return BigIntVector.class;
+            case DECIMAL:
+                return DecimalVector.class;
+            case DATE:
+                return DateMilliVector.class;
+            case DATETIME:
+                return TimeStampMilliVector.class;
+            case TIME:
+                return TimeMilliVector.class;
+            case CHAR:
+            case VARCHAR:
+                return VarCharVector.class;
+            case BINARY:
+                return VarBinaryVector.class;
+            case FLOAT:
+                return Float4Vector.class;
+            case NULL:
+                return NullVector.class;
+            default:
+                throw new IllegalStateException("Unexpected value: " + this);
+        }
+    }
+
+    @SneakyThrows
+    public void convertToVector(ResultSet resultSet, int index, FieldVector fieldVector, int rowIndex) {
+        switch (this) {
+            case BOOLEAN: {
+                boolean aBoolean = resultSet.getBoolean(index);
+                BitVector bitVector = (BitVector) fieldVector;
+                if (resultSet.wasNull()) {
+                    bitVector.setNull(rowIndex);
+                } else {
+                    if (aBoolean) {
+                        bitVector.setToOne(rowIndex);
+                    } else {
+                        bitVector.set(rowIndex, 0);
+                    }
+                }
+                break;
+            }
+
+            case UNSIGNED_INT: {
+                long aLong = resultSet.getLong(index);
+                UInt4Vector uInt4Vector = (UInt4Vector) fieldVector;
+                if (resultSet.wasNull()) {
+                    uInt4Vector.setNull(rowIndex);
+                } else {
+                    uInt4Vector.setWithPossibleTruncate(rowIndex, aLong);
+                }
+                break;
+            }
+
+            case LONG: {
+                long aLong = resultSet.getLong(index);
+                BigIntVector uInt8Vector = (BigIntVector) fieldVector;
+                if (resultSet.wasNull()) {
+                    uInt8Vector.setNull(rowIndex);
+                } else {
+                    uInt8Vector.set(rowIndex, aLong);
+                }
+                break;
+            }
+            case TINYINT: {
+                byte aByte = resultSet.getByte(index);
+                TinyIntVector tinyIntVector = (TinyIntVector) fieldVector;
+                if (resultSet.wasNull()) {
+                    tinyIntVector.setNull(rowIndex);
+                } else {
+                    tinyIntVector.set(rowIndex, aByte);
+                }
+                break;
+            }
+            case UNSIGNED_TINYINT: {
+                short aShort = resultSet.getShort(index);
+                UInt1Vector tinyIntVector = (UInt1Vector) fieldVector;
+                if (resultSet.wasNull()) {
+                    tinyIntVector.setNull(rowIndex);
+                } else {
+                    tinyIntVector.set(rowIndex, aShort);
+                }
+                break;
+            }
+            case YEAR:
+            case SHORT: {
+                short aShort = resultSet.getShort(index);
+                SmallIntVector smallIntVector = (SmallIntVector) fieldVector;
+                if (resultSet.wasNull()) {
+                    smallIntVector.setNull(rowIndex);
+                } else {
+                    smallIntVector.set(rowIndex, aShort);
+                }
+                break;
+            }
+            case UNSIGNED_SHORT: {
+                int anInt = resultSet.getInt(index);
+                UInt2Vector uInt2Vector = (UInt2Vector) fieldVector;
+                if (resultSet.wasNull()) {
+                    uInt2Vector.setNull(rowIndex);
+                } else {
+                    uInt2Vector.set(rowIndex, anInt);
+                }
+                break;
+            }
+            case INT: {
+                int anInt = resultSet.getInt(index);
+                IntVector intVector = (IntVector) fieldVector;
+                if (resultSet.wasNull()) {
+                    intVector.setNull(rowIndex);
+                } else {
+                    intVector.set(rowIndex, anInt);
+                }
+                break;
+            }
+            case BIT:
+            case UNSIGNED_LONG: {
+                BigInteger bigInteger = resultSet.getObject(index, BigInteger.class);
+                UInt8Vector uInt8Vector = (UInt8Vector) fieldVector;
+                if (resultSet.wasNull()) {
+                    uInt8Vector.setNull(rowIndex);
+                } else {
+                    uInt8Vector.setWithPossibleTruncate(rowIndex, bigInteger.longValue());
+                }
+                break;
+            }
+            case DOUBLE: {
+                double aDouble = resultSet.getDouble(index);
+                Float8Vector doubleVector = (Float8Vector) fieldVector;
+                if (resultSet.wasNull()) {
+                    doubleVector.setNull(rowIndex);
+                } else {
+                    doubleVector.set(rowIndex, aDouble);
+                }
+                break;
+            }
+            case DECIMAL: {
+                BigDecimal bigDecimal = resultSet.getBigDecimal(index);
+                DecimalVector decimalVector = (DecimalVector) fieldVector;
+                if (resultSet.wasNull()) {
+                    decimalVector.setNull(rowIndex);
+                } else {
+                    decimalVector.set(rowIndex, bigDecimal);
+                }
+                break;
+            }
+            case DATE: {
+                Date date = resultSet.getDate(index);
+                DateMilliVector dateMilliVector = (DateMilliVector) fieldVector;
+                if (resultSet.wasNull()) {
+                    dateMilliVector.setNull(rowIndex);
+                } else {
+                    dateMilliVector.set(rowIndex, date.getTime());
+                }
+                break;
+            }
+            case DATETIME: {
+                Timestamp timestamp = resultSet.getTimestamp(index);
+                TimeStampMilliVector milliVector = (TimeStampMilliVector) fieldVector;
+                if (resultSet.wasNull()) {
+                    milliVector.setNull(rowIndex);
+                } else {
+                    milliVector.set(rowIndex, timestamp.getTime());
+                }
+                break;
+            }
+            case TIME: {
+                Time time = resultSet.getTime(index);
+                TimeMilliVector milliVector = (TimeMilliVector) fieldVector;
+                if (resultSet.wasNull()) {
+                    milliVector.setNull(rowIndex);
+                } else {
+                    milliVector.set(rowIndex, (int) time.getTime());
+                }
+                break;
+            }
+            default:
+            case CHAR:
+            case VARCHAR: {
+                byte[] bytes = resultSet.getBytes(index);
+                VarCharVector varCharVector = (VarCharVector) fieldVector;
+                if (resultSet.wasNull()) {
+                    varCharVector.setNull(rowIndex);
+                } else {
+                    varCharVector.set(rowIndex, bytes);
+                }
+                break;
+            }
+            case BINARY: {
+                byte[] bytes = resultSet.getBytes(index);
+                VarBinaryVector varCharVector = (VarBinaryVector) fieldVector;
+                if (resultSet.wasNull()) {
+                    varCharVector.setNull(rowIndex);
+                } else {
+                    varCharVector.set(rowIndex, bytes);
+                }
+                break;
+            }
+            case FLOAT: {
+                float aFloat = resultSet.getFloat(index);
+                Float4Vector doubleVector = (Float4Vector) fieldVector;
+                if (resultSet.wasNull()) {
+                    doubleVector.setNull(rowIndex);
+                } else {
+                    doubleVector.set(rowIndex, aFloat);
+                }
+                break;
+            }
+            case NULL:
+
+        }
+    }
+
+    @SneakyThrows
+    public Object convertToObject(ResultSet resultSet, int index) {
+        switch (this) {
+            case BOOLEAN:
+                boolean aBoolean = resultSet.getBoolean(index);
+                return resultSet.wasNull() ? null : aBoolean;
+            case BIT:
+            case UNSIGNED_INT:
+            case LONG:
+                long aBit = resultSet.getLong(index);
+                return resultSet.wasNull() ? null : aBit;
+            case TINYINT:
+                short aByte = resultSet.getByte(index);
+                return resultSet.wasNull() ? null : aByte;
+            case UNSIGNED_TINYINT:
+            case SHORT:
+            case YEAR:
+                int aShort = resultSet.getShort(index);
+                return resultSet.wasNull() ? null : aShort;
+            case UNSIGNED_SHORT:
+            case INT:
+                int anInt = resultSet.getInt(index);
+                return resultSet.wasNull() ? null : anInt;
+            case UNSIGNED_LONG:
+                return resultSet.getObject(index, BigInteger.class);
+            case DOUBLE:
+                double aDouble = resultSet.getDouble(index);
+                return resultSet.wasNull() ? null : aDouble;
+            case DECIMAL:
+                return resultSet.getBigDecimal(index);
+            case DATE:
+                Date date = resultSet.getDate(index);
+                return date == null ? null : date.toLocalDate();
+            case DATETIME:
+                Timestamp timestamp = resultSet.getTimestamp(index);
+                return timestamp == null ? null : timestamp.toLocalDateTime();
+            case TIME:
+                Time time = resultSet.getTime(index);
+                return time == null ? null : time.toLocalTime();
+            default:
+            case CHAR:
+            case VARCHAR:
+                return resultSet.getString(index);
+            case BINARY:
+                return resultSet.getBytes(index);
+            case FLOAT:
+                float aFloat = resultSet.getFloat(index);
+                return resultSet.wasNull() ? null : aFloat;
+            case NULL:
+                return null;
+        }
+    }
+
+    @SneakyThrows
+    public Object convertToObject(Row row, int index) {
+        return fromValue(row.getValue(index));
+    }
+
     @SneakyThrows
     public Object fromValue(Object o) {
         switch (this) {
@@ -436,7 +734,7 @@ public enum MycatDataType {
                 }
                 if (o instanceof LocalTime) {
                     LocalTime time = (LocalTime) o;
-                    return Duration.ofHours(time.getHour()).plusMinutes(time.getMinute()).plusSeconds(time.getSecond());
+                    return toDuration(time);
                 }
                 if (o instanceof Duration) {
                     return o;
@@ -447,6 +745,7 @@ public enum MycatDataType {
                     return ((Number) o).shortValue();
                 }
                 throw new UnsupportedOperationException();
+            default:
             case VARCHAR:
             case CHAR:
                 if (o instanceof String) {
@@ -484,6 +783,10 @@ public enum MycatDataType {
                 throw new UnsupportedOperationException();
         }
         throw new UnsupportedOperationException();
+    }
+
+    private Duration toDuration(LocalTime time) {
+        return Duration.ofHours(time.getHour()).plusMinutes(time.getMinute()).plusSeconds(time.getSecond());
     }
 
     public JDBCType getSignedJdbcType() {
@@ -597,4 +900,5 @@ public enum MycatDataType {
                 return MycatDataType.VARCHAR;
         }
     }
+
 }
