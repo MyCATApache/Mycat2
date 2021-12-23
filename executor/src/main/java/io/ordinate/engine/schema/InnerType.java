@@ -37,7 +37,7 @@ public enum InnerType {
     INT32_TYPE(ArrowTypes.INT32_TYPE, IntVector.class, int.class, "int32", true, JDBCType.INTEGER),
     INT64_TYPE(ArrowTypes.INT64_TYPE, BigIntVector.class, long.class, "int64", true, JDBCType.BIGINT),
     FLOAT_TYPE(ArrowTypes.FLOAT_TYPE, Float4Vector.class, float.class, "float", false, JDBCType.FLOAT),
-    DOUBLE_TYPE(ArrowTypes.DOUBLE_TYPE, Float8Vector.class, float.class, "double", false, JDBCType.DOUBLE),
+    DOUBLE_TYPE(ArrowTypes.DOUBLE_TYPE, Float8Vector.class, double.class, "double", false, JDBCType.DOUBLE),
     DECIMAL_TYPE(ArrowTypes.DECIMAL_TYPE, DecimalVector.class, float.class, "decimal", false, JDBCType.DECIMAL),
     STRING_TYPE(ArrowTypes.STRING_TYPE, VarCharVector.class, String.class, "string", false, JDBCType.VARCHAR),
     BINARY_TYPE(ArrowTypes.BINARY_TYPE, VarBinaryVector.class, BinarySequence.class, "binary", false, JDBCType.BINARY),
