@@ -79,7 +79,10 @@ public class DrdsSql {
         return forUpdate;
     }
 
-    public <T extends SQLStatement> T getParameterizedStatement() {
-        return (T) SQLUtils.parseSingleMysqlStatement(parameterizedSql);
+    public  SQLStatement  getParameterizedStatement() {
+        return  SQLUtils.parseSingleMysqlStatement(parameterizedSql);
+    }
+    public  String  getParameterizedSQL() {
+        return  parameterizedSql;
     }
 }

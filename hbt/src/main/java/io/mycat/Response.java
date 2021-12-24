@@ -16,6 +16,7 @@
  */
 package io.mycat;
 
+import com.alibaba.druid.sql.ast.SQLStatement;
 import io.mycat.api.collector.*;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.PrepareExecutor;
@@ -36,15 +37,15 @@ public interface Response {
 
     Future<Void> sendError(Throwable e);
 
-    Future<Void> proxySelect(List<String> targets, String statement);
+    Future<Void> proxySelect(List<String> targets, String statement,List<Object> params);
 
-    Future<Void> proxyInsert(List<String> targets, String proxyUpdate);
+    Future<Void> proxyInsert(List<String> targets, String proxyUpdate,List<Object> params);
 
-    Future<Void> proxyUpdate(List<String> targets, String proxyUpdate);
+    Future<Void> proxyUpdate(List<String> targets, String proxyUpdate,List<Object> params);
 
-    Future<Void> proxyUpdateToPrototype(String proxyUpdate);
+    Future<Void> proxyUpdateToPrototype(String proxyUpdate,List<Object> params);
 
-    Future<Void> proxySelectToPrototype(String statement);
+    Future<Void> proxySelectToPrototype(String statement,List<Object> params);
 
     Future<Void> sendError(String errorMessage, int errorCode);
 

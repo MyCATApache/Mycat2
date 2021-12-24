@@ -214,7 +214,7 @@ public class VertxUpdateExecuter {
                         }
 
                         for (ShardingTable indexTable : shardingTable.getIndexTables()) {
-                            SQLStatement eachStatement = SQLUtils.parseSingleMysqlStatement(drdsSqlWithParams.getParameterizedSql());
+                            SQLStatement eachStatement = SQLUtils.parseSingleMysqlStatement(drdsSqlWithParams.getParameterizedSQL());
                             SQLExprTableSource sqlTableSource = new SQLExprTableSource();
                             sqlTableSource.setExpr(indexTable.getTableName());
                             sqlTableSource.setSchema(indexTable.getSchemaName());

@@ -19,11 +19,13 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.*;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.MycatRel;
+import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.plan.PlanImplementor;
 import io.mycat.calcite.rewriter.OptimizationContext;
 import io.mycat.calcite.spm.Plan;
@@ -67,10 +69,16 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
             Optional<String> targetNameOptional = Optional.ofNullable(metadataManager.getPrototype());
             if (!handlerMapOptional.isPresent()) {
                 if (targetNameOptional.isPresent()) {
-                    if (insert){
-                        return receiver.proxyInsert(Collections.singletonList(targetNameOptional.get()), Objects.toString(sqlStatement));
-                    }else {
-                        return receiver.proxyUpdate(Collections.singletonList(targetNameOptional.get()), Objects.toString(sqlStatement));
+                    if (insert) {
+                        DrdsSqlWithParams drdsSqlWithParams = MycatPreparedStatementUtil.outputToParameterizedProxySql((MySqlInsertStatement) sqlStatement);
+                        return receiver.proxyInsert(Collections.singletonList(targetNameOptional.get()),
+                                drdsSqlWithParams.getParameterizedSQL(),
+                                drdsSqlWithParams.getParams());
+                    } else {
+                        DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlStatement, dataContext.getDefaultSchema());
+                        return receiver.proxyUpdate(Collections.singletonList(targetNameOptional.get()),
+                                drdsSqlWithParams.getParameterizedSQL(),
+                                drdsSqlWithParams.getParams());
                     }
                 } else {
                     return receiver.sendError(new MycatException("Unable to route:" + sqlStatement));
@@ -93,47 +101,60 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
             TableHandler tableHandler = tableMap.get(tableName);
             ///////////////////////////////common///////////////////////////////
             if (tableHandler == null) {
-                if (insert){
+                if (insert) {
+                    DrdsSqlWithParams drdsSqlWithParams = MycatPreparedStatementUtil.outputToParameterizedProxySql((MySqlInsertStatement) sqlStatement);
                     return receiver.proxyInsert(
-                            Collections.singletonList(Objects.requireNonNull(defaultTargetName, "can not route :" + sqlStatement)),
-                            sqlStatement.toString());
-                }else {
+                            Collections.singletonList(Objects.requireNonNull(defaultTargetName, "can not route :" + drdsSqlWithParams)),
+                            drdsSqlWithParams.getParameterizedSQL(), drdsSqlWithParams.getParams());
+                } else {
+                    DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlStatement, null);
+
                     return receiver.proxyUpdate(
-                            Collections.singletonList(Objects.requireNonNull(defaultTargetName, "can not route :" + sqlStatement)),
-                            sqlStatement.toString());
+                            Collections.singletonList(Objects.requireNonNull(defaultTargetName, "can not route :" + drdsSqlWithParams)),
+                            drdsSqlWithParams.getParameterizedSQL(), drdsSqlWithParams.getParams());
                 }
             }
             switch (tableHandler.getType()) {
                 case NORMAL:
-                    HackRouter hackRouter = new HackRouter(sqlStatement, dataContext);
+                    DrdsSqlWithParams drdsSqlWithParams;
+                    if (insert) {
+                        drdsSqlWithParams = MycatPreparedStatementUtil.outputToParameterizedProxySql((MySqlInsertStatement) sqlStatement);
+                    } else {
+                        drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlStatement, dataContext.getDefaultSchema());
+                    }
+                    HackRouter hackRouter = new HackRouter(drdsSqlWithParams.getParameterizedStatement(), dataContext);
                     if (hackRouter.analyse()) {
                         Pair<String, String> plan = hackRouter.getPlan();
                         if (insert) {
-                            return receiver.proxyInsert(Collections.singletonList(plan.getKey()), plan.getValue());
-                        }else {
-                            return receiver.proxyUpdate(Collections.singletonList(plan.getKey()), plan.getValue());
+                            return receiver.proxyInsert(Collections.singletonList(plan.getKey()), plan.getValue(), drdsSqlWithParams.getParams());
+                        } else {
+                            return receiver.proxyUpdate(Collections.singletonList(plan.getKey()), plan.getValue(), drdsSqlWithParams.getParams());
                         }
                     }
                     break;
                 default:
                     break;
             }
-            return executeUpdate(sqlStatement, dataContext, receiver, schemaName);
+            DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlStatement, dataContext.getDefaultSchema());
+
+            return executeUpdate(drdsSqlWithParams, dataContext, receiver, schemaName);
         }
         HackRouter hackRouter = new HackRouter(sqlStatement, dataContext);
         if (hackRouter.analyse()) {
             Pair<String, String> plan = hackRouter.getPlan();
             if (insert) {
-                return receiver.proxyInsert(Collections.singletonList(plan.getKey()), plan.getValue());
-            }else {
-                return receiver.proxyUpdate(Collections.singletonList(plan.getKey()), plan.getValue());
+                DrdsSqlWithParams drdsSqlWithParams = MycatPreparedStatementUtil.outputToParameterizedProxySql((MySqlInsertStatement) sqlStatement);
+                return receiver.proxyInsert(Collections.singletonList(plan.getKey()), plan.getValue(), drdsSqlWithParams.getParams());
+            } else {
+                DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlStatement, dataContext.getDefaultSchema());
+
+                return receiver.proxyUpdate(Collections.singletonList(plan.getKey()), plan.getValue(), drdsSqlWithParams.getParams());
             }
         }
         return receiver.sendError(new MycatException("can not route " + sqlStatement));
     }
 
-    public static Future<Void> executeUpdate(SQLStatement sqlStatement, MycatDataContext dataContext, Response receiver, String schemaName) {
-        DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlStatement, schemaName);
+    public static Future<Void> executeUpdate(DrdsSqlWithParams drdsSqlWithParams, MycatDataContext dataContext, Response receiver, String schemaName) {
         Plan plan = getPlan(drdsSqlWithParams);
         PlanImplementor planImplementor = DrdsRunnerHelper.getPlanImplementor(dataContext, receiver, drdsSqlWithParams);
         return DrdsRunnerHelper.impl(plan, planImplementor);
@@ -142,7 +163,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
     @Nullable
     public static Plan getPlan(DrdsSqlWithParams drdsSqlWithParams) {
         UpdatePlanCache updatePlanCache = MetaClusterCurrent.wrapper(UpdatePlanCache.class);
-        Plan plan = updatePlanCache.computeIfAbsent(drdsSqlWithParams.getParameterizedSql(), s -> {
+        Plan plan = updatePlanCache.computeIfAbsent(drdsSqlWithParams.getParameterizedSQL(), s -> {
             DrdsSqlCompiler drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
             OptimizationContext optimizationContext = new OptimizationContext();
             MycatRel dispatch = drdsRunner.dispatch(optimizationContext, drdsSqlWithParams);

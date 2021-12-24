@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.JDBCType;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -66,7 +67,7 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
             if (tableName instanceof SQLIdentifierExpr && dataContext.getDefaultSchema() != null) {
                 explainAst.setTableName(new SQLPropertyExpr(new SQLIdentifierExpr(dataContext.getDefaultSchema()), ((SQLIdentifierExpr) tableName).getName()));
             }
-            return response.proxySelectToPrototype(explainAst.toString());
+            return response.proxySelectToPrototype(explainAst.toUnformattedString(), Collections.emptyList());
         }
         SQLStatement statement = request.getAst().getStatement();
         boolean forUpdate = false;

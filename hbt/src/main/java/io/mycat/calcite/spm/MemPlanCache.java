@@ -155,7 +155,7 @@ public class MemPlanCache implements QueryPlanCache {
         List<CodeExecuterContext> list = new ArrayList<>(1);
         if (!baselineSql.getHints().isEmpty()) {
             for (BaselinePlan p : baseline.getPlanList()) {
-                if (p.isAccept() && p.getSql().equals(baselineSql.getParameterizedSql())) {
+                if (p.isAccept() && p.getSql().equals(baselineSql.getParameterizedSQL())) {
                     CodeExecuterContext codeExecuterContext = getCodeExecuterContext(baseline,p);
                     list.add(codeExecuterContext);
                     return list;
@@ -183,7 +183,7 @@ public class MemPlanCache implements QueryPlanCache {
         RelJsonWriter relJsonWriter = new RelJsonWriter();
         mycatRel.explain(relJsonWriter);
         long hash = planIds.nextPlanId();
-        BaselinePlan newBaselinePlan = new BaselinePlan(drdsSql.getParameterizedSql(), relJsonWriter.asString(), hash, baselineId = baseline.getBaselineId(), null);
+        BaselinePlan newBaselinePlan = new BaselinePlan(drdsSql.getParameterizedSQL(), relJsonWriter.asString(), hash, baselineId = baseline.getBaselineId(), null);
         getCodeExecuterContext(baseline,newBaselinePlan,optimizationContext, mycatRel);
         return saveBaselinePlan(fix, false, baseline, newBaselinePlan);
     }

@@ -195,7 +195,8 @@ public enum MycatdbCommand {
         } catch (Throwable e) {
             Response response = responseFactory.apply(1);
             if (isNavicatClientStatusQuery(text)) {
-                return response.proxySelectToPrototype(text);
+                return response.proxySelectToPrototype(text,
+                        Collections.emptyList());
             }
             return Future.failedFuture(e);
         }
@@ -443,9 +444,9 @@ public enum MycatdbCommand {
                             targetArray = Collections.singletonList(targetArray.toString());
                         }
                         if (select) {
-                            return receiver.proxySelect((List) targetArray, sqlText);
+                            return receiver.proxySelect((List) targetArray, sqlText,Collections.emptyList());
                         }
-                        return receiver.proxyUpdate((List) targetArray, sqlText);
+                        return receiver.proxyUpdate((List) targetArray, sqlText,Collections.emptyList());
                     }
                 }
                 SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
@@ -457,7 +458,7 @@ public enum MycatdbCommand {
                 } else {
                     if (sqlStatement instanceof MySqlShowStatement) {
                         logger.warn("ignore SQL prototype statement:{}", sqlStatement);
-                        return receiver.proxySelectToPrototype(sqlStatement.toString());
+                        return receiver.proxySelectToPrototype(sqlStatement.toString(),Collections.emptyList());
                     } else {
                         logger.warn("ignore SQL statement:{}", sqlStatement);
                         return receiver.sendOk();

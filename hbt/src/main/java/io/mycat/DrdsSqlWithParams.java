@@ -15,6 +15,7 @@ import io.mycat.calcite.MycatHint;
 import io.mycat.calcite.spm.ParamHolder;
 import io.mycat.calcite.spm.QueryPlanner;
 import io.mycat.util.NameMap;
+import lombok.ToString;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.curator.shaded.com.google.common.collect.ImmutableMap;
 import org.jetbrains.annotations.NotNull;
@@ -27,7 +28,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-
+@ToString
 public class DrdsSqlWithParams extends DrdsSql {
     private final List<Object> params;
     private final List<String> aliasList;
