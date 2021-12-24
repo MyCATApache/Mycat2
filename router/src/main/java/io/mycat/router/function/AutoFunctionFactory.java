@@ -66,10 +66,10 @@ public class AutoFunctionFactory {
         int tableNum = Integer.parseInt(properties.getOrDefault("tableNum", 1).toString());
 
 
-        Integer storeNum = Optional.ofNullable(properties.get("storeNum"))
-                .map(i -> Integer.parseInt(i.toString()))
-                .filter(n -> n > 0)
-                .orElseThrow(() -> new IllegalArgumentException("can not get storeNum"));
+        int storeNum = Optional.ofNullable(properties.get("storeNum"))
+                .map(i -> Integer.parseInt(i.toString())).orElse(0);
+
+        boolean prototype = (storeNum == 0);
         Integer storeDbNum = Optional.ofNullable(properties.get("storeDbNum"))
                 .map(i -> Integer.parseInt(i.toString())).orElse(dbNum * tableNum / storeNum);
         SQLMethodInvokeExpr tableMethod = converyToMethodExpr((String) properties.get("tableMethod"));
@@ -87,7 +87,7 @@ public class AutoFunctionFactory {
         Set<String> tableShardingKeys = new HashSet<>();
 
         String mappingFormat = (String) properties.computeIfAbsent("mappingFormat", (unused) ->
-                String.join(sep, "c${targetIndex}",
+                String.join(sep, prototype ? "prototype" : "c${targetIndex}",
                         tableHandler.getSchemaName() + "_${dbIndex}",
                         tableHandler.getTableName() + ((!supportFlattenMapping(tableMethod, dbMethod)) ? "_${tableIndex}" : "_${index}")));
         final boolean flattenMapping = mappingFormat.contains("${index}");
@@ -505,6 +505,7 @@ public class AutoFunctionFactory {
                 public boolean isFlattenMapping() {
                     return false;
                 }
+
                 @Override
                 public boolean isShardingDbEnum() {
                     return dbEnum;
