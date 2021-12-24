@@ -54,7 +54,7 @@ public class ClientTest implements MycatTest {
          *
          */
         DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse("SELECT @@global.character_set_server, @@global.collation_server", null);
-        Assert.assertEquals("SELECT @@global.character_set_server, @@global.collation_server",drdsSqlWithParams.getParameterizedSql());
+        Assert.assertEquals("SELECT @@global.character_set_server, @@global.collation_server",drdsSqlWithParams.getParameterizedSQL());
         try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT)) {
 //            Statement statement = mySQLConnection.createStatement();
 //            ResultSet resultSet = statement.executeQuery("SELECT * FROM `information_schema`.`CHARACTER_SETS` LIMIT 0, 1000; ");

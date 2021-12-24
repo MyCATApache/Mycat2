@@ -16,7 +16,9 @@ package io.mycat.sqlhandler.dml;
 
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLReplaceStatement;
+import io.mycat.DrdsSqlWithParams;
 import io.mycat.MycatDataContext;
+import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;

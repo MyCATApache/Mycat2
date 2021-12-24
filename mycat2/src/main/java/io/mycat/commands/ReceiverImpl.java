@@ -15,6 +15,7 @@
 package io.mycat.commands;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
+import com.alibaba.druid.sql.ast.SQLStatement;
 import io.mycat.*;
 import io.mycat.api.collector.*;
 import io.mycat.beans.mycat.MycatRowMetaData;
@@ -91,31 +92,31 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public Future<Void> proxySelect(List<String> targets, String statement) {
-        return execute(ExplainDetail.create(QUERY, targets, statement, null));
+    public Future<Void> proxySelect(List<String> targets, String statement,List<Object> params) {
+        return execute(ExplainDetail.create(QUERY, targets, statement, null,params));
     }
 
     @Override
-    public Future<Void> proxyInsert(List<String> targets, String proxyUpdate) {
-        return execute(ExplainDetail.create(INSERT, targets, proxyUpdate, null));
+    public Future<Void> proxyInsert(List<String> targets, String proxyUpdate,List<Object> params) {
+        return execute(ExplainDetail.create(INSERT, targets, proxyUpdate, null,params));
     }
 
 
     @Override
-    public Future<Void> proxyUpdate(List<String> targets, String sql) {
-        return execute(ExplainDetail.create(UPDATE, Objects.requireNonNull(targets), sql, null));
+    public Future<Void> proxyUpdate(List<String> targets, String sql,List<Object> params) {
+        return execute(ExplainDetail.create(UPDATE, Objects.requireNonNull(targets), sql, null,params));
     }
 
     @Override
-    public Future<Void> proxyUpdateToPrototype(String proxyUpdate) {
+    public Future<Void> proxyUpdateToPrototype(String proxyUpdate,List<Object> params) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        return proxyUpdate(Collections.singletonList(Objects.requireNonNull(metadataManager.getPrototype())), proxyUpdate);
+        return proxyUpdate(Collections.singletonList(Objects.requireNonNull(metadataManager.getPrototype())), proxyUpdate,params);
     }
 
     @Override
-    public Future<Void> proxySelectToPrototype(String statement) {
+    public Future<Void> proxySelectToPrototype(String statement,List<Object> params) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        return execute(ExplainDetail.create(QUERY_MASTER, Collections.singletonList(Objects.requireNonNull(metadataManager.getPrototype())), statement, null));
+        return execute(ExplainDetail.create(QUERY_MASTER, Collections.singletonList(Objects.requireNonNull(metadataManager.getPrototype())), statement, null,params));
     }
 
 
@@ -208,9 +209,9 @@ public class ReceiverImpl implements Response {
                     String datasource = targetOrderList.get(i);
                     Future<NewMycatConnection> connectionFuture = transactionSession.getConnection(datasource);
                     if (i == 0) {
-                        outputs.add(VertxExecuter.runQueryOutputAsMysqlPayloadObject(connectionFuture, sql, detail.getParams()));
+                        outputs.add(VertxExecuter.runQueryOutputAsMysqlPayloadObject(connectionFuture, sql.toString(), detail.getParams()));
                     } else {
-                        outputs.add(VertxExecuter.runQuery(connectionFuture, sql, Collections.emptyList(), null)
+                        outputs.add(VertxExecuter.runQuery(connectionFuture, sql.toString(), Collections.emptyList(), null)
                                 .map(row -> new MysqlObjectArrayRow(row)));
                     }
                 }
@@ -223,9 +224,9 @@ public class ReceiverImpl implements Response {
                     String datasource = targetOrderList.get(i);
                     Future<NewMycatConnection> connectionFuture = transactionSession.getConnection(datasource);
                     if (detail.getExecuteType() == INSERT) {
-                        updateInfoList.add(VertxExecuter.runInsert(connectionFuture, sql));
+                        updateInfoList.add(VertxExecuter.runInsert(connectionFuture, sql.toString(),detail.getParams()));
                     } else {
-                        updateInfoList.add(VertxExecuter.runUpdate(connectionFuture, sql));
+                        updateInfoList.add(VertxExecuter.runUpdate(connectionFuture, sql.toString(),detail.getParams()));
                     }
                 }
                 CompositeFuture all = CompositeFuture.join((List) updateInfoList)

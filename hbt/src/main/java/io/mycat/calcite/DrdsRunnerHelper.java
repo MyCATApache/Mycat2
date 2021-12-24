@@ -50,6 +50,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nonnull;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.math.BigInteger;
 import java.sql.JDBCType;
 import java.util.*;
 
@@ -144,7 +145,7 @@ public class DrdsRunnerHelper {
                 SqlTypeName sqlTypeName = null;
                 MySQLType[] mySQLTypes = MySQLType.values();
                 for (MySQLType value : mySQLTypes) {
-                    if (Long.class == aClass){
+                    if (Long.class == aClass) {
                         sqlTypeName = SqlTypeName.BIGINT;
                         break;
                     }
@@ -158,6 +159,14 @@ public class DrdsRunnerHelper {
                     }
                     if (Byte.class == aClass) {
                         sqlTypeName = SqlTypeName.BINARY;
+                        break;
+                    }
+                    if (Short.class == aClass) {
+                        sqlTypeName = SqlTypeName.INTEGER;
+                        break;
+                    }
+                    if (BigInteger.class == aClass) {
+                        sqlTypeName = SqlTypeName.BIGINT;
                         break;
                     }
                     if (value.getJavaClass() == aClass) {
@@ -337,9 +346,7 @@ public class DrdsRunnerHelper {
     }
 
     public static Future<Void> runOnDrds(MycatDataContext dataContext,
-                                         SQLSelectStatement sqlSelectStatement, Response response) {
-
-        DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlSelectStatement, dataContext.getDefaultSchema());
+                                         DrdsSqlWithParams drdsSqlWithParams, Response response) {
         PlanImpl plan = getPlan(drdsSqlWithParams);
         PlanImplementor planImplementor = getPlanImplementor(dataContext, response, drdsSqlWithParams);
         return impl(plan, planImplementor);

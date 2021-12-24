@@ -8,14 +8,13 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLAggregateExpr;
 import com.alibaba.druid.sql.ast.expr.SQLInSubQueryExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntervalExpr;
-import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLSelectGroupByClause;
-import com.alibaba.druid.sql.ast.statement.SQLWithSubqueryClause;
+import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
 import com.alibaba.druid.sql.visitor.VisitorFeature;
 import com.google.common.collect.ImmutableList;
+import io.mycat.DrdsSqlWithParams;
 import io.mycat.MycatConnection;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorCloseCallback;
@@ -30,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -215,6 +215,25 @@ public class MycatPreparedStatementUtil {
         parameterVisitor.setShardingSupport(false);
         parameterVisitor.setInputParameters(Collections.emptyList());
         sqlStatement.accept(parameterVisitor);
+    }
+
+    public static DrdsSqlWithParams outputToParameterizedProxySql(MySqlInsertStatement sqlStatement) {
+        StringBuilder sb = new StringBuilder();
+        List<Object> outputParameters = new ArrayList<>();
+        MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(outputParameters, sb, true) {
+
+        };
+        parameterVisitor.setShardingSupport(false);
+        parameterVisitor.setFeatures(VisitorFeature.OutputParameterizedQuesUnMergeInList.mask |
+                        VisitorFeature.OutputParameterizedQuesUnMergeAnd.mask |
+                        VisitorFeature.OutputParameterizedUnMergeShardingTable.mask |
+                        VisitorFeature.OutputParameterizedQuesUnMergeOr.mask
+                | VisitorFeature.OutputParameterizedQuesUnMergeValuesList.mask
+                        | VisitorFeature.OutputParameterized.mask
+        );
+        parameterVisitor.setInputParameters(Collections.emptyList());
+        sqlStatement.accept(parameterVisitor);
+        return new DrdsSqlWithParams(sb.toString(),outputParameters,false,Collections.emptyList(),Collections.emptyList(),Collections.emptyList());
     }
 
     public static ExecuteBatchInsert batchInsert(String sql, Group value, Connection connection, String targetName) {

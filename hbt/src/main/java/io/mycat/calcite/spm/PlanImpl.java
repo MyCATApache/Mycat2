@@ -14,6 +14,7 @@
  */
 package io.mycat.calcite.spm;
 
+import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.AsyncMycatDataContextImpl;
 import io.mycat.DrdsSqlWithParams;
@@ -124,7 +125,7 @@ public class PlanImpl implements Plan {
                 break;
             }
             case INSERT: {
-                Iterable<VertxExecuter.EachSQL> eachSQLS = (VertxExecuter.explainInsert(drdsSql.getParameterizedStatement(), drdsSql.getParams()));
+                Iterable<VertxExecuter.EachSQL> eachSQLS = (VertxExecuter.explainInsert((SQLInsertStatement) drdsSql.getParameterizedStatement(), drdsSql.getParams()));
                 for (VertxExecuter.EachSQL eachSQL : eachSQLS) {
                     list.add(eachSQL.toString());
                 }

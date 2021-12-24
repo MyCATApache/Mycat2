@@ -9,6 +9,8 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
 
+import java.util.Collections;
+
 public class SQLDropFunctionHandler extends AbstractSQLHandler<SQLDropFunctionStatement> {
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLDropFunctionStatement> request, MycatDataContext dataContext, Response response) {
@@ -19,6 +21,6 @@ public class SQLDropFunctionHandler extends AbstractSQLHandler<SQLDropFunctionSt
                 ast.setName(new SQLPropertyExpr("`"+defaultSchema+"`",((SQLIdentifierExpr) ast.getName()).getName()));
             }
         }
-        return response.proxyUpdateToPrototype(ast.toString());
+        return response.proxyUpdateToPrototype(ast.toUnformattedString(), Collections.emptyList());
     }
 }

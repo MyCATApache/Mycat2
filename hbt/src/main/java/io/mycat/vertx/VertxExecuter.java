@@ -151,7 +151,7 @@ public class VertxExecuter {
 
     @SneakyThrows
     public static Collection<EachSQL> explainUpdate(DrdsSqlWithParams drdsSqlWithParams, MycatDataContext context) {
-        SQLUpdateStatement statement = drdsSqlWithParams.getParameterizedStatement();
+        SQLUpdateStatement statement = (SQLUpdateStatement)drdsSqlWithParams.getParameterizedStatement();
         List<Object> params = drdsSqlWithParams.getParams();
         SQLExprTableSource tableSource = (SQLExprTableSource) statement.getTableSource();
         String alias = SQLUtils.normalize(tableSource.computeAlias());

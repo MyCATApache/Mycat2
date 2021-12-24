@@ -49,18 +49,6 @@ public class PrototypeService {
     }
 
 
-    public Optional<MySQLResultSet> handleSql(String sql) {
-        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-        return handleSql(sqlStatement);
-    }
-
-    public Future<Void> handleSql(String sql, Response response) {
-        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-        Optional<MySQLResultSet> mySQLResultSetOptional = handleSql(sqlStatement);
-        return mySQLResultSetOptional.map(i -> response.sendResultSet(i.build()))
-                .orElseGet(() -> response.proxySelectToPrototype(sql));
-    }
-
     @NotNull
     public Optional<MySQLResultSet> handleSql(SQLStatement sqlStatement) {
         if (LOGGER.isDebugEnabled()) {

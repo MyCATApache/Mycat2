@@ -26,32 +26,33 @@ public class MycatPreparedStatement implements PreparedStatement {
 
     @Override
     public ResultSet executeQuery(String sql) throws SQLException {
-        JdbcResponse jdbcResponse = new JdbcResponse(dataContext);
-        Future<Void> execute = MycatdbCommand.execute(dataContext, jdbcResponse, SQLUtils.parseSingleMysqlStatement(sql));
-        MycatRowMetaData metaData = jdbcResponse.getMetaData();
-        Iterator<Object[]> iterator = jdbcResponse.getIterator();
-        return new MycatResultSet(new AbstractObjectRowIterator() {
-            @Override
-            public MycatRowMetaData getMetaData() {
-                return metaData;
-            }
-
-            @Override
-            public boolean next() {
-                boolean b = iterator.hasNext();
-                if (b){
-                    this.currentRow = iterator.next();
-                }
-                return b;
-            }
-
-            @Override
-            public void close() {
-                while (iterator.hasNext()){
-                    iterator.next();
-                }
-            }
-        });
+//        JdbcResponse jdbcResponse = new JdbcResponse(dataContext);
+//        Future<Void> execute = MycatdbCommand.execute(dataContext, jdbcResponse, SQLUtils.parseSingleMysqlStatement(sql));
+//        MycatRowMetaData metaData = jdbcResponse.getMetaData();
+//        Iterator<Object[]> iterator = jdbcResponse.getIterator();
+//        return new MycatResultSet(new AbstractObjectRowIterator() {
+//            @Override
+//            public MycatRowMetaData getMetaData() {
+//                return metaData;
+//            }
+//
+//            @Override
+//            public boolean next() {
+//                boolean b = iterator.hasNext();
+//                if (b){
+//                    this.currentRow = iterator.next();
+//                }
+//                return b;
+//            }
+//
+//            @Override
+//            public void close() {
+//                while (iterator.hasNext()){
+//                    iterator.next();
+//                }
+//            }
+//        });
+        return null;
     }
 
     @Override
