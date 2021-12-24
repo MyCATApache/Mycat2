@@ -320,6 +320,10 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                         break;
                 }
             }
+            if(o instanceof RexCall){
+                //Skip if it cannot become literal
+                continue;
+            }
             builder.add(o);
         }
 
