@@ -56,7 +56,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         super(dataContext, context, drdsSqlWithParams);
     }
 
-    synchronized Future<NewMycatConnection> getConnection(String key) {
+    public synchronized Future<NewMycatConnection> getConnection(String key) {
         XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
         if (context.isInTransaction()) {
             return transactionConnnectionMap
@@ -68,7 +68,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         return connection;
     }
 
-    synchronized void recycleConnection(String key, Future<NewMycatConnection> connectionFuture) {
+    public synchronized void recycleConnection(String key, Future<NewMycatConnection> connectionFuture) {
         XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
         if (context.isInTransaction()) {
             transactionConnnectionMap.put(key, connectionFuture);
