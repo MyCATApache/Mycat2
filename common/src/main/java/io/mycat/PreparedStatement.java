@@ -44,6 +44,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -100,7 +102,15 @@ public class PreparedStatement {
             o = java.sql.Date.valueOf((LocalDate) o);
             return fromJavaObject(o,timeZone);
         }
-
+        if (o instanceof Time) {
+            return new SQLTimeExpr((Time) o, timeZone);
+        }
+        if (o instanceof java.sql.Date) {
+            return new SQLDateExpr((Date) o, timeZone);
+        }
+        if (o instanceof Timestamp) {
+            return new SQLTimestampExpr((Timestamp) o, timeZone);
+        }
         if (o instanceof Date) {
             return new SQLTimestampExpr((Date) o, timeZone);
         }

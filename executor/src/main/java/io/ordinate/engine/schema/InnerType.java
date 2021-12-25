@@ -18,6 +18,7 @@
 package io.ordinate.engine.schema;
 
 
+import io.mycat.beans.mycat.ArrowTypes;
 import io.ordinate.engine.function.BinarySequence;
 import lombok.Getter;
 import org.apache.arrow.vector.*;
@@ -25,6 +26,7 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
 
+import java.math.BigDecimal;
 import java.sql.JDBCType;
 import java.util.List;
 
@@ -38,7 +40,7 @@ public enum InnerType {
     INT64_TYPE(ArrowTypes.INT64_TYPE, BigIntVector.class, long.class, "int64", true, JDBCType.BIGINT),
     FLOAT_TYPE(ArrowTypes.FLOAT_TYPE, Float4Vector.class, float.class, "float", false, JDBCType.FLOAT),
     DOUBLE_TYPE(ArrowTypes.DOUBLE_TYPE, Float8Vector.class, double.class, "double", false, JDBCType.DOUBLE),
-    DECIMAL_TYPE(ArrowTypes.DECIMAL_TYPE, DecimalVector.class, float.class, "decimal", false, JDBCType.DECIMAL),
+    DECIMAL_TYPE(ArrowTypes.DECIMAL_TYPE, DecimalVector.class, BigDecimal.class, "decimal", false, JDBCType.DECIMAL),
     STRING_TYPE(ArrowTypes.STRING_TYPE, VarCharVector.class, String.class, "string", false, JDBCType.VARCHAR),
     BINARY_TYPE(ArrowTypes.BINARY_TYPE, VarBinaryVector.class, BinarySequence.class, "binary", false, JDBCType.BINARY),
 
@@ -48,12 +50,12 @@ public enum InnerType {
     UINT32_TYPE(ArrowTypes.INT32_TYPE, UInt4Vector.class, int.class, "uint32", false, JDBCType.INTEGER),
     UINT64_TYPE(ArrowTypes.INT64_TYPE, UInt8Vector.class, long.class, "uint64", false, JDBCType.INTEGER),
 
-    TIME_MILLI_TYPE(ArrowTypes.TIME_MILLI_TYPE, TimeMilliVector.class, long.class, "time", false, JDBCType.TIME),
-    DATE_TYPE(ArrowTypes.DATE_TYPE, DateMilliVector.class, int.class, "date", false, JDBCType.DATE),
+    TIME_MILLI_TYPE(ArrowTypes.DURATION_TYPE, DurationVector.class, long.class, "time", false, JDBCType.TIME),
+    DATE_TYPE(ArrowTypes.DATE_TYPE, TimeStampMilliVector.class, long.class, "date", false, JDBCType.DATE),
     DATETIME_MILLI_TYPE(ArrowTypes.DATETIME_MILLI_TYPE, TimeStampMilliVector.class, long.class, "datetime", false, JDBCType.TIMESTAMP),
-    SYMBOL_TYPE(null, null, String.class, "symbol", false, JDBCType.VARCHAR),
+    SYMBOL_TYPE(ArrowTypes.STRING_TYPE, VarCharVector.class, String.class, "symbol", false, JDBCType.VARCHAR),
     OBJECT_TYPE(null, null, Object.class, "object", false, JDBCType.JAVA_OBJECT),
-    NULL_TYPE(null, null, Void.class, "null", false, JDBCType.NULL),
+    NULL_TYPE(ArrowTypes.NULL_TYPE, NullVector.class, Void.class, "null", false, JDBCType.NULL),
     ;
     private ArrowType arrowType;
     Class<? extends FieldVector> fieldVector;
@@ -373,7 +375,7 @@ public enum InnerType {
         }
     }
 
-   public InnerType toUnsigned() {
+    public InnerType toUnsigned() {
         switch (this) {
             case BOOLEAN_TYPE:
             case CHAR_TYPE:

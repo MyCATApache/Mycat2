@@ -8,7 +8,7 @@
 //import io.ordinate.engine.physicalplan.OutputLinq4jPhysicalPlan;
 //import io.ordinate.engine.physicalplan.PhysicalPlan;
 //import io.ordinate.engine.record.RootContext;
-//import io.ordinate.engine.schema.ArrowTypes;
+//import io.mycat.beans.mycat.ArrowTypes;
 //import io.ordinate.engine.schema.InnerType;
 //import io.reactivex.rxjava3.core.Observable;
 //import junit.framework.TestCase;

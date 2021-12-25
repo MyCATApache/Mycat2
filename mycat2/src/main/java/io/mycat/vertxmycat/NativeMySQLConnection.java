@@ -28,6 +28,7 @@ import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.mysqlclient.impl.datatype.DataType;
 import io.vertx.mysqlclient.impl.protocol.ColumnDefinition;
 import lombok.NonNull;
+import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -247,7 +248,7 @@ public class NativeMySQLConnection implements NewMycatConnection {
     }
 
     @Override
-    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params) {
+    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator) {
         throw new UnsupportedOperationException();
     }
 

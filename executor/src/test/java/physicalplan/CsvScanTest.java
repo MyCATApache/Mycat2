@@ -4,7 +4,7 @@ package physicalplan;
 import io.ordinate.engine.physicalplan.CsvScanPlan;
 import io.ordinate.engine.physicalplan.PhysicalPlan;
 import io.ordinate.engine.physicalplan.ValuesCsvScanPlan;
-import io.ordinate.engine.schema.ArrowTypes;
+import io.mycat.beans.mycat.ArrowTypes;
 import io.ordinate.engine.builder.ExecuteCompiler;
 import io.ordinate.engine.record.RootContext;
 import io.ordinate.engine.builder.SchemaBuilder;
@@ -13,7 +13,6 @@ import io.reactivex.rxjava3.core.Observable;
 import lombok.SneakyThrows;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.commons.lang3.time.StopWatch;
-import org.junit.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

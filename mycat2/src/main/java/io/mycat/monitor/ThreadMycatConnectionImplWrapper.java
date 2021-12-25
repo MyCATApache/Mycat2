@@ -10,6 +10,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
 import java.util.List;
@@ -55,8 +56,8 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
     }
 
     @Override
-    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params) {
-        return newMycatConnection.prepareQuery(sql, params);
+    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator) {
+        return newMycatConnection.prepareQuery(sql, params,allocator);
     }
 
     @Override

@@ -15,9 +15,10 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.ordinate.engine.schema;
+package io.mycat.beans.mycat;
 
 import org.apache.arrow.vector.types.FloatingPointPrecision;
+import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 
@@ -35,15 +36,15 @@ public class ArrowTypes {
 
     public static final ArrowType.FloatingPoint FLOAT_TYPE = new ArrowType.FloatingPoint(FloatingPointPrecision.SINGLE);
     public static final ArrowType.FloatingPoint DOUBLE_TYPE = new ArrowType.FloatingPoint(FloatingPointPrecision.DOUBLE);
-    public static final ArrowType.Decimal DECIMAL_TYPE =  ArrowType.Decimal.createDecimal(0,0,16);
+    public static final ArrowType.Decimal DECIMAL_TYPE = new ArrowType.Decimal(0,0,64);
     public static final ArrowType.Utf8 STRING_TYPE = new ArrowType.Utf8();
     public static final ArrowType.Binary BINARY_TYPE = new ArrowType.Binary();
 
 
-    public static final ArrowType TIME_MILLI_TYPE = Types.MinorType.TIMEMILLI.getType();
-    public static final ArrowType DATE_TYPE = Types.MinorType.DATEMILLI.getType();
+    public static final ArrowType DURATION_TYPE =new ArrowType.Duration(TimeUnit.MILLISECOND);
+    public static final ArrowType DATE_TYPE = Types.MinorType.TIMESTAMPMILLI.getType();
     public static final ArrowType DATETIME_MILLI_TYPE = Types.MinorType.TIMESTAMPMILLI.getType();
-
+    public static final ArrowType NULL_TYPE = Types.MinorType.NULL.getType();
     public static void main(String[] args) {
         ArrowType.Int uint64Type = ArrowTypes.UINT64_TYPE;
     }

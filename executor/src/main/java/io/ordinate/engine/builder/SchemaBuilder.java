@@ -19,7 +19,7 @@ package io.ordinate.engine.builder;
 
 import com.google.common.collect.ImmutableList;
 import io.ordinate.engine.function.Function;
-import io.ordinate.engine.schema.ArrowTypes;
+import io.mycat.beans.mycat.ArrowTypes;
 import io.ordinate.engine.schema.FieldBuilder;
 import io.ordinate.engine.schema.InnerType;
 import lombok.ToString;

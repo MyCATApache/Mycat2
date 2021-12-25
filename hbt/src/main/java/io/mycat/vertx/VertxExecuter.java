@@ -216,11 +216,11 @@ public class VertxExecuter {
                 }
 
                 ExecutorProvider executorProvider = MetaClusterCurrent.wrapper(ExecutorProvider.class);
-                RowBaseIterator bindable = executorProvider.runAsObjectArray(context,sqlSelectStatement.toString());
+                RowBaseIterator bindable = executorProvider.runAsObjectArray(context, sqlSelectStatement.toString());
                 try {
                     List<Object[]> list = new ArrayList<>();
-                    while (bindable.next()){
-                        list.add(  bindable.getObjects());
+                    while (bindable.next()) {
+                        list.add(bindable.getObjects());
                     }
                     if (list.size() > 1000) {
                         throw new IllegalArgumentException("The number of update rows exceeds the limit.");
@@ -478,16 +478,6 @@ public class VertxExecuter {
         ));
     }
 
-    private static void fillIndexTableShardingKeys(Map<String, List<RangeVariable>> variables, ShardingTable indexTable) {
-        for (String s : indexTable.getColumns().stream()
-                .filter(i -> i.isShardingKey())
-                .filter(i -> i.isNullable())
-                .map(i -> i.getColumnName())
-                .collect(Collectors.toList())) {
-            variables.putIfAbsent(s, Collections.singletonList(new RangeVariable(s, RangeVariableType.EQUAL, null)));
-        }
-    }
-
     @NotNull
     private static List<Object> getNewParams(List params, SQLInsertStatement primaryStatement) {
         List<Object> newParams = new ArrayList<>();
@@ -557,63 +547,6 @@ public class VertxExecuter {
         return variables;
     }
 
-//
-//    public static Future<long[]> runMycatUpdateRel(MycatDataContext context, MycatUpdateRel updateRel, List<Object> params) {
-//
-//
-//        MycatRouteUpdateCore mycatRouteUpdateCore = updateRel.getMycatRouteUpdateCore();
-//        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-//        TableHandler table = metadataManager.getTable(mycatRouteUpdateCore.getSchemaName(), mycatRouteUpdateCore.getTableName());
-//        List<Partition> partitions = Collections.emptyList();
-//        switch (table.getType()) {
-//            case SHARDING: {
-//                ShardingTable shardingTable = (ShardingTable) table;
-//                RexNode conditions = mycatRouteUpdateCore.getConditions();
-//                ParamHolder paramHolder = ParamHolder.CURRENT_THREAD_LOCAL.get();
-//                paramHolder.setData(params, null);
-//                try {
-//                    ArrayList<RexNode> res = new ArrayList<>(1);
-//                    MycatRexExecutor.INSTANCE.reduce(MycatCalciteSupport.RexBuilder, Collections.singletonList(conditions), res);
-//                    RexNode rexNode = res.get(0);
-//                    ValuePredicateAnalyzer predicateAnalyzer = new ValuePredicateAnalyzer(shardingTable.keyMetas(), shardingTable.getColumns().stream().map(i -> i.getColumnName()).collect(Collectors.toList()));
-//                    ValueIndexCondition indexCondition = predicateAnalyzer.translateMatch(rexNode);
-//                    partitions = ValueIndexCondition.getObject(shardingTable.getShardingFuntion(), indexCondition, params);
-//                } finally {
-//                    paramHolder.clear();
-//                }
-//                break;
-//            }
-//            case GLOBAL: {
-//                GlobalTable globalTable = (GlobalTable) table;
-//                partitions = globalTable.getGlobalDataNode();
-//                break;
-//            }
-//            case NORMAL: {
-//                NormalTable normalTable = (NormalTable) table;
-//                partitions = Collections.singletonList(normalTable.getDataNode());
-//                break;
-//            }
-//            case CUSTOM:
-//                throw new UnsupportedOperationException();
-//        }
-//        ArrayList<EachSQL> eachSQLS = new ArrayList<>();
-//        SQLStatement sqlStatement = updateRel.getMycatRouteUpdateCore().getSqlStatement().clone();
-//        for (Partition partition : partitions) {
-//            sqlStatement.accept(new MySqlASTVisitorAdapter() {
-//                @Override
-//                public boolean visit(SQLExprTableSource x) {
-//                    x.setSimpleName(partition.getTable());
-//                    x.setSchema(partition.getSchema());
-//                    return false;
-//                }
-//            });
-//            String s = sqlStatement.toString();
-//            eachSQLS.add(new EachSQL(partition.getTargetName(), s, params));
-//        }
-//        return simpleUpdate(context, true, true, eachSQLS);
-//    }
-
-
     public static Future<long[]> wrapAsXaTransaction(MycatDataContext context, Function<Void, Future<long[]>> function) {
         TransactionSession sqlConnection = context.getTransactionSession();
         if ((!context.isInTransaction() && context.isAutocommit())) {
@@ -659,6 +592,14 @@ public class VertxExecuter {
             });
             connectionFuture.onFailure(i -> emitter.onError(i));
         });
+    }
+
+
+    public static interface Queryer<T> {
+        Observable<T> runQuery(Future<NewMycatConnection> connectionFuture,
+                               String sql,
+                               List<Object> values,
+                               MycatRowMetaData rowMetaDataArg);
     }
 
     public static Observable<Object[]> runQuery(Future<NewMycatConnection> connectionFuture,
@@ -713,18 +654,6 @@ public class VertxExecuter {
                 .map(r -> new long[]{r.getAffectRows(), r.getLastInsertId()}));
     }
 
-    public static Future<long[]> runUpdate(Map<String, List<Object>> updateMap,
-                                           Future<NewMycatConnection> sqlConnectionFuture) {
-        List<long[]> list = Collections.synchronizedList(new ArrayList<>());
-        Future<Void> future = Future.succeededFuture();
-        for (Map.Entry<String, List<Object>> e : updateMap.entrySet()) {
-            String sql = e.getKey();
-            List<Object> values = e.getValue();
-            future = future.flatMap(new UpdateByConnection(sqlConnectionFuture, sql, values, list));
-        }
-        return future.map(sumUpdateResult(list));
-    }
-
     public static Future<long[]> runInsert(
             Map<String, List<List<Object>>> insertMap,
             Future<SqlConnection> sqlConnectionFuture) {
@@ -765,65 +694,5 @@ public class VertxExecuter {
                         (longs1, longs2) ->
                                 new long[]{longs1[0] + longs2[0],
                                         Math.max(longs1[1], longs2[1])});
-    }
-
-    private static class SumUpdateResult implements Function<CompositeFuture, long[]> {
-        private final boolean global;
-        private final List<Future<long[]>> res;
-
-        public SumUpdateResult(boolean global, List<Future<long[]>> res) {
-            this.global = global;
-            this.res = res;
-        }
-
-        @Override
-        public long[] apply(CompositeFuture r) {
-            return this.global ? res.get(0).result() :
-                    res.stream().map(l -> l.result())
-                            .reduce((longs, longs2) ->
-                                    new long[]{longs[0] + longs2[0], Math.max(longs[1], longs2[1])})
-                            .orElse(new long[2]);
-        }
-    }
-
-    private static class UpdateByConnection implements Function {
-        private final Future<NewMycatConnection> sqlConnectionFuture;
-        private final String sql;
-        private final List<Object> values;
-        private final List<long[]> list;
-
-        public UpdateByConnection(Future<NewMycatConnection> sqlConnectionFuture, String sql, List<Object> values, List<long[]> list) {
-            this.sqlConnectionFuture = sqlConnectionFuture;
-            this.sql = sql;
-            this.values = values;
-            this.list = list;
-        }
-
-        @Override
-        public Object apply(Object unused) {
-//            return sqlConnectionFuture
-//                    .flatMap(connection -> Process.getCurrentProcess().trace(connection).prepare(sql)
-//                            .flatMap(preparedStatement -> {
-//                                Future<RowSet<Row>> rowSetFuture;
-//                                if (!values.isEmpty() && values.get(0) instanceof List) {
-//                                    rowSetFuture = preparedStatement.query().executeBatch(values.stream().map(i -> Tuple.from((List<Object>) i)).collect(Collectors.toList()));
-//                                } else {
-//                                    rowSetFuture = preparedStatement.query().execute(Tuple.from(values));
-//                                }
-//                                return rowSetFuture.map(new UpdateResultCollector());
-//                            }));
-            return null;
-        }
-
-        private class UpdateResultCollector implements Function<RowSet<Row>, Object> {
-            @Override
-            public Object apply(RowSet<Row> rows) {
-                int affectedRow = rows.rowCount();
-                long lastInsertId = Optional.ofNullable(rows.property(MySQLClient.LAST_INSERTED_ID))
-                        .orElse(0L);
-                list.add(new long[]{affectedRow, lastInsertId});
-                return null;
-            }
-        }
     }
 }

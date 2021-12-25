@@ -6,7 +6,7 @@
 //import io.reactivex.rxjava3.core.Observable;
 //import io.reactivex.rxjava3.schedulers.Schedulers;
 //import io.ordinate.engine.vectorexpression.AggregateVectorExpression;
-//import io.ordinate.engine.schema.ArrowTypes;
+//import io.mycat.beans.mycat.ArrowTypes;
 //import io.ordinate.engine.record.RootContext;
 //import org.apache.arrow.memory.util.hash.SimpleHasher;
 //import org.apache.arrow.vector.*;

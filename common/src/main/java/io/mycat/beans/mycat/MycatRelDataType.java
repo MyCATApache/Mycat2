@@ -175,7 +175,7 @@ public class MycatRelDataType {
                 }
                 case "DOUBLE": {
                     mysqlTypeName = "DOUBLE";
-                    klass = DOUBLE.class;
+                    klass = Double.class;
                     if (arguments.size() > 0) {
                         scale = Integer.parseInt(arguments.get(0).toString());
                     }

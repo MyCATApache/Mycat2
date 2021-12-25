@@ -2,6 +2,7 @@ package io.mycat.newquery;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
+import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
 import java.util.Collections;
@@ -20,7 +21,7 @@ public interface NewMycatConnection {
 
     void prepareQuery(String sql, List<Object> params, MysqlCollector collector);
 
-    Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params);
+    Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator);
 
     Future<List<Object>> call(String sql);
 

@@ -33,6 +33,7 @@ import lombok.SneakyThrows;
 import org.apache.arrow.adapter.jdbc.JdbcFieldInfo;
 import org.apache.arrow.adapter.jdbc.JdbcToArrowConfig;
 import org.apache.arrow.adapter.jdbc.JdbcToArrowConfigBuilder;
+import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.*;
 import org.apache.arrow.vector.types.pojo.ArrowType;
@@ -407,7 +408,7 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
     }
 
     @Override
-    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params) {
+    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator) {
         return Observable.create(new ObservableOnSubscribe<VectorSchemaRoot>() {
             @Override
             public void subscribe(@NonNull ObservableEmitter<VectorSchemaRoot> emitter) throws Throwable {

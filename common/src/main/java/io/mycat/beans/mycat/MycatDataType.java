@@ -12,6 +12,7 @@ import io.vertx.sqlclient.desc.ColumnDescriptor;
 import lombok.SneakyThrows;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.*;
+import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
@@ -216,7 +217,11 @@ public enum MycatDataType {
                 mycatDataType = BOOLEAN;
                 break;
             case DATE:
-                mycatDataType = DATE;
+                if (columnClassName.contains("year")){
+                    mycatDataType = YEAR;
+                }else {
+                    mycatDataType = DATE;
+                }
                 break;
             case TIME:
             case TIME_WITH_TIMEZONE:
@@ -318,9 +323,9 @@ public enum MycatDataType {
                 return TinyIntVector.class;
             case UNSIGNED_TINYINT:
                 return UInt1Vector.class;
-            case YEAR:
             case SHORT:
                 return SmallIntVector.class;
+            case YEAR:
             case UNSIGNED_SHORT:
                 return UInt2Vector.class;
             case INT:
@@ -338,7 +343,7 @@ public enum MycatDataType {
             case DATETIME:
                 return TimeStampMilliVector.class;
             case TIME:
-                return TimeMilliVector.class;
+                return DurationVector.class;
             case CHAR:
             case VARCHAR:
                 return VarCharVector.class;
@@ -364,9 +369,9 @@ public enum MycatDataType {
                 return new TinyIntVector(field, allocator);
             case UNSIGNED_TINYINT:
                 return new UInt1Vector(field, allocator);
-            case YEAR:
             case SHORT:
                 return new SmallIntVector(field, allocator);
+            case YEAR:
             case UNSIGNED_SHORT:
                 return new UInt2Vector(field, allocator);
             case INT:
@@ -380,11 +385,11 @@ public enum MycatDataType {
             case DECIMAL:
                 return new DecimalVector(field, allocator);
             case DATE:
-                return new DateMilliVector(field, allocator);
+                return new TimeStampMilliVector(field, allocator);
             case DATETIME:
                 return new TimeStampMilliVector(field, allocator);
             case TIME:
-                return new TimeMilliVector(field, allocator);
+                return new DurationVector(field, allocator);
             case CHAR:
             case VARCHAR:
                 return new VarCharVector(field, allocator);
@@ -401,6 +406,7 @@ public enum MycatDataType {
 
     @SneakyThrows
     public void convertToVector(ResultSet resultSet, int index, FieldVector fieldVector, int rowIndex) {
+        index = index + 1;
         switch (this) {
             case BOOLEAN: {
                 boolean aBoolean = resultSet.getBoolean(index);
@@ -458,7 +464,7 @@ public enum MycatDataType {
                 }
                 break;
             }
-            case YEAR:
+
             case SHORT: {
                 short aShort = resultSet.getShort(index);
                 SmallIntVector smallIntVector = (SmallIntVector) fieldVector;
@@ -469,6 +475,7 @@ public enum MycatDataType {
                 }
                 break;
             }
+            case YEAR:
             case UNSIGNED_SHORT: {
                 int anInt = resultSet.getInt(index);
                 UInt2Vector uInt2Vector = (UInt2Vector) fieldVector;
@@ -522,7 +529,7 @@ public enum MycatDataType {
             }
             case DATE: {
                 Date date = resultSet.getDate(index);
-                DateMilliVector dateMilliVector = (DateMilliVector) fieldVector;
+                TimeStampMilliVector dateMilliVector = (TimeStampMilliVector) fieldVector;
                 if (resultSet.wasNull()) {
                     dateMilliVector.setNull(rowIndex);
                 } else {
@@ -542,7 +549,7 @@ public enum MycatDataType {
             }
             case TIME: {
                 Time time = resultSet.getTime(index);
-                TimeMilliVector milliVector = (TimeMilliVector) fieldVector;
+                DurationVector milliVector = (DurationVector) fieldVector;
                 if (resultSet.wasNull()) {
                     milliVector.setNull(rowIndex);
                 } else {
@@ -558,7 +565,7 @@ public enum MycatDataType {
                 if (resultSet.wasNull()) {
                     varCharVector.setNull(rowIndex);
                 } else {
-                    varCharVector.set(rowIndex, bytes);
+                    varCharVector.setSafe(rowIndex, bytes);
                 }
                 break;
             }
@@ -568,7 +575,7 @@ public enum MycatDataType {
                 if (resultSet.wasNull()) {
                     varCharVector.setNull(rowIndex);
                 } else {
-                    varCharVector.set(rowIndex, bytes);
+                    varCharVector.setSafe(rowIndex, bytes);
                 }
                 break;
             }
@@ -952,4 +959,49 @@ public enum MycatDataType {
     }
 
 
+    public ArrowType getArrowType() {
+        switch (this) {
+            case BOOLEAN:
+                return ArrowType.Bool.INSTANCE;
+            case BIT:
+            case UNSIGNED_LONG:
+                return ArrowTypes.UINT64_TYPE;
+            case TINYINT:
+                return ArrowTypes.INT8_TYPE;
+            case UNSIGNED_TINYINT:
+                return ArrowTypes.UINT8_TYPE;
+            case SHORT:
+                return ArrowTypes.INT16_TYPE;
+            case UNSIGNED_SHORT:
+            case YEAR:
+                return ArrowTypes.UINT16_TYPE;
+            case INT:
+                return ArrowTypes.INT32_TYPE;
+            case UNSIGNED_INT:
+                return ArrowTypes.UINT32_TYPE;
+            case LONG:
+                return ArrowTypes.INT64_TYPE;
+            case DOUBLE:
+                return ArrowTypes.DOUBLE_TYPE;
+            case DECIMAL:
+                return new ArrowType.Decimal(64,0,64);
+            case DATE:
+                return ArrowTypes.DATE_TYPE;
+            case DATETIME:
+                return ArrowTypes.DATETIME_MILLI_TYPE;
+            case TIME:
+                return ArrowTypes.DURATION_TYPE;
+            case CHAR:
+            case VARCHAR:
+                return ArrowTypes.STRING_TYPE;
+            case BINARY:
+                return ArrowTypes.BINARY_TYPE;
+            case FLOAT:
+                return ArrowTypes.FLOAT_TYPE;
+            case NULL:
+                return ArrowTypes.NULL_TYPE;
+            default:
+                throw new IllegalStateException("Unexpected value: " + this);
+        }
+    }
 }

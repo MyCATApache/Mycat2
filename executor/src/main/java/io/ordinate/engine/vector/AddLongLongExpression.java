@@ -20,7 +20,7 @@
 package io.ordinate.engine.vector;
 
 
-import io.ordinate.engine.schema.ArrowTypes;
+import io.mycat.beans.mycat.ArrowTypes;
 import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 

@@ -19,11 +19,13 @@ import io.mycat.newquery.MysqlCollector;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.newquery.RowSet;
 import io.mycat.util.JsonUtil;
+import io.reactivex.rxjava3.core.Observable;
 import lombok.SneakyThrows;
 import lombok.ToString;
+import org.apache.arrow.memory.*;
+import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Assert;
 
 import java.sql.Date;
 import java.sql.Time;
@@ -57,6 +59,14 @@ public class DatasourcePoolTest {
         MycatDatasourcePool jdbcDs =
                 new JdbcDatasourcePoolImpl("prototypeDs");
 
+
+        NewMycatConnection newMycatConnection = jdbcDs.getConnection().toCompletionStage().toCompletableFuture().get();
+        Observable<VectorSchemaRoot> observable = newMycatConnection.prepareQuery("select 1", Collections.emptyList(), new RootAllocator());
+        List<VectorSchemaRoot> vectorSchemaRoots = observable.toList().blockingGet();
+
+        System.out.println();
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////
         MycatDatasourcePool nativeDs =
                new VertxMySQLDatasourcePoolImpl(datasourceConfig,"prototypeDs");
 
@@ -75,13 +85,15 @@ public class DatasourcePoolTest {
         System.out.println(mycatRelDataType2);
         System.out.println("=====================================================================================================");
         boolean equals = mycatRelDataType1.equals(mycatRelDataType2);
-        Assert.assertTrue(equals);
+//        Assert.assertTrue(equals);
 
         equals = mycatRelDataType1.equals(sqlMycatRelType);
 
         System.out.println(sqlMycatRelType);
         System.out.println(mycatRelDataType1);
 
+     observable = newMycatConnection.prepareQuery("select * from testSchema.testColumnTable", Collections.emptyList(), new RootAllocator());
+   vectorSchemaRoots = observable.toList().blockingGet();
 
         System.out.println();
     }
@@ -111,13 +123,14 @@ public class DatasourcePoolTest {
         sqlExprTableSource.setSchema(schema);
         mySqlInsertStatement.setTableSource(sqlExprTableSource);
 
-        for (Object[] objects :  getColumns()) {
+        ImmutableList<Object[]> columns = getColumns();
+        for (Object[] objects :  columns) {
             String column = (String) objects[0];
             String type = (String) objects[1];
             mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`" + column + "`"));
         }
         SQLInsertStatement.ValuesClause valuesClause = new SQLInsertStatement.ValuesClause();
-        for (Object[] objects :  getColumns()) {
+        for (Object[] objects :  columns) {
             String column = (String) objects[0];
             String type = (String) objects[1];
             Object value = objects[2];

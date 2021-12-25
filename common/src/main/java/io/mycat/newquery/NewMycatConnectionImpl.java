@@ -5,10 +5,7 @@ import com.alibaba.druid.util.JdbcUtils;
 import com.mysql.cj.jdbc.StatementImpl;
 import com.mysql.cj.protocol.Resultset;
 import com.mysql.cj.result.Field;
-import io.mycat.beans.mycat.CopyMycatRowMetaData;
-import io.mycat.beans.mycat.JdbcRowMetaData;
-import io.mycat.beans.mycat.MycatMySQLRowMetaData;
-import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.beans.mycat.*;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import io.reactivex.rxjava3.annotations.NonNull;
@@ -22,8 +19,12 @@ import lombok.SneakyThrows;
 import org.apache.arrow.adapter.jdbc.ArrowVectorIterator;
 import org.apache.arrow.adapter.jdbc.JdbcToArrowConfig;
 import org.apache.arrow.adapter.jdbc.JdbcToArrowConfigBuilder;
+import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
+import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
+import org.apache.arrow.vector.types.pojo.ArrowType;
+import org.apache.arrow.vector.types.pojo.FieldType;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,63 +161,80 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     }
 
     @Override
-    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params) {
+    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator) {
         return Observable.create(new ObservableOnSubscribe<VectorSchemaRoot>() {
             @Override
             public void subscribe(@NonNull ObservableEmitter<VectorSchemaRoot> emitter) throws Throwable {
 
 
                 synchronized (NewMycatConnectionImpl.this) {
-
-
-                    JdbcToArrowConfigBuilder jdbcToArrowConfigBuilder = new JdbcToArrowConfigBuilder();
-                    RootAllocator rootAllocator = new RootAllocator();
-                    jdbcToArrowConfigBuilder.setAllocator(rootAllocator);
-                    JdbcToArrowConfig jdbcToArrowConfig = jdbcToArrowConfigBuilder.build();
                     try {
-                        if (params.isEmpty()) {
-                            try (Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
-                                setStreamFlag(statement);
-                                onSend();
-                                resultSet = statement.executeQuery(sql);
-                                onRev();
-                                try (ArrowVectorIterator arrowVectorIterator = ArrowVectorIterator.create(resultSet, jdbcToArrowConfig)) {
-                                    while (arrowVectorIterator.hasNext()) {
-                                        VectorSchemaRoot schemaRoot = arrowVectorIterator.next();
-                                        emitter.onNext(schemaRoot);
-                                    }
+                        try (PreparedStatement statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
+                            setStreamFlag(statement);
+                            int limit = params.size() + 1;
+                            for (int i = 1; i < limit; i++) {
+                                statement.setObject(i, params.get(i - 1));
+                            }
+                            onSend();
+                            resultSet = statement.executeQuery();
+                            onRev();
+
+                            MycatField[] mycatFields = MycatDataType.from(resultSet.getMetaData());
+                            VectorSchemaRoot vectorSchemaRoot = null;
+                            FieldVector[] fieldVectors = null;
+                            int rowId = 0;
+                            while (resultSet.next()) {
+                                if (vectorSchemaRoot == null) {
+                                    fieldVectors = getFieldVectors(mycatFields, allocator);
+                                    vectorSchemaRoot = new VectorSchemaRoot(Arrays.asList(fieldVectors));
+                                    vectorSchemaRoot.allocateNew();
+                                }
+                                for (int j = 0; j < mycatFields.length; j++) {
+                                    mycatFields[j].getMycatDataType()
+                                            .convertToVector(resultSet, j, fieldVectors[j], rowId);
+                                }
+
+                                rowId++;
+                                vectorSchemaRoot.setRowCount(rowId);
+                                if (rowId > 1024) {
+                                    emitter.onNext(vectorSchemaRoot);
+                                    rowId = 0;
+                                    vectorSchemaRoot = null;
                                 }
                             }
-                        } else {
-                            try (PreparedStatement statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
-                                setStreamFlag(statement);
-                                int limit = params.size() + 1;
-                                for (int i = 1; i < limit; i++) {
-                                    statement.setObject(i, params.get(i - 1));
-                                }
-                                onSend();
-                                resultSet = statement.executeQuery();
-                                onRev();
-                                try (ArrowVectorIterator arrowVectorIterator = ArrowVectorIterator.create(resultSet, jdbcToArrowConfig)) {
-                                    while (arrowVectorIterator.hasNext()) {
-                                        VectorSchemaRoot schemaRoot = arrowVectorIterator.next();
-                                        emitter.onNext(schemaRoot);
-                                    }
-                                }
+                            if (vectorSchemaRoot != null) {
+                                emitter.onNext(vectorSchemaRoot);
+                                vectorSchemaRoot = null;
                             }
                         }
-
                     } catch (Exception e) {
                         emitter.onError(e);
                     } finally {
                         emitter.onComplete();
                         resultSet = null;
                     }
-
-
                 }
             }
         });
+    }
+
+    @NotNull
+    private FieldVector[] getFieldVectors(MycatField[] mycatFields, BufferAllocator allocator) {
+        FieldVector[] fieldVectors = new FieldVector[mycatFields.length];
+        int i = 0;
+        for (MycatField mycatField : mycatFields) {
+            String name = mycatField.getName();
+            boolean nullable = mycatField.isNullable();
+            ArrowType arrowType = mycatField.getMycatDataType().getArrowType();
+            FieldType fieldType =
+                    new FieldType(nullable, arrowType, null);
+            org.apache.arrow.vector.types.pojo.Field field =
+                    new org.apache.arrow.vector.types.pojo.Field(name, fieldType, Collections.emptyList());
+            FieldVector fieldVector = mycatField.getMycatDataType().createFieldVector(field, allocator);
+            fieldVectors[i] = fieldVector;
+            i++;
+        }
+        return fieldVectors;
     }
 
     @Override
