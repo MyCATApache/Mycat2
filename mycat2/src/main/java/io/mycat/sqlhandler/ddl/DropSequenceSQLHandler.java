@@ -44,7 +44,7 @@ public class DropSequenceSQLHandler extends AbstractSQLHandler<com.alibaba.druid
                     ast.setName(sqlPropertyExpr);
                 }
                 MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-                return response.proxyUpdate(Collections.singletonList(metadataManager.getPrototype()), ast.toString());
+                return response.proxyUpdate(Collections.singletonList(metadataManager.getPrototype()), ast.toString(),Collections.emptyList());
             }catch (Throwable throwable){
                 return Future.failedFuture(throwable);
             }finally {

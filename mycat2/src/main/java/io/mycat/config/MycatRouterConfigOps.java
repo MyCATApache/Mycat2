@@ -58,6 +58,7 @@ import io.mycat.statistic.StatisticCenter;
 import io.mycat.util.JsonUtil;
 import io.mycat.util.NameMap;
 import io.vertx.core.json.Json;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +67,7 @@ import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Collectors;
 
-
+@Getter
 public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatRouterConfigOps.class);
     final MycatRouterConfig original;

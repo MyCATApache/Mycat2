@@ -14,7 +14,9 @@
  */
 package io.mycat.sqlhandler;
 
+import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import io.mycat.DrdsSqlWithParams;
 import io.mycat.MycatDataContext;
 import io.mycat.Response;
 import io.mycat.api.collector.RowBaseIterator;
@@ -46,13 +48,14 @@ public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             op = testExample(request, dataContext, response);
             if (op.isPresent()) return op.get();
         }
-        HackRouter hackRouter = new HackRouter(request.getAst(), dataContext);
+        DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(request.getAst(), dataContext.getDefaultSchema());
+        HackRouter hackRouter = new HackRouter(drdsSqlWithParams.getParameterizedStatement(), dataContext);
         try {
             if (hackRouter.analyse()) {
                 Pair<String, String> plan = hackRouter.getPlan();
-                return response.proxySelect(Collections.singletonList(plan.getKey()), plan.getValue());
+                return response.proxySelect(Collections.singletonList(plan.getKey()), plan.getValue(),drdsSqlWithParams.getParams());
             } else {
-                return DrdsRunnerHelper.runOnDrds(dataContext, request.getAst(), response);
+                return DrdsRunnerHelper.runOnDrds(dataContext, drdsSqlWithParams, response);
             }
         } catch (Throwable throwable) {
             LOGGER.error(request.getAst().toString(), throwable);

@@ -352,7 +352,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    */
   public static final SqlBinaryOperator IS_NOT_DISTINCT_FROM =
       new SqlBinaryOperator(
-          "IS NOT DISTINCT FROM",
+          "<=>",
           SqlKind.IS_NOT_DISTINCT_FROM,
           30,
           true,

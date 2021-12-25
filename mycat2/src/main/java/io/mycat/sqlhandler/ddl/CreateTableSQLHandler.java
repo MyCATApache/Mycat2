@@ -17,6 +17,8 @@ package io.mycat.sqlhandler.ddl;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.*;
+import io.mycat.config.ClusterConfig;
+import io.mycat.config.MycatRouterConfig;
 import io.mycat.config.MycatRouterConfigOps;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
@@ -30,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import static io.mycat.config.MycatRouterConfigOps.getAutoHashProperties;
 
@@ -48,7 +51,7 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
         Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
         return lockFuture.flatMap(lock -> {
-            try{
+            try {
                 Map hint = Optional.ofNullable(request.getAst().getHeadHintsDirect())
                         .map(i -> i.get(0))
                         .map(i -> i.getText())
@@ -60,9 +63,9 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
                 MySqlCreateTableStatement ast = request.getAst();
                 String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
                 String tableName = ast.getTableName() == null ? null : SQLUtils.normalize(ast.getTableName());
-               if (ast.getSchema()==null){
-                   ast.setSchema(schemaName);
-               }
+                if (ast.getSchema() == null) {
+                    ast.setSchema(schemaName);
+                }
                 if (tableName == null) {
                     return response.sendError(new MycatException("CreateTableSQL need tableName"));
                 }
@@ -71,9 +74,9 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
                 }
                 createTable(hint, schemaName, tableName, ast);
                 return response.sendOk();
-            }catch (Throwable throwable){
+            } catch (Throwable throwable) {
                 return Future.failedFuture(throwable);
-            }finally {
+            } finally {
                 lock.release();
             }
         });
@@ -106,9 +109,18 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
                 } else if (createTableSql.getDbPartitionBy() == null && createTableSql.getTablePartitionBy() == null) {
                     ops.putNormalTable(schemaName, tableName, createTableSql);
                 } else {
+                    MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+                    int defaultStoreNodeNum = metadataManager.getDefaultStoreNodeNum();
+                    if (defaultStoreNodeNum == 0) {
+                        ops.getOriginal().getClusters().stream().filter(i -> "prototype".equals(i.getName()))
+                                .findFirst()
+                                .ifPresent(clusterConfig -> {
+                                    ClusterConfig config = JsonUtil.from(JsonUtil.toJson(clusterConfig), ClusterConfig.class);
+                                    ops.putReplica(config);
+                                });
+                    }
                     ops.putHashTable(schemaName, tableName, createTableSql, getAutoHashProperties(createTableSql));
                 }
-
             } else {
                 Map<String, Object> infos = hint;
                 switch (Objects.requireNonNull(infos.get("type")).toString()) {
@@ -135,8 +147,8 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
             ops.commit();
             MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
             TableHandler table = metadataManager.getTable(schemaName, tableName);
-            if (table==null){
-                throw new MycatException("create table fail:"+schemaName+"."+tableName);
+            if (table == null) {
+                throw new MycatException("create table fail:" + schemaName + "." + tableName);
             }
         }
     }
