@@ -79,16 +79,21 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         connnectionFutureCollection.add(Objects.requireNonNull(connectionFuture));
     }
 
+   public static interface Queryer<T>{
+
+        Observable<T>  runQuery(Future<NewMycatConnection> sessionConnection, String sql, List<Object> extractParams, MycatRowMetaData calciteRowMetaData);
+    }
+
     @NotNull
-    public synchronized List<Observable<Object[]>> getObservables(ImmutableMultimap<String, SqlString> expand, MycatRowMetaData calciteRowMetaData) {
-        LinkedList<Observable<Object[]>> observables = new LinkedList<>();
+    public synchronized <T> List<Observable<T>> getObservables(ImmutableMultimap<String, SqlString> expand, MycatRowMetaData calciteRowMetaData,Queryer<T> queryer) {
+        LinkedList<Observable<T>> observables = new LinkedList<>();
         for (Map.Entry<String, SqlString> entry : expand.entries()) {
             String key = context.resolveDatasourceTargetName(entry.getKey());
             SqlString sqlString = entry.getValue();
-            Observable<Object[]> observable = Observable.create(emitter -> {
+            Observable<T> observable = Observable.create(emitter -> {
                 Future<NewMycatConnection> sessionConnection = getConnection(key);
                 PromiseInternal<NewMycatConnection> promise = VertxUtil.newPromise();
-                Observable<Object[]> innerObservable = Objects.requireNonNull(VertxExecuter.runQuery(sessionConnection,
+                Observable<T> innerObservable = Objects.requireNonNull(queryer.runQuery(sessionConnection,
                         sqlString.getSql(),
                         MycatPreparedStatementUtil.extractParams(drdsSqlWithParams.getParams(), sqlString.getDynamicParameters()), calciteRowMetaData));
                 innerObservable.subscribe(objects -> {
@@ -139,7 +144,9 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = codeExecuterContext.getRelContext().get(node);
             MycatTransientSQLTableScan relNode = (MycatTransientSQLTableScan) mycatRelDatasourceSourceInfo.getRelNode();
             ImmutableMultimap<String, SqlString> multimap = ImmutableMultimap.of(relNode.getTargetName(), new SqlString(MycatSqlDialect.DEFAULT, relNode.getSql()));
-            return getObservables(multimap, mycatRelDatasourceSourceInfo.getColumnInfo());
+            return getObservables(multimap, mycatRelDatasourceSourceInfo.getColumnInfo(),
+                    (sessionConnection, sql, extractParams, calciteRowMetaData) -> VertxExecuter.runQuery(sessionConnection,sql,extractParams,calciteRowMetaData)
+            );
         }
 
         @Override
@@ -171,7 +178,9 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             List<PartitionGroup> sqlMap = getPartition(node).get();
             boolean share = mycatRelDatasourceSourceInfo.refCount > 0;
             List<Observable<Object[]>> observables = getObservables((view
-                    .apply(dataContext.getMergeUnionSize(), mycatRelDatasourceSourceInfo.getSqlTemplate(), sqlMap, drdsSqlWithParams.getParams())), mycatRelDatasourceSourceInfo.getColumnInfo());
+                    .apply(dataContext.getMergeUnionSize(), mycatRelDatasourceSourceInfo.getSqlTemplate(), sqlMap, drdsSqlWithParams.getParams())), mycatRelDatasourceSourceInfo.getColumnInfo(),
+                    (sessionConnection, sql, extractParams, calciteRowMetaData) -> VertxExecuter.runQuery(sessionConnection,sql,extractParams,calciteRowMetaData)
+            );
             if (share) {
                 observables = observables.stream().map(i -> i.share()).collect(Collectors.toList());
                 shareObservable.put(node, observables);

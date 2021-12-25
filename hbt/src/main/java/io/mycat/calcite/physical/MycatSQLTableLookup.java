@@ -5,11 +5,15 @@ import com.google.common.collect.ImmutableMultimap;
 import io.mycat.AsyncMycatDataContextImpl;
 import io.mycat.DrdsSqlWithParams;
 import io.mycat.beans.mycat.CopyMycatRowMetaData;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.*;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
+import io.mycat.newquery.NewMycatConnection;
+import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
+import io.vertx.core.Future;
 import lombok.Getter;
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.linq4j.tree.*;
@@ -269,7 +273,9 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
             DrdsSqlWithParams drdsSql = context.getDrdsSql();
             SqlNode sqlTemplate = newRightView.getSQLTemplate(DrdsSqlWithParams.isForUpdate(drdsSql.getParameterizedSQL()));
             ImmutableMultimap<String, SqlString> apply1 = newRightView.apply(context.getContext().getMergeUnionSize(),sqlTemplate, sqlMycatDataContext.getSqlMap(Collections.emptyMap(), newRightView, drdsSql, drdsSql.getHintDataNodeFilter()), drdsSql.getParams());
-            return Observable.merge(sqlMycatDataContext.getObservables(apply1, rightRowMetaData));
+            return Observable.merge(sqlMycatDataContext.getObservables(apply1, rightRowMetaData,
+                    (sessionConnection, sql, extractParams, calciteRowMetaData) -> VertxExecuter.runQuery(sessionConnection,sql,extractParams,calciteRowMetaData)
+            ));
         });
         return rightObservable;
     }
