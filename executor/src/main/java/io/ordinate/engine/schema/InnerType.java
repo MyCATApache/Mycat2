@@ -54,7 +54,7 @@ public enum InnerType {
     DATE_TYPE(ArrowTypes.DATE_TYPE, TimeStampMilliVector.class, long.class, "date", false, JDBCType.DATE),
     DATETIME_MILLI_TYPE(ArrowTypes.DATETIME_MILLI_TYPE, TimeStampMilliVector.class, long.class, "datetime", false, JDBCType.TIMESTAMP),
     SYMBOL_TYPE(ArrowTypes.STRING_TYPE, VarCharVector.class, String.class, "symbol", false, JDBCType.VARCHAR),
-    OBJECT_TYPE(null, null, Object.class, "object", false, JDBCType.JAVA_OBJECT),
+    OBJECT_TYPE(ArrowTypes.BINARY_TYPE, VarBinaryVector.class, Object.class, "object", false, JDBCType.JAVA_OBJECT),
     NULL_TYPE(ArrowTypes.NULL_TYPE, NullVector.class, Void.class, "null", false, JDBCType.NULL),
     ;
     private ArrowType arrowType;
@@ -78,6 +78,9 @@ public enum InnerType {
     }
 
     public static InnerType from(ArrowType type) {
+        if (type instanceof ArrowType.Decimal){
+            return InnerType.DECIMAL_TYPE;
+        }
         for (InnerType value : values()) {
             if (value.arrowType.equals(type)) {
                 return value;
