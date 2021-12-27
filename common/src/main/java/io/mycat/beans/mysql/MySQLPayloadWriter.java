@@ -30,6 +30,14 @@ public class MySQLPayloadWriter extends ByteArrayOutput implements
 
     //private final PacketSplitterImpl packetSplitter = new PacketSplitterImpl();
 
+    @Override
+    public byte[] toByteArray() {
+        if (super.buf.length == count) {
+            return super.buf;
+        }
+        return super.toByteArray();
+    }
+
     public MySQLPayloadWriter() {
     }
 

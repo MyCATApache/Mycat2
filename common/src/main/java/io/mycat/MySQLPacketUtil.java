@@ -330,21 +330,36 @@ public class MySQLPacketUtil {
 
     public static byte[] generateMySQLPacket(int packetId, byte[] packet) {
         try {
-            PacketSplitterImpl packetSplitter = new PacketSplitterImpl();
-            int wholePacketSize = MySQLPacketSplitter.caculWholePacketSize(packet.length);
-            try (MySQLPayloadWriter byteArray = new MySQLPayloadWriter(
-                    wholePacketSize)) {
-                packetSplitter.init(packet.length);
-                while (packetSplitter.nextPacketInPacketSplitter()) {
-                    int offset = packetSplitter.getOffsetInPacketSplitter();
-                    int len = packetSplitter.getPacketLenInPacketSplitter();
+            if (packet.length < PacketSplitterImpl.MAX_PACKET_SIZE) {
+                int wholePacketSize = MySQLPacketSplitter.caculWholePacketSize(packet.length);
+                try (MySQLPayloadWriter byteArray = new MySQLPayloadWriter(
+                        wholePacketSize)) {
+                    int offset = 0;
+                    int len = packet.length;
                     byteArray.writeFixInt(3, len);
                     byteArray.write(packetId);
                     byteArray.write(packet, offset, len);
                     ++packetId;
+                    return byteArray.toByteArray();
                 }
-                return byteArray.toByteArray();
+            } else {
+                PacketSplitterImpl packetSplitter = new PacketSplitterImpl();
+                int wholePacketSize = MySQLPacketSplitter.caculWholePacketSize(packet.length);
+                try (MySQLPayloadWriter byteArray = new MySQLPayloadWriter(
+                        wholePacketSize)) {
+                    packetSplitter.init(packet.length);
+                    while (packetSplitter.nextPacketInPacketSplitter()) {
+                        int offset = packetSplitter.getOffsetInPacketSplitter();
+                        int len = packetSplitter.getPacketLenInPacketSplitter();
+                        byteArray.writeFixInt(3, len);
+                        byteArray.write(packetId);
+                        byteArray.write(packet, offset, len);
+                        ++packetId;
+                    }
+                    return byteArray.toByteArray();
+                }
             }
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
