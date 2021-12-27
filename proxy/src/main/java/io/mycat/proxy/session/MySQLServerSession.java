@@ -148,12 +148,13 @@ public interface MySQLServerSession<T> {
     if (hasMoreResult) {
       serverStatus |= MySQLServerStatusFlags.MORE_RESULTS;
     }
+    int capabilities = getCapabilities();
     byte[] bytes = MySQLPacketUtil
         .generateOk(0, getWarningCount(), serverStatus, affectedRows(),
             getLastInsertId(),
-            MySQLServerCapabilityFlags.isClientProtocol41(getCapabilities()),
-            MySQLServerCapabilityFlags.isKnowsAboutTransactions(getCapabilities()),
-                MySQLServerCapabilityFlags.isSessionVariableTracking(getCapabilities()), ""
+            MySQLServerCapabilityFlags.isClientProtocol41(capabilities),
+            MySQLServerCapabilityFlags.isKnowsAboutTransactions(capabilities),
+                MySQLServerCapabilityFlags.isSessionVariableTracking(capabilities), ""
 
         );
     return writeBytes(bytes, !hasMoreResult);
