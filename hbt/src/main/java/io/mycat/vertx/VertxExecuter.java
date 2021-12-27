@@ -667,7 +667,7 @@ public class VertxExecuter {
                         .flatMap(new Function<SqlConnection, Future<Void>>() {
                             @Override
                             public Future<Void> apply(SqlConnection connection) {
-                                Future<Void> future2 = Process.getCurrentProcess().trace(connection).prepare(sql).flatMap(preparedStatement -> {
+                                Future<Void> future2 = connection.prepare(sql).flatMap(preparedStatement -> {
                                     List<Tuple> collect = values.stream().map(u -> Tuple.from(u)).collect(Collectors.toList());
                                     Future<RowSet<Row>> rowSetFuture = preparedStatement.query().executeBatch(collect);
                                     Future<Void> map = rowSetFuture.map(rows -> {
