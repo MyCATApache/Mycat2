@@ -101,7 +101,10 @@ public class VertxMycatServer implements MycatServer {
         @Override
         public void start() throws Exception {
             Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
-            NetServer netServer = vertx.createNetServer(new NetServerOptions().setReusePort(true));//创建代理服务器
+            NetServerOptions netServerOptions = new NetServerOptions();
+            netServerOptions.setReusePort(true);
+            netServerOptions.setReuseAddress(true);
+            NetServer netServer = vertx.createNetServer();//创建代理服务器
             netServer.connectHandler(socket -> {
                 VertxMySQLAuthHandler vertxMySQLAuthHandler = new VertxMySQLAuthHandler(socket, MycatSessionManager.this);
             }).listen(this.serverConfig.getServer().getPort(),
