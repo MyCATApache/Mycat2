@@ -133,11 +133,8 @@ public class VertxSessionImpl implements VertxSession {
             }
         }
         if (!close) {
-            Future<Void> future = socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload)));
-            if (end) {
-                this.socket.resume();
-            }
-            return VertxUtil.castPromise(future);
+            socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload)), null);
+            return VertxUtil.castPromise(Future.succeededFuture());
         } else {
             return VertxUtil.castPromise(Future.failedFuture("session is closed"));
         }
@@ -189,10 +186,9 @@ public class VertxSessionImpl implements VertxSession {
         if (mycatDataContext != null) {
             TransactionSession transactionSession = mycatDataContext.getTransactionSession();
             if (transactionSession != null) {
-                future= transactionSession.closeStatementState();
+                future = transactionSession.closeStatementState();
             }
         }
-        this.socket.resume();
         return future;
     }
 
