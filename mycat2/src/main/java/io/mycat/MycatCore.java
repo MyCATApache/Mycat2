@@ -107,8 +107,8 @@ public class MycatCore {
         vertxOptions.setMaxWorkerExecuteTime(workerPool.getTaskTimeout());
         vertxOptions.setMaxWorkerExecuteTimeUnit(TimeUnit.valueOf(workerPool.getTimeUnit()));
         vertxOptions.setEventLoopPoolSize(serverConfig.getServer().getReactorNumber());
-        vertxOptions.getMetricsOptions().setEnabled(true);
-        vertxOptions.getMetricsOptions().setFactory(new MycatVertxMetricsFactory());
+//        vertxOptions.getMetricsOptions().setEnabled(true);
+//        vertxOptions.getMetricsOptions().setFactory(new MycatVertxMetricsFactory());
         this.mycatServer = newMycatServer(serverConfig);
 
         HashMap<Class, Object> context = new HashMap<>();
