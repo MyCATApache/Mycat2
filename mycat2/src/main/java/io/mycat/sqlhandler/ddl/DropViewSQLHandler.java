@@ -41,7 +41,7 @@ public class DropViewSQLHandler extends AbstractSQLHandler<SQLDropViewStatement>
         SQLDropViewStatement ast = request.getAst();
         SQLExprTableSource sqlExprTableSource = ast.getTableSources().get(0);
         resolveSQLExprTableSource(sqlExprTableSource, dataContext);
-        Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
+        Future<Lock> lockFuture = lockService.getLock(DDL_LOCK);
         return lockFuture.flatMap(lock -> {
             try {
                 String schemaName = Optional.ofNullable(sqlExprTableSource.getSchema()).orElse(dataContext.getDefaultSchema());

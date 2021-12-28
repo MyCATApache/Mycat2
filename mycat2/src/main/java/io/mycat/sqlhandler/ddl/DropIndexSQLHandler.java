@@ -31,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatement> {
@@ -39,7 +38,7 @@ public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatemen
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLDropIndexStatement> request, MycatDataContext dataContext, Response response){
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
+        Future<Lock> lockFuture = lockService.getLock(DDL_LOCK);
         return lockFuture.flatMap(lock -> {
             try{
                 SQLDropIndexStatement sqlDropIndexStatement = request.getAst();

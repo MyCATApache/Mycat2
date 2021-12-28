@@ -32,7 +32,7 @@ public class DropSequenceSQLHandler extends AbstractSQLHandler<com.alibaba.druid
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLDropSequenceStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
+        Future<Lock> lockFuture = lockService.getLock(DDL_LOCK);
         return lockFuture.flatMap(lock -> {
             try {
                 SQLDropSequenceStatement ast = request.getAst();
