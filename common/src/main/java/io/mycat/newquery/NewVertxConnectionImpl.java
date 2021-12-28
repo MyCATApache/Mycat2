@@ -259,7 +259,7 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
         MysqlCollector collector;
         private String sql;
         List<Object> params;
-
+        PreparedStatement preparedStatement;
         public CursorHandler(MysqlCollector collector, String sql, List<Object> params) {
             this.collector = collector;
             this.sql = sql;
@@ -275,11 +275,16 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
                     cursor = null;
                 }
             }
+            if (preparedStatement!=null){
+                preparedStatement.close();
+                preparedStatement = null;
+            }
             return Future.succeededFuture();
         }
 
         @Override
         public void handle(PreparedStatement preparedStatement) {
+            this.preparedStatement = preparedStatement;
             try {
                 // Create a cursor
                 if (params.isEmpty()) {
@@ -343,6 +348,10 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
                     cursor = null;
                 }
             }
+            if (preparedStatement!=null){
+                preparedStatement.close();
+                preparedStatement = null;
+            }
             return Future.succeededFuture();
         }
     }
@@ -350,10 +359,37 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
     @Override
     public void prepareQuery(String sql, List<Object> params, MysqlCollector collector) {
         LOGGER.debug("sql:{}", sql);
-        Future<PreparedStatement> preparedStatementFuture = mySQLConnection.prepare(sql);
-        this.cursorHandler = new CursorHandler(collector, sql, params);
-        preparedStatementFuture.onSuccess(cursorHandler)
-                .onFailure(throwable -> collector.onError(mapException(throwable)));
+        Future<io.vertx.sqlclient.RowSet<Row>> execute = mySQLConnection.query(sql).execute();
+        execute=  execute.onFailure(new Handler<Throwable>() {
+            @Override
+            public void handle(Throwable event) {
+                collector.onError(event);
+            }
+        });
+        execute.onSuccess(new Handler<io.vertx.sqlclient.RowSet<Row>>() {
+            @Override
+            public void handle(io.vertx.sqlclient.RowSet<Row> event) {
+                try {
+                    List<ColumnDefinition> columnDescriptors = (List) event.columnDescriptors();
+                    MycatRowMetaData mycatRowMetaData = toColumnMetaData(columnDescriptors);
+                    collector.onColumnDef(mycatRowMetaData);
+                    int columnCount = mycatRowMetaData.getColumnCount();
+                    RowIterator<Row> iterator = event.iterator();
+                    while (iterator.hasNext()) {
+                        Row next = iterator.next();
+                        Object[] objects = new Object[next.size()];
+                        for (int i = 0; i < columnCount; i++) {
+                            objects[i] = next.getValue(i);
+                        }
+                        collector.onRow(objects);
+                    }
+                    collector.onComplete();
+                }catch (Exception e){
+                    collector.onError(e);
+                }
+
+            }
+        });
     }
 
     public static MycatRowMetaData toColumnMetaData(List<ColumnDefinition> event) {
@@ -373,8 +409,8 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
                 final long columnLength = columnDefinition.columnLength();
                 final DataType type = columnDefinition.type();
                 final int flags = columnDefinition.flags();
-                 byte decimals = columnDefinition.decimals();
-                if (decimals == 31){
+                byte decimals = columnDefinition.decimals();
+                if (decimals == 31) {
                     decimals = 0;
                 }
                 ColumnDefPacketImpl mySQLFieldInfo = new ColumnDefPacketImpl();
@@ -414,7 +450,8 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
             public void subscribe(@NonNull ObservableEmitter<VectorSchemaRoot> emitter) throws Throwable {
                 Future<PreparedStatement> preparedStatementFuture = mySQLConnection.prepare(sql);
                 preparedStatementFuture.onSuccess(new VectorCursorHandler(emitter, params))
-                        .onFailure(throwable -> emitter.onError(mapException(throwable)));
+                        .onFailure(throwable -> emitter.onError(mapException(throwable)))
+                        .onComplete(event -> preparedStatementFuture.onSuccess(event1 -> event1.close()));
             }
         });
     }
@@ -521,7 +558,13 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
     @Override
     public Future<Void> close() {
         LOGGER.debug("close");
-        return mySQLConnection.close();
+        synchronized (NewVertxConnectionImpl.this) {
+            if (mySQLConnection != null) {
+                mySQLConnection.close();
+                mySQLConnection = null;
+            }
+        }
+        return Future.succeededFuture();
     }
 
     @Override
@@ -529,7 +572,15 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
         LOGGER.debug("abandonConnection");
         Future<Void> abandonQuery = abandonQuery();
         abandonQuery.onComplete(unused -> mySQLConnection.resetConnection()
-                .onComplete(voidAsyncResult -> mySQLConnection.close()));
+                .onComplete(voidAsyncResult -> {
+                    synchronized (NewVertxConnectionImpl.this) {
+                        if (mySQLConnection != null) {
+                            mySQLConnection.close();
+                            mySQLConnection = null;
+                        }
+                    }
+
+                }));
 
     }
 

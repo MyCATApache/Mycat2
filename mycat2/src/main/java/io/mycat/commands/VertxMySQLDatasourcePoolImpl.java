@@ -18,12 +18,16 @@ package io.mycat.commands;
 
 import com.mysql.cj.conf.ConnectionUrlParser;
 import com.mysql.cj.conf.HostInfo;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.monitor.DatabaseInstanceEntry;
 import io.mycat.monitor.InstanceMonitor;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.newquery.NewVertxConnectionImpl;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.mysqlclient.impl.MySQLConnectionImpl;
@@ -31,6 +35,8 @@ import io.vertx.mysqlclient.impl.MySQLPoolImpl;
 import io.vertx.sqlclient.PoolOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.function.Function;
 
 public class VertxMySQLDatasourcePoolImpl extends AbstractMycatDatasourcePool {
     private static final Logger LOGGER = LoggerFactory.getLogger(VertxMySQLDatasourcePoolImpl.class);
@@ -50,18 +56,30 @@ public class VertxMySQLDatasourcePoolImpl extends AbstractMycatDatasourcePool {
                 .setDatabase(hostInfo.getDatabase())
                 .setUser(config.getUser())
                 .setPassword(config.getPassword())
-                .setCachePreparedStatements(true)
+                .setCachePreparedStatements(false)
+                .setReconnectAttempts(config.getMaxRetryCount())
+                .setConnectTimeout((int)config.getMaxConnectTimeout())
+                .setTcpKeepAlive(true)
+                .setSsl(false)
 //                .setCollation("utf8mb4")
                 .setCharset("utf8")
                 .setUseAffectedRows(true);
         poolOptions = new PoolOptions()
-                .setMaxSize(config.getMaxCon())
-                .setIdleTimeout((int) config.getIdleTimeout());
+//                .setEventLoopSize(8)
+//                .setMaxSize(config.getMaxCon())
+//                .setMaxWaitQueueSize(-1)
+//                .se
+//                .setIdleTimeout()
+//                .setIdleTimeout((int) config.getIdleTimeout())
+//                .setConnectionTimeout(config.getQueryTimeout())
+//                .setMaxWaitQueueSize(65535)
+        ;
 
         this.mySQLPool = getMySQLPool();
     }
 
     private MySQLPoolImpl getMySQLPool() {
+        Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
         return (MySQLPoolImpl) MySQLPool.pool(connectOptions, poolOptions);
     }
 
@@ -78,7 +96,7 @@ public class VertxMySQLDatasourcePoolImpl extends AbstractMycatDatasourcePool {
     @Override
     public Future<NewMycatConnection> getConnection() {
         LOGGER.debug("getConnection");
-        return mySQLPool.getConnection().map(sqlConnection -> {
+        Future<NewVertxConnectionImpl> map = mySQLPool.getConnection().map(sqlConnection -> {
             DatabaseInstanceEntry stat = DatabaseInstanceEntry.stat(targetName);
             stat.plusCon();
             stat.plusQps();
@@ -104,6 +122,13 @@ public class VertxMySQLDatasourcePoolImpl extends AbstractMycatDatasourcePool {
                 }
             };
         });
+        map = map.onFailure(new Handler<Throwable>() {
+            @Override
+            public void handle(Throwable event) {
+                System.out.println(event);
+            }
+        });
+        return (Future) map;
     }
 
     @Override
