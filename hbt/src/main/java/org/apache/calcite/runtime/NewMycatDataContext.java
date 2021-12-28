@@ -55,4 +55,10 @@ public interface NewMycatDataContext extends DataContext {
     public DrdsSqlWithParams getDrdsSql();
 
     public MycatDataContext getContext();
+
+    public Integer getLock(String name,int timeout);
+
+    public Integer releaseLock(String name);
+
+    public Integer isFreeLock(String name);
 }

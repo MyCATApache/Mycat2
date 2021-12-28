@@ -16,23 +16,33 @@
  */
 package io.mycat;
 
+import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.calcite.CodeExecuterContext;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import lombok.Getter;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.schema.SchemaPlus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+
 @Getter
 public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NewMycatDataContextImpl.class);
     protected final MycatDataContext context;
     protected final CodeExecuterContext codeExecuterContext;
     protected final DrdsSqlWithParams drdsSqlWithParams;
 
     public NewMycatDataContextImpl(MycatDataContext dataContext,
                                    CodeExecuterContext context,
-                                   DrdsSqlWithParams  drdsSqlWithParams) {
+                                   DrdsSqlWithParams drdsSqlWithParams) {
         this.context = dataContext;
         this.codeExecuterContext = context;
         this.drdsSqlWithParams = drdsSqlWithParams;
@@ -109,5 +119,44 @@ public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
 
     public MycatDataContext getContext() {
         return context;
+    }
+
+
+    public Integer getLock(String name, int timeout) {
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype())) {
+            Connection rawConnection = connection.getRawConnection();
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(rawConnection, "select GET_LOCK(?,?)",
+                    Arrays.asList(name,timeout));
+            return ((Number)maps.get(0).values().iterator().next()).intValue();
+        } catch (Exception e) {
+            LOGGER.error("",e);
+            return null;
+        }
+    }
+
+    public Integer releaseLock(String name) {
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype())) {
+            Connection rawConnection = connection.getRawConnection();
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(rawConnection, "select RELEASE_LOCK(?)",
+                    Arrays.asList(name));
+            return ((Number)maps.get(0).values().iterator().next()).intValue();
+        } catch (Exception e) {
+            LOGGER.error("",e);
+            return null;
+        }
+    }
+    public Integer isFreeLock(String name) {
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype())) {
+            Connection rawConnection = connection.getRawConnection();
+            List<Map<String, Object>> maps = JdbcUtils.executeQuery(rawConnection, "select IS_FREE_LOCK(?)",
+                    Arrays.asList(name));
+            return ((Number)maps.get(0).values().iterator().next()).intValue();
+        } catch (Exception e) {
+            LOGGER.error("",e);
+            return null;
+        }
     }
 }

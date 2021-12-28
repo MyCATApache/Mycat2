@@ -30,6 +30,9 @@ import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.sqlfunction.cmpfunction.StrictEqualFunction;
 import io.mycat.calcite.sqlfunction.datefunction.*;
 import io.mycat.calcite.sqlfunction.infofunction.*;
+import io.mycat.calcite.sqlfunction.lockfunction.MycatGetLockFunction;
+import io.mycat.calcite.sqlfunction.lockfunction.MycatIsFreeLockFunction;
+import io.mycat.calcite.sqlfunction.lockfunction.MycatReleaseLockFunction;
 import io.mycat.calcite.sqlfunction.mathfunction.*;
 import io.mycat.calcite.sqlfunction.stringfunction.*;
 import io.mycat.calcite.table.SingeTargetSQLTable;
@@ -406,7 +409,10 @@ public enum MycatCalciteSupport implements Context {
                             RandFunction.INSTANCE,
                             TruncateFunction.INSTANCE,
                             DaynameFunction.INSTANCE,
-                            DayOfYearFunction.INSTANCE
+                            DayOfYearFunction.INSTANCE,
+                            MycatGetLockFunction.INSTANCE,
+                            MycatReleaseLockFunction.INSTANCE,
+                            MycatIsFreeLockFunction.INSTANCE
                     ).forEach(i -> build.put(i.getName(), i));
                     build.put("CHARACTER_LENGTH", CharLengthFunction.INSTANCE);
                     build.put("LCASE", LowerFunction.INSTANCE);
