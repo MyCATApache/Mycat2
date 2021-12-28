@@ -146,7 +146,9 @@ public class MetadataManager {
     public void recomputeERRelation() {
         Stream<ShardingTable> shardingTables = this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream()).filter(i -> i.getType() == LogicTableType.SHARDING)
                 .map(i -> (ShardingTable) i);
-        Map<String, List<ShardingTable>> res = shardingTables.collect(Collectors.groupingBy(i -> i.getShardingFuntion().getErUniqueID()));
+        Map<String, List<ShardingTable>> res = shardingTables
+                .filter(i -> i.getShardingFuntion().getErUniqueID() != null)
+                .collect(Collectors.groupingBy(i -> i.getShardingFuntion().getErUniqueID()));
         this.erTableGroup.clear();
         this.erTableGroup.putAll(res);
 
@@ -279,7 +281,7 @@ public class MetadataManager {
         }
         for (Map.Entry<String, ViewConfig> e : value.getViews().entrySet()) {
             String viewName = e.getKey();
-            removeView(schemaName,viewName);
+            removeView(schemaName, viewName);
             ViewConfig viewConfig = e.getValue();
             addView(schemaName, viewName, viewConfig);
         }
@@ -287,10 +289,10 @@ public class MetadataManager {
 
     public void addView(String schemaNameArg, String viewName, ViewConfig viewConfig) {
         String createViewSQL = viewConfig.getCreateViewSQL();
-        SQLCreateViewStatement sqlStatement =(SQLCreateViewStatement) SQLUtils.parseSingleMysqlStatement(createViewSQL);
-        List<String> columns = sqlStatement.getColumns().stream().map(i->SQLUtils.normalize(i.toString())).collect(Collectors.toList());
+        SQLCreateViewStatement sqlStatement = (SQLCreateViewStatement) SQLUtils.parseSingleMysqlStatement(createViewSQL);
+        List<String> columns = sqlStatement.getColumns().stream().map(i -> SQLUtils.normalize(i.toString())).collect(Collectors.toList());
         SQLSelect query = sqlStatement.getSubQuery();
-        query.accept(new MySqlASTVisitorAdapter(){
+        query.accept(new MySqlASTVisitorAdapter() {
             @Override
             public boolean visit(SQLExprTableSource x) {
                 String schemaName = x.getSchema();
@@ -302,10 +304,10 @@ public class MetadataManager {
         });
         String subQuery = query.toString();
         SchemaHandler schemaHandler = schemaMap.get(schemaNameArg);
-        schemaHandler.views().put(viewName,ViewHandlerImpl.create(schemaNameArg,viewName,columns,subQuery));
+        schemaHandler.views().put(viewName, ViewHandlerImpl.create(schemaNameArg, viewName, columns, subQuery));
     }
 
-    public void removeView(String schemaName,String viewName) {
+    public void removeView(String schemaName, String viewName) {
         SchemaHandler schemaHandler = schemaMap.get(schemaName);
         schemaHandler.views().remove(viewName);
     }
@@ -625,9 +627,9 @@ public class MetadataManager {
                         break;
                 }
             }
-            for (ViewHandler viewHandler:schemaHandler.views().values()){
+            for (ViewHandler viewHandler : schemaHandler.views().values()) {
                 ViewConfig config = viewHandler.getConfig();
-                logicSchemaConfig.getViews().put(viewHandler.getViewName(),config);
+                logicSchemaConfig.getViews().put(viewHandler.getViewName(), config);
             }
         }
         return schemaConfigs;
