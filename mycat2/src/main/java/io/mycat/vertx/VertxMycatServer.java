@@ -23,6 +23,7 @@ import io.mycat.config.ServerConfig;
 import io.mycat.config.ThreadPoolExecutorConfig;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetServer;
 import io.vertx.core.net.NetServerOptions;
@@ -87,7 +88,7 @@ public class VertxMycatServer implements MycatServer {
 
     @Override
     public int kill(List<Long> ids) {
-      return   server.kill(ids);
+        return server.kill(ids);
     }
 
     public static class MycatSessionManager implements MycatServer {
@@ -104,18 +105,29 @@ public class VertxMycatServer implements MycatServer {
             NetServerOptions netServerOptions = new NetServerOptions();
             netServerOptions.setReusePort(true);
             netServerOptions.setReuseAddress(true);
-            NetServer netServer = vertx.createNetServer();//创建代理服务器
-            netServer.connectHandler(socket -> {
-                VertxMySQLAuthHandler vertxMySQLAuthHandler = new VertxMySQLAuthHandler(socket, MycatSessionManager.this);
-            }).listen(this.serverConfig.getServer().getPort(),
-                    this.serverConfig.getServer().getIp(), listenResult -> {//代理服务器的监听端口
-                        if (listenResult.succeeded()) {
-                            LOGGER.info("Mycat Vertx server started up.");
-                        } else {
-                            LOGGER.error("Mycat Vertx server exit. because: " + listenResult.cause().getMessage(), listenResult.cause());
-                            System.exit(1);
-                        }
-                    });
+            DeploymentOptions deploymentOptions = new DeploymentOptions();
+            deploymentOptions.setWorker(false);
+            for (int i = 0; i < serverConfig.getServer().getReactorNumber(); i++) {
+                vertx.deployVerticle(new AbstractVerticle() {
+                    @Override
+                    public void start(Promise<Void> startPromise) throws Exception {
+                        super.start(startPromise);
+                        NetServer netServer = vertx.createNetServer(netServerOptions);//创建代理服务器
+                        netServer.connectHandler(socket -> {
+                            VertxMySQLAuthHandler vertxMySQLAuthHandler = new VertxMySQLAuthHandler(socket, MycatSessionManager.this);
+                        }).listen(serverConfig.getServer().getPort(),
+                                serverConfig.getServer().getIp(), listenResult -> {//代理服务器的监听端口
+                                    if (listenResult.succeeded()) {
+                                        LOGGER.info("Mycat Vertx server " + super.deploymentID() +
+                                                " started up.");
+                                    } else {
+                                        LOGGER.error("Mycat Vertx server exit. because: " + listenResult.cause().getMessage(), listenResult.cause());
+                                    }
+                                });
+                    }
+                }, deploymentOptions);
+            }
+
         }
 
         @Override
@@ -123,8 +135,8 @@ public class VertxMycatServer implements MycatServer {
             int count = 0;
             for (VertxSession session : sessions) {
                 for (Long id : ids) {
-                    if(session.getDataContext().getSessionId() == id){
-                        session.close(false,"kill");
+                    if (session.getDataContext().getSessionId() == id) {
+                        session.close(false, "kill");
                         count++;
                     }
                 }
