@@ -17,7 +17,7 @@
     "ip":"0.0.0.0",
     "mycatId":1,
     "port":8066,
-    "reactorNumber":1,
+    "reactorNumber":8,
     "tempDirectory":null,
     "timeWorkerPool":{
       "corePoolSize":0,
