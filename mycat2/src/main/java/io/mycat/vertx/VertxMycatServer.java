@@ -110,8 +110,7 @@ public class VertxMycatServer implements MycatServer {
             for (int i = 0; i < serverConfig.getServer().getReactorNumber(); i++) {
                 vertx.deployVerticle(new AbstractVerticle() {
                     @Override
-                    public void start(Promise<Void> startPromise) throws Exception {
-                        super.start(startPromise);
+                    public void start() throws Exception {
                         NetServer netServer = vertx.createNetServer(netServerOptions);//创建代理服务器
                         netServer.connectHandler(socket -> {
                             VertxMySQLAuthHandler vertxMySQLAuthHandler = new VertxMySQLAuthHandler(socket, MycatSessionManager.this);
