@@ -53,7 +53,7 @@ public class CreateViewSQLHandler extends AbstractSQLHandler<SQLCreateViewStatem
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
         SQLCreateViewStatement ast = request.getAst();
         resolveSQLExprTableSource(ast.getTableSource(), dataContext);
-        Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
+        Future<Lock> lockFuture = lockService.getLock(DDL_LOCK);
         return lockFuture.flatMap(lock -> {
             try {
                 String schemaName = Optional.ofNullable(ast.getSchema()).orElse(dataContext.getDefaultSchema());

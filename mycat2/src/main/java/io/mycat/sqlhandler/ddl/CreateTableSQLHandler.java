@@ -18,7 +18,6 @@ import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.*;
 import io.mycat.config.ClusterConfig;
-import io.mycat.config.MycatRouterConfig;
 import io.mycat.config.MycatRouterConfigOps;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
@@ -32,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import static io.mycat.config.MycatRouterConfigOps.getAutoHashProperties;
 
@@ -49,7 +47,7 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
     @Override
     protected Future<Void> onExecute(SQLRequest<MySqlCreateTableStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
+        Future<Lock> lockFuture = lockService.getLock(DDL_LOCK);
         return lockFuture.flatMap(lock -> {
             try {
                 Map hint = Optional.ofNullable(request.getAst().getHeadHintsDirect())

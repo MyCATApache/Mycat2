@@ -20,7 +20,6 @@ import com.alibaba.druid.sql.ast.statement.SQLAlterTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.*;
-import io.mycat.config.PrototypeServer;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.prototypeserver.mysql.PrototypeService;
 import io.mycat.sqlhandler.AbstractSQLHandler;
@@ -39,7 +38,7 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLAlterTableStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
+        Future<Lock> lockFuture = lockService.getLock(DDL_LOCK);
         return lockFuture.flatMap(lock -> {
             try {
                 SQLAlterTableStatement sqlAlterTableStatement = request.getAst();

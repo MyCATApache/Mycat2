@@ -40,7 +40,7 @@ public class CreateDatabaseSQLHandler extends AbstractSQLHandler<SQLCreateDataba
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLCreateDatabaseStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
+        Future<Lock> lockFuture = lockService.getLock(DDL_LOCK);
        return lockFuture.flatMap(lock -> {
            MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
            SQLCreateDatabaseStatement ast = request.getAst();

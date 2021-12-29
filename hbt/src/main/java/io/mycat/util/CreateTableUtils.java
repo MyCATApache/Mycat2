@@ -80,6 +80,7 @@ public class CreateTableUtils {
             try {
                 return innerNormalizeCreateTableSQLToMySQL(createTableSQL.substring(0, i));
             } catch (Throwable e) {
+                LOGGER.error("", throwable);
                 continue;
             }
         }

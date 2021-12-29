@@ -15,6 +15,9 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.MycatException;
 import io.mycat.calcite.sqlfunction.datefunction.*;
 import io.mycat.calcite.sqlfunction.infofunction.*;
+import io.mycat.calcite.sqlfunction.lockfunction.MycatGetLockFunction;
+import io.mycat.calcite.sqlfunction.lockfunction.MycatIsFreeLockFunction;
+import io.mycat.calcite.sqlfunction.lockfunction.MycatReleaseLockFunction;
 import io.mycat.calcite.sqlfunction.mathfunction.Log2Function;
 import io.mycat.calcite.sqlfunction.mathfunction.LogFunction;
 import io.mycat.calcite.sqlfunction.mathfunction.RandFunction;
@@ -1964,6 +1967,21 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             }
             case "ISNULL": {
                 functionOperator = IS_NULL;
+                sqlNode = Objects.requireNonNull(functionOperator).createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "GET_LOCK": {
+                functionOperator = MycatGetLockFunction.INSTANCE;
+                sqlNode = Objects.requireNonNull(functionOperator).createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "RELEASE_ALL": {
+                functionOperator = MycatReleaseLockFunction.INSTANCE;
+                sqlNode = Objects.requireNonNull(functionOperator).createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "IS_FREE_LOCK": {
+                functionOperator = MycatIsFreeLockFunction.INSTANCE;
                 sqlNode = Objects.requireNonNull(functionOperator).createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }

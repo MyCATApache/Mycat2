@@ -29,13 +29,12 @@ import io.vertx.core.Future;
 import io.vertx.core.shareddata.Lock;
 
 import java.util.Optional;
-import java.util.function.Function;
 
 public class CreateSequenceHandler extends AbstractSQLHandler<SQLCreateSequenceStatement> {
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLCreateSequenceStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
+        Future<Lock> lockFuture = lockService.getLock(DDL_LOCK);
         return lockFuture.flatMap(lock -> {
             SQLCreateSequenceStatement requestAst = request.getAst();
 
