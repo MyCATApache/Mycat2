@@ -16,22 +16,22 @@
  */
 package io.mycat;
 
-import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.calcite.CodeExecuterContext;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.config.MycatServerConfig;
 import lombok.Getter;
+import lombok.SneakyThrows;
+import okhttp3.Response;
+import okhttp3.*;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.schema.SchemaPlus;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Getter
 public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
@@ -123,40 +123,52 @@ public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
 
 
     public Integer getLock(String name, int timeout) {
-        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype())) {
-            Connection rawConnection = connection.getRawConnection();
-            List<Map<String, Object>> maps = JdbcUtils.executeQuery(rawConnection, "select GET_LOCK(?,?)",
-                    Arrays.asList(name,timeout));
-            return ((Number)maps.get(0).values().iterator().next()).intValue();
-        } catch (Exception e) {
-            LOGGER.error("",e);
-            return null;
-        }
+        return doLock(name, "GET_LOCK", timeout);
     }
 
+    @SneakyThrows
     public Integer releaseLock(String name) {
-        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype())) {
-            Connection rawConnection = connection.getRawConnection();
-            List<Map<String, Object>> maps = JdbcUtils.executeQuery(rawConnection, "select RELEASE_LOCK(?)",
-                    Arrays.asList(name));
-            return ((Number)maps.get(0).values().iterator().next()).intValue();
-        } catch (Exception e) {
-            LOGGER.error("",e);
-            return null;
-        }
+        return doLock(name, "RELEASE_LOCK", 0);
     }
-    public Integer isFreeLock(String name) {
-        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype())) {
-            Connection rawConnection = connection.getRawConnection();
-            List<Map<String, Object>> maps = JdbcUtils.executeQuery(rawConnection, "select IS_FREE_LOCK(?)",
-                    Arrays.asList(name));
-            return ((Number)maps.get(0).values().iterator().next()).intValue();
-        } catch (Exception e) {
-            LOGGER.error("",e);
-            return null;
+
+    @Nullable
+    private Integer doLock(String name, String method, long timeout) {
+        try {
+            MycatServerConfig mycatServerConfig = MetaClusterCurrent.wrapper(MycatServerConfig.class);
+            Map<String, Object> properties = mycatServerConfig.getProperties();
+            String lock_server_url = (String) properties.getOrDefault("lock_service_address", "http://localhost:9066/lockserivce");
+            OkHttpClient.Builder builder = new OkHttpClient.Builder();
+            if (timeout > 0) {
+                builder.connectTimeout(timeout, TimeUnit.MILLISECONDS);
+            }
+            if (timeout > 0) {
+                builder.readTimeout(timeout, TimeUnit.MILLISECONDS);
+            }
+            OkHttpClient okHttpClient = builder.build();
+            RequestBody body = new FormBody.Builder()
+                    .add("method", method)
+                    .add("name", name)
+                    .add("timeout", String.valueOf(timeout))
+                    .add("id",String.valueOf(getContext().getSessionId()))
+                    .build();
+
+            final Request request = new Request.Builder()
+                    .url(lock_server_url)
+                    .post(body)
+                    .build();
+            Call call = okHttpClient.newCall(request);
+            Response response = call.execute();
+            ResponseBody responseBody = response.body();
+            String s = new String(responseBody.bytes());
+            if (s.contains("1")) return 1;
+            if (s.contains("0")) return 0;
+         } catch (Exception e) {
+            LOGGER.error("", e);
         }
+        return 0;
+    }
+
+    public Integer isFreeLock(String name) {
+        return doLock(name, "IS_FREE_LOCK", 0);
     }
 }

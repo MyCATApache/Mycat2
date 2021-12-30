@@ -33,8 +33,8 @@ public class MycatIsFreeLockFunction extends MycatSqlDefinedFunction {
 
     public MycatIsFreeLockFunction() {
         super("IS_FREE_LOCK",
-                ReturnTypes.INTEGER,
-                InferTypes.RETURN_TYPE, OperandTypes.VARIADIC, null, SqlFunctionCategory.SYSTEM);
+                ReturnTypes.BIGINT,
+                null,  OperandTypes.STRING, null, SqlFunctionCategory.SYSTEM);
     }
 
     @Override

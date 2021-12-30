@@ -19,10 +19,11 @@ import org.apache.calcite.adapter.enumerable.RexImpTable;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.mycat.MycatSqlDefinedFunction;
 import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.sql.SqlFunctionCategory;
-import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 
@@ -33,14 +34,14 @@ public class MycatReleaseLockFunction extends MycatSqlDefinedFunction {
 
     public MycatReleaseLockFunction() {
         super("RELEASE_LOCK",
-                ReturnTypes.INTEGER,
-                InferTypes.RETURN_TYPE, OperandTypes.VARIADIC, null, SqlFunctionCategory.SYSTEM);
+                ReturnTypes.BIGINT,
+              null, OperandTypes.STRING, null, SqlFunctionCategory.SYSTEM);
     }
 
     @Override
     public Expression implement(RexToLixTranslator translator, RexCall call, RexImpTable.NullAs nullAs) {
         List<Expression> argValueList = translator.translateList(call.getOperands(), nullAs);
         return Expressions.call(DataContext.ROOT,
-                "releaseLock",argValueList.get(0));
+                Types.lookupMethod(NewMycatDataContext.class,"releaseLock",String.class),argValueList.get(0));
     }
 }

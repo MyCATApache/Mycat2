@@ -33,8 +33,8 @@ public class MycatGetLockFunction extends MycatSqlDefinedFunction {
 
     public MycatGetLockFunction() {
         super("GET_LOCK",
-                ReturnTypes.INTEGER,
-                InferTypes.RETURN_TYPE, OperandTypes.VARIADIC, null, SqlFunctionCategory.SYSTEM);
+                ReturnTypes.BIGINT,
+              null, OperandTypes.VARIADIC, null, SqlFunctionCategory.SYSTEM);
     }
 
     @Override
