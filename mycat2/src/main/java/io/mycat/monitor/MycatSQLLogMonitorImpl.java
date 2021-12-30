@@ -68,7 +68,9 @@ public class MycatSQLLogMonitorImpl extends MycatSQLLogMonitor {
             httpServer.requestHandler(new Handler<HttpServerRequest>() {
                 @Override
                 public void handle(HttpServerRequest request) {
-                    request.setExpectMultipart(true);
+                    if(request.isExpectMultipart()){
+                        request.setExpectMultipart(true);
+                    }
                     request.endHandler(v -> {
                         vertx.executeBlocking(new Handler<Promise<Void>>() {
                             @Override
