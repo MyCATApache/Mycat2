@@ -26,16 +26,18 @@ import io.mycat.*;
 import io.mycat.config.GlobalTableConfig;
 import io.mycat.config.NormalTableConfig;
 import io.mycat.config.ShardingTableConfig;
-import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.util.MycatSQLExprTableSourceUtil;
 import lombok.Getter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Getter
 public class LogicTable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LogicTable.class);
     private final String uniqueName;
     private final LogicTableType type;
     private final String schemaName;
@@ -63,21 +65,7 @@ public class LogicTable {
         this.tableName = tableName;
         this.rawColumns = rawColumns;
         this.indexes = indexInfos;
-        SQLStatement createTableAst = SQLUtils.parseSingleMysqlStatement(createTableSQL);
-        if (createTableAst instanceof SQLCreateTableStatement) {
-            ((SQLCreateTableStatement) createTableAst).setIfNotExiists(true);
-            ((SQLCreateTableStatement) createTableAst).setSchema(schemaName);
-        }
-        if (createTableAst instanceof MySqlCreateTableStatement) {
-            ((MySqlCreateTableStatement) createTableAst).setIfNotExiists(true);
-            ((MySqlCreateTableStatement) createTableAst).setSchema(schemaName);
-        }
-        if (createTableAst instanceof SQLCreateViewStatement) {
-            ((SQLCreateViewStatement) createTableAst).setIfNotExists(true);
-            SQLExprTableSource tableSource = ((SQLCreateViewStatement) createTableAst).getTableSource();
-            MycatSQLExprTableSourceUtil.setSqlExprTableSource(schemaName,tableSource.getTableName(),tableSource);
-        }
-        this.createTableSQL = Objects.requireNonNull(SQLUtils.toMySqlString(createTableAst), this.uniqueName + " createTableSQL is not existed");
+        this.createTableSQL = normalizeCreateTableSQL(schemaName, createTableSQL);
         /////////////////////////////////////////
         this.autoIncrementColumn = rawColumns.stream().filter(i -> i.isAutoIncrement()).findFirst().orElse(null);
         /////////////////////////////////////////
@@ -86,6 +74,29 @@ public class LogicTable {
             result.put(k.getColumnName(), k);
         }
         this.map = result;
+    }
+
+    private static String normalizeCreateTableSQL(String schemaName, String createTableSQL) {
+        try {
+            SQLStatement createTableAst = SQLUtils.parseSingleMysqlStatement(createTableSQL);
+            if (createTableAst instanceof SQLCreateTableStatement) {
+                ((SQLCreateTableStatement) createTableAst).setIfNotExiists(true);
+                ((SQLCreateTableStatement) createTableAst).setSchema(schemaName);
+            }
+            if (createTableAst instanceof MySqlCreateTableStatement) {
+                ((MySqlCreateTableStatement) createTableAst).setIfNotExiists(true);
+                ((MySqlCreateTableStatement) createTableAst).setSchema(schemaName);
+            }
+            if (createTableAst instanceof SQLCreateViewStatement) {
+                ((SQLCreateViewStatement) createTableAst).setIfNotExists(true);
+                SQLExprTableSource tableSource = ((SQLCreateViewStatement) createTableAst).getTableSource();
+                MycatSQLExprTableSourceUtil.setSqlExprTableSource(schemaName, tableSource.getTableName(), tableSource);
+            }
+           return Objects.requireNonNull(SQLUtils.toMySqlString(createTableAst));
+        }catch (Throwable throwable){
+          LOGGER.error("",throwable);
+        }
+        return createTableSQL;
     }
 
     public static TableHandler createGlobalTable(String schemaName,
