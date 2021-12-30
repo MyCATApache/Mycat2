@@ -119,9 +119,13 @@ public class MetadataManager {
     public void removeTable(String schemaName, String tableName) {
         SchemaHandler schemaHandler = schemaMap.get(schemaName);
         if (schemaHandler != null) {
-            NameMap<TableHandler> stringLogicTableConcurrentHashMap = schemaMap.get(schemaName).logicTables();
-            if (stringLogicTableConcurrentHashMap != null) {
-                stringLogicTableConcurrentHashMap.remove(tableName);
+            NameMap<TableHandler> keySet = schemaMap.get(schemaName).logicTables();
+            if (keySet != null) {
+                for (String s : new ArrayList<>(keySet.keySet())) {
+                    if (tableName.equalsIgnoreCase(s)) {
+                        keySet.remove(s);
+                    }
+                }
             }
         }
     }
@@ -198,8 +202,10 @@ public class MetadataManager {
     public void addSchema(LogicSchemaConfig value) {
         String targetName = value.getTargetName();
         String schemaName = value.getSchemaName();
-        SchemaHandlerImpl schemaHandler = new SchemaHandlerImpl(schemaName, targetName);
-        schemaMap.put(schemaName, schemaHandler);
+        if (!schemaMap.containsKey(schemaName, false)) {
+            SchemaHandlerImpl schemaHandler = new SchemaHandlerImpl(schemaName, targetName);
+            schemaMap.put(schemaName, schemaHandler);
+        }
         if (targetName != null) {
             Map<String, NormalTableConfig> normalTables = value.getNormalTables();
             Map<String, NormalTableConfig> adds = prototypeService.getDefaultNormalTable(targetName, schemaName, tableName -> {
@@ -220,7 +226,6 @@ public class MetadataManager {
 
         for (Map.Entry<String, NormalTableConfig> e : value.getNormalTables().entrySet()) {
             String tableName = e.getKey();
-            removeTable(schemaName, tableName);
             NormalTableConfig tableConfigEntry = e.getValue();
             try {
                 addNormalTable(schemaName, tableName,
@@ -326,23 +331,37 @@ public class MetadataManager {
         addLogicTable(customTableHandler);
     }
 
-    public boolean addNormalTable(String schemaName,
-                                  String tableName,
-                                  NormalTableConfig tableConfigEntry) {
+    public void addNormalTable(String schemaName,
+                               String tableName,
+                               NormalTableConfig tableConfigEntry) {
         //////////////////////////////////////////////
-        NormalBackEndTableInfoConfig dataNode = tableConfigEntry.getLocality();
-        List<Partition> partitions = ImmutableList.of(new BackendTableInfo(dataNode.getTargetName(),
-                Optional.ofNullable(dataNode.getSchemaName()).orElse(schemaName),
-                Optional.ofNullable(dataNode.getTableName()).orElse(tableName)));
-        String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL())
-                .orElseGet(() -> prototypeService.getCreateTableSQLByJDBC(schemaName, tableName, partitions).orElse(null));
-        if (createTableSQL != null) {
-            List<SimpleColumnInfo> columns = prototypeService.getColumnInfo(createTableSQL);
-            Map<String, IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName, columns);
-            addLogicTable(LogicTable.createNormalTable(schemaName, tableName, partitions.get(0), columns, indexInfos, createTableSQL, tableConfigEntry));
-            return true;
+        TableHandler backupTable = getTable(schemaName, tableName);
+        try {
+            NormalBackEndTableInfoConfig dataNode = Optional.ofNullable(tableConfigEntry.getLocality())
+                    .orElse(NormalBackEndTableInfoConfig.builder()
+                            .targetName(MetadataManager.getPrototype())
+                            .schemaName(schemaName)
+                            .tableName(tableName)
+                            .build());
+            List<Partition> partitions = ImmutableList.of(new BackendTableInfo(
+                    Optional.ofNullable(dataNode.getTargetName()).orElse(MetadataManager.getPrototype()),
+                    Optional.ofNullable(dataNode.getSchemaName()).orElse(schemaName),
+                    Optional.ofNullable(dataNode.getTableName()).orElse(tableName)));
+            String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL())
+                    .orElseGet(() -> prototypeService.getCreateTableSQLByJDBC(schemaName, tableName, partitions).orElse(null));
+            if (createTableSQL != null) {
+                List<SimpleColumnInfo> columns = prototypeService.getColumnInfo(createTableSQL, schemaName, tableName);
+                Map<String, IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName, columns);
+                removeTable(schemaName, tableName);
+                addLogicTable(LogicTable.createNormalTable(schemaName, tableName, partitions.get(0), columns, indexInfos, createTableSQL, tableConfigEntry));
+                return;
+            } else {
+                LOGGER.error("not found createTable SQL:{}", tableConfigEntry);
+            }
+        } catch (Throwable throwable) {
+            LOGGER.error("", throwable);
         }
-        return false;
+        addLogicTable(backupTable);
     }
 
     public void addGlobalTable(String schemaName,
