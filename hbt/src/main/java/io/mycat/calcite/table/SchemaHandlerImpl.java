@@ -57,4 +57,12 @@ public class SchemaHandlerImpl implements SchemaHandler {
     public NameMap<ViewHandler> views() {
         return viewMap;
     }
+
+    public SchemaHandler changeTargetTo(String defaultTargetName){
+        SchemaHandlerImpl schemaHandler = new SchemaHandlerImpl(name, defaultTargetName);
+        schemaHandler.tableMap.putAll(this.tableMap.map());
+        schemaHandler.procedureMap.putAll(this.procedureMap.map());
+        schemaHandler.viewMap.putAll(this.viewMap.map());
+        return schemaHandler;
+    }
 }

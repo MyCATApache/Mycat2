@@ -622,6 +622,15 @@ public class MysqlMetadataManager extends MetadataManager {
                 System.out.println();
             }
         }
+        tables.put("dual",
+                VisualTableHandler
+                        .createByMySQL("create table mysql.dual (DUMMY varchar(1))",
+                                new Supplier<Observable<Object[]>>() {
+                                    @Override
+                                    public Observable<Object[]> get() {
+                                     return Observable.fromIterable(Collections.singletonList(new Object[]{"X"}));
+                                    }
+                                }));
         return information_schema;
     }
 

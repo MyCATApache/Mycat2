@@ -205,6 +205,9 @@ public class MetadataManager {
         if (!schemaMap.containsKey(schemaName, false)) {
             SchemaHandlerImpl schemaHandler = new SchemaHandlerImpl(schemaName, targetName);
             schemaMap.put(schemaName, schemaHandler);
+        }else {
+            SchemaHandler oldSchema = schemaMap.get(schemaName);
+            oldSchema.changeTargetTo(targetName);
         }
         if (targetName != null) {
             Map<String, NormalTableConfig> normalTables = value.getNormalTables();

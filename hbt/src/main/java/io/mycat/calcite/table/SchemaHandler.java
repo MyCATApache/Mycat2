@@ -33,4 +33,6 @@ public interface SchemaHandler {
     NameMap<ProcedureHandler> procedures();
 
     NameMap<ViewHandler> views();
+
+    public SchemaHandler changeTargetTo(String defaultTargetName);
 }
