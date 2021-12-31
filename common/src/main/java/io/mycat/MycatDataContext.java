@@ -146,4 +146,10 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
     boolean isDebug();
 
     public void setDebug(boolean value);
+
+    public void addUsedLock(String name);
+
+    public void removeUsedLock(String name);
+
+    public boolean hasUsedLock(String name);
 }

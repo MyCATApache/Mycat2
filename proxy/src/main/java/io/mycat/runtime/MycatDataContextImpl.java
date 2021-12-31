@@ -33,9 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -79,6 +77,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     private volatile Observable<AbstractWritePacket> observable;
     private Map<String, Object> processStateMap = new HashMap<>();
     private boolean debug = false;
+    private Set<String> usedlocks = new HashSet<>();
 
     public MycatDataContextImpl() {
         this.id = IDS.getAndIncrement();
@@ -462,6 +461,21 @@ public class MycatDataContextImpl implements MycatDataContext {
     @Override
     public void setDebug(boolean value) {
         this.debug = value;
+    }
+
+    @Override
+    public void addUsedLock(String name) {
+        usedlocks.add(name);
+    }
+
+    @Override
+    public void removeUsedLock(String name) {
+        usedlocks.remove(name);
+    }
+
+    @Override
+    public boolean hasUsedLock(String name) {
+        return usedlocks.contains(name);
     }
 
     @Override
