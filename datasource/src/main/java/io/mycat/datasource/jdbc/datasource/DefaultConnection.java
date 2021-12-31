@@ -70,6 +70,7 @@ public class DefaultConnection implements MycatConnection {
             }
             return new long[]{statement.getUpdateCount(), 0};
         } catch (Exception e) {
+            LOGGER.error("",e);
             throw new MycatException(e);
         }
     }

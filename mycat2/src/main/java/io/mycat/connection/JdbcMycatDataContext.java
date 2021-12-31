@@ -235,6 +235,21 @@ public class JdbcMycatDataContext implements MycatDataContext {
     }
 
     @Override
+    public Integer getLock(String name, long time) {
+        return null;
+    }
+
+    @Override
+    public Integer releaseLock(String name) {
+        return null;
+    }
+
+    @Override
+    public Integer isFreeLock(String name) {
+        return null;
+    }
+
+    @Override
     public <T> T unwrap(Class<T> iface) {
         return null;
     }

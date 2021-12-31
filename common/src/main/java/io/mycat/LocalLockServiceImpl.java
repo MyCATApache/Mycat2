@@ -13,24 +13,24 @@ public class LocalLockServiceImpl implements LockService {
 
     @Override
     public Future<Lock> getLock(String name, long timeout) {
-        ReentrantLock lock = map.computeIfAbsent(name, s -> new ReentrantLock());
-        try {
-            if (timeout > 0) {
-                if (lock.tryLock(timeout, TimeUnit.MILLISECONDS)) {
-                    return Future.succeededFuture(() -> lock.unlock());
-                } else {
-                    return Future.failedFuture(new MycatException("can not get lock :" + name));
-                }
-            }else {
-                if (lock.tryLock()) {
-                    return Future.succeededFuture(() -> lock.unlock());
-                } else {
-                    return Future.failedFuture(new MycatException("can not get lock :" + name));
-                }
-            }
-        } catch (InterruptedException e) {
-            return Future.failedFuture(e);
-        }
-
+//        ReentrantLock lock = map.computeIfAbsent(name, s -> new ReentrantLock());
+//        try {
+//            if (timeout > 0) {
+//                if (lock.tryLock(timeout, TimeUnit.MILLISECONDS)) {
+//                    return Future.succeededFuture(() -> lock.unlock());
+//                } else {
+//                    return Future.failedFuture(new MycatException("can not get lock :" + name));
+//                }
+//            }else {
+//                if (lock.tryLock()) {
+//                    return Future.succeededFuture(() -> lock.unlock());
+//                } else {
+//                    return Future.failedFuture(new MycatException("can not get lock :" + name));
+//                }
+//            }
+//        } catch (InterruptedException e) {
+//            return Future.failedFuture(e);
+//        }
+       return Future.succeededFuture(() -> {});
     }
 }

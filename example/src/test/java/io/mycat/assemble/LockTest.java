@@ -17,25 +17,80 @@ public class LockTest implements MycatTest {
     @Test
     public void testLock() throws Exception {
 
-        try (Connection connection = getMySQLConnection(DB_MYCAT);) {
+        try (Connection one = getMySQLConnection(DB_MYCAT);
+             Connection two = getMySQLConnection(DB_MYCAT);) {
             //base
             {
-                Assert.assertTrue(executeQuery(connection,
-                        "SELECT GET_LOCK('1',0);").toString().contains("1"));
-                Assert.assertTrue(executeQuery(connection,
-                        "SELECT RELEASE_LOCK('1');").toString().contains("1"));
-                Assert.assertTrue(executeQuery(connection, "SELECT IS_FREE_LOCK('1');").toString().contains("1"));
+                Assert.assertTrue(executeQuery(one,
+                        "SELECT GET_LOCK('1',0) as v;").toString().contains("1"));
+                Assert.assertTrue(executeQuery(one,
+                        "SELECT RELEASE_LOCK('1')  as v;").toString().contains("1"));
+                Assert.assertTrue(executeQuery(one, "SELECT IS_FREE_LOCK('1') as v;").toString().contains("1"));
             }
 
             {
-                Assert.assertTrue(executeQuery(connection,
-                        "SELECT GET_LOCK('1',0);").toString().contains("1"));
-                Assert.assertTrue(executeQuery(connection, "SELECT IS_FREE_LOCK('1');").toString().contains("0"));
-                Assert.assertTrue(executeQuery(connection,
-                        "SELECT RELEASE_LOCK('1');").toString().contains("1"));
-                Assert.assertTrue(executeQuery(connection, "SELECT IS_FREE_LOCK('1');").toString().contains("1"));
+                Assert.assertTrue(executeQuery(one,
+                        "SELECT GET_LOCK('1',0) as v;").toString().contains("1"));
+                Assert.assertTrue(executeQuery(one, "SELECT IS_FREE_LOCK('1');").toString().contains("0"));
+                Assert.assertTrue(executeQuery(one,
+                        "SELECT RELEASE_LOCK('1') as v;").toString().contains("1"));
+                Assert.assertTrue(executeQuery(one, "SELECT IS_FREE_LOCK('1');").toString().contains("1"));
             }
-         }
+
+            {
+                Assert.assertTrue(executeQuery(one,
+                        "SELECT GET_LOCK('1',0) as v;").toString().contains("1"));
+                Assert.assertTrue(executeQuery(two, "SELECT IS_FREE_LOCK('1');").toString().contains("0"));
+
+                Assert.assertTrue(executeQuery(one,
+                        "SELECT RELEASE_LOCK('1') as v;").toString().contains("1"));
+
+                Assert.assertTrue(executeQuery(two, "SELECT IS_FREE_LOCK('1') as v;").toString().contains("1"));
+            }
+
+            {
+                Assert.assertTrue(executeQuery(one,
+                        "SELECT GET_LOCK('1',0) as v;").toString().contains("1"));
+                Assert.assertTrue(executeQuery(two,
+                        "SELECT GET_LOCK('1',0) as v;").toString().contains("0"));
+
+                Assert.assertTrue(executeQuery(one,
+                        "SELECT RELEASE_LOCK('1') as v;").toString().contains("1"));
+
+                Assert.assertTrue(executeQuery(two, "SELECT IS_FREE_LOCK('1') as v;").toString().contains("1"));
+
+                Assert.assertTrue(executeQuery(two,
+                        "SELECT GET_LOCK('1',0) as v;").toString().contains("1"));
+
+                Assert.assertTrue(executeQuery(two,
+                        "SELECT RELEASE_LOCK('1') as v;").toString().contains("1"));
+
+
+                Assert.assertTrue(executeQuery(one, "SELECT IS_FREE_LOCK('1') as v;").toString().contains("1"));
+            }
+
+            {
+                Assert.assertTrue(executeQuery(one,
+                        "SELECT GET_LOCK('1',0) as v;").toString().contains("1"));
+                Assert.assertTrue(executeQuery(two,
+                        "SELECT GET_LOCK('1',1000) as v;").toString().contains("0"));
+
+                Assert.assertTrue(executeQuery(one,
+                        "SELECT RELEASE_LOCK('1') as v;").toString().contains("1"));
+
+                Assert.assertTrue(executeQuery(two, "SELECT IS_FREE_LOCK('1') as v;").toString().contains("1"));
+
+                Assert.assertTrue(executeQuery(two,
+                        "SELECT GET_LOCK('1',0) as v;").toString().contains("1"));
+
+                Assert.assertTrue(executeQuery(two,
+                        "SELECT RELEASE_LOCK('1') as v;").toString().contains("1"));
+
+
+                Assert.assertTrue(executeQuery(one, "SELECT IS_FREE_LOCK('1') as v;").toString().contains("1"));
+            }
+
+        }
     }
 
 

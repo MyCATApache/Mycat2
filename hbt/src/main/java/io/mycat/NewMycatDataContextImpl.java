@@ -123,52 +123,17 @@ public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
 
 
     public Integer getLock(String name, int timeout) {
-        return doLock(name, "GET_LOCK", timeout);
+        MycatDataContext context = getContext();
+        return context.getLock(name, timeout);
     }
 
-    @SneakyThrows
     public Integer releaseLock(String name) {
-        return doLock(name, "RELEASE_LOCK", 0);
-    }
-
-    @Nullable
-    private Integer doLock(String name, String method, long timeout) {
-        try {
-            MycatServerConfig mycatServerConfig = MetaClusterCurrent.wrapper(MycatServerConfig.class);
-            Map<String, Object> properties = mycatServerConfig.getProperties();
-            String lock_server_url = (String) properties.getOrDefault("lock_service_address", "http://localhost:9066/lockserivce");
-            OkHttpClient.Builder builder = new OkHttpClient.Builder();
-            if (timeout > 0) {
-                builder.connectTimeout(timeout, TimeUnit.MILLISECONDS);
-            }
-            if (timeout > 0) {
-                builder.readTimeout(timeout, TimeUnit.MILLISECONDS);
-            }
-            OkHttpClient okHttpClient = builder.build();
-            RequestBody body = new FormBody.Builder()
-                    .add("method", method)
-                    .add("name", name)
-                    .add("timeout", String.valueOf(timeout))
-                    .add("id",String.valueOf(getContext().getSessionId()))
-                    .build();
-
-            final Request request = new Request.Builder()
-                    .url(lock_server_url)
-                    .post(body)
-                    .build();
-            Call call = okHttpClient.newCall(request);
-            Response response = call.execute();
-            ResponseBody responseBody = response.body();
-            String s = new String(responseBody.bytes());
-            if (s.contains("1")) return 1;
-            if (s.contains("0")) return 0;
-         } catch (Exception e) {
-            LOGGER.error("", e);
-        }
-        return 0;
+        MycatDataContext context = getContext();
+        return context.releaseLock(name);
     }
 
     public Integer isFreeLock(String name) {
-        return doLock(name, "IS_FREE_LOCK", 0);
+        MycatDataContext context = getContext();
+        return context.isFreeLock(name);
     }
 }
