@@ -21,7 +21,8 @@ import java.util.stream.IntStream;
 public class DDLTest implements MycatTest {
     @Test
     public void testNormal() throws Exception {
-     while (true)  {
+     //while (true)
+     {
             int count = 8;
             NameableExecutor testDDLPool = null;
             List<Connection> connections = new ArrayList<>();
