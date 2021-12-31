@@ -32,14 +32,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.function.Supplier;
 
 public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatement> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DropIndexSQLHandler.class);
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLDropIndexStatement> request, MycatDataContext dataContext, Response response){
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLock(DDL_LOCK);
-        return lockFuture.flatMap(lock -> {
+        return lockService.lock(DDL_LOCK, () -> {
             try{
                 SQLDropIndexStatement sqlDropIndexStatement = request.getAst();
                 sqlDropIndexStatement.setIfExists(true);
@@ -76,11 +76,8 @@ public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatemen
                 return response.sendOk();
             }catch (Throwable throwable){
                 return Future.failedFuture(throwable);
-            }finally {
-                lock.release();
             }
         });
-
     }
 
     private boolean isUpdateShardingTable(String indexName, MySqlCreateTableStatement sqlStatement, boolean updateShardingTable) {

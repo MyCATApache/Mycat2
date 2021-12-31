@@ -54,6 +54,7 @@ public interface MycatTest {
                 dataSource.setCheckExecuteTime(true);
                 dataSource.setQueryTimeout(100);
                 dataSource.setMaxWait(TimeUnit.SECONDS.toMillis(100));
+                dataSource.setMaxActive(8);
                 return dataSource;
             }
         }).getConnection();

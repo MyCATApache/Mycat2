@@ -30,6 +30,8 @@ import io.vertx.core.shareddata.Lock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.Supplier;
+
 
 public class DropDatabaseSQLHandler extends AbstractSQLHandler<SQLDropDatabaseStatement> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DropDatabaseSQLHandler.class);
@@ -37,22 +39,21 @@ public class DropDatabaseSQLHandler extends AbstractSQLHandler<SQLDropDatabaseSt
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLDropDatabaseStatement> request, MycatDataContext dataContext, Response response)  {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLock(DDL_LOCK);
-        return lockFuture.flatMap(lock -> {
-            SQLDropDatabaseStatement dropDatabaseStatement = request.getAst();
-            String schemaName = SQLUtils.normalize(dropDatabaseStatement.getDatabaseName());
-            try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
-                ops.dropSchema(schemaName);
-                ops.commit();
-                onPhysics(schemaName);
-                return response.sendOk();
-            }catch (Throwable throwable){
-                return Future.failedFuture(throwable);
-            }finally {
-                lock.release();
-            }
-        });
-
+       return lockService.lock(DDL_LOCK, new Supplier<Future<Void>>() {
+           @Override
+           public Future<Void> get() {
+               SQLDropDatabaseStatement dropDatabaseStatement = request.getAst();
+               String schemaName = SQLUtils.normalize(dropDatabaseStatement.getDatabaseName());
+               try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+                   ops.dropSchema(schemaName);
+                   ops.commit();
+                   onPhysics(schemaName);
+                   return response.sendOk();
+               }catch (Throwable throwable){
+                   return Future.failedFuture(throwable);
+               }
+           }
+       });
     }
     protected void onPhysics(String name) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);

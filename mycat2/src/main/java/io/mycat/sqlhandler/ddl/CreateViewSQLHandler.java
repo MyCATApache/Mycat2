@@ -42,6 +42,7 @@ import java.sql.Statement;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 
@@ -53,9 +54,9 @@ public class CreateViewSQLHandler extends AbstractSQLHandler<SQLCreateViewStatem
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
         SQLCreateViewStatement ast = request.getAst();
         resolveSQLExprTableSource(ast.getTableSource(), dataContext);
-        Future<Lock> lockFuture = lockService.getLock(DDL_LOCK);
-        return lockFuture.flatMap(lock -> {
-            try {
+        return lockService.lock(DDL_LOCK, new Supplier<Future<Void>>() {
+            @Override
+            public Future<Void> get() {
                 String schemaName = Optional.ofNullable(ast.getSchema()).orElse(dataContext.getDefaultSchema());
                 schemaName = SQLUtils.normalize(schemaName);
 
@@ -95,13 +96,12 @@ public class CreateViewSQLHandler extends AbstractSQLHandler<SQLCreateViewStatem
                         ops.addView(schemaName, viewName, ast.toString());
                     }
                     ops.commit();
+                    return response.sendOk();
                 } catch (Throwable throwable) {
                     return Future.failedFuture(throwable);
                 }
-                return response.sendOk();
-            } finally {
-                lock.release();
             }
         });
+
     }
 }

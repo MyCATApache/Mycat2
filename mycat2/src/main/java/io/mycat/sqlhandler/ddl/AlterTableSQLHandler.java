@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Supplier;
 
 
 public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatement> {
@@ -38,49 +39,49 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLAlterTableStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLock(DDL_LOCK);
-        return lockFuture.flatMap(lock -> {
-            try {
-                SQLAlterTableStatement sqlAlterTableStatement = request.getAst();
-                SQLExprTableSource tableSource = sqlAlterTableStatement.getTableSource();
-                resolveSQLExprTableSource(tableSource, dataContext);
-                String schema = SQLUtils.normalize(sqlAlterTableStatement.getSchema());
-                String tableName = SQLUtils.normalize(sqlAlterTableStatement.getTableName());
-                MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-                TableHandler tableHandler = metadataManager.getTable(schema, tableName);
-                MySqlCreateTableStatement createTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(tableHandler.getCreateTableSQL());
-                JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-                Set<Partition> partitions = getDataNodes(tableHandler);
-                executeOnDataNodes(sqlAlterTableStatement, connectionManager, partitions);
+        return lockService.lock(DDL_LOCK, new Supplier<Future<Void>>() {
+            @Override
+            public Future<Void> get() {
+                try {
+                    SQLAlterTableStatement sqlAlterTableStatement = request.getAst();
+                    SQLExprTableSource tableSource = sqlAlterTableStatement.getTableSource();
+                    resolveSQLExprTableSource(tableSource, dataContext);
+                    String schema = SQLUtils.normalize(sqlAlterTableStatement.getSchema());
+                    String tableName = SQLUtils.normalize(sqlAlterTableStatement.getTableName());
+                    MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+                    TableHandler tableHandler = metadataManager.getTable(schema, tableName);
+                    MySqlCreateTableStatement createTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(tableHandler.getCreateTableSQL());
+                    JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+                    Set<Partition> partitions = getDataNodes(tableHandler);
+                    executeOnDataNodes(sqlAlterTableStatement, connectionManager, partitions);
 
-                PrototypeService manager = MetaClusterCurrent.wrapper(PrototypeService.class);
-                Optional<String> createTableSQLByJDBCOptional = manager.getCreateTableSQLByJDBC(schema, tableName, new ArrayList<>(partitions));
-                if (createTableSQLByJDBCOptional.isPresent()) {
-                    String createTableSQLByJDBC = createTableSQLByJDBCOptional.get();
-                    MySqlCreateTableStatement oldCreateTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(tableHandler.getCreateTableSQL());
-                    MySqlCreateTableStatement newMySqlCreateTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(createTableSQLByJDBC);
-                    boolean broadCast = oldCreateTableStatement.isBroadCast();
-                    SQLExpr dbPartitionBy = oldCreateTableStatement.getDbPartitionBy();
-                    SQLExpr dbPartitions = oldCreateTableStatement.getDbPartitions();
-                    SQLExpr tablePartitionBy = oldCreateTableStatement.getTablePartitionBy();
-                    SQLExpr tbpartitions = oldCreateTableStatement.getTbpartitions();
+                    PrototypeService manager = MetaClusterCurrent.wrapper(PrototypeService.class);
+                    Optional<String> createTableSQLByJDBCOptional = manager.getCreateTableSQLByJDBC(schema, tableName, new ArrayList<>(partitions));
+                    if (createTableSQLByJDBCOptional.isPresent()) {
+                        String createTableSQLByJDBC = createTableSQLByJDBCOptional.get();
+                        MySqlCreateTableStatement oldCreateTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(tableHandler.getCreateTableSQL());
+                        MySqlCreateTableStatement newMySqlCreateTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(createTableSQLByJDBC);
+                        boolean broadCast = oldCreateTableStatement.isBroadCast();
+                        SQLExpr dbPartitionBy = oldCreateTableStatement.getDbPartitionBy();
+                        SQLExpr dbPartitions = oldCreateTableStatement.getDbPartitions();
+                        SQLExpr tablePartitionBy = oldCreateTableStatement.getTablePartitionBy();
+                        SQLExpr tbpartitions = oldCreateTableStatement.getTbpartitions();
 
-                    newMySqlCreateTableStatement.setBroadCast(broadCast);
-                    newMySqlCreateTableStatement.setDbPartitionBy(dbPartitionBy);
-                    newMySqlCreateTableStatement.setDbPartitions(dbPartitions);
-                    newMySqlCreateTableStatement.setTablePartitionBy(tablePartitionBy);
-                    newMySqlCreateTableStatement.setTablePartitions(tbpartitions);
+                        newMySqlCreateTableStatement.setBroadCast(broadCast);
+                        newMySqlCreateTableStatement.setDbPartitionBy(dbPartitionBy);
+                        newMySqlCreateTableStatement.setDbPartitions(dbPartitions);
+                        newMySqlCreateTableStatement.setTablePartitionBy(tablePartitionBy);
+                        newMySqlCreateTableStatement.setTablePartitions(tbpartitions);
 
 
-                    CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(), schema, tableName, newMySqlCreateTableStatement);
-                } else {
-                    return Future.failedFuture(new MycatException("can not generate new create table sql:" + sqlAlterTableStatement));
+                        CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(), schema, tableName, newMySqlCreateTableStatement);
+                    } else {
+                        return Future.failedFuture(new MycatException("can not generate new create table sql:" + sqlAlterTableStatement));
+                    }
+                    return response.sendOk();
+                } catch (Throwable throwable) {
+                    return Future.failedFuture(throwable);
                 }
-                return response.sendOk();
-            } catch (Throwable throwable) {
-                return Future.failedFuture(throwable);
-            } finally {
-                lock.release();
             }
         });
     }

@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 
 public class CreateDatabaseSQLHandler extends AbstractSQLHandler<SQLCreateDatabaseStatement> {
@@ -40,26 +41,26 @@ public class CreateDatabaseSQLHandler extends AbstractSQLHandler<SQLCreateDataba
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLCreateDatabaseStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLock(DDL_LOCK);
-       return lockFuture.flatMap(lock -> {
-           MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-           SQLCreateDatabaseStatement ast = request.getAst();
-           boolean ifNotExists = ast.isIfNotExists();
-           String tableName = SQLUtils.normalize(ast.getName().getSimpleName());
-           Map<String, Object> attributes = ast.getAttributes();
-           String json = (String) attributes.get(SqlHints.AFTER_COMMENT);
-           String targetName = JsonUtil.fromMap(json, "targetName").orElse(null);
-           try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
-               ops.addSchema(tableName, targetName);
-               ops.commit();
-               onPhysics(tableName);
-               return response.sendOk();
-           }catch (Throwable throwable){
-               return Future.failedFuture(throwable);
-           }finally {
-               lock.release();
-           }
-       });
+        return lockService.lock(DDL_LOCK, new Supplier<Future<Void>>() {
+            @Override
+            public Future<Void> get() {
+                MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+                SQLCreateDatabaseStatement ast = request.getAst();
+                boolean ifNotExists = ast.isIfNotExists();
+                String tableName = SQLUtils.normalize(ast.getName().getSimpleName());
+                Map<String, Object> attributes = ast.getAttributes();
+                String json = (String) attributes.get(SqlHints.AFTER_COMMENT);
+                String targetName = JsonUtil.fromMap(json, "targetName").orElse(null);
+                try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+                    ops.addSchema(tableName, targetName);
+                    ops.commit();
+                    onPhysics(tableName);
+                    return response.sendOk();
+                }catch (Throwable throwable){
+                    return Future.failedFuture(throwable);
+                }
+            }
+        });
     }
 
     protected void onPhysics(String name) {

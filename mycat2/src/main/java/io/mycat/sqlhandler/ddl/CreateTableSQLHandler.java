@@ -24,6 +24,7 @@ import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.JsonUtil;
 import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.core.shareddata.Lock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,41 +48,37 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
     @Override
     protected Future<Void> onExecute(SQLRequest<MySqlCreateTableStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLock(DDL_LOCK);
-        return lockFuture.flatMap(lock -> {
-            try {
-                Map hint = Optional.ofNullable(request.getAst().getHeadHintsDirect())
-                        .map(i -> i.get(0))
-                        .map(i -> i.getText())
-                        .filter(i -> {
-                            i = i.replaceAll(" ", "");
-                            return i.contains("+mycat:createTable{");
-                        }).map(i -> i.substring(i.indexOf("{"))).map(i -> JsonUtil.from(i, Map.class)).orElse(null);
+       return lockService.lock(DDL_LOCK,()->{
+           try {
+               Map hint = Optional.ofNullable(request.getAst().getHeadHintsDirect())
+                       .map(i -> i.get(0))
+                       .map(i -> i.getText())
+                       .filter(i -> {
+                           i = i.replaceAll(" ", "");
+                           return i.contains("+mycat:createTable{");
+                       }).map(i -> i.substring(i.indexOf("{"))).map(i -> JsonUtil.from(i, Map.class)).orElse(null);
 
-                MySqlCreateTableStatement ast = request.getAst();
-                String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
-                String tableName = ast.getTableName() == null ? null : SQLUtils.normalize(ast.getTableName());
-                if (ast.getSchema() == null) {
-                    ast.setSchema(schemaName);
-                }
-                if (tableName == null) {
-                    return response.sendError(new MycatException("CreateTableSQL need tableName"));
-                }
-                if (schemaName == null) {
-                    return response.sendError("No database selected", 1046);
-                }
-                createTable(hint, schemaName, tableName, ast);
-                return response.sendOk();
-            } catch (Throwable throwable) {
-                return Future.failedFuture(throwable);
-            } finally {
-                lock.release();
-            }
-        });
-
+               MySqlCreateTableStatement ast = request.getAst();
+               String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
+               String tableName = ast.getTableName() == null ? null : SQLUtils.normalize(ast.getTableName());
+               if (ast.getSchema() == null) {
+                   ast.setSchema(schemaName);
+               }
+               if (tableName == null) {
+                   return response.sendError(new MycatException("CreateTableSQL need tableName"));
+               }
+               if (schemaName == null) {
+                   return response.sendError("No database selected", 1046);
+               }
+               createTable(hint, schemaName, tableName, ast);
+               return response.sendOk();
+           } catch (Throwable throwable) {
+               return Future.failedFuture(throwable);
+           }
+       });
     }
 
-    public void createTable(Map hint,
+    public synchronized void createTable(Map hint,
                             String schemaName,
                             String tableName,
                             MySqlCreateTableStatement createTableSql) throws Exception {

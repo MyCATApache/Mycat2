@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 
 public class DropViewSQLHandler extends AbstractSQLHandler<SQLDropViewStatement> {
@@ -41,25 +42,22 @@ public class DropViewSQLHandler extends AbstractSQLHandler<SQLDropViewStatement>
         SQLDropViewStatement ast = request.getAst();
         SQLExprTableSource sqlExprTableSource = ast.getTableSources().get(0);
         resolveSQLExprTableSource(sqlExprTableSource, dataContext);
-        Future<Lock> lockFuture = lockService.getLock(DDL_LOCK);
-        return lockFuture.flatMap(lock -> {
-            try {
-                String schemaName = Optional.ofNullable(sqlExprTableSource.getSchema()).orElse(dataContext.getDefaultSchema());
-                schemaName = SQLUtils.normalize(schemaName);
+        return lockService.lock(DDL_LOCK, new Supplier<Future<Void>>() {
+            @Override
+            public Future<Void> get() {
+                    String schemaName = Optional.ofNullable(sqlExprTableSource.getSchema()).orElse(dataContext.getDefaultSchema());
+                    schemaName = SQLUtils.normalize(schemaName);
 
-                String viewName = SQLUtils.normalize(sqlExprTableSource.getTableName());
+                    String viewName = SQLUtils.normalize(sqlExprTableSource.getTableName());
 
-                try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
-                    ops.removeView(schemaName, viewName);
-                    ops.commit();
-                } catch (Throwable throwable) {
-                    return Future.failedFuture(throwable);
-                }
-            }finally {
-                lock.release();
+                    try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+                        ops.removeView(schemaName, viewName);
+                        ops.commit();
+                        return response.sendOk();
+                    } catch (Throwable throwable) {
+                        return Future.failedFuture(throwable);
+                    }
             }
-
-            return response.sendOk();
         });
     }
 }
