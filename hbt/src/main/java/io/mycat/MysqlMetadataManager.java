@@ -702,7 +702,8 @@ public class MysqlMetadataManager extends MetadataManager {
                         VIEW_TABLE_HANDLER,
                         ROUTINES_TABLE_HANDLER,
                         GLOBAL_VARIABLES_TABLE_HANDLER,
-                        TRIGGERS_TABLE_HANDLER)
+                        TRIGGERS_TABLE_HANDLER,
+                        PARAMETERS_TABLE_HANDLER)
                 .forEach(c -> {
                     tables.put(c.getTableName().toUpperCase(), c);
                 });
@@ -1058,4 +1059,34 @@ public class MysqlMetadataManager extends MetadataManager {
         createEVENTSTableSQL.addColumn("DATABASE_COLLATION", "varchar(192)");
         return createEVENTSTableSQL.toString();
     }
+    private static String PARAMETERS() {
+        MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
+        createEVENTSTableSQL.setTableName("parameters");
+        createEVENTSTableSQL.setSchema("information_schema");
+        createEVENTSTableSQL.addColumn("SPECIFIC_CATALOG", "varchar(64)");
+        createEVENTSTableSQL.addColumn("SPECIFIC_SCHEMA", "varchar(64)");
+        createEVENTSTableSQL.addColumn("SPECIFIC_NAME", "varchar(64)");
+        createEVENTSTableSQL.addColumn("ORDINAL_POSITION", "bigint(11) unsigned");
+        createEVENTSTableSQL.addColumn("PARAMETER_MODE", "varchar(5)");
+        createEVENTSTableSQL.addColumn("PARAMETER_NAME", "varchar(64)");
+        createEVENTSTableSQL.addColumn("DATA_TYPE", "longtext");
+        createEVENTSTableSQL.addColumn("CHARACTER_MAXIMUM_LENGTH", "bigint(21)");
+        createEVENTSTableSQL.addColumn("CHARACTER_OCTET_LENGTH", "bigint(21)");
+        createEVENTSTableSQL.addColumn("NUMERIC_PRECISION", "int(10) unsigned");
+        createEVENTSTableSQL.addColumn("NUMERIC_SCALE", "bigint(11)");
+        createEVENTSTableSQL.addColumn("DATETIME_PRECISION", "int(10)");
+        createEVENTSTableSQL.addColumn("CHARACTER_SET_NAME", "varchar(64)");
+        createEVENTSTableSQL.addColumn("COLLATION_NAME", "varchar(64)");
+        createEVENTSTableSQL.addColumn("DTD_IDENTIFIER", "mediumtext");
+        createEVENTSTableSQL.addColumn("ROUTINE_TYPE", "enum('FUNCTION','PROCEDURE')");
+        return createEVENTSTableSQL.toString();
+    }
+
+    public static final VisualTableHandler PARAMETERS_TABLE_HANDLER = VisualTableHandler.createByMySQL(PARAMETERS(), new Supplier<Observable<Object[]>>() {
+        @Override
+        public Observable<Object[]> get() {
+            ArrayList<Object[]> resList = new ArrayList<>();
+            return Observable.fromIterable(resList);
+        }
+    });
 }
