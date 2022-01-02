@@ -604,13 +604,13 @@ public class MysqlMetadataManager extends MetadataManager {
         for (LogicSchemaConfig c : schemaConfigs.values()) {
             addSchema(c);
         }
-        SchemaHandler information_schema = schemaMap.map().computeIfAbsent("information_schema", s -> new SchemaHandlerImpl(s, null));
+        SchemaHandler information_schema = schemaMap.computeIfAbsent("information_schema", s -> new SchemaHandlerImpl(s, null));
         addInformationSchemaVisual((SchemaHandlerImpl)information_schema);
 
-        SchemaHandler performance_schema = schemaMap.map().computeIfAbsent("performance_schema", s -> new SchemaHandlerImpl(s, null));
+        SchemaHandler performance_schema = schemaMap.computeIfAbsent("performance_schema", s -> new SchemaHandlerImpl(s, null));
         addPerformanceSchemaVisualTable((SchemaHandlerImpl)performance_schema);
 
-        SchemaHandler mysql = schemaMap.map().computeIfAbsent("mysql", s -> new SchemaHandlerImpl(s, null));
+        SchemaHandler mysql = schemaMap.computeIfAbsent("mysql", s -> new SchemaHandlerImpl(s, null));
         addMySQLSchemaVisualTable((SchemaHandlerImpl)mysql);
 
 
@@ -623,7 +623,12 @@ public class MysqlMetadataManager extends MetadataManager {
         for (Map.Entry<String, String> stringStringEntry : MYSQL_SCHEMA_INFO.entrySet()) {
             addVisualTableIfAbsent(tables, stringStringEntry);
         }
-        tables.map().computeIfAbsent("dual", s -> DUAL_TABLE_HANDLER);
+        Arrays.asList(DUAL_TABLE_HANDLER)
+                .forEach(c -> {
+                    if (!tables.containsKey(c.getTableName().toUpperCase(), false)) {
+                        tables.put(c.getTableName().toUpperCase(), c);
+                    }
+                });
         return mysql;
     }
 
@@ -634,7 +639,10 @@ public class MysqlMetadataManager extends MetadataManager {
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(value);
         if (sqlStatement instanceof MySqlCreateTableStatement) {
             VisualTableHandler visualTableHandler = VisualTableHandler.createByMySQL(value, () -> Observable.empty());
-            tables.map().computeIfAbsent(key, s -> visualTableHandler);
+            if (!tables.containsKey(key,false)){
+                tables.put(key, visualTableHandler);
+            }
+
         }
     }
 
@@ -680,7 +688,9 @@ public class MysqlMetadataManager extends MetadataManager {
                         TRIGGERS_TABLE_HANDLER,
                         PARAMETERS_TABLE_HANDLER)
                 .forEach(c -> {
-                    tables.map().computeIfAbsent(c.getTableName().toUpperCase(), s -> c);
+                    if (!tables.containsKey(c.getTableName().toUpperCase(), false)) {
+                        tables.put(c.getTableName().toUpperCase(), c);
+                    }
                 });
         return information_schema;
     }
