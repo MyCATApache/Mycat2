@@ -123,14 +123,18 @@ public class NameMap<V> {
     public boolean containsKey(String name, boolean caseSensitive) {
         return !range(name, caseSensitive).isEmpty();
     }
+
     public V computeIfAbsent(String key,
-                              Function<String, ? extends V> mappingFunction) {
-        if(!containsKey(key,false)){
-            return mappingFunction.apply(key);
-        }else {
-            return get(key,false);
+                             Function<String, ? extends V> mappingFunction) {
+        if (!containsKey(key, false)) {
+            V apply = mappingFunction.apply(key);
+            map.put(key, apply);
+            return (V) apply;
+        } else {
+            return get(key, false);
         }
     }
+
     /**
      * Returns the underlying map.
      */
