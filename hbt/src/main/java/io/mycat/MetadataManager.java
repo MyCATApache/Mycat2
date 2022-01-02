@@ -364,7 +364,9 @@ public class MetadataManager {
         } catch (Throwable throwable) {
             LOGGER.error("", throwable);
         }
-        addLogicTable(backupTable);
+        if (backupTable!=null){
+            addLogicTable(backupTable);
+        }
     }
 
     public void addGlobalTable(String schemaName,
@@ -483,10 +485,10 @@ public class MetadataManager {
     }
 
     private synchronized void addLogicTable(TableHandler logicTable) {
-        String schemaName = logicTable.getSchemaName();
+        String schemaName = Objects.requireNonNull(logicTable.getSchemaName());
         String tableName = logicTable.getTableName();
         String createTableSQL = logicTable.getCreateTableSQL();
-        NameMap<TableHandler> tableMap = schemaMap.get(schemaName).logicTables();
+        NameMap<TableHandler> tableMap =  Objects.requireNonNull(schemaMap.get(schemaName)).logicTables();
         tableMap.put(tableName, logicTable);
     }
 
