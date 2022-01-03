@@ -25,6 +25,7 @@ import io.vertx.core.Future;
 import io.vertx.core.shareddata.Lock;
 
 import java.util.Collections;
+import java.util.function.Supplier;
 
 
 public class DropSequenceSQLHandler extends AbstractSQLHandler<com.alibaba.druid.sql.ast.statement.SQLDropSequenceStatement> {
@@ -32,25 +33,24 @@ public class DropSequenceSQLHandler extends AbstractSQLHandler<com.alibaba.druid
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLDropSequenceStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLock(DDL_LOCK);
-        return lockFuture.flatMap(lock -> {
-            try {
-                SQLDropSequenceStatement ast = request.getAst();
-                SQLName name = ast.getName();
-                if (name instanceof SQLIdentifierExpr) {
-                    SQLPropertyExpr sqlPropertyExpr = new SQLPropertyExpr();
-                    sqlPropertyExpr.setOwner(dataContext.getDefaultSchema());
-                    sqlPropertyExpr.setName(name.toString());
-                    ast.setName(sqlPropertyExpr);
+        return lockService.lock(DDL_LOCK, new Supplier<Future<Void>>() {
+            @Override
+            public Future<Void> get() {
+                try {
+                    SQLDropSequenceStatement ast = request.getAst();
+                    SQLName name = ast.getName();
+                    if (name instanceof SQLIdentifierExpr) {
+                        SQLPropertyExpr sqlPropertyExpr = new SQLPropertyExpr();
+                        sqlPropertyExpr.setOwner(dataContext.getDefaultSchema());
+                        sqlPropertyExpr.setName(name.toString());
+                        ast.setName(sqlPropertyExpr);
+                    }
+                    MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+                    return response.proxyUpdate(Collections.singletonList(metadataManager.getPrototype()), ast.toString(),Collections.emptyList());
+                }catch (Throwable throwable){
+                    return Future.failedFuture(throwable);
                 }
-                MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-                return response.proxyUpdate(Collections.singletonList(metadataManager.getPrototype()), ast.toString(),Collections.emptyList());
-            }catch (Throwable throwable){
-                return Future.failedFuture(throwable);
-            }finally {
-                lock.release();
             }
         });
-
     }
 }

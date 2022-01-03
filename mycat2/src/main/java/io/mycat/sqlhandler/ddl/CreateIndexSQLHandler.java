@@ -31,6 +31,7 @@ import io.vertx.core.shareddata.Lock;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 
@@ -39,8 +40,7 @@ public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStat
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLCreateIndexStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLock(DDL_LOCK);
-        return lockFuture.flatMap(lock -> {
+        return lockService.lock(DDL_LOCK, () -> {
             try {
                 SQLCreateIndexStatement sqlCreateIndexStatement = request.getAst();
                 SQLExprTableSource table = (SQLExprTableSource) sqlCreateIndexStatement.getTable();
@@ -60,11 +60,8 @@ public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStat
                 return response.sendOk();
             } catch (Throwable throwable) {
                 return response.sendError(throwable);
-            } finally {
-                lock.release();
             }
         });
-
     }
 
     private void createGlobalIndex(SQLCreateIndexStatement sqlCreateIndexStatement) throws Exception {

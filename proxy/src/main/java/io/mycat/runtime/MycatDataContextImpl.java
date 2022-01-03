@@ -24,18 +24,21 @@ import com.alibaba.druid.sql.SQLUtils;
 import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.config.MycatServerConfig;
 import io.mycat.util.packet.AbstractWritePacket;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.ObservableEmitter;
 import lombok.Getter;
 import lombok.Setter;
+import okhttp3.*;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -79,6 +82,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     private volatile Observable<AbstractWritePacket> observable;
     private Map<String, Object> processStateMap = new HashMap<>();
     private boolean debug = false;
+    private Set<String> usedlocks = new HashSet<>();
 
     public MycatDataContextImpl() {
         this.id = IDS.getAndIncrement();
@@ -159,7 +163,7 @@ public class MycatDataContextImpl implements MycatDataContext {
             return this.getUser().getUserName();
         } else if (target.contains("transaction_policy")) {
             return this.transactionType().getName();
-        }else if (target.contains("transaction_isolation")||target.contains("tx_isolation")) {
+        } else if (target.contains("transaction_isolation") || target.contains("tx_isolation")) {
             MySQLIsolation isolation = getIsolation();
             return isolation.getSessionText();
         }
@@ -419,6 +423,7 @@ public class MycatDataContextImpl implements MycatDataContext {
         if (transactionSession != null) {
             transactionSession.close();
         }
+        closeAllLock();
     }
 
     @Override
@@ -427,6 +432,7 @@ public class MycatDataContextImpl implements MycatDataContext {
         if (transactionSession != null) {
             transactionSession.kill();
         }
+        closeAllLock();
     }
 
     @Override
@@ -465,10 +471,93 @@ public class MycatDataContextImpl implements MycatDataContext {
     }
 
     @Override
+    public Integer getLock(String name, long time) {
+        Integer res = doLock(getId(), name, "GET_LOCK", 0);
+        if (null == res) {
+            return 0;
+        }
+        if (1 == res) {
+            usedlocks.add(name);
+        }
+        return res;
+    }
+
+    @Override
+    public Integer releaseLock(String name) {
+        try {
+            Integer res = doLock(getId(), name, "RELEASE_LOCK", 0);
+            if (null == res) {
+                return 0;
+            }
+            return res;
+        } finally {
+            usedlocks.remove(name);
+        }
+    }
+
+    @Override
+    public Integer isFreeLock(String name) {
+        Integer res = doLock(getId(), name, "IS_FREE_LOCK", 0);
+        if (null == res) {
+            return 0;
+        }
+        return res;
+    }
+
+    @Override
     public String getDefaultSchema() {
         if (!this.processStateMap.isEmpty()) {
             return (String) this.processStateMap.getOrDefault("SCHEMA", defaultSchema);
         }
         return defaultSchema;
     }
+
+    public void closeAllLock() {
+        Set<String> usedLocks = new HashSet<>(this.usedlocks);
+        this.usedlocks.clear();
+        for (String usedlock : usedLocks) {
+            CompletableFuture.runAsync(() -> {
+                doLock(getId(), usedlock, "RELEASE_LOCK", 0);
+            });
+        }
+
+    }
+
+    @Nullable
+    public static Integer doLock(long id, String name, String method, long timeout) {
+        try {
+            MycatServerConfig mycatServerConfig = MetaClusterCurrent.wrapper(MycatServerConfig.class);
+            Map<String, Object> properties = mycatServerConfig.getProperties();
+            String lock_server_url = (String) properties.getOrDefault("lock_service_address", "http://localhost:9066/lockserivce");
+            OkHttpClient.Builder builder = new OkHttpClient.Builder();
+            if (timeout > 0) {
+                builder.connectTimeout(timeout, TimeUnit.MILLISECONDS);
+            }
+            if (timeout > 0) {
+                builder.readTimeout(timeout, TimeUnit.MILLISECONDS);
+            }
+            OkHttpClient okHttpClient = builder.build();
+            RequestBody body = new FormBody.Builder()
+                    .add("method", method)
+                    .add("name", name)
+                    .add("timeout", String.valueOf(timeout))
+                    .add("id", String.valueOf(id))
+                    .build();
+
+            final Request request = new Request.Builder()
+                    .url(lock_server_url)
+                    .post(body)
+                    .build();
+            Call call = okHttpClient.newCall(request);
+            Response response = call.execute();
+            ResponseBody responseBody = response.body();
+            String s = new String(responseBody.bytes());
+            if (s.contains("1")) return 1;
+            if (s.contains("0")) return 0;
+        } catch (Exception e) {
+            LOGGER.error("", e);
+        }
+        return 0;
+    }
+
 }

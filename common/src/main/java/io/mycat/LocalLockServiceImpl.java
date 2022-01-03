@@ -1,36 +1,31 @@
 package io.mycat;
 
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.shareddata.Lock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class LocalLockServiceImpl implements LockService {
-    final ConcurrentMap<String, ReentrantLock> map = new ConcurrentHashMap<>();
+    private static final Logger LOGGER = LoggerFactory.getLogger(LocalLockServiceImpl.class);
+
 
     @Override
-    public Future<Lock> getLock(String name, long timeout) {
-        ReentrantLock lock = map.computeIfAbsent(name, s -> new ReentrantLock());
+    public synchronized Future<Void> lock(String name, Supplier<Future<Void>> runnable) {
+        LOGGER.info("lock_service_worker is running with '" + name + "'");
         try {
-            if (timeout > 0) {
-                if (lock.tryLock(timeout, TimeUnit.MILLISECONDS)) {
-                    return Future.succeededFuture(() -> lock.unlock());
-                } else {
-                    return Future.failedFuture(new MycatException("can not get lock :" + name));
-                }
-            }else {
-                if (lock.tryLock()) {
-                    return Future.succeededFuture(() -> lock.unlock());
-                } else {
-                    return Future.failedFuture(new MycatException("can not get lock :" + name));
-                }
-            }
-        } catch (InterruptedException e) {
-            return Future.failedFuture(e);
+            return runnable.get();
+        }catch (Throwable throwable){
+            return Future.failedFuture(throwable);
         }
-
     }
+
 }

@@ -70,6 +70,7 @@ public class DefaultConnection implements MycatConnection {
             }
             return new long[]{statement.getUpdateCount(), 0};
         } catch (Exception e) {
+            LOGGER.error("",e);
             throw new MycatException(e);
         }
     }
@@ -180,6 +181,6 @@ public class DefaultConnection implements MycatConnection {
     }
 
     public void createDatabase(String schema) {
-        executeUpdate("CREATE DATABASE IF NOT EXISTS " + schema, false);
+        executeUpdate("CREATE DATABASE IF NOT EXISTS " + schema+ " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci ", false);
     }
 }

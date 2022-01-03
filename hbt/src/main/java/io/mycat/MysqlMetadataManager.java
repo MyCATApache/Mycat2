@@ -1,10 +1,12 @@
 package io.mycat;
 
 import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLDataType;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
+import com.alibaba.druid.sql.ast.statement.SQLCharacterDataType;
 import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
@@ -17,6 +19,8 @@ import io.mycat.config.LogicSchemaConfig;
 import io.mycat.prototypeserver.mysql.*;
 import io.mycat.util.NameMap;
 import io.reactivex.rxjava3.core.Observable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -24,10 +28,18 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class MysqlMetadataManager extends MetadataManager {
+    final static Logger log = LoggerFactory.getLogger(MysqlMetadataManager.class);
     public static final NameMap<String> INFORMATION_SCHEMA_INFO = NameMap.immutableCopyOf(CreateMySQLSQLSet.getFieldValue(InformationSchema.class));
     public static final NameMap<String> PERFORMANCE_SCHEMA_INFO = NameMap.immutableCopyOf(CreateMySQLSQLSet.getFieldValue(PerformanceSchema.class));
     public static final NameMap<String> MYSQL_SCHEMA_INFO = NameMap.immutableCopyOf(CreateMySQLSQLSet.getFieldValue(MysqlSchema.class));
-
+    public static final VisualTableHandler DUAL_TABLE_HANDLER = VisualTableHandler
+            .createByMySQL("create table mysql.dual (DUMMY varchar(1))",
+                    new Supplier<Observable<Object[]>>() {
+                        @Override
+                        public Observable<Object[]> get() {
+                            return Observable.fromIterable(Collections.singletonList(new Object[]{"X"}));
+                        }
+                    });
     public static final VisualTableHandler CHARACTER_SETS_TABLE_HANDLER = VisualTableHandler.createByMySQL(CHARACTER_SETS(),
             () -> Observable.fromArray(
                     new Object[]{"utf8", "utf8_bin", "UTF-8 Unicode", 3},
@@ -37,7 +49,7 @@ public class MysqlMetadataManager extends MetadataManager {
                     new Object[]{"binary", "binary", "binary", 1}
             ));
     public static final VisualTableHandler COLLATIONS_TABLE_HANDLER = VisualTableHandler.createByMySQL(COLLATIONS(), () -> {
-        List<Object[]> list = Collections.singletonList(new Object[]{"utf8mb4_bin", "utf8mb4", 46, "Yes", "Yes", 1,"PAD SPACE"});
+        List<Object[]> list = Collections.singletonList(new Object[]{"utf8mb4_bin", "utf8mb4", 46, "Yes", "Yes", 1, "PAD SPACE"});
         return Observable.fromIterable(list);
     });
 
@@ -129,8 +141,8 @@ public class MysqlMetadataManager extends MetadataManager {
                         long NUMERIC_PRECISION = 0;
                         long NUMERIC_SCALE = 0;
                         long DATETIME_PRECISION = 0;
-                        String CHARACTER_SET_NAME = "utf8mb4";
-                        String COLLATION_NAME = "utf8_general_ci";
+                        String CHARACTER_SET_NAME;
+                        String COLLATION_NAME;
                         String COLUMN_TYPE;
                         String COLUMN_KEY;
                         String EXTRA;
@@ -145,7 +157,21 @@ public class MysqlMetadataManager extends MetadataManager {
                             COLUMN_NAME = name;
                             ORDINAL_POSITION = i;
                             DATA_TYPE = column.getDataType().getName();
-                            String Collation = Optional.ofNullable(column.getCollateExpr()).map(s -> SQLUtils.normalize(s.toString())).orElse(null);
+                            CHARACTER_SET_NAME = Optional.ofNullable(column.getCharsetExpr()).map(s -> SQLUtils.normalize(s.toString()))
+                                    .orElseGet(() -> {
+                                        SQLDataType dataType = column.getDataType();
+                                        if (dataType instanceof SQLCharacterDataType) {
+                                            return Optional.ofNullable(((SQLCharacterDataType) dataType).getCharSetName()).orElse("utf8mb4");
+                                        }
+                                        return null;
+                                    });
+                            COLLATION_NAME = Optional.ofNullable(column.getCollateExpr()).map(s -> SQLUtils.normalize(s.toString())).orElseGet(() -> {
+                                SQLDataType dataType = column.getDataType();
+                                if (dataType instanceof SQLCharacterDataType) {
+                                    return Optional.ofNullable(((SQLCharacterDataType) dataType).getCollate()).orElse("utf8mb4_general_ci");
+                                }
+                                return null;
+                            });
                             IS_NULLABLE = column.containsNotNullConstaint() ? "NO" : "YES";
                             COLUMN_KEY = mySqlCreateTableStatement.isPrimaryColumn(name) ?
                                     "PRI" : mySqlCreateTableStatement.isUNI(name) ? "UNI" : mySqlCreateTableStatement.isMUL(name) ? "MUL" : null;
@@ -269,7 +295,7 @@ public class MysqlMetadataManager extends MetadataManager {
             resList.add(new Object[]{"basedir", System.getProperty("MYCAT_HOME")});
             resList.add(new Object[]{"big_tables", "0"});
             resList.add(new Object[]{"big_tables", "*"});
-            resList.add(new Object[]{"lower_case_table_names","1"});
+            resList.add(new Object[]{"lower_case_table_names", "1"});
             return Observable.fromIterable(resList);
         }
     });
@@ -277,9 +303,19 @@ public class MysqlMetadataManager extends MetadataManager {
         @Override
         public Observable<Object[]> get() {
             ArrayList<Object[]> resList = new ArrayList<>();
+            try {
+                if (MetaClusterCurrent.exist(MysqlVariableService.class)) {
+                    MysqlVariableService variableService = MetaClusterCurrent.wrapper(MysqlVariableService.class);
+                    resList.addAll(variableService.getGlobalVariables());
+                }
+            } catch (Throwable throwable) {
+                log.error("", throwable);
+            }
+
             return Observable.fromIterable(resList);
         }
     });
+
     private static String SESSION_VARIABLES() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("SESSION_VARIABLES");
@@ -288,6 +324,7 @@ public class MysqlMetadataManager extends MetadataManager {
         createEVENTSTableSQL.addColumn("VARIABLE_VALUE ", "varchar(1024)");
         return createEVENTSTableSQL.toString();
     }
+
     private static String GLOBAL_VARIABLES() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("GLOBAL_VARIABLES");
@@ -309,7 +346,7 @@ public class MysqlMetadataManager extends MetadataManager {
             String INDEX_SCHEMA;
             String INDEX_NAME;
             long SEQ_IN_INDEX;
-            String COLUMN_NAME ;
+            String COLUMN_NAME;
             String COLLATION = null;
             long CARDINALITY = 0;
             String SUB_PART = null;
@@ -324,11 +361,11 @@ public class MysqlMetadataManager extends MetadataManager {
             MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
             List<TableHandler> tables = metadataManager.getSchemaMap().values().stream().flatMap(i -> i.logicTables().values().stream()).collect(Collectors.toList());
             for (TableHandler table : tables) {
-                TABLE_SCHEMA= table.getSchemaName();
+                TABLE_SCHEMA = table.getSchemaName();
                 TABLE_NAME = table.getTableName();
                 String createTableSQL = table.getCreateTableSQL();
                 SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(createTableSQL);
-                if (sqlStatement instanceof MySqlCreateTableStatement){
+                if (sqlStatement instanceof MySqlCreateTableStatement) {
                     MySqlCreateTableStatement mySqlCreateTableStatement = (MySqlCreateTableStatement) sqlStatement;
                     List<MySqlTableIndex> mySqlTableIndices = Optional.ofNullable(mySqlCreateTableStatement.getMysqlIndexes()).orElse(Collections.emptyList());
                     List<MySqlKey> mySqlKeys = Optional.ofNullable(mySqlCreateTableStatement.getMysqlKeys()).orElse(Collections.emptyList());
@@ -336,13 +373,13 @@ public class MysqlMetadataManager extends MetadataManager {
                     for (MySqlTableIndex mySqlTableIndex : mySqlTableIndices) {
                         INDEX_NAME = SQLUtils.normalize(mySqlTableIndex.getName().getSimpleName());
                         for (SQLSelectOrderByItem column : mySqlTableIndex.getColumns()) {
-                            COLUMN_NAME = SQLUtils.normalize (((SQLName) column.getExpr()).getSimpleName());
-                            NON_UNIQUE=  mySqlCreateTableStatement.isUNI(COLUMN_NAME)?"0":"1";
-                            SEQ_IN_INDEX =table.getColumnByName(COLUMN_NAME).getId();
+                            COLUMN_NAME = SQLUtils.normalize(((SQLName) column.getExpr()).getSimpleName());
+                            NON_UNIQUE = mySqlCreateTableStatement.isUNI(COLUMN_NAME) ? "0" : "1";
+                            SEQ_IN_INDEX = table.getColumnByName(COLUMN_NAME).getId();
                             INDEX_TYPE = mySqlTableIndex.getIndexType();
                             resList.add(new Object[]{
-                                    TABLE_CATALOG,TABLE_SCHEMA,TABLE_NAME,NON_UNIQUE,INDEX_SCHEMA,INDEX_NAME,SEQ_IN_INDEX,COLUMN_NAME,
-                                    COLLATION,CARDINALITY,SUB_PART,PACKED,NULLABLE,INDEX_TYPE,COMMENT,INDEX_COMMENT,IS_VISIBLE,Expression});
+                                    TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, NON_UNIQUE, INDEX_SCHEMA, INDEX_NAME, SEQ_IN_INDEX, COLUMN_NAME,
+                                    COLLATION, CARDINALITY, SUB_PART, PACKED, NULLABLE, INDEX_TYPE, COMMENT, INDEX_COMMENT, IS_VISIBLE, Expression});
                         }
 
                     }
@@ -360,6 +397,7 @@ public class MysqlMetadataManager extends MetadataManager {
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement("ALTER TABLE t_order ADD UNIQUE GLOBAL INDEX `g_i_buyer` (`buyer_id`) COVERING (`order_snapshot`) dbpartition by hash(`buyer_id`);");
         System.out.println();
     }
+
     public static final VisualTableHandler TABLES_CONSTRAINTS_TABLE_HANDLER = VisualTableHandler.createByMySQL(TABLES_CONSTARAINTS(), new Supplier<Observable<Object[]>>() {
         @Override
         public Observable<Object[]> get() {
@@ -367,9 +405,9 @@ public class MysqlMetadataManager extends MetadataManager {
 
             String CONSTRAINT_CATALOG = "def";
             String CONSTRAINT_SCHEMA;
-            String CONSTRAINT_NAME    ;
-            String TABLE_SCHEMA       ;
-            String TABLE_NAME         ;
+            String CONSTRAINT_NAME;
+            String TABLE_SCHEMA;
+            String TABLE_NAME;
 
             return Observable.fromIterable(resList);
         }
@@ -427,9 +465,9 @@ public class MysqlMetadataManager extends MetadataManager {
 
             String CONSTRAINT_CATALOG = "def";
             String CONSTRAINT_SCHEMA;
-            String CONSTRAINT_NAME    ;
-            String TABLE_SCHEMA       ;
-            String TABLE_NAME         ;
+            String CONSTRAINT_NAME;
+            String TABLE_SCHEMA;
+            String TABLE_NAME;
 
             return Observable.fromIterable(resList);
         }
@@ -475,6 +513,7 @@ public class MysqlMetadataManager extends MetadataManager {
         createEVENTSTableSQL.addColumn("TABLE_COMMENT", "varchar(2048)");
         return createEVENTSTableSQL.toString();
     }
+
     public static final VisualTableHandler TABLES_TABLE_HANDLER = VisualTableHandler.createByMySQL(TABLES(), new Supplier<Observable<Object[]>>() {
         @Override
         public Observable<Object[]> get() {
@@ -487,8 +526,8 @@ public class MysqlMetadataManager extends MetadataManager {
             Long VERSION = 10L;
             String ROW_FORMAT = "Compact";
             long TABLE_ROWS = 0;
-            long AVG_ROW_LENGTH  = 0;
-            long DATA_LENGTH  = 0;
+            long AVG_ROW_LENGTH = 0;
+            long DATA_LENGTH = 0;
             long MAX_DATA_LENGTH = 0;
             long INDEX_LENGTH = 0;
             long DATA_FREE = 0;
@@ -532,26 +571,26 @@ public class MysqlMetadataManager extends MetadataManager {
                 });
             }
 
-             TABLE_CATALOG = "def";
+            TABLE_CATALOG = "def";
 
-             TABLE_TYPE = "VIEW";
-             ENGINE = null;
-             VERSION = null;
-             ROW_FORMAT = null;
-             TABLE_ROWS = 0;
-             AVG_ROW_LENGTH  = 0;
-             DATA_LENGTH  = 0;
-             MAX_DATA_LENGTH = 0;
-             INDEX_LENGTH = 0;
-             DATA_FREE = 0;
-             AUTO_INCREMENT = 0;
-             CREATE_TIME = null;
-             UPDATE_TIME = null;
-             CHECK_TIME = null;
-             TABLE_COLLATION = "utf8mb4_bin";
-             CHECKSUM = 0;
-             CREATE_OPTIONS = null;
-             TABLE_COMMENT = null;
+            TABLE_TYPE = "VIEW";
+            ENGINE = null;
+            VERSION = null;
+            ROW_FORMAT = null;
+            TABLE_ROWS = 0;
+            AVG_ROW_LENGTH = 0;
+            DATA_LENGTH = 0;
+            MAX_DATA_LENGTH = 0;
+            INDEX_LENGTH = 0;
+            DATA_FREE = 0;
+            AUTO_INCREMENT = 0;
+            CREATE_TIME = null;
+            UPDATE_TIME = null;
+            CHECK_TIME = null;
+            TABLE_COLLATION = "utf8mb4_bin";
+            CHECKSUM = 0;
+            CREATE_OPTIONS = null;
+            TABLE_COMMENT = null;
 
             List<ViewHandler> views = metadataManager.getSchemaMap().entrySet().stream().flatMap(i -> i.getValue().views().values().stream()).collect(Collectors.toList());
             for (ViewHandler table : views) {
@@ -590,94 +629,66 @@ public class MysqlMetadataManager extends MetadataManager {
 
     public MysqlMetadataManager(Map<String, LogicSchemaConfig> schemaConfigs, PrototypeService prototypeService) {
         super(prototypeService);
-        schemaMap.put("information_schema", createInformationSchema());
-        schemaMap.put("performance_schema", createPerformanceSchema());
-        schemaMap.put("mysql", createMysqlSchema());
-
-        schemaConfigs.values().stream().parallel().forEach(c->{
+        for (LogicSchemaConfig c : schemaConfigs.values()) {
             addSchema(c);
-        });
+        }
+        SchemaHandler information_schema = schemaMap.computeIfAbsent("information_schema", s -> new SchemaHandlerImpl(s, null));
+        addInformationSchemaVisual((SchemaHandlerImpl) information_schema);
+
+        SchemaHandler performance_schema = schemaMap.computeIfAbsent("performance_schema", s -> new SchemaHandlerImpl(s, null));
+        addPerformanceSchemaVisualTable((SchemaHandlerImpl) performance_schema);
+
+        SchemaHandler mysql = schemaMap.computeIfAbsent("mysql", s -> new SchemaHandlerImpl(s, null));
+        addMySQLSchemaVisualTable((SchemaHandlerImpl) mysql);
+
+
     }
 
 
-    private SchemaHandler createMysqlSchema() {
-        SchemaHandlerImpl information_schema = new SchemaHandlerImpl("mysql", null);
-        NameMap<TableHandler> tables = information_schema.logicTables();
+    private SchemaHandler addMySQLSchemaVisualTable(SchemaHandlerImpl mysql) {
+        NameMap<TableHandler> tables = mysql.logicTables();
 
         for (Map.Entry<String, String> stringStringEntry : MYSQL_SCHEMA_INFO.entrySet()) {
-            String key = stringStringEntry.getKey();
-            String value = stringStringEntry.getValue();
-
-            SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(value);
-            if (sqlStatement instanceof MySqlCreateTableStatement) {
-                VisualTableHandler visualTableHandler = VisualTableHandler.createByMySQL(value, new Supplier<Observable<Object[]>>() {
-
-                    @Override
-                    public Observable<Object[]> get() {
-                        return Observable.empty();
+            addVisualTableIfAbsent(tables, stringStringEntry);
+        }
+        Arrays.asList(DUAL_TABLE_HANDLER)
+                .forEach(c -> {
+                    if (!tables.containsKey(c.getTableName().toUpperCase(), false)) {
+                        tables.put(c.getTableName().toUpperCase(), c);
                     }
                 });
-                tables.put(key, visualTableHandler);
-            }else {
-                System.out.println();
-            }
-        }
-        tables.put("dual",
-                VisualTableHandler
-                        .createByMySQL("create table mysql.dual (DUMMY varchar(1))",
-                                new Supplier<Observable<Object[]>>() {
-                                    @Override
-                                    public Observable<Object[]> get() {
-                                     return Observable.fromIterable(Collections.singletonList(new Object[]{"X"}));
-                                    }
-                                }));
-        return information_schema;
+        return mysql;
     }
 
-    private SchemaHandler createPerformanceSchema() {
-        SchemaHandlerImpl information_schema = new SchemaHandlerImpl("performance_schema", null);
+    private void addVisualTableIfAbsent(NameMap<TableHandler> tables, Map.Entry<String, String> stringStringEntry) {
+        String key = stringStringEntry.getKey();
+        String value = stringStringEntry.getValue();
+
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(value);
+        if (sqlStatement instanceof MySqlCreateTableStatement) {
+            VisualTableHandler visualTableHandler = VisualTableHandler.createByMySQL(value, () -> Observable.empty());
+            if (!tables.containsKey(key, false)) {
+                tables.put(key, visualTableHandler);
+            }
+
+        }
+    }
+
+    private SchemaHandler addPerformanceSchemaVisualTable(SchemaHandlerImpl information_schema) {
         NameMap<TableHandler> tables = information_schema.logicTables();
 
         for (Map.Entry<String, String> stringStringEntry : PERFORMANCE_SCHEMA_INFO.entrySet()) {
-            String key = stringStringEntry.getKey();
-            String value = stringStringEntry.getValue();
-
-            SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(value);
-            if (sqlStatement instanceof MySqlCreateTableStatement) {
-                VisualTableHandler visualTableHandler = VisualTableHandler.createByMySQL(value, new Supplier<Observable<Object[]>>() {
-
-                    @Override
-                    public Observable<Object[]> get() {
-                        return Observable.empty();
-                    }
-                });
-                tables.put(key, visualTableHandler);
-            }else {
-                System.out.println();
-            }
+            addVisualTableIfAbsent(tables, stringStringEntry);
         }
+
         return information_schema;
     }
 
-    private SchemaHandlerImpl createInformationSchema() {
-        SchemaHandlerImpl information_schema = new SchemaHandlerImpl("information_schema", null);
+    private SchemaHandlerImpl addInformationSchemaVisual(SchemaHandlerImpl information_schema) {
         NameMap<TableHandler> tables = information_schema.logicTables();
 
         for (Map.Entry<String, String> stringStringEntry : INFORMATION_SCHEMA_INFO.entrySet()) {
-            String key = stringStringEntry.getKey();
-            String value = stringStringEntry.getValue();
-
-            SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(value);
-            if (sqlStatement instanceof MySqlCreateTableStatement) {
-                VisualTableHandler visualTableHandler = VisualTableHandler.createByMySQL(value, new Supplier<Observable<Object[]>>() {
-
-                    @Override
-                    public Observable<Object[]> get() {
-                        return Observable.empty();
-                    }
-                });
-                tables.put(key, visualTableHandler);
-            }
+            addVisualTableIfAbsent(tables, stringStringEntry);
 
         }
 
@@ -702,9 +713,12 @@ public class MysqlMetadataManager extends MetadataManager {
                         VIEW_TABLE_HANDLER,
                         ROUTINES_TABLE_HANDLER,
                         GLOBAL_VARIABLES_TABLE_HANDLER,
-                        TRIGGERS_TABLE_HANDLER)
+                        TRIGGERS_TABLE_HANDLER,
+                        PARAMETERS_TABLE_HANDLER)
                 .forEach(c -> {
-                    tables.put(c.getTableName().toUpperCase(), c);
+                    if (!tables.containsKey(c.getTableName().toUpperCase(), false)) {
+                        tables.put(c.getTableName().toUpperCase(), c);
+                    }
                 });
         return information_schema;
     }
@@ -987,6 +1001,7 @@ public class MysqlMetadataManager extends MetadataManager {
 
         return createEVENTSTableSQL.toString();
     }
+
     private static String ROUTINES() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("ROUTINES");
@@ -1029,6 +1044,7 @@ public class MysqlMetadataManager extends MetadataManager {
         createEVENTSTableSQL.addColumn("DATABASE_COLLATION", "varchar(64)");
         return createEVENTSTableSQL.toString();
     }
+
     private static String TRIGGERS() {
         MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
         createEVENTSTableSQL.setTableName("TRIGGERS");
@@ -1058,4 +1074,35 @@ public class MysqlMetadataManager extends MetadataManager {
         createEVENTSTableSQL.addColumn("DATABASE_COLLATION", "varchar(192)");
         return createEVENTSTableSQL.toString();
     }
+
+    private static String PARAMETERS() {
+        MySqlCreateTableStatement createEVENTSTableSQL = new MySqlCreateTableStatement();
+        createEVENTSTableSQL.setTableName("parameters");
+        createEVENTSTableSQL.setSchema("information_schema");
+        createEVENTSTableSQL.addColumn("SPECIFIC_CATALOG", "varchar(64)");
+        createEVENTSTableSQL.addColumn("SPECIFIC_SCHEMA", "varchar(64)");
+        createEVENTSTableSQL.addColumn("SPECIFIC_NAME", "varchar(64)");
+        createEVENTSTableSQL.addColumn("ORDINAL_POSITION", "bigint(11) unsigned");
+        createEVENTSTableSQL.addColumn("PARAMETER_MODE", "varchar(5)");
+        createEVENTSTableSQL.addColumn("PARAMETER_NAME", "varchar(64)");
+        createEVENTSTableSQL.addColumn("DATA_TYPE", "longtext");
+        createEVENTSTableSQL.addColumn("CHARACTER_MAXIMUM_LENGTH", "bigint(21)");
+        createEVENTSTableSQL.addColumn("CHARACTER_OCTET_LENGTH", "bigint(21)");
+        createEVENTSTableSQL.addColumn("NUMERIC_PRECISION", "int(10) unsigned");
+        createEVENTSTableSQL.addColumn("NUMERIC_SCALE", "bigint(11)");
+        createEVENTSTableSQL.addColumn("DATETIME_PRECISION", "int(10)");
+        createEVENTSTableSQL.addColumn("CHARACTER_SET_NAME", "varchar(64)");
+        createEVENTSTableSQL.addColumn("COLLATION_NAME", "varchar(64)");
+        createEVENTSTableSQL.addColumn("DTD_IDENTIFIER", "mediumtext");
+        createEVENTSTableSQL.addColumn("ROUTINE_TYPE", "enum('FUNCTION','PROCEDURE')");
+        return createEVENTSTableSQL.toString();
+    }
+
+    public static final VisualTableHandler PARAMETERS_TABLE_HANDLER = VisualTableHandler.createByMySQL(PARAMETERS(), new Supplier<Observable<Object[]>>() {
+        @Override
+        public Observable<Object[]> get() {
+            ArrayList<Object[]> resList = new ArrayList<>();
+            return Observable.fromIterable(resList);
+        }
+    });
 }

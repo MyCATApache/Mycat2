@@ -1,7 +1,9 @@
 package io.mycat.monitor;
 
+import io.mycat.ExecutorUtil;
 import io.mycat.IOExecutor;
 import io.mycat.MetaClusterCurrent;
+import io.mycat.NameableExecutor;
 import io.mycat.config.MonitorConfig;
 import io.mycat.config.SqlLogConfig;
 import io.mycat.config.TimerConfig;
@@ -17,12 +19,11 @@ import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 public class MycatSQLLogMonitorImpl extends MycatSQLLogMonitor {
@@ -40,12 +41,12 @@ public class MycatSQLLogMonitorImpl extends MycatSQLLogMonitor {
     public static final String QUERY_SQL_LOG = "/QuerySqlLog";
     public static final String LOCKSERIVCE_URL = "/lockserivce";
 
-    Map<String, LockContext> lockMap = new HashMap<>();
+    Map<String, LockContext> lockMap = new ConcurrentHashMap<>();
+    NameableExecutor lockThread = ExecutorUtil.create("lock_server", 1);
 
     @Data
     static class LockContext {
         String id;
-        ReentrantLock lock;
     }
 
     @SneakyThrows
@@ -68,14 +69,15 @@ public class MycatSQLLogMonitorImpl extends MycatSQLLogMonitor {
             httpServer.requestHandler(new Handler<HttpServerRequest>() {
                 @Override
                 public void handle(HttpServerRequest request) {
-                    if(request.isExpectMultipart()){
+                    if (request.uri().startsWith(LOCKSERIVCE_URL.toLowerCase())) {
                         request.setExpectMultipart(true);
                     }
                     request.endHandler(v -> {
-                        vertx.executeBlocking(new Handler<Promise<Void>>() {
+
+                        lockThread.execute(new Runnable() {
                             @Override
-                            public void handle(Promise<Void> promise) {
-                                try{
+                            public void run() {
+                                try {
                                     MultiMap formAttributes = request.formAttributes();
                                     String uri = request.path().toLowerCase();
                                     Object res = "mycat2 monitor";
@@ -96,45 +98,32 @@ public class MycatSQLLogMonitorImpl extends MycatSQLLogMonitor {
                                             String name = formAttributes.get("name");
                                             String id = Objects.toString(formAttributes.get("id"));
                                             long timeout = Long.parseLong(Optional.ofNullable(formAttributes.get("timeout")).orElse("0"));
-                                            synchronized (MycatSQLLogMonitorImpl.this) {
-                                                switch (method) {
-                                                    case "GET_LOCK": {
-                                                        LockContext context = lockMap.computeIfAbsent(name, s -> {
-                                                            LockContext lockContext = new LockContext();
-                                                            lockContext.setId(id);
-                                                            lockContext.setLock(new ReentrantLock());
-                                                            return lockContext;
-                                                        });
-                                                        if (context.getId().equals(id)) {
-                                                            res = 1;
-                                                        } else {
-                                                            boolean b = context.getLock().tryLock(timeout, TimeUnit.MILLISECONDS);
-                                                           if (b){
-                                                               context.setId(id);
-                                                               res = 1;
-                                                           }else {
-                                                               res = 0;
-                                                           }
-                                                        }
-                                                        break;
+                                            switch (method) {
+                                                case "GET_LOCK": {
+                                                    LockContext context = lockMap.computeIfAbsent(name, s -> {
+                                                        LockContext lockContext = new LockContext();
+                                                        lockContext.setId(id);
+                                                        return lockContext;
+                                                    });
+                                                    if (context.getId().equals(id)) {
+                                                        res = 1;
+                                                    } else {
+                                                        res = 0;
                                                     }
-                                                    case "RELEASE_LOCK": {
-                                                        if (!lockMap.containsKey(name)) {
-                                                            res = null;
-                                                        } else {
-                                                            lockMap.remove(name);
-                                                            res = 1;
-                                                        }
-                                                        break;
-                                                    }
-                                                    case "IS_FREE_LOCK": {
-                                                        res = (!lockMap.containsKey(name)) ? 1 : 0;
-                                                        break;
-                                                    }
-                                                    default:
-                                                        res = ("Unexpected value: " + method);
-                                                        break;
+                                                    break;
                                                 }
+                                                case "RELEASE_LOCK": {
+                                                    LockContext lockContext = lockMap.remove(name);
+                                                    res = lockContext != null ? 1 : 0;
+                                                    break;
+                                                }
+                                                case "IS_FREE_LOCK": {
+                                                    res = (!lockMap.containsKey(name)) ? 1 : 0;
+                                                    break;
+                                                }
+                                                default:
+                                                    res = ("Unexpected value: " + method);
+                                                    break;
                                             }
                                         } catch (Throwable throwable) {
                                             LOGGER.error("", throwable);
@@ -142,14 +131,12 @@ public class MycatSQLLogMonitorImpl extends MycatSQLLogMonitor {
                                         }
                                     }
                                     request.response().end(Json.encode(res));
-                                }catch (Throwable throwable){
-                                    LOGGER.error("",throwable);
-                                }finally {
-                                    promise.tryComplete();
+                                } catch (Throwable throwable) {
+                                    LOGGER.error("", throwable);
+                                    request.response().end(throwable.getLocalizedMessage());
                                 }
                             }
                         });
-
                     });
                 }
             }).listen(port, ip);

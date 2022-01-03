@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableSortedMap;
 
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import static io.mycat.util.CaseInsensitiveComparator.COMPARATOR;
 
@@ -121,6 +122,17 @@ public class NameMap<V> {
      */
     public boolean containsKey(String name, boolean caseSensitive) {
         return !range(name, caseSensitive).isEmpty();
+    }
+
+    public V computeIfAbsent(String key,
+                             Function<String, ? extends V> mappingFunction) {
+        if (!containsKey(key, false)) {
+            V apply = mappingFunction.apply(key);
+            map.put(key, apply);
+            return (V) apply;
+        } else {
+            return get(key, false);
+        }
     }
 
     /**
