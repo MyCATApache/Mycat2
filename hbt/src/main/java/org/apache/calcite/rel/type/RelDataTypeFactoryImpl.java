@@ -36,6 +36,7 @@ import com.google.common.collect.Interners;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.AbstractList;
@@ -533,7 +534,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
   }
 
   public Charset getDefaultCharset() {
-    return Util.getDefaultCharset();
+    return StandardCharsets.UTF_8;
   }
 
   @SuppressWarnings("deprecation")

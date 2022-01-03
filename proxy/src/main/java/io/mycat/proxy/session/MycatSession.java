@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -140,7 +141,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
 
     private void setCharset(int index, String charsetName) {
-        this.dataContext.setCharset(index, charsetName, Charset.defaultCharset());
+        this.dataContext.setCharset(index, charsetName, StandardCharsets.UTF_8);
     }
 
     public void setSchema(String schema) {

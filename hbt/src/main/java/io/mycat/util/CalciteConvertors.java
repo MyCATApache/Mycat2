@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.*;
 import java.util.*;
@@ -356,7 +357,7 @@ public class CalciteConvertors {
             if (columnType == JDBCType.VARCHAR) {
                 type = factory.createTypeWithCharsetAndCollation(
                         factory.createSqlType(SqlTypeName.VARCHAR),
-                        Charset.defaultCharset(),
+                        StandardCharsets.UTF_8,
                         SqlCollation.IMPLICIT);
             } else if (columnType == JDBCType.LONGVARBINARY) {
                 type = factory.createSqlType(SqlTypeName.VARBINARY);
