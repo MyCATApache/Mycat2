@@ -61,7 +61,7 @@ public class ShardingTableConfigVO implements VO {
 
     public File testFile;
 
-    public  IndexShardingTableVO currentIndexShardingTableController;
+    public IndexShardingTableVO currentIndexShardingTableController;
 
     public ShardingTableConfigVO() {
 
@@ -81,7 +81,7 @@ public class ShardingTableConfigVO implements VO {
             ShardingTableConfig shardingTableConfig = getShardingTableConfig();
             controller.save(schemaName, tableName, validate(shardingTableConfig));
             controller.flashSchemas();
-        }catch (Exception e){
+        } catch (Exception e) {
             popAlter(e);
         }
     }
@@ -124,7 +124,12 @@ public class ShardingTableConfigVO implements VO {
             Integer dbIndex = partition.getDbIndex();
             Integer tableIndex = partition.getTableIndex();
             Integer index = partition.getIndex();
-            partitions.add(Arrays.asList(targetName, schema, table, dbIndex, tableIndex, index));
+
+            if (tableIndex != null) {
+                partitions.add(Arrays.asList(targetName, schema, table, dbIndex, tableIndex, index));
+            } else {
+                partitions.add(Arrays.asList(targetName, schema, table));
+            }
         }
 
         ShardingFunction shardingFuntion = Json.decodeValue(shardingInfoText, ShardingFunction.class);
@@ -147,7 +152,7 @@ public class ShardingTableConfigVO implements VO {
                 file = testFile;
                 testFile = null;
             }
-            if(file==null){
+            if (file == null) {
                 return;
             }
             inputPartitions(view, file);
@@ -261,14 +266,14 @@ public class ShardingTableConfigVO implements VO {
         try {
             FXMLLoader loader = UIMain.loader("/indexShardingTable.fxml");
             Parent parent = loader.load();
-            this. currentIndexShardingTableController = loader.getController();
+            this.currentIndexShardingTableController = loader.getController();
             currentIndexShardingTableController.setController(this.controller);
             currentIndexShardingTableController.getLogicalSchemaName().setText(getSchemaName().getText());
             currentIndexShardingTableController.getLogicalTableName().setText(Objects.requireNonNull(getTableName().getText()));
             currentIndexShardingTableController.setShardingTableConfigVO(this);
 
             Stage stage = new Stage();
-            Scene scene = SceneUtil.createScene(()->new Scene(parent));
+            Scene scene = SceneUtil.createScene(() -> new Scene(parent));
             stage.setScene(scene);
             currentIndexShardingTableController.setStage(stage);
             stage.showAndWait();
