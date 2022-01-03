@@ -17,6 +17,8 @@ import io.mycat.config.LogicSchemaConfig;
 import io.mycat.prototypeserver.mysql.*;
 import io.mycat.util.NameMap;
 import io.reactivex.rxjava3.core.Observable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -24,6 +26,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class MysqlMetadataManager extends MetadataManager {
+    final static Logger log = LoggerFactory.getLogger(MysqlMetadataManager.class);
     public static final NameMap<String> INFORMATION_SCHEMA_INFO = NameMap.immutableCopyOf(CreateMySQLSQLSet.getFieldValue(InformationSchema.class));
     public static final NameMap<String> PERFORMANCE_SCHEMA_INFO = NameMap.immutableCopyOf(CreateMySQLSQLSet.getFieldValue(PerformanceSchema.class));
     public static final NameMap<String> MYSQL_SCHEMA_INFO = NameMap.immutableCopyOf(CreateMySQLSQLSet.getFieldValue(MysqlSchema.class));
@@ -284,6 +287,15 @@ public class MysqlMetadataManager extends MetadataManager {
         @Override
         public Observable<Object[]> get() {
             ArrayList<Object[]> resList = new ArrayList<>();
+            try {
+                if (MetaClusterCurrent.exist(MysqlVariableService.class)) {
+                    MysqlVariableService variableService = MetaClusterCurrent.wrapper(MysqlVariableService.class);
+                    resList.addAll(variableService.getGlobalVariables());
+                }
+            } catch (Throwable throwable) {
+                log.error("", throwable);
+            }
+
             return Observable.fromIterable(resList);
         }
     });
@@ -605,13 +617,13 @@ public class MysqlMetadataManager extends MetadataManager {
             addSchema(c);
         }
         SchemaHandler information_schema = schemaMap.computeIfAbsent("information_schema", s -> new SchemaHandlerImpl(s, null));
-        addInformationSchemaVisual((SchemaHandlerImpl)information_schema);
+        addInformationSchemaVisual((SchemaHandlerImpl) information_schema);
 
         SchemaHandler performance_schema = schemaMap.computeIfAbsent("performance_schema", s -> new SchemaHandlerImpl(s, null));
-        addPerformanceSchemaVisualTable((SchemaHandlerImpl)performance_schema);
+        addPerformanceSchemaVisualTable((SchemaHandlerImpl) performance_schema);
 
         SchemaHandler mysql = schemaMap.computeIfAbsent("mysql", s -> new SchemaHandlerImpl(s, null));
-        addMySQLSchemaVisualTable((SchemaHandlerImpl)mysql);
+        addMySQLSchemaVisualTable((SchemaHandlerImpl) mysql);
 
 
     }
@@ -639,7 +651,7 @@ public class MysqlMetadataManager extends MetadataManager {
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(value);
         if (sqlStatement instanceof MySqlCreateTableStatement) {
             VisualTableHandler visualTableHandler = VisualTableHandler.createByMySQL(value, () -> Observable.empty());
-            if (!tables.containsKey(key,false)){
+            if (!tables.containsKey(key, false)) {
                 tables.put(key, visualTableHandler);
             }
 
