@@ -22,6 +22,7 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
@@ -158,7 +159,7 @@ public class ResultSetMapping {
                         }
                         default:
                             Object object = objects[columnIndex];
-                            row[rowIndex] = (object == null ? null : Objects.toString(object).getBytes());
+                            row[rowIndex] = (object == null ? null : Objects.toString(object).getBytes(StandardCharsets.UTF_8));
                             break;
                     }
 
