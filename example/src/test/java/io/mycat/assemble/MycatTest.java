@@ -84,6 +84,7 @@ public interface MycatTest {
     public default void execute(Connection mySQLConnection, String sql) throws Exception {
         LOGGER.info(sql);
         JdbcUtils.execute(mySQLConnection, sql);
+        System.out.println(sql);
     }
 
     public default List<Map<String, Object>> executeQuery(Connection mySQLConnection, String sql) throws Exception {

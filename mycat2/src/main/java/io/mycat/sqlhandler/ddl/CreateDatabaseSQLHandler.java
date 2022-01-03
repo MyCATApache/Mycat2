@@ -46,15 +46,15 @@ public class CreateDatabaseSQLHandler extends AbstractSQLHandler<SQLCreateDataba
             public Future<Void> get() {
                 MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
                 SQLCreateDatabaseStatement ast = request.getAst();
-                boolean ifNotExists = ast.isIfNotExists();
-                String tableName = SQLUtils.normalize(ast.getName().getSimpleName());
+                ast.setIfNotExists(true);
+                String databaseName = SQLUtils.normalize(ast.getName().getSimpleName());
                 Map<String, Object> attributes = ast.getAttributes();
                 String json = (String) attributes.get(SqlHints.AFTER_COMMENT);
                 String targetName = JsonUtil.fromMap(json, "targetName").orElse(null);
                 try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
-                    ops.addSchema(tableName, targetName);
+                    ops.addSchema(databaseName, targetName);
                     ops.commit();
-                    onPhysics(tableName);
+                    onPhysics(ast.toString());
                     return response.sendOk();
                 }catch (Throwable throwable){
                     return Future.failedFuture(throwable);
@@ -63,13 +63,11 @@ public class CreateDatabaseSQLHandler extends AbstractSQLHandler<SQLCreateDataba
         });
     }
 
-    protected void onPhysics(String name) {
+    protected void onPhysics(String sql) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         try (DefaultConnection connection = jdbcConnectionManager.getConnection(metadataManager.getPrototype())) {
-            connection.executeUpdate(String.format(
-                    "CREATE DATABASE IF NOT EXISTS %s DEFAULT CHARSET utf8 COLLATE utf8_general_ci;",
-                    name),false);
+            connection.executeUpdate(sql,false);
         }catch (Throwable t){
             LOGGER.warn("",t);
         }
