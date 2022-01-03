@@ -23,7 +23,7 @@ public class DDLTest implements MycatTest {
     public void testNormal() throws Exception {
      //while (true)
      {
-            int count = 8;
+            int count = 4;
             NameableExecutor testDDLPool = null;
             List<Connection> connections = new ArrayList<>();
             try (Connection db1 = getMySQLConnection(DB1);
