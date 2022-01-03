@@ -1,10 +1,12 @@
 package io.mycat;
 
 import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLDataType;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
+import com.alibaba.druid.sql.ast.statement.SQLCharacterDataType;
 import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
@@ -139,8 +141,8 @@ public class MysqlMetadataManager extends MetadataManager {
                         long NUMERIC_PRECISION = 0;
                         long NUMERIC_SCALE = 0;
                         long DATETIME_PRECISION = 0;
-                        String CHARACTER_SET_NAME = "utf8mb4";
-                        String COLLATION_NAME = "utf8_general_ci";
+                        String CHARACTER_SET_NAME;
+                        String COLLATION_NAME;
                         String COLUMN_TYPE;
                         String COLUMN_KEY;
                         String EXTRA;
@@ -155,7 +157,21 @@ public class MysqlMetadataManager extends MetadataManager {
                             COLUMN_NAME = name;
                             ORDINAL_POSITION = i;
                             DATA_TYPE = column.getDataType().getName();
-                            String Collation = Optional.ofNullable(column.getCollateExpr()).map(s -> SQLUtils.normalize(s.toString())).orElse(null);
+                            CHARACTER_SET_NAME = Optional.ofNullable(column.getCharsetExpr()).map(s -> SQLUtils.normalize(s.toString()))
+                                    .orElseGet(() -> {
+                                        SQLDataType dataType = column.getDataType();
+                                        if (dataType instanceof SQLCharacterDataType) {
+                                            return Optional.ofNullable(((SQLCharacterDataType) dataType).getCharSetName()).orElse("utf8mb4");
+                                        }
+                                        return null;
+                                    });
+                            COLLATION_NAME = Optional.ofNullable(column.getCollateExpr()).map(s -> SQLUtils.normalize(s.toString())).orElseGet(() -> {
+                                SQLDataType dataType = column.getDataType();
+                                if (dataType instanceof SQLCharacterDataType) {
+                                    return Optional.ofNullable(((SQLCharacterDataType) dataType).getCollate()).orElse("utf8mb4_general_ci");
+                                }
+                                return null;
+                            });
                             IS_NULLABLE = column.containsNotNullConstaint() ? "NO" : "YES";
                             COLUMN_KEY = mySqlCreateTableStatement.isPrimaryColumn(name) ?
                                     "PRI" : mySqlCreateTableStatement.isUNI(name) ? "UNI" : mySqlCreateTableStatement.isMUL(name) ? "MUL" : null;
