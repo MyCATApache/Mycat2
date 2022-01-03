@@ -100,7 +100,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         cmd = s.substring(0, bodyStartIndex);
                         body = s.substring(bodyStartIndex);
                     }
-
+                    cmd = cmd.trim();
 
                     MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
                     MycatRouterConfig routerConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);

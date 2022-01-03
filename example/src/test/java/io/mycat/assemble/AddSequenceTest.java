@@ -74,9 +74,12 @@ public class AddSequenceTest implements MycatTest {
             List<Map<String, Object>> maps1 = executeQuery(connection, "select LAST_INSERT_ID()");
 
             execute(connection, "/*+ mycat:setSequence{\n" +
-                    "\t\"name\":\"db1_travelrecord\",\n" +
-                    "\t\"clazz\":\"io.mycat.plug.sequence.SequenceMySQLGenerator\",\n" +
-                    "} */");
+                    "\"name\":\"db1_travelrecord\",\n" +
+                    "\"clazz\":\"io.mycat.plug.sequence.SequenceMySQLGenerator\",\n" +
+                    "\"name\":\"db1_travelrecord\",\n" +
+                    "  \"targetName\": \"prototype\",\n" +
+                    "  \"schemaName\":\"db1\"\n" +
+                    "  } */;");
             try (Connection mySQLConnection = getMySQLConnection(DB1)) {
                 try (Statement statement = mySQLConnection.createStatement()) {
                     statement.execute("use db1");
