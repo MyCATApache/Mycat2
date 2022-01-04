@@ -216,7 +216,7 @@ public class MongoConnection implements Connection {
 			int resultSetConcurrency, int resultSetHoldability)
 			throws SQLException {
 		// 创建一个 Statement 对象，该对象将生成具有给定类型、并发性和可保存性的 ResultSet 对象。
-		return new MongoStatement(this, resultSetType, resultSetConcurrency, resultSetHoldability);
+		return new MongoStatement(this, 0, 0, resultSetHoldability);
 	}
 	
 	@Override
