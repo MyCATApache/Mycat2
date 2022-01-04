@@ -34,7 +34,7 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
     }
 
 
-     class Replacer extends MySqlASTVisitorAdapter {
+    class Replacer extends MySqlASTVisitorAdapter {
         NameMap<Partition> partition;
         boolean success = true;
 
@@ -45,7 +45,9 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
         @Override
         public boolean visit(SQLExprTableSource x) {
             if (!success) return false;
-            x.setAlias(x.getTableName());
+            if (x.getAlias() == null) {
+                x.setAlias(x.getTableName());
+            }
             String schema = SQLUtils.normalize(x.getSchema());
             String table = SQLUtils.normalize(x.getTableName());
             String s = schema + "_" + table;
@@ -69,7 +71,7 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
             SQLStatement parameterizedStatement = drdsSqlWithParams.getParameterizedStatement().clone();
             Replacer replacer = new Replacer(partition);
             parameterizedStatement.accept(replacer);
-            if (replacer.success){
+            if (replacer.success) {
                 ExplainDetail explainDetail = new ExplainDetail(ExecuteType.QUERY, Collections.singletonList(targetName), parameterizedStatement.toString(), null, drdsSqlWithParams.getParams());
                 return response.execute(explainDetail);
             }
@@ -77,7 +79,7 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
         return super.executeQuery(plan);
     }
 
-    private  Optional<PartitionGroup> checkColocatedPushDown(Plan plan) {
+    private Optional<PartitionGroup> checkColocatedPushDown(Plan plan) {
         CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
         AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, codeExecuterContext, drdsSqlWithParams);
         Map<String, MycatRelDatasourceSourceInfo> relContext = codeExecuterContext.getRelContext();
