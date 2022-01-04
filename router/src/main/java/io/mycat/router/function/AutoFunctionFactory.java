@@ -70,6 +70,9 @@ public class AutoFunctionFactory {
                 .map(i -> Integer.parseInt(i.toString())).orElse(0);
 
         boolean prototype = (storeNum == 0);
+        if (prototype){
+            storeNum = 1;
+        }
         Integer storeDbNum = Optional.ofNullable(properties.get("storeDbNum"))
                 .map(i -> Integer.parseInt(i.toString())).orElse(dbNum * tableNum / storeNum);
         SQLMethodInvokeExpr tableMethod = converyToMethodExpr((String) properties.get("tableMethod"));
