@@ -45,6 +45,7 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
         @Override
         public boolean visit(SQLExprTableSource x) {
             if (!success) return false;
+            x.setAlias(x.getTableName());
             String schema = SQLUtils.normalize(x.getSchema());
             String table = SQLUtils.normalize(x.getTableName());
             String s = schema + "_" + table;
