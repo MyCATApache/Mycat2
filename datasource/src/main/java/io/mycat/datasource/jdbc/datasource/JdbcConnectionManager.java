@@ -16,6 +16,7 @@ package io.mycat.datasource.jdbc.datasource;
 
 
 import com.alibaba.druid.util.JdbcUtils;
+import com.mongodb.Mongo;
 import io.mycat.ConnectionManager;
 import io.mycat.IOExecutor;
 import io.mycat.MetaClusterCurrent;
@@ -26,6 +27,7 @@ import io.mycat.config.DatasourceConfig;
 import io.mycat.config.ServerConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.DruidDatasourceProvider;
+import io.mycat.datasource.jdbc.mongodb.MongoDriver;
 import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import org.slf4j.Logger;
@@ -117,28 +119,49 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         });
         DefaultConnection defaultConnection;
         Connection connection = null;
-        try {
-            DatasourceConfig config = key.getConfig();
-            connection = key.getDataSource().getConnection();
-            defaultConnection = new DefaultConnection(connection, key, autocommit, transactionIsolation, this);
-            LOGGER.debug("get connection:{} {}", name, defaultConnection);
-            if (config.isInitSqlsGetConnection()) {
-                if (config.getInitSqls() != null && !config.getInitSqls().isEmpty()) {
-                    try (Statement statement = connection.createStatement()) {
-                        for (String initSql : config.getInitSqls()) {
-                            statement.execute(initSql);
+        switch (key.getDbType()) {
+            default: {
+                try {
+                    DatasourceConfig config = key.getConfig();
+                    connection = key.getDataSource().getConnection();
+                    defaultConnection = new DefaultConnection(connection, key, autocommit, transactionIsolation, this);
+                    LOGGER.debug("get connection:{} {}", name, defaultConnection);
+                    if (config.isInitSqlsGetConnection()) {
+                        if (config.getInitSqls() != null && !config.getInitSqls().isEmpty()) {
+                            try (Statement statement = connection.createStatement()) {
+                                for (String initSql : config.getInitSqls()) {
+                                    statement.execute(initSql);
+                                }
+                            }
                         }
                     }
+                    key.counter.getAndIncrement();
+                    return defaultConnection;
+                } catch (SQLException e) {
+                    if (connection != null) {
+                        JdbcUtils.close(connection);
+                    }
+                    LOGGER.debug("", e);
+                    throw new MycatException(e);
                 }
             }
-            key.counter.getAndIncrement();
-            return defaultConnection;
-        } catch (SQLException e) {
-            if (connection != null) {
-                JdbcUtils.close(connection);
+            case "mongodb": {
+                try {
+                    Properties properties = new Properties();
+                    String username = key.getUsername();
+                    String password = key.getPassword();
+                    if (username != null) {
+                        properties.setProperty("username", username);
+                    }
+                    if (password != null) {
+                        properties.setProperty("password", password);
+                    }
+                    Connection connect = new MongoDriver().connect(key.getUrl(), properties);
+                    return new DefaultConnection(connect, key, autocommit, transactionIsolation, this);
+                } catch (SQLException ex) {
+                    throw new MycatException(ex);
+                }
             }
-            LOGGER.debug("", e);
-            throw new MycatException(e);
         }
     }
 
