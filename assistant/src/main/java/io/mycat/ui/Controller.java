@@ -305,6 +305,8 @@ public class Controller {
         partitionsView.getColumns().addAll(firstCol, secondCol, thirdCol, fourthCol, fifthCol, sixCol);
 
         for (Partition backend : partitions) {
+            Objects.requireNonNull(backend);
+            Objects.requireNonNull(partitionsView);
             partitionsView.getItems().add(PartitionEntry.of(backend.getIndex(),backend.getDbIndex(),backend.getTableIndex(),backend.getTargetName(),backend.getSchema(),backend.getTable()));
         }
 
