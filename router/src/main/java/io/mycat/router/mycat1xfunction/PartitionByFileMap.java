@@ -113,7 +113,9 @@ public class PartitionByFileMap extends Mycat1xSingleValueRuleFunction {
                     .getResourceAsStream(mapFile);
             if (fin == null) {
                 try {
-                    fin = new FileInputStream(Paths.get(mapFile).toAbsolutePath().toFile());
+                    Path path = Paths.get(mapFile).toAbsolutePath();
+                    fin = new FileInputStream(path.toFile());
+                    LOGGER.info("PartitionByFileMap path is "+path);
                 } catch (IOException e) {
                     LOGGER.error("can not find file", e);
                 }
