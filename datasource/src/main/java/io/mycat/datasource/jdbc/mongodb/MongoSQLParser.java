@@ -92,7 +92,7 @@ public class MongoSQLParser {
 			
 			//表名
 			SQLTableSource table=mysqlSelectQuery.getFrom();
-			DBCollection coll =this._db.getCollection(table.toString());
+			DBCollection coll =this._db.getCollection(table.computeAlias());
 			mongo.setTable(table.toString());
 			
 			SQLExpr expr=mysqlSelectQuery.getWhere();	
@@ -146,6 +146,7 @@ public class MongoSQLParser {
 			   // System.out.println(order);
 			  }
 		   }
+			LOGGER.info("{}",c);
 		   mongo.setCursor(c);
 		}
 		return  mongo;		
