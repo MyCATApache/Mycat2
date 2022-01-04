@@ -9,7 +9,6 @@ import io.mycat.calcite.table.ShardingTable;
 import io.mycat.querycondition.ComparisonOperator;
 import io.mycat.querycondition.KeyMeta;
 import io.mycat.querycondition.QueryType;
-import javassist.runtime.Inner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.*;
@@ -17,13 +16,16 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Sarg;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 public class ValuePredicateAnalyzer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ValuePredicateAnalyzer.class);
     public static final RexBuilder REX_BUILDER = MycatCalciteSupport.RexBuilder;
     final String indexName;
     final List<KeyMeta> keyMetas;
@@ -44,6 +46,8 @@ public class ValuePredicateAnalyzer {
     }
 
     public Map<QueryType, List<ValueIndexCondition>> translateMatch(RexNode condition) {
+        Map<QueryType, List<ValueIndexCondition>> tryAndInRes = tryAndIn(condition);
+        if (tryAndInRes != null && !tryAndInRes.isEmpty()) return tryAndInRes;
         // does not support disjunctions
         List<RexNode> disjunctions = RelOptUtil.disjunctions(condition);
         if (disjunctions.size() == 1) {
@@ -55,6 +59,65 @@ public class ValuePredicateAnalyzer {
         disjunctions = RelOptUtil.disjunctions(listToInList);
         if (disjunctions.size() == 1) {
             return translateAnd(disjunctions.get(0));
+        }
+        return Collections.emptyMap();
+    }
+
+    @Nullable
+    private Map<QueryType, List<ValueIndexCondition>> tryAndIn(RexNode condition) {
+        try {
+            if (condition.isA(SqlKind.AND)) {
+                RexCall rexCall = (RexCall) condition;
+                List<RexNode> operands = rexCall.getOperands();
+                RexNode primaryHead = operands.get(0);
+                if (operands.subList(1, operands.size()).stream().anyMatch(i -> RexUtil.findOperatorCall(SqlStdOperatorTable.OR, i) != null)) {
+                    return Collections.emptyMap();
+                }
+                boolean allMatch = true;
+                RexNode primaryInputRef = null;
+                List<RexNode> valueList = new ArrayList<>();
+                if (primaryHead.isA(SqlKind.OR)) {
+                    RexCall primaryNode = (RexCall) primaryHead;
+                    for (RexNode maybeEquals : primaryNode.getOperands()) {
+                        if (maybeEquals.isA(SqlKind.EQUALS)) {
+                            RexCall equals = (RexCall) maybeEquals;
+                            RexNode maybeId = equals.getOperands().get(0);
+                            valueList.add(RexUtil.removeCast(equals.getOperands().get(1)));
+                            if (maybeId.isA(SqlKind.INPUT_REF)) {
+                                if (primaryInputRef == null) {
+                                    primaryInputRef = maybeId;
+                                    continue;
+                                } else if (primaryInputRef.equals(maybeId)) {
+                                    continue;
+                                }
+                            }
+                        }
+                        allMatch = false;
+                        break;
+                    }
+                    if (allMatch&&!valueList.isEmpty()) {
+                        Map<QueryType, List<ValueIndexCondition>> indexConditions = new HashMap<>();
+                        ValueIndexCondition pushDownCondition = null;
+                        for (KeyMeta skMeta : keyMetas) {
+                            for (RexNode rexNode : valueList) {
+                                if (pushDownCondition == null){
+                                    pushDownCondition = findPushDownCondition(
+                                            ImmutableList.of(MycatCalciteSupport.RexBuilder.makeCall(SqlStdOperatorTable.EQUALS, primaryInputRef, rexNode)), skMeta);
+                                }else {
+                                    pushDownCondition.pointQueryKey.add(rexNode);
+                                }
+                            }
+                        }
+                        if (pushDownCondition != null){
+                            indexConditions.put(QueryType.PK_POINT_QUERY,Collections.singletonList(pushDownCondition));
+                        }
+                        return indexConditions;
+                    }
+                }
+            }
+            return Collections.emptyMap();
+        } catch (Throwable throwable) {
+            LOGGER.warn("", throwable);
         }
         return Collections.emptyMap();
     }
@@ -97,7 +160,7 @@ public class ValuePredicateAnalyzer {
     }
 
     private Map<QueryType, List<ValueIndexCondition>> translateAnd(RexNode condition) {
-        List<RexNode> rexNodeList =  RelOptUtil.conjunctions(condition);
+        List<RexNode> rexNodeList = RelOptUtil.conjunctions(condition);
 
 
         List<ValueIndexCondition> indexConditions = new ArrayList<>();
@@ -240,15 +303,15 @@ public class ValuePredicateAnalyzer {
             }
         }
         Optional<InternalRexNode> leftMostSargOpNode = findFirstOp(leftMostKeyNodes, "sarg");
-        if (leftMostSargOpNode.isPresent()){
+        if (leftMostSargOpNode.isPresent()) {
             InternalRexNode node = leftMostSargOpNode.get();
             RexCall rexCall = (RexCall) node.node;
-            Sarg sarg =(Sarg)((RexLiteral)rexCall.getOperands().get(1)).getValue();
-            if(sarg.isPoints()){
-                RexCall rexNode = (RexCall)RexUtil.expandSearch(REX_BUILDER, null, rexCall);
+            Sarg sarg = (Sarg) ((RexLiteral) rexCall.getOperands().get(1)).getValue();
+            if (sarg.isPoints()) {
+                RexCall rexNode = (RexCall) RexUtil.expandSearch(REX_BUILDER, null, rexCall);
 
                 List<Object> key = new ArrayList<>();
-                rexNode.accept(new RexShuttle(){
+                rexNode.accept(new RexShuttle() {
                     @Override
                     public RexNode visitLiteral(RexLiteral literal) {
                         key.add(literal.getValue());
@@ -261,7 +324,7 @@ public class ValuePredicateAnalyzer {
                 return condition
                         .withQueryType(QueryType.PK_POINT_QUERY)
                         .withPointQueryKey(key);
-            }else {
+            } else {
                 return condition.withQueryType(QueryType.PK_FULL_SCAN);
             }
 
