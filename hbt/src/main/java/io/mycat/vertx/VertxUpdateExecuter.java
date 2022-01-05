@@ -26,7 +26,6 @@ import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.calcite.CodeExecuterContext;
@@ -37,13 +36,9 @@ import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingIndexTable;
 import io.mycat.calcite.table.ShardingTable;
-import io.mycat.newquery.RowSet;
-import io.reactivex.rxjava3.core.Observable;
 import lombok.SneakyThrows;
-import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -58,13 +53,14 @@ import static io.mycat.calcite.DrdsRunnerHelper.getTypes;
 public class VertxUpdateExecuter {
     private static final Logger LOGGER = LoggerFactory.getLogger(VertxUpdateExecuter.class);
 
-
     public static SQLExprTableSource getTableSource(SQLStatement sqlStatement) {
         if (sqlStatement instanceof SQLUpdateStatement) {
-            return (SQLExprTableSource) ((SQLUpdateStatement) sqlStatement).getTableSource();
+            SQLUpdateStatement sqlUpdateStatement = (SQLUpdateStatement) sqlStatement;
+            return (SQLExprTableSource) sqlUpdateStatement.getTableSource();
         }
         if (sqlStatement instanceof SQLDeleteStatement) {
-            return (SQLExprTableSource) ((SQLDeleteStatement) sqlStatement).getTableSource();
+            SQLDeleteStatement sqlDeleteStatement = (SQLDeleteStatement) sqlStatement;
+            return (SQLExprTableSource) sqlDeleteStatement.getTableSource();
         }
         if (sqlStatement instanceof SQLInsertStatement) {
             return (SQLExprTableSource) ((SQLInsertStatement) sqlStatement).getTableSource();
@@ -72,7 +68,48 @@ public class VertxUpdateExecuter {
         if (sqlStatement instanceof SQLReplaceStatement) {
             return (SQLExprTableSource) ((SQLReplaceStatement) sqlStatement).getTableSource();
         }
-        throw new UnsupportedOperationException(sqlStatement+" can not get SQLExprTableSource");
+        throw new UnsupportedOperationException(sqlStatement + " can not get SQLExprTableSource");
+    }
+
+    public static SQLExprTableSource convertToFromExprDatasource(SQLStatement sqlStatement) {
+        if (sqlStatement instanceof SQLUpdateStatement) {
+            SQLUpdateStatement sqlUpdateStatement = (SQLUpdateStatement) sqlStatement;
+            return (SQLExprTableSource) Optional.ofNullable(sqlUpdateStatement.getFrom()).orElseGet(() -> {
+                SQLExprTableSource newTableSource = new SQLExprTableSource();
+                SQLExprTableSource tableSource = (SQLExprTableSource) sqlUpdateStatement.getTableSource();
+                newTableSource.setAlias(tableSource.getTableName());
+                if (tableSource.getSchema() == null) {
+                    newTableSource.setSchema(tableSource.getSchema());
+
+                }
+                tableSource.setSchema(null);
+                newTableSource.setExpr(sqlUpdateStatement.getTableName());
+                sqlUpdateStatement.setFrom(newTableSource);
+                return newTableSource;
+            });
+        }
+        if (sqlStatement instanceof SQLDeleteStatement) {
+            SQLDeleteStatement sqlDeleteStatement = (SQLDeleteStatement) sqlStatement;
+            return (SQLExprTableSource) Optional.ofNullable(sqlDeleteStatement.getFrom()).orElseGet(() -> {
+                SQLExprTableSource newTableSource = new SQLExprTableSource();
+                SQLExprTableSource tableSource = (SQLExprTableSource) sqlDeleteStatement.getTableSource();
+                newTableSource.setAlias(tableSource.getTableName());
+                if (tableSource.getSchema() == null) {
+                    newTableSource.setSchema(tableSource.getSchema());
+                }
+                tableSource.setSchema(null);
+                newTableSource.setExpr(sqlDeleteStatement.getTableName());
+                sqlDeleteStatement.setFrom(newTableSource);
+                return newTableSource;
+            });
+        }
+        if (sqlStatement instanceof SQLInsertStatement) {
+            return (SQLExprTableSource) ((SQLInsertStatement) sqlStatement).getTableSource();
+        }
+        if (sqlStatement instanceof SQLReplaceStatement) {
+            return (SQLExprTableSource) ((SQLReplaceStatement) sqlStatement).getTableSource();
+        }
+        throw new UnsupportedOperationException(sqlStatement + " can not get SQLExprTableSource");
     }
 
     public static SQLExpr getWhere(SQLStatement sqlStatement) {
@@ -88,7 +125,7 @@ public class VertxUpdateExecuter {
         if (sqlStatement instanceof SQLReplaceStatement) {
             return null;
         }
-       return null;
+        return null;
     }
 
     public static void setFrom(SQLStatement sqlStatement, SQLExprTableSource tableSource) {
@@ -200,14 +237,14 @@ public class VertxUpdateExecuter {
                         continue;
                     }
                     ////////////////////////////////////////index-scan////////////////////////////////////////////////////////////
-                    Objects.requireNonNull(shardingTable.getPrimaryKey()," need primary key");
+                    Objects.requireNonNull(shardingTable.getPrimaryKey(), " need primary key");
 
-                    RowBaseIterator bindable = MetaClusterCurrent.wrapper(ExecutorProvider.class).runAsObjectArray(context,sqlSelectStatement.toString());
+                    RowBaseIterator bindable = MetaClusterCurrent.wrapper(ExecutorProvider.class).runAsObjectArray(context, sqlSelectStatement.toString());
 
                     try {
                         List<Object[]> list = new ArrayList<>();
-                        while (bindable.next()){
-                            list.add( bindable.getObjects());
+                        while (bindable.next()) {
+                            list.add(bindable.getObjects());
                         }
                         if (list.size() > 1000) {
                             throw new IllegalArgumentException("The number of update rows exceeds the limit.");
@@ -315,7 +352,7 @@ public class VertxUpdateExecuter {
     private static void handleTargets(SQLStatement statement, List<VertxExecuter.EachSQL> res, List<Object> params, List<Partition> partitions) {
         for (Partition partition : partitions) {
             SQLStatement eachSql = statement.clone();
-            SQLExprTableSource eachTableSource = getTableSource(eachSql);
+            SQLExprTableSource eachTableSource = convertToFromExprDatasource(eachSql);
             eachTableSource.setExpr(partition.getTable());
             eachTableSource.setSchema(partition.getSchema());
             res.add(new VertxExecuter.EachSQL(partition.getTargetName(), eachSql.toString(), params));
@@ -326,7 +363,7 @@ public class VertxUpdateExecuter {
         NormalTable normalTable = table;
         Partition partition = normalTable.getDataNode();
         SQLStatement eachSql = statement.clone();
-        SQLExprTableSource eachTableSource = getTableSource(eachSql);
+        SQLExprTableSource eachTableSource = convertToFromExprDatasource(eachSql);
         eachTableSource.setExpr(partition.getTable());
         eachTableSource.setSchema(partition.getSchema());
         res.add(new VertxExecuter.EachSQL(partition.getTargetName(), eachSql.toString(), params));
