@@ -14,7 +14,6 @@
  */
 package io.mycat.router.mycat1xfunction;
 
-import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.MycatException;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
@@ -22,17 +21,11 @@ import io.mycat.router.ShardingTableHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.function.Function;
 
 public class PartitionByFileMap extends Mycat1xSingleValueRuleFunction {
@@ -107,53 +100,11 @@ public class PartitionByFileMap extends Mycat1xSingleValueRuleFunction {
             default:
                 throw new MycatException("unsupport type!!");
         }
-        if (prot.get("mapFile") != null && (range == null || range.isEmpty())) {
-            String mapFile = (String) prot.get("mapFile");
-            InputStream fin = this.getClass().getClassLoader()
-                    .getResourceAsStream(mapFile);
-            if (fin == null) {
-                try {
-                    Path path = Paths.get(mapFile).toAbsolutePath();
-                    fin = new FileInputStream(path.toFile());
-                    LOGGER.info("PartitionByFileMap path is "+path);
-                } catch (IOException e) {
-                    LOGGER.error("can not find file", e);
-                }
-            }
-            if (fin == null) {
-                throw new RuntimeException("can't find class resource file "
-                        + mapFile);
-            }
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(fin))) {
-                for (String line = null; (line = in.readLine()) != null; ) {
-                    line = line.trim();
-                    if (line.startsWith("#") || line.startsWith("//")) {
-                        continue;
-                    }
-                    int ind = line.indexOf('=');
-                    if (ind < 0) {
-                        continue;
-                    }
-                    try {
-                        String key = line.substring(0, ind).trim();
-                        int pid = Integer.parseInt(line.substring(ind + 1).trim());
-                        app2Partition.put(transformation.apply(key), pid);
-                    } catch (Exception e) {
-                        LOGGER.error("PartitionByFileMap " + line + " is wrong");
-                    }
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("can't find class resource file "
-                        + mapFile);
-            } finally {
-                JdbcUtils.close(fin);
-            }
-        } else {
-            for (Entry<String, Object> entry : range.entrySet()) {
-                Object key = transformation.apply(entry.getKey());
-                int value = Integer.parseInt(Objects.toString(entry.getValue()));
-                app2Partition.put(key, value);
-            }
+        Map<String, Object> map = getRangeFromPropertyOrRangeConfig(PartitionByFileMap.class,prot, range);
+        for (Entry<String, Object> entry : map.entrySet()) {
+            Object key = transformation.apply(entry.getKey());
+            int value = Integer.parseInt(Objects.toString(entry.getValue()));
+            app2Partition.put(key, value);
         }
         if (defaultNode > 0) {
             app2Partition.put(DEFAULT_NODE, defaultNode);

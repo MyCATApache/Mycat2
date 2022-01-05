@@ -40,7 +40,7 @@ public class PartitionByPrefixPattern extends Mycat1xSingleValueRuleFunction {
     public void init(ShardingTableHandler table, Map<String, Object> prot, Map<String, Object> ranges) {
         this.patternValue = Integer.parseInt(Objects.toString(prot.get("patternValue")));
         this.prefixLength = Integer.parseInt(Objects.toString(prot.get("prefixLength")));
-        this.longRongs = NodeIndexRange.getLongRanges(ranges);
+        this.longRongs = NodeIndexRange.getLongRanges(getRangeFromPropertyOrRangeConfig(PartitionByPrefixPattern.class,prot, ranges));
         this.nPartition = NodeIndexRange.getPartitionCount(this.longRongs);
     }
 

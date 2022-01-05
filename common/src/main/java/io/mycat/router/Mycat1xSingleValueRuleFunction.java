@@ -15,14 +15,21 @@
 package io.mycat.router;
 
 import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.Partition;
 import io.mycat.MycatException;
 import io.mycat.RangeVariable;
 import io.mycat.ShardingTableType;
 import io.mycat.util.CollectionUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.function.BiConsumer;
 
 /**
  * @author mycat
@@ -30,7 +37,7 @@ import java.util.*;
  * 路由算法接口
  */
 public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(Mycat1xSingleValueRuleFunction.class);
     private String columnName;
     private ShardingTableType shardingTableType;
 
@@ -208,5 +215,57 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
     @Override
     public boolean requireShardingKeys(Set<String> shardingKeys) {
         return shardingKeys.contains(columnName);
+    }
+
+    public  Map<String, Object> getRangeFromPropertyOrRangeConfig(Class<?> info, Map<String, Object> prot, Map<String, Object> range) {
+        if (prot.get("mapFile") != null && (range == null || range.isEmpty())) {
+            String mapFile = (String) prot.get("mapFile");
+            InputStream fin = info.getClassLoader()
+                    .getResourceAsStream(mapFile);
+            if (fin == null) {
+                try {
+                    Path path = Paths.get(mapFile).toAbsolutePath();
+                    fin = new FileInputStream(path.toFile());
+                    LOGGER.info(info + " path is " + path);
+                } catch (IOException e) {
+                    LOGGER.error("can not find file", e);
+                }
+            }
+            if (fin == null) {
+                throw new RuntimeException("can't find class resource file "
+                        + mapFile);
+            }
+            return (Map)getRangeFromIniFile(name(),mapFile,fin);
+        } else {
+            return range;
+        }
+    }
+
+    public static HashMap<String, String> getRangeFromIniFile(String info, String mapFile, InputStream fin) {
+        HashMap<String, String> map = new HashMap<>();
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(fin))) {
+            for (String line = null; (line = in.readLine()) != null; ) {
+                line = line.trim();
+                if (line.startsWith("#") || line.startsWith("//")) {
+                    continue;
+                }
+                int ind = line.indexOf('=');
+                if (ind < 0) {
+                    continue;
+                }
+                try {
+                    String key = line.substring(0, ind).trim();
+                    map.put(key, line.substring(ind + 1).trim());
+                } catch (Exception e) {
+                    LOGGER.error(info + " " + line + " is wrong");
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("can't find class resource file "
+                    + mapFile);
+        } finally {
+            JdbcUtils.close(fin);
+        }
+        return map;
     }
 }

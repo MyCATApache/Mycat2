@@ -19,8 +19,6 @@ import io.mycat.router.NodeIndexRange;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -48,7 +46,7 @@ public class PartitionByPattern extends Mycat1xSingleValueRuleFunction {
   public void init(ShardingTableHandler table, Map<String, Object> prot, Map<String, Object> ranges) {
     this.patternValue = Integer.parseInt(Objects.toString(prot.get("patternValue")));
     this.defaultNode = Integer.parseInt(Objects.toString(prot.get("defaultNode")));
-    this.longRanges = NodeIndexRange.getLongRanges(ranges);
+    this.longRanges = NodeIndexRange.getLongRanges(getRangeFromPropertyOrRangeConfig(PartitionByPattern.class,prot,ranges));
     this.nPartition = NodeIndexRange.getPartitionCount(this.longRanges);
   }
 

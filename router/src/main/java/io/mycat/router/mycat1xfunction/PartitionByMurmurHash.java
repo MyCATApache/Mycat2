@@ -64,7 +64,7 @@ public class PartitionByMurmurHash extends Mycat1xSingleValueRuleFunction {
         int seed = Integer.parseInt(Objects.toString(prot.get("seed")));
         this.count = Integer.parseInt(Objects.toString(prot.get("count")));
         int virtualBucketTimes = Integer.parseInt(Objects.toString(prot.get("virtualBucketTimes")));
-        initBucketMap(ranges, seed, count, virtualBucketTimes);
+        initBucketMap(getRangeFromPropertyOrRangeConfig(PartitionByMurmurHash.class,prot,ranges), seed, count, virtualBucketTimes);
     }
 
     private void initBucketMap(Map<String, Object> ranges, int seed, int count,
