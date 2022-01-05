@@ -64,7 +64,7 @@ public class PartitionByPattern extends Mycat1xSingleValueRuleFunction {
         return longRang.nodeIndex;
       }
     }
-    return -1;
+    return defaultNode;
   }
 
   @Override
