@@ -74,19 +74,11 @@ public class VertxUpdateExecuter {
     public static SQLExprTableSource convertToFromExprDatasource(SQLStatement sqlStatement) {
         if (sqlStatement instanceof SQLUpdateStatement) {
             SQLUpdateStatement sqlUpdateStatement = (SQLUpdateStatement) sqlStatement;
-            return (SQLExprTableSource) Optional.ofNullable(sqlUpdateStatement.getFrom()).orElseGet(() -> {
-                SQLExprTableSource newTableSource = new SQLExprTableSource();
-                SQLExprTableSource tableSource = (SQLExprTableSource) sqlUpdateStatement.getTableSource();
-                newTableSource.setAlias(tableSource.getTableName());
-                if (tableSource.getSchema() == null) {
-                    newTableSource.setSchema(tableSource.getSchema());
-
-                }
-                tableSource.setSchema(null);
-                newTableSource.setExpr(sqlUpdateStatement.getTableName());
-                sqlUpdateStatement.setFrom(newTableSource);
-                return newTableSource;
-            });
+            SQLExprTableSource from = (SQLExprTableSource) sqlUpdateStatement.getTableSource();
+            if (from.getAlias() == null) {
+                from.setAlias(from.computeAlias());
+            }
+            return from;
         }
         if (sqlStatement instanceof SQLDeleteStatement) {
             SQLDeleteStatement sqlDeleteStatement = (SQLDeleteStatement) sqlStatement;
