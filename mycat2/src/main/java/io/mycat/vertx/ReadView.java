@@ -49,12 +49,12 @@ public class ReadView implements MySQLPayloadReadView {
 
     @Override
     public Long readLenencInt() {
-        int len = buffer.getByte(index)&0xff;
+        int len = buffer.getByte(index) & 0xff;
         index++;
         if (len < 251) {
-            return  Long.valueOf(len);
+            return Long.valueOf(len);
         } else if (len == 0xfc) {
-            return  readFixInt(2);
+            return readFixInt(2);
         } else if (len == 0xfd) {
             return Long.valueOf(readFixInt(3));
         } else if (len == 0xfb) {
@@ -74,7 +74,7 @@ public class ReadView implements MySQLPayloadReadView {
     @Override
     public String readLenencString() {
         byte[] bytes = readLenencStringBytes();
-        if (bytes == null)return null;
+        if (bytes == null) return null;
         return new String(bytes, UTF_8);
     }
 
@@ -132,13 +132,18 @@ public class ReadView implements MySQLPayloadReadView {
         return buffer.getByte(tmp);
     }
 
+    public byte getByte() {
+        int tmp = index;
+        return buffer.getByte(tmp);
+    }
+
     @Override
     public byte[] readLenencBytes() {
         Long aLong = readLenencInt();
-        if (aLong == null){
+        if (aLong == null || aLong < 0) {
             return null;
         }
-        int len =aLong.intValue();
+        int len = aLong.intValue();
         byte[] bytes = null;
         if ((len & 0xff) == 0xfb) {
             return null;
@@ -151,14 +156,14 @@ public class ReadView implements MySQLPayloadReadView {
     @Override
     public long readLong() {
         int tmp = index;
-        index+=8;
+        index += 8;
         return buffer.getLongLE(tmp);
     }
 
     @Override
     public double readDouble() {
         int tmp = index;
-        index+=8;
+        index += 8;
         byte[] bytes = buffer.getBytes(tmp, index);
         return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getDouble();
     }
@@ -181,7 +186,7 @@ public class ReadView implements MySQLPayloadReadView {
     @Override
     public float readFloat() {
         int tmp = index;
-        index+=4;
+        index += 4;
         byte[] bytes = buffer.getBytes(tmp, index);
         return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getFloat();
     }
