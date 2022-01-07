@@ -127,8 +127,11 @@ public class MycatRelDataTypeFactory implements JavaTypeFactory {
 
     @Override
     public RelDataType leastRestrictive(List<RelDataType> list) {
-
-        return this.javaTypeFactory.leastRestrictive(list);
+        RelDataType relDataType = this.javaTypeFactory.leastRestrictive(list);
+        if (relDataType == null){//出现无法推导类型的情况,就用第一个
+            return list.get(0);
+        }
+        return relDataType;
     }
 
     @Override
