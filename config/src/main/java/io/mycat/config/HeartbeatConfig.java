@@ -12,6 +12,7 @@ public class HeartbeatConfig {
     private long minSwitchTimeInterval;
     private long heartbeatTimeout;
     private double slaveThreshold;
+    private boolean showLog = true;
 
     public HeartbeatConfig() {
     }

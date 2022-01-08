@@ -79,7 +79,7 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo, Closeable, Re
                 String key = replicaName + "." + datasourceName;
                 HeartbeatFlow heartbeatFlow = replicaSelectorRuntime.getHeartbeatDetectorMap().get(key);
                 if (heartbeatFlow != null) {
-                    if (LOGGER.isInfoEnabled()) {
+                    if (heartbeatFlow.isShowLog()) {
                         LOGGER.info("heartbeat:{}", key);
                     }
                     heartbeatFlow.heartbeat();
@@ -299,7 +299,7 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo, Closeable, Re
     }
 
     public synchronized void removeWriteDataSource(String dataSource) {
-        writeDataSourceList.removeIf(i->i.getName().equals(dataSource));
+        writeDataSourceList.removeIf(i -> i.getName().equals(dataSource));
     }
 
 
@@ -318,7 +318,7 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo, Closeable, Re
     }
 
     public synchronized void removeReadDataSource(String dataSource) {
-        readDataSource.removeIf(i->i.getName().equals(dataSource));
+        readDataSource.removeIf(i -> i.getName().equals(dataSource));
     }
 
 }

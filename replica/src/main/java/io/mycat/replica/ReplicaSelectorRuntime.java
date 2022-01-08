@@ -392,15 +392,17 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
     public synchronized void putHeartFlow(String replicaName, String datasourceName, Consumer<HeartBeatStrategy> executer) {
         String name = replicaName + "." + datasourceName;
         this.replicaConfigList.stream().filter(i -> replicaName.equals(i.getName())).findFirst().ifPresent(c -> {
-            HeartbeatConfig heartbeat = c.getHeartbeat();
-            if (heartbeat != null) {
+            HeartbeatConfig heartbeatConfig = c.getHeartbeat();
+            if (heartbeatConfig != null) {
                 ReplicaSelector selector = replicaMap.get(replicaName);
                 if (selector != null) {
                     PhysicsInstance physicsInstance = selector.getRawDataSourceMap().get(datasourceName);
                     DefaultHeartbeatFlow heartbeatFlow = new DefaultHeartbeatFlow(selector, physicsInstance, datasourceName,
-                            heartbeat.getMaxRetryCount(), heartbeat.getMinSwitchTimeInterval(), heartbeat.getHeartbeatTimeout(),
+                            heartbeatConfig.getMaxRetryCount(), heartbeatConfig.getMinSwitchTimeInterval(), heartbeatConfig.getHeartbeatTimeout(),
                             ReplicaSwitchType.valueOf(c.getSwitchType()),
-                            heartbeat.getSlaveThreshold(), getStrategyByReplicaType(c.getClusterType()),
+                            heartbeatConfig.getSlaveThreshold(),
+                            getStrategyByReplicaType(c.getClusterType()),
+                            heartbeatConfig.isShowLog(),
                             executer);
 
                     heartbeatDetectorMap.put(name, heartbeatFlow);
