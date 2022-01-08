@@ -35,13 +35,15 @@ public abstract class HeartbeatFlow {
   protected volatile DatasourceStatus dsStatus;
   protected volatile long lastSendQryTime;
   protected volatile long lastReceivedQryTime;//    private isCheck
-
+  protected volatile boolean showLog;
 
   public HeartbeatFlow(PhysicsInstance instance, int maxRetry,
       long minSwitchTimeInterval, long heartbeatTimeout,
-                       double slaveThreshold) {
+                       double slaveThreshold,
+                       boolean showHeartBeatLog) {
     this.instance = instance;
     this.slaveThreshold = slaveThreshold;
+    this.showLog = showHeartBeatLog;
     this.dsStatus = new DatasourceStatus();
     this.hbStatus = new HeartBeatStatus(maxRetry, minSwitchTimeInterval, false, 0);
     this.heartbeatTimeout = heartbeatTimeout;

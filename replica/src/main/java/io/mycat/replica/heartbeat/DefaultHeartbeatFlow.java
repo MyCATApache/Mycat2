@@ -37,14 +37,18 @@ public class DefaultHeartbeatFlow extends HeartbeatFlow {
 
     public DefaultHeartbeatFlow(ReplicaSelector replicaSelector, PhysicsInstance instance, String datasouceName,
                                 int maxRetry,
-                                long minSwitchTimeInterval, long heartbeatTimeout,
-                                ReplicaSwitchType switchType, double slaveThreshold,
+                                long minSwitchTimeInterval,
+                                long heartbeatTimeout,
+                                ReplicaSwitchType switchType,
+                                double slaveThreshold,
                                 Function<HeartbeatFlow, HeartBeatStrategy> strategyProvider,
+                                boolean showLog,
                                 Consumer<HeartBeatStrategy> executer) {
-        super(instance, maxRetry, minSwitchTimeInterval, heartbeatTimeout, slaveThreshold);
+        super(instance, maxRetry, minSwitchTimeInterval, heartbeatTimeout, slaveThreshold,showLog);
         this.replicaSelector = replicaSelector;
         this.datasouceName = datasouceName;
         this.switchType = switchType;
+        this.showLog = showLog;
         this.executer = executer;
         this.strategyProvider = strategyProvider;
     }
