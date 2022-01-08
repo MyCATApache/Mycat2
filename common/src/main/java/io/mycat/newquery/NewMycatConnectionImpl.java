@@ -12,6 +12,7 @@ import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.ObservableEmitter;
 import io.reactivex.rxjava3.core.ObservableOnSubscribe;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 public class NewMycatConnectionImpl implements NewMycatConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(NewMycatConnectionImpl.class);
@@ -41,6 +43,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     boolean needLastInsertId;
     Connection connection;
     ResultSet resultSet;
+    Future<Void> future = Future.succeededFuture();
 
     public NewMycatConnectionImpl(boolean needLastInsertId, Connection connection) {
         this.needLastInsertId = needLastInsertId;
@@ -54,7 +57,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     @Override
     public Future<RowSet> query(String sql, List<Object> params) {
-        Future<RowSet> future = Future.future(new Handler<Promise<RowSet>>() {
+        return Future.future(new Handler<Promise<RowSet>>() {
             @Override
             public void handle(Promise<RowSet> rowSetPromise) {
                 prepareQuery(sql, params, new MysqlCollector() {
@@ -84,60 +87,63 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                 });
             }
         });
-
-        return future;
     }
 
     @Override
     public synchronized void prepareQuery(String sql, List<Object> params, MysqlCollector collector) {
-        try {
-            if (params.isEmpty()) {
-                try (Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
-                    setStreamFlag(statement);
-                    resultSet = statement.executeQuery(sql);
-                    onRev();
-                    MycatRowMetaData mycatRowMetaData = getJdbcRowMetaData(resultSet.getMetaData());
-                    int columnCount = mycatRowMetaData.getColumnCount();
-                    collector.onColumnDef(mycatRowMetaData);
-                    int columnLimit = columnCount + 1;
-                    while (!isResultSetClosed() && resultSet.next()) {
-                        Object[] objects = new Object[columnCount];
-                        for (int i = 1, j = 0; i < columnLimit; i++, j++) {
-                            objects[j] = resultSet.getObject(i);
+        this.future = this.future.transform(voidAsyncResult -> {
+            try {
+                if (params.isEmpty()) {
+                    try (Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
+                        setStreamFlag(statement);
+                        resultSet = statement.executeQuery(sql);
+                        onRev();
+                        MycatRowMetaData mycatRowMetaData = getJdbcRowMetaData(resultSet.getMetaData());
+                        int columnCount = mycatRowMetaData.getColumnCount();
+                        collector.onColumnDef(mycatRowMetaData);
+                        int columnLimit = columnCount + 1;
+                        while (!isResultSetClosed() && resultSet.next()) {
+                            Object[] objects = new Object[columnCount];
+                            for (int i = 1, j = 0; i < columnLimit; i++, j++) {
+                                objects[j] = resultSet.getObject(i);
+                            }
+                            collector.onRow(objects);
                         }
-                        collector.onRow(objects);
+                    }
+                } else {
+                    try (PreparedStatement statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);) {
+                        setStreamFlag(statement);
+                        int limit = params.size() + 1;
+                        for (int i = 1; i < limit; i++) {
+                            statement.setObject(i, params.get(i - 1));
+                        }
+                        onSend();
+                        resultSet = statement.executeQuery();
+                        onRev();
+                        MycatRowMetaData mycatRowMetaData = getJdbcRowMetaData(resultSet.getMetaData());
+                        int columnCount = mycatRowMetaData.getColumnCount();
+                        collector.onColumnDef(mycatRowMetaData);
+                        int columnLimit = columnCount + 1;
+                        while (!isResultSetClosed() && resultSet.next()) {
+                            Object[] objects = new Object[columnCount];
+                            for (int i = 1, j = 0; i < columnLimit; i++, j++) {
+                                objects[j] = resultSet.getObject(i);
+                            }
+                            collector.onRow(objects);
+                        }
                     }
                 }
-            } else {
-                try (PreparedStatement statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);) {
-                    setStreamFlag(statement);
-                    int limit = params.size() + 1;
-                    for (int i = 1; i < limit; i++) {
-                        statement.setObject(i, params.get(i - 1));
-                    }
-                    onSend();
-                    resultSet = statement.executeQuery();
-                    onRev();
-                    MycatRowMetaData mycatRowMetaData = getJdbcRowMetaData(resultSet.getMetaData());
-                    int columnCount = mycatRowMetaData.getColumnCount();
-                    collector.onColumnDef(mycatRowMetaData);
-                    int columnLimit = columnCount + 1;
-                    while (!isResultSetClosed() && resultSet.next()) {
-                        Object[] objects = new Object[columnCount];
-                        for (int i = 1, j = 0; i < columnLimit; i++, j++) {
-                            objects[j] = resultSet.getObject(i);
-                        }
-                        collector.onRow(objects);
-                    }
-                }
-            }
 
-        } catch (Exception e) {
-            collector.onError(e);
-        } finally {
+            } catch (Exception e) {
+                collector.onError(e);
+                return Future.failedFuture(e);
+            } finally {
+                resultSet = null;
+            }
             collector.onComplete();
-            resultSet = null;
-        }
+            return Future.succeededFuture();
+        });
+
     }
 
     @SneakyThrows
@@ -162,12 +168,9 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     @Override
     public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator) {
-        return Observable.create(new ObservableOnSubscribe<VectorSchemaRoot>() {
-            @Override
-            public void subscribe(@NonNull ObservableEmitter<VectorSchemaRoot> emitter) throws Throwable {
-
-
-                synchronized (NewMycatConnectionImpl.this) {
+        return Observable.create(emitter -> {
+            synchronized (NewMycatConnectionImpl.this) {
+                NewMycatConnectionImpl.this.future = NewMycatConnectionImpl.this.future.transform(voidAsyncResult -> {
                     try {
                         try (PreparedStatement statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
                             setStreamFlag(statement);
@@ -209,11 +212,13 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                         }
                     } catch (Exception e) {
                         emitter.onError(e);
+                        return Future.failedFuture(e);
                     } finally {
-                        emitter.onComplete();
                         resultSet = null;
                     }
-                }
+                    emitter.onComplete();
+                    return Future.succeededFuture();
+                });
             }
         });
     }
@@ -239,120 +244,131 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     @Override
     public synchronized Future<List<Object>> call(String sql) {
-        try {
-            ArrayList<Object> resultSetList = new ArrayList<>();
-            CallableStatement callableStatement = connection.prepareCall(sql);
-            boolean moreResults = true;
-            int updateCount = 0;
-            callableStatement.execute();
-            while (moreResults && updateCount != -1) {
-                updateCount = callableStatement.getUpdateCount();
-                if (updateCount == -1) {
-                    ResultSet resultSet = callableStatement.getResultSet();
-                    if (resultSet == null) {
-                        break;
-                    }
-                    MycatRowMetaData metaData = getJdbcRowMetaData(resultSet.getMetaData());
-                    List<Object[]> objects = new ArrayList<>();
-                    while (resultSet.next()) {
-                        int columnCount = metaData.getColumnCount();
-                        Object[] row = new Object[columnCount];
-                        for (int i = 0; i < columnCount; i++) {
-                            row[i] = resultSet.getObject(i + 1);
+        Future<List<Object>> transform = future.transform(voidAsyncResult -> {
+            try {
+                ArrayList<Object> resultSetList = new ArrayList<>();
+                CallableStatement callableStatement = connection.prepareCall(sql);
+                boolean moreResults = true;
+                int updateCount = 0;
+                callableStatement.execute();
+                while (moreResults && updateCount != -1) {
+                    updateCount = callableStatement.getUpdateCount();
+                    if (updateCount == -1) {
+                        ResultSet resultSet = callableStatement.getResultSet();
+                        if (resultSet == null) {
+                            break;
                         }
-                        objects.add(row);
+                        MycatRowMetaData metaData = getJdbcRowMetaData(resultSet.getMetaData());
+                        List<Object[]> objects = new ArrayList<>();
+                        while (resultSet.next()) {
+                            int columnCount = metaData.getColumnCount();
+                            Object[] row = new Object[columnCount];
+                            for (int i = 0; i < columnCount; i++) {
+                                row[i] = resultSet.getObject(i + 1);
+                            }
+                            objects.add(row);
+                        }
+                        RowSet rowSet = new RowSet(metaData, objects);
+                        resultSetList.add(rowSet);
+                    } else {
+                        resultSetList.add(new long[]{
+                                updateCount, getLastInsertId(callableStatement)
+                        });
                     }
-                    RowSet rowSet = new RowSet(metaData, objects);
-                    resultSetList.add(rowSet);
-                } else {
-                    resultSetList.add(new long[]{
-                            updateCount, getLastInsertId(callableStatement)
-                    });
+                    moreResults = callableStatement.getMoreResults();
+
                 }
-                moreResults = callableStatement.getMoreResults();
-
+                return Future.succeededFuture(resultSetList);
+            } catch (Exception exception) {
+                return Future.failedFuture(exception);
             }
-
-            return Future.succeededFuture(resultSetList);
-        } catch (Exception exception) {
-            return Future.failedFuture(exception);
-        }
+        });
+        this.future = transform.mapEmpty();
+        return transform;
     }
 
     @Override
     public synchronized Future<SqlResult> insert(String sql, List<Object> params) {
-        try {
-            long affectRows;
-            long lastInsertId = 0;
-            if (params.isEmpty()) {
-                try (Statement statement = connection.createStatement();) {
-                    onSend();
-                    affectRows = statement.executeUpdate(sql, needLastInsertId ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
-                    onRev();
-                    lastInsertId = getLastInsertId(statement);
-                }
-            } else {
-                try (PreparedStatement preparedStatement = connection.prepareStatement(sql, needLastInsertId ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS)) {
-                    int limit = params.size() + 1;
-                    for (int i = 1; i < limit; i++) {
-                        preparedStatement.setObject(i, params.get(i - 1));
+        Future<SqlResult> transform = future.transform(voidAsyncResult -> {
+            try {
+                long affectRows;
+                long lastInsertId = 0;
+                if (params.isEmpty()) {
+                    try (Statement statement = connection.createStatement();) {
+                        onSend();
+                        affectRows = statement.executeUpdate(sql, needLastInsertId ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
+                        onRev();
+                        lastInsertId = getLastInsertId(statement);
                     }
-                    onSend();
-                    affectRows = preparedStatement.executeUpdate();
-                    onRev();
-                    lastInsertId = getLastInsertId(preparedStatement);
+                } else {
+                    try (PreparedStatement preparedStatement = connection.prepareStatement(sql, needLastInsertId ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS)) {
+                        int limit = params.size() + 1;
+                        for (int i = 1; i < limit; i++) {
+                            preparedStatement.setObject(i, params.get(i - 1));
+                        }
+                        onSend();
+                        affectRows = preparedStatement.executeUpdate();
+                        onRev();
+                        lastInsertId = getLastInsertId(preparedStatement);
+                    }
                 }
+                SqlResult sqlResult = new SqlResult();
+                sqlResult.setAffectRows(affectRows);
+                sqlResult.setLastInsertId(lastInsertId);
+                return Future.succeededFuture(sqlResult);
+            } catch (Exception e) {
+                return Future.failedFuture(e);
             }
-            SqlResult sqlResult = new SqlResult();
-            sqlResult.setAffectRows(affectRows);
-            sqlResult.setLastInsertId(lastInsertId);
-            return Future.succeededFuture(sqlResult);
-        } catch (Exception e) {
-            return Future.failedFuture(e);
-        }
+        });
+        this.future = transform.mapEmpty();
+        return transform;
     }
 
     @Override
-    public synchronized Future<SqlResult> insert(String sql) {
+    public  Future<SqlResult> insert(String sql) {
         return insert(sql, Collections.emptyList());
     }
 
     @Override
-    public synchronized Future<SqlResult> update(String sql) {
+    public  Future<SqlResult> update(String sql) {
         return update(sql, Collections.emptyList());
     }
 
     @Override
     public synchronized Future<SqlResult> update(String sql, List<Object> params) {
-        try {
-            long affectRows;
-            long lastInsertId = 0;
-            if (params.isEmpty()) {
-                try (Statement statement = connection.createStatement();) {
-                    onSend();
-                    affectRows = statement.executeUpdate(sql);
-                    onRev();
-                    lastInsertId = 0;
-                }
-            } else {
-                try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-                    int limit = params.size() + 1;
-                    for (int i = 1; i < limit; i++) {
-                        preparedStatement.setObject(i, params.get(i - 1));
+        Future<SqlResult> transform = future.transform(voidAsyncResult -> {
+            try {
+                long affectRows;
+                long lastInsertId = 0;
+                if (params.isEmpty()) {
+                    try (Statement statement = connection.createStatement();) {
+                        onSend();
+                        affectRows = statement.executeUpdate(sql);
+                        onRev();
+                        lastInsertId = 0;
                     }
-                    onSend();
-                    affectRows = preparedStatement.executeUpdate();
-                    onRev();
-                    lastInsertId = 0;
+                } else {
+                    try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+                        int limit = params.size() + 1;
+                        for (int i = 1; i < limit; i++) {
+                            preparedStatement.setObject(i, params.get(i - 1));
+                        }
+                        onSend();
+                        affectRows = preparedStatement.executeUpdate();
+                        onRev();
+                        lastInsertId = 0;
+                    }
                 }
+                SqlResult sqlResult = new SqlResult();
+                sqlResult.setAffectRows(affectRows);
+                sqlResult.setLastInsertId(lastInsertId);
+                return Future.succeededFuture(sqlResult);
+            } catch (Exception e) {
+                return Future.failedFuture(e);
             }
-            SqlResult sqlResult = new SqlResult();
-            sqlResult.setAffectRows(affectRows);
-            sqlResult.setLastInsertId(lastInsertId);
-            return Future.succeededFuture(sqlResult);
-        } catch (Exception e) {
-            return Future.failedFuture(e);
-        }
+        });
+        this.future = transform.mapEmpty();
+        return transform;
     }
 
     @Override
@@ -376,6 +392,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     public Future<Void> abandonQuery() {
         if (resultSet != null) {
             JdbcUtils.close(resultSet);
+            resultSet = null;
         }
         return Future.succeededFuture();
     }
