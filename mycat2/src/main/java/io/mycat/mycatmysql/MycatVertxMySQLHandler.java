@@ -480,7 +480,7 @@ public class MycatVertxMySQLHandler {
     }
 
     private PromiseInternal<Void> handlePrepareStatement(byte[] bytes, MycatVertxMysqlSession MycatMysqlSession) {
-        boolean deprecateEOF = session.isDeprecateEOF();
+        boolean deprecateEOF = false;
         String sql = new String(bytes);
         /////////////////////////////////////////////////////
         if (LOGGER.isDebugEnabled()) {
