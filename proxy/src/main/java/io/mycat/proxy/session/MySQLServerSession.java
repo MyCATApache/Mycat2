@@ -22,6 +22,7 @@ import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.MySQLPacketUtil;
 import io.mycat.swapbuffer.PacketRequest;
 import io.mycat.swapbuffer.PacketResponse;
+import io.mycat.util.VertxUtil;
 import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 
@@ -165,6 +166,9 @@ public interface MySQLServerSession<T> {
    * @param moreResultSet
    */
   default PromiseInternal<Void> writeColumnEndPacket(boolean moreResultSet) {
+    if (isDeprecateEOF()){
+      return VertxUtil.castPromise(Future.succeededFuture());
+    }
     int serverStatusValue = getServerStatusValue();
     if (moreResultSet) {
       serverStatusValue |= MySQLServerStatusFlags.MORE_RESULTS;
@@ -185,7 +189,7 @@ public interface MySQLServerSession<T> {
     if (hasCursor) {
       serverStatus |= MySQLServerStatusFlags.CURSOR_EXISTS;
     }
-    if (false) {
+    if (isDeprecateEOF()) {
       bytes = MySQLPacketUtil
           .generateOk(0xfe, getWarningCount(), serverStatus, affectedRows(),
               getLastInsertId(),
