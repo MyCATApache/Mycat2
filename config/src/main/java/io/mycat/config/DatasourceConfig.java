@@ -37,7 +37,7 @@ public class DatasourceConfig implements KVObject{
     private String jdbcDriverClass;//保留属性
     @javax.validation.constraints.NotNull
     private String type = DatasourceType.JDBC.name();
-    private int queryTimeout = 30;
+    private int queryTimeout = 0;
 
     public DatasourceConfig() {
     }
