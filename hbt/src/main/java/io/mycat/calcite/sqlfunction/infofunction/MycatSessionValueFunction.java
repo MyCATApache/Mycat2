@@ -27,25 +27,36 @@ import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.SqlReturnTypeInference;
 
 import java.util.List;
 
 public class MycatSessionValueFunction extends MycatSqlDefinedFunction {
 
-    public static MycatSessionValueFunction INSTANCE = new MycatSessionValueFunction();
+    public static final MycatSessionValueFunction STRING_TYPE_INSTANCE = createString();
 
-    public MycatSessionValueFunction() {
-        super("MYCATSESSIONVALUE", ReturnTypes.ARG0,InferTypes.ANY_NULLABLE, OperandTypes.ANY, null,
+    public static final MycatSessionValueFunction BIGINT_TYPE_INSTANCE = createNumber();
+
+    public MycatSessionValueFunction(SqlReturnTypeInference sqlReturnTypeInference) {
+        super("MYCATSESSIONVALUE", sqlReturnTypeInference, InferTypes.ANY_NULLABLE, OperandTypes.ANY, null,
                 SqlFunctionCategory.SYSTEM);
     }
 
     @Override
     public Expression implement(RexToLixTranslator translator, RexCall call, RexImpTable.NullAs nullAs) {
-        List<Expression> argValueList = translator.translateList(call.getOperands(),nullAs);
+        List<Expression> argValueList = translator.translateList(call.getOperands(), nullAs);
         return Expressions.call(
                 NewMycatDataContext.ROOT,
                 "getSessionVariable",
                 argValueList.get(0));
+    }
+
+    private static MycatSessionValueFunction createString() {
+        return new MycatSessionValueFunction(ReturnTypes.VARCHAR_2000);
+    }
+
+    private static MycatSessionValueFunction createNumber() {
+        return new MycatSessionValueFunction(ReturnTypes.BIGINT_NULLABLE);
     }
 }
 

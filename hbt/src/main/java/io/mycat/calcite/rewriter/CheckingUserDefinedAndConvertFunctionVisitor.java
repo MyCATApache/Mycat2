@@ -29,7 +29,7 @@ public class CheckingUserDefinedAndConvertFunctionVisitor
         if (operator instanceof SqlFunction) {
             containsUsedDefinedFunction |= Information_Functions.containsKey(name, false);
         }
-        if (operator == MycatSessionValueFunction.INSTANCE) {
+        if (operator == MycatSessionValueFunction.BIGINT_TYPE_INSTANCE || operator == MycatSessionValueFunction.STRING_TYPE_INSTANCE) {
             containsUsedDefinedFunction = true;
         }
         return super.visitCall(call);

@@ -974,14 +974,14 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                     SqlLiteral.createCharString(name, SqlParserPos.ZERO));
         } else {
             if (name.startsWith("@@")) {
-                return MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
+                return MycatSessionValueFunction.STRING_TYPE_INSTANCE.createCall(SqlParserPos.ZERO,
                         SqlLiteral.createCharString(name.substring(2), SqlParserPos.ZERO));
             }
             if (name.startsWith("@")) {
                 return MycatUserValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
                         SqlLiteral.createCharString(name.substring(1), SqlParserPos.ZERO));
             }
-            return MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
+            return MycatSessionValueFunction.STRING_TYPE_INSTANCE.createCall(SqlParserPos.ZERO,
                     SqlLiteral.createCharString(name, SqlParserPos.ZERO));
         }
     }
@@ -1941,7 +1941,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 return false;
             }
             case "MYCATSESSIONVALUE": {
-                this.sqlNode = MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                this.sqlNode = MycatSessionValueFunction.STRING_TYPE_INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "CHAR": {
