@@ -58,6 +58,7 @@ import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.BuiltInMethod;
@@ -89,7 +90,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     public MycatView(RelTraitSet relTrait, RelNode input, Distribution dataNode, RexNode conditions) {
         super(input.getCluster(), relTrait = relTrait.replace(MycatConvention.INSTANCE));
         this.distribution = Objects.requireNonNull(dataNode);
-        this.condition = conditions;
+        ;
         this.rowType = input.getRowType();
 //        if (input instanceof MycatRel) {
 //            input = input.accept(new ToLocalConverter());
@@ -101,6 +102,20 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             if (RexUtil.isIdentity(project.getProjects(), project.getInput().getRowType())) {
                 input = project.getInput();//ProjectRemoveRule
             }
+        }
+        if (conditions != null) {
+            this.condition = conditions.accept(new RexShuttle() {
+                @Override
+                public RexNode visitCall(RexCall call) {
+                    if (call.isA(SqlKind.IS_DISTINCT_FROM) || call.getOperator().getName().equalsIgnoreCase("<=>")) {
+                        RexBuilder rexBuilder = MycatCalciteSupport.RexBuilder;
+                        return rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, call.getOperands());
+                    }
+                    return super.visitCall(call);
+                }
+            });
+        } else {
+            this.condition = null;
         }
         this.relNode = input;
     }
@@ -872,6 +887,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     public boolean banPushdown() {
         return isMergeAgg() || isMergeSort();
     }
+
     public boolean allowPushdown() {
         return !banPushdown();
     }
