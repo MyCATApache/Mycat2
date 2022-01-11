@@ -50,8 +50,8 @@ public class DruidDatasourceProvider implements DatasourceProvider {
         datasource.setMaxActive(maxCon);
         datasource.setMinIdle(minCon);
         datasource.setKeepAlive(true);
-        datasource.setTestOnReturn(true);
-        datasource.setTestOnBorrow(true);
+//        datasource.setTestOnReturn(true);
+//        datasource.setTestOnBorrow(true);
         datasource.setValidationQuery("select 'x'");
         datasource.setTestWhileIdle(true);
         datasource.setQueryTimeout(config.getQueryTimeout());
