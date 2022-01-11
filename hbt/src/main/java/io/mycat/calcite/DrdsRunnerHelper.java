@@ -258,9 +258,14 @@ public class DrdsRunnerHelper {
                     if (sqlTypeName == null) {
                         List<Object> contextParams = paramHolder.getParams();
                         if (contextParams != null && contextParams.size() > index) {
+
                             Object o = contextParams.get(index);
-                            if (o instanceof Number) {
-                                sqlTypeName = SqlTypeName.BIGINT;
+                            if (o instanceof Float) {
+                                sqlTypeName = SqlTypeName.FLOAT;
+                            } else if (o instanceof Double) {
+                                sqlTypeName = SqlTypeName.DOUBLE;
+                            }else if (o instanceof Number) {
+                                sqlTypeName = SqlTypeName.DECIMAL;
                             } else if (o instanceof String) {
                                 sqlTypeName = SqlTypeName.VARCHAR;
                             }
@@ -269,8 +274,9 @@ public class DrdsRunnerHelper {
                     if (sqlTypeName != null) {
                         return super.typeFactory.createSqlType(Objects.requireNonNull(sqlTypeName));
                     }
+                    return typeFactory.createSqlType(SqlTypeName.ANY);
                 }
-                return typeFactory.createSqlType(SqlTypeName.ANY);
+                return null;
             }
 
             @Override
