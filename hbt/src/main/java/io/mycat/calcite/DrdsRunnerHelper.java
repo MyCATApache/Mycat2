@@ -260,15 +260,17 @@ public class DrdsRunnerHelper {
                         if (contextParams != null && contextParams.size() > index) {
                             Object o = contextParams.get(index);
                             if (o instanceof Number) {
-                                sqlTypeName = SqlTypeName.INTEGER;
+                                sqlTypeName = SqlTypeName.BIGINT;
                             } else if (o instanceof String) {
                                 sqlTypeName = SqlTypeName.VARCHAR;
                             }
                         }
                     }
-                    return super.typeFactory.createSqlType(Objects.requireNonNull(sqlTypeName));
+                    if (sqlTypeName != null) {
+                        return super.typeFactory.createSqlType(Objects.requireNonNull(sqlTypeName));
+                    }
                 }
-                return null;
+                return typeFactory.createSqlType(SqlTypeName.ANY);
             }
 
             @Override
