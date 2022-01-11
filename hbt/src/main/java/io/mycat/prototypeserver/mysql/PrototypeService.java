@@ -2268,9 +2268,6 @@ public class PrototypeService {
             }
         }
         if (!rowMetaData.isPresent()) {
-            rowMetaData = getMycatRowMetaDataPrepareSQLByTargetName(MetadataManager.getPrototype(), sql);
-        }
-        if (!rowMetaData.isPresent()) {
             try {
                 PlanImpl plan = DrdsRunnerHelper.getPlan(DrdsRunnerHelper.preParse(sqlStatement, schema));
                 rowMetaData =  Optional.of(plan.getMetaData());
@@ -2278,6 +2275,9 @@ public class PrototypeService {
                 LOGGER.warn("can not get meta from calcite ", e);
                 rowMetaData = Optional.empty();
             }
+        }
+        if (!rowMetaData.isPresent()) {
+            rowMetaData = getMycatRowMetaDataPrepareSQLByTargetName(MetadataManager.getPrototype(), sql);
         }
         return rowMetaData;
     }

@@ -1,7 +1,6 @@
 package io.mycat.mycatmysql;
 
 import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.ast.SQLDataType;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
@@ -20,6 +19,7 @@ import io.mycat.commands.MycatdbCommand;
 import io.mycat.commands.ReceiverImpl;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.config.ServerConfig;
+import io.mycat.prototypeserver.mysql.PrototypeService;
 import io.mycat.util.VertxUtil;
 import io.mycat.util.packet.AbstractWritePacket;
 import io.mycat.vertx.ReadView;
@@ -42,10 +42,10 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.JDBCType;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -199,7 +199,7 @@ public class MycatVertxMySQLHandler {
                             byte[] longData = getLongData(statementId, i, this.session);
                             if (longData == null) {
                                 ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
-                                BindValueUtil.read(readView, bv, StandardCharsets.UTF_8,!serverConfig.isPstmtStringVal());
+                                BindValueUtil.read(readView, bv, StandardCharsets.UTF_8, !serverConfig.isPstmtStringVal());
                                 bv.isLongData = false;
                             } else {
                                 bv.value = longData;
@@ -497,8 +497,19 @@ public class MycatVertxMySQLHandler {
         );
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
 
-        ResultSetBuilder fieldsBuilder = ResultSetBuilder.create();
-        MycatRowMetaData fields = fieldsBuilder.build().getMetaData();
+        MycatRowMetaData fields;
+        if ((sqlStatement instanceof SQLSelectStatement)) {
+            PrototypeService prototypeService = MetaClusterCurrent.wrapper(PrototypeService.class);
+            Optional<MycatRowMetaData> mycatRowMetaDataForPrepareStatement = prototypeService.getMycatRowMetaDataForPrepareStatement(MycatMysqlSession.getDataContext().getDefaultSchema(), sql);
+
+            if (!mycatRowMetaDataForPrepareStatement.isPresent()) {
+                return VertxUtil.castPromise(Future.failedFuture(new SQLException("can not prepare " + sqlStatement, "00000", 0)));
+            }
+            fields = mycatRowMetaDataForPrepareStatement.get();
+        } else {
+            fields = ResultSetBuilder.create().build().getMetaData();
+        }
+
         ResultSetBuilder paramsBuilder = ResultSetBuilder.create();
 
         sqlStatement.accept(new MySqlASTVisitorAdapter() {
