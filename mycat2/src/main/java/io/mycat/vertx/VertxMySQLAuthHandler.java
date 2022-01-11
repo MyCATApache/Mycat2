@@ -50,7 +50,9 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
         this.socket = socket;
         this.mysqlProxyServerVerticle = mysqlProxyServerVerticle;
         this.mycatDataContext = new MycatDataContextImpl();
-        int defaultServerCapabilities = MySQLServerCapabilityFlags.getDefaultServerCapabilities();
+        int defaultServerCapabilities = MySQLServerCapabilityFlags.getDefaultServerCapabilities()
+                //  |MySQLServerCapabilityFlags.CLIENT_DEPRECATE_EOF
+                ;
         this.seedParts = MysqlNativePasswordPluginUtil.nextSeedBuild();
         byte[] handshakePacket = MySQLClientAuthHandler.createHandshakePayload(mycatDataContext.getSessionId(), defaultServerCapabilities, seedParts);
         socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(0, handshakePacket)));
@@ -130,7 +132,10 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
         InetSocketAddress remoteAddress = new InetSocketAddress(socket.remoteAddress().host(), socket.remoteAddress().port());
         mycatDataContext.setUser(new MycatUser(username, null, null, host, remoteAddress,userInfo));
         mycatDataContext.useShcema(authPacket.getDatabase());
-        mycatDataContext.setServerCapabilities(authPacket.getCapabilities());
+        mycatDataContext.setServerCapabilities(
+                authPacket.getCapabilities()
+                        & (~MySQLServerCapabilityFlags.CLIENT_DEPRECATE_EOF)
+        );
         mycatDataContext.setAutoCommit(true);
         mycatDataContext.setIsolation(MySQLIsolation.REPEATED_READ);
         mycatDataContext.setCharsetIndex(authPacket.getCharacterSet());
