@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.sqlhandler;
+package io.mycat.prototypeserver.mysql;
 
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -31,15 +31,19 @@ import java.util.stream.Collectors;
 
 public class HackRouter {
     SQLStatement selectStatement;
-    private MycatDataContext dataContext;
+    private String defaultSchema;
     Optional<Distribution> res;
     private MetadataManager metadataManager;
     private String targetName;
     private NameMap<Partition> targetMap;
 
     public HackRouter(SQLStatement selectStatement, MycatDataContext context) {
+        this(selectStatement, context.getDefaultSchema());
+    }
+
+    public HackRouter(SQLStatement selectStatement, String defaultSchema) {
         this.selectStatement = selectStatement;
-        this.dataContext = context;
+        this.defaultSchema = defaultSchema;
     }
 
     public boolean analyse() {
@@ -49,7 +53,7 @@ public class HackRouter {
             public boolean visit(SQLExprTableSource x) {
                 String tableName = x.getTableName();
                 if (tableName != null) {
-                    String schema = Optional.ofNullable(x.getSchema()).orElse(dataContext.getDefaultSchema());
+                    String schema = Optional.ofNullable(x.getSchema()).orElse(defaultSchema);
                     if (schema == null) {
                         throw new MycatException("please use schema;");
                     }
@@ -98,7 +102,7 @@ public class HackRouter {
                 @Override
                 public boolean visit(SQLExprTableSource x) {
                     String tableName = SQLUtils.normalize(x.getTableName());
-                    String schema = SQLUtils.normalize(Optional.ofNullable(x.getSchema()).orElse(dataContext.getDefaultSchema()));
+                    String schema = SQLUtils.normalize(Optional.ofNullable(x.getSchema()).orElse(defaultSchema));
                     Partition partition = targetMap.get(schema + "_" + tableName, false);
                     if (partition != null) {
                         MycatSQLExprTableSourceUtil.setSqlExprTableSource(partition.getSchema(), partition.getTable(), x);

@@ -32,7 +32,7 @@ import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.spm.UpdatePlanCache;
 import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
-import io.mycat.sqlhandler.HackRouter;
+import io.mycat.prototypeserver.mysql.HackRouter;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.NameMap;
 import io.mycat.util.Pair;

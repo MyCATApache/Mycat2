@@ -1,31 +1,35 @@
 package io.mycat.prototypeserver.mysql;
 
 import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.ast.SQLDataType;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.github.jinahya.database.metadata.bind.Catalog;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.CopyMycatRowMetaData;
+import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.beans.mysql.MySQLType;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
+import io.mycat.calcite.DrdsRunnerHelper;
+import io.mycat.calcite.spm.PlanImpl;
 import io.mycat.config.NormalBackEndTableInfoConfig;
 import io.mycat.config.NormalTableConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.util.CalciteConvertors;
 import io.mycat.util.NameMap;
+import io.mycat.util.Pair;
 import io.mycat.util.SQL2ResultSetUtil;
-import io.vertx.core.Future;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSetMetaData;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -2129,7 +2133,7 @@ public class PrototypeService {
                     } catch (Exception e) {
                         LOGGER.error("", e);
                     }
-                    if (sqlStatement == null||!(sqlStatement instanceof SQLCreateTableStatement)) {
+                    if (sqlStatement == null || !(sqlStatement instanceof SQLCreateTableStatement)) {
                         try (RowBaseIterator rowBaseIterator = connection.executeQuery("select * from " + targetSchemaTable + " where 0 limit 0")) {
                             MycatRowMetaData metaData = rowBaseIterator.getMetaData();
                             String createTableSql = generateSql(schemaName, tableName, metaData.metaData());
@@ -2167,7 +2171,7 @@ public class PrototypeService {
             MycatRowMetaData mycatRowMetaData = null;
             if (sqlStatement instanceof MySqlCreateTableStatement) {
                 mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData((MySqlCreateTableStatement) sqlStatement);
-            }else {
+            } else {
                 Optional<JdbcConnectionManager> prototypeConnectionManagerOptional = getPrototypeConnectionManager();
                 if (!prototypeConnectionManagerOptional.isPresent()) return Collections.emptyList();
                 if (sqlStatement instanceof SQLCreateViewStatement) {
@@ -2238,6 +2242,60 @@ public class PrototypeService {
             }
         });
         return res;
+    }
+
+    public Optional<MycatRowMetaData> getMycatRowMetaDataForPrepareStatement(String schema, String sql) {
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+        if (schema != null) {
+            sqlStatement.accept(new MySqlASTVisitorAdapter() {
+                @Override
+                public boolean visit(SQLExprTableSource x) {
+                    if (x.getSchema() == null) {
+                        x.setSchema(schema);
+                    }
+                    return super.visit(x);
+                }
+            });
+        }
+        sql = sqlStatement.toString();
+
+        Optional<MycatRowMetaData> rowMetaData = Optional.empty();
+        if (!rowMetaData.isPresent()) {
+            HackRouter hackRouter = new HackRouter(sqlStatement, schema);
+            if (hackRouter.analyse()) {
+                Pair<String, String> plan = hackRouter.getPlan();
+                rowMetaData = getMycatRowMetaDataPrepareSQLByTargetName(plan.getKey(), plan.getValue());
+            }
+        }
+        if (!rowMetaData.isPresent()) {
+            rowMetaData = getMycatRowMetaDataPrepareSQLByTargetName(MetadataManager.getPrototype(), sql);
+        }
+        if (!rowMetaData.isPresent()) {
+            try {
+                PlanImpl plan = DrdsRunnerHelper.getPlan(DrdsRunnerHelper.preParse(sqlStatement, schema));
+                rowMetaData =  Optional.of(plan.getMetaData());
+            }catch (Exception e){
+                LOGGER.warn("can not get meta from calcite ", e);
+                rowMetaData = Optional.empty();
+            }
+        }
+        return rowMetaData;
+    }
+
+    private Optional<MycatRowMetaData> getMycatRowMetaDataPrepareSQLByTargetName(String targetName, String sql) {
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
+            Connection rawConnection = connection.getRawConnection();
+            PreparedStatement preparedStatement = rawConnection.prepareStatement(sql);
+            ResultSetMetaData metaData = preparedStatement.getMetaData();
+            if (metaData != null) {
+                return Optional.of(new CopyMycatRowMetaData(new JdbcRowMetaData(metaData)));
+            }
+        } catch (Exception e) {
+            LOGGER.warn("can not get meta from {} {}", targetName, e);
+            return Optional.empty();
+        }
+        return Optional.empty();
     }
 
 }

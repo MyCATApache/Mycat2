@@ -29,11 +29,10 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.prototypeserver.mysql.PrototypeService;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
-import io.mycat.sqlhandler.HackRouter;
+import io.mycat.prototypeserver.mysql.HackRouter;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.Pair;
 import io.vertx.core.Future;
-import io.vertx.core.shareddata.Lock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

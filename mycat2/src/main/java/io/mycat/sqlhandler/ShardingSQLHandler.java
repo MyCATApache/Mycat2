@@ -14,7 +14,6 @@
  */
 package io.mycat.sqlhandler;
 
-import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import io.mycat.DrdsSqlWithParams;
 import io.mycat.MycatDataContext;
@@ -22,7 +21,7 @@ import io.mycat.Response;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.DrdsRunnerHelper;
-import io.mycat.calcite.PrepareExecutor;
+import io.mycat.prototypeserver.mysql.HackRouter;
 import io.mycat.swapbuffer.MySQLSwapbufferBuilder;
 import io.mycat.swapbuffer.PacketRequest;
 import io.mycat.util.Pair;
