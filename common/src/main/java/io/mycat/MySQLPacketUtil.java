@@ -143,7 +143,12 @@ public class MySQLPacketUtil {
 
     public static final byte[] generateColumnDefPayload(MycatRowMetaData metaData, int columnIndex) {
         try (MySQLPayloadWriter writer = new MySQLPayloadWriter(128)) {
-            ColumnDefPacketImpl columnDefPacket = new ColumnDefPacketImpl(metaData, columnIndex);
+            ColumnDefPacketImpl columnDefPacket;
+            if (metaData instanceof MycatMySQLRowMetaData) {
+                columnDefPacket = (ColumnDefPacketImpl) ((MycatMySQLRowMetaData) metaData).getColumnDefPackets().get(columnIndex);
+            } else {
+                columnDefPacket = new ColumnDefPacketImpl(metaData, columnIndex);
+            }
             columnDefPacket.writePayload(writer);
             return writer.toByteArray();
         }
