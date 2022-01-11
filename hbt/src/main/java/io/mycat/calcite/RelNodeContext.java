@@ -23,6 +23,7 @@ import org.apache.calcite.tools.RelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -34,9 +35,9 @@ public class RelNodeContext {
     final RelBuilder relBuilder;
     final CalciteCatalogReader catalogReader;
     final RelDataType parameterRowType;
-    final ImmutableMap<RexNode, RexNode> constantMap;
+    ImmutableMap<RexNode, RexNode> constantMap;
 
-   public static final Logger LOGGER = LoggerFactory.getLogger(RelNodeContext.class);
+    public static final Logger LOGGER = LoggerFactory.getLogger(RelNodeContext.class);
 
     public RelNodeContext(RelRoot root, SqlToRelConverter sqlToRelConverter, SqlValidator validator, RelBuilder relBuilder, CalciteCatalogReader catalogReader, RelDataType parameterRowType) {
         this.root = root;
@@ -50,12 +51,13 @@ public class RelNodeContext {
         RelOptCluster cluster = relNode.getCluster();
         RelMetadataQuery metadataQuery = cluster.getMetadataQuery();
         RelOptPredicateList pulledUpPredicates = metadataQuery.getPulledUpPredicates(root.rel);
-        this.constantMap = Optional.ofNullable(pulledUpPredicates).map(i -> {
-            ImmutableMap.Builder<RexNode, RexNode> builder = ImmutableMap.builder();
-            for (Map.Entry<RexNode, RexNode> rexNodeRexNodeEntry : i.constantMap.entrySet()) {
-                RexNode key = rexNodeRexNodeEntry.getKey();
-                RexNode value = rexNodeRexNodeEntry.getValue();
-                try {
+        try {
+            this.constantMap = Optional.ofNullable(pulledUpPredicates).map(i -> {
+                HashMap<RexNode, RexNode> builder = new HashMap<>();
+                for (Map.Entry<RexNode, RexNode> rexNodeRexNodeEntry : i.constantMap.entrySet()) {
+                    RexNode key = rexNodeRexNodeEntry.getKey();
+                    RexNode value = rexNodeRexNodeEntry.getValue();
+
                     if (key instanceof RexSlot) {
                         RelColumnOrigin columnOrigin = metadataQuery.getColumnOrigin(relNode, ((RexSlot) key).getIndex());
                         if (columnOrigin != null && !columnOrigin.isDerived()) {
@@ -66,11 +68,13 @@ public class RelNodeContext {
                             builder.put(inputRef, value);
                         }
                     }
-                }catch (Throwable throwable){
-                    LOGGER.warn("",throwable);
+
                 }
-            }
-            return builder.build();
-        }).orElse(ImmutableMap.of());
+                return ImmutableMap.copyOf(builder);
+            }).orElse(ImmutableMap.of());
+        } catch (Throwable throwable) {
+            LOGGER.warn("", throwable);
+            this.constantMap = ImmutableMap.of();
+        }
     }
 }

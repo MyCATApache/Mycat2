@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.enumerable;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.sqlfunction.cmpfunction.StrictEqualFunction;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.util.ByteString;
@@ -2622,7 +2623,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     if (rexResultMap.containsKey(call)) {
       return rexResultMap.get(call);
     }
-    final SqlOperator operator = call.getOperator();
+     SqlOperator operator = call.getOperator();
     if (operator == PREV) {
       return implementPrev(call);
     }
@@ -2633,7 +2634,11 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       return RexUtil.expandSearch(builder, program, call).accept(this);
     }
 
-     RexImpTable.RexCallImplementor implementor =
+    if (operator.getName().equalsIgnoreCase("<=>")){
+      operator = StrictEqualFunction.INSTANCE;
+    }
+
+    RexImpTable.RexCallImplementor implementor =
         RexImpTable.INSTANCE.get(operator);
 
     if (implementor == null) {
