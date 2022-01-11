@@ -37,8 +37,8 @@ public class MycatSessionValueFunction extends MycatSqlDefinedFunction {
 
     public static final MycatSessionValueFunction BIGINT_TYPE_INSTANCE = createNumber();
 
-    public MycatSessionValueFunction(SqlReturnTypeInference sqlReturnTypeInference) {
-        super("MYCATSESSIONVALUE", sqlReturnTypeInference, InferTypes.ANY_NULLABLE, OperandTypes.ANY, null,
+    public MycatSessionValueFunction(String name,SqlReturnTypeInference sqlReturnTypeInference) {
+        super(name, sqlReturnTypeInference, InferTypes.RETURN_TYPE, OperandTypes.ANY, null,
                 SqlFunctionCategory.SYSTEM);
     }
 
@@ -52,11 +52,11 @@ public class MycatSessionValueFunction extends MycatSqlDefinedFunction {
     }
 
     private static MycatSessionValueFunction createString() {
-        return new MycatSessionValueFunction(ReturnTypes.VARCHAR_2000);
+        return new MycatSessionValueFunction("MYCATSESSION_STRING_VALUE",ReturnTypes.VARCHAR_2000);
     }
 
     private static MycatSessionValueFunction createNumber() {
-        return new MycatSessionValueFunction(ReturnTypes.BIGINT_NULLABLE);
+        return new MycatSessionValueFunction("MYCATSESSION_INT_VALUE",ReturnTypes.BIGINT_NULLABLE);
     }
 }
 

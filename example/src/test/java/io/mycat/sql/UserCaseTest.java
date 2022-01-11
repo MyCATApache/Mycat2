@@ -1592,4 +1592,11 @@ public class UserCaseTest implements MycatTest {
 
         }
     }
+    @Test
+    public void caseSelectSessionValueInt() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
+            List<Map<String, Object>> maps1 = executeQuery(mycatConnection, "select @@max_allowed_packet; ");
+            Number next = (Number) maps1.get(0).values().iterator().next();
+        }
+    }
 }

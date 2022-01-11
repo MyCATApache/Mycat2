@@ -66,7 +66,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
 
     private SqlNode sqlNode;
     private boolean hint = false;
-    private  int qbIds;
+    private int qbIds;
 
     public MycatCalciteMySqlNodeVisitor(int qbIds) {
         this.qbIds = qbIds;
@@ -398,7 +398,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         }
 
         //hints
-        SqlNodeList hints = convertHints((List)x.getHints());
+        SqlNodeList hints = convertHints((List) x.getHints());
 
         if (orderBy != null && x.getParent() instanceof SQLUnionQuery) {
             this.sqlNode = new SqlSelect(SqlParserPos.ZERO
@@ -860,7 +860,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         if (sqlNode instanceof SqlSelect) {
             SqlSelect select = (SqlSelect) sqlNode;
 
-            SqlNodeList headHints = convertHints((List)x.getHeadHintsDirect());
+            SqlNodeList headHints = convertHints((List) x.getHeadHintsDirect());
             select.setHints(headHints);
             this.sqlNode = select;
         } else {
@@ -974,16 +974,26 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                     SqlLiteral.createCharString(name, SqlParserPos.ZERO));
         } else {
             if (name.startsWith("@@")) {
-                return MycatSessionValueFunction.STRING_TYPE_INSTANCE.createCall(SqlParserPos.ZERO,
-                        SqlLiteral.createCharString(name.substring(2), SqlParserPos.ZERO));
+                name = name.substring(2);
+            }else if (name.startsWith("@")) {
+                name = name.substring(1);
             }
-            if (name.startsWith("@")) {
-                return MycatUserValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
-                        SqlLiteral.createCharString(name.substring(1), SqlParserPos.ZERO));
+            if (isNumberType(name)){
+                return MycatSessionValueFunction.BIGINT_TYPE_INSTANCE.createCall(SqlParserPos.ZERO,
+                        SqlLiteral.createCharString(name, SqlParserPos.ZERO));
+
             }
             return MycatSessionValueFunction.STRING_TYPE_INSTANCE.createCall(SqlParserPos.ZERO,
                     SqlLiteral.createCharString(name, SqlParserPos.ZERO));
         }
+    }
+
+    public static boolean isNumberType(String name) {
+        if (name == null) return false;
+        if (name.equalsIgnoreCase("max_allowed_packet")) {
+            return true;
+        }
+        return false;
     }
 
     void buildIdentifier(SQLPropertyExpr x, List<String> names) {
@@ -2079,10 +2089,10 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             return null;
         }
         MycatCalciteMySqlNodeVisitor visitor;
-        if (ast instanceof SQLSelect||ast instanceof SQLExprTableSource){
-            visitor  = new MycatCalciteMySqlNodeVisitor(++qbIds);
-        }else {
-            visitor  = new MycatCalciteMySqlNodeVisitor(qbIds);
+        if (ast instanceof SQLSelect || ast instanceof SQLExprTableSource) {
+            visitor = new MycatCalciteMySqlNodeVisitor(++qbIds);
+        } else {
+            visitor = new MycatCalciteMySqlNodeVisitor(qbIds);
         }
 
         ast.accept(visitor);
@@ -2133,17 +2143,17 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         List<MycatHint> list = new ArrayList<>(hints.size() + 1);
         boolean QB_NAME = false;
         for (SQLHint hint : hints) {
-            if (hint instanceof MySqlForceIndexHint){
+            if (hint instanceof MySqlForceIndexHint) {
                 MySqlForceIndexHint forceIndexHint = (MySqlForceIndexHint) hint;
                 List<SQLName> indexList = forceIndexHint.getIndexList();
-                list.add(new MycatHint( "+MYCAT:" +
+                list.add(new MycatHint("+MYCAT:" +
                         "INDEX(" +
-                        indexList.stream().map(i->i.getSimpleName()).collect(Collectors.joining(","))+")"));
-            }else if (hint instanceof SQLCommentHint ){
+                        indexList.stream().map(i -> i.getSimpleName()).collect(Collectors.joining(",")) + ")"));
+            } else if (hint instanceof SQLCommentHint) {
                 SQLCommentHint sqlCommentHint = (SQLCommentHint) hint;
                 list.add(new MycatHint(sqlCommentHint.getText()));
                 QB_NAME = sqlCommentHint.getText().contains("QB_NAME");
-            }else {
+            } else {
 
             }
 
@@ -2156,7 +2166,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                         "";
             } else {
                 format = "+MYCAT:" +
-                        "QB_NAME(" +alias+
+                        "QB_NAME(" + alias +
                         ")" +
                         "";
             }
