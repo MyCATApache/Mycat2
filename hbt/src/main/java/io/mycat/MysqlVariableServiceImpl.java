@@ -5,10 +5,13 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.util.NameMap;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import static io.mycat.MySQLVariablesUtil.toInt;
 
 public class MysqlVariableServiceImpl implements MysqlVariableService {
 
@@ -96,12 +99,22 @@ public class MysqlVariableServiceImpl implements MysqlVariableService {
 
     @Override
     public Object getGlobalVariable(String name) {
-        return globalVariables.get(name.startsWith("@@") ? name.substring(2) : name, false);
+        name = name.startsWith("@@") ? name.substring(2) : name;
+        Object o = globalVariables.get(name, false);
+        return fixValue(name, o);
+    }
+
+    @Nullable
+    private Object fixValue(String name, Object o) {
+        if (name.equalsIgnoreCase("innodb_file_per_table")){
+            return toInt(o);
+        }
+        return o;
     }
 
     @Override
     public Object getSessionVariable(String name) {
-        return sessionVariables.get(name, false);
+        return fixValue(name, sessionVariables.get(name, false));
     }
 
     @Override

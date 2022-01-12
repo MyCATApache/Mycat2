@@ -1584,19 +1584,23 @@ public class UserCaseTest implements MycatTest {
                     "INSERT INTO `db1`.`travelrecord`(`id`,`blob`) VALUES (20,?)", Arrays.asList(bytes));
             List<Map<String, Object>> maps = executeQuery(mycatConnection, "SELECT `blob` from db1.travelrecord");
             Object next = maps.get(0).values().iterator().next();
-            if (next instanceof String){
-                Assert.assertTrue(next.toString().equals(new String(  bytes)));
-            }else {
-                Assert.assertTrue(Arrays.equals(bytes,(byte[])next));
+            if (next instanceof String) {
+                Assert.assertTrue(next.toString().equals(new String(bytes)));
+            } else {
+                Assert.assertTrue(Arrays.equals(bytes, (byte[]) next));
             }
 
         }
     }
+
     @Test
     public void caseSelectSessionValueInt() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
             List<Map<String, Object>> maps1 = executeQuery(mycatConnection, "select @@max_allowed_packet; ");
             Number next = (Number) maps1.get(0).values().iterator().next();
+
+            maps1 = executeQuery(mycatConnection, "SELECT @@innodb_file_per_table =1;");
+            next = (Number) maps1.get(0).values().iterator().next();
         }
     }
 }

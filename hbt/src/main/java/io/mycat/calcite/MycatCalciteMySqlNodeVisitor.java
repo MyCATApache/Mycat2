@@ -993,6 +993,9 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         if (name.equalsIgnoreCase("max_allowed_packet")) {
             return true;
         }
+        if (name.equalsIgnoreCase("innodb_file_per_table")) {
+            return true;
+        }
         return false;
     }
 
