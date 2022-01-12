@@ -159,7 +159,14 @@ public class MycatVertxMySQLHandler {
                 }
                 case MySQLCommandType.COM_STMT_PREPARE: {
                     byte[] bytes = readView.readEOFStringBytes();
-                    promise = handlePrepareStatement(bytes, this.session);
+                    IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
+                    promise = ioExecutor.executeBlocking((Handler<Promise<Void>>) voidPromise -> {
+                        try {
+                            handlePrepareStatement(bytes, session).onComplete(voidPromise);
+                        }catch (Throwable throwable){
+                            voidPromise.fail(throwable);
+                        }
+                    });
                     break;
                 }
                 case MySQLCommandType.COM_STMT_SEND_LONG_DATA: {
