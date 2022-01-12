@@ -270,7 +270,7 @@ public class ReceiverImpl implements Response {
                 session.directWriteStart();
                 sender.subscribe(buffer -> future= session.directWrite(buffer),
                         throwable -> promise.tryFail(throwable),
-                        () -> future.onComplete(event -> {
+                        () -> future.flatMap((Function<Void, Future<Void>>) unused -> session.directWriteEnd()).onComplete(event -> {
                             if (event.succeeded()){
                                 promise.tryComplete();
                             }else {
