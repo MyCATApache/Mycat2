@@ -91,6 +91,6 @@ public class MySQLVariablesUtil {
         if ("false".equalsIgnoreCase(s)) {
             return 0;
         }
-        throw new UnsupportedOperationException(s);
+        return Integer.parseInt(s);
     }
 }

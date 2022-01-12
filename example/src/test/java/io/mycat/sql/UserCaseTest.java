@@ -1601,6 +1601,9 @@ public class UserCaseTest implements MycatTest {
 
             maps1 = executeQuery(mycatConnection, "SELECT @@innodb_file_per_table =1;");
             next = (Number) maps1.get(0).values().iterator().next();
+
+            maps1 = executeQuery(mycatConnection, "SELECT @@FOREIGN_KEY_CHECKS");
+            next = (Number) maps1.get(0).values().iterator().next();
         }
     }
 }

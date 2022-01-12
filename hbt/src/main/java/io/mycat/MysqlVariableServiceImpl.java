@@ -109,6 +109,12 @@ public class MysqlVariableServiceImpl implements MysqlVariableService {
         if (name.equalsIgnoreCase("innodb_file_per_table")){
             return toInt(o);
         }
+        if (name.equalsIgnoreCase("FOREIGN_KEY_CHECKS")){
+            return toInt(o);
+        }
+        if (name.equalsIgnoreCase("max_allowed_packet")){
+            return toInt(o);
+        }
         return o;
     }
 
