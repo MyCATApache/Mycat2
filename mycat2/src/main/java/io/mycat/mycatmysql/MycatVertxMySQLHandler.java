@@ -479,8 +479,8 @@ public class MycatVertxMySQLHandler {
         return VertxUtil.newSuccessPromise();
     }
 
-    private PromiseInternal<Void> handlePrepareStatement(byte[] bytes, MycatVertxMysqlSession MycatMysqlSession) {
-        boolean deprecateEOF = false;
+    private PromiseInternal<Void> handlePrepareStatement(byte[] bytes, MycatVertxMysqlSession mysqlSession) {
+        boolean deprecateEOF = mysqlSession.isDeprecateEOF();
         String sql = new String(bytes);
         /////////////////////////////////////////////////////
         if (LOGGER.isDebugEnabled()) {
@@ -500,7 +500,7 @@ public class MycatVertxMySQLHandler {
         MycatRowMetaData fields;
         if ((sqlStatement instanceof SQLSelectStatement)) {
             PrototypeService prototypeService = MetaClusterCurrent.wrapper(PrototypeService.class);
-            Optional<MycatRowMetaData> mycatRowMetaDataForPrepareStatement = prototypeService.getMycatRowMetaDataForPrepareStatement(MycatMysqlSession.getDataContext().getDefaultSchema(), sql);
+            Optional<MycatRowMetaData> mycatRowMetaDataForPrepareStatement = prototypeService.getMycatRowMetaDataForPrepareStatement(mysqlSession.getDataContext().getDefaultSchema(), sql);
 
             if (!mycatRowMetaDataForPrepareStatement.isPresent()) {
                 return VertxUtil.castPromise(Future.failedFuture(new SQLException("can not prepare " + sqlStatement, "00000", 0)));
