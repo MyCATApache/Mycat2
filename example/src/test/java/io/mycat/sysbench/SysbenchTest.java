@@ -30,6 +30,7 @@ public class SysbenchTest implements MycatTest {
                     "\tPRIMARY KEY (id),\n" +
                     "\tINDEX k_1(k)\n" +
                     ")");
+            deleteData(mySQLConnection,"testdb","sbtest1");
             JdbcUtils.execute(mySQLConnection,"insert sbtest1(id,k,c,pad) " +
                     "values (1,25," +
                     "'31451373586-15688153734-79729593694-96509299839-83724898275-86711833539-78981337422-35049690573-51724173961-87474696253'," +

@@ -51,7 +51,6 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
         this.mysqlProxyServerVerticle = mysqlProxyServerVerticle;
         this.mycatDataContext = new MycatDataContextImpl();
         int defaultServerCapabilities = MySQLServerCapabilityFlags.getDefaultServerCapabilities()
-                //  |MySQLServerCapabilityFlags.CLIENT_DEPRECATE_EOF
                 ;
         this.seedParts = MysqlNativePasswordPluginUtil.nextSeedBuild();
         byte[] handshakePacket = MySQLClientAuthHandler.createHandshakePayload(mycatDataContext.getSessionId(), defaultServerCapabilities, seedParts);
@@ -134,7 +133,6 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
         mycatDataContext.useShcema(authPacket.getDatabase());
         mycatDataContext.setServerCapabilities(
                 authPacket.getCapabilities()
-                        & (~MySQLServerCapabilityFlags.CLIENT_DEPRECATE_EOF)
         );
         mycatDataContext.setAutoCommit(true);
         mycatDataContext.setIsolation(MySQLIsolation.REPEATED_READ);

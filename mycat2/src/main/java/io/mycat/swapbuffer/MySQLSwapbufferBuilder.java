@@ -9,6 +9,7 @@ import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.ObservableEmitter;
 import io.reactivex.rxjava3.core.ObservableOnSubscribe;
+import io.vertx.core.buffer.Buffer;
 
 import java.util.Collections;
 import java.util.List;
@@ -26,10 +27,10 @@ public class MySQLSwapbufferBuilder {
        this(Collections.singletonList(rowBaseIterator));
     }
 
-    public Observable<PacketRequest> build() {
-        return Observable.create(new ObservableOnSubscribe<PacketRequest>() {
+    public Observable<Buffer> build() {
+        return Observable.create(new ObservableOnSubscribe<Buffer>() {
             @Override
-            public void subscribe(@NonNull ObservableEmitter<PacketRequest> emitter) throws Throwable {
+            public void subscribe(@NonNull ObservableEmitter<Buffer> emitter) throws Throwable {
                 try {
                     int resultSetCount = rowBaseIteratorList.size();
                     Function<Object[], byte[]> function;
@@ -78,8 +79,8 @@ public class MySQLSwapbufferBuilder {
                     emitter.tryOnError(e);
                 }
             }
-            private PacketRequest packet(byte[] generateMySQLPacket) {
-                return PacketRequest.of(generateMySQLPacket);
+            private Buffer packet(byte[] generateMySQLPacket) {
+                return Buffer.buffer(generateMySQLPacket);
             }
         });
     }

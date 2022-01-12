@@ -23,11 +23,12 @@ import io.mycat.swapbuffer.PacketRequest;
 import io.mycat.swapbuffer.PacketResponse;
 import io.mycat.util.VertxUtil;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.core.net.NetSocket;
 
 import java.nio.charset.Charset;
+import java.util.function.Function;
 
 public class VertxSessionImpl implements VertxSession {
     private MycatDataContext mycatDataContext;
@@ -123,25 +124,27 @@ public class VertxSessionImpl implements VertxSession {
     }
 
     @Override
-    public PromiseInternal<Void> writeBytes(byte[] payload, boolean end) {
-        if (end) {
-            if (mycatDataContext != null) {
-                TransactionSession transactionSession = mycatDataContext.getTransactionSession();
-                if (transactionSession != null) {
-                    transactionSession.closeStatementState();
+    public Future<Void> writeBytes(byte[] payload, boolean end) {
+        if (!close) {
+            if (end) {
+                if (mycatDataContext != null) {
+                    TransactionSession transactionSession = mycatDataContext.getTransactionSession();
+                    if (transactionSession != null) {
+                        //加速回收资源
+                        return transactionSession.closeStatementState()
+                                .transform(voidAsyncResult ->
+                                        socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload))));
+                    }
                 }
             }
-        }
-        if (!close) {
-            socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload)), null);
-            return VertxUtil.castPromise(Future.succeededFuture());
+            return socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload)));
         } else {
             return VertxUtil.castPromise(Future.failedFuture("session is closed"));
         }
     }
 
     @Override
-    public PromiseInternal<Void> writeErrorEndPacketBySyncInProcessError() {
+    public Future<Void> writeErrorEndPacketBySyncInProcessError() {
         return writeBytes(MySQLPacketUtil.generateError(
                 mycatDataContext.getLastErrorCode(),
                 mycatDataContext.getLastMessage(),
@@ -150,7 +153,7 @@ public class VertxSessionImpl implements VertxSession {
     }
 
     @Override
-    public PromiseInternal<Void> writeErrorEndPacketBySyncInProcessError(int errorCode) {
+    public Future<Void> writeErrorEndPacketBySyncInProcessError(int errorCode) {
         return writeBytes(MySQLPacketUtil.generateError(
                 errorCode,
                 mycatDataContext.getLastMessage(),
@@ -175,21 +178,19 @@ public class VertxSessionImpl implements VertxSession {
     }
 
     @Override
-    public PacketResponse directWrite(PacketRequest packetRequest) {
-        socket.write(packetRequest.asJavaVertxBuffer());
-        return packetRequest.response();
+    public Future<Void> directWrite(Buffer buffer) {
+        return socket.write(buffer);
     }
 
     @Override
     public Future<Void> directWriteEnd() {
-        Future<Void> future = Future.succeededFuture();
         if (mycatDataContext != null) {
             TransactionSession transactionSession = mycatDataContext.getTransactionSession();
             if (transactionSession != null) {
-                future = transactionSession.closeStatementState();
+                return transactionSession.closeStatementState();
             }
         }
-        return future;
+        return Future.succeededFuture();
     }
 
     @Override
@@ -198,7 +199,7 @@ public class VertxSessionImpl implements VertxSession {
     }
 
     @Override
-    public PromiseInternal<Void> close() {
+    public Future<Void> close() {
         mycatDataContext.close();
         Future<Void> future = socket.close();
         return VertxUtil.castPromise(future);

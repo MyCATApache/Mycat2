@@ -15,22 +15,16 @@
 package io.mycat.commands;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
-import com.alibaba.druid.sql.ast.SQLStatement;
 import io.mycat.*;
 import io.mycat.api.collector.*;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.resultset.ResultSetWriter;
 import io.mycat.beans.resultset.SimpleBinaryWriterImpl;
 import io.mycat.beans.resultset.SimpleTextWriterImpl;
-import io.mycat.calcite.PrepareExecutor;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.newquery.RowSet;
 import io.mycat.newquery.SqlResult;
 import io.mycat.proxy.session.MySQLServerSession;
-import io.mycat.swapbuffer.PacketMessageConsumer;
-import io.mycat.swapbuffer.PacketRequest;
-import io.mycat.swapbuffer.PacketResponse;
-import io.mycat.swapbuffer.SwapBufferUtil;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.ResultSetMapping;
 import io.mycat.vertx.VertxExecuter;
@@ -38,12 +32,12 @@ import io.ordinate.engine.builder.SchemaBuilder;
 import io.ordinate.engine.schema.InnerType;
 import io.ordinate.engine.util.ResultWriterUtil;
 import io.reactivex.rxjava3.annotations.NonNull;
-import io.reactivex.rxjava3.core.Emitter;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.ObservableSource;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.*;
+import io.vertx.core.buffer.Buffer;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -268,20 +262,23 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public Future<Void> swapBuffer(Observable<PacketRequest> sender, Emitter<PacketResponse> recycler) {
-        session.directWriteStart();
-        PacketMessageConsumer messageConsumer = new PacketMessageConsumer() {
+    public Future<Void> swapBuffer(Observable<Buffer> sender) {
+        return Future.future(new Handler<Promise<Void>>() {
+            Future<Void> future = Future.succeededFuture();
             @Override
-            public void onNext(PacketRequest packetMessage, Emitter<PacketResponse> emitter) {
-                emitter.onNext(session.directWrite(packetMessage));
+            public void handle(Promise<Void> promise) {
+                session.directWriteStart();
+                sender.subscribe(buffer -> future= session.directWrite(buffer),
+                        throwable -> promise.tryFail(throwable),
+                        () -> future.onComplete(event -> {
+                            if (event.succeeded()){
+                                promise.tryComplete();
+                            }else {
+                                promise.tryFail(event.cause());
+                            }
+                        }));
             }
-
-            @Override
-            public Future<Void> onComplete() {
-                return session.directWriteEnd();
-            }
-        };
-        return SwapBufferUtil.consume(messageConsumer, sender, recycler);
+        });
     }
 
 

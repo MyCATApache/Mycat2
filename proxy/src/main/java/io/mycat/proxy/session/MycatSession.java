@@ -36,11 +36,10 @@ import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.FrontMySQLPacketResolver;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
-import io.mycat.swapbuffer.PacketRequest;
-import io.mycat.swapbuffer.PacketResponse;
 import io.mycat.util.CharsetUtil;
 import io.mycat.util.VertxUtil;
 import io.vertx.core.Future;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.impl.future.PromiseInternal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -192,9 +191,10 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     }
 
     @Override
-    public PacketResponse directWrite(PacketRequest packetRequest) {
+    public Future<Void> directWrite(Buffer buffer) {
         throw new UnsupportedOperationException();
     }
+
 
     @Override
     public Future<Void> directWriteEnd() {

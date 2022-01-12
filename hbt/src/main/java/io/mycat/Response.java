@@ -24,6 +24,7 @@ import io.mycat.swapbuffer.*;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.*;
 import io.vertx.core.Future;
+import io.vertx.core.buffer.Buffer;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
 import java.util.List;
@@ -101,37 +102,7 @@ public interface Response {
 
     <T> T unWrapper(Class<T> clazz);
 
-
-    public default Future<Void> swapBuffer(PacketMessageConsumer messageConsumer, Observable<PacketRequest> sender,
-                                           Emitter<PacketResponse> recycler) {
-        return SwapBufferUtil.consume(messageConsumer, sender, recycler);
-    }
-
-    public Future<Void> swapBuffer(Observable<PacketRequest> sender,
-                                   Emitter<PacketResponse> recycler);
-
-    public default Future<Void> swapBuffer(Observable<PacketRequest> sender) {
-        return swapBuffer(sender, new Emitter<PacketResponse>() {
-            @Override
-            public void onNext(@NonNull PacketResponse value) {
-                if (value instanceof PacketRequestResponseJavaByteArrayImpl) {
-                    value.close();
-                } else {
-                    throw new UnsupportedOperationException();
-                }
-            }
-
-            @Override
-            public void onError(@NonNull Throwable error) {
-
-            }
-
-            @Override
-            public void onComplete() {
-
-            }
-        });
-    }
+    public  Future<Void> swapBuffer(Observable<Buffer> sender) ;
 
     public Future<Void> sendVectorResultSet(MycatRowMetaData mycatRowMetaData,
                                             Observable<VectorSchemaRoot> observable);

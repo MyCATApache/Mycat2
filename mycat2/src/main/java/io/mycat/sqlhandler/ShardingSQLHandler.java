@@ -28,6 +28,7 @@ import io.mycat.util.Pair;
 import io.ordinate.engine.util.ResultWriterUtil;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
+import io.vertx.core.buffer.Buffer;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +72,7 @@ public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             resultSetBuilder.addObjectRowPayload(Arrays.asList(1, 2));
             resultSetBuilder.addObjectRowPayload(Arrays.asList(3, 4));
             MySQLSwapbufferBuilder mySQLSwapbufferBuilder = new MySQLSwapbufferBuilder(resultSetBuilder.build());
-            Observable<PacketRequest> sender = mySQLSwapbufferBuilder.build();
+            Observable<Buffer> sender = mySQLSwapbufferBuilder.build();
             return Optional.of(response.swapBuffer(sender));
         }
         if (sqlString.equalsIgnoreCase("select arrow")) {
