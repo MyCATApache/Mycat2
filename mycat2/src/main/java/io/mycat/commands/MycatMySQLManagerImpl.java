@@ -17,15 +17,19 @@
 package io.mycat.commands;
 
 import com.alibaba.druid.util.JdbcUtils;
+import com.mysql.cj.conf.ConnectionUrlParser;
+import com.mysql.cj.conf.HostInfo;
 import io.mycat.MetaClusterCurrent;
-import io.mycat.NativeMycatServer;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.mysqlclient.MycatNativeDatasourcePool;
+import io.mycat.mysqlclient.VertxPoolConnectionImpl;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.replica.InstanceType;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 import static io.mycat.config.DatasourceConfig.DatasourceType.NATIVE_JDBC;
 
 public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
-    public static boolean FORCE_NATIVE_DATASOURCE = false;
+    public static boolean FORCE_NATIVE_DATASOURCE = true;
 
     private final ConcurrentHashMap<String, MycatDatasourcePool> map;
 
@@ -94,7 +98,26 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
 
     @NotNull
     public static MycatDatasourcePool createNativeDatasourcePool(DatasourceConfig datasource, String targetName) {
-        return new VertxMySQLDatasourcePoolImpl(datasource, targetName);
+
+        ConnectionUrlParser connectionUrlParser = ConnectionUrlParser.parseConnectionString(datasource.getUrl());
+        HostInfo hostInfo = connectionUrlParser.getHosts().get(0);
+
+        int port = hostInfo.getPort();
+        String host = hostInfo.getHost();
+        String username = datasource.getUser();
+        String password = datasource.getPassword();
+        VertxPoolConnectionImpl.Config config = new VertxPoolConnectionImpl.Config();
+        config.setHost(host);
+        config.setPassword(password);
+        config.setUsername(username);
+        config.setPort(port);
+        config.setDatabase(connectionUrlParser.getPath());
+        config.setRetry(datasource.getMaxRetryCount());
+        config.setTimer(datasource.getIdleTimeout());
+        config.setClientDeprecateEof(true);
+        Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+        VertxPoolConnectionImpl vertxConnectionPool = new VertxPoolConnectionImpl(config, vertx);
+        return new MycatNativeDatasourcePool(vertxConnectionPool, targetName);
     }
 
     @NotNull

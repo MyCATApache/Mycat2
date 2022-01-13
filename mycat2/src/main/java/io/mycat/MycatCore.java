@@ -203,17 +203,7 @@ public class MycatCore {
 
     @NotNull
     private MycatServer newMycatServer(MycatServerConfig serverConfig) throws URISyntaxException {
-        String configResourceKeyName = "server";
-        String type = System.getProperty(configResourceKeyName, "vertx");
-        if ("native".equalsIgnoreCase(type)) {
-            logger.info("start NativeMycatServer");
-            return new NativeMycatServer(serverConfig);
-        }
-        if ("vertx".equalsIgnoreCase(type)) {
-            logger.info("start VertxMycatServer");
-            return new VertxMycatServer(serverConfig);
-        }
-        throw new UnsupportedOperationException("unsupport server type:" + type);
+        return new VertxMycatServer(serverConfig);
     }
 
     public void startServer() throws Exception {

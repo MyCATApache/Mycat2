@@ -752,7 +752,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     //DO_NOT(false),
     QUERY_PACKET(true),
     FIRST_PACKET(true),
-    COLUMN_DEFINITION(false),
+    COLUMN_DEFINITION(true),
     AUTH_SWITCH_PLUGIN_RESPONSE(true),
     AUTH_SWITCH_OTHER_REQUEST(true),
     COLUMN_END_EOF(true),
