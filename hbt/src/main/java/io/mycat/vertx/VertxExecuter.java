@@ -151,7 +151,7 @@ public class VertxExecuter {
 
     @SneakyThrows
     public static Collection<EachSQL> explainUpdate(DrdsSqlWithParams drdsSqlWithParams, MycatDataContext context) {
-        SQLUpdateStatement statement = (SQLUpdateStatement)drdsSqlWithParams.getParameterizedStatement();
+        SQLUpdateStatement statement = (SQLUpdateStatement) drdsSqlWithParams.getParameterizedStatement();
         List<Object> params = drdsSqlWithParams.getParams();
         SQLExprTableSource tableSource = (SQLExprTableSource) statement.getTableSource();
         String alias = SQLUtils.normalize(tableSource.computeAlias());
@@ -621,7 +621,12 @@ public class VertxExecuter {
 
                     @Override
                     public void onRow(Object[] row) {
-                        emitter.onNext(BaseRowObservable.getObjects(row, this.mycatRowMetaData));
+                        try {
+                            emitter.onNext(BaseRowObservable.getObjects(row, this.mycatRowMetaData));
+                        } catch (Exception e) {
+                            LOGGER.error("", e);
+                            throw e;
+                        }
                     }
 
                     @Override

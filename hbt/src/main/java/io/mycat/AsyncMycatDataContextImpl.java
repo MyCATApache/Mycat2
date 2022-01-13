@@ -102,13 +102,20 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                         throwable -> {
                             sessionConnection.onSuccess(c -> {
                                         //close connection?
-                                        promise.fail(throwable);
+                                        emitter.onError(throwable);
+                                        promise.tryFail(throwable);
                                     })
-                                    .onFailure(t -> promise.fail(t));
+                                    .onFailure(t -> {
+                                        emitter.onError(throwable);
+                                        promise.tryFail(t);
+                                    });
                         }, () -> {
                             sessionConnection.onSuccess(c -> {
                                 promise.tryComplete(c);
-                            }).onFailure(t -> promise.fail(t));
+                            }).onFailure(t -> {
+                                emitter.onError(t);
+                                promise.tryFail(t);
+                            });
                             ;
                         });
                 recycleConnection(key,
