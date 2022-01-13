@@ -61,7 +61,7 @@ public class MycatVertxMySQLHandler {
 
     public void handle(int packetId, Buffer event, NetSocket socket) {
         synchronized (MycatVertxMySQLHandler.this) {
-            sequenceFuture = sequenceFuture.compose(unused -> handle0(packetId, event));
+            sequenceFuture = sequenceFuture.transform(unused -> handle0(packetId, event));
         }
     }
 
