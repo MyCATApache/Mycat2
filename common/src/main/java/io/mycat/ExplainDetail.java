@@ -45,6 +45,7 @@ public class ExplainDetail {
         list.add("targets: " + targets);
         list.add("sql:" + sql);
         list.add("balance:" + balance);
+        list.add("params:" + params);
         return list;
     }
 

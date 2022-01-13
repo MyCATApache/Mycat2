@@ -18,6 +18,7 @@ import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.AsyncMycatDataContextImpl;
 import io.mycat.DrdsSqlWithParams;
+import io.mycat.ExplainDetail;
 import io.mycat.MycatDataContext;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.CodeExecuterContext;
@@ -28,6 +29,7 @@ import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatSQLTableLookup;
 import io.mycat.calcite.physical.MycatUpdateRel;
+import io.mycat.calcite.plan.ColocatedPlanner;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.vertx.VertxExecuter;
@@ -106,6 +108,15 @@ public class PlanImpl implements Plan {
 
         switch (this.type) {
             case PHYSICAL:
+
+                Optional<ExplainDetail> singleViewOptional = ColocatedPlanner.executeQuery(dataContext, this, drdsSql);
+                if (singleViewOptional.isPresent()){
+                    ExplainDetail explainDetail = singleViewOptional.get();
+                    list.add("ColocatedPushDown:");
+                    list.add(explainDetail.toString());
+                }
+                list.add("\n");
+                list.add("Plan:");
                 String s = dumpPlan();
                 list.addAll(Arrays.asList(s.split("\n")));
                 List<SpecificSql> map = specificSql(drdsSql,dataContext);
@@ -113,7 +124,7 @@ public class PlanImpl implements Plan {
                     list.addAll(Arrays.asList(specificSql.toString().split("\n")));
                 }
                 if (code) {
-                    list.add("code:");
+                    list.add("Code:");
                     list.addAll(Arrays.asList(getCodeExecuterContext().getCodeContext().getCode().split("\n")));
                 }
                 break;
