@@ -41,11 +41,6 @@
             <version>2.4.1</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.arrow.gandiva</groupId>
-            <artifactId>arrow-gandiva</artifactId>
-            <version>5.0.0</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.arrow</groupId>
             <artifactId>arrow-algorithm</artifactId>
             <version>5.0.0</version>
