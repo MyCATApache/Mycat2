@@ -30,7 +30,8 @@ public class LoaddataTest implements MycatTest {
             Connection mysqlConnection = getMySQLConnection(DB1)){
 
             /////////////////////////////////////////////////////////////////////////////
-            execute(mysqlConnection,"drop table if exists  db1.travelrecord");
+            execute(mysqlConnection,"DROP DATABASE IF EXISTS db1_0");
+            execute(mysqlConnection,"DROP DATABASE IF EXISTS db1_1");
             /////////////////////////////////////////////////////////////////////////////
 
             execute(mycatConnection, RESET_CONFIG);
@@ -87,7 +88,8 @@ public class LoaddataTest implements MycatTest {
         try(Connection mycatConnection = getMySQLConnection(DB_MYCAT);
             Connection mysqlConnection = getMySQLConnection(DB1)){
             /////////////////////////////////////////////////////////////////////////////
-            execute(mysqlConnection,"drop table if exists  db1.travelrecord");
+            execute(mysqlConnection,"DROP DATABASE IF EXISTS db1_0");
+            execute(mysqlConnection,"DROP DATABASE IF EXISTS db1_1");
             /////////////////////////////////////////////////////////////////////////////
 
             execute(mycatConnection, RESET_CONFIG);
