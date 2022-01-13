@@ -41,6 +41,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(NewMycatConnectionImpl.class);
 
     boolean needLastInsertId;
+    private String targetName;
     Connection connection;
     ResultSet resultSet;
     Future<Void> future = Future.succeededFuture();
@@ -50,7 +51,8 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
         this.connection = connection;
     }
 
-    public NewMycatConnectionImpl(Connection connection) {
+    public NewMycatConnectionImpl(String targetName, Connection connection) {
+        this.targetName = targetName;
         this.connection = connection;
         this.needLastInsertId = true;
     }
@@ -92,6 +94,9 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     @Override
     public synchronized void prepareQuery(String sql, List<Object> params, MysqlCollector collector) {
         this.future = this.future.transform(voidAsyncResult -> {
+            if (LOGGER.isDebugEnabled()){
+                LOGGER.debug("targetName:{}\n sql:{}\n params:{}",targetName,sql,params);
+            }
             try {
                 if (params.isEmpty()) {
                     try (Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
@@ -172,6 +177,9 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
             synchronized (NewMycatConnectionImpl.this) {
                 NewMycatConnectionImpl.this.future = NewMycatConnectionImpl.this.future.transform(voidAsyncResult -> {
                     try {
+                        if (LOGGER.isDebugEnabled()){
+                            LOGGER.debug("targetName:{}\n sql:{}\n params:{}",targetName,sql,params);
+                        }
                         try (PreparedStatement statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
                             setStreamFlag(statement);
                             int limit = params.size() + 1;
@@ -246,6 +254,9 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     public synchronized Future<List<Object>> call(String sql) {
         Future<List<Object>> transform = future.transform(voidAsyncResult -> {
             try {
+                if (LOGGER.isDebugEnabled()){
+                    LOGGER.debug("targetName:{}\n sql:{}\n",targetName,sql);
+                }
                 ArrayList<Object> resultSetList = new ArrayList<>();
                 CallableStatement callableStatement = connection.prepareCall(sql);
                 boolean moreResults = true;
@@ -291,6 +302,9 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     public synchronized Future<SqlResult> insert(String sql, List<Object> params) {
         Future<SqlResult> transform = future.transform(voidAsyncResult -> {
             try {
+                if (LOGGER.isDebugEnabled()){
+                    LOGGER.debug("targetName:{}\n sql:{}\n params:{}",targetName,sql,params);
+                }
                 long affectRows;
                 long lastInsertId = 0;
                 if (params.isEmpty()) {
@@ -338,6 +352,9 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     public synchronized Future<SqlResult> update(String sql, List<Object> params) {
         Future<SqlResult> transform = future.transform(voidAsyncResult -> {
             try {
+                if (LOGGER.isDebugEnabled()){
+                    LOGGER.debug("targetName:{}\n sql:{}\n params:{}",targetName,sql,params);
+                }
                 long affectRows;
                 long lastInsertId = 0;
                 if (params.isEmpty()) {
