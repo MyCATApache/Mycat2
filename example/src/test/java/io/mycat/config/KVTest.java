@@ -3,6 +3,7 @@ package io.mycat.config;
 import io.mycat.assemble.MycatTest;
 import io.mycat.hint.CreateDataSourceHint;
 import io.mycat.sqlhandler.config.DbKVImpl;
+import io.mycat.sqlhandler.config.DbStorageManagerImpl;
 import io.mycat.sqlhandler.config.FileKV;
 import io.mycat.sqlhandler.config.KV;
 import lombok.SneakyThrows;
@@ -76,8 +77,11 @@ public class KVTest implements MycatTest {
     }
 
     @NotNull
-    private KV getDbKV(String path,Class aClass) throws IOException {
-        DatasourceConfig ds = CreateDataSourceHint.createConfig("ds", DB1);
+    private KV getDbKV(String path,Class aClass) throws Exception {
+        DatasourceConfig ds = CreateDataSourceHint.createConfig("prototypeDs", DB1);
+        DbStorageManagerImpl dbStorageManager = new DbStorageManagerImpl(ds);
+        dbStorageManager.register(DatasourceConfig.class);
+        dbStorageManager.createTable();
         return new DbKVImpl<>(ds,path, aClass);
     }
 

@@ -40,7 +40,7 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
             DatabaseInstanceEntry stat = DatabaseInstanceEntry.stat(targetName);
             stat.plusCon();
             stat.plusQps();
-            NewMycatConnectionImpl newMycatConnection = new NewMycatConnectionImpl(connection.getRawConnection()) {
+            NewMycatConnectionImpl newMycatConnection = new NewMycatConnectionImpl(targetName,connection.getRawConnection()) {
                 long start;
 
                 @Override

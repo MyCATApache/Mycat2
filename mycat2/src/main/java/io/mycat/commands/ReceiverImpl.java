@@ -86,31 +86,31 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public Future<Void> proxySelect(List<String> targets, String statement,List<Object> params) {
-        return execute(ExplainDetail.create(QUERY, targets, statement, null,params));
+    public Future<Void> proxySelect(List<String> targets, String statement, List<Object> params) {
+        return execute(ExplainDetail.create(QUERY, targets, statement, null, params));
     }
 
     @Override
-    public Future<Void> proxyInsert(List<String> targets, String proxyUpdate,List<Object> params) {
-        return execute(ExplainDetail.create(INSERT, targets, proxyUpdate, null,params));
+    public Future<Void> proxyInsert(List<String> targets, String proxyUpdate, List<Object> params) {
+        return execute(ExplainDetail.create(INSERT, targets, proxyUpdate, null, params));
     }
 
 
     @Override
-    public Future<Void> proxyUpdate(List<String> targets, String sql,List<Object> params) {
-        return execute(ExplainDetail.create(UPDATE, Objects.requireNonNull(targets), sql, null,params));
+    public Future<Void> proxyUpdate(List<String> targets, String sql, List<Object> params) {
+        return execute(ExplainDetail.create(UPDATE, Objects.requireNonNull(targets), sql, null, params));
     }
 
     @Override
-    public Future<Void> proxyUpdateToPrototype(String proxyUpdate,List<Object> params) {
+    public Future<Void> proxyUpdateToPrototype(String proxyUpdate, List<Object> params) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        return proxyUpdate(Collections.singletonList(Objects.requireNonNull(metadataManager.getPrototype())), proxyUpdate,params);
+        return proxyUpdate(Collections.singletonList(Objects.requireNonNull(metadataManager.getPrototype())), proxyUpdate, params);
     }
 
     @Override
-    public Future<Void> proxySelectToPrototype(String statement,List<Object> params) {
+    public Future<Void> proxySelectToPrototype(String statement, List<Object> params) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        return execute(ExplainDetail.create(QUERY_MASTER, Collections.singletonList(Objects.requireNonNull(metadataManager.getPrototype())), statement, null,params));
+        return execute(ExplainDetail.create(QUERY_MASTER, Collections.singletonList(Objects.requireNonNull(metadataManager.getPrototype())), statement, null, params));
     }
 
 
@@ -218,9 +218,9 @@ public class ReceiverImpl implements Response {
                     String datasource = targetOrderList.get(i);
                     Future<NewMycatConnection> connectionFuture = transactionSession.getConnection(datasource);
                     if (detail.getExecuteType() == INSERT) {
-                        updateInfoList.add(VertxExecuter.runInsert(connectionFuture, sql.toString(),detail.getParams()));
+                        updateInfoList.add(VertxExecuter.runInsert(connectionFuture, sql.toString(), detail.getParams()));
                     } else {
-                        updateInfoList.add(VertxExecuter.runUpdate(connectionFuture, sql.toString(),detail.getParams()));
+                        updateInfoList.add(VertxExecuter.runUpdate(connectionFuture, sql.toString(), detail.getParams()));
                     }
                 }
                 CompositeFuture all = CompositeFuture.join((List) updateInfoList)
@@ -265,15 +265,16 @@ public class ReceiverImpl implements Response {
     public Future<Void> swapBuffer(Observable<Buffer> sender) {
         return Future.future(new Handler<Promise<Void>>() {
             Future<Void> future = Future.succeededFuture();
+
             @Override
             public void handle(Promise<Void> promise) {
                 session.directWriteStart();
-                sender.subscribe(buffer -> future= session.directWrite(buffer),
+                sender.subscribe(buffer -> future = session.directWrite(buffer),
                         throwable -> promise.tryFail(throwable),
                         () -> future.flatMap((Function<Void, Future<Void>>) unused -> session.directWriteEnd()).onComplete(event -> {
-                            if (event.succeeded()){
+                            if (event.succeeded()) {
                                 promise.tryComplete();
-                            }else {
+                            } else {
                                 promise.tryFail(event.cause());
                             }
                         }));
@@ -311,25 +312,29 @@ public class ReceiverImpl implements Response {
 
         @Override
         public void onNext(@NonNull MysqlPayloadObject next) {
-            if (next instanceof MysqlObjectArrayRow) {
-                rowCount.getAndIncrement();
-                session.writeBytes(this.convertor.apply(((MysqlObjectArrayRow) next).getRow()), false);
-            } else if (next instanceof MysqlByteArrayPayloadRow) {
-                rowCount.getAndIncrement();
-                session.writeBytes(((MysqlByteArrayPayloadRow) next).getBytes(), false);
-            } else if (next instanceof MySQLColumnDef) {
-                MycatRowMetaData rowMetaData = ((MySQLColumnDef) next).getMetaData();
-                session.writeColumnCount(rowMetaData.getColumnCount());
-                if (!binary) {
-                    convertor = ResultSetMapping.concertToDirectTextResultSet(rowMetaData);
-                } else {
-                    convertor = ResultSetMapping.concertToDirectBinaryResultSet(rowMetaData);
+            try {
+                if (next instanceof MysqlObjectArrayRow) {
+                    rowCount.getAndIncrement();
+                    session.writeBytes(this.convertor.apply(((MysqlObjectArrayRow) next).getRow()), false);
+                } else if (next instanceof MysqlByteArrayPayloadRow) {
+                    rowCount.getAndIncrement();
+                    session.writeBytes(((MysqlByteArrayPayloadRow) next).getBytes(), false);
+                } else if (next instanceof MySQLColumnDef) {
+                    MycatRowMetaData rowMetaData = ((MySQLColumnDef) next).getMetaData();
+                    session.writeColumnCount(rowMetaData.getColumnCount());
+                    if (!binary) {
+                        convertor = ResultSetMapping.concertToDirectTextResultSet(rowMetaData);
+                    } else {
+                        convertor = ResultSetMapping.concertToDirectBinaryResultSet(rowMetaData);
+                    }
+                    Iterator<byte[]> columnIterator = MySQLPacketUtil.generateAllColumnDefPayload(rowMetaData).iterator();
+                    while (columnIterator.hasNext()) {
+                        session.writeBytes(columnIterator.next(), false);
+                    }
+                    session.writeColumnEndPacket(moreResultSet);
                 }
-                Iterator<byte[]> columnIterator = MySQLPacketUtil.generateAllColumnDefPayload(rowMetaData).iterator();
-                while (columnIterator.hasNext()) {
-                    session.writeBytes(columnIterator.next(), false);
-                }
-                session.writeColumnEndPacket(moreResultSet);
+            } catch (Throwable e) {
+                onError(e);
             }
         }
 
@@ -371,7 +376,8 @@ public class ReceiverImpl implements Response {
                 }
                 return Observable.fromIterable(objects);
             }
-        };
+        }
+        ;
         Writer writer = new Writer();
         Observable<MySQLColumnDef> mySQLColumnDefObservable = Observable.fromArray(MySQLColumnDef.of(mycatRowMetaData));
         Observable<MysqlPayloadObject> mysqlPayloadObjectObservable = rootObservable.flatMap(writer);

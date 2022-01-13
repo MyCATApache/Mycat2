@@ -26,7 +26,14 @@ public class LoaddataTest implements MycatTest {
 
     @Test
     public void testLoaddata() throws Exception {
-        try(Connection mycatConnection = getMySQLConnection(DB_MYCAT)){
+        try(Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+            Connection mysqlConnection = getMySQLConnection(DB1)){
+
+            /////////////////////////////////////////////////////////////////////////////
+            execute(mysqlConnection,"DROP DATABASE IF EXISTS db1_0");
+            execute(mysqlConnection,"DROP DATABASE IF EXISTS db1_1");
+            /////////////////////////////////////////////////////////////////////////////
+
             execute(mycatConnection, RESET_CONFIG);
 
             execute(mycatConnection, "DROP DATABASE db1");
@@ -78,7 +85,13 @@ public class LoaddataTest implements MycatTest {
 
     @Test
     public void testLoaddata2() throws Exception {
-        try(Connection mycatConnection = getMySQLConnection(DB_MYCAT)){
+        try(Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+            Connection mysqlConnection = getMySQLConnection(DB1)){
+            /////////////////////////////////////////////////////////////////////////////
+            execute(mysqlConnection,"DROP DATABASE IF EXISTS db1_0");
+            execute(mysqlConnection,"DROP DATABASE IF EXISTS db1_1");
+            /////////////////////////////////////////////////////////////////////////////
+
             execute(mycatConnection, RESET_CONFIG);
 
             execute(mycatConnection, "DROP DATABASE db1");
