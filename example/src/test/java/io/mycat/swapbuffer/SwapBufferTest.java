@@ -12,7 +12,7 @@ import java.util.Map;
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
 public class SwapBufferTest implements MycatTest {
-    @Test
+//    @Test
     public void test() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
             execute(mycatConnection, "/*+mycat:setDebug{1}*/");
