@@ -101,12 +101,7 @@ public class VertxPoolConnectionImpl implements VertxConnectionPool {
                                         kill(vertxConnection);
                                     }
                                 });
-                            }).onFailure(new Handler<Throwable>() {
-                                @Override
-                                public void handle(Throwable event) {
-
-                                }
-                            });
+                            }).onFailure(event14 -> logger.error("", event14));
                         }
                     });
                 }

@@ -40,7 +40,7 @@ public class MycatNativeDatasourcePool extends AbstractMycatDatasourcePool {
             DatabaseInstanceEntry stat = DatabaseInstanceEntry.stat(targetName);
             stat.plusCon();
             stat.plusQps();
-            return new VertxMycatConnectionPool(connection, vertxPoolConnection){
+            return new VertxMycatConnectionPool(targetName,connection, vertxPoolConnection){
                 long start;
 
                 @Override

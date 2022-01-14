@@ -1,27 +1,25 @@
 package io.mycat.newquery;
 
 import com.alibaba.druid.pool.DruidPooledConnection;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLReplaceable;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.util.JdbcUtils;
-import com.mysql.cj.jdbc.StatementImpl;
-import com.mysql.cj.protocol.Resultset;
 import com.mysql.cj.result.Field;
+import io.mycat.MySQLPacketUtil;
 import io.mycat.beans.mycat.*;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
-import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.ObservableEmitter;
-import io.reactivex.rxjava3.core.ObservableOnSubscribe;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.core.buffer.Buffer;
 import lombok.SneakyThrows;
-import org.apache.arrow.adapter.jdbc.ArrowVectorIterator;
-import org.apache.arrow.adapter.jdbc.JdbcToArrowConfig;
-import org.apache.arrow.adapter.jdbc.JdbcToArrowConfigBuilder;
 import org.apache.arrow.memory.BufferAllocator;
-import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.types.pojo.ArrowType;
@@ -37,6 +35,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+import static io.mycat.beans.mycat.MycatDataType.BINARY;
+
 public class NewMycatConnectionImpl implements NewMycatConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(NewMycatConnectionImpl.class);
 
@@ -45,6 +45,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     Connection connection;
     ResultSet resultSet;
     Future<Void> future = Future.succeededFuture();
+    boolean isMySQLDriver = false;
 
     public NewMycatConnectionImpl(boolean needLastInsertId, Connection connection) {
         this.needLastInsertId = needLastInsertId;
@@ -94,8 +95,8 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     @Override
     public synchronized void prepareQuery(String sql, List<Object> params, MysqlCollector collector) {
         this.future = this.future.transform(voidAsyncResult -> {
-            if (LOGGER.isDebugEnabled()){
-                LOGGER.debug("targetName:{}\n sql:{}\n params:{}",targetName,sql,params);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("targetName:{}\n sql:{}\n params:{}", targetName, sql, params);
             }
             try {
                 if (params.isEmpty()) {
@@ -177,8 +178,8 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
             synchronized (NewMycatConnectionImpl.this) {
                 NewMycatConnectionImpl.this.future = NewMycatConnectionImpl.this.future.transform(voidAsyncResult -> {
                     try {
-                        if (LOGGER.isDebugEnabled()){
-                            LOGGER.debug("targetName:{}\n sql:{}\n params:{}",targetName,sql,params);
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("targetName:{}\n sql:{}\n params:{}", targetName, sql, params);
                         }
                         try (PreparedStatement statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
                             setStreamFlag(statement);
@@ -231,6 +232,118 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
         });
     }
 
+    public static String paramize(String sql, List<Object> params) {
+        if (params.isEmpty()) return sql;
+        if (sql.startsWith("be")) {
+            return sql;
+        }
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+        sqlStatement.accept(new MySqlASTVisitorAdapter() {
+            int index;
+
+            @Override
+            public void endVisit(SQLVariantRefExpr x) {
+                if ("?".equalsIgnoreCase(x.getName())) {
+                    if (index < params.size()) {
+                        Object value = params.get(index++);
+                        SQLReplaceable parent = (SQLReplaceable) x.getParent();
+                        parent.replace(x, io.mycat.PreparedStatement.fromJavaObject(value));
+                    }
+                }
+                super.endVisit(x);
+            }
+        });
+        sql = sqlStatement.toString();
+        return sql;
+    }
+
+    @Override
+    public Observable<Buffer> prepareQuery(String sql, List<Object> params) {
+        return Observable.create(emitter -> {
+            synchronized (NewMycatConnectionImpl.this) {
+                this.future = this.future.transform(new Function<AsyncResult<Void>, Future<Void>>() {
+                    private Buffer packet(byte[] generateMySQLPacket) {
+                        return Buffer.buffer(generateMySQLPacket);
+                    }
+
+                    @Override
+                    public Future<Void> apply(AsyncResult<Void> voidAsyncResult) {
+                        try {
+                            if (LOGGER.isDebugEnabled()) {
+                                LOGGER.debug("targetName:{}\n sql:{}\n params:{}", targetName, sql, params);
+                            }
+                            String paramize = paramize(sql, params);
+                            boolean clientDeprecateEof = NewMycatConnectionConfig.CLIENT_DEPRECATE_EOF;
+                            try (Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
+                                NewMycatConnectionImpl.this.setStreamFlag(statement);
+                                resultSet = statement.executeQuery(paramize);
+                                NewMycatConnectionImpl.this.onRev();
+                                int columnCount = resultSet.getMetaData().getColumnCount();
+                                int packetId = 1;
+                                MycatRowMetaData metaData = getJdbcRowMetaData(resultSet.getMetaData());
+                                MycatRelDataType mycatRelDataType = metaData.getMycatRelDataType();
+                                List<MycatField> fieldList = mycatRelDataType.getFieldList();
+                                emitter.onNext(packet(
+                                        MySQLPacketUtil.generateMySQLPacket(packetId++,
+                                                MySQLPacketUtil.generateResultSetCount(metaData.getColumnCount()))
+                                ));
+                                Iterable<byte[]> bytes = MySQLPacketUtil.generateAllColumnDefPayload(metaData);
+                                for (byte[] aByte : bytes) {
+                                    emitter.onNext(packet(
+                                            MySQLPacketUtil.generateMySQLPacket(packetId++,
+                                                    aByte)
+                                    ));
+                                }
+                                if (!clientDeprecateEof) {
+                                    emitter.onNext(packet(
+                                            MySQLPacketUtil.generateMySQLPacket(packetId++,
+                                                    MySQLPacketUtil.generateEof(0, 0))
+                                    ));
+                                }
+                                while (!isResultSetClosed() && resultSet.next()) {
+                                    byte[][] row = new byte[columnCount][];
+                                    for (int index = 0; index < columnCount; index += 1) {
+                                        if (isMySQLDriver) {
+                                            row[index] = (resultSet.getBytes(index + 1));
+                                        } else {
+                                            MycatField mycatField = fieldList.get(index);
+                                            if (mycatField.getMycatDataType() == BINARY) {
+                                                row[index] = (resultSet.getBytes(index + 1));
+                                            } else {
+                                                String string = resultSet.getString(index + 1);
+                                                row[index] = string == null ? null : string.getBytes();
+                                            }
+                                        }
+                                    }
+                                    emitter.onNext(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(packetId++, MySQLPacketUtil.generateTextRow(row))));
+                                }
+                                if (clientDeprecateEof) {
+                                    emitter.onNext(packet(
+                                            MySQLPacketUtil.generateMySQLPacket(packetId++,
+                                                    MySQLPacketUtil.generateOk(0xfe, 0, 0, 0, 0, false, false, false, ""))
+                                    ));
+                                } else {
+                                    emitter.onNext(packet(
+                                            MySQLPacketUtil.generateMySQLPacket(packetId++,
+                                                    MySQLPacketUtil.generateEof(0, 0))
+                                    ));
+                                }
+                                emitter.onComplete();
+                            } catch (Exception e) {
+                                emitter.tryOnError(e);
+                            }
+                        } catch (Throwable e) {
+                            return Future.failedFuture(e);
+                        }
+                        return Future.succeededFuture();
+                    }
+                });
+            }
+        });
+
+
+    }
+
     @NotNull
     private FieldVector[] getFieldVectors(MycatField[] mycatFields, BufferAllocator allocator) {
         FieldVector[] fieldVectors = new FieldVector[mycatFields.length];
@@ -254,8 +367,8 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     public synchronized Future<List<Object>> call(String sql) {
         Future<List<Object>> transform = future.transform(voidAsyncResult -> {
             try {
-                if (LOGGER.isDebugEnabled()){
-                    LOGGER.debug("targetName:{}\n sql:{}\n",targetName,sql);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("targetName:{}\n sql:{}\n", targetName, sql);
                 }
                 ArrayList<Object> resultSetList = new ArrayList<>();
                 CallableStatement callableStatement = connection.prepareCall(sql);
@@ -302,8 +415,8 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     public synchronized Future<SqlResult> insert(String sql, List<Object> params) {
         Future<SqlResult> transform = future.transform(voidAsyncResult -> {
             try {
-                if (LOGGER.isDebugEnabled()){
-                    LOGGER.debug("targetName:{}\n sql:{}\n params:{}",targetName,sql,params);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("targetName:{}\n sql:{}\n params:{}", targetName, sql, params);
                 }
                 long affectRows;
                 long lastInsertId = 0;
@@ -339,12 +452,12 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     }
 
     @Override
-    public  Future<SqlResult> insert(String sql) {
+    public Future<SqlResult> insert(String sql) {
         return insert(sql, Collections.emptyList());
     }
 
     @Override
-    public  Future<SqlResult> update(String sql) {
+    public Future<SqlResult> update(String sql) {
         return update(sql, Collections.emptyList());
     }
 
@@ -352,8 +465,8 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     public synchronized Future<SqlResult> update(String sql, List<Object> params) {
         Future<SqlResult> transform = future.transform(voidAsyncResult -> {
             try {
-                if (LOGGER.isDebugEnabled()){
-                    LOGGER.debug("targetName:{}\n sql:{}\n params:{}",targetName,sql,params);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("targetName:{}\n sql:{}\n params:{}", targetName, sql, params);
                 }
                 long affectRows;
                 long lastInsertId = 0;
@@ -435,6 +548,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
         MycatRowMetaData mycatRowMetaData;
         String canonicalName = jdbcMetaData.getClass().getCanonicalName();
         if ("com.mysql.cj.jdbc.result.ResultSetMetaData".equals(canonicalName)) {
+            isMySQLDriver = true;
             com.mysql.cj.jdbc.result.ResultSetMetaData mysqlJdbcMetaData = (com.mysql.cj.jdbc.result.ResultSetMetaData) jdbcMetaData;
             int columnCount = mysqlJdbcMetaData.getColumnCount();
             Field[] fields = mysqlJdbcMetaData.getFields();

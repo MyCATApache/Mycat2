@@ -65,7 +65,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             return vertx.executeBlocking(event -> {
                 Future<Void> promise =
                         MycatdbCommand.INSTANCE.executeQuery(sql, session.getDataContext(),
-                                (size) -> new ReceiverImpl(session, size, false));
+                                (size) -> new ProxyReceiverImpl(session, size, false));
                 promise.onComplete(event);
             });
         } catch (Throwable e) {

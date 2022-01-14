@@ -19,6 +19,7 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import io.vertx.core.buffer.Buffer;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
@@ -76,6 +77,11 @@ public class FutureNewMycatConnectionImpl implements NewMycatConnection {
 
     @Override
     public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Observable<Buffer> prepareQuery(String sql, List<Object> params) {
         throw new UnsupportedOperationException();
     }
 

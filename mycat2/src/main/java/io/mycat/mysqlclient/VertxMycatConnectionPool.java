@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.PreparedStatement;
 import io.mycat.beans.mycat.MycatMySQLRowMetaData;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
+import io.mycat.commands.JdbcDatasourcePoolImpl;
 import io.mycat.mysqlclient.decoder.ObjectArrayDecoder;
 import io.mycat.newquery.MysqlCollector;
 import io.mycat.newquery.NewMycatConnection;
@@ -31,28 +32,34 @@ import io.mycat.newquery.SqlResult;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.core.buffer.Buffer;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 public class VertxMycatConnectionPool implements NewMycatConnection {
+    private String targetName;
     VertxConnection connection;
     private VertxPoolConnectionImpl vertxConnectionPool;
     Future<Void> queryCloseFuture = Future.succeededFuture();
 
-    public VertxMycatConnectionPool(VertxConnection connection, VertxPoolConnectionImpl vertxConnectionPool) {
+    public VertxMycatConnectionPool(String targetName, VertxConnection connection, VertxPoolConnectionImpl vertxConnectionPool) {
+        this.targetName = targetName;
         this.connection = connection;
         this.vertxConnectionPool = vertxConnectionPool;
     }
 
     @Override
     public synchronized Future<RowSet> query(String sql, List<Object> params) {
-        String psql = paramize(sql, params);
-        return queryCloseFuture.flatMap(unused -> {
+        String psql = deparameterize(sql, params);
+        Future<RowSet> rowSetFuture = queryCloseFuture.flatMap(unused -> {
             Promise<RowSet> promise = Promise.promise();
             ObjectArrayDecoder objectArrayDecoder = new ObjectArrayDecoder();
             Observable<Object[]> query = connection.query(psql, objectArrayDecoder);
@@ -64,13 +71,15 @@ public class VertxMycatConnectionPool implements NewMycatConnection {
             });
             map = map.doOnSuccess(objects -> promise.tryComplete(objects));
             map = map.doOnError(objects -> promise.tryFail(objects));
-            map = map.doOnTerminate(() ->   onRev());
+            map = map.doOnTerminate(() -> onRev());
             map.subscribe();
             return promise.future();
         });
+        this.queryCloseFuture = rowSetFuture.mapEmpty();
+        return rowSetFuture;
     }
 
-    private String paramize(String sql, List<Object> params) {
+    public static String deparameterize(String sql, List<Object> params) {
         if (sql.startsWith("be")) {
             return sql;
         }
@@ -97,7 +106,7 @@ public class VertxMycatConnectionPool implements NewMycatConnection {
     @Override
     public synchronized void prepareQuery(String sqlArg, List<Object> params, MysqlCollector collector) {
         this.queryCloseFuture = this.queryCloseFuture.flatMap(event -> {
-            String sql = paramize(sqlArg, params);
+            String sql = deparameterize(sqlArg, params);
             ObjectArrayDecoder objectArrayDecoder = new ObjectArrayDecoder() {
                 @Override
                 public void onColumnEnd() {
@@ -109,7 +118,7 @@ public class VertxMycatConnectionPool implements NewMycatConnection {
             Promise<Void> promise = Promise.promise();
             onSend();
             Observable<Object[]> query = connection.query(sql, objectArrayDecoder);
-            query.subscribeOn(Schedulers.computation()).subscribe(objects -> collector.onRow(objects),
+            query.subscribe(objects -> collector.onRow(objects),
                     throwable -> {
                         promise.tryFail(throwable);
                         collector.onError(throwable);
@@ -125,12 +134,62 @@ public class VertxMycatConnectionPool implements NewMycatConnection {
 
     @Override
     public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator) {
-        throw new UnsupportedOperationException();
+        return Observable.create(emitter -> {
+            synchronized (VertxMycatConnectionPool.this) {
+                VertxMycatConnectionPool.this.queryCloseFuture = VertxMycatConnectionPool.this.queryCloseFuture
+                        .transform(voidAsyncResult -> {
+                            return Future.future((Handler<Promise<Observable<Buffer>>>) promise -> {
+                                JdbcDatasourcePoolImpl jdbcDatasourcePool = new JdbcDatasourcePoolImpl(targetName);
+                                Future<NewMycatConnection> mycatConnectionFuture = jdbcDatasourcePool.getConnection();
+                                mycatConnectionFuture.onSuccess(connection -> {
+                                    onSend();
+                                    Observable<VectorSchemaRoot> observable = connection.prepareQuery(sql, params, allocator);
+                                    onRev();
+                                    observable = observable.doOnComplete(() -> connection.close());
+                                    observable.subscribe(vectorSchemaRoot -> emitter.onNext(vectorSchemaRoot),
+                                            throwable -> emitter.onError(throwable),
+                                            () -> emitter.onComplete());
+                                }).onFailure(event -> emitter.onError(event))
+                                        .onComplete(event -> promise.tryComplete());
+                            });
+                        }).mapEmpty();
+            }
+        });
+    }
+
+    @Override
+    public Observable<Buffer> prepareQuery(String sql, List<Object> params) {
+        return Observable.create(emitter -> {
+            synchronized (VertxMycatConnectionPool.this) {
+                VertxMycatConnectionPool.this.queryCloseFuture = VertxMycatConnectionPool.this.queryCloseFuture
+                        .transform((Function<AsyncResult<Void>, Future<Observable<Buffer>>>) voidAsyncResult -> {
+                            Observable<Buffer> observable = connection.query(deparameterize(sql, params));
+                            observable.subscribe(buffer -> emitter.onNext(buffer),
+                                    throwable -> emitter.onError(throwable),
+                                    () -> emitter.onComplete());
+                            return Future.succeededFuture();
+                        }).mapEmpty();
+            }
+        });
     }
 
     @Override
     public Future<List<Object>> call(String sql) {
-        throw new UnsupportedOperationException();
+        synchronized (this) {
+            Future<List<Object>> future = this.queryCloseFuture.transform(voidAsyncResult -> {
+                JdbcDatasourcePoolImpl jdbcDatasourcePool = new JdbcDatasourcePoolImpl(targetName);
+                return jdbcDatasourcePool.getConnection().flatMap(connection -> {
+                    onSend();
+                    Future<List<Object>> call = connection.call(sql);
+                    return call.onComplete(event -> {
+                        onRev();
+                        connection.close();
+                    });
+                });
+            });
+            this.queryCloseFuture = future.mapEmpty();
+            return future;
+        }
     }
 
     @Override
@@ -154,7 +213,7 @@ public class VertxMycatConnectionPool implements NewMycatConnection {
     @Override
     public Future<SqlResult> update(String sql, List<Object> params) {
         onSend();
-        return connection.update(paramize(sql, params)).onComplete(event -> onRev());
+        return connection.update(deparameterize(sql, params)).onComplete(event -> onRev());
     }
 
     @Override

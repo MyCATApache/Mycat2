@@ -26,6 +26,7 @@ import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.mysqlclient.MycatNativeDatasourcePool;
 import io.mycat.mysqlclient.VertxPoolConnectionImpl;
 import io.mycat.newquery.NewMycatConnection;
+import io.mycat.newquery.NewMycatConnectionConfig;
 import io.mycat.replica.InstanceType;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -39,9 +40,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import static io.mycat.config.DatasourceConfig.DatasourceType.NATIVE_JDBC;
+import static io.mycat.newquery.NewMycatConnectionConfig.FORCE_NATIVE_DATASOURCE;
 
 public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
-    public static boolean FORCE_NATIVE_DATASOURCE = true;
+
 
     private final ConcurrentHashMap<String, MycatDatasourcePool> map;
 
@@ -114,7 +116,7 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
         config.setDatabase(connectionUrlParser.getPath());
         config.setRetry(datasource.getMaxRetryCount());
         config.setTimer(datasource.getIdleTimeout());
-        config.setClientDeprecateEof(true);
+        config.setClientDeprecateEof(NewMycatConnectionConfig.CLIENT_DEPRECATE_EOF);
         Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
         VertxPoolConnectionImpl vertxConnectionPool = new VertxPoolConnectionImpl(config, vertx);
         return new MycatNativeDatasourcePool(vertxConnectionPool, targetName);
