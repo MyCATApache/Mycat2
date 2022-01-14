@@ -503,6 +503,10 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     @Override
     public Future<Void> close() {
+        ResultSet resultSet = this.resultSet;
+        if (resultSet != null) {
+            JdbcUtils.close(resultSet);
+        }
         JdbcUtils.close(connection);
         return Future.succeededFuture();
     }

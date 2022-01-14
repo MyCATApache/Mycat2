@@ -358,7 +358,7 @@ public enum MycatdbCommand {
                             continue;
                         }
                         case "VECTOR": {
-                            map.put("VECTOR",null);
+                            map.put("VECTOR", null);
                             continue;
                         }
                         case "MASTER": {
@@ -428,9 +428,11 @@ public enum MycatdbCommand {
                 if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
                     SqlResultSetService sqlResultSetService
                             = MetaClusterCurrent.wrapper(SqlResultSetService.class);
-                    Optional<Observable<MysqlPayloadObject>> baseIteratorOptional = sqlResultSetService.get((SQLSelectStatement) sqlStatement);
-                    if (baseIteratorOptional.isPresent()) {
-                        return receiver.sendResultSet(baseIteratorOptional.get());
+                    if (sqlResultSetService.isWorking()) {
+                        Optional<Observable<MysqlPayloadObject>> baseIteratorOptional = sqlResultSetService.get((SQLSelectStatement) sqlStatement);
+                        if (baseIteratorOptional.isPresent()) {
+                            return receiver.sendResultSet(baseIteratorOptional.get());
+                        }
                     }
                 }
                 Map<String, Object> hintRoute = getHintRoute(sqlStatement);
@@ -444,9 +446,9 @@ public enum MycatdbCommand {
                             targetArray = Collections.singletonList(targetArray.toString());
                         }
                         if (select) {
-                            return receiver.proxySelect((List) targetArray, sqlText,Collections.emptyList());
+                            return receiver.proxySelect((List) targetArray, sqlText, Collections.emptyList());
                         }
-                        return receiver.proxyUpdate((List) targetArray, sqlText,Collections.emptyList());
+                        return receiver.proxyUpdate((List) targetArray, sqlText, Collections.emptyList());
                     }
                 }
                 SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
@@ -458,14 +460,14 @@ public enum MycatdbCommand {
                 } else {
                     if (sqlStatement instanceof MySqlShowStatement) {
                         logger.warn("ignore SQL prototype statement:{}", sqlStatement);
-                        return receiver.proxySelectToPrototype(sqlStatement.toString(),Collections.emptyList());
+                        return receiver.proxySelectToPrototype(sqlStatement.toString(), Collections.emptyList());
                     } else {
                         logger.warn("ignore SQL statement:{}", sqlStatement);
                         return receiver.sendOk();
                     }
                 }
             } catch (Throwable throwable) {
-                logger.error("",throwable);
+                logger.error("", throwable);
                 return Future.failedFuture(throwable);
             }
         });

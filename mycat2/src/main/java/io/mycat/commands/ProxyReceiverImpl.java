@@ -3,7 +3,9 @@ package io.mycat.commands;
 import io.mycat.ExecuteType;
 import io.mycat.ExplainDetail;
 import io.mycat.MycatDataContext;
+import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.newquery.NewMycatConnection;
+import io.mycat.newquery.NewMycatConnectionConfig;
 import io.mycat.proxy.session.MySQLServerSession;
 import io.mycat.runtime.MycatXaTranscation;
 import io.reactivex.rxjava3.core.Observable;
@@ -18,9 +20,10 @@ public class ProxyReceiverImpl extends ReceiverImpl {
     @Override
     public Future<Void> execute(ExplainDetail detail) {
         MycatDataContext dataContext = session.getDataContext();
-        if (count == 1 && !binary && !dataContext.isInTransaction() &&
+        if (count == 0 && !binary && !dataContext.isInTransaction() &&
                 (detail.getExecuteType() == ExecuteType.QUERY || detail.getExecuteType() == ExecuteType.QUERY_MASTER)
-                && detail.getTargets().size() == 1) {
+                && detail.getTargets().size() == 1
+                && MySQLServerCapabilityFlags.isDeprecateEOF(dataContext.getServerCapabilities()) == NewMycatConnectionConfig.CLIENT_DEPRECATE_EOF) {
             String targetName = dataContext.resolveDatasourceTargetName(detail.getTargets().get(0));
             MycatXaTranscation transactionSession = (MycatXaTranscation) dataContext.getTransactionSession();
             Future<NewMycatConnection> connection = transactionSession.getConnection(targetName);
