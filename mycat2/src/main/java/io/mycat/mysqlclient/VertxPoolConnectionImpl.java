@@ -19,6 +19,7 @@ import io.mycat.MycatCore;
 import io.mycat.mysqlclient.command.ConnectHandler;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.*;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetSocket;
 import lombok.Data;
@@ -61,9 +62,57 @@ public class VertxPoolConnectionImpl implements VertxConnectionPool {
     public static void main(String[] args) {
         Vertx vertx = Vertx.vertx();
         VertxPoolConnectionImpl vertxConnectionPool = new VertxPoolConnectionImpl(new Config(), vertx);
-        Future<VertxConnection> connection = vertxConnectionPool.getConnection();
-        VertxConnection vertxConnection = connection.toCompletionStage().toCompletableFuture().get();
-        System.out.println();
+
+        long start = System.currentTimeMillis();
+        List<Future> list = new ArrayList<>();
+        long count = 60000;
+        long batch = 30;
+        for (int i = 0; i < batch; i++) {
+            Future<Void> future = Future.future(promise -> {
+                Handler<AsyncResult<VertxConnection>> handler = new Handler<AsyncResult<VertxConnection>>() {
+                    Future<Void> future = Future.succeededFuture();
+                    long start = System.currentTimeMillis();
+
+
+                    @Override
+                    public void handle(AsyncResult<VertxConnection> res) {
+                        if (res.succeeded()) {
+                            start = System.currentTimeMillis();
+                            VertxConnection mySQLConnection = res.result();
+                            for (int i1 = 0; i1 < count; i1++) {
+                                future = future.compose(unused -> {
+                                    return Future.future(promise1 -> {
+                                        Observable<Buffer> query = mySQLConnection.query("select * from db1.travelrecord");
+                                        query.doOnComplete(() -> promise1.tryComplete()).doOnError(throwable -> promise1.tryFail(throwable)).subscribe();
+                                    });
+
+                                });
+                            }
+                            future = future.onSuccess(event -> {
+                                long end = System.currentTimeMillis();
+                                double during = end - start;
+                                System.out.println(during);
+                                System.out.println("qps:" + count / during * 1000);
+                            });
+                            future = future.onFailure(event -> System.out.println(event));
+                            future= future.onSuccess(event -> mySQLConnection.close());
+                            future=future.onComplete(event -> promise.tryComplete());
+                        } else {
+                            System.out.println("Could not connect " + res.cause());
+                        }
+                    }
+                };
+                Future<VertxConnection> connection = vertxConnectionPool.getConnection();
+                connection.onComplete(handler);
+            });
+            list.add(future);
+        }
+        CompositeFuture.join(list).toCompletionStage().toCompletableFuture().get();
+        long end = System.currentTimeMillis();
+        double during = end - start;
+        System.out.println(during);
+        System.out.println("qps:" + count* batch/ during * 1000);
+        System.exit(0);
     }
 
 
@@ -168,6 +217,7 @@ public class VertxPoolConnectionImpl implements VertxConnectionPool {
                         } else {
                             promise.tryFail("pool has closed");
                         }
+                        return;
                     }
                 }
                 useCount.incrementAndGet();

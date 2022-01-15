@@ -1,13 +1,14 @@
 package io.mycat.commands;
 
+import cn.mycat.vertx.xa.MySQLManager;
 import io.mycat.ExecuteType;
 import io.mycat.ExplainDetail;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.newquery.NewMycatConnectionConfig;
 import io.mycat.proxy.session.MySQLServerSession;
-import io.mycat.runtime.MycatXaTranscation;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
@@ -25,11 +26,13 @@ public class ProxyReceiverImpl extends ReceiverImpl {
                 && detail.getTargets().size() == 1
                 && MySQLServerCapabilityFlags.isDeprecateEOF(dataContext.getServerCapabilities()) == NewMycatConnectionConfig.CLIENT_DEPRECATE_EOF) {
             String targetName = dataContext.resolveDatasourceTargetName(detail.getTargets().get(0));
-            MycatXaTranscation transactionSession = (MycatXaTranscation) dataContext.getTransactionSession();
-            Future<NewMycatConnection> connection = transactionSession.getConnection(targetName);
+            MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
+            Future<NewMycatConnection> connection = mySQLManager.getConnection(targetName);
             return connection.flatMap(connection1 -> {
                 Observable<Buffer> bufferObservable = connection1.prepareQuery(detail.getSql(), detail.getParams());
-                return swapBuffer(bufferObservable).eventually(unused -> transactionSession.closeStatementState());
+                bufferObservable= bufferObservable.doOnComplete(() -> connection1.close());
+                bufferObservable=  bufferObservable;
+                return swapBuffer(bufferObservable);
             });
         }
         return super.execute(detail);

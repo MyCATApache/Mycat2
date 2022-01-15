@@ -162,12 +162,16 @@ public class VertxMycatConnectionPool implements NewMycatConnection {
         return Observable.create(emitter -> {
             synchronized (VertxMycatConnectionPool.this) {
                 VertxMycatConnectionPool.this.queryCloseFuture = VertxMycatConnectionPool.this.queryCloseFuture
-                        .transform((Function<AsyncResult<Void>, Future<Observable<Buffer>>>) voidAsyncResult -> {
-                            Observable<Buffer> observable = connection.query(deparameterize(sql, params));
-                            observable.subscribe(buffer -> emitter.onNext(buffer),
-                                    throwable -> emitter.onError(throwable),
-                                    () -> emitter.onComplete());
-                            return Future.succeededFuture();
+                        .transform(voidAsyncResult -> {
+                            return Future.future((Handler<Promise<Observable<Buffer>>>) promise -> {
+                                Observable<Buffer> observable = connection.query(deparameterize(sql, params));
+                                observable.subscribe(buffer -> emitter.onNext(buffer),
+                                        throwable -> emitter.onError(throwable),
+                                        () -> {
+                                            promise.tryComplete();
+                                            emitter.onComplete();
+                                        });
+                            });
                         }).mapEmpty();
             }
         });

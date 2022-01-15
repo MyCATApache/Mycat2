@@ -62,7 +62,7 @@ public class ResponseBufferCommand implements Handler<Buffer>, Command {
     int payloadLength;
     int remainsBytes;
     boolean multiPacket;
-    byte packetId;
+    byte packetId = 0;
     int head;
     int startPos;
     int endPos;
@@ -105,6 +105,7 @@ public class ResponseBufferCommand implements Handler<Buffer>, Command {
             } else {
                 next = readHalfFull();
             }
+
             if (!next) {
                 break;
             } else {
@@ -171,17 +172,19 @@ public class ResponseBufferCommand implements Handler<Buffer>, Command {
             }
             int packetLength = (int) readFixInt(this.curBuffer, startIndex, 3);
             this.parsePacketId = (byte) (this.curBuffer.getByte(startIndex + 3) & 0xff);
+
             this.multiPacket = (packetLength == MySQLPacketSplitter.MAX_PACKET_SIZE);
             if (packetLength == 0) {
+                this.checkPacketId();
                 this.startPos = startIndex;
                 this.endPos = (startIndex + 4);
                 this.remainsBytes = 0;
-                checkPacketId();
                 return true;
             }
             if (receiveSize < 5) {
                 return false;
             }
+            this.checkPacketId();
             int aByte = curBuffer.getByte(startIndex + 4) & 0xff;
             this.head = (aByte);
             this.payloadLength = packetLength;
@@ -218,21 +221,15 @@ public class ResponseBufferCommand implements Handler<Buffer>, Command {
             resolvePayloadType(head, payloadFinished, payloadLength);
         }
         boolean isPacketEnd = remainsBytes == 0;
-        if (isPacketEnd) {
-            checkPacketId();
-        }
         return true;
     }
 
-    private void checkPacketId() {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("parsePacketId:{}", parsePacketId);
-        }
-        if ((this.packetId + 1) != parsePacketId) {
+    public void checkPacketId() {
+        if ((this.parsePacketId - this.packetId) > 1) {
             throw new IllegalArgumentException("packet error " + this.packetId + " to " + parsePacketId);
         }
         this.packetId = parsePacketId;
-        this.parsePacketId = -1;
+        this.parsePacketId = parsePacketId;
     }
 
     public long readFixInt(Buffer buffer, int startIndex, int length) {
@@ -266,6 +263,7 @@ public class ResponseBufferCommand implements Handler<Buffer>, Command {
             }
             int packetLength = (int) readFixInt(this.curBuffer, this.startPos, 3);
             this.parsePacketId = (byte) (this.curBuffer.getByte(this.startPos + 3) & 0xff);
+            this.checkPacketId();
             this.payloadLength = packetLength;
             this.multiPacket = packetLength == MySQLPacketSplitter.MAX_PACKET_SIZE;
             if ((packetLength + 4) <= reveiceSize) {
@@ -274,9 +272,6 @@ public class ResponseBufferCommand implements Handler<Buffer>, Command {
                 this.endPos = this.startPos + packetLength + 4;
                 int aByte = curBuffer.getByte(this.startPos + 4) & 0xff;
                 resolvePayloadType(aByte, true, payloadLength);
-
-                checkPacketId();
-
                 return true;
             } else {
                 this.remainsBytes = packetLength + 4 - reveiceSize;
@@ -290,9 +285,6 @@ public class ResponseBufferCommand implements Handler<Buffer>, Command {
                 this.startPos = this.startPos;
                 this.endPos = this.startPos + payloadLength + 4;
                 this.remainsBytes = 0;
-
-                checkPacketId();
-
                 return true;
             } else {
                 this.startPos = this.startPos;
@@ -384,6 +376,7 @@ public class ResponseBufferCommand implements Handler<Buffer>, Command {
                     throw new UnsupportedOperationException();
                 } else if (head == 0xfe && payloadLength < 0xffffff) {
                     resolveResultsetRowEnd(isPacketFinished);
+                    state = (MySQLPacketResolver.ComQueryState.COMMAND_END);//COMMAND_END结束完毕就切换到读状态
                 } else if (head == 0xff) {
                     state = (MySQLPacketResolver.ComQueryState.RESULTSET_ROW_ERROR);
                     payloadType = (ROW_ERROR);
