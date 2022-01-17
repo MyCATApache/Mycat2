@@ -26,14 +26,10 @@ import java.util.*;
 public class MHAHeartBeatStrategy extends HeartBeatStrategy {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MHAHeartBeatStrategy.class);
-
-    public static String READ_ONLY_SQL =
-            "SELECT TRUE AS `READ_ONLY` FROM performance_schema.global_variables WHERE variable_name IN ('read_only', 'super_read_only') AND VARIABLE_VALUE = 'ON' LIMIT 1) ";
     public static final String MASTER_SLAVE_HEARTBEAT_SQL = "show slave status";
 
     public List<String> getSqls() {
         return Arrays.asList(
-                READ_ONLY_SQL,
                 MASTER_SLAVE_HEARTBEAT_SQL
         );
     }
@@ -41,9 +37,9 @@ public class MHAHeartBeatStrategy extends HeartBeatStrategy {
     @Override
     public void process(List<List<Map<String, Object>>> resultList, boolean readonly) {
         DatasourceStatus datasourceStatus = new DatasourceStatus();
-        boolean master = !readonly && !("1".equalsIgnoreCase(Objects.toString(resultList.get(0).get(0).getOrDefault("READ_ONLY", null))));
+        boolean master = !readonly;
         if (!resultList.isEmpty()) {
-            List<Map<String, Object>> result = resultList.get(1);
+            List<Map<String, Object>> result = resultList.get(0);
             if (!result.isEmpty()) {
                 Map<String, Object> resultResult = result.get(0);
                 String Slave_IO_Running =

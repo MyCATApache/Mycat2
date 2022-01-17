@@ -398,20 +398,19 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         return response.sendResultSet(resultSetBuilder.build());
                     }
                     if ("showHeartbeatStatus".equalsIgnoreCase(cmd)) {
+                        ResultSetBuilder builder = ResultSetBuilder.create();
+                        builder.addColumnInfo("name", JDBCType.VARCHAR);
+                        builder.addColumnInfo("status", JDBCType.VARCHAR);
                         Map<String, HeartbeatFlow> heartbeatDetectorMap = replicaSelectorRuntime.getHeartbeatDetectorMap();
                         for (Map.Entry<String, HeartbeatFlow> entry : heartbeatDetectorMap.entrySet()) {
                             String key = entry.getKey();
                             HeartbeatFlow value = entry.getValue();
-
-                            ResultSetBuilder builder = ResultSetBuilder.create();
-                            builder.addColumnInfo("name", JDBCType.VARCHAR);
-                            builder.addColumnInfo("status", JDBCType.VARCHAR);
                             builder.addObjectRowPayload(Arrays.asList(
                                     Objects.toString(key),
                                     Objects.toString(value.getDsStatus())
                             ));
-                            return response.sendResultSet(() -> builder.build());
                         }
+                        return response.sendResultSet(() -> builder.build());
                     }
                     if ("showInstances".equalsIgnoreCase(cmd)) {
                         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
