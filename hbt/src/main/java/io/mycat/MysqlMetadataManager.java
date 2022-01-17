@@ -67,147 +67,154 @@ public class MysqlMetadataManager extends MetadataManager {
                     MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
                     List<TableHandler> tableHandlers = metadataManager.getSchemaMap().values().stream().flatMap(i -> i.logicTables().values().stream()).collect(Collectors.toList());
                     for (TableHandler tableHandler : tableHandlers) {
-                        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(tableHandler.getCreateTableSQL());
-                        if (!(sqlStatement instanceof MySqlCreateTableStatement)) {
-                            continue;
-                        }
-                        MySqlCreateTableStatement mySqlCreateTableStatement = (MySqlCreateTableStatement) sqlStatement;
+                       String createTableSQL = tableHandler.getCreateTableSQL();
+                        try {
+                            SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(createTableSQL);
+                            if (!(sqlStatement instanceof MySqlCreateTableStatement)) {
+                                continue;
+                            }
 
-                        List<SQLColumnDefinition> columns = new ArrayList<SQLColumnDefinition>();
-                        List<String> dataTypes = new ArrayList<String>();
-                        List<String> defaultValues = new ArrayList<String>();
+                            MySqlCreateTableStatement mySqlCreateTableStatement = (MySqlCreateTableStatement) sqlStatement;
 
-                        int name_len = -1, dataType_len = -1, defaultVal_len = 7, extra_len = 5;
-                        for (SQLTableElement element : mySqlCreateTableStatement.getTableElementList()) {
-                            if (element instanceof SQLColumnDefinition) {
-                                SQLColumnDefinition column = (SQLColumnDefinition) element;
-                                columns.add(column);
+                            List<SQLColumnDefinition> columns = new ArrayList<SQLColumnDefinition>();
+                            List<String> dataTypes = new ArrayList<String>();
+                            List<String> defaultValues = new ArrayList<String>();
 
-                                String name = SQLUtils.normalize(column.getName().getSimpleName());
-                                if (name_len < name.length()) {
-                                    name_len = name.length();
-                                }
+                            int name_len = -1, dataType_len = -1, defaultVal_len = 7, extra_len = 5;
+                            for (SQLTableElement element : mySqlCreateTableStatement.getTableElementList()) {
+                                if (element instanceof SQLColumnDefinition) {
+                                    SQLColumnDefinition column = (SQLColumnDefinition) element;
+                                    columns.add(column);
 
-                                String dataType = column.getDataType().getName();
-                                if (column.getDataType().getArguments().size() > 0) {
-                                    dataType += "(";
-                                    for (int i = 0; i < column.getDataType().getArguments().size(); i++) {
-                                        if (i != 0) {
-                                            dataType += ",";
+                                    String name = SQLUtils.normalize(column.getName().getSimpleName());
+                                    if (name_len < name.length()) {
+                                        name_len = name.length();
+                                    }
+
+                                    String dataType = column.getDataType().getName();
+                                    if (column.getDataType().getArguments().size() > 0) {
+                                        dataType += "(";
+                                        for (int i = 0; i < column.getDataType().getArguments().size(); i++) {
+                                            if (i != 0) {
+                                                dataType += ",";
+                                            }
+                                            SQLExpr arg = column.getDataType().getArguments().get(i);
+                                            dataType += arg.toString();
                                         }
-                                        SQLExpr arg = column.getDataType().getArguments().get(i);
-                                        dataType += arg.toString();
+                                        dataType += ")";
                                     }
-                                    dataType += ")";
-                                }
 
-                                if (dataType_len < dataType.length()) {
-                                    dataType_len = dataType.length();
-                                }
-                                dataTypes.add(dataType);
-
-                                if (column.getDefaultExpr() == null) {
-                                    defaultValues.add(null);
-                                } else {
-                                    String defaultVal = SQLUtils.toMySqlString(column.getDefaultExpr());
-                                    if (defaultVal.length() > 2 && defaultVal.charAt(0) == '\'' && defaultVal.charAt(defaultVal.length() - 1) == '\'') {
-                                        defaultVal = defaultVal.substring(1, defaultVal.length() - 1);
+                                    if (dataType_len < dataType.length()) {
+                                        dataType_len = dataType.length();
                                     }
-                                    defaultValues.add(defaultVal);
+                                    dataTypes.add(dataType);
 
-                                    if (defaultVal_len < defaultVal.length()) {
-                                        defaultVal_len = defaultVal.length();
+                                    if (column.getDefaultExpr() == null) {
+                                        defaultValues.add(null);
+                                    } else {
+                                        String defaultVal = SQLUtils.toMySqlString(column.getDefaultExpr());
+                                        if (defaultVal.length() > 2 && defaultVal.charAt(0) == '\'' && defaultVal.charAt(defaultVal.length() - 1) == '\'') {
+                                            defaultVal = defaultVal.substring(1, defaultVal.length() - 1);
+                                        }
+                                        defaultValues.add(defaultVal);
+
+                                        if (defaultVal_len < defaultVal.length()) {
+                                            defaultVal_len = defaultVal.length();
+                                        }
                                     }
-                                }
 
-                                if (column.isAutoIncrement()) {
-                                    extra_len = "auto_increment".length();
-                                } else if (column.getOnUpdate() != null) {
-                                    extra_len = "on update CURRENT_TIMESTAMP".length();
+                                    if (column.isAutoIncrement()) {
+                                        extra_len = "auto_increment".length();
+                                    } else if (column.getOnUpdate() != null) {
+                                        extra_len = "on update CURRENT_TIMESTAMP".length();
+                                    }
                                 }
                             }
-                        }
 
-                        String TABLE_CATALOG = "def";
-                        String TABLE_SCHEMA = tableHandler.getSchemaName();
-                        String TABLE_NAME = tableHandler.getTableName();
-                        String COLUMN_NAME;
-                        long ORDINAL_POSITION;
-                        String COLUMN_DEFAULT;
-                        String IS_NULLABLE;
-                        String DATA_TYPE;
-                        long CHARACTER_MAXIMUM_LENGTH = 4;
-                        long CHARACTER_OCTET_LENGTH = 1;
-                        long NUMERIC_PRECISION = 0;
-                        long NUMERIC_SCALE = 0;
-                        long DATETIME_PRECISION = 0;
-                        String CHARACTER_SET_NAME;
-                        String COLLATION_NAME;
-                        String COLUMN_TYPE;
-                        String COLUMN_KEY;
-                        String EXTRA;
-                        String PRIVILEGES;
-                        String COLUMN_COMMENT;
-                        String GENERATION_EXPRESSION;
+                            String TABLE_CATALOG = "def";
+                            String TABLE_SCHEMA = tableHandler.getSchemaName();
+                            String TABLE_NAME = tableHandler.getTableName();
+                            String COLUMN_NAME;
+                            long ORDINAL_POSITION;
+                            String COLUMN_DEFAULT;
+                            String IS_NULLABLE;
+                            String DATA_TYPE;
+                            long CHARACTER_MAXIMUM_LENGTH = 4;
+                            long CHARACTER_OCTET_LENGTH = 1;
+                            long NUMERIC_PRECISION = 0;
+                            long NUMERIC_SCALE = 0;
+                            long DATETIME_PRECISION = 0;
+                            String CHARACTER_SET_NAME;
+                            String COLLATION_NAME;
+                            String COLUMN_TYPE;
+                            String COLUMN_KEY;
+                            String EXTRA;
+                            String PRIVILEGES;
+                            String COLUMN_COMMENT;
+                            String GENERATION_EXPRESSION;
 
-                        for (int i = 0; i < columns.size(); i++) {
-                            SQLColumnDefinition column = columns.get(i);
-                            String name = SQLUtils.normalize(column.getName().getSimpleName());
+                            for (int i = 0; i < columns.size(); i++) {
+                                SQLColumnDefinition column = columns.get(i);
+                                String name = SQLUtils.normalize(column.getName().getSimpleName());
 
-                            COLUMN_NAME = name;
-                            ORDINAL_POSITION = i;
-                            DATA_TYPE = column.getDataType().getName();
-                            CHARACTER_SET_NAME = Optional.ofNullable(column.getCharsetExpr()).map(s -> SQLUtils.normalize(s.toString()))
-                                    .orElseGet(() -> {
-                                        SQLDataType dataType = column.getDataType();
-                                        if (dataType instanceof SQLCharacterDataType) {
-                                            return Optional.ofNullable(((SQLCharacterDataType) dataType).getCharSetName()).orElse("utf8mb4");
-                                        }
-                                        return null;
-                                    });
-                            COLLATION_NAME = Optional.ofNullable(column.getCollateExpr()).map(s -> SQLUtils.normalize(s.toString())).orElseGet(() -> {
-                                SQLDataType dataType = column.getDataType();
-                                if (dataType instanceof SQLCharacterDataType) {
-                                    return Optional.ofNullable(((SQLCharacterDataType) dataType).getCollate()).orElse("utf8mb4_general_ci");
-                                }
-                                return null;
-                            });
-                            IS_NULLABLE = column.containsNotNullConstaint() ? "NO" : "YES";
-                            COLUMN_KEY = mySqlCreateTableStatement.isPrimaryColumn(name) ?
-                                    "PRI" : mySqlCreateTableStatement.isUNI(name) ? "UNI" : mySqlCreateTableStatement.isMUL(name) ? "MUL" : null;
+                                COLUMN_NAME = name;
+                                ORDINAL_POSITION = i;
+                                DATA_TYPE = column.getDataType().getName();
+                                CHARACTER_SET_NAME = Optional.ofNullable(column.getCharsetExpr()).map(s -> SQLUtils.normalize(s.toString()))
+                                        .orElseGet(() -> {
+                                            SQLDataType dataType = column.getDataType();
+                                            if (dataType instanceof SQLCharacterDataType) {
+                                                return Optional.ofNullable(((SQLCharacterDataType) dataType).getCharSetName()).orElse("utf8mb4");
+                                            }
+                                            return null;
+                                        });
+                                COLLATION_NAME = Optional.ofNullable(column.getCollateExpr()).map(s -> SQLUtils.normalize(s.toString())).orElseGet(() -> {
+                                    SQLDataType dataType = column.getDataType();
+                                    if (dataType instanceof SQLCharacterDataType) {
+                                        return Optional.ofNullable(((SQLCharacterDataType) dataType).getCollate()).orElse("utf8mb4_general_ci");
+                                    }
+                                    return null;
+                                });
+                                IS_NULLABLE = column.containsNotNullConstaint() ? "NO" : "YES";
+                                COLUMN_KEY = mySqlCreateTableStatement.isPrimaryColumn(name) ?
+                                        "PRI" : mySqlCreateTableStatement.isUNI(name) ? "UNI" : mySqlCreateTableStatement.isMUL(name) ? "MUL" : null;
 
-                            COLUMN_DEFAULT = Optional.ofNullable(defaultValues.get(i)).orElse("NULL");
-                            CHARACTER_MAXIMUM_LENGTH = 4;
-                            COLUMN_TYPE = dataTypes.get(i);
-                            EXTRA = "";
-                            PRIVILEGES = "select,insert,update,references";
-                            COLUMN_COMMENT = Optional.ofNullable(column.getComment()).map(s -> ((SQLCharExpr) s).getText()).orElse(null);
-                            GENERATION_EXPRESSION = Optional.ofNullable(column.getGeneratedAlawsAs()).map(m -> m.toString()).orElse(null);
+                                COLUMN_DEFAULT = Optional.ofNullable(defaultValues.get(i)).orElse("NULL");
+                                CHARACTER_MAXIMUM_LENGTH = 4;
+                                COLUMN_TYPE = dataTypes.get(i);
+                                EXTRA = "";
+                                PRIVILEGES = "select,insert,update,references";
+                                COLUMN_COMMENT = Optional.ofNullable(column.getComment()).map(s -> ((SQLCharExpr) s).getText()).orElse(null);
+                                GENERATION_EXPRESSION = Optional.ofNullable(column.getGeneratedAlawsAs()).map(m -> m.toString()).orElse(null);
 
-                            objects.add(new Object[]{
-                                    TABLE_CATALOG,
-                                    TABLE_SCHEMA,
-                                    TABLE_NAME,
-                                    COLUMN_NAME,
-                                    ORDINAL_POSITION,
-                                    COLUMN_DEFAULT,
-                                    IS_NULLABLE,
-                                    DATA_TYPE,
-                                    CHARACTER_MAXIMUM_LENGTH,
-                                    CHARACTER_OCTET_LENGTH,
-                                    NUMERIC_PRECISION,
-                                    NUMERIC_SCALE,
-                                    DATETIME_PRECISION,
-                                    CHARACTER_SET_NAME,
-                                    COLLATION_NAME,
-                                    COLUMN_TYPE,
-                                    COLUMN_KEY,
-                                    EXTRA,
-                                    PRIVILEGES,
-                                    COLUMN_COMMENT,
-                                    GENERATION_EXPRESSION
-                            });
+                                objects.add(new Object[]{
+                                        TABLE_CATALOG,
+                                        TABLE_SCHEMA,
+                                        TABLE_NAME,
+                                        COLUMN_NAME,
+                                        ORDINAL_POSITION,
+                                        COLUMN_DEFAULT,
+                                        IS_NULLABLE,
+                                        DATA_TYPE,
+                                        CHARACTER_MAXIMUM_LENGTH,
+                                        CHARACTER_OCTET_LENGTH,
+                                        NUMERIC_PRECISION,
+                                        NUMERIC_SCALE,
+                                        DATETIME_PRECISION,
+                                        CHARACTER_SET_NAME,
+                                        COLLATION_NAME,
+                                        COLUMN_TYPE,
+                                        COLUMN_KEY,
+                                        EXTRA,
+                                        PRIVILEGES,
+                                        COLUMN_COMMENT,
+                                        GENERATION_EXPRESSION
+                                });
 
+                            }
+
+                        } catch (Throwable throwable) {
+                            log.error("can not generate STATISTICS for sql:{}", createTableSQL, throwable);
                         }
                     }
                     return Observable.fromIterable(objects);
@@ -364,26 +371,31 @@ public class MysqlMetadataManager extends MetadataManager {
                 TABLE_SCHEMA = table.getSchemaName();
                 TABLE_NAME = table.getTableName();
                 String createTableSQL = table.getCreateTableSQL();
-                SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(createTableSQL);
-                if (sqlStatement instanceof MySqlCreateTableStatement) {
-                    MySqlCreateTableStatement mySqlCreateTableStatement = (MySqlCreateTableStatement) sqlStatement;
-                    List<MySqlTableIndex> mySqlTableIndices = Optional.ofNullable(mySqlCreateTableStatement.getMysqlIndexes()).orElse(Collections.emptyList());
-                    List<MySqlKey> mySqlKeys = Optional.ofNullable(mySqlCreateTableStatement.getMysqlKeys()).orElse(Collections.emptyList());
-                    INDEX_SCHEMA = table.getSchemaName();
-                    for (MySqlTableIndex mySqlTableIndex : mySqlTableIndices) {
-                        INDEX_NAME = SQLUtils.normalize(mySqlTableIndex.getName().getSimpleName());
-                        for (SQLSelectOrderByItem column : mySqlTableIndex.getColumns()) {
-                            COLUMN_NAME = SQLUtils.normalize(((SQLName) column.getExpr()).getSimpleName());
-                            NON_UNIQUE = mySqlCreateTableStatement.isUNI(COLUMN_NAME) ? "0" : "1";
-                            SEQ_IN_INDEX = table.getColumnByName(COLUMN_NAME).getId();
-                            INDEX_TYPE = mySqlTableIndex.getIndexType();
-                            resList.add(new Object[]{
-                                    TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, NON_UNIQUE, INDEX_SCHEMA, INDEX_NAME, SEQ_IN_INDEX, COLUMN_NAME,
-                                    COLLATION, CARDINALITY, SUB_PART, PACKED, NULLABLE, INDEX_TYPE, COMMENT, INDEX_COMMENT, IS_VISIBLE, Expression});
-                        }
+                try {
+                    SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(createTableSQL);
+                    if (sqlStatement instanceof MySqlCreateTableStatement) {
+                        MySqlCreateTableStatement mySqlCreateTableStatement = (MySqlCreateTableStatement) sqlStatement;
+                        List<MySqlTableIndex> mySqlTableIndices = Optional.ofNullable(mySqlCreateTableStatement.getMysqlIndexes()).orElse(Collections.emptyList());
+                        List<MySqlKey> mySqlKeys = Optional.ofNullable(mySqlCreateTableStatement.getMysqlKeys()).orElse(Collections.emptyList());
+                        INDEX_SCHEMA = table.getSchemaName();
+                        for (MySqlTableIndex mySqlTableIndex : mySqlTableIndices) {
+                            INDEX_NAME = SQLUtils.normalize(mySqlTableIndex.getName().getSimpleName());
+                            for (SQLSelectOrderByItem column : mySqlTableIndex.getColumns()) {
+                                COLUMN_NAME = SQLUtils.normalize(((SQLName) column.getExpr()).getSimpleName());
+                                NON_UNIQUE = mySqlCreateTableStatement.isUNI(COLUMN_NAME) ? "0" : "1";
+                                SEQ_IN_INDEX = table.getColumnByName(COLUMN_NAME).getId();
+                                INDEX_TYPE = mySqlTableIndex.getIndexType();
+                                resList.add(new Object[]{
+                                        TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, NON_UNIQUE, INDEX_SCHEMA, INDEX_NAME, SEQ_IN_INDEX, COLUMN_NAME,
+                                        COLLATION, CARDINALITY, SUB_PART, PACKED, NULLABLE, INDEX_TYPE, COMMENT, INDEX_COMMENT, IS_VISIBLE, Expression});
+                            }
 
+                        }
                     }
+                } catch (Throwable throwable) {
+                    log.error("can not generate STATISTICS for sql:{}", createTableSQL, throwable);
                 }
+
 
             }
 
