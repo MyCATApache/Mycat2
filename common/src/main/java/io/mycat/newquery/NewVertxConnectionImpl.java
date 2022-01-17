@@ -260,6 +260,7 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
         private String sql;
         List<Object> params;
         PreparedStatement preparedStatement;
+
         public CursorHandler(MysqlCollector collector, String sql, List<Object> params) {
             this.collector = collector;
             this.sql = sql;
@@ -275,7 +276,7 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
                     cursor = null;
                 }
             }
-            if (preparedStatement!=null){
+            if (preparedStatement != null) {
                 preparedStatement.close();
                 preparedStatement = null;
             }
@@ -348,7 +349,7 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
                     cursor = null;
                 }
             }
-            if (preparedStatement!=null){
+            if (preparedStatement != null) {
                 preparedStatement.close();
                 preparedStatement = null;
             }
@@ -360,35 +361,27 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
     public void prepareQuery(String sql, List<Object> params, MysqlCollector collector) {
         LOGGER.debug("sql:{}", sql);
         Future<io.vertx.sqlclient.RowSet<Row>> execute = mySQLConnection.query(sql).execute();
-        execute=  execute.onFailure(new Handler<Throwable>() {
-            @Override
-            public void handle(Throwable event) {
-                collector.onError(event);
-            }
-        });
-        execute.onSuccess(new Handler<io.vertx.sqlclient.RowSet<Row>>() {
-            @Override
-            public void handle(io.vertx.sqlclient.RowSet<Row> event) {
-                try {
-                    List<ColumnDefinition> columnDescriptors = (List) event.columnDescriptors();
-                    MycatRowMetaData mycatRowMetaData = toColumnMetaData(columnDescriptors);
-                    collector.onColumnDef(mycatRowMetaData);
-                    int columnCount = mycatRowMetaData.getColumnCount();
-                    RowIterator<Row> iterator = event.iterator();
-                    while (iterator.hasNext()) {
-                        Row next = iterator.next();
-                        Object[] objects = new Object[next.size()];
-                        for (int i = 0; i < columnCount; i++) {
-                            objects[i] = next.getValue(i);
-                        }
-                        collector.onRow(objects);
+        execute = execute.onFailure(event -> collector.onError(event));
+        execute.onSuccess(event -> {
+            try {
+                List<ColumnDefinition> columnDescriptors = (List) event.columnDescriptors();
+                MycatRowMetaData mycatRowMetaData = toColumnMetaData(columnDescriptors);
+                collector.onColumnDef(mycatRowMetaData);
+                int columnCount = mycatRowMetaData.getColumnCount();
+                RowIterator<Row> iterator = event.iterator();
+                while (iterator.hasNext()) {
+                    Row next = iterator.next();
+                    Object[] objects = new Object[next.size()];
+                    for (int i = 0; i < columnCount; i++) {
+                        objects[i] = next.getValue(i);
                     }
-                    collector.onComplete();
-                }catch (Exception e){
-                    collector.onError(e);
+                    collector.onRow(objects);
                 }
-
+                collector.onComplete();
+            } catch (Exception e) {
+                collector.onError(e);
             }
+
         });
     }
 
@@ -454,6 +447,11 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
                         .onComplete(event -> preparedStatementFuture.onSuccess(event1 -> event1.close()));
             }
         });
+    }
+
+    @Override
+    public Observable<Buffer> prepareQuery(String sql, List<Object> params) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

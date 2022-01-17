@@ -58,6 +58,10 @@ public class SqlResultSetService implements Closeable, Dumpable {
         cache.cleanUp();
     }
 
+    public boolean isWorking(){
+        return !cacheConfigMap.isEmpty();
+    }
+
     public synchronized void dropByName(String name) {
         if (name != null) {
             SqlCacheTask sqlCacheTask = cacheConfigMap.remove(name);

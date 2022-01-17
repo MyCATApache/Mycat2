@@ -15,23 +15,27 @@
 package io.mycat.vertx;
 
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
-import io.mycat.mycatmysql.MycatVertxMySQLHandler;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static io.mycat.vertx.VertxMySQLPacketResolver.State.HEAD;
-import static io.mycat.vertx.VertxMySQLPacketResolver.State.PAYLOAD;
+import static io.mycat.vertx.VertxMySQLPacketClientResolver.State.HEAD;
+import static io.mycat.vertx.VertxMySQLPacketClientResolver.State.PAYLOAD;
 
-public class VertxMySQLPacketResolver implements Handler<Buffer> {
-    Buffer head;
-    Buffer payload;
-    State state = HEAD;
-    int currentPacketLength;
-    int reveicePacketLength = 0;
-    MycatVertxMySQLHandler mySQLHandler;
-    NetSocket socket;
-    private short packetId;
+
+public abstract class VertxMySQLPacketClientResolver implements Handler<Buffer> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(VertxMySQLPacketClientResolver.class);
+    protected Buffer head;
+    protected Buffer payload;
+    protected State state = HEAD;
+    protected int currentPacketLength;
+    protected int reveicePacketLength = 0;
+    protected NetSocket socket;
+    protected int packetId;
+
+    public Buffer debugBuffer;
 
     public static enum State {
         HEAD,
@@ -39,15 +43,19 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
     }
 
 
-    public VertxMySQLPacketResolver(NetSocket socket, MycatVertxMySQLHandler mySQLHandler) {
-        this.mySQLHandler = mySQLHandler;
+    public VertxMySQLPacketClientResolver(NetSocket socket, int packetId) {
         this.socket = socket;
+        this.packetId =  packetId;
     }
 
     @Override
     public void handle(Buffer event) {
+//        if (debugBuffer == null){
+//            debugBuffer = Buffer.buffer();
+//        }
+//        debugBuffer.appendBuffer(event);
         for (; ; ) {
-            if (event.length()==0)return;
+            if (event.length() == 0) return;
             switch (state) {
                 case HEAD: {
                     if (head == null) {
@@ -81,13 +89,13 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
                         event = event.slice(restPacketLength, event.length());
                     } else {
                         curBuffer = event;
-                        event =Buffer.buffer();
+                        event = Buffer.buffer();
                     }
                     payload.appendBuffer(curBuffer);
                     reveicePacketLength += curBuffer.length();
                     boolean endPacket = currentPacketLength == reveicePacketLength;
                     boolean multiPacket = (currentPacketLength == MySQLPacketSplitter.MAX_PACKET_SIZE);
-                    if (endPacket){
+                    if (endPacket) {
                         state = HEAD;
                         this.head = null;
                         reveicePacketLength = 0;
@@ -95,18 +103,21 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
                     if (endPacket && !multiPacket) {
                         Buffer payload = this.payload;
                         this.payload = null;
-                        mySQLHandler.handle(packetId, payload, socket);
+                        handle0(packetId, payload, socket);
                         continue;
-                    }else {
+                    } else {
+                        LOGGER.debug(" received half packet ");
                         continue;
+                    }
                 }
+                default:
+                    throw new IllegalStateException("Unexpected value: " + state);
             }
-            default:
-                throw new IllegalStateException("Unexpected value: " + state);
         }
+
     }
 
-}
+    public abstract void handle0(int packetId, Buffer payload, NetSocket socket);
 
     public static int readInt(Buffer buffer, int start, int length) {
         int rv = 0;
