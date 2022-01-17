@@ -241,6 +241,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                     ArrayList<List<Map<String, Object>>> resultList = new ArrayList<>();
                     List<String> sqls = heartBeatStrategy.getSqls();
                     for (String sql : sqls) {
+                        LOGGER.debug("heartbeat sql:{}", sql);
                         try (RowBaseIterator iterator = connection
                                 .executeQuery(sql)) {
                             resultList.add(iterator.getResultSetMap());

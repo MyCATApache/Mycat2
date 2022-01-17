@@ -436,9 +436,7 @@ public class MHATest extends ReplicaTest {
         return heartBeatStrategy -> {
             List<String> sqls = heartBeatStrategy.getSqls();
             List<List<Map<String, Object>>> list = new ArrayList<>();
-            Assert.assertTrue(sqls.get(0).equalsIgnoreCase(MHAHeartBeatStrategy.READ_ONLY_SQL));
-            Assert.assertTrue(sqls.get(1).equalsIgnoreCase(MHAHeartBeatStrategy.MASTER_SLAVE_HEARTBEAT_SQL));
-            list.add(Arrays.asList(Maps.of("READ_ONLY", !master ? 1 : 0)));
+            Assert.assertTrue(sqls.get(0).equalsIgnoreCase(MHAHeartBeatStrategy.MASTER_SLAVE_HEARTBEAT_SQL));
 
             Map<String, Object> map13 = new HashMap<>();
             map13.put("Slave_IO_Running", "Yes");
