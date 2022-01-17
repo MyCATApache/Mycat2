@@ -2190,7 +2190,7 @@ public class PrototypeService {
             }
             return CalciteConvertors.getColumnInfo(Objects.requireNonNull(mycatRowMetaData));
         } catch (Exception e) {
-            LOGGER.error("", e);
+            LOGGER.error("sql:{}",sql, e);
             return getSimpleColumnInfos(schema, table);
         }
     }

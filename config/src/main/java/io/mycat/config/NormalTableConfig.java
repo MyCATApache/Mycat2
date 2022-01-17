@@ -1,14 +1,12 @@
 package io.mycat.config;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode
+@ToString
 public class NormalTableConfig {
     String createTableSQL;
     NormalBackEndTableInfoConfig locality = new NormalBackEndTableInfoConfig();

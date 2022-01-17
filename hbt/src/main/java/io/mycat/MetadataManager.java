@@ -353,16 +353,20 @@ public class MetadataManager {
             String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL())
                     .orElseGet(() -> prototypeService.getCreateTableSQLByJDBC(schemaName, tableName, partitions).orElse(null));
             if (createTableSQL != null) {
-                List<SimpleColumnInfo> columns = prototypeService.getColumnInfo(createTableSQL, schemaName, tableName);
-                Map<String, IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName, columns);
-                removeTable(schemaName, tableName);
-                addLogicTable(LogicTable.createNormalTable(schemaName, tableName, partitions.get(0), columns, indexInfos, createTableSQL, tableConfigEntry));
-                return;
+                try {
+                    List<SimpleColumnInfo> columns = prototypeService.getColumnInfo(createTableSQL, schemaName, tableName);
+                    Map<String, IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName, columns);
+                    removeTable(schemaName, tableName);
+                    addLogicTable(LogicTable.createNormalTable(schemaName, tableName, partitions.get(0), columns, indexInfos, createTableSQL, tableConfigEntry));
+                    return;
+                }catch (Throwable throwable){
+                    LOGGER.error("generate column fail {}", tableConfigEntry,throwable);
+                }
             } else {
                 LOGGER.error("not found createTable SQL:{}", tableConfigEntry);
             }
         } catch (Throwable throwable) {
-            LOGGER.error("", throwable);
+            LOGGER.error("addNormalTable fail schemaName:{} tableName:{}",schemaName,tableName, throwable);
         }
         if (backupTable!=null){
             addLogicTable(backupTable);
