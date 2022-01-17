@@ -323,7 +323,7 @@ public class MHATest extends ReplicaTest {
             masterTargets.add(manager.getDatasourceNameByReplicaName("c0", true, null));
             return false;
         });
-       // Assert.assertEquals(1, masterTargets.size());//todo check
+        Assert.assertEquals(1, masterTargets.size());//todo check
         Assert.assertTrue(masterTargets.contains("dsw2"));
 
         manager.putHeartFlow("c0", "dsw2", checkMHA(true, 0));
@@ -444,7 +444,7 @@ public class MHATest extends ReplicaTest {
             map13.put("Seconds_Behind_Master", delay +"");
 
             list.add(Arrays.asList(map13));
-            heartBeatStrategy.process(list);
+            heartBeatStrategy.process(list,!master);
         };
     }
 
