@@ -199,7 +199,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         for (UserConfig userConfig : userConfigs) {
                             builder.addObjectRowPayload(Arrays.asList(
                                     userConfig.getUsername(),
-                                    userConfig.getPassword(),
+                                    userConfig.getIp(),
                                     userConfig.getTransactionType(),
                                     userConfig.getDialect()
                             ));
