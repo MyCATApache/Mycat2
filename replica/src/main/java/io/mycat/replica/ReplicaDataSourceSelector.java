@@ -140,8 +140,8 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo, Closeable, Re
                 this.writeDataSourceList.add(physicsInstance);
             }
         }
-        physicsInstance.notifyChangeAlive(false);
-        physicsInstance.notifyChangeSelectRead(false);
+        physicsInstance.notifyChangeAlive(true);
+        physicsInstance.notifyChangeSelectRead(true);
         switch (this.type) {
             case SINGLE_NODE:
             case MASTER_SLAVE:

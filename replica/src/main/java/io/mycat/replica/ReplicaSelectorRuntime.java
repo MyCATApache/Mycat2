@@ -409,8 +409,8 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
                             executer);
 
                     heartbeatDetectorMap.put(name, heartbeatFlow);
-                    //马上进行心跳,获取集群状态
-                    heartbeatFlow.heartbeat();
+                    //马上进行心跳,获取集群状态,暂时禁用因为会导致马上切换,jdbc管理器没有启动完成
+                    //heartbeatFlow.heartbeat();
                 }
             }
         });
