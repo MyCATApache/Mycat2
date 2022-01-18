@@ -282,7 +282,9 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                 case DATALINK:
                 default:
                     value = row.getValue(columnIndex);
-                    LOGGER.warn("may be unsupported type :" + JDBCType.valueOf(columnType));
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("may be unsupported type :{}", JDBCType.valueOf(columnType));
+                    }
             }
             objects[columnIndex] = value;
         }
@@ -472,7 +474,9 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                 case DATALINK:
                 default:
                     value = row[columnIndex];
-                    LOGGER.warn("may be unsupported type :" + JDBCType.valueOf(columnType));
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("may be unsupported type :{}", JDBCType.valueOf(columnType));
+                    }
             }
             objects[columnIndex] = value;
         }
