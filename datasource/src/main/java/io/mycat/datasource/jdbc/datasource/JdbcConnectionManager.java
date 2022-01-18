@@ -233,11 +233,13 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
             }
 
             private void heartbeat(HeartBeatStrategy heartBeatStrategy) {
-                DefaultConnection connection = null;
                 boolean readOnly = false;
-                try {
-                    connection = getConnection(datasource);
-                    readOnly = connection.connection.isReadOnly();
+                try (DefaultConnection connection = getConnection(datasource)) {
+                    try {
+                        readOnly = JdbcUtils.executeQuery(connection.connection, "SELECT @@read_only", Collections.emptyList()).toString().contains("1");
+                    } catch (Throwable throwable) {
+                        LOGGER.debug("heartbeat sql:{}", "SELECT @@read_only", throwable);
+                    }
                     ArrayList<List<Map<String, Object>>> resultList = new ArrayList<>();
                     List<String> sqls = heartBeatStrategy.getSqls();
                     for (String sql : sqls) {
@@ -255,10 +257,6 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                 } catch (Throwable e) {
                     heartBeatStrategy.onException(e);
                     LOGGER.error("", e);
-                } finally {
-                    if (connection != null) {
-                        connection.close();
-                    }
                 }
             }
         });
