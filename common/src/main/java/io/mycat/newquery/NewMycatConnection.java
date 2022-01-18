@@ -25,7 +25,7 @@ public interface NewMycatConnection {
 
     Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator);
 
-    Observable<Buffer> prepareQuery(String sql, List<Object> params);
+    Observable<Buffer> prepareQuery(String sql, List<Object> params,int serverstatus);
 
     Future<List<Object>> call(String sql);
 
