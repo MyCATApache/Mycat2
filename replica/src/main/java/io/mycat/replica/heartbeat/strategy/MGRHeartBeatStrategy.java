@@ -14,10 +14,7 @@
  */
 package io.mycat.replica.heartbeat.strategy;
 
-import io.mycat.replica.heartbeat.DatasourceEnum;
-import io.mycat.replica.heartbeat.DatasourceStatus;
-import io.mycat.replica.heartbeat.HeartBeatStrategy;
-import io.mycat.replica.heartbeat.HeartbeatFlow;
+import io.mycat.replica.heartbeat.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +40,8 @@ public class MGRHeartBeatStrategy extends HeartBeatStrategy {
     @Override
     public void process(List<List<Map<String, Object>>> resultList, boolean readonly) {
         DatasourceStatus datasourceStatus = new DatasourceStatus();
+        datasourceStatus.setDbSynStatus(DbSynEnum.DB_SYN_NORMAL);
+        datasourceStatus.setSlaveBehindMaster(false);
         Map<String, Object> result = resultList.get(0).get(0);
         boolean master = !readonly && !("1".equalsIgnoreCase(Objects.toString(result.getOrDefault("READ_ONLY", null))));
         double behind;

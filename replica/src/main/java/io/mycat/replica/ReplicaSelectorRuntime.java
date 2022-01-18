@@ -370,6 +370,9 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
         if (balanceStrategy == null) {
             balanceStrategy = defaultWriteLoadBalanceStrategy;
         }
+        if (element.isEmpty()){
+            element = selector.getWriteDataSourceByReplicaType();
+        }
         LoadBalanceElement select = balanceStrategy.select(selector, element);
         Objects.requireNonNull(select, "No data source available");
         return (PhysicsInstance) select;
