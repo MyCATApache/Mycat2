@@ -90,7 +90,7 @@ public class DefaultHeartbeatFlow extends HeartbeatFlow {
             case MGR:
                 if (currentDatasourceStatus.isMaster()){
                     replicaSelector.addWriteDataSource(datasouceName);
-                    replicaSelector.removeReadDataSource(datasouceName);
+                    replicaSelector.addReadDataSource(datasouceName);
                 }else {
                     replicaSelector.addReadDataSource(datasouceName);
                     replicaSelector.removeWriteDataSource(datasouceName);
