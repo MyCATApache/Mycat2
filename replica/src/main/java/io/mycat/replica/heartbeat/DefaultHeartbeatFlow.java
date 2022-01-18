@@ -51,13 +51,14 @@ public class DefaultHeartbeatFlow extends HeartbeatFlow {
         this.showLog = showLog;
         this.executer = executer;
         this.strategyProvider = strategyProvider;
+
+        HeartBeatStrategy strategy = strategyProvider.apply(this);
+        this.strategy = strategy;
     }
 
     @Override
     public void heartbeat() {
         updateLastSendQryTime();
-        HeartBeatStrategy strategy = strategyProvider.apply(this);
-        this.strategy = strategy;
         executer.accept(strategy);
     }
 
