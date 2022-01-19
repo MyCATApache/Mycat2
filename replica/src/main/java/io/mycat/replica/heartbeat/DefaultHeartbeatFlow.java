@@ -51,13 +51,14 @@ public class DefaultHeartbeatFlow extends HeartbeatFlow {
         this.showLog = showLog;
         this.executer = executer;
         this.strategyProvider = strategyProvider;
+
+        HeartBeatStrategy strategy = strategyProvider.apply(this);
+        this.strategy = strategy;
     }
 
     @Override
     public void heartbeat() {
         updateLastSendQryTime();
-        HeartBeatStrategy strategy = strategyProvider.apply(this);
-        this.strategy = strategy;
         executer.accept(strategy);
     }
 
@@ -90,7 +91,7 @@ public class DefaultHeartbeatFlow extends HeartbeatFlow {
             case MGR:
                 if (currentDatasourceStatus.isMaster()){
                     replicaSelector.addWriteDataSource(datasouceName);
-                    replicaSelector.removeReadDataSource(datasouceName);
+                    replicaSelector.addReadDataSource(datasouceName);
                 }else {
                     replicaSelector.addReadDataSource(datasouceName);
                     replicaSelector.removeWriteDataSource(datasouceName);

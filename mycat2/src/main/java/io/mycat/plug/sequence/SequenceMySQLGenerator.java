@@ -45,19 +45,19 @@ public class SequenceMySQLGenerator implements SequenceHandler {
     public void init(String sql, String targetName) {
         init(sql, targetName, (s, s2) -> {
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-            try(DefaultConnection mycatConnection = jdbcConnectionManager.getConnection(targetName)){
+            try (DefaultConnection mycatConnection = jdbcConnectionManager.getConnection(targetName)) {
                 Connection rawConnection = mycatConnection.getRawConnection();
-                    try (Statement statement = rawConnection.createStatement()) {
-                        try (ResultSet resultSet = statement.executeQuery(s2)) {
-                            while (resultSet.next()) {
-                                return resultSet.getString(1);
-                            }
+                try (Statement statement = rawConnection.createStatement()) {
+                    try (ResultSet resultSet = statement.executeQuery(s2)) {
+                        while (resultSet.next()) {
+                            return resultSet.getString(1);
                         }
                     }
-                } catch (SQLException e) {
-                    throw new RuntimeException("can not get queryTargetName:" + s + ",sql:" + s2 + " e");
                 }
-                return null;
+            } catch (SQLException e) {
+                throw new RuntimeException("can not get queryTargetName:" + s + ",sql:" + s2 + " e");
+            }
+            return null;
         });
     }
 
@@ -69,12 +69,13 @@ public class SequenceMySQLGenerator implements SequenceHandler {
 
     @Override
     public synchronized Number get() {
-        if (count > limit) {
+        if (count >= limit) {
             try {
                 String s = function.apply(queryTargetName, sql);
                 String[] split = SplitUtil.split(s, ',');
                 this.count = Long.parseLong(split[0]);
-                this.limit = Long.parseLong(split[1]);
+                long inc = Long.parseLong(split[1]);
+                this.limit = this.count + inc;
             } catch (Throwable e) {
                 LOGGER.error("", e);
                 throw new RuntimeException(e);
@@ -88,7 +89,7 @@ public class SequenceMySQLGenerator implements SequenceHandler {
         String[] split = args.getName().split("_");
         String db = Optional.ofNullable(args.getSchemaName()).orElse(split[0]);
         String targetName = Optional.ofNullable(args.getTargetName()).orElse("prototype");
-        init(String.format("select %s.mycat_seq_nextval('%s')",db, args.getName()),targetName);
+        init(String.format("select %s.mycat_seq_nextval('%s')", db, args.getName()), targetName);
     }
 
     @Override

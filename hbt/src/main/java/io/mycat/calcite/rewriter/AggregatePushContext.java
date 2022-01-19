@@ -77,6 +77,7 @@ public class AggregatePushContext {
                 case BIT_OR:
                 case BIT_XOR:
                 case BIT_AND:
+                case SUM0:
                     splitCommon(aggregateCall);
                     break;
                 default:

@@ -140,8 +140,8 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo, Closeable, Re
                 this.writeDataSourceList.add(physicsInstance);
             }
         }
-        physicsInstance.notifyChangeAlive(false);
-        physicsInstance.notifyChangeSelectRead(false);
+        physicsInstance.notifyChangeAlive(true);
+        physicsInstance.notifyChangeSelectRead(true);
         switch (this.type) {
             case SINGLE_NODE:
             case MASTER_SLAVE:
@@ -305,15 +305,24 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo, Closeable, Re
 
     public synchronized void addWriteDataSource(String dataSource) {
         PhysicsInstance physicsInstance = datasourceMap.get(dataSource);
-        if (!writeDataSourceList.contains(physicsInstance)) {
-            writeDataSourceList.add(physicsInstance);
+        if (physicsInstance != null) {
+            if (physicsInstance.getType().isWriteType()) {
+                if (!writeDataSourceList.contains(physicsInstance)) {
+                    writeDataSourceList.add(physicsInstance);
+                }
+            }
         }
+
     }
 
     public synchronized void addReadDataSource(String dataSource) {
         PhysicsInstance physicsInstance = datasourceMap.get(dataSource);
-        if (!readDataSource.contains(physicsInstance)) {
-            readDataSource.add(physicsInstance);
+        if (physicsInstance != null) {
+            if (physicsInstance.getType().isReadType()) {
+                if (!readDataSource.contains(physicsInstance)) {
+                    readDataSource.add(physicsInstance);
+                }
+            }
         }
     }
 

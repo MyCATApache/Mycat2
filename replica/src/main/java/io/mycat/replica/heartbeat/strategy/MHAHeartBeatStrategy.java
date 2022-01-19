@@ -37,6 +37,8 @@ public class MHAHeartBeatStrategy extends HeartBeatStrategy {
     @Override
     public void process(List<List<Map<String, Object>>> resultList, boolean readonly) {
         DatasourceStatus datasourceStatus = new DatasourceStatus();
+        datasourceStatus.setDbSynStatus(DbSynEnum.DB_SYN_NORMAL);
+        datasourceStatus.setSlaveBehindMaster(false);
         boolean master = !readonly;
         if (!resultList.isEmpty()) {
             List<Map<String, Object>> result = resultList.get(0);

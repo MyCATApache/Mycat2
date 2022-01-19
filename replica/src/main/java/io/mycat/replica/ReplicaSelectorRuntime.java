@@ -15,6 +15,7 @@
 package io.mycat.replica;
 
 import io.mycat.ReplicaBalanceType;
+import io.mycat.ScheduleUtil;
 import io.mycat.config.*;
 import io.mycat.plug.loadBalance.LoadBalanceElement;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
@@ -370,6 +371,9 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
         if (balanceStrategy == null) {
             balanceStrategy = defaultWriteLoadBalanceStrategy;
         }
+        if (element.isEmpty()){
+            element = selector.getWriteDataSourceByReplicaType();
+        }
         LoadBalanceElement select = balanceStrategy.select(selector, element);
         Objects.requireNonNull(select, "No data source available");
         return (PhysicsInstance) select;
@@ -406,8 +410,9 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
                             executer);
 
                     heartbeatDetectorMap.put(name, heartbeatFlow);
-                    //马上进行心跳,获取集群状态
-                    heartbeatFlow.heartbeat();
+                    //马上进行心跳,获取集群状态,暂时禁用因为会导致马上切换,jdbc管理器没有启动完成
+                   // heartbeatFlow.heartbeat();
+
                 }
             }
         });

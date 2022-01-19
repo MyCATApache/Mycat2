@@ -56,6 +56,8 @@ public class MGRTest extends ReplicaTest {
         manager.putHeartFlow("c0", "dsw1", checkMGR(true));
         manager.putHeartFlow("c0", "dsw2", checkMGR(false));
         manager.putHeartFlow("c0", "dsr1", checkMGR(false));
+        manager.start();
+
         for (Runnable runnable : runnables) {
             runnable.run();
         }
@@ -191,7 +193,7 @@ public class MGRTest extends ReplicaTest {
         manager.putHeartFlow("c0", "dsw1", checkMGR(true));
         manager.putHeartFlow("c0", "dsw2", checkMGR(false));
         manager.putHeartFlow("c0", "dsr1", checkMGR(false, Integer.MAX_VALUE));
-
+        manager.start();
         for (Runnable runnable : runnables) {
             runnable.run();
         }

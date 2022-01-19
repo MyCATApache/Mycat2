@@ -390,7 +390,9 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
             case REF:
             case DATALINK:
             default:
-                LOGGER.warn("may be unsupported type :" + JDBCType.valueOf(columnType));
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("may be unsupported type :{}", JDBCType.valueOf(columnType));
+                }
                 return resultSet.getObject(columnIndex);
         }
     }
