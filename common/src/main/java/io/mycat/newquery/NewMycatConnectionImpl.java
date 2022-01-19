@@ -1,12 +1,14 @@
 package io.mycat.newquery;
 
 import com.alibaba.druid.pool.DruidPooledConnection;
+import com.alibaba.druid.pool.DruidPooledResultSet;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLReplaceable;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.util.JdbcUtils;
+import com.mysql.cj.jdbc.result.ResultSetImpl;
 import com.mysql.cj.result.Field;
 import io.mycat.MySQLPacketUtil;
 import io.mycat.beans.mycat.*;
@@ -29,6 +31,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -308,11 +312,13 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                                             int jdbcColumnIndex = index + 1;
                                             MycatDataType mycatDataType = mycatField.getMycatDataType();
                                             if (mycatDataType == DATE) {
-                                                String string = resultSet.getString(jdbcColumnIndex);
-                                                row[index] = string == null ? null : string.getBytes();
+                                                ResultSetImpl resultSet = NewMycatConnectionImpl.this.resultSet.unwrap(ResultSetImpl.class);
+                                                LocalDate localDate = resultSet.getLocalDate(jdbcColumnIndex);
+                                                row[index] = localDate == null ? null :localDate.toString().getBytes();
                                             } else if (mycatDataType == DATETIME) {
-                                                String string = resultSet.getString(jdbcColumnIndex);
-                                                row[index] = string == null ? null : string.getBytes();
+                                                ResultSetImpl resultSet = NewMycatConnectionImpl.this.resultSet.unwrap(ResultSetImpl.class);
+                                                LocalDateTime localDateTime = ((ResultSetImpl) resultSet).getLocalDateTime(jdbcColumnIndex);
+                                                row[index] = localDateTime == null ? null :getBytes(localDateTime);
                                             } else {
                                                 row[index] = (resultSet.getBytes(jdbcColumnIndex));
                                             }
@@ -352,6 +358,34 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
         });
 
 
+    }
+    public static byte[] getBytes(LocalDateTime value) {
+        int year = value.getYear();
+        int monthValue = value.getMonthValue();
+        int dayOfMonth = value.getDayOfMonth();
+        int hour = value.getHour();
+        int minute = value.getMinute();
+        int second = value.getSecond();
+        int nano = value.getNano()/1000;
+        if (nano == 0) {
+            return String.format("%04d-%02d-%02d %02d:%02d:%02d",
+                    year,
+                    monthValue,
+                    dayOfMonth,
+                    hour,
+                    minute,
+                    second
+            ).getBytes();
+        }
+        return (String.format("%04d-%02d-%02d %02d:%02d:%02d.%06d",//"%04d-%02d-%02d %02d:%02d:%02d.%09d"
+                year,
+                monthValue,
+                dayOfMonth,
+                hour,
+                minute,
+                second,
+                nano
+        )).getBytes();
     }
 
     @NotNull
