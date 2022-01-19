@@ -35,7 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-import static io.mycat.beans.mycat.MycatDataType.BINARY;
+import static io.mycat.beans.mycat.MycatDataType.*;
 
 public class NewMycatConnectionImpl implements NewMycatConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(NewMycatConnectionImpl.class);
@@ -258,7 +258,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     }
 
     @Override
-    public Observable<Buffer> prepareQuery(String sql, List<Object> params,int serverstatus) {
+    public Observable<Buffer> prepareQuery(String sql, List<Object> params, int serverstatus) {
         return Observable.create(emitter -> {
             synchronized (NewMycatConnectionImpl.this) {
                 this.future = this.future.transform(new Function<AsyncResult<Void>, Future<Void>>() {
@@ -303,10 +303,20 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                                 while (!isResultSetClosed() && resultSet.next()) {
                                     byte[][] row = new byte[columnCount][];
                                     for (int index = 0; index < columnCount; index += 1) {
+                                        MycatField mycatField = fieldList.get(index);
                                         if (isMySQLDriver) {
-                                            row[index] = (resultSet.getBytes(index + 1));
+                                            int jdbcColumnIndex = index + 1;
+                                            MycatDataType mycatDataType = mycatField.getMycatDataType();
+                                            if (mycatDataType == DATE) {
+                                                String string = resultSet.getString(jdbcColumnIndex);
+                                                row[index] = string == null ? null : string.getBytes();
+                                            } else if (mycatDataType == DATETIME) {
+                                                String string = resultSet.getString(jdbcColumnIndex);
+                                                row[index] = string == null ? null : string.getBytes();
+                                            } else {
+                                                row[index] = (resultSet.getBytes(jdbcColumnIndex));
+                                            }
                                         } else {
-                                            MycatField mycatField = fieldList.get(index);
                                             if (mycatField.getMycatDataType() == BINARY) {
                                                 row[index] = (resultSet.getBytes(index + 1));
                                             } else {
