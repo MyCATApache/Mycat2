@@ -313,12 +313,12 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                                             MycatDataType mycatDataType = mycatField.getMycatDataType();
                                             if (mycatDataType == DATE) {
                                                 ResultSetImpl resultSet = NewMycatConnectionImpl.this.resultSet.unwrap(ResultSetImpl.class);
-                                                LocalDate localDate = resultSet.getLocalDate(jdbcColumnIndex);
+                                                Date localDate = resultSet.getDate(jdbcColumnIndex);
                                                 row[index] = localDate == null ? null :localDate.toString().getBytes();
                                             } else if (mycatDataType == DATETIME) {
                                                 ResultSetImpl resultSet = NewMycatConnectionImpl.this.resultSet.unwrap(ResultSetImpl.class);
-                                                LocalDateTime localDateTime = ((ResultSetImpl) resultSet).getLocalDateTime(jdbcColumnIndex);
-                                                row[index] = localDateTime == null ? null :getBytes(localDateTime);
+                                                Timestamp localDateTime = ((ResultSetImpl) resultSet).getTimestamp(jdbcColumnIndex);
+                                                row[index] = localDateTime == null ? null :localDateTime.toString().getBytes();
                                             } else {
                                                 row[index] = (resultSet.getBytes(jdbcColumnIndex));
                                             }
