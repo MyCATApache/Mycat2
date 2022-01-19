@@ -81,7 +81,7 @@ public class FutureNewMycatConnectionImpl implements NewMycatConnection {
     }
 
     @Override
-    public Observable<Buffer> prepareQuery(String sql, List<Object> params) {
+    public Observable<Buffer> prepareQuery(String sql, List<Object> params, int serverstatus) {
         throw new UnsupportedOperationException();
     }
 

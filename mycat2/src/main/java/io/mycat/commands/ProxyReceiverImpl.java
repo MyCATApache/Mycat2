@@ -29,7 +29,7 @@ public class ProxyReceiverImpl extends ReceiverImpl {
             MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
             Future<NewMycatConnection> connection = mySQLManager.getConnection(targetName);
             return connection.flatMap(connection1 -> {
-                Observable<Buffer> bufferObservable = connection1.prepareQuery(detail.getSql(), detail.getParams());
+                Observable<Buffer> bufferObservable = connection1.prepareQuery(detail.getSql(), detail.getParams(),session.getServerStatusValue());
                 bufferObservable= bufferObservable.doOnComplete(() -> connection1.close());
                 bufferObservable=  bufferObservable;
                 return swapBuffer(bufferObservable);

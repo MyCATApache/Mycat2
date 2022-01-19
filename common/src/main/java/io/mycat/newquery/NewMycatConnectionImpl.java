@@ -258,7 +258,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     }
 
     @Override
-    public Observable<Buffer> prepareQuery(String sql, List<Object> params) {
+    public Observable<Buffer> prepareQuery(String sql, List<Object> params,int serverstatus) {
         return Observable.create(emitter -> {
             synchronized (NewMycatConnectionImpl.this) {
                 this.future = this.future.transform(new Function<AsyncResult<Void>, Future<Void>>() {

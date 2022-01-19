@@ -158,7 +158,7 @@ public class VertxMycatConnectionPool implements NewMycatConnection {
     }
 
     @Override
-    public Observable<Buffer> prepareQuery(String sql, List<Object> params) {
+    public Observable<Buffer> prepareQuery(String sql, List<Object> params,int serverstatus) {
         return Observable.create(emitter -> {
             synchronized (VertxMycatConnectionPool.this) {
                 VertxMycatConnectionPool.this.queryCloseFuture = VertxMycatConnectionPool.this.queryCloseFuture

@@ -60,8 +60,8 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
     }
 
     @Override
-    public Observable<Buffer> prepareQuery(String sql, List<Object> params) {
-        return newMycatConnection.prepareQuery(sql, params);
+    public Observable<Buffer> prepareQuery(String sql, List<Object> params,int serverstatus) {
+        return newMycatConnection.prepareQuery(sql, params,serverstatus);
     }
 
     @Override
