@@ -400,7 +400,7 @@ public class GaleraTest extends ReplicaTest {
         manager.putHeartFlow("c0", "dsw1", checkGalera());
         manager.putHeartFlow("c0", "dsw2", checkGalera());
         manager.putHeartFlow("c0", "dsr1",checkGalera(Long.MAX_VALUE));
-
+        manager.start();
         for (Runnable runnable : runnables) {
             runnable.run();
         }
