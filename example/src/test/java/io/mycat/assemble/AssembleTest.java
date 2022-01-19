@@ -437,8 +437,8 @@ public class AssembleTest implements MycatTest {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
              Connection db1 = getMySQLConnection(DB1);
         ) {
-            execute(db1, "set time_zone = '+8:00';");
-            execute(db1, "set global time_zone='+8:00';");
+//            execute(db1, "set time_zone = '+8:00';");
+//            execute(db1, "set global time_zone='+8:00';");
             execute(db1, "drop database if exists db1");
             execute(mycatConnection, RESET_CONFIG);
             execute(mycatConnection, "create database db1");
