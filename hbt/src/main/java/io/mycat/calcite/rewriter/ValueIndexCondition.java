@@ -163,40 +163,56 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                         break;
                     }
                     case PK_RANGE_QUERY: {
-                        Map<String, RangeVariable> map = new HashMap<>();
+                        ArrayList<Object> leftValues = new ArrayList<>(2);
+                        ArrayList<Object> rightValues = new ArrayList<>(2);
+
                         if (rangeQueryUpperOp == ComparisonOperator.LT) {
                             rangeQueryUpperOp = ComparisonOperator.LTE;
-                        }
-                        if (rangeQueryLowerOp == ComparisonOperator.GT) {
-                            rangeQueryLowerOp = ComparisonOperator.GTE;
-                        }
-                        if (rangeQueryUpperOp == ComparisonOperator.LTE && rangeQueryLowerOp == ComparisonOperator.GTE) {
-                            ArrayList<Object> leftValues = new ArrayList<>();
                             for (Object o1 : rangeQueryLowerKey) {
                                 if (o1 instanceof RexNode) {
                                     o1 = MycatRexUtil.resolveParam((RexNode) o1, params);
                                 }
                                 leftValues.add(o1);
                             }
-                            ArrayList<Object> rightValues = new ArrayList<>();
+                            Collections.sort((List) rangeQueryLowerKey);
+                        }
+                        if (rangeQueryLowerOp == ComparisonOperator.GT) {
+                            rangeQueryLowerOp = ComparisonOperator.GTE;
                             for (Object o1 : rangeQueryUpperKey) {
                                 if (o1 instanceof RexNode) {
                                     o1 = MycatRexUtil.resolveParam((RexNode) o1, params);
                                 }
                                 rightValues.add(o1);
                             }
-                            Collections.sort((List) rangeQueryLowerKey);
+
                             Collections.sort((List) rangeQueryUpperKey);
-
-                            Object smallOne = rangeQueryLowerKey.get(0);
-                            Object bigOne = rangeQueryUpperKey.get(rangeQueryUpperKey.size() - 1);
-
+                        }
+                        Object smallOne = null;
+                        Object bigOne = null;
+                        if (!rangeQueryLowerKey.isEmpty()) {
+                            smallOne = rangeQueryLowerKey.get(0);
+                        }
+                        if (!rangeQueryUpperKey.isEmpty()) {
+                            bigOne = rangeQueryUpperKey.get(rangeQueryUpperKey.size() - 1);
+                        }
+                        Map<String, RangeVariable> map = new HashMap<>();
+                        if (smallOne != null && bigOne != null) {
                             for (String indexColumnName : condition.getIndexColumnNames()) {
                                 RangeVariable rangeVariable = new RangeVariable(indexColumnName, RangeVariableType.RANGE, smallOne, bigOne);
                                 map.put(indexColumnName, rangeVariable);
                             }
-                            partitions = calculatePartitions(customRuleFunction, map, partitions);
+                        } else if (smallOne != null) {
+                            for (String indexColumnName : condition.getIndexColumnNames()) {
+                                RangeVariable rangeVariable = new RangeVariable(indexColumnName, RangeVariableType.GTE, smallOne);
+                                map.put(indexColumnName, rangeVariable);
+                            }
+                        } else if (bigOne != null) {
+                            for (String indexColumnName : condition.getIndexColumnNames()) {
+                                RangeVariable rangeVariable = new RangeVariable(indexColumnName, RangeVariableType.LTE, bigOne);
+                                map.put(indexColumnName, rangeVariable);
+                            }
                         }
+                        partitions = calculatePartitions(customRuleFunction, map, partitions);
                         break;
                     }
                     case PK_FULL_SCAN:
@@ -320,7 +336,7 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                         break;
                 }
             }
-            if(o instanceof RexCall){
+            if (o instanceof RexCall) {
                 //Skip if it cannot become literal
                 continue;
             }

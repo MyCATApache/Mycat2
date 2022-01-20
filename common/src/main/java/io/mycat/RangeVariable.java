@@ -18,7 +18,36 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
+ *
  * @author Junwen Chen
+ * {
+ *     operator = EQUAL
+ *     id = value
+ * },
+ * {
+ *     operator = RANGE
+ *     start<= id  and  id<=end;
+ *
+ *      start< id  and  id<=end;
+ *      start<= id and  id<end;
+ *      start< id  and  id<end;
+ *      统一为start<= id  and  id<=end;
+ * },
+ * monotonic
+ * {
+ *       operator = GTE;
+ *
+ *        id>value;
+ *        id>=value;
+ *        统一为value<= id;
+ *},
+ * {
+ *    operator = LTE;
+ *    id<value;
+ *    id<=value;
+ }
+ * id = value
+ *
  **/
 @EqualsAndHashCode
 @Data
@@ -31,7 +60,6 @@ public class RangeVariable {
     public RangeVariable(String columnName, RangeVariableType operator, Object value) {
         this.columnName = columnName;
         this.operator = operator;
-        assert operator == RangeVariableType.EQUAL;
         this.value = value;
     }
 

@@ -16,5 +16,7 @@ package io.mycat;
 
 public enum RangeVariableType {
     EQUAL,
-    RANGE
+    RANGE,
+    GTE,
+    LTE
 }
