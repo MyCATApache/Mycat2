@@ -473,7 +473,7 @@ public class AssembleTest implements MycatTest {
             String mycat_row = mycat_result.get(0).toString();
             String mysql_row = mysql_result.get(0).toString();
 
-            if (mycat_row.contains(localDate.toString()) && mysql_row.contains(localDateTime.toString())) {
+            if (mycat_row.contains(localDate.toString()) && mycat_row.contains(localDateTime.toString())) {
                 return;
             }
             System.out.println("timezone input:" + localDateTime);
@@ -488,7 +488,7 @@ public class AssembleTest implements MycatTest {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
              Connection db1 = getMySQLConnection(DB1);
         ) {
-            execute(db1, "set global time_zone='+8:00'; ");
+            //execute(db1, "set global time_zone='+8:00'; ");
             execute(db1, "drop database if exists db1");
             execute(db1, "drop database if exists db1");
             execute(db1, "drop database if exists db1_0");
@@ -522,10 +522,8 @@ public class AssembleTest implements MycatTest {
                 preparedStatement.setTimestamp(2, java.sql.Timestamp.valueOf(localDateTime));
                 preparedStatement.executeUpdate();
             }
-            String sql = "select traveldate,travel_timestamp from db1.test_timezone limit 1";
-
-            List<Map<String, Object>> mycat_result = executeQuery(mycatConnection, sql);
-            List<Map<String, Object>> mysql_result = executeQuery(db1, sql);
+            List<Map<String, Object>> mycat_result = executeQuery(mycatConnection, "select * from db1.test_timezone");
+            List<Map<String, Object>> mysql_result = executeQuery(db1, "SELECT * FROM `db1_1`.`test_timezone_3` LIMIT 0, 1000; ");
             if (mysql_result.equals(mycat_result)) {
                 return;
             }
@@ -535,7 +533,7 @@ public class AssembleTest implements MycatTest {
             String mycat_row = mycat_result.get(0).toString();
             String mysql_row = mysql_result.get(0).toString();
 
-            if (mycat_row.contains(localDate.toString()) && mysql_row.contains(localDateTime.toString())) {
+            if (mycat_row.contains(localDate.toString()) && mycat_row.contains(localDateTime.toString())) {
                 return;
             }
             System.out.println("timezone input:" + localDateTime);
