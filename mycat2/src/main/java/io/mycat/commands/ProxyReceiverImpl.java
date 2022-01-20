@@ -21,7 +21,7 @@ public class ProxyReceiverImpl extends ReceiverImpl {
     @Override
     public Future<Void> execute(ExplainDetail detail) {
         MycatDataContext dataContext = session.getDataContext();
-        if (false&&count == 0 && !binary && !dataContext.isInTransaction() &&
+        if (count == 0 && !binary && !dataContext.isInTransaction() &&
                 (detail.getExecuteType() == ExecuteType.QUERY || detail.getExecuteType() == ExecuteType.QUERY_MASTER)
                 && detail.getTargets().size() == 1
                 && MySQLServerCapabilityFlags.isDeprecateEOF(dataContext.getServerCapabilities()) == NewMycatConnectionConfig.CLIENT_DEPRECATE_EOF) {

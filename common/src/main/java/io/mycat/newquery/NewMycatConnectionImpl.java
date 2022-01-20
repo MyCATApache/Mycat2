@@ -307,22 +307,23 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                                 while (!isResultSetClosed() && resultSet.next()) {
                                     byte[][] row = new byte[columnCount][];
                                     for (int index = 0; index < columnCount; index += 1) {
-                                        MycatField mycatField = fieldList.get(index);
                                         if (isMySQLDriver) {
                                             int jdbcColumnIndex = index + 1;
-                                            MycatDataType mycatDataType = mycatField.getMycatDataType();
-                                            if (mycatDataType == DATE) {
-                                                ResultSetImpl resultSet = NewMycatConnectionImpl.this.resultSet.unwrap(ResultSetImpl.class);
-                                                Date localDate = resultSet.getDate(jdbcColumnIndex);
-                                                row[index] = localDate == null ? null :localDate.toString().getBytes();
-                                            } else if (mycatDataType == DATETIME) {
-                                                ResultSetImpl resultSet = NewMycatConnectionImpl.this.resultSet.unwrap(ResultSetImpl.class);
-                                                Timestamp localDateTime = ((ResultSetImpl) resultSet).getTimestamp(jdbcColumnIndex);
-                                                row[index] = localDateTime == null ? null :localDateTime.toString().getBytes();
-                                            } else {
-                                                row[index] = (resultSet.getBytes(jdbcColumnIndex));
-                                            }
+//                                            MycatDataType mycatDataType = mycatField.getMycatDataType();
+//                                            if (mycatDataType == DATE) {
+//                                                ResultSetImpl resultSet = NewMycatConnectionImpl.this.resultSet.unwrap(ResultSetImpl.class);
+//                                                Date localDate = resultSet.getDate(jdbcColumnIndex);
+//                                                row[index] = localDate == null ? null :localDate.toString().getBytes();
+//                                            } else if (mycatDataType == DATETIME) {
+//                                                ResultSetImpl resultSet = NewMycatConnectionImpl.this.resultSet.unwrap(ResultSetImpl.class);
+//                                                Timestamp localDateTime = ((ResultSetImpl) resultSet).getTimestamp(jdbcColumnIndex);
+//                                                row[index] = localDateTime == null ? null :localDateTime.toString().getBytes();
+//                                            } else {
+//                                                row[index] = (resultSet.getBytes(jdbcColumnIndex));
+//                                            }
+                                            row[index] = (resultSet.getBytes(jdbcColumnIndex));
                                         } else {
+                                            MycatField mycatField = fieldList.get(index);
                                             if (mycatField.getMycatDataType() == BINARY) {
                                                 row[index] = (resultSet.getBytes(index + 1));
                                             } else {
