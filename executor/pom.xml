@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.21-release</version>
+        <version>1.22-test</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -28,12 +28,12 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-            <version>1.21-release</version>
+            <version>1.22-test</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>hbt</artifactId>
-            <version>1.21-release</version>
+            <version>1.22-test</version>
         </dependency>
         <dependency>
             <groupId>net.openhft</groupId>
@@ -104,7 +104,7 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-            <version>1.21-release</version>
+            <version>1.22-test</version>
             <scope>compile</scope>
         </dependency>
 
