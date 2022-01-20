@@ -192,6 +192,11 @@ public class ConnectHandler extends VertxMySQLPacketClientResolver {
 
     }
 
+    @Override
+    public void onException(Throwable throwable) {
+        promise.tryFail(throwable);
+    }
+
     private void sendHandshakeResponseMessage(String username,
                                               String password,
                                               String database,

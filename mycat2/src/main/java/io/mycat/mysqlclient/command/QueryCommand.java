@@ -47,8 +47,13 @@ public class QueryCommand<T> extends VertxMySQLPacketClientResolver implements C
     }
 
     @Override
-    public synchronized void write() {
-        LOGGER.debug("-------------------{}:queryCommand{}:netsocket{}:{}--------------------", Thread.currentThread(), this.hashCode(), this.socket.hashCode(), text);
+    public void write() {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("-------------------{}:queryCommand{}:netsocket{}:{}--------------------", Thread.currentThread(), this.hashCode(), this.socket.hashCode(), text);
+        }
+        if (LOGGER.isDebugEnabled()){
+            LOGGER.debug("send sql:{}",text);
+        }
         packetId = PacketUtil.writeQueryText(this.socket, text);
         close = false;
     }
@@ -64,11 +69,15 @@ public class QueryCommand<T> extends VertxMySQLPacketClientResolver implements C
     }
 
     @Override
-    public synchronized void handle0(int packetId, Buffer payload, NetSocket socket) {
-        LOGGER.debug("-------------------queryCommand{}:socket{}:packetId:{}payload:{}--------------------", this.hashCode(), this.socket.hashCode(), packetId, payload);
+    public void handle0(int packetId, Buffer payload, NetSocket socket) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("-------------------queryCommand{}:socket{}:packetId:{}payload:{}--------------------", this.hashCode(), this.socket.hashCode(), packetId, payload);
+        }
         try {
             if (close) {
-                LOGGER.debug("-------close------------queryCommand{}:socket{}:packetId:{}payload:{}--------------------", this.hashCode(), this.socket.hashCode(), packetId, payload);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("-------close------------queryCommand{}:socket{}:packetId:{}payload:{}--------------------", this.hashCode(), this.socket.hashCode(), packetId, payload);
+                }
             }
             switch (state) {
                 case INIT: {
@@ -117,6 +126,11 @@ public class QueryCommand<T> extends VertxMySQLPacketClientResolver implements C
         } catch (Exception e) {
             emitter.onError(e);
         }
+    }
+
+    @Override
+    public void onException(Throwable throwable) {
+        emitter.onError(throwable);
     }
 
     public void onEnd() {

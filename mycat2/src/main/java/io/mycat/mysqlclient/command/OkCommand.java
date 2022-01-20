@@ -24,11 +24,14 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 import io.vertx.mysqlclient.impl.protocol.Packets;
 import lombok.Getter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.vertx.mysqlclient.impl.protocol.Packets.ERROR_PACKET_HEADER;
 
 @Getter
 public class OkCommand extends VertxMySQLPacketClientResolver implements Command {
+    final static Logger logger = LoggerFactory.getLogger(OkCommand.class);
     final String text;
     private Promise<SqlResult> promise;
     public int serverstatus;
@@ -41,24 +44,37 @@ public class OkCommand extends VertxMySQLPacketClientResolver implements Command
 
     @Override
     public void write() {
+        if (logger.isDebugEnabled()){
+            logger.debug("send sql:{}",text);
+        }
         packetId = PacketUtil.writeQueryText(socket, text);
     }
 
     @Override
     public void handle0(int packetId, Buffer payload, NetSocket socket) {
-        short firstByte = payload.getUnsignedByte(0);
-        switch (firstByte) {
-            case ERROR_PACKET_HEADER: {
-                promise.fail(PacketUtil.handleErrorPacketPayload(payload));
-                break;
+        try{
+            short firstByte = payload.getUnsignedByte(0);
+            switch (firstByte) {
+                case ERROR_PACKET_HEADER: {
+                    promise.fail(PacketUtil.handleErrorPacketPayload(payload));
+                    break;
+                }
+                default: {
+                    Packets.OkPacket okPacket = PacketUtil.decodeOkPacketPayload(payload);
+                    serverstatus = okPacket.serverStatusFlags();
+                    promise.tryComplete(SqlResult.of(okPacket.affectedRows(), okPacket.lastInsertId()));
+                    break;
+                }
             }
-            default: {
-                Packets.OkPacket okPacket = PacketUtil.decodeOkPacketPayload(payload);
-                serverstatus = okPacket.serverStatusFlags();
-                promise.tryComplete(SqlResult.of(okPacket.affectedRows(), okPacket.lastInsertId()));
-                break;
-            }
+            return;
+        }catch (Exception e){
+            promise.fail(e);
         }
-        return;
+
+    }
+
+    @Override
+    public void onException(Throwable throwable) {
+        promise.fail(throwable);
     }
 }

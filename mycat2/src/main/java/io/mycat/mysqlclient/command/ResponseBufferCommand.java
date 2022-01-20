@@ -53,6 +53,9 @@ public class ResponseBufferCommand implements Handler<Buffer>, Command {
 
     @Override
     public void write() {
+        if (LOGGER.isDebugEnabled()){
+            LOGGER.debug("send sql:{}",text);
+        }
         parsePacketId = PacketUtil.writeQueryText(this.socket, text);
     }
 

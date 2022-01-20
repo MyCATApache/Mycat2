@@ -54,70 +54,78 @@ public abstract class VertxMySQLPacketClientResolver implements Handler<Buffer> 
 //            debugBuffer = Buffer.buffer();
 //        }
 //        debugBuffer.appendBuffer(event);
-        for (; ; ) {
-            if (event.length() == 0) return;
-            switch (state) {
-                case HEAD: {
-                    if (head == null) {
-                        head = Buffer.buffer();
-                    }
-                    int restEnd = 4 - head.length();
-                    head.appendBuffer(event.slice(0, Math.min(event.length(), restEnd)));
-                    if (head.length() < 4) {
-                        state = HEAD;
-                        return;
-                    } else {
-                        state = PAYLOAD;
-                        event = event.slice(restEnd, event.length());
-                    }
-                    if (state == PAYLOAD) {
-                        currentPacketLength = readInt(head, 0, 3);
-                        reveicePacketLength = 0;
-                        this.packetId = head.getUnsignedByte(3);
-                        head = null;//help gc
-                    }
-                    continue;
-                }
-                case PAYLOAD: {
-                    if (payload == null) {
-                        payload = Buffer.buffer();
-                    }
-                    int restPacketLength = currentPacketLength - reveicePacketLength;
-                    Buffer curBuffer;
-                    if (event.length() > restPacketLength) {
-                        curBuffer = event.slice(0, restPacketLength);
-                        event = event.slice(restPacketLength, event.length());
-                    } else {
-                        curBuffer = event;
-                        event = Buffer.buffer();
-                    }
-                    payload.appendBuffer(curBuffer);
-                    reveicePacketLength += curBuffer.length();
-                    boolean endPacket = currentPacketLength == reveicePacketLength;
-                    boolean multiPacket = (currentPacketLength == MySQLPacketSplitter.MAX_PACKET_SIZE);
-                    if (endPacket) {
-                        state = HEAD;
-                        this.head = null;
-                        reveicePacketLength = 0;
-                    }
-                    if (endPacket && !multiPacket) {
-                        Buffer payload = this.payload;
-                        this.payload = null;
-                        handle0(packetId, payload, socket);
-                        continue;
-                    } else {
-                        LOGGER.debug(" received half packet ");
+        try {
+            for (; ; ) {
+                if (event.length() == 0) return;
+                switch (state) {
+                    case HEAD: {
+                        if (head == null) {
+                            head = Buffer.buffer();
+                        }
+                        int restEnd = 4 - head.length();
+                        head.appendBuffer(event.slice(0, Math.min(event.length(), restEnd)));
+                        if (head.length() < 4) {
+                            state = HEAD;
+                            return;
+                        } else {
+                            state = PAYLOAD;
+                            event = event.slice(restEnd, event.length());
+                        }
+                        if (state == PAYLOAD) {
+                            currentPacketLength = readInt(head, 0, 3);
+                            reveicePacketLength = 0;
+                            this.packetId = head.getUnsignedByte(3);
+                            head = null;//help gc
+                        }
                         continue;
                     }
+                    case PAYLOAD: {
+                        if (payload == null) {
+                            payload = Buffer.buffer();
+                        }
+                        int restPacketLength = currentPacketLength - reveicePacketLength;
+                        Buffer curBuffer;
+                        if (event.length() > restPacketLength) {
+                            curBuffer = event.slice(0, restPacketLength);
+                            event = event.slice(restPacketLength, event.length());
+                        } else {
+                            curBuffer = event;
+                            event = Buffer.buffer();
+                        }
+                        payload.appendBuffer(curBuffer);
+                        reveicePacketLength += curBuffer.length();
+                        boolean endPacket = currentPacketLength == reveicePacketLength;
+                        boolean multiPacket = (currentPacketLength == MySQLPacketSplitter.MAX_PACKET_SIZE);
+                        if (endPacket) {
+                            state = HEAD;
+                            this.head = null;
+                            reveicePacketLength = 0;
+                        }
+                        if (endPacket && !multiPacket) {
+                            Buffer payload = this.payload;
+                            this.payload = null;
+                            handle0(packetId, payload, socket);
+                            continue;
+                        } else {
+                            if (LOGGER.isDebugEnabled()) {
+                                LOGGER.debug(" received half packet ");
+                            }
+                            continue;
+                        }
+                    }
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + state);
                 }
-                default:
-                    throw new IllegalStateException("Unexpected value: " + state);
             }
+        }catch (Throwable throwable){
+            LOGGER.error("",throwable);
+            onException(throwable);
         }
-
     }
 
     public abstract void handle0(int packetId, Buffer payload, NetSocket socket);
+
+    public abstract void onException(Throwable throwable);
 
     public static int readInt(Buffer buffer, int start, int length) {
         int rv = 0;
