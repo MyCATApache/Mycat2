@@ -53,8 +53,8 @@ public class ResponseBufferCommand implements Handler<Buffer>, Command {
 
     @Override
     public void write() {
-        if (LOGGER.isDebugEnabled()){
-            LOGGER.debug("send sql:{}",text);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("send sql:{}", text);
         }
         parsePacketId = PacketUtil.writeQueryText(this.socket, text);
     }
@@ -115,6 +115,7 @@ public class ResponseBufferCommand implements Handler<Buffer>, Command {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("payloadLength:{}", (payloadLength));
                     LOGGER.debug("packetLength:{}", (endPos - startPos));
+                    LOGGER.debug("remainsBytes:{}", (remainsBytes));
                     LOGGER.debug("-------------------------------------------");
                 }
 
@@ -129,8 +130,8 @@ public class ResponseBufferCommand implements Handler<Buffer>, Command {
             emitter.onNext(curBuffer);
         } else {
             Buffer slice = this.curBuffer.slice(0, this.endPos);
-            Buffer newBuffer = Buffer.buffer(this.curBuffer.length() + this.curBuffer.length() - this.endPos);
-            this.curBuffer = newBuffer.appendBuffer(this.curBuffer, this.endPos, this.curBuffer.length());
+            Buffer newBuffer = Buffer.buffer(2*this.curBuffer.length());
+            this.curBuffer = newBuffer.appendBuffer(this.curBuffer, this.endPos, this.curBuffer.length()-this.endPos);
             this.startPos = 0;
             this.endPos = 0;
             emitter.onNext(slice);
@@ -218,10 +219,9 @@ public class ResponseBufferCommand implements Handler<Buffer>, Command {
                 endPos = (startIndex + receiveSize);
             }
         }
-        boolean isPayloadEnd = !multiPacket;
-        payloadFinished = isPayloadEnd && remainsBytes == 0;
-        if (isPayloadEnd) {
-            resolvePayloadType(head, payloadFinished, payloadLength);
+        payloadFinished = !multiPacket && remainsBytes == 0;
+        if (payloadFinished) {
+            resolvePayloadType(head, true, payloadLength);
         }
         boolean isPacketEnd = remainsBytes == 0;
         return true;
@@ -276,24 +276,6 @@ public class ResponseBufferCommand implements Handler<Buffer>, Command {
                 int aByte = curBuffer.getByte(this.startPos + 4) & 0xff;
                 resolvePayloadType(aByte, true, payloadLength);
                 return true;
-            } else {
-                this.remainsBytes = packetLength + 4 - reveiceSize;
-                this.startPos = this.startPos;
-                this.endPos = -1;
-                return false;
-            }
-        }
-        if (this.remainsBytes > 0) {
-            if (this.remainsBytes <= reveiceSize) {
-                this.startPos = this.startPos;
-                this.endPos = this.startPos + payloadLength + 4;
-                this.remainsBytes = 0;
-                return true;
-            } else {
-                this.startPos = this.startPos;
-                this.endPos = this.startPos + payloadLength + 4 - this.remainsBytes;
-                this.remainsBytes = this.remainsBytes;
-                return false;
             }
         }
         return false;

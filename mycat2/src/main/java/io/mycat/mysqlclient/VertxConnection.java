@@ -122,7 +122,7 @@ public class VertxConnection {
                     public Future<Void> apply(Void unused) {
                         return Future.future((promise) -> {
                             checkException();
-                            ResponseBufferCommand bufferedResponseHandler = new ResponseBufferCommand(netSocket, sql, config,true, emitter) {
+                            ResponseBufferCommand bufferedResponseHandler = new ResponseBufferCommand(netSocket, sql, config,false, emitter) {
                                 @Override
                                 public void onEnd() {
                                     super.onEnd();
