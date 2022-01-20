@@ -238,7 +238,7 @@ public class ShardingTable implements ShardingTableHandler {
     List<KeyMeta> sharedAndDistnctKeydMetas;
 
     public List<KeyMeta> keyMetas() {
-        return sharedKeyMetas;
+        return keyMetas(false);
     }
 
     public List<KeyMeta> keyMetas(boolean distinct) {
