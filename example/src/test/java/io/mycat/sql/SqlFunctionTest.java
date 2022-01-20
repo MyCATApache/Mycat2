@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -200,7 +201,12 @@ public class SqlFunctionTest implements MycatTest {
     public void testTimeFunction() throws Exception {
         checkValue("SELECT ADDDATE(\"2017-06-15\", INTERVAL 10 DAY);");//
         checkValue("SELECT ADDTIME(\"2017-06-15 09:34:21\", \"2\");");//
-        checkValue("SELECT CURDATE();");//
+//        checkValue("SELECT CURDATE();");//
+
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+        ) {
+            Assert.assertTrue(executeQuery(mycatConnection, "SELECT CURDATE();").toString().contains(LocalDate.now().toString()));
+        }
         checkValue("SELECT CURRENT_DATE();");//
         uncheckValue("SELECT CURRENT_TIME();");//
         checkValue("SELECT DATE('2003-12-31 01:02:03');");//
@@ -298,10 +304,10 @@ public class SqlFunctionTest implements MycatTest {
         Connection mysql3306 = getMySQLConnection(DB1);
         Connection mysql3307 = getMySQLConnection(DB2);
 
-        JdbcUtils.execute(mysql3306,"drop table if exists db1_0.travelrecord_0");
-        JdbcUtils.execute(mysql3306,"drop table if exists db1_0.travelrecord_1");
-        JdbcUtils.execute(mysql3307,"drop table if exists db1_1.travelrecord_2");
-        JdbcUtils.execute(mysql3307,"drop table if exists db1_1.travelrecord_3");
+        JdbcUtils.execute(mysql3306, "drop table if exists db1_0.travelrecord_0");
+        JdbcUtils.execute(mysql3306, "drop table if exists db1_0.travelrecord_1");
+        JdbcUtils.execute(mysql3307, "drop table if exists db1_1.travelrecord_2");
+        JdbcUtils.execute(mysql3307, "drop table if exists db1_1.travelrecord_3");
 
         execute(mycatConnection, "DROP DATABASE db1");
 
