@@ -360,6 +360,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
 
     }
+
     public static byte[] getBytes(LocalDateTime value) {
         int year = value.getYear();
         int monthValue = value.getMonthValue();
@@ -367,7 +368,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
         int hour = value.getHour();
         int minute = value.getMinute();
         int second = value.getSecond();
-        int nano = value.getNano()/1000;
+        int nano = value.getNano() / 1000;
         if (nano == 0) {
             return String.format("%04d-%02d-%02d %02d:%02d:%02d",
                     year,
@@ -595,8 +596,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     @NotNull
     private MycatRowMetaData getJdbcRowMetaData(ResultSetMetaData jdbcMetaData) throws SQLException {
         MycatRowMetaData mycatRowMetaData;
-        String canonicalName = jdbcMetaData.getClass().getCanonicalName();
-        if ("com.mysql.cj.jdbc.result.ResultSetMetaData".equals(canonicalName)) {
+        if (isMySQLDriver || "com.mysql.cj.jdbc.result.ResultSetMetaData".equals(jdbcMetaData.getClass().getCanonicalName())) {
             isMySQLDriver = true;
             com.mysql.cj.jdbc.result.ResultSetMetaData mysqlJdbcMetaData = (com.mysql.cj.jdbc.result.ResultSetMetaData) jdbcMetaData;
             int columnCount = mysqlJdbcMetaData.getColumnCount();
