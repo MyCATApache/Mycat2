@@ -470,15 +470,18 @@ public class AssembleTest implements MycatTest {
 
             localDateTime = localDateTime.minusNanos(localDateTime.getNano());
 
+
             String mycat_row = mycat_result.get(0).toString();
             String mysql_row = mysql_result.get(0).toString();
 
-            if (mycat_row.contains(localDate.toString()) && mycat_row.contains(localDateTime.toString())) {
-                return;
-            }
+            System.out.println("testNormalTableTimezone");
             System.out.println("timezone input:" + localDateTime);
             System.out.println("mysql_row:" + mysql_row);
             System.out.println("mycat_row:" + mycat_row);
+            if (mycat_row.contains(localDate.toString()) && mycat_row.contains(localDateTime.toString())) {
+                return;
+            }
+
             Assert.assertEquals(mysql_result, mycat_result);
         }
     }
@@ -533,12 +536,14 @@ public class AssembleTest implements MycatTest {
             String mycat_row = mycat_result.get(0).toString();
             String mysql_row = mysql_result.get(0).toString();
 
-            if (mycat_row.contains(localDate.toString()) && mycat_row.contains(localDateTime.toString())) {
-                return;
-            }
+            System.out.println("testShardingTableTimezone");
             System.out.println("timezone input:" + localDateTime);
             System.out.println("mysql_row:" + mysql_row);
             System.out.println("mycat_row:" + mycat_row);
+
+            if (mycat_row.contains(localDate.toString()) && mycat_row.contains(localDateTime.toString())) {
+                return;
+            }
             Assert.assertEquals(mysql_result, mycat_result);
         }
     }
