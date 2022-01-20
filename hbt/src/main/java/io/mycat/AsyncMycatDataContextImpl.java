@@ -285,7 +285,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                     ArrayList<RexNode> res = new ArrayList<>(inputConditions.size());
                     MycatRexExecutor.INSTANCE.reduce(rexBuilder, inputConditions, res);
                     condition = res.get(0);
-                    ValuePredicateAnalyzer predicateAnalyzer = new ValuePredicateAnalyzer(shardingTable.keyMetas(), shardingTable.getColumns().stream().map(i -> i.getColumnName()).collect(Collectors.toList()));
+                    ValuePredicateAnalyzer predicateAnalyzer = new ValuePredicateAnalyzer(shardingTable.keyMetas(true), shardingTable.getColumns().stream().map(i -> i.getColumnName()).collect(Collectors.toList()));
                     Map<QueryType, List<ValueIndexCondition>> indexConditionMap = predicateAnalyzer.translateMatch(condition);
                     List<Partition> partitions = ValueIndexCondition.getObject(shardingTable.getShardingFuntion(), indexConditionMap, drdsSqlWithParams.getParams());
                     return mapSharding(view, partitions);

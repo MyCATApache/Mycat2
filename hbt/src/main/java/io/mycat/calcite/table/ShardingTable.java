@@ -201,8 +201,8 @@ public class ShardingTable implements ShardingTableHandler {
     public void dropPhysicalTables() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         getBackends().stream().parallel().forEach(c -> {
-            try(DefaultConnection connection = jdbcConnectionManager.getConnection(c.getTargetName())){
-                connection.deleteTable(c.getSchema(),c.getTable());
+            try (DefaultConnection connection = jdbcConnectionManager.getConnection(c.getTargetName())) {
+                connection.deleteTable(c.getSchema(), c.getTable());
             }
         });
     }
@@ -234,13 +234,37 @@ public class ShardingTable implements ShardingTableHandler {
         }
     }
 
+    List<KeyMeta> sharedKeyMetas;
+    List<KeyMeta> sharedAndDistnctKeydMetas;
+
     public List<KeyMeta> keyMetas() {
-        List<String> shardingKeys = this.getColumns().stream().filter(i -> i.isShardingKey()).map(i -> i.getColumnName()).collect(Collectors.toList());
-        List<KeyMeta> keyMetas = new ArrayList<>();
-        for (int i = 0; i < shardingKeys.size(); i++) {
-            KeyMeta keyMeta = KeyMeta.of(shardingFuntion.name(), shardingKeys.get(i));
-            keyMetas.add(keyMeta);
+        return sharedKeyMetas;
+    }
+
+    public List<KeyMeta> keyMetas(boolean distinct) {
+        if (this.sharedKeyMetas == null) {
+            List<String> shardingKeys = this.getColumns().stream().filter(i -> i.isShardingKey()).map(i -> i.getColumnName()).collect(Collectors.toList());
+            List<KeyMeta> keyMetas = new ArrayList<>();
+            for (int i = 0; i < shardingKeys.size(); i++) {
+                KeyMeta keyMeta = KeyMeta.of(shardingFuntion.name(), shardingKeys.get(i));
+                keyMetas.add(keyMeta);
+            }
+            this.sharedKeyMetas = keyMetas;
         }
-        return keyMetas;
+        if (distinct) {
+            if (this.sharedAndDistnctKeydMetas == null) {
+                List<String> distinctKeys = this.getColumns().stream().filter(i -> i.isUniqueKey()).map(i -> i.getColumnName()).collect(Collectors.toList());
+                List<KeyMeta> sharedAndDistnctKeydMetas = new ArrayList<>(this.sharedKeyMetas);
+                for (String distinctKey : distinctKeys) {
+                    sharedAndDistnctKeydMetas.add(KeyMeta.of("mycat_unique_" + distinctKey.toLowerCase(), distinctKeys));
+                }
+                this.sharedAndDistnctKeydMetas = sharedAndDistnctKeydMetas;
+                return this.sharedAndDistnctKeydMetas;
+            } else {
+                return this.sharedAndDistnctKeydMetas;
+            }
+        } else {
+            return this.sharedKeyMetas;
+        }
     }
 }
