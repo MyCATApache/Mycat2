@@ -39,7 +39,7 @@ public class RwTest implements MycatTest {
             }
 
             {
-                execute(readMysql, "drop database " + db);
+                execute(readMysql, "drop database if exists " + db);
                 execute(readMysql, "create database " + db);
                 execute(readMysql, "use " + db);
                 execute(readMysql, "drop table if exists " + db + ".normal");
