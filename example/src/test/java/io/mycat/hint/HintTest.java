@@ -37,6 +37,7 @@ public class HintTest implements MycatTest {
              Connection master = getMySQLConnection(DB1);
              Connection slave = getMySQLConnection(DB2);) {
             JdbcUtils.execute(mycatConnection, "CREATE DATABASE if not exists db1");
+            JdbcUtils.execute(slave, "CREATE DATABASE if not exists db1");
 
             execute(mycatConnection,
                     CreateDataSourceHint
@@ -58,6 +59,7 @@ public class HintTest implements MycatTest {
                                     Arrays.asList("dr1"), Arrays.asList("dr1")));
 
             JdbcUtils.execute(mycatConnection, "CREATE table if not exists db1.m (id int)");
+            JdbcUtils.execute(slave, "CREATE table if not exists db1.m (id int)");
 
             deleteData(master, "db1", "m");
             deleteData(slave, "db1", "m");

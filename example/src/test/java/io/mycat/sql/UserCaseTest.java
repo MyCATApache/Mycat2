@@ -733,7 +733,7 @@ public class UserCaseTest implements MycatTest {
     @Test
     public void case12() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
-             Connection mysql2 = getMySQLConnection(DB2);
+             Connection readMysql = getMySQLConnection(DB2);
         ) {
             execute(mycatConnection, RESET_CONFIG);
 
@@ -768,6 +768,12 @@ public class UserCaseTest implements MycatTest {
                     ")ENGINE=InnoDB DEFAULT CHARSET=utf8;");
 
 
+            execute(readMysql, "CREATE DATABASE IF NOT EXISTS db1");
+            execute(readMysql, "CREATE TABLE IF NOT EXISTS db1.`tbl`(\n" +
+                    "   `id` INT UNSIGNED AUTO_INCREMENT," +
+                    "   PRIMARY KEY ( `id` )\n" +
+                    ")ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+
             ds0.setInstanceType("WRITE");
             ds1.setInstanceType("READ");
 
@@ -782,8 +788,8 @@ public class UserCaseTest implements MycatTest {
             execute(mycatConnection,
                     CreateClusterHint.create("prototype",
                             Arrays.asList("ds0"), Arrays.asList("ds1")));
-            deleteData(mysql2, "db1", "tbl");
-            execute(mysql2, "INSERT INTO db1.tbl \n" +
+            deleteData(readMysql, "db1", "tbl");
+            execute(readMysql, "INSERT INTO db1.tbl \n" +
                     "(id)\n" +
                     "VALUES\n" +
                     " (1);");

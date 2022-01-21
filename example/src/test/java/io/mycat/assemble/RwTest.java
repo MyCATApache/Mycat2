@@ -27,12 +27,24 @@ public class RwTest implements MycatTest {
     @Test
     public void testRw() throws Exception {
         try (Connection mycat = getMySQLConnection(DB_MYCAT);
-             Connection readMysql = getMySQLConnection(DB1);) {
+             Connection writeMysql = getMySQLConnection(DB1);
+             Connection readMysql = getMySQLConnection(DB2);) {
             execute(mycat, RESET_CONFIG);
             String db = "testSchema";
-            execute(mycat, "drop database " + db);
-            execute(mycat, "create database " + db);
-            execute(mycat, "use " + db);
+
+            {
+                execute(mycat, "drop database " + db);
+                execute(mycat, "create database " + db);
+                execute(mycat, "use " + db);
+            }
+
+            {
+                execute(readMysql, "drop database " + db);
+                execute(readMysql, "create database " + db);
+                execute(readMysql, "use " + db);
+                execute(readMysql, "drop table if exists " + db + ".normal");
+                execute(readMysql,"create table normal(id int)");
+            }
 
             execute(mycat, CreateDataSourceHint
                     .create("dw0", DB1));
@@ -42,13 +54,13 @@ public class RwTest implements MycatTest {
             execute(mycat,
                     "/*+ mycat:createCluster{\"name\":\"c0\",\"masters\":[\"dw0\"],\"replicas\":[\"dr0\"]} */;");
 
-            execute(readMysql, "drop table if exists " + db + ".normal");
+            execute(writeMysql, "drop table if exists " + db + ".normal");
             execute(
                     mycat,
                     CreateTableHint
                             .createNormal(db, "normal", "create table normal(id int)", "c0")
             );
-            execute(readMysql, "insert " + db + ".normal (id) VALUES (1)");
+            execute(writeMysql, "insert " + db + ".normal (id) VALUES (1)");
             long endTime = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(5);
             boolean res = false;
             while (true) {
@@ -180,7 +192,7 @@ public class RwTest implements MycatTest {
                                     "CREATE TABLE mysql.role_edges (\n\t`FROM_HOST` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`FROM_USER` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`TO_HOST` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`TO_USER` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`WITH_ADMIN_OPTION` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\tPRIMARY KEY (`FROM_HOST`, `FROM_USER`, `TO_HOST`, `TO_USER`)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Role hierarchy and role grants'",
                                     "dw0")));
             List<Map<String, Object>> maps = executeQuery(mycat, ShowTopologyHint.create("mysql", "role_edges"));
-           Assert.assertTrue(maps.toString().contains("dw0"));
+            Assert.assertTrue(maps.toString().contains("dw0"));
         }
     }
     @Test
