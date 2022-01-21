@@ -31,10 +31,12 @@ import jdk.nashorn.internal.runtime.options.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static io.mycat.util.DDLHelper.createDatabaseIfNotExist;
 import static io.mycat.calcite.table.LogicTable.rewriteCreateTableSql;
@@ -50,18 +52,24 @@ public class CreateTableUtils {
             set.add(node.getTargetName());
         }
         if (selectorRuntime.isReplicaName(node.getTargetName())) {
-            set.addAll(selectorRuntime.getReplicaMap().get(node.getTargetName()).getRawDataSourceMap().keySet());
+            set.addAll(selectorRuntime.getReplicaMap().get(node.getTargetName()).getWriteDataSourceByReplicaType().stream().map(i -> i.getName()).collect(Collectors.toList()));
         }
         if (set.isEmpty()) {
-            throw new IllegalArgumentException("can not found "+node.getTargetName());
+            throw new IllegalArgumentException("can not found " + node.getTargetName());
         }
         normalizeCreateTableSQLToMySQL(createSQL).ifPresent(sql -> {
             for (String s : set) {
                 try (DefaultConnection connection = jdbcConnectionManager.getConnection(s)) {
                     if (InstanceType.valueOf(connection.getDataSource().getConfig().getInstanceType()).isWriteType()) {
-                        connection.createDatabase(node.getSchema());
-                        connection.createTable(rewriteCreateTableSql(sql, node.getSchema(), node.getTable()));
+                        Connection rawConnection = connection.getRawConnection();
+                        if (!rawConnection.isReadOnly()) {
+                            connection.createDatabase(node.getSchema());
+                            rawConnection.setSchema(node.getSchema());
+                            connection.createTable(rewriteCreateTableSql(sql, node.getSchema(), node.getTable()));
+                        }
                     }
+                } catch (Throwable throwable) {
+                    LOGGER.error("", throwable);
                 }
             }
         });
