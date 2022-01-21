@@ -15,11 +15,13 @@
 
 package io.mycat.mysqlclient;
 
+import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.mysqlclient.command.OkCommand;
 import io.mycat.mysqlclient.command.QueryCommand;
 import io.mycat.mysqlclient.command.ResponseBufferCommand;
 import io.mycat.mysqlclient.decoder.ByteArrayDecoder;
 import io.mycat.mysqlclient.decoder.StringArrayDecoder;
+import io.mycat.newquery.NewMycatConnectionConfig;
 import io.mycat.newquery.SqlResult;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.AsyncResult;
@@ -56,8 +58,8 @@ public class VertxConnection {
 
     private void checkException() {
         this.netSocket.exceptionHandler(event -> {
-            logger.error("",event);
-            VertxConnection.this.    vertxConnectionPool.kill(VertxConnection.this);
+            logger.error("", event);
+            VertxConnection.this.vertxConnectionPool.kill(VertxConnection.this);
         });
     }
 
@@ -95,7 +97,7 @@ public class VertxConnection {
                             @Override
                             public void handle(Promise<Void> promise) {
                                 checkException();
-                                QueryCommand<T> queryCommand = new QueryCommand(netSocket, sql,config, decoder, emitter) {
+                                QueryCommand<T> queryCommand = new QueryCommand(netSocket, sql, config, decoder, emitter) {
                                     @Override
                                     public void onEnd() {
                                         super.onEnd();
@@ -122,7 +124,7 @@ public class VertxConnection {
                     public Future<Void> apply(Void unused) {
                         return Future.future((promise) -> {
                             checkException();
-                            ResponseBufferCommand bufferedResponseHandler = new ResponseBufferCommand(netSocket, sql, config,false, emitter) {
+                            ResponseBufferCommand bufferedResponseHandler = new ResponseBufferCommand(netSocket, sql, config, !NewMycatConnectionConfig.PASS_HALF_PACKET, emitter) {
                                 @Override
                                 public void onEnd() {
                                     super.onEnd();
@@ -139,7 +141,12 @@ public class VertxConnection {
         return objectObservable;
     }
 
-     Future<Void> close() {
+    Future<Void> close() {
         return netSocket.close();
+    }
+
+    public boolean checkVaildForRecycle(){
+        boolean autocommit = MySQLServerStatusFlags.statusCheck(serverstatus,MySQLServerStatusFlags.AUTO_COMMIT );
+        return autocommit;
     }
 }

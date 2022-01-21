@@ -29,18 +29,22 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 public class VertxPoolConnectionImpl implements VertxConnectionPool {
     final static Logger logger = LoggerFactory.getLogger(MycatCore.class);
     Config config;
     ConcurrentLinkedQueue<VertxConnection> connections = new ConcurrentLinkedQueue<>();
+    ConcurrentHashMap<Long,VertxConnection> usedConnections = new ConcurrentHashMap<>();
     Vertx vertx;
     boolean closed;
-    AtomicInteger useCount = new AtomicInteger();
+
     long lastActiveTime = System.currentTimeMillis();
 
     @Data
@@ -143,7 +147,10 @@ public class VertxPoolConnectionImpl implements VertxConnectionPool {
                             connectionFuture.onSuccess(vertxConnection -> {
                                 Observable<Object[]> observable = vertxConnection.queryAsObjectArray("select 1");
                                 AtomicBoolean success = new AtomicBoolean(false);
-                                observable.subscribe(objects -> success.set(true), throwable -> success.set(false), () -> {
+                                observable.subscribe(objects -> success.set(true), throwable -> {
+                                    logger.error("",throwable);
+                                    success.set(false);
+                                }, () -> {
                                     if (success.get()) {
                                         recycle(vertxConnection);
                                     } else {
@@ -211,7 +218,6 @@ public class VertxPoolConnectionImpl implements VertxConnectionPool {
                         int maxCon = config.maxCon;
                         if (usedNumber < maxCon) {
                             innerCreateConnection().map(c -> {
-                                useCount.incrementAndGet();
                                 return c;
                             }).onComplete(promise);
                         } else {
@@ -220,10 +226,12 @@ public class VertxPoolConnectionImpl implements VertxConnectionPool {
                         return;
                     }
                 }
-                useCount.incrementAndGet();
                 promise.tryComplete(connection);
                 return;
             }
+        }).map(connection -> {
+            usedConnections.put(connection.getConnectionId(),connection);
+            return connection;
         });
     }
 
@@ -233,20 +241,26 @@ public class VertxPoolConnectionImpl implements VertxConnectionPool {
         for (VertxConnection connection : connections) {
             connection.close();
         }
+        usedConnections.clear();
     }
 
     @Override
     public void recycle(VertxConnection connection) {
         synchronized (this) {
-            useCount.decrementAndGet();
-            connections.offer(connection);
+            if(connection.checkVaildForRecycle()){
+                connections.offer(connection);
+                usedConnections.remove(connection.getConnectionId());
+            }else {
+                logger.info("because connectionId:{} maybe have transcation,so kill it in recycling connection",connection.getConnectionId());
+                kill(connection);
+            }
         }
-
     }
 
     @Override
     public void kill(VertxConnection connection) {
         synchronized (this) {
+            usedConnections.remove(connection.getConnectionId());
             connections.remove(connection);
             connection.close();
         }
@@ -257,6 +271,6 @@ public class VertxPoolConnectionImpl implements VertxConnectionPool {
     }
 
     public Integer getUsedNumber() {
-        return useCount.get();
+        return usedConnections.size();
     }
 }
