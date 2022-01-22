@@ -27,12 +27,24 @@ public class RwTest implements MycatTest {
     @Test
     public void testRw() throws Exception {
         try (Connection mycat = getMySQLConnection(DB_MYCAT);
-             Connection readMysql = getMySQLConnection(DB1);) {
+             Connection writeMysql = getMySQLConnection(DB1);
+             Connection readMysql = getMySQLConnection(DB2);) {
             execute(mycat, RESET_CONFIG);
             String db = "testSchema";
-            execute(mycat, "drop database " + db);
-            execute(mycat, "create database " + db);
-            execute(mycat, "use " + db);
+
+            {
+                execute(mycat, "drop database if  exists  " + db);
+                execute(mycat, "create database " + db);
+                execute(mycat, "use " + db);
+            }
+
+            {
+                execute(readMysql, "drop database if  exists " + db);
+                execute(readMysql, "create database " + db);
+                execute(readMysql, "use " + db);
+                execute(readMysql, "drop table if exists " + db + ".normal");
+                execute(readMysql,"create table normal(id int)");
+            }
 
             execute(mycat, CreateDataSourceHint
                     .create("dw0", DB1));
@@ -42,13 +54,13 @@ public class RwTest implements MycatTest {
             execute(mycat,
                     "/*+ mycat:createCluster{\"name\":\"c0\",\"masters\":[\"dw0\"],\"replicas\":[\"dr0\"]} */;");
 
-            execute(readMysql, "drop table if exists " + db + ".normal");
+            execute(writeMysql, "drop table if exists " + db + ".normal");
             execute(
                     mycat,
                     CreateTableHint
                             .createNormal(db, "normal", "create table normal(id int)", "c0")
             );
-            execute(readMysql, "insert " + db + ".normal (id) VALUES (1)");
+            execute(writeMysql, "insert " + db + ".normal (id) VALUES (1)");
             long endTime = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(5);
             boolean res = false;
             while (true) {
