@@ -69,7 +69,7 @@ public class NoneTest extends ReplicaTest {
             masterTargets.add(manager.getDatasourceNameByReplicaName("c0", true, null));
             return false;
         });
-        Assert.assertEquals(2, masterTargets.size());
+        Assert.assertEquals(1, masterTargets.size());
     }
 
     @Test
@@ -132,7 +132,7 @@ public class NoneTest extends ReplicaTest {
             masterTargets.add(manager.getDatasourceNameByReplicaName("c0", true, null));
             return false;
         });
-        Assert.assertEquals(2, masterTargets.size());
+        Assert.assertEquals(1, masterTargets.size());
         Assert.assertTrue(masterTargets.contains("dsw1"));
 
 
@@ -228,14 +228,14 @@ public class NoneTest extends ReplicaTest {
         });
 
         Assert.assertTrue(balanceTargets.contains("dsw1"));
-
-        Set<String> masterTargets = new HashSet<>();
-        test(() -> {
-            masterTargets.add(manager.getDatasourceNameByReplicaName("c0", true, null));
-            return false;
-        });
-
-        Assert.assertTrue(masterTargets.contains("dsw2"));
+//
+//        Set<String> masterTargets = new HashSet<>();
+//        test(() -> {
+//            masterTargets.add(manager.getDatasourceNameByReplicaName("c0", true, null));
+//            return false;
+//        });
+//
+//        Assert.assertTrue(masterTargets.contains("dsw2"));
 
         for (Runnable runnable : runnables) {
             runnable.run();

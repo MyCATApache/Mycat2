@@ -72,7 +72,7 @@ public class GaleraTest extends ReplicaTest {
             masterTargets.add(manager.getDatasourceNameByReplicaName("c0", true, null));
             return false;
         });
-        Assert.assertEquals(2, masterTargets.size());
+        Assert.assertEquals(1, masterTargets.size());
     }
 
     @Test
@@ -165,7 +165,7 @@ public class GaleraTest extends ReplicaTest {
             return false;
         });
         Assert.assertEquals(1, masterTargets.size());
-        Assert.assertTrue(masterTargets.contains("dsw2"));
+        Assert.assertTrue(masterTargets.contains("dsw1"));
 
         manager.putHeartFlow("c0", "dsw2", checkGalera());
         manager.putHeartFlow("c0", "dsw1", checkGalera());
@@ -349,7 +349,7 @@ public class GaleraTest extends ReplicaTest {
             masterTargets.add(manager.getDatasourceNameByReplicaName("c0", true, null));
             return false;
         });
-        Assert.assertEquals(2, masterTargets.size());
+        Assert.assertEquals(1, masterTargets.size());
         Assert.assertTrue(masterTargets.contains("dsw1"));
 
         manager.putHeartFlow("c0", "dsr1", checkGalera());
