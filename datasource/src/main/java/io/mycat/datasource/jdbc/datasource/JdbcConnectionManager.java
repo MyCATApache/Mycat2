@@ -236,7 +236,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                 boolean readOnly = false;
                 try (DefaultConnection connection = getConnection(datasource)) {
                     try {
-                        readOnly = JdbcUtils.executeQuery(connection.connection, "SELECT @@read_only", Collections.emptyList()).toString().contains("1");
+                        readOnly = connection.connection.isReadOnly() || JdbcUtils.executeQuery(connection.connection, "SELECT @@read_only", Collections.emptyList()).toString().contains("1");
                     } catch (Throwable throwable) {
                         LOGGER.debug("heartbeat sql:{}", "SELECT @@read_only", throwable);
                     }
