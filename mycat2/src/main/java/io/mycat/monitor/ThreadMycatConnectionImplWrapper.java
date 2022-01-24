@@ -8,8 +8,7 @@ import io.mycat.newquery.RowSet;
 import io.mycat.newquery.SqlResult;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
+import io.vertx.core.buffer.Buffer;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
@@ -58,6 +57,11 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
     @Override
     public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator) {
         return newMycatConnection.prepareQuery(sql, params,allocator);
+    }
+
+    @Override
+    public Observable<Buffer> prepareQuery(String sql, List<Object> params,int serverstatus) {
+        return newMycatConnection.prepareQuery(sql, params,serverstatus);
     }
 
     @Override

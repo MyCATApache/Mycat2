@@ -33,7 +33,7 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
     NetSocket socket;
     private short packetId;
 
-    static enum State {
+    public static enum State {
         HEAD,
         PAYLOAD
     }

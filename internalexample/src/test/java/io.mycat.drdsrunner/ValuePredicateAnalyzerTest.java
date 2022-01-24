@@ -275,4 +275,30 @@ public class ValuePredicateAnalyzerTest {
         Assert.assertEquals( "[{targetName='c0', schemaName='db1_0', tableName='sharding_0', index=0, dbIndex=0, tableIndex=0}, {targetName='c0', schemaName='db1_0', tableName='sharding_1', index=1, dbIndex=0, tableIndex=1}, {targetName='c1', schemaName='db1_1', tableName='sharding_2', index=2, dbIndex=1, tableIndex=0}, {targetName='c1', schemaName='db1_1', tableName='sharding_3', index=3, dbIndex=1, tableIndex=1}]",Objects.toString(o));
         System.out.println();
     }
+
+    @Test
+    public void testGte() {
+        DrdsTest.getDrds();
+        int count = 5;
+
+        RexNode  rexNode = rexBuilder.makeCall(SqlStdOperatorTable.GREATER_THAN, rexBuilder.makeInputRef(
+                MycatCalciteSupport.TypeFactory.createSqlType(SqlTypeName.INTEGER),
+                0
+        ), rexBuilder.makeLiteral(5, MycatCalciteSupport.TypeFactory.createSqlType(SqlTypeName.INTEGER), true));
+
+        List<String> columnList = Arrays.asList("id");
+        ValuePredicateAnalyzer valuePredicateAnalyzer2 = new ValuePredicateAnalyzer(Arrays.asList(
+                KeyMeta.of("seqSharding", "id")),
+                columnList);
+        Map<QueryType, List<ValueIndexCondition>> indexCondition = valuePredicateAnalyzer2.translateMatch(rexNode);
+        Assert.assertEquals("{PK_RANGE_QUERY=[ValueIndexCondition(fieldNames=[id], indexName=seqSharding, indexColumnNames=[id], queryType=PK_RANGE_QUERY, rangeQueryLowerOp=GT, rangeQueryLowerKey=[5], rangeQueryUpperOp=null, rangeQueryUpperKey=null, pointQueryKey=null)]}", Objects.toString(indexCondition));
+        MetadataManager metadataManager = DrdsTest.getMetadataManager();
+        //以下代码需要实现对应支持>的分片算法才能继续测试
+        ShardingTable table = (ShardingTable) metadataManager.getTable("db1", "seqSharding");
+        List o = ValueIndexCondition.getObject(table.getShardingFuntion(), valuePredicateAnalyzer2.translateMatch(rexNode), Arrays.asList());
+        o.sort(Comparator.comparing(c->c.toString()));
+        Assert.assertEquals(4,o.size());
+        Assert.assertEquals( "[{targetName='c0', schemaName='db1_0', tableName='sharding_0', index=0, dbIndex=0, tableIndex=0}, {targetName='c0', schemaName='db1_0', tableName='sharding_1', index=1, dbIndex=0, tableIndex=1}, {targetName='c1', schemaName='db1_1', tableName='sharding_2', index=2, dbIndex=1, tableIndex=0}, {targetName='c1', schemaName='db1_1', tableName='sharding_3', index=3, dbIndex=1, tableIndex=1}]",Objects.toString(o));
+        System.out.println();
+    }
 }

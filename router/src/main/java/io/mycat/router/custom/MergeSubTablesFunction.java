@@ -73,6 +73,8 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
                         CollectionUtil.setOpAdd(res, partitions);
                         break;
                     }
+                    default:
+                        continue;
                 }
             }
         }

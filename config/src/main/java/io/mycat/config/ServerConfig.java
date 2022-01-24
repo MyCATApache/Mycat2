@@ -16,6 +16,7 @@
 package io.mycat.config;
 
 import io.mycat.util.JsonUtil;
+import io.mycat.util.MySQLDatabaseMetadata;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
@@ -69,6 +70,8 @@ public class ServerConfig {
     private boolean partitionKeyJoin = true;
     private long bkaJoinLeftRowCountLimit = 1000;
     private boolean pstmtStringVal = false;
+
+
     public static void main(String[] args) {
         System.out.println(JsonUtil.toJson(new ServerConfig()));
     }
@@ -106,5 +109,9 @@ public class ServerConfig {
             System.out.println("tempDirectory:" + tempDirectory);
         }
         return tempDirectory;
+    }
+
+    public boolean computeClientDeprecateEof() {
+        return MySQLDatabaseMetadata.parse(getServerVersion()).isClientDeprecateEof();
     }
 }

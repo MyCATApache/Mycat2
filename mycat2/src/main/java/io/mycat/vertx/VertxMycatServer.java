@@ -18,12 +18,11 @@ import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatServer;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
+import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.config.MycatServerConfig;
-import io.mycat.config.ServerConfig;
-import io.mycat.config.ThreadPoolExecutorConfig;
+import io.mycat.newquery.NewMycatConnectionConfig;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetServer;
 import io.vertx.core.net.NetServerOptions;
@@ -35,7 +34,6 @@ import java.sql.JDBCType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.TimeUnit;
 
 public class VertxMycatServer implements MycatServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(VertxMycatServer.class);
@@ -107,13 +105,21 @@ public class VertxMycatServer implements MycatServer {
             netServerOptions.setReuseAddress(true);
             DeploymentOptions deploymentOptions = new DeploymentOptions();
             deploymentOptions.setWorker(false);
+            boolean supportClientDeprecateEof = NewMycatConnectionConfig.CLIENT_DEPRECATE_EOF;
+            int defaultServerCapabilities = MySQLServerCapabilityFlags.getDefaultServerCapabilities();
+            if (supportClientDeprecateEof) {
+                defaultServerCapabilities |= MySQLServerCapabilityFlags.CLIENT_DEPRECATE_EOF;
+            } else {
+                defaultServerCapabilities &= (~MySQLServerCapabilityFlags.CLIENT_DEPRECATE_EOF);
+            }
+            int finalServerCapabilities = defaultServerCapabilities;
             for (int i = 0; i < serverConfig.getServer().getReactorNumber(); i++) {
                 vertx.deployVerticle(new AbstractVerticle() {
                     @Override
                     public void start() throws Exception {
                         NetServer netServer = vertx.createNetServer(netServerOptions);//创建代理服务器
                         netServer.connectHandler(socket -> {
-                            VertxMySQLAuthHandler vertxMySQLAuthHandler = new VertxMySQLAuthHandler(socket, MycatSessionManager.this);
+                            VertxMySQLAuthHandler vertxMySQLAuthHandler = new VertxMySQLAuthHandler(socket, finalServerCapabilities, MycatSessionManager.this);
                         }).listen(serverConfig.getServer().getPort(),
                                 serverConfig.getServer().getIp(), listenResult -> {//代理服务器的监听端口
                                     if (listenResult.succeeded()) {

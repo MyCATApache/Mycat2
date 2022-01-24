@@ -19,7 +19,6 @@ import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.AuthPacket;
 import io.mycat.beans.mysql.packet.AuthSwitchRequestPacket;
-import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.config.UserConfig;
 import io.mycat.mycatmysql.MycatVertxMySQLHandler;
 import io.mycat.mycatmysql.MycatVertxMysqlSession;
@@ -46,12 +45,10 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
     boolean authSwitchResponse = false;
     private AuthPacket authPacket;
 
-    public VertxMySQLAuthHandler(NetSocket socket, VertxMycatServer.MycatSessionManager mysqlProxyServerVerticle) {
+    public VertxMySQLAuthHandler(NetSocket socket, int defaultServerCapabilities, VertxMycatServer.MycatSessionManager mysqlProxyServerVerticle) {
         this.socket = socket;
         this.mysqlProxyServerVerticle = mysqlProxyServerVerticle;
         this.mycatDataContext = new MycatDataContextImpl();
-        int defaultServerCapabilities = MySQLServerCapabilityFlags.getDefaultServerCapabilities()
-                ;
         this.seedParts = MysqlNativePasswordPluginUtil.nextSeedBuild();
         byte[] handshakePacket = MySQLClientAuthHandler.createHandshakePayload(mycatDataContext.getSessionId(), defaultServerCapabilities, seedParts);
         socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(0, handshakePacket)));

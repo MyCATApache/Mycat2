@@ -56,8 +56,8 @@ public class ReceiverImpl implements Response {
     protected final MySQLServerSession session;
     protected final MycatDataContext dataContext;
     protected final XaSqlConnection transactionSession;
-    private final int stmtSize;
-    private final boolean binary;
+    protected final int stmtSize;
+    protected final boolean binary;
     protected int count = 0;
 
     public ReceiverImpl(MySQLServerSession session, int stmtSize, boolean binary) {

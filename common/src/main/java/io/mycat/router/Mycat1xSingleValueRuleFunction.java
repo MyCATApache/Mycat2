@@ -123,6 +123,8 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
                         CollectionUtil.setOpAdd(res, partitions);
                         break;
                     }
+                    default:
+                        continue;
                 }
             }
         }

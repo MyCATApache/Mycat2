@@ -16,6 +16,7 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.commands.MycatdbCommand;
+import io.mycat.commands.ProxyReceiverImpl;
 import io.mycat.commands.ReceiverImpl;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.config.ServerConfig;
@@ -428,7 +429,7 @@ public class MycatVertxMySQLHandler {
                 ||
                 sqlStatement instanceof SQLDeleteStatement
         );
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        //MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
 
         MycatRowMetaData fields;
         if ((sqlStatement instanceof SQLSelectStatement)) {
@@ -517,7 +518,7 @@ public class MycatVertxMySQLHandler {
 
     public Future<Void> handleQuery(String sql, MycatVertxMysqlSession session) {
         return MycatdbCommand.INSTANCE.executeQuery(sql, mycatDataContext, (size) ->
-                new ReceiverImpl(session, size, false));
+                new ProxyReceiverImpl(session, size, false));
     }
 
     public Future<Void> handleSleep(MycatVertxMysqlSession session) {

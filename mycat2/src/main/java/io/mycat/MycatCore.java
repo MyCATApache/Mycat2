@@ -16,19 +16,18 @@ package io.mycat;
 
 import io.mycat.beans.mysql.MySQLVersion;
 import io.mycat.calcite.ExecutorProvider;
-import io.mycat.commands.MycatMySQLManagerImpl;
 import io.mycat.config.*;
 import io.mycat.executor.ExecutorProviderImpl;
 import io.mycat.exporter.SqlRecorderRuntime;
 import io.mycat.monitor.MycatSQLLogMonitor;
 import io.mycat.monitor.MycatSQLLogMonitorImpl;
+import io.mycat.newquery.NewMycatConnectionConfig;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.config.FileStorageManagerImpl;
 import io.mycat.sqlhandler.config.StdStorageManagerImpl;
 import io.mycat.sqlhandler.config.StorageManager;
 import io.mycat.vertx.VertxMycatServer;
-import io.mycat.vertxmycat.MycatVertxMetricsFactory;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -100,7 +99,8 @@ public class MycatCore {
         MySQLVersion.setServerVersion(serverConfig.getServer().getServerVersion());
         String datasourceProvider = Optional.ofNullable(serverConfig.getDatasourceProvider()).orElse(io.mycat.datasource.jdbc.DruidDatasourceProvider.class.getCanonicalName());
         ThreadPoolExecutorConfig workerPool = serverConfig.getServer().getWorkerPool();
-        MycatMySQLManagerImpl.FORCE_NATIVE_DATASOURCE = "native".equalsIgnoreCase(System.getProperty("server", ""));
+        NewMycatConnectionConfig.FORCE_NATIVE_DATASOURCE = "native".equalsIgnoreCase(System.getProperty("server"));
+        NewMycatConnectionConfig.CLIENT_DEPRECATE_EOF = serverConfig.getServer().computeClientDeprecateEof();
 
         VertxOptions vertxOptions = new VertxOptions();
         vertxOptions.setWorkerPoolSize(workerPool.getMaxPoolSize());
@@ -203,17 +203,7 @@ public class MycatCore {
 
     @NotNull
     private MycatServer newMycatServer(MycatServerConfig serverConfig) throws URISyntaxException {
-        String configResourceKeyName = "server";
-        String type = System.getProperty(configResourceKeyName, "vertx");
-        if ("native".equalsIgnoreCase(type)) {
-            logger.info("start NativeMycatServer");
-            return new NativeMycatServer(serverConfig);
-        }
-        if ("vertx".equalsIgnoreCase(type)) {
-            logger.info("start VertxMycatServer");
-            return new VertxMycatServer(serverConfig);
-        }
-        throw new UnsupportedOperationException("unsupport server type:" + type);
+        return new VertxMycatServer(serverConfig);
     }
 
     public void startServer() throws Exception {

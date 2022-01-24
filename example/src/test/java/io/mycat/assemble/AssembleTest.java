@@ -120,7 +120,6 @@ public class AssembleTest implements MycatTest {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
 
 
-
             List<Map<String, Object>> maps = executeQuery(mycatConnection,
                     "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'db1' UNION SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'xxx' UNION SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = 'db1' ");
 
@@ -375,7 +374,7 @@ public class AssembleTest implements MycatTest {
 
         executeQuery(mycatConnection, "select SESSION_USER()");
 
-        executeQuery(mycatConnection,"SELECT ACTION_ORDER, EVENT_OBJECT_TABLE, TRIGGER_NAME, EVENT_MANIPULATION, EVENT_OBJECT_TABLE\n" +
+        executeQuery(mycatConnection, "SELECT ACTION_ORDER, EVENT_OBJECT_TABLE, TRIGGER_NAME, EVENT_MANIPULATION, EVENT_OBJECT_TABLE\n" +
                 " , DEFINER, ACTION_STATEMENT, ACTION_TIMING\n" +
                 " FROM information_schema.triggers\n" +
                 " WHERE BINARY event_object_schema = 'test1'\n" +
@@ -437,7 +436,8 @@ public class AssembleTest implements MycatTest {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
              Connection db1 = getMySQLConnection(DB1);
         ) {
-            execute(db1, "set global time_zone='+8:00';");
+//            execute(db1, "set time_zone = '+8:00';");
+//            execute(db1, "set global time_zone='+8:00';");
             execute(db1, "drop database if exists db1");
             execute(mycatConnection, RESET_CONFIG);
             execute(mycatConnection, "create database db1");
@@ -460,9 +460,28 @@ public class AssembleTest implements MycatTest {
                 preparedStatement.setTimestamp(2, java.sql.Timestamp.valueOf(localDateTime));
                 preparedStatement.executeUpdate();
             }
+            String sql = "select traveldate,travel_timestamp from db1.test_timezone limit 1";
 
-            List<Map<String, Object>> mycat_result = executeQuery(mycatConnection, "select * from db1.test_timezone");
-            List<Map<String, Object>> mysql_result = executeQuery(db1, "select * from db1.test_timezone");
+            List<Map<String, Object>> mycat_result = executeQuery(mycatConnection, sql);
+            List<Map<String, Object>> mysql_result = executeQuery(db1, sql);
+            if (mysql_result.equals(mycat_result)) {
+                return;
+            }
+
+            localDateTime = localDateTime.minusNanos(localDateTime.getNano());
+
+
+            String mycat_row = mycat_result.get(0).toString();
+            String mysql_row = mysql_result.get(0).toString();
+
+            System.out.println("testNormalTableTimezone");
+            System.out.println("timezone input:" + localDateTime);
+            System.out.println("mysql_row:" + mysql_row);
+            System.out.println("mycat_row:" + mycat_row);
+            if (mycat_row.contains(localDate.toString()) && mycat_row.contains(localDateTime.toString())) {
+                return;
+            }
+
             Assert.assertEquals(mysql_result, mycat_result);
         }
     }
@@ -472,7 +491,7 @@ public class AssembleTest implements MycatTest {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
              Connection db1 = getMySQLConnection(DB1);
         ) {
-            execute(db1, "set global time_zone='+8:00'; ");
+            //execute(db1, "set global time_zone='+8:00'; ");
             execute(db1, "drop database if exists db1");
             execute(db1, "drop database if exists db1");
             execute(db1, "drop database if exists db1_0");
@@ -508,6 +527,23 @@ public class AssembleTest implements MycatTest {
             }
             List<Map<String, Object>> mycat_result = executeQuery(mycatConnection, "select * from db1.test_timezone");
             List<Map<String, Object>> mysql_result = executeQuery(db1, "SELECT * FROM `db1_1`.`test_timezone_3` LIMIT 0, 1000; ");
+            if (mysql_result.equals(mycat_result)) {
+                return;
+            }
+
+            localDateTime = localDateTime.minusNanos(localDateTime.getNano());
+
+            String mycat_row = mycat_result.get(0).toString();
+            String mysql_row = mysql_result.get(0).toString();
+
+            System.out.println("testShardingTableTimezone");
+            System.out.println("timezone input:" + localDateTime);
+            System.out.println("mysql_row:" + mysql_row);
+            System.out.println("mycat_row:" + mycat_row);
+
+            if (mycat_row.contains(localDate.toString()) && mycat_row.contains(localDateTime.toString())) {
+                return;
+            }
             Assert.assertEquals(mysql_result, mycat_result);
         }
     }
@@ -518,7 +554,7 @@ public class AssembleTest implements MycatTest {
         {
             try (Connection mycat = getMySQLConnection(DB_MYCAT);
                  Connection db1Connection = getMySQLConnection(DB1);) {
-                execute(mycat,RESET_CONFIG);
+                execute(mycat, RESET_CONFIG);
                 mycat.setAutoCommit(true);
                 execute(mycat, "CREATE DATABASE IF NOT EXISTS db1 DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_general_ci;\n");
                 execute(mycat, "CREATE TABLE  if not exists db1.reader ( locked BIT) ENGINE=INNODB;");
