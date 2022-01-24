@@ -235,6 +235,16 @@ public class JdbcMycatDataContext implements MycatDataContext {
     }
 
     @Override
+    public boolean isVector() {
+        return false;
+    }
+
+    @Override
+    public void setVector(boolean value) {
+
+    }
+
+    @Override
     public Integer getLock(String name, long time) {
         return null;
     }

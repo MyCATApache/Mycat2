@@ -147,6 +147,10 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     public void setDebug(boolean value);
 
+    boolean isVector();
+
+    public void setVector(boolean value);
+
     public Integer getLock(String name,long time);
 
     public Integer releaseLock(String name);

@@ -536,6 +536,11 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         dataContext.setDebug(contains);
                         return response.sendOk();
                     }
+                    if ("setVector".equalsIgnoreCase(cmd)) {
+                        boolean contains = body.contains("1");
+                        dataContext.setVector(contains);
+                        return response.sendOk();
+                    }
                     if ("is".equalsIgnoreCase(cmd)) {
                         ResultSetBuilder builder = ResultSetBuilder.create();
                         builder.addColumnInfo("value", JDBCType.VARCHAR);

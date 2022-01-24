@@ -82,6 +82,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     private volatile Observable<AbstractWritePacket> observable;
     private Map<String, Object> processStateMap = new HashMap<>();
     private boolean debug = false;
+    private boolean vector = false;
     private Set<String> usedlocks = new HashSet<>();
 
     public MycatDataContextImpl() {
@@ -468,6 +469,16 @@ public class MycatDataContextImpl implements MycatDataContext {
     @Override
     public void setDebug(boolean value) {
         this.debug = value;
+    }
+
+    @Override
+    public boolean isVector() {
+        return vector;
+    }
+
+    @Override
+    public void setVector(boolean value) {
+        this.vector = value;
     }
 
     @Override
