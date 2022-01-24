@@ -473,7 +473,7 @@ public class MycatDataContextImpl implements MycatDataContext {
 
     @Override
     public boolean isVector() {
-        return vector;
+        return vector || getProcessStateMap().containsKey("VECTOR");
     }
 
     @Override

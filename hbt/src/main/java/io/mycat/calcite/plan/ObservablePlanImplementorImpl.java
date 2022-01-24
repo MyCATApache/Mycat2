@@ -45,8 +45,6 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
     protected final DrdsSqlWithParams drdsSqlWithParams;
     protected final Response response;
 
-    public static boolean VECTOR = false;
-
     public ObservablePlanImplementorImpl(XaSqlConnection xaSqlConnection, MycatDataContext context, DrdsSqlWithParams drdsSqlWithParams, Response response) {
         this.xaSqlConnection = xaSqlConnection;
         this.context = context;
@@ -85,7 +83,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
         ExecutorProvider executorProvider = MetaClusterCurrent.wrapper(ExecutorProvider.class);
 
         PrepareExecutor prepare = executorProvider.prepare(plan);
-        if (VECTOR || context.getProcessStateMap().containsKey("VECTOR")) {
+        if (context.isVector()) {
             PrepareExecutor.ArrowObservable observable1 = prepare.asObservableVector(sqlMycatDataContext, plan.getMetaData());
             return response.sendVectorResultSet(observable1.getMycatRowMetaData(), observable1.getObservable());
         } else {
