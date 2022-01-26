@@ -22,6 +22,7 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.ImmutableList;
 import io.mycat.PreparedStatement;
 import io.mycat.beans.mycat.MycatMySQLRowMetaData;
+import io.mycat.beans.mycat.MycatRelDataType;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.commands.JdbcDatasourcePoolImpl;
 import io.mycat.mysqlclient.decoder.ObjectArrayDecoder;
@@ -133,7 +134,7 @@ public class VertxMycatConnectionPool implements NewMycatConnection {
     }
 
     @Override
-    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator) {
+    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, MycatRelDataType mycatRelDataType, BufferAllocator allocator) {
         return Observable.create(emitter -> {
             synchronized (VertxMycatConnectionPool.this) {
                 VertxMycatConnectionPool.this.queryCloseFuture = VertxMycatConnectionPool.this.queryCloseFuture
@@ -142,19 +143,24 @@ public class VertxMycatConnectionPool implements NewMycatConnection {
                                 JdbcDatasourcePoolImpl jdbcDatasourcePool = new JdbcDatasourcePoolImpl(targetName);
                                 Future<NewMycatConnection> mycatConnectionFuture = jdbcDatasourcePool.getConnection();
                                 mycatConnectionFuture.onSuccess(connection -> {
-                                    onSend();
-                                    Observable<VectorSchemaRoot> observable = connection.prepareQuery(sql, params, allocator);
-                                    onRev();
-                                    observable = observable.doOnComplete(() -> connection.close());
-                                    observable.subscribe(vectorSchemaRoot -> emitter.onNext(vectorSchemaRoot),
-                                            throwable -> emitter.onError(throwable),
-                                            () -> emitter.onComplete());
-                                }).onFailure(event -> emitter.onError(event))
+                                            onSend();
+                                            Observable<VectorSchemaRoot> observable = connection.prepareQuery(sql, params, mycatRelDataType,allocator);
+                                            onRev();
+                                            observable = observable.doOnComplete(() -> connection.close());
+                                            observable.subscribe(vectorSchemaRoot -> emitter.onNext(vectorSchemaRoot),
+                                                    throwable -> emitter.onError(throwable),
+                                                    () -> emitter.onComplete());
+                                        }).onFailure(event -> emitter.onError(event))
                                         .onComplete(event -> promise.tryComplete());
                             });
                         }).mapEmpty();
             }
         });
+    }
+
+    @Override
+    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator) {
+        return prepareQuery(sql,params,null,allocator);
     }
 
     @Override

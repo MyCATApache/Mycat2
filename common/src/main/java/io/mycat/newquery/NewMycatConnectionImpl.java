@@ -177,7 +177,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     }
 
     @Override
-    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator) {
+    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, MycatRelDataType mycatRelDataType, BufferAllocator allocator) {
         return Observable.create(emitter -> {
             synchronized (NewMycatConnectionImpl.this) {
                 NewMycatConnectionImpl.this.future = NewMycatConnectionImpl.this.future.transform(voidAsyncResult -> {
@@ -194,8 +194,12 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                             onSend();
                             resultSet = statement.executeQuery();
                             onRev();
-
-                            MycatField[] mycatFields = MycatDataType.from(resultSet.getMetaData());
+                            MycatField[] mycatFields;
+                            if (mycatRelDataType == null){
+                                mycatFields = MycatDataType.from(resultSet.getMetaData());
+                            }else {
+                                mycatFields = mycatRelDataType.getFieldList().toArray(new MycatField[0]);
+                            }
                             VectorSchemaRoot vectorSchemaRoot = null;
                             FieldVector[] fieldVectors = null;
                             int rowId = 0;
@@ -234,6 +238,12 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                 });
             }
         });
+    }
+
+
+    @Override
+    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator) {
+        return prepareQuery(sql,params,null,allocator);
     }
 
     public static String paramize(String sql, List<Object> params) {

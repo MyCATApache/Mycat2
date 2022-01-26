@@ -18,15 +18,16 @@
 package io.ordinate.engine.function.aggregate.any;
 
 import io.ordinate.engine.function.BinarySequence;
-import io.ordinate.engine.schema.InnerType;
 import io.ordinate.engine.record.Record;
+import io.ordinate.engine.schema.InnerType;
 import io.questdb.cairo.ArrayColumnTypes;
 import io.questdb.cairo.ColumnType;
 import io.questdb.cairo.map.MapValue;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 public class AnyValueAccumulator implements AnyAccumulator {
     final InnerType type;
@@ -34,6 +35,8 @@ public class AnyValueAccumulator implements AnyAccumulator {
     int stackIndex;
     int valueIndex;
     List<Object> object = new ArrayList<>();
+
+    //Map<Integer, Integer> map = new HashMap<Integer, Integer>();
 
     public AnyValueAccumulator(InnerType type, int inputColumnIndex) {
         this.type = type;
@@ -47,16 +50,17 @@ public class AnyValueAccumulator implements AnyAccumulator {
 
     @Override
     public void computeFirst(MapValue reduceContext, Record record) {
-        if (object.size()<=valueIndex){
+        if (object.size() <= valueIndex) {
             object.add(null);
         }
-        reduceContext.putLong(stackIndex,valueIndex);
+        reduceContext.putInt(stackIndex, valueIndex);
+        //map.put(stackIndex, valueIndex);
         switch (type) {
             case BOOLEAN_TYPE: {
-                int value = record.getInt(inputColumnIndex);
+                int value = getValueIndex(record, inputColumnIndex);
                 boolean isNull = record.isNull(inputColumnIndex);
-                if (!isNull){
-                    object.set(valueIndex,value);
+                if (!isNull) {
+                    object.set(valueIndex, value);
                 }
                 break;
             }
@@ -68,8 +72,7 @@ public class AnyValueAccumulator implements AnyAccumulator {
                 }
                 break;
             }
-            case INT16_TYPE:
-            {
+            case INT16_TYPE: {
                 short value = record.getShort(inputColumnIndex);
                 boolean isNull = record.isNull(inputColumnIndex);
                 if (!isNull) {
@@ -77,8 +80,7 @@ public class AnyValueAccumulator implements AnyAccumulator {
                 }
                 break;
             }
-            case CHAR_TYPE:
-            {
+            case CHAR_TYPE: {
                 char value = record.getChar(inputColumnIndex);
                 boolean isNull = record.isNull(inputColumnIndex);
                 if (!isNull) {
@@ -86,17 +88,15 @@ public class AnyValueAccumulator implements AnyAccumulator {
                 }
                 break;
             }
-            case INT32_TYPE:
-            {
-                int value = record.getInt(inputColumnIndex);
+            case INT32_TYPE: {
+                int value = getValueIndex(record, inputColumnIndex);
                 boolean isNull = record.isNull(inputColumnIndex);
                 if (!isNull) {
                     object.set(valueIndex, value);
                 }
                 break;
             }
-            case INT64_TYPE:
-            {
+            case INT64_TYPE: {
                 long value = record.getLong(inputColumnIndex);
                 boolean isNull = record.isNull(inputColumnIndex);
                 if (!isNull) {
@@ -104,8 +104,7 @@ public class AnyValueAccumulator implements AnyAccumulator {
                 }
                 break;
             }
-            case FLOAT_TYPE:
-            {
+            case FLOAT_TYPE: {
                 float value = record.getFloat(inputColumnIndex);
                 boolean isNull = record.isNull(inputColumnIndex);
                 if (!isNull) {
@@ -113,8 +112,7 @@ public class AnyValueAccumulator implements AnyAccumulator {
                 }
                 break;
             }
-            case DOUBLE_TYPE:
-            {
+            case DOUBLE_TYPE: {
                 double value = record.getDouble(inputColumnIndex);
                 boolean isNull = record.isNull(inputColumnIndex);
                 if (!isNull) {
@@ -122,8 +120,7 @@ public class AnyValueAccumulator implements AnyAccumulator {
                 }
                 break;
             }
-            case STRING_TYPE:
-            {
+            case STRING_TYPE: {
                 CharSequence value = record.getString(inputColumnIndex);
                 boolean isNull = record.isNull(inputColumnIndex);
                 if (!isNull) {
@@ -131,8 +128,7 @@ public class AnyValueAccumulator implements AnyAccumulator {
                 }
                 break;
             }
-            case BINARY_TYPE:
-            {
+            case BINARY_TYPE: {
                 BinarySequence value = record.getBinary(inputColumnIndex);
                 boolean isNull = record.isNull(inputColumnIndex);
                 if (!isNull) {
@@ -140,8 +136,7 @@ public class AnyValueAccumulator implements AnyAccumulator {
                 }
                 break;
             }
-            case UINT8_TYPE:
-            {
+            case UINT8_TYPE: {
                 byte value = record.getByte(inputColumnIndex);
                 boolean isNull = record.isNull(inputColumnIndex);
                 if (!isNull) {
@@ -149,8 +144,7 @@ public class AnyValueAccumulator implements AnyAccumulator {
                 }
                 break;
             }
-            case UINT16_TYPE:
-            {
+            case UINT16_TYPE: {
                 short value = record.getShort(inputColumnIndex);
                 boolean isNull = record.isNull(inputColumnIndex);
                 if (!isNull) {
@@ -158,17 +152,15 @@ public class AnyValueAccumulator implements AnyAccumulator {
                 }
                 break;
             }
-            case UINT32_TYPE:
-            {
-                int value = record.getInt(inputColumnIndex);
+            case UINT32_TYPE: {
+                int value = getValueIndex(record, inputColumnIndex);
                 boolean isNull = record.isNull(inputColumnIndex);
                 if (!isNull) {
                     object.set(valueIndex, value);
                 }
                 break;
             }
-            case UINT64_TYPE:
-            {
+            case UINT64_TYPE: {
                 long value = record.getLong(inputColumnIndex);
                 boolean isNull = record.isNull(inputColumnIndex);
                 if (!isNull) {
@@ -176,8 +168,7 @@ public class AnyValueAccumulator implements AnyAccumulator {
                 }
                 break;
             }
-            case TIME_MILLI_TYPE:
-            {
+            case TIME_MILLI_TYPE: {
                 long value = record.getTime(inputColumnIndex);
                 boolean isNull = record.isNull(inputColumnIndex);
                 if (!isNull) {
@@ -185,8 +176,7 @@ public class AnyValueAccumulator implements AnyAccumulator {
                 }
                 break;
             }
-            case DATE_TYPE:
-            {
+            case DATE_TYPE: {
                 long value = record.getDate(inputColumnIndex);
                 boolean isNull = record.isNull(inputColumnIndex);
                 if (!isNull) {
@@ -194,8 +184,7 @@ public class AnyValueAccumulator implements AnyAccumulator {
                 }
                 break;
             }
-            case DATETIME_MILLI_TYPE:
-            {
+            case DATETIME_MILLI_TYPE: {
                 long value = record.getDatetime(inputColumnIndex);
                 boolean isNull = record.isNull(inputColumnIndex);
                 if (!isNull) {
@@ -203,8 +192,7 @@ public class AnyValueAccumulator implements AnyAccumulator {
                 }
                 break;
             }
-            case SYMBOL_TYPE:
-            {
+            case SYMBOL_TYPE: {
                 CharSequence value = record.getSymbol(inputColumnIndex);
                 boolean isNull = record.isNull(inputColumnIndex);
                 if (!isNull) {
@@ -212,12 +200,10 @@ public class AnyValueAccumulator implements AnyAccumulator {
                 }
                 break;
             }
-            case OBJECT_TYPE:
-            {
-              throw new UnsupportedOperationException();
+            case OBJECT_TYPE: {
+                throw new UnsupportedOperationException();
             }
-            case NULL_TYPE:
-            {
+            case NULL_TYPE: {
                 object.set(valueIndex, null);
                 break;
             }
@@ -234,7 +220,7 @@ public class AnyValueAccumulator implements AnyAccumulator {
     @Override
     public void allocContext(ArrayColumnTypes columnTypes) {
         stackIndex = columnTypes.getColumnCount();
-        columnTypes.add(ColumnType.BOOLEAN);
+        columnTypes.add(ColumnType.INT);
     }
 
     @Override
@@ -265,111 +251,119 @@ public class AnyValueAccumulator implements AnyAccumulator {
 
     @Override
     public BinarySequence getBinary(Record rec) {
-        int valueIndex = rec.getInt(stackIndex);
+        int valueIndex = getValueIndex(rec, stackIndex);
         Object o = object.get(valueIndex);
-        if (o == null)return null;
-        return (BinarySequence)o;
+        if (o == null) return null;
+        return (BinarySequence) o;
+    }
+
+    private int getValueIndex(Record rec, int stackIndex) {
+        int anInt = rec.getInt(stackIndex);
+        if (anInt >= object.size()) {
+            throw new UnsupportedOperationException();
+        }
+        return anInt;
     }
 
     @Override
     public byte getByte(Record rec) {
-        int valueIndex = rec.getInt(stackIndex);
+        int valueIndex = getValueIndex(rec, stackIndex);
         Object o = object.get(valueIndex);
-        if (o == null)return 0;
+        if (o == null) return 0;
         return (Byte) o;
     }
 
     @Override
     public char getChar(Record rec) {
-        int valueIndex = rec.getInt(stackIndex);
+        int valueIndex = getValueIndex(rec, stackIndex);
         Object o = object.get(valueIndex);
-        if (o == null)return 0;
+        if (o == null) return 0;
         return (Character) o;
     }
 
     @Override
     public long getDate(Record rec) {
-        int valueIndex = rec.getInt(stackIndex);
+        int valueIndex = getValueIndex(rec, stackIndex);
         Object o = object.get(valueIndex);
-        if (o == null)return 0;
+        if (o == null) return 0;
         return (Long) o;
     }
 
     @Override
     public double getDouble(Record rec) {
-        int valueIndex = rec.getInt(stackIndex);
+        int valueIndex = getValueIndex(rec, stackIndex);
         Object o = object.get(valueIndex);
-        if (o == null)return 0;
+        if (o == null) return 0;
         return (Double) o;
     }
 
     @Override
     public float getFloat(Record rec) {
-        int valueIndex = rec.getInt(stackIndex);
+        int valueIndex = getValueIndex(rec, stackIndex);
         Object o = object.get(valueIndex);
-        if (o == null)return 0;
+        if (o == null) return 0;
         return (Float) o;
     }
 
     @Override
     public int getInt(Record rec) {
-        int valueIndex = rec.getInt(stackIndex);
+        int valueIndex = getValueIndex(rec, stackIndex);
         Object o = object.get(valueIndex);
-        if (o == null)return 0;
+        if (o == null) return 0;
         return (Integer) o;
     }
 
     @Override
     public long getLong(Record rec) {
-        int valueIndex = rec.getInt(stackIndex);
+        int valueIndex = getValueIndex(rec, stackIndex);
         Object o = object.get(valueIndex);
-        if (o == null)return 0;
+        if (o == null) return 0;
         return (Long) o;
     }
 
     @Override
     public short getShort(Record rec) {
-        int valueIndex = rec.getInt(stackIndex);
+        int valueIndex = getValueIndex(rec, stackIndex);
         Object o = object.get(valueIndex);
-        if (o == null)return 0;
+        if (o == null) return 0;
         return (Short) o;
     }
 
     @Override
     public CharSequence getString(Record rec) {
-        int valueIndex = rec.getInt(stackIndex);
+        int valueIndex = getValueIndex(rec, stackIndex);
         Object o = object.get(valueIndex);
-        if (o == null)return null;
+        if (o == null) return null;
         return (CharSequence) o;
     }
 
     @Override
     public long getDatetime(Record rec) {
-        int valueIndex = rec.getInt(stackIndex);
+        int valueIndex = getValueIndex(rec, stackIndex);
         Object o = object.get(valueIndex);
-        if (o == null)return 0;
+        if (o == null) return 0;
         return (Long) o;
     }
 
     @Override
     public long getTime(Record rec) {
-        int valueIndex = rec.getInt(stackIndex);
+        int valueIndex = getValueIndex(rec, stackIndex);
         Object o = object.get(valueIndex);
-        if (o == null)return 0;
+        if (o == null) return 0;
         return (Long) o;
     }
 
     @Override
     public CharSequence getSymbol(Record rec) {
-        int valueIndex = rec.getInt(stackIndex);
+        int valueIndex = getValueIndex(rec, stackIndex);
         Object o = object.get(valueIndex);
-        if (o == null)return null;
+        if (o == null) return null;
         return (CharSequence) o;
     }
 
     @Override
     public boolean isNull(Record rec) {
-        int valueIndex = rec.getInt(stackIndex);
+        int valueIndex = getValueIndex(rec, stackIndex);
         Object o = object.get(valueIndex);
         return o == null;
     }

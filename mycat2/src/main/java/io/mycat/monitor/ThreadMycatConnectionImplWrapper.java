@@ -2,6 +2,7 @@ package io.mycat.monitor;
 
 import io.mycat.IOExecutor;
 import io.mycat.MetaClusterCurrent;
+import io.mycat.beans.mycat.MycatRelDataType;
 import io.mycat.newquery.MysqlCollector;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.newquery.RowSet;
@@ -52,6 +53,11 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
                 this.stat.decThread();
             }
         });
+    }
+
+    @Override
+    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, MycatRelDataType mycatRelDataType, BufferAllocator allocator) {
+        return newMycatConnection.prepareQuery(sql, params,mycatRelDataType,allocator);
     }
 
     @Override

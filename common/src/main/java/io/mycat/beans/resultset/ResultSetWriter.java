@@ -14,6 +14,8 @@
  */
 package io.mycat.beans.resultset;
 
+import java.math.BigDecimal;
+
 public interface ResultSetWriter {
     public void addFlagNull(boolean value);
 
@@ -52,6 +54,8 @@ public interface ResultSetWriter {
     public void addTime(int value);
 
     public void addUInt8(byte value);
+
+    public void addDecimal(BigDecimal value);
 
     public byte[] build();
 }

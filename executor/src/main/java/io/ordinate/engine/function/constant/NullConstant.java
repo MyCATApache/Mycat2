@@ -65,7 +65,7 @@ public final class NullConstant implements ConstantFunction, ScalarFunction {
 
     @Override
     public InnerType getType() {
-        return InnerType.NULL_TYPE;
+        return type;
     }
 
     @Override

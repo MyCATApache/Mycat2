@@ -41,6 +41,7 @@ public class SimpleColumnInfo {
     final String columnName;
     final int precision;
     final int scale;
+    final boolean signed;
     @NonNull
     final JDBCType jdbcType;
     final boolean nullable;
@@ -65,11 +66,15 @@ public class SimpleColumnInfo {
      */
     final int id;
 
+    MycatField mycatField;
 
-    public SimpleColumnInfo(@NonNull String columnName, int precision, int scale, @NonNull JDBCType jdbcType, boolean nullable, boolean autoIncrement, boolean primaryKey, boolean uniqueKey, int id) {
+    public SimpleColumnInfo(@NonNull String columnName, int precision, int scale, @NonNull JDBCType jdbcType, boolean nullable, boolean autoIncrement, boolean primaryKey, boolean uniqueKey, int id, boolean signed) {
         this.columnName = columnName;
         this.precision = precision;
         this.scale = scale;
+        this.signed = signed;
+
+        this.mycatField = MycatField.of(columnName, MycatDataType.fromJdbc(jdbcType, signed), nullable);
 
         switch (jdbcType) {
             case BIT:
@@ -216,7 +221,7 @@ public class SimpleColumnInfo {
                     return o;
                 }
                 if (o instanceof Boolean) {
-                    return ((Boolean) o).booleanValue()?1:0;
+                    return ((Boolean) o).booleanValue() ? 1 : 0;
                 }
                 throw new IllegalArgumentException();
             case STRING:
@@ -313,7 +318,7 @@ public class SimpleColumnInfo {
     }
 
     public MycatField toMycatField() {
-        return MycatField.of(columnName, MycatDataType.fromJdbc(getJdbcType(), true), true);
+        return mycatField;
     }
 
 }

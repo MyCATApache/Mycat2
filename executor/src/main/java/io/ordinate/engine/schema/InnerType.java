@@ -78,13 +78,30 @@ public enum InnerType {
     }
 
     public static InnerType from(ArrowType type) {
-        if (type instanceof ArrowType.Decimal){
+        if (type instanceof ArrowType.Decimal) {
             return InnerType.DECIMAL_TYPE;
         }
         for (InnerType value : values()) {
             if (value.arrowType.equals(type)) {
                 return value;
 
+            }
+        }
+        if (type instanceof ArrowType.Int) {
+            ArrowType.Int anInt = (ArrowType.Int) type;
+            int bitWidth = anInt.getBitWidth();
+            boolean isSigned = anInt.getIsSigned();
+            if (bitWidth == 8) {
+                return InnerType.INT8_TYPE;
+            }
+            if (bitWidth == 16) {
+                return InnerType.INT16_TYPE;
+            }
+            if (bitWidth == 32) {
+                return InnerType.INT32_TYPE;
+            }
+            if (bitWidth == 64) {
+                return InnerType.INT64_TYPE;
             }
         }
         throw new IllegalArgumentException();

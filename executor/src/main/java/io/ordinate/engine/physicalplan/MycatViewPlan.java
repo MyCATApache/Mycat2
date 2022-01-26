@@ -6,6 +6,7 @@ import io.mycat.DrdsSql;
 import io.mycat.DrdsSqlWithParams;
 import io.mycat.PartitionGroup;
 import io.mycat.beans.mycat.CopyMycatRowMetaData;
+import io.mycat.beans.mycat.MycatRelDataType;
 import io.mycat.calcite.MycatRelDatasourceSourceInfo;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.logical.MycatView;
@@ -31,6 +32,7 @@ import io.vertx.core.Handler;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
+import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
@@ -99,6 +101,7 @@ public class MycatViewPlan implements PhysicalPlan {
                 Future<Observable<VectorSchemaRoot>> observableFuture = connectionFuture.map(connection -> {
                     Observable<VectorSchemaRoot> observable = connection.prepareQuery(sqlString.getSql(),
                             MycatPreparedStatementUtil.extractParams(drdsSql.getParams(), sqlString.getDynamicParameters()),
+                            MycatRelDataType.getMycatRelType(MycatViewPlan.this.schema()),
                             rootAllocator);
                     return observable.doOnComplete(() -> context.recycleConnection(   context.getContext().resolveDatasourceTargetName(key), Future.succeededFuture(connection)));
                 });

@@ -292,8 +292,10 @@ public class RexConverter {
                 ae = executeCompiler.call("exists", aeOperands.get(0));
                 break;
             case CASE:
+                ae = executeCompiler.call("case", aeOperands);
+                break;
             case COALESCE:
-                ae = executeCompiler.call("case", aeOperands.get(0));
+                ae = executeCompiler.call("coalesce", aeOperands);
                 break;
             case OTHER:
             case OTHER_FUNCTION:

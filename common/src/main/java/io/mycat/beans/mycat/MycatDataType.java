@@ -217,9 +217,9 @@ public enum MycatDataType {
                 mycatDataType = BOOLEAN;
                 break;
             case DATE:
-                if (columnClassName.contains("year")){
+                if (columnClassName.contains("year")) {
                     mycatDataType = YEAR;
-                }else {
+                } else {
                     mycatDataType = DATE;
                 }
                 break;
@@ -958,6 +958,65 @@ public enum MycatDataType {
         }
     }
 
+    public static MycatDataType fromArrowType(Field field) {
+        ArrowType arrowType = field.getType();
+        if (arrowType == ArrowType.Bool.INSTANCE) {
+            return BOOLEAN;
+        }
+        if (arrowType == ArrowTypes.UINT64_TYPE) {
+            return UNSIGNED_LONG;
+        }
+        if (arrowType == ArrowTypes.INT8_TYPE) {
+            return TINYINT;
+        }
+        if (arrowType == ArrowTypes.UINT8_TYPE) {
+            return UNSIGNED_TINYINT;
+        }
+        if (arrowType == ArrowTypes.INT16_TYPE) {
+            return SHORT;
+        }
+        if (arrowType == ArrowTypes.UINT16_TYPE) {
+            return UNSIGNED_SHORT;
+        }
+        if (arrowType == ArrowTypes.INT32_TYPE) {
+            return INT;
+        }
+        if (arrowType == ArrowTypes.UINT32_TYPE) {
+            return UNSIGNED_INT;
+        }
+        if (arrowType == ArrowTypes.INT64_TYPE) {
+            return LONG;
+        }
+        if (arrowType == ArrowTypes.DOUBLE_TYPE) {
+            return DOUBLE;
+        }
+        if (arrowType instanceof ArrowType.Decimal) {
+            return DECIMAL;
+        }
+        if (arrowType == ArrowTypes.DATE_TYPE) {
+            return DATE;
+        }
+        if (arrowType == ArrowTypes.DATETIME_MILLI_TYPE) {
+            return DATETIME;
+        }
+        if (arrowType == ArrowTypes.DURATION_TYPE) {
+            return TIME;
+        }
+        if (arrowType == ArrowTypes.STRING_TYPE) {
+            return VARCHAR;
+        }
+        if (arrowType == ArrowTypes.BINARY_TYPE) {
+            return BINARY;
+        }
+        if (arrowType == ArrowTypes.FLOAT_TYPE) {
+            return FLOAT;
+        }
+        if (arrowType == ArrowTypes.NULL_TYPE) {
+            return NULL;
+        }
+        throw new IllegalStateException("Unexpected value: " + arrowType);
+    }
+
 
     public ArrowType getArrowType() {
         switch (this) {
@@ -984,7 +1043,7 @@ public enum MycatDataType {
             case DOUBLE:
                 return ArrowTypes.DOUBLE_TYPE;
             case DECIMAL:
-                return new ArrowType.Decimal(64,0,64);
+                return new ArrowType.Decimal(64, 0, 64);
             case DATE:
                 return ArrowTypes.DATE_TYPE;
             case DATETIME:

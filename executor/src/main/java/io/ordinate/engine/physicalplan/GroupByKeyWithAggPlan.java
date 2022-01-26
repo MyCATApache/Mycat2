@@ -124,6 +124,7 @@ public class GroupByKeyWithAggPlan implements PhysicalPlan {
                     functionSink.copy(accumulators, RecordUtil.wrapAsAggRecord(record), index++, output);
                 }
                 output.setRowCount(index);
+                map1.clear();
                 return output;
             }).toObservable().doOnComplete(() -> map.close());
         } else {

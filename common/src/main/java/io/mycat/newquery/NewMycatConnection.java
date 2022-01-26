@@ -1,5 +1,6 @@
 package io.mycat.newquery;
 
+import io.mycat.beans.mycat.MycatRelDataType;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
@@ -22,6 +23,8 @@ public interface NewMycatConnection {
     Future<RowSet> query(String sql, List<Object> params);
 
     void prepareQuery(String sql, List<Object> params, MysqlCollector collector);
+
+    Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, MycatRelDataType mycatRelDataType, BufferAllocator allocator);
 
     Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator);
 

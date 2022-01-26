@@ -52,6 +52,7 @@ public class ExecutorProviderImpl implements ExecutorProvider {
                         DrdsSqlWithParams drdsSql = newMycatDataContext.getDrdsSql();
                         CalciteCompiler mycatCalciteCompiler = new CalciteCompiler();
                         PhysicalPlan factory = mycatCalciteCompiler.convert(plan.getMycatRel());
+                       factory= fixCast(factory);
                         RexConverter rexConverter = mycatCalciteCompiler.getRexConverter();
                         Map<Integer, IndexedParameterLinkFunction> indexedMap = rexConverter.getIndexedParameterLinkFunctionMap();
                         List<Object> params = drdsSql.getParams();
@@ -82,6 +83,10 @@ public class ExecutorProviderImpl implements ExecutorProvider {
 
         }
         return null;
+    }
+
+    private PhysicalPlan fixCast(PhysicalPlan factory) {
+        return factory;
     }
 
     @Override

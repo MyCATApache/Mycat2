@@ -10,6 +10,9 @@ import com.google.common.collect.ImmutableList;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
+import org.apache.arrow.vector.types.pojo.ArrowType;
+import org.apache.arrow.vector.types.pojo.Field;
+import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.spark.sql.execution.columnar.DOUBLE;
 
 import java.math.BigDecimal;
@@ -33,6 +36,19 @@ public class MycatRelDataType {
 
     public static MycatRelDataType of(List<MycatField> mycatFields) {
         return new MycatRelDataType(mycatFields);
+    }
+
+    public static MycatRelDataType getMycatRelType(Schema schema) {
+        List<Field> fields = schema.getFields();
+        List<MycatField> mycatFields = new ArrayList<>(fields.size());
+        for (Field field : schema.getFields()) {
+            String name = field.getName();
+            ArrowType type = field.getType();
+            boolean nullable = field.isNullable();
+            MycatDataType mycatDataType = MycatDataType.fromArrowType(field);
+            mycatFields.add(MycatField.of(name,mycatDataType,nullable));
+        }
+        return MycatRelDataType.of(mycatFields);
     }
 
     public MycatRelDataType join(MycatRelDataType right) {

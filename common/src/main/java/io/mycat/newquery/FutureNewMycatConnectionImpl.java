@@ -15,6 +15,7 @@
 
 package io.mycat.newquery;
 
+import io.mycat.beans.mycat.MycatRelDataType;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
@@ -73,6 +74,11 @@ public class FutureNewMycatConnectionImpl implements NewMycatConnection {
             });
             return promise.future();
         });
+    }
+
+    @Override
+    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, MycatRelDataType mycatRelDataType, BufferAllocator allocator) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

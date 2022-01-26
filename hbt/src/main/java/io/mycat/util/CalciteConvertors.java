@@ -31,7 +31,6 @@ import org.apache.calcite.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.*;
@@ -150,7 +149,7 @@ public class CalciteConvertors {
 
 
                 res.add(new SimpleColumnInfo(columnName, precision, scale, jdbcType, nullable,
-                        IS_AUTOINCREMENT, false, false,id++));
+                        IS_AUTOINCREMENT, false, false,id++, true));
             }
             return res;
         } catch (Throwable e) {
@@ -248,8 +247,9 @@ public class CalciteConvertors {
             boolean primaryKey = mycatRowMetaData.isPrimaryKey(i);
             JDBCType jdbcType = JDBCType.valueOf(columnType);
             boolean uniqueKey = mycatRowMetaData.isUniqueKey(i);
+            boolean signed = mycatRowMetaData.isSigned(i);
             list.add(new SimpleColumnInfo(columnName, precision, scale, jdbcType,
-                    mycatRowMetaData.isNullable(i), autoIncrement, primaryKey, uniqueKey,id));
+                    mycatRowMetaData.isNullable(i), autoIncrement, primaryKey, uniqueKey,id,signed));
         }
         return list;
     }

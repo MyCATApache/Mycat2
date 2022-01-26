@@ -14,6 +14,8 @@
  */
 package io.mycat.beans.resultset;
 
+import java.math.BigDecimal;
+
 public class SimpleBinaryWriterImpl implements ResultSetWriter {
     Object[] objects;
     int index = 0;
@@ -126,6 +128,12 @@ public class SimpleBinaryWriterImpl implements ResultSetWriter {
 
     @Override
     public void addUInt8(byte value) {
+        objects[index] =value;
+        index++;
+    }
+
+    @Override
+    public void addDecimal(BigDecimal value) {
         objects[index] =value;
         index++;
     }

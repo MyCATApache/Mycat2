@@ -2,6 +2,7 @@ io.ordinate.engine.function.math.AbsIntFunctionFactory
 io.ordinate.engine.function.math.AddIntFunctionFactory
 io.ordinate.engine.function.cast.CastIntToLongFunctionFactory
 io.ordinate.engine.function.cast.CastLongToIntFunctionFactory
+io.ordinate.engine.function.math.DivDoubleFunctionFactory
 
 #bool
 io.ordinate.engine.function.bool.AndFunctionFactory
@@ -283,3 +284,6 @@ io.ordinate.engine.function.time.WeekdayFunctionFactory
 io.ordinate.engine.function.time.WeekOfYearFunctionFactory
 io.ordinate.engine.function.time.YearFunctionFactory
 io.ordinate.engine.function.time.YearWeekFunctionFactory
+
+#case
+io.ordinate.engine.function.bool.CaseLongFunctionFactory

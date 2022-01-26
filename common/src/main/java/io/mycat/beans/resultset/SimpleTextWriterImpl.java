@@ -18,6 +18,8 @@ import io.mycat.MySQLPacketUtil;
 import io.mycat.util.ByteUtil;
 import io.mycat.Datetimes;
 
+import java.math.BigDecimal;
+
 public class SimpleTextWriterImpl implements ResultSetWriter {
     byte[][] row;
     short index = 0;
@@ -138,6 +140,12 @@ public class SimpleTextWriterImpl implements ResultSetWriter {
     @Override
     public void addUInt8(byte b) {
         row[index] = String.valueOf(b).getBytes();
+        index++;
+    }
+
+    @Override
+    public void addDecimal(BigDecimal value) {
+        row[index] = value.toString().getBytes();
         index++;
     }
 

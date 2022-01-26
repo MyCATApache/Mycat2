@@ -8,6 +8,7 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.ImmutableList;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatMySQLRowMetaData;
+import io.mycat.beans.mycat.MycatRelDataType;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLFieldsType;
@@ -383,6 +384,11 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
             }
 
         });
+    }
+
+    @Override
+    public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, MycatRelDataType mycatRelDataType, BufferAllocator allocator) {
+        throw new UnsupportedOperationException();
     }
 
     public static MycatRowMetaData toColumnMetaData(List<ColumnDefinition> event) {
