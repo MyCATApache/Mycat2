@@ -21,24 +21,20 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
-import io.mycat.Partition;
+import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.MetaClusterCurrent;
+import io.mycat.Partition;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.replica.InstanceType;
 import io.mycat.replica.ReplicaSelectorManager;
-import jdk.nashorn.internal.runtime.options.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.mycat.util.DDLHelper.createDatabaseIfNotExist;
 import static io.mycat.calcite.table.LogicTable.rewriteCreateTableSql;
 
 public class CreateTableUtils {
@@ -61,13 +57,21 @@ public class CreateTableUtils {
             for (String s : set) {
                 try (DefaultConnection connection = jdbcConnectionManager.getConnection(s)) {
                     Connection rawConnection = connection.getRawConnection();
-                    String backupSchema = rawConnection.getSchema();
+                    String backupSchema = null;
+                    try {
+                        backupSchema = JdbcUtils.executeQuery(rawConnection, "select database()", Collections.emptyList())
+                                .get(0).values().iterator().next().toString();
+                    } catch (Exception e) {
+                        LOGGER.error("", e);
+                    }
                     if (InstanceType.valueOf(connection.getDataSource().getConfig().getInstanceType()).isWriteType()) {
                         if (!rawConnection.isReadOnly()) {
                             connection.createDatabase(node.getSchema());
-                            rawConnection.setSchema(node.getSchema());
+                            JdbcUtils.execute(rawConnection, "use `" + node.getSchema() + "`");
                             connection.createTable(rewriteCreateTableSql(sql, node.getSchema(), node.getTable()));
-                            rawConnection.setSchema(backupSchema);
+                            if (backupSchema != null) {
+                                JdbcUtils.execute(rawConnection, "use `" + backupSchema + "`");
+                            }
                         }
                     }
                 } catch (Throwable throwable) {
