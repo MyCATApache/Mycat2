@@ -55,6 +55,12 @@ public class MycatMonitorTest implements MycatTest {
                     "  `id` bigint(20) NOT NULL KEY " +
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
         }
+        try (Connection mycatConnection = getMySQLConnection(DB1);) {
+            execute(mycatConnection, "CREATE DATABASE if not exists db1");
+            execute(mycatConnection, "CREATE TABLE if not exists db1.`monitor` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY " +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
+        }
     }
 
     @Test
