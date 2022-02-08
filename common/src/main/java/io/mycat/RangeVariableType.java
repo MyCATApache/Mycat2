@@ -18,5 +18,7 @@ public enum RangeVariableType {
     EQUAL,
     RANGE,
     GTE,
-    LTE
+    GT,
+    LTE,
+    LT
 }

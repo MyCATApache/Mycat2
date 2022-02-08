@@ -1,6 +1,5 @@
 package io.mycat.calcite.rewriter;
 
-import com.google.common.collect.ImmutableList;
 import io.mycat.Partition;
 import io.mycat.RangeVariable;
 import io.mycat.RangeVariableType;
@@ -124,7 +123,7 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
     }
 
     @NotNull
-    public static List<Partition> getObject(CustomRuleFunction customRuleFunction, Map<QueryType, List<ValueIndexCondition>> conditions, List<Object> params) {
+    public static List<Partition> getPartitions(CustomRuleFunction customRuleFunction, Map<QueryType, List<ValueIndexCondition>> conditions, List<Object> params) {
         if (conditions == null || conditions.isEmpty()) {
             return customRuleFunction.calculate(Collections.emptyMap());
         }
@@ -166,8 +165,7 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                         ArrayList<Object> leftValues = new ArrayList<>(2);
                         ArrayList<Object> rightValues = new ArrayList<>(2);
 
-                        if (rangeQueryUpperOp == ComparisonOperator.LT) {
-                            rangeQueryUpperOp = ComparisonOperator.LTE;
+                        if (rangeQueryUpperOp == ComparisonOperator.LT || rangeQueryUpperOp == ComparisonOperator.LTE) {
                             for (Object o1 : rangeQueryLowerKey) {
                                 if (o1 instanceof RexNode) {
                                     o1 = MycatRexUtil.resolveParam((RexNode) o1, params);
@@ -176,8 +174,7 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                             }
                             Collections.sort((List) rangeQueryLowerKey);
                         }
-                        if (rangeQueryLowerOp == ComparisonOperator.GT) {
-                            rangeQueryLowerOp = ComparisonOperator.GTE;
+                        if (rangeQueryLowerOp == ComparisonOperator.GT || rangeQueryLowerOp == ComparisonOperator.GTE) {
                             for (Object o1 : rangeQueryUpperKey) {
                                 if (o1 instanceof RexNode) {
                                     o1 = MycatRexUtil.resolveParam((RexNode) o1, params);
@@ -196,20 +193,37 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                             bigOne = rangeQueryUpperKey.get(rangeQueryUpperKey.size() - 1);
                         }
                         Map<String, RangeVariable> map = new HashMap<>();
-                        if (smallOne != null && bigOne != null) {
+                        if (smallOne != null && bigOne != null &&
+                                rangeQueryUpperOp == ComparisonOperator.LTE && rangeQueryLowerOp == ComparisonOperator.GTE) {
                             for (String indexColumnName : condition.getIndexColumnNames()) {
                                 RangeVariable rangeVariable = new RangeVariable(indexColumnName, RangeVariableType.RANGE, smallOne, bigOne);
                                 map.put(indexColumnName, rangeVariable);
                             }
                         } else if (smallOne != null) {
-                            for (String indexColumnName : condition.getIndexColumnNames()) {
-                                RangeVariable rangeVariable = new RangeVariable(indexColumnName, RangeVariableType.GTE, smallOne);
-                                map.put(indexColumnName, rangeVariable);
+                            RangeVariableType type = null;
+                            if (rangeQueryUpperOp == ComparisonOperator.LT) {
+                                type = RangeVariableType.LT;
+                            } else if (rangeQueryUpperOp == ComparisonOperator.LTE) {
+                                type = RangeVariableType.LTE;
+                            }
+                            if (type != null) {
+                                for (String indexColumnName : condition.getIndexColumnNames()) {
+                                    RangeVariable rangeVariable = new RangeVariable(indexColumnName, type, smallOne);
+                                    map.put(indexColumnName, rangeVariable);
+                                }
                             }
                         } else if (bigOne != null) {
-                            for (String indexColumnName : condition.getIndexColumnNames()) {
-                                RangeVariable rangeVariable = new RangeVariable(indexColumnName, RangeVariableType.LTE, bigOne);
-                                map.put(indexColumnName, rangeVariable);
+                            RangeVariableType type = null;
+                            if (rangeQueryUpperOp == ComparisonOperator.GT) {
+                                type = RangeVariableType.GT;
+                            } else if (rangeQueryUpperOp == ComparisonOperator.GTE) {
+                                type = RangeVariableType.GTE;
+                            }
+                            if (type != null) {
+                                for (String indexColumnName : condition.getIndexColumnNames()) {
+                                    RangeVariable rangeVariable = new RangeVariable(indexColumnName, type, bigOne);
+                                    map.put(indexColumnName, rangeVariable);
+                                }
                             }
                         }
                         partitions = calculatePartitions(customRuleFunction, map, partitions);
