@@ -29,7 +29,6 @@ import java.util.Map;
 @net.jcip.annotations.NotThreadSafe
 public class MycatMonitorTest implements MycatTest {
     public static Vertx vertx;
-    boolean init = false;
 
     @BeforeClass
     public static void beforeClass() {
@@ -50,17 +49,12 @@ public class MycatMonitorTest implements MycatTest {
     @Before
     @SneakyThrows
     public synchronized void before() {
-        if (!init) {
-            try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
-                execute(mycatConnection, "CREATE DATABASE db1");
-                execute(mycatConnection, "CREATE TABLE db1.`monitor` (\n" +
-                        "  `id` bigint(20) NOT NULL KEY " +
-                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
-            }
-            init = true;
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
+            execute(mycatConnection, "CREATE DATABASE if not exists db1");
+            execute(mycatConnection, "CREATE TABLE if not exists db1.`monitor` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY " +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
         }
-
-
     }
 
     @Test
