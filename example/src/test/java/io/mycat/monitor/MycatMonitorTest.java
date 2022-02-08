@@ -49,18 +49,7 @@ public class MycatMonitorTest implements MycatTest {
     @Before
     @SneakyThrows
     public synchronized void before() {
-        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
-            execute(mycatConnection, "CREATE DATABASE if not exists db1");
-            execute(mycatConnection, "CREATE TABLE if not exists db1.`monitor` (\n" +
-                    "  `id` bigint(20) NOT NULL KEY " +
-                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
-        }
-        try (Connection mycatConnection = getMySQLConnection(DB1);) {
-            execute(mycatConnection, "CREATE DATABASE if not exists db1");
-            execute(mycatConnection, "CREATE TABLE if not exists db1.`monitor` (\n" +
-                    "  `id` bigint(20) NOT NULL KEY " +
-                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
-        }
+
     }
 
     @Test
@@ -70,6 +59,11 @@ public class MycatMonitorTest implements MycatTest {
         String url = MycatSQLLogMonitorImpl.SHOW_DB_MONITOR_URL;
         DatabaseInstanceEntry.DatabaseInstanceMap b = fetch(url, tClass);
         try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT);) {
+            execute(mySQLConnection, "CREATE DATABASE if not exists db1");
+            execute(mySQLConnection, "CREATE TABLE if not exists db1.`monitor` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY " +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
+
             String sql = " select * FROM db1.`monitor`; ";
             for (int i = 0; i < 1000; i++) {
                 JdbcUtils.executeQuery(mySQLConnection, sql, Collections.emptyList());
@@ -87,6 +81,11 @@ public class MycatMonitorTest implements MycatTest {
         String url = MycatSQLLogMonitorImpl.SHOW_INSTANCE_MONITOR_URL;
         InstanceEntry b = fetch(url, tClass);
         try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT);) {
+            execute(mySQLConnection, "CREATE DATABASE if not exists db1");
+            execute(mySQLConnection, "CREATE TABLE if not exists db1.`monitor` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY " +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
+
             String sql = " select * FROM db1.`monitor`; ";
             for (int i = 0; i < 1000; i++) {
                 executeQuery(mySQLConnection, sql);
@@ -104,6 +103,11 @@ public class MycatMonitorTest implements MycatTest {
         String url = MycatSQLLogMonitorImpl.SHOW_RW_MONITOR_URL;
         RWEntry.RWEntryMap b = fetch(url, tClass);
         try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT);) {
+            execute(mySQLConnection, "CREATE DATABASE if not exists db1");
+            execute(mySQLConnection, "CREATE TABLE if not exists db1.`monitor` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY " +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
+
             String sql = " select * FROM db1.`monitor`";
             for (int i = 0; i < 1000; i++) {
                 executeQuery(mySQLConnection, sql);
