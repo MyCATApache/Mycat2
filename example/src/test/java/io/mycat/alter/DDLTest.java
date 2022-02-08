@@ -5,6 +5,7 @@ import io.mycat.NameableExecutor;
 import io.mycat.assemble.MycatTest;
 import io.vertx.core.CompositeFuture;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
@@ -18,8 +19,10 @@ import java.util.stream.IntStream;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
+@Ignore
 public class DDLTest implements MycatTest {
     @Test
+    @Ignore
     public void testNormal() throws Exception {
      //while (true)
      {
