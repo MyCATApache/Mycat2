@@ -152,8 +152,7 @@ public class VertxMycatServer implements MycatServer {
         public void addSession(VertxSession vertxSession) {
             NetSocket socket = vertxSession.getSocket();
             socket.closeHandler(event -> {
-                String message = "session:{} is closing:{}";
-                LOGGER.info(message, vertxSession);
+                LOGGER.info("session:{} is closing", vertxSession);
                 sessions.remove(vertxSession);
             });
             sessions.add(vertxSession);

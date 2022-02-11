@@ -20,8 +20,8 @@ import cn.mycat.vertx.xa.XaLog;
 import io.mycat.newquery.NewMycatConnection;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.impl.logging.Logger;
-import io.vertx.core.impl.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -120,7 +120,11 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
         }
         if (localSqlConnection != null && map.isEmpty()) {
             inTranscation = false;
-            return localSqlConnection.update("rollback;").compose(unused -> localSqlConnection.close()).mapEmpty();
+            return localSqlConnection.update("rollback;").transform(unused -> {
+                LOGGER.error("", unused.cause());
+                localSqlConnection.abandonConnection();
+                return Future.succeededFuture();
+            }).mapEmpty();
         }
         String curXid = this.xid;
         NewMycatConnection curLocalSqlConnection = this.localSqlConnection;
@@ -129,7 +133,11 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
             this.targetName = null;
             this.xid = null;
             return curLocalSqlConnection.update("delete from mycat.xa_log where xid = '" + curXid + "'");
-        })).compose(u -> curLocalSqlConnection.close()).mapEmpty();
+        })).transform(u -> {
+            LOGGER.error("", u.cause());
+            curLocalSqlConnection.abandonConnection();
+            return Future.succeededFuture();
+        }).mapEmpty();
     }
 
     @Override
@@ -161,11 +169,12 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
             if (localSqlConnection != null) {
                 return localSqlConnection
                         .update("rollback")
-                        .flatMap(c -> localSqlConnection.close()
-                                .onComplete(event1 -> {
-                                    localSqlConnection = null;
-                                    targetName = null;
-                                }));
+                        .onComplete(c -> {
+                            LOGGER.error("", c.cause());
+                            localSqlConnection.abandonConnection();
+                            localSqlConnection = null;
+                            targetName = null;
+                        }).mapEmpty();
 
             } else {
                 return Future.succeededFuture();
@@ -193,6 +202,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
         return future.flatMap(unused -> {
             if (localSqlConnection != null) {
                 localSqlConnection.abandonConnection();
+                localSqlConnection = null;
             }
             return super.kill();
         });

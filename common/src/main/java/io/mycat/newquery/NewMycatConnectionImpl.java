@@ -145,6 +145,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                 }
 
             } catch (Exception e) {
+                LOGGER.error("",e);
                 collector.onError(e);
                 return Future.failedFuture(e);
             } finally {
@@ -228,6 +229,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                             }
                         }
                     } catch (Exception e) {
+                        LOGGER.error("",e);
                         emitter.onError(e);
                         return Future.failedFuture(e);
                     } finally {
@@ -460,6 +462,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                 }
                 return Future.succeededFuture(resultSetList);
             } catch (Exception exception) {
+                LOGGER.error("",exception);
                 return Future.failedFuture(exception);
             }
         });
@@ -500,6 +503,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                 sqlResult.setLastInsertId(lastInsertId);
                 return Future.succeededFuture(sqlResult);
             } catch (Exception e) {
+                LOGGER.error("",e);
                 return Future.failedFuture(e);
             }
         });
@@ -550,6 +554,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                 sqlResult.setLastInsertId(lastInsertId);
                 return Future.succeededFuture(sqlResult);
             } catch (Exception e) {
+                LOGGER.error("",e);
                 return Future.failedFuture(e);
             }
         });
