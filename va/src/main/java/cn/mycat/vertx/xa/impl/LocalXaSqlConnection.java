@@ -165,21 +165,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
 
     @Override
     public Future<Void> close() {
-        return super.close().flatMap(event -> {
-            if (localSqlConnection != null) {
-                return localSqlConnection
-                        .update("rollback")
-                        .onComplete(c -> {
-                            LOGGER.error("", c.cause());
-                            localSqlConnection.abandonConnection();
-                            localSqlConnection = null;
-                            targetName = null;
-                        }).mapEmpty();
-
-            } else {
-                return Future.succeededFuture();
-            }
-        });
+        return rollback();
     }
 
     @Override
@@ -195,10 +181,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
 
     @Override
     public Future<Void> kill() {
-        Future<Void> future = Future.succeededFuture();
-        if (isInTransaction()) {
-            future = rollback();
-        }
+        Future<Void> future = rollback();
         return future.flatMap(unused -> {
             if (localSqlConnection != null) {
                 localSqlConnection.abandonConnection();
