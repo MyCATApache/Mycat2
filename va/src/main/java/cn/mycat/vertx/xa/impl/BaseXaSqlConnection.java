@@ -23,8 +23,8 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.impl.logging.Logger;
-import io.vertx.core.impl.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.util.*;
@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 
 
 public class BaseXaSqlConnection extends AbstractXaSqlConnection {
-    private final static Logger LOGGER = LoggerFactory.getLogger(BaseXaSqlConnection.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseXaSqlConnection.class);
     protected final ConcurrentHashMap<String, NewMycatConnection> map = new ConcurrentHashMap<>();
     protected final Map<NewMycatConnection, State> connectionState = Collections.synchronizedMap(new IdentityHashMap<>());
     protected final List<NewMycatConnection> extraConnections = new CopyOnWriteArrayList<>();
@@ -171,7 +171,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                             //@todo 注册调度中心,定时恢复
                             return Future.failedFuture(message);
                         } catch (Exception e) {
-                            LOGGER.error(e);
+                            LOGGER.error("",e);
                             return Future.failedFuture(e);
                         }
                     }).onComplete(promise);
@@ -191,7 +191,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                 log.readXARecoveryLog(map);
                 return true;
             } catch (Exception e) {
-                LOGGER.error(e);
+                LOGGER.error("",e);
             } finally {
                 map.values().forEach(c -> {
                     if (c != null) {
