@@ -11,14 +11,14 @@
 
 package io.vertx.core.impl.future;
 
-import cn.mycat.vertx.xa.impl.XaLogImpl;
+import io.mycat.commands.VertxMySQLDatasourcePoolImpl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.NoStackTraceThrowable;
-import io.vertx.core.impl.logging.Logger;
-import io.vertx.core.impl.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Objects;
@@ -29,7 +29,7 @@ import java.util.Objects;
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 class FutureImpl<T> extends FutureBase<T> {
-  private final static Logger LOGGER = LoggerFactory.getLogger(FutureImpl.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(VertxMySQLDatasourcePoolImpl.class);
 
   private static final Object NULL_VALUE = new Object();
 
