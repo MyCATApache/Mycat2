@@ -10,6 +10,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.FieldVector;
@@ -26,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+@Getter
 public class NewMycatConnectionImpl implements NewMycatConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(NewMycatConnectionImpl.class);
 
@@ -407,7 +409,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     public void abandonConnection() {
         if (this.connection instanceof DruidPooledConnection) {
             DruidPooledConnection connection = (DruidPooledConnection) this.connection;
-            JdbcUtils.close(connection.getConnection());
+            connection.abandond();
             JdbcUtils.close(connection);
         } else {
             JdbcUtils.close(this.connection);
