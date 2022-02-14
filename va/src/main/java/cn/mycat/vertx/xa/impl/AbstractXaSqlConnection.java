@@ -45,19 +45,6 @@ public abstract class AbstractXaSqlConnection implements XaSqlConnection {
         this.autocommit = autocommit;
     }
 
-    /**
-     * a sql runs before call it,if autocommit = false,it should begin a transcation.
-     *
-     * @param handler the callback handler
-     */
-    @Override
-    public void openStatementState(Handler<AsyncResult<Void>> handler) {
-        Future<Void> future = openStatementState();
-        if (handler != null) {
-            future.onComplete(handler);
-        }
-    }
-
     public Future<Void> openStatementState() {
         if (!isAutocommit()) {
             if (!isInTransaction()) {
@@ -70,15 +57,6 @@ public abstract class AbstractXaSqlConnection implements XaSqlConnection {
     @Override
     public boolean isInTransaction() {
         return inTranscation;
-    }
-
-
-
-    public void closeStatementState(Handler<AsyncResult<Void>> handler) {
-        Future<Void> future = closeStatementState();
-        if (handler != null) {
-            future.onComplete(handler);
-        }
     }
 
     @Override
