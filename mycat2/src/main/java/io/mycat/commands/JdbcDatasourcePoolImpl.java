@@ -73,10 +73,8 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
                     if (rawConnection instanceof DruidPooledConnection) {
                         DruidPooledConnection connection = (DruidPooledConnection)rawConnection;
                         connection.abandond();
-                        JdbcUtils.close(rawConnection);
-                    } else {
-                        JdbcUtils.close(rawConnection);
                     }
+                    defaultConnection.close();
                 }
             };
             return Future.succeededFuture(new ThreadMycatConnectionImplWrapper(stat,newMycatConnection));
