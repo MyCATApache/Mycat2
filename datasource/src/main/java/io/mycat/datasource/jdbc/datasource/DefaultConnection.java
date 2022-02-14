@@ -99,7 +99,7 @@ public class DefaultConnection implements MycatConnection {
     }
 
 
-    public void close() {
+    public synchronized void close() {
         try {
             if (!isClosed()) {
                 if (LOGGER.isDebugEnabled()) {
