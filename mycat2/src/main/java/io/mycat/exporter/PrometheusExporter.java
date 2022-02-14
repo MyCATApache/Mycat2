@@ -33,7 +33,9 @@ public class PrometheusExporter implements Runnable {
                                 new CPULoadCollector()
                         );
                         collectorList.register();
+                        LOGGER.info("PrometheusExporter start server port:"+port);
                         HTTPServer server = new io.mycat.exporter.HTTPServer(Integer.parseInt(Objects.toString(port)));
+                        LOGGER.info("PrometheusExporter success");
                     } catch (Throwable e) {
                         LOGGER.error("", e);
                     }
