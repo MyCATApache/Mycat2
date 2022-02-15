@@ -28,7 +28,7 @@ public abstract class BaseSavepointSuite extends XaTestSuite {
 
         SavepointSqlConnection savepointSqlConnection = (SavepointSqlConnection) baseXaSqlConnection;
 
-        baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             @SneakyThrows
             public void handle(AsyncResult<Void> event) {
@@ -55,7 +55,7 @@ public abstract class BaseSavepointSuite extends XaTestSuite {
 
         SavepointSqlConnection savepointSqlConnection = (SavepointSqlConnection) baseXaSqlConnection;
 
-        baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             @SneakyThrows
             public void handle(AsyncResult<Void> event) {
@@ -99,7 +99,7 @@ public abstract class BaseSavepointSuite extends XaTestSuite {
 
         SavepointSqlConnection savepointSqlConnection = (SavepointSqlConnection) baseXaSqlConnection;
 
-        baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             @SneakyThrows
             public void handle(AsyncResult<Void> event) {
@@ -120,7 +120,7 @@ public abstract class BaseSavepointSuite extends XaTestSuite {
 
         SavepointSqlConnection savepointSqlConnection = (SavepointSqlConnection) baseXaSqlConnection;
 
-        baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             @SneakyThrows
             public void handle(AsyncResult<Void> event) {
@@ -142,7 +142,7 @@ public abstract class BaseSavepointSuite extends XaTestSuite {
 
         SavepointSqlConnection savepointSqlConnection = (SavepointSqlConnection) baseXaSqlConnection;
 
-        baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             @SneakyThrows
             public void handle(AsyncResult<Void> event) {
@@ -168,7 +168,7 @@ public abstract class BaseSavepointSuite extends XaTestSuite {
 
         SavepointSqlConnection savepointSqlConnection = (SavepointSqlConnection) baseXaSqlConnection;
 
-        baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             @SneakyThrows
             public void handle(AsyncResult<Void> event) {
@@ -215,7 +215,7 @@ public abstract class BaseSavepointSuite extends XaTestSuite {
 
         SavepointSqlConnection savepointSqlConnection = (SavepointSqlConnection) baseXaSqlConnection;
 
-        baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             @SneakyThrows
             public void handle(AsyncResult<Void> event) {
@@ -262,7 +262,7 @@ public abstract class BaseSavepointSuite extends XaTestSuite {
 
         SavepointSqlConnection savepointSqlConnection = (SavepointSqlConnection) baseXaSqlConnection;
 
-        baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             @SneakyThrows
             public void handle(AsyncResult<Void> event) {
@@ -320,7 +320,7 @@ public abstract class BaseSavepointSuite extends XaTestSuite {
 
         SavepointSqlConnection savepointSqlConnection = (SavepointSqlConnection) baseXaSqlConnection;
 
-        baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             @SneakyThrows
             public void handle(AsyncResult<Void> event) {
@@ -385,7 +385,7 @@ public abstract class BaseSavepointSuite extends XaTestSuite {
 
         SavepointSqlConnection savepointSqlConnection = (SavepointSqlConnection) baseXaSqlConnection;
 
-        baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             @SneakyThrows
             public void handle(AsyncResult<Void> event) {
@@ -479,7 +479,7 @@ public abstract class BaseSavepointSuite extends XaTestSuite {
 
         SavepointSqlConnection savepointSqlConnection = (SavepointSqlConnection) baseXaSqlConnection;
 
-        baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             @SneakyThrows
             public void handle(AsyncResult<Void> event) {
@@ -570,7 +570,7 @@ public abstract class BaseSavepointSuite extends XaTestSuite {
 
         SavepointSqlConnection savepointSqlConnection = (SavepointSqlConnection) baseXaSqlConnection;
 
-        baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             @SneakyThrows
             public void handle(AsyncResult<Void> event) {
@@ -645,7 +645,7 @@ public abstract class BaseSavepointSuite extends XaTestSuite {
 
         SavepointSqlConnection savepointSqlConnection = (SavepointSqlConnection) baseXaSqlConnection;
 
-        baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             @SneakyThrows
             public void handle(AsyncResult<Void> event) {

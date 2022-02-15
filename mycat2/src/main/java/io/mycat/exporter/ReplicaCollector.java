@@ -8,10 +8,7 @@ import io.prometheus.client.GaugeMetricFamily;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ReplicaCollector extends Collector {
@@ -27,9 +24,10 @@ public class ReplicaCollector extends Collector {
 
             List<Map<String, Object>> resultSetMap = rowBaseIterator.getResultSetMap();
             for (Map<String, Object> map : resultSetMap) {
-                List<String> collect = map.keySet().stream()
-                        .filter(i -> columns.contains(i))
-                        .map(s -> Objects.toString(map.get(s))).collect(Collectors.toList());
+                List<String> collect = columns.stream()
+                        .map(s -> {
+                            return Optional.ofNullable(map.get(s)).map(i-> Objects.toString(i)).orElse(null);
+                        }).collect(Collectors.toList());
                 Object available = map.get("AVAILABLE");
                 int value = (Boolean.parseBoolean(available.toString())) ? 1 : 0;//check the value
                 gaugeMetricFamily.addMetric(collect, value);

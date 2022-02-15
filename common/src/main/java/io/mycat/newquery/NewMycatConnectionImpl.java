@@ -1,14 +1,12 @@
 package io.mycat.newquery;
 
 import com.alibaba.druid.pool.DruidPooledConnection;
-import com.alibaba.druid.pool.DruidPooledResultSet;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLReplaceable;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.util.JdbcUtils;
-import com.mysql.cj.jdbc.result.ResultSetImpl;
 import com.mysql.cj.result.Field;
 import io.mycat.MySQLPacketUtil;
 import io.mycat.beans.mycat.*;
@@ -20,6 +18,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.FieldVector;
@@ -31,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,8 +37,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-import static io.mycat.beans.mycat.MycatDataType.*;
+import static io.mycat.beans.mycat.MycatDataType.BINARY;
 
+@Getter
 public class NewMycatConnectionImpl implements NewMycatConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(NewMycatConnectionImpl.class);
 
@@ -98,6 +97,9 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     @Override
     public synchronized void prepareQuery(String sql, List<Object> params, MysqlCollector collector) {
+        if (this.future.isComplete()) {
+            this.future = Future.succeededFuture();
+        }
         this.future = this.future.transform(voidAsyncResult -> {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("targetName:{}\n sql:{}\n params:{}", targetName, sql, params);
@@ -145,7 +147,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                 }
 
             } catch (Exception e) {
-                LOGGER.error("",e);
+                LOGGER.error("", e);
                 collector.onError(e);
                 return Future.failedFuture(e);
             } finally {
@@ -181,6 +183,9 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, MycatRelDataType mycatRelDataType, BufferAllocator allocator) {
         return Observable.create(emitter -> {
             synchronized (NewMycatConnectionImpl.this) {
+                if (this.future.isComplete()) {
+                    this.future = Future.succeededFuture();
+                }
                 NewMycatConnectionImpl.this.future = NewMycatConnectionImpl.this.future.transform(voidAsyncResult -> {
                     try {
                         if (LOGGER.isDebugEnabled()) {
@@ -229,7 +234,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                             }
                         }
                     } catch (Exception e) {
-                        LOGGER.error("",e);
+                        LOGGER.error("", e);
                         emitter.onError(e);
                         return Future.failedFuture(e);
                     } finally {
@@ -423,6 +428,9 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     @Override
     public synchronized Future<List<Object>> call(String sql) {
+        if (this.future.isComplete()) {
+            this.future = Future.succeededFuture();
+        }
         Future<List<Object>> transform = future.transform(voidAsyncResult -> {
             try {
                 if (LOGGER.isDebugEnabled()) {
@@ -462,7 +470,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                 }
                 return Future.succeededFuture(resultSetList);
             } catch (Exception exception) {
-                LOGGER.error("",exception);
+                LOGGER.error("", exception);
                 return Future.failedFuture(exception);
             }
         });
@@ -472,6 +480,9 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     @Override
     public synchronized Future<SqlResult> insert(String sql, List<Object> params) {
+        if (this.future.isComplete()) {
+            this.future = Future.succeededFuture();
+        }
         Future<SqlResult> transform = future.transform(voidAsyncResult -> {
             try {
                 if (LOGGER.isDebugEnabled()) {
@@ -503,7 +514,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                 sqlResult.setLastInsertId(lastInsertId);
                 return Future.succeededFuture(sqlResult);
             } catch (Exception e) {
-                LOGGER.error("",e);
+                LOGGER.error("", e);
                 return Future.failedFuture(e);
             }
         });
@@ -523,6 +534,9 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     @Override
     public synchronized Future<SqlResult> update(String sql, List<Object> params) {
+        if (this.future.isComplete()) {
+            this.future = Future.succeededFuture();
+        }
         Future<SqlResult> transform = future.transform(voidAsyncResult -> {
             try {
                 if (LOGGER.isDebugEnabled()) {
@@ -554,7 +568,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                 sqlResult.setLastInsertId(lastInsertId);
                 return Future.succeededFuture(sqlResult);
             } catch (Exception e) {
-                LOGGER.error("",e);
+                LOGGER.error("", e);
                 return Future.failedFuture(e);
             }
         });
@@ -576,7 +590,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     public void abandonConnection() {
         if (this.connection instanceof DruidPooledConnection) {
             DruidPooledConnection connection = (DruidPooledConnection) this.connection;
-            JdbcUtils.close(connection.getConnection());
+            connection.abandond();
             JdbcUtils.close(connection);
         } else {
             JdbcUtils.close(this.connection);

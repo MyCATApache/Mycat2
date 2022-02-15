@@ -16,6 +16,8 @@
  */
 package io.mycat.commands;
 
+import com.alibaba.druid.pool.DruidPooledConnection;
+import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
@@ -27,6 +29,8 @@ import io.mycat.newquery.NewMycatConnection;
 import io.mycat.newquery.NewMycatConnectionImpl;
 import io.vertx.core.Future;
 
+import java.sql.Connection;
+
 public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
     public JdbcDatasourcePoolImpl(String targetName) {
         super(targetName);
@@ -36,11 +40,11 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
     public Future<NewMycatConnection> getConnection() {
         try {
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-            DefaultConnection connection = jdbcConnectionManager.getConnection(targetName);
+            DefaultConnection defaultConnection = jdbcConnectionManager.getConnection(targetName);
             DatabaseInstanceEntry stat = DatabaseInstanceEntry.stat(targetName);
             stat.plusCon();
             stat.plusQps();
-            NewMycatConnectionImpl newMycatConnection = new NewMycatConnectionImpl(targetName,connection.getRawConnection()) {
+            NewMycatConnectionImpl newMycatConnection = new NewMycatConnectionImpl(targetName,defaultConnection.getRawConnection()) {
                 long start;
 
                 @Override
@@ -54,10 +58,23 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
                     InstanceMonitor.plusPrt(end - start);
                 }
 
+
                 @Override
-                public Future<Void> close() {
+                public synchronized Future<Void> close() {
                     stat.decCon();
-                    return super.close();
+                    defaultConnection.close();
+                    return Future.succeededFuture();
+                }
+
+                @Override
+                public synchronized void abandonConnection() {
+                    stat.decCon();
+                    Connection rawConnection = defaultConnection.getRawConnection();
+                    if (rawConnection instanceof DruidPooledConnection) {
+                        DruidPooledConnection connection = (DruidPooledConnection)rawConnection;
+                        connection.abandond();
+                    }
+                    defaultConnection.close();
                 }
             };
             return Future.succeededFuture(new ThreadMycatConnectionImplWrapper(stat,newMycatConnection));

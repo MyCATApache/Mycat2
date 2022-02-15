@@ -176,7 +176,7 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
         HashMap<String, Integer> resMap = new HashMap<>();
         for (Map.Entry<String, MycatDatasourcePool> entry : map.entrySet()) {
             MycatDatasourcePool pool = entry.getValue();
-            Integer n = pool.getAvailableNumber();
+            Integer n = pool.getUsedNumber();
             resMap.put(entry.getKey(), n);
         }
         return Future.succeededFuture(resMap);

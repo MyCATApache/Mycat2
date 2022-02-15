@@ -38,91 +38,23 @@ public interface XaSqlConnection {
 
     public MySQLIsolation getTransactionIsolation();
 
-    default public void begin(Handler<AsyncResult<Void>> handler) {
-        Future<Void> future = begin();
-        if (handler != null) {
-            future.onComplete(handler);
-        }
-    }
-
     public Future<Void> begin();
 
     public Future<NewMycatConnection> getConnection(String targetName);
 
     public List<NewMycatConnection> getExistedTranscationConnections();
 
-    default public void rollback(Handler<AsyncResult<Void>> handler) {
-        Future<Void> future = rollback();
-        if (handler != null) {
-            future.onComplete(handler);
-        }
-    }
-
     public Future<Void> rollback();
-
-    default public void commit(Handler<AsyncResult<Void>> handler) {
-        Future<Void> future = commit();
-        if (handler != null) {
-            future.onComplete(handler);
-        }
-    }
 
     public Future<Void> commit();
 
-    /**
-     * inner interface
-     *
-     * @param beforeCommit for the native connection commit or some exception test
-     * @param handler      the callback handler
-     */
-    public default void commitXa(Function<ImmutableCoordinatorLog, Future<Void>> beforeCommit, Handler<AsyncResult<Void>> handler) {
-        Future<Void> future = commitXa(beforeCommit);
-        if (handler != null) {
-            future.onComplete(handler);
-        }
-    }
-
-
     public Future<Void> commitXa(Function<ImmutableCoordinatorLog, Future<Void>> beforeCommit);
-
-    public default void close(Handler<AsyncResult<Void>> handler) {
-        Future<Void> future = close();
-        if (handler != null) {
-            future.onComplete(handler);
-        }
-    }
 
     public Future<Void> close();
 
     public Future<Void> kill();
 
-
-    /**
-     * a sql runs before call it;
-     *
-     * @param handler the callbackhandler
-     */
-    public default void openStatementState(Handler<AsyncResult<Void>> handler) {
-        Future<Void> future = openStatementState();
-        if (handler != null) {
-            future.onComplete(handler);
-        }
-    }
-
     public Future<Void> openStatementState();
-
-
-    /**
-     * a sql runs after call it;
-     *
-     * @param handler the callback handler
-     */
-    public default void closeStatementState(Handler<AsyncResult<Void>> handler) {
-        Future<Void> future = closeStatementState();
-        if (future != null) {
-            future.onComplete(handler);
-        }
-    }
 
     public Future<Void> closeStatementState();
 

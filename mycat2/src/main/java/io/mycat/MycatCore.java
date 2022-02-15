@@ -18,6 +18,7 @@ import io.mycat.beans.mysql.MySQLVersion;
 import io.mycat.calcite.ExecutorProvider;
 import io.mycat.config.*;
 import io.mycat.executor.ExecutorProviderImpl;
+import io.mycat.exporter.PrometheusExporter;
 import io.mycat.exporter.SqlRecorderRuntime;
 import io.mycat.monitor.MycatSQLLogMonitor;
 import io.mycat.monitor.MycatSQLLogMonitorImpl;
@@ -209,6 +210,7 @@ public class MycatCore {
     public void startServer() throws Exception {
         ConfigUpdater.loadConfigFromFile();
         mycatServer.start();
+        new PrometheusExporter().run();
     }
 
     public static void main(String[] args) throws Exception {

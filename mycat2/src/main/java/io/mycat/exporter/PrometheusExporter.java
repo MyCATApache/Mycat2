@@ -16,7 +16,7 @@ public class PrometheusExporter implements Runnable {
     @Override
     public void run() {
         MycatServerConfig mycatServerConfig = MetaClusterCurrent.wrapper(MycatServerConfig.class);
-        Optional.ofNullable(mycatServerConfig.getProperties().getOrDefault("prometheusPort",null))
+        Optional.ofNullable(mycatServerConfig.getProperties().getOrDefault("prometheusPort",7066))
                 .ifPresent(port->{
                     try {
                         CollectorList collectorList = new CollectorList(
@@ -30,10 +30,17 @@ public class PrometheusExporter implements Runnable {
                                 //////////////////////////////////////////
                                 new SqlStatCollector(),
                                 new ReplicaCollector(),
-                                new CPULoadCollector()
+                                new CPULoadCollector(),
+                                /////////////////////////////////////////
+                                new ConnectionCounterCollector(),
+                                new HeartbeatCollector(),
+                                new InstanceCollector(),
+                                new ThreadPoolCollector()
                         );
                         collectorList.register();
+                        LOGGER.info("PrometheusExporter start server port:"+port);
                         HTTPServer server = new io.mycat.exporter.HTTPServer(Integer.parseInt(Objects.toString(port)));
+                        LOGGER.info("PrometheusExporter success");
                     } catch (Throwable e) {
                         LOGGER.error("", e);
                     }
