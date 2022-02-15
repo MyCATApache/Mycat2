@@ -91,7 +91,7 @@ public abstract class XaTestSuite {
     @Test
     public void begin(VertxTestContext testContext) {
         XaSqlConnection baseXaSqlConnection = factory.apply(mySQLManager,xaLog);
-        baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             public void handle(AsyncResult<Void> event) {
                 Assertions.assertEquals(baseXaSqlConnection.isInTransaction(), true);
@@ -104,7 +104,7 @@ public abstract class XaTestSuite {
     @Test
     public void beginCommit(VertxTestContext testContext) {
         XaSqlConnection baseXaSqlConnection = factory.apply(mySQLManager,xaLog);
-        baseXaSqlConnection.begin(event -> baseXaSqlConnection.commit(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(event -> baseXaSqlConnection.commit().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             public void handle(AsyncResult<Void> event) {
                 Assertions.assertEquals(baseXaSqlConnection.isInTransaction(), false);
@@ -117,7 +117,7 @@ public abstract class XaTestSuite {
     @Test
     public void beginRollback(VertxTestContext testContext) {
         XaSqlConnection baseXaSqlConnection = factory.apply(mySQLManager,xaLog);
-        baseXaSqlConnection.begin(event -> baseXaSqlConnection.rollback(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(event -> baseXaSqlConnection.rollback().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             public void handle(AsyncResult<Void> event) {
                 Assertions.assertEquals(baseXaSqlConnection.isInTransaction(), false);
@@ -131,10 +131,10 @@ public abstract class XaTestSuite {
     @Disabled
     public void beginBegin(VertxTestContext testContext) {
         XaSqlConnection baseXaSqlConnection = factory.apply(mySQLManager,xaLog);
-        baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             public void handle(AsyncResult<Void> event) {
-                baseXaSqlConnection.begin(event1 -> {
+                baseXaSqlConnection.begin().onComplete(event1 -> {
                     Assertions.assertTrue(event1.failed());
                     testContext.completeNow();
                 });
@@ -146,7 +146,7 @@ public abstract class XaTestSuite {
     @Test
     public void rollback(VertxTestContext testContext) {
         XaSqlConnection baseXaSqlConnection = factory.apply(mySQLManager,xaLog);
-        baseXaSqlConnection.rollback(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.rollback().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             public void handle(AsyncResult<Void> event) {
                 Assertions.assertTrue(event.succeeded());
@@ -159,7 +159,7 @@ public abstract class XaTestSuite {
     @Test
     public void commit(VertxTestContext testContext) {
         XaSqlConnection baseXaSqlConnection = factory.apply(mySQLManager,xaLog);
-        baseXaSqlConnection.commit(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.commit().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             public void handle(AsyncResult<Void> event) {
                 Assertions.assertTrue(event.succeeded());
@@ -172,7 +172,7 @@ public abstract class XaTestSuite {
     @Test
     public void close(VertxTestContext testContext) {
         XaSqlConnection baseXaSqlConnection = factory.apply(mySQLManager,xaLog);
-        baseXaSqlConnection.close(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.close().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             public void handle(AsyncResult<Void> event) {
                 Assertions.assertTrue(event.succeeded());
@@ -185,10 +185,10 @@ public abstract class XaTestSuite {
     @Test
     public void closeInTranscation(VertxTestContext testContext) {
         XaSqlConnection baseXaSqlConnection = factory.apply(mySQLManager,xaLog);
-        baseXaSqlConnection.begin(new Handler<AsyncResult<Void>>() {
+        baseXaSqlConnection.begin().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             public void handle(AsyncResult<Void> event) {
-                baseXaSqlConnection.close(new Handler<AsyncResult<Void>>() {
+                baseXaSqlConnection.close().onComplete(new Handler<AsyncResult<Void>>() {
                     @Override
                     public void handle(AsyncResult<Void> event) {
                         Assertions.assertTrue(event.succeeded());
@@ -204,7 +204,7 @@ public abstract class XaTestSuite {
     public void beginSingleTargetInsertCommit(VertxTestContext testContext) throws Exception {
         clearData();
         XaSqlConnection baseXaSqlConnection =  factory.apply(mySQLManager,xaLog);
-        baseXaSqlConnection.begin(event -> {
+        baseXaSqlConnection.begin().onComplete(event -> {
             Assertions.assertTrue(event.succeeded());
             Future<NewMycatConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
             ds1.compose(connection -> {
@@ -224,7 +224,7 @@ public abstract class XaTestSuite {
                         });
             }).onComplete(event13 -> {
                 Assertions.assertTrue(event13.succeeded());
-                baseXaSqlConnection.commit(event12 -> {
+                baseXaSqlConnection.commit().onComplete(event12 -> {
                     Assertions.assertTrue(event12.succeeded());
                     Assertions.assertFalse(baseXaSqlConnection.isInTransaction());
                     Future<NewMycatConnection> connectionFuture =
@@ -247,7 +247,7 @@ public abstract class XaTestSuite {
     public void beginDoubleTargetInsertCommit(VertxTestContext testContext) throws Exception {
         clearData();
         XaSqlConnection baseXaSqlConnection =  factory.apply(mySQLManager,xaLog);
-        baseXaSqlConnection.begin(event -> {
+        baseXaSqlConnection.begin().onComplete(event -> {
             Assertions.assertTrue(event.succeeded());
             Future<NewMycatConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
             Future<NewMycatConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
@@ -273,7 +273,7 @@ public abstract class XaTestSuite {
             }));
             all.onComplete(event13 -> {
                 Assertions.assertTrue(event13.succeeded());
-                baseXaSqlConnection.commit(event12 -> {
+                baseXaSqlConnection.commit().onComplete(event12 -> {
                     Assertions.assertTrue(event12.succeeded());
                     Assertions.assertFalse(baseXaSqlConnection.isInTransaction());
                     Future<NewMycatConnection> connectionFuture =
@@ -295,7 +295,7 @@ public abstract class XaTestSuite {
     public void beginDoubleTargetInsertButStatementFail(VertxTestContext testContext) throws Exception {
         clearData();
         XaSqlConnection baseXaSqlConnection =  factory.apply(mySQLManager,xaLog);
-        baseXaSqlConnection.begin(event -> {
+        baseXaSqlConnection.begin().onComplete(event -> {
             Assertions.assertTrue(event.succeeded());
             Future<NewMycatConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
             Future<NewMycatConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
@@ -321,7 +321,7 @@ public abstract class XaTestSuite {
             }));
             all.onComplete(event13 -> {
                 Assertions.assertTrue(event13.failed());
-                baseXaSqlConnection.rollback(new Handler<AsyncResult<Void>>() {
+                baseXaSqlConnection.rollback().onComplete(new Handler<AsyncResult<Void>>() {
                     @Override
                     public void handle(AsyncResult<Void> event) {
                         Assertions.assertTrue(event.succeeded());
@@ -346,7 +346,7 @@ public abstract class XaTestSuite {
     public void beginDoubleTargetInsertButPrepareFail(VertxTestContext testContext) throws Exception {
         clearData();
         XaSqlConnection baseXaSqlConnection =  factory.apply(mySQLManager,xaLog);
-        baseXaSqlConnection.begin(event -> {
+        baseXaSqlConnection.begin().onComplete(event -> {
             Assertions.assertTrue(event.succeeded());
             Future<NewMycatConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
             Future<NewMycatConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
@@ -377,7 +377,7 @@ public abstract class XaTestSuite {
                     @Override
                     public void handle(AsyncResult<Void> event) {
                         Assertions.assertTrue(event.failed());
-                        baseXaSqlConnection.rollback(new Handler<AsyncResult<Void>>() {
+                        baseXaSqlConnection.rollback().onComplete(new Handler<AsyncResult<Void>>() {
                             @Override
                             public void handle(AsyncResult<Void> event) {
                                 Assertions.assertTrue(event.succeeded());
@@ -405,7 +405,7 @@ public abstract class XaTestSuite {
     public void beginDoubleTargetInsertButCommitFail(VertxTestContext testContext) throws Exception {
         clearData();
         XaSqlConnection baseXaSqlConnection =  factory.apply(mySQLManager,xaLog);
-        baseXaSqlConnection.begin(event -> {
+        baseXaSqlConnection.begin().onComplete(event -> {
             Assertions.assertTrue(event.succeeded());
             Future<NewMycatConnection> ds1 = baseXaSqlConnection.getConnection("ds1");
             Future<NewMycatConnection> ds2 = baseXaSqlConnection.getConnection("ds2");
@@ -436,7 +436,7 @@ public abstract class XaTestSuite {
                             @Override
                             public void handle(AsyncResult<Void> event) {
                                 Assertions.assertTrue(event.failed());
-                                baseXaSqlConnection.commit(new Handler<AsyncResult<Void>>() {
+                                baseXaSqlConnection.commit().onComplete(new Handler<AsyncResult<Void>>() {
                                     @Override
                                     public void handle(AsyncResult<Void> event) {
                                         Assertions.assertTrue(event.succeeded());
