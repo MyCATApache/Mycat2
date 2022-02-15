@@ -33,7 +33,7 @@ public class MySQLLogConsumer implements Consumer<SqlEntry> {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         try (DefaultConnection connection = jdbcConnectionManager.getConnection(metadataManager.getPrototype())) {
             JdbcUtils.execute(connection.getRawConnection(),
-                    " create table if not exists  mycat.`sql_log` (\n" +
+                    "CREATE TABLE `sql_log` (\n" +
                             "  `instanceId` bigint(20) DEFAULT NULL,\n" +
                             "  `user` varchar(64) DEFAULT NULL,\n" +
                             "  `connectionId` bigint(20) DEFAULT NULL,\n" +
@@ -44,13 +44,13 @@ public class MySQLLogConsumer implements Consumer<SqlEntry> {
                             "  `sqlType` varchar(22) DEFAULT NULL,\n" +
                             "  `sql` longtext,\n" +
                             "  `transactionId` varchar(22) DEFAULT NULL,\n" +
-                            "  `sqlTime` time DEFAULT NULL,\n" +
+                            "  `sqlTime` bigint(20) DEFAULT NULL,\n" +
                             "  `responseTime` datetime DEFAULT NULL,\n" +
                             "  `affectRow` int(11) DEFAULT NULL,\n" +
                             "  `result` tinyint(1) DEFAULT NULL,\n" +
                             "  `externalMessage` tinytext,\n" +
                             "  PRIMARY KEY (`traceId`)\n" +
-                            ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", Collections.emptyList());
+                            ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", Collections.emptyList());
         }
     }
 

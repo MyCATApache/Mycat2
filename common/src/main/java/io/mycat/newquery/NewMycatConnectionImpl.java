@@ -590,7 +590,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     public void abandonConnection() {
         if (this.connection instanceof DruidPooledConnection) {
             DruidPooledConnection connection = (DruidPooledConnection) this.connection;
-            connection.abandond();
+            JdbcUtils.close(connection.getConnection());
             JdbcUtils.close(connection);
         } else {
             JdbcUtils.close(this.connection);
