@@ -70,7 +70,7 @@ public class AutoFunctionFactory {
                 .map(i -> Integer.parseInt(i.toString())).orElse(0);
 
         boolean prototype = (storeNum == 0);
-        if (prototype){
+        if (prototype) {
             storeNum = 1;
         }
         Integer storeDbNum = Optional.ofNullable(properties.get("storeDbNum"))
@@ -93,7 +93,7 @@ public class AutoFunctionFactory {
                 String.join(sep, prototype ? "prototype" : "c${targetIndex}",
                         tableHandler.getSchemaName() + "_${dbIndex}",
                         tableHandler.getTableName() + ((!supportFlattenMapping(tableMethod, dbMethod)) ? "_${tableIndex}" : "_${index}")));
-        final boolean flattenMapping = mappingFormat.contains("${index}");
+        final boolean flattenMapping = mappingFormat.contains("${index}") && supportFlattenMapping(tableMethod, dbMethod);
 
         boolean dbEnum = Optional.ofNullable(dbMethod).map(db -> {
             return ENUM_RANGE.contains(SQLUtils.normalize(db.getMethodName().toUpperCase()));
