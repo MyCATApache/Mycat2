@@ -16,7 +16,7 @@ public class PrometheusExporter implements Runnable {
     @Override
     public void run() {
         MycatServerConfig mycatServerConfig = MetaClusterCurrent.wrapper(MycatServerConfig.class);
-        Optional.ofNullable(mycatServerConfig.getProperties().getOrDefault("prometheusPort",7066))
+        Optional.ofNullable(mycatServerConfig.getProperties().getOrDefault("prometheusPort",null))
                 .ifPresent(port->{
                     try {
                         CollectorList collectorList = new CollectorList(
