@@ -6,7 +6,7 @@ Distributed database based on MySQL or JDBC.
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Dev/badge.svg)
 
 
-[v1.21-release](https://github.com/MyCATApache/Mycat2/releases/tag/v1.21-1-17)
+[v1.21-release](https://github.com/MyCATApache/Mycat2/releases/tag/v1.21-2022-2-18)
 
 [doc-en](https://www.yuque.com/ccazhw/ml3nkf/bef923fb8acc57e0f805d45ef7782670?translate=en)
 [doc-cn](https://www.yuque.com/books/share/6606b3b6-3365-4187-94c4-e51116894695)
