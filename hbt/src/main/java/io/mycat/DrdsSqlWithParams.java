@@ -28,7 +28,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-@ToString
+
 public class DrdsSqlWithParams extends DrdsSql {
     private final List<Object> params;
     private final List<String> aliasList;
@@ -280,4 +280,13 @@ public class DrdsSqlWithParams extends DrdsSql {
         return Optional.ofNullable(timeout);
     }
 
+    @Override
+    public String toString() {
+        return "DrdsSqlWithParams{" +
+                "params=" + params +
+                ", aliasList=" + aliasList +
+                ", timeout=" + timeout +
+                ", partitions=" + getHintDataNodeFilter().orElse(Collections.emptyList()) +
+                '}';
+    }
 }

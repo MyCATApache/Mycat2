@@ -3,6 +3,7 @@ package io.mycat.assemble;
 import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.hint.BaselineAddHint;
 import io.mycat.hint.BaselineListHint;
+import io.mycat.hint.BaselineParameterizeHint;
 import io.mycat.hint.BaselineUpdateHint;
 import org.junit.Assert;
 import org.junit.Test;
@@ -17,7 +18,15 @@ import java.util.Objects;
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
 public class SpmHintTest implements MycatTest {
-
+    @Test
+    public void testParameterize() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+        ) {
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, BaselineParameterizeHint.create("select 1"));
+            Assert.assertEquals(1, maps.size());
+            Assert.assertEquals("{PARAMETERIZED_SQL=select ?, INFO=DrdsSqlWithParams{params=[1], aliasList=[1], timeout=null, partitions=[]}}",maps.get(0).toString());
+        }
+    }
     @Test
     public void testAdd() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
