@@ -14,13 +14,13 @@
  */
 package io.mycat.vertx;
 
-import io.mycat.MetaClusterCurrent;
-import io.mycat.MycatServer;
+import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.config.MycatServerConfig;
 import io.mycat.config.ServerConfig;
 import io.mycat.config.ThreadPoolExecutorConfig;
+import io.mycat.proxy.session.MycatSession;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Promise;
@@ -34,8 +34,10 @@ import org.slf4j.LoggerFactory;
 import java.sql.JDBCType;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class VertxMycatServer implements MycatServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(VertxMycatServer.class);
@@ -159,7 +161,86 @@ public class VertxMycatServer implements MycatServer {
 
         @Override
         public RowBaseIterator showConnections() {
-            return demo();
+            List<MycatDataContext> sessions = MycatSessionManager.this.sessions.stream().map(i->i.getDataContext()).collect(Collectors.toList());
+
+            ResultSetBuilder builder = ResultSetBuilder.create();
+
+            builder.addColumnInfo("ID", JDBCType.BIGINT);
+            builder.addColumnInfo("USER_NAME", JDBCType.VARCHAR);
+            builder.addColumnInfo("HOST", JDBCType.VARCHAR);
+            builder.addColumnInfo("SCHEMA", JDBCType.VARCHAR);
+            builder.addColumnInfo("AFFECTED_ROWS", JDBCType.BIGINT);
+            builder.addColumnInfo("AUTOCOMMIT", JDBCType.VARCHAR);
+            builder.addColumnInfo("IN_TRANSACTION", JDBCType.VARCHAR);
+            builder.addColumnInfo("CHARSET", JDBCType.VARCHAR);
+            builder.addColumnInfo("CHARSET_INDEX", JDBCType.BIGINT);
+            builder.addColumnInfo("OPEN", JDBCType.VARCHAR);
+            builder.addColumnInfo("SERVER_CAPABILITIES", JDBCType.BIGINT);
+            builder.addColumnInfo("ISOLATION", JDBCType.VARCHAR);
+            builder.addColumnInfo("LAST_ERROR_CODE", JDBCType.BIGINT);
+            builder.addColumnInfo("LAST_INSERT_ID", JDBCType.BIGINT);
+            builder.addColumnInfo("LAST_MESSAGE", JDBCType.VARCHAR);
+            builder.addColumnInfo("PROCESS_STATE", JDBCType.VARCHAR);
+            builder.addColumnInfo("WARNING_COUNT", JDBCType.BIGINT);
+            builder.addColumnInfo("MYSQL_SESSION_ID", JDBCType.BIGINT);
+            builder.addColumnInfo("TRANSACTION_TYPE", JDBCType.VARCHAR);
+            builder.addColumnInfo("TRANSCATION_SNAPSHOT", JDBCType.VARCHAR);
+            builder.addColumnInfo("CANCEL_FLAG", JDBCType.VARCHAR);
+
+            for (MycatDataContext session : sessions) {
+                long ID = session.getSessionId();
+                MycatUser user = session.getUser();
+                String USER_NAME = user.getUserName();
+                String HOST = user.getHost();
+                String SCHEMA = session.getDefaultSchema();
+                long AFFECTED_ROWS = session.getAffectedRows();
+                boolean AUTOCOMMIT = session.isAutocommit();
+                boolean IN_TRANSACTION = session.isInTransaction();
+                String CHARSET = Optional.ofNullable(session.getCharset()).map(i -> i.displayName()).orElse("");
+                int CHARSET_INDEX = session.getCharsetIndex();
+                boolean OPEN = true;
+                int SERVER_CAPABILITIES = session.getServerCapabilities();
+                String ISOLATION = session.getIsolation().getText();
+                int LAST_ERROR_CODE = session.getLastErrorCode();
+                long LAST_INSERT_ID = session.getLastInsertId();
+                String LAST_MESSAGE = session.getLastMessage();
+                String PROCESS_STATE = session.isRunning()?"RUNNING":"IDLE";
+
+                int WARNING_COUNT = session.getWarningCount();
+                Long MYSQL_SESSION_ID = ID;
+
+
+                MycatDataContext dataContext = session;
+                String TRANSACTION_TYPE = Optional.ofNullable(dataContext.transactionType()).map(i -> i.getName()).orElse("");
+
+                TransactionSession transactionSession = dataContext.getTransactionSession();
+                String TRANSCATION_SMAPSHOT = transactionSession.snapshot().toString("|");
+                boolean CANCEL_FLAG = dataContext.getCancelFlag().get();
+                builder.addObjectRowPayload(Arrays.asList(
+                        ID,
+                        USER_NAME,
+                        HOST,
+                        SCHEMA,
+                        AFFECTED_ROWS,
+                        AUTOCOMMIT,
+                        IN_TRANSACTION,
+                        CHARSET,
+                        CHARSET_INDEX,
+                        OPEN,
+                        SERVER_CAPABILITIES,
+                        ISOLATION,
+                        LAST_ERROR_CODE,
+                        LAST_INSERT_ID,
+                        LAST_MESSAGE,
+                        PROCESS_STATE,
+                        WARNING_COUNT,
+                        MYSQL_SESSION_ID,
+                        TRANSACTION_TYPE,
+                        TRANSCATION_SMAPSHOT,
+                        CANCEL_FLAG
+                ));
+            }
+            return builder.build();
         }
 
         @Override
