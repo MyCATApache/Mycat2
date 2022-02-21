@@ -302,7 +302,17 @@ public enum MycatdbCommand {
                 queryPlanCache.unFix(Long.parseLong(text));
                 return response.sendOk();
             }
-
+            if (text.startsWith("PARAMETERIZE")) {
+                text = text.substring("PARAMETERIZE".length()).trim();
+                DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(text,dataContext.getDefaultSchema());
+                String parameterizedSQL = drdsSqlWithParams.getParameterizedSQL();
+                String info = drdsSqlWithParams.toString();
+                ResultSetBuilder builder = ResultSetBuilder.create();
+                builder.addColumnInfo("PARAMETERIZED_SQL", JDBCType.VARCHAR)
+                        .addColumnInfo("INFO", JDBCType.VARCHAR);
+                builder.addObjectRowPayload(Arrays.asList(parameterizedSQL,info));
+                return response.sendResultSet(builder.build());
+            }
         }
         return Future.failedFuture("unknown baseline cmd " + text);
     }
