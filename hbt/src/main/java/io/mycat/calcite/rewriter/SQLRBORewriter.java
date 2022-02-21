@@ -620,7 +620,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                         aggregate.getGroupSets(),
                         aggregateContext.getPartialAggregateCallList()));
 
-        LogicalAggregate globalAggregateRelNode = LogicalAggregate.create(newView,aggregate.getHints(),
+        LogicalAggregate globalAggregateRelNode = LogicalAggregate.create(newView, aggregate.getHints(),
                 aggregate.getGroupSet(),
                 aggregate.getGroupSets(),
                 aggregateContext.getGlobalAggregateCallList());
@@ -668,7 +668,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         if (inputViews.isEmpty()) {
             return Optional.empty();
         }
-        if (inputViews.size() > 1) {
+        if (inputViews.size() > 1 && inputViews.stream().map(i -> i.getDistribution().getShardingTables().size()).count() == 1) {
             MycatView left = inputViews.get(0);
             List<MycatView> matchViews = new ArrayList<>();
             matchViews.add(left);
@@ -684,7 +684,8 @@ public class SQLRBORewriter extends RelShuttleImpl {
                         continue;
                     } else if (type == Distribution.Type.SHARDING &&
                             unionAllInPartitonKey(left) &&
-                            unionAllInPartitonKey(right)) {
+                            unionAllInPartitonKey(right) &&
+                            left.getDistribution().getTargets().equals(right.getDistribution().getTargets())) {
                         matchViews.add(right);
                         continue;
                     }
