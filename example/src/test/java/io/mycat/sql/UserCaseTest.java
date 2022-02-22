@@ -1612,4 +1612,12 @@ public class UserCaseTest implements MycatTest {
             next = (Number) maps1.get(0).values().iterator().next();
         }
     }
+
+    @Test
+    public void TIMEDIFF_NOW_UTC_TIMESTAMP() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
+            List<Map<String, Object>> maps1 = executeQuery(mycatConnection, "SELECT TIMEDIFF(NOW(), UTC_TIMESTAMP())");
+            System.out.println();
+        }
+    }
 }

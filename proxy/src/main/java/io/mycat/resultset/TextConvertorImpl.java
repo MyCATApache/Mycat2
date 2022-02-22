@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.time.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Junwen Chen
@@ -132,11 +133,14 @@ public enum TextConvertorImpl implements TextConvertor {
         long hours = seconds / SECONDS_PER_HOUR;
         int minutes = (int) ((seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
         int secs = (int) (seconds % SECONDS_PER_MINUTE);
-        int nano = duration.getNano();
-        if (nano == 0) {
-            return String.format("%02d:%02d:%02d", hours, minutes, secs);
+        int micro =(int) TimeUnit.NANOSECONDS.toMicros(duration.getNano());
+        String value;
+        if (micro == 0) {
+            value= String.format("%02d:%02d:%02d", hours, minutes, secs);
+        }else {
+            value = String.format("%02d:%02d:%02d.%d", hours, minutes, secs, micro);
         }
-        return String.format("%02d:%02d:%02d.%09d", hours, minutes, secs, nano);
+        return value;
     }
 
     @Override
@@ -149,11 +153,11 @@ public enum TextConvertorImpl implements TextConvertor {
         int hour = localTime.getHour();
         int minute = localTime.getMinute();
         int second = localTime.getSecond();
-        int nano = localTime.getNano();
-        if (nano == 0) {
+        int micro =(int) TimeUnit.NANOSECONDS.toMicros(localTime.getNano());
+        if (micro == 0) {
             return String.format("%02d:%02d:%02d", hour, minute, second).getBytes();
         }
-        return String.format("%02d:%02d:%02d.%09d", hour, minute, second, nano).getBytes();
+        return String.format("%02d:%02d:%02d.%d", hour, minute, second, micro).getBytes();
     }
 
     @Override
