@@ -23,14 +23,14 @@ import java.time.temporal.Temporal;
 
 public class TimeDiff3Function extends MycatDateFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(TimeDiff3Function.class,
-            "timdDiff");
+            "timeDiff");
     public static TimeDiff3Function INSTANCE = new TimeDiff3Function();
 
     public TimeDiff3Function() {
         super("TIMEDIFF", scalarFunction);
     }
 
-    public static Duration timdDiff(Duration date1, Duration date2) {
+    public static Duration timeDiff(Duration date1, Duration date2) {
         if (date1 == null||date2 == null){
             return null;
         }
