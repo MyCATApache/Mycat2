@@ -23,14 +23,14 @@ import java.time.LocalDateTime;
 
 public class TimeDiffFunction extends MycatDateFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(TimeDiffFunction.class,
-            "timdDiff");
+            "timeDiff");
     public static TimeDiffFunction INSTANCE = new TimeDiffFunction();
 
     public TimeDiffFunction() {
         super("TIMEDIFF", scalarFunction);
     }
 
-    public static Duration timdDiff(LocalDateTime date1, LocalDateTime date2) {
+    public static Duration timeDiff(LocalDateTime date1, LocalDateTime date2) {
         if (date1 == null||date2 == null){
             return null;
         }
