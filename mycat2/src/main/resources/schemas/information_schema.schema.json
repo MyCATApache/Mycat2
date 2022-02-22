@@ -1,0 +1,42 @@
+{
+  "customTables": {},
+  "globalTables": {},
+  "normalTables": {
+    "ROUTINES": {
+      "createTableSQL": "CREATE TABLE information_schema.ROUTINES (\n\tSPECIFIC_NAME varchar(192),\n\tROUTINE_CATALOG varchar(192),\n\tROUTINE_SCHEMA varchar(192),\n\tROUTINE_NAME varchar(192),\n\tROUTINE_TYPE varchar(27),\n\tDATA_TYPE varchar(1024),\n\tCHARACTER_MAXIMUM_LENGTH  bigint(21),\n\tCHARACTER_OCTET_LENGTH bigint(21),\n\tNUMERIC_PRECISION bigint(3),\n\tNUMERIC_SCALE bigint(3),\n\tDATETIME_PRECISION bigint(3),\n\tCHARACTER_SET_NAME varchar(12),\n\tCOLLATION_NAME varchar(12),\n\tDTD_IDENTIFIER varchar(255),\n\tROUTINE_BODY varchar(255),\n\tROUTINE_DEFINITION varchar(255),\n\tEXTERNAL_NAME varchar(255),\n\tEXTERNAL_LANGUAGE varchar(255),\n\tPARAMETER_STYLE varchar(255),\n\tIS_DETERMINISTIC varchar(255),\n\tSQL_DATA_ACCESS char(64),\n\tSQL_PATH varchar(255),\n\tSECURITY_TYPE varchar(255),\n\tCREATED datetime,\n\tLAST_ALTERED datetime,\n\tSQL_MODE varchar(80),\n\tROUTINE_COMMENT varchar(12),\n\tDEFINER varchar(64),\n\tCHARACTER_SET_CLIENT varchar(64),\n\tCOLLATION_CONNECTION varchar(64),\n\tDATABASE_COLLATION varchar(64)\n)",
+      "locality": {
+        "schemaName": "information_schema",
+        "tableName": "ROUTINES",
+        "targetName": "prototype"
+      }
+    },
+    "PARAMETERS": {
+      "createTableSQL": "CREATE TABLE information_schema.parameters (\n\tSPECIFIC_CATALOG varchar(64),\n\tSPECIFIC_SCHEMA varchar(64),\n\tSPECIFIC_NAME varchar(64),\n\tORDINAL_POSITION bigint(11) UNSIGNED,\n\tPARAMETER_MODE varchar(5),\n\tPARAMETER_NAME varchar(64),\n\tDATA_TYPE longtext,\n\tCHARACTER_MAXIMUM_LENGTH bigint(21),\n\tCHARACTER_OCTET_LENGTH bigint(21),\n\tNUMERIC_PRECISION int(10) UNSIGNED,\n\tNUMERIC_SCALE bigint(11),\n\tDATETIME_PRECISION int(10),\n\tCHARACTER_SET_NAME varchar(64),\n\tCOLLATION_NAME varchar(64),\n\tDTD_IDENTIFIER mediumtext,\n\tROUTINE_TYPE enum('FUNCTION', 'PROCEDURE')\n)",
+      "locality": {
+        "schemaName": "information_schema",
+        "tableName": "PARAMETERS",
+        "targetName": "prototype"
+      }
+    },
+    "CHARACTER_SETS": {
+      "createTableSQL": "CREATE TABLE information_schema.CHARACTER_SETS (\n\tCHARACTER_SET_NAME varchar(32),\n\tDEFAULT_COLLATE_NAME varchar(32),\n\tDESCRIPTION varchar(60),\n\tMAXLEN bigint(3)\n)",
+      "locality": {
+        "targetName": "prototype"
+      }
+    },
+    "COLLATIONS": {
+      "createTableSQL": "CREATE TABLE information_schema.COLLATIONS (\n\tCOLLATION_NAME varchar(32),\n\tCHARACTER_SET_NAME varchar(32),\n\tID bigint(11),\n\tIS_DEFAULT varchar(3),\n\tIS_COMPILED varchar(3),\n\tSORTLEN bigint(3),\n\tPAD_ATTRIBUTE varchar(16)\n)",
+      "locality": {
+        "targetName": "prototype"
+      }
+    },
+    "COLLATION_CHARACTER_SET_APPLICABILITY": {
+      "createTableSQL": "CREATE TABLE information_schema.COLLATION_CHARACTER_SET_APPLICABILITY (\n\tCOLLATION_NAME varchar(32),\n\tCHARACTER_SET_NAME varchar(32)\n)",
+      "locality": {
+        "targetName": "prototype"
+      }
+    }
+  },
+  "schemaName": "information_schema",
+  "shardingTables": {}
+}
