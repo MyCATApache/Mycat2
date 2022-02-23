@@ -16,6 +16,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
@@ -26,9 +27,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,17 +48,23 @@ public class MigrateUtil {
 
     public static RowBaseIterator list() {
         ResultSetBuilder builder = ResultSetBuilder.create();
+        builder.addColumnInfo("ID", JDBCType.VARCHAR);
         builder.addColumnInfo("NAME", JDBCType.VARCHAR);
         builder.addColumnInfo("PROCESS", JDBCType.VARCHAR);
         builder.addColumnInfo("COMPLETE", JDBCType.INTEGER);
         builder.addColumnInfo("INFO", JDBCType.VARCHAR);
         builder.addColumnInfo("ERROR", JDBCType.VARCHAR);
+        builder.addColumnInfo("START_TIME", JDBCType.TIMESTAMP);
+        builder.addColumnInfo("END_TIME", JDBCType.TIMESTAMP);
         for (MigrateScheduler scheduler : schedulers) {
+            String id = scheduler.getId();
             String name = scheduler.getName();
             int complete = scheduler.getFuture().isComplete() ? 1 : 0;
-            String process = scheduler.computeProcess()*100+"%";
+            String process = scheduler.computeProcess() * 100 + "%";
             String info = scheduler.toString();
-            builder.addObjectRowPayload(new Object[]{name, process, complete, info, scheduler.getFuture().cause()});
+            builder.addObjectRowPayload(
+                    new Object[]{id,name, process, complete, info, scheduler.getFuture().cause(),scheduler.getStartTime(),scheduler.getEndTime()}
+            );
         }
         return builder.build();
     }
@@ -102,19 +112,25 @@ public class MigrateUtil {
     @Getter
     @ToString
     public static class MigrateScheduler {
+        String id;
         String name;
         List<MigrateJdbcInput> inputs;
         MigrateJdbcOutput output;
         Future<Void> future;
+        LocalDateTime startTime = LocalDateTime.now();
+        LocalDateTime endTime;
 
         public MigrateScheduler(String name,
                                 List<MigrateJdbcInput> inputs,
                                 MigrateJdbcOutput output,
                                 Future<Void> future) {
+            this.id = UUID.randomUUID().toString();
             this.name = name;
             this.inputs = inputs;
             this.output = output;
             this.future = future;
+
+            future.onComplete(event -> MigrateScheduler.this.endTime = LocalDateTime.now());
         }
 
         public double computeProcess() {
@@ -140,6 +156,8 @@ public class MigrateUtil {
                     ", inputs=" + inputs +
                     ", output=" + output +
                     ", future=" + future +
+                    ", startTime=" + startTime +
+                    ", endTime=" + endTime +
                     '}';
         }
     }
