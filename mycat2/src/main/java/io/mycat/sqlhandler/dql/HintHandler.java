@@ -6,6 +6,7 @@ import com.alibaba.druid.sql.ast.SQLCommentHint;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlHintStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
@@ -32,8 +33,8 @@ import io.mycat.commands.SqlResultSetService;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
-import io.mycat.executor.ExecutorProviderImpl;
 import io.mycat.exporter.SqlRecorderRuntime;
+import io.mycat.hint.MigrateHint;
 import io.mycat.monitor.MycatSQLLogMonitor;
 import io.mycat.monitor.SqlEntry;
 import io.mycat.replica.PhysicsInstance;
@@ -43,17 +44,17 @@ import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartBeatStatus;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
-import io.mycat.sqlhandler.AbstractSQLHandler;
-import io.mycat.sqlhandler.ConfigUpdater;
-import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.sqlhandler.SqlHints;
+import io.mycat.sqlhandler.*;
 import io.mycat.sqlhandler.config.StorageManager;
 import io.mycat.sqlhandler.dml.UpdateSQLHandler;
 import io.mycat.util.JsonUtil;
 import io.mycat.util.NameMap;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.*;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 import org.apache.calcite.runtime.ArrayBindable;
@@ -66,15 +67,19 @@ import org.jetbrains.annotations.Nullable;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.sql.JDBCType;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static io.mycat.vertxmycat.JdbcMySqlConnection.setStreamFlag;
 
 
 public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
@@ -509,6 +514,110 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                             default:
                                 throw new UnsupportedOperationException();
                         }
+                    }
+                    if ("MIGRATE_LIST".equalsIgnoreCase(cmd)) {
+                        return response.sendResultSet(MigrateUtil.list());
+                    }
+                    if ("MIGRATE".equalsIgnoreCase(cmd)) {
+                        MigrateHint migrateHint = JsonUtil.from(body, MigrateHint.class);
+                        String name = migrateHint.getName();
+                        MigrateHint.Input input = migrateHint.getInput();
+                        MigrateHint.Output output = migrateHint.getOutput();
+
+                        MetadataManager manager = MetaClusterCurrent.wrapper(MetadataManager.class);
+                        TableHandler inputTable = manager.getTable(input.getSchemaName(), input.getTableName());
+                        TableHandler outputTable = manager.getTable(output.getSchemaName(), output.getTableName());
+
+                        String username = Optional.ofNullable( output.getUsername()).orElseGet(new Supplier<String>() {
+                            @Override
+                            public String get() {
+                                UserConfig userConfig = routerConfig.getUsers().get(0);
+                                String username = userConfig.getUsername();
+                                String password = userConfig.getPassword();
+                                return username;
+                            }
+                        });
+                        String password = Optional.ofNullable( output.getUsername()).orElseGet(new Supplier<String>() {
+                            @Override
+                            public String get() {
+
+                                UserConfig userConfig = routerConfig.getUsers().get(0);
+                                String username = userConfig.getUsername();
+                                String password = userConfig.getPassword();
+                                return password;
+                            }
+                        });
+                        String url = Optional.ofNullable(output.getUrl()).orElseGet(() -> {
+                            ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
+                            String ip = serverConfig.getIp();
+                            int port = serverConfig.getPort();
+                            return "jdbc:mysql://" +
+                                    ip +
+                                    ":" +
+                                    port + "/mysql?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true";
+                        });
+                        String outputSchemaName = outputTable.getSchemaName();
+                        String outputTableName = outputTable.getTableName();
+
+
+                        MySqlInsertStatement mySqlInsertStatement = new MySqlInsertStatement();
+                        mySqlInsertStatement.setTableName(new SQLIdentifierExpr("`" + outputTableName + "`"));
+                        mySqlInsertStatement.getTableSource().setSchema("`" + outputSchemaName + "`");
+                        SQLInsertStatement.ValuesClause valuesClause = new SQLInsertStatement.ValuesClause();
+
+
+                        for (SimpleColumnInfo column : inputTable.getColumns()) {
+                            mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`" + column.getColumnName() + "`"));
+                            valuesClause.addValue(new SQLVariantRefExpr("?"));
+                        }
+                        mySqlInsertStatement.setValues(valuesClause);
+                        String insertTemplate = mySqlInsertStatement.toString();
+                        List<MigrateUtil.MigrateJdbcInput> migrateJdbcInputs = new ArrayList<>();
+                        List<Observable<Object[]>> observables = new ArrayList<>();
+                        switch (inputTable.getType()) {
+                            case SHARDING: {
+                                ShardingTable shardingTable = (ShardingTable) inputTable;
+                                for (Partition backend : shardingTable.getBackends()) {
+                                    MigrateUtil.MigrateJdbcInput migrateJdbcInput = new MigrateUtil.MigrateJdbcInput();
+                                    migrateJdbcInputs.add(migrateJdbcInput);
+                                    observables.add(MigrateUtil.read(migrateJdbcInput, backend));
+                                }
+                                break;
+                            }
+                            case GLOBAL: {
+                                GlobalTable globalTable = (GlobalTable) inputTable;
+                                Partition partition = globalTable.getGlobalDataNode().get(0);
+                                MigrateUtil.MigrateJdbcInput migrateJdbcInput = new MigrateUtil.MigrateJdbcInput();
+                                migrateJdbcInputs.add(migrateJdbcInput);
+                                observables.add(MigrateUtil.read(migrateJdbcInput, partition));
+                                break;
+                            }
+                            case NORMAL: {
+                                NormalTable normalTable = (NormalTable) inputTable;
+                                Partition partition = normalTable.getDataNode();
+                                MigrateUtil.MigrateJdbcInput migrateJdbcInput = new MigrateUtil.MigrateJdbcInput();
+                                migrateJdbcInputs.add(migrateJdbcInput);
+                                observables.add(MigrateUtil.read(migrateJdbcInput, partition));
+                                break;
+                            }
+                            case VISUAL:
+                            case VIEW:
+                            case CUSTOM:
+                                MigrateUtil.MigrateJdbcInput migrateJdbcInput = new MigrateUtil.MigrateJdbcInput();
+                                migrateJdbcInputs.add(migrateJdbcInput);
+                                observables.add(MigrateUtil.read(migrateJdbcInput, input.getTableName(), input.getSchemaName(), url, username, password));
+                            default:
+                                throw new IllegalStateException("Unexpected value: " + inputTable.getType());
+                        }
+                        MigrateUtil.MigrateJdbcOutput migrateJdbcOutput = new MigrateUtil.MigrateJdbcOutput();
+                        migrateJdbcOutput.setUsername(username);
+                        migrateJdbcOutput.setPassword(password);
+                        migrateJdbcOutput.setUrl(url);
+                        migrateJdbcOutput.setInsertTemplate(insertTemplate);
+
+                        Future<Void> future = MigrateUtil.write(migrateJdbcOutput, Observable.concat(observables));
+                        MigrateUtil.register(name, migrateJdbcInputs, migrateJdbcOutput, future);
+                        return response.sendResultSet(MigrateUtil.list());
                     }
                     mycatDmlHandler(cmd, body);
                     return response.sendOk();
