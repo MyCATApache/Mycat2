@@ -46,6 +46,7 @@ public class ValuePredicateAnalyzer {
     }
 
     public Map<QueryType, List<ValueIndexCondition>> translateMatch(RexNode condition) {
+        condition = conditionClippingByKeyMeta(condition,fieldNames,keyMetas);
         Map<QueryType, List<ValueIndexCondition>> tryAndInRes = tryAndIn(condition);
         if (tryAndInRes != null && !tryAndInRes.isEmpty()) return tryAndInRes;
         // does not support disjunctions
@@ -61,6 +62,53 @@ public class ValuePredicateAnalyzer {
             return translateAnd(disjunctions.get(0));
         }
         return Collections.emptyMap();
+    }
+
+    public static RexNode conditionClippingByKeyMeta(RexNode condition, List<String> fieldNames, List<KeyMeta> keyMetas) {
+        List<RexNode> rexNodeList = RelOptUtil.conjunctions(condition);
+        if (rexNodeList.isEmpty() || rexNodeList.size() == 1) {
+          return condition;
+        } else {
+            class ShardingKeyFinder extends RexShuttle {
+                boolean find = false;
+
+                @Override
+                public RexNode visitInputRef(RexInputRef inputRef) {
+                    if (find) {
+                        return inputRef;
+                    }
+                    int index = inputRef.getIndex();
+                    String name = fieldNames.get(index);
+
+                    for (KeyMeta keyMeta : keyMetas) {
+                        if (keyMeta.findColumnName(name)) {
+                            find = true;
+                            break;
+                        }
+                    }
+                    return super.visitInputRef(inputRef);
+                }
+
+            }
+            List<RexNode> newRexNodeList = new ArrayList<>();
+            for (RexNode rexNode : rexNodeList) {
+                ShardingKeyFinder shardingKeyFinder = new ShardingKeyFinder();
+                rexNode.accept(shardingKeyFinder);
+                if (shardingKeyFinder.find) {
+                    newRexNodeList.add(rexNode);
+                }
+            }
+            rexNodeList = newRexNodeList;
+            if (rexNodeList.isEmpty()) {
+               return condition;
+            } else if (rexNodeList.size() == 1) {
+                condition = rexNodeList.get(0);
+            } else {
+                condition = rexNodeList.stream()
+                        .reduce((rexNode, rexNode2) -> MycatCalciteSupport.RexBuilder.makeCall(SqlStdOperatorTable.AND, rexNode, rexNode2)).get();
+            }
+        }
+        return condition;
     }
 
     @Nullable
@@ -95,21 +143,21 @@ public class ValuePredicateAnalyzer {
                         allMatch = false;
                         break;
                     }
-                    if (allMatch&&!valueList.isEmpty()) {
+                    if (allMatch && !valueList.isEmpty()) {
                         Map<QueryType, List<ValueIndexCondition>> indexConditions = new HashMap<>();
                         ValueIndexCondition pushDownCondition = null;
                         for (KeyMeta skMeta : keyMetas) {
                             for (RexNode rexNode : valueList) {
-                                if (pushDownCondition == null){
+                                if (pushDownCondition == null) {
                                     pushDownCondition = findPushDownCondition(
                                             ImmutableList.of(MycatCalciteSupport.RexBuilder.makeCall(SqlStdOperatorTable.EQUALS, primaryInputRef, rexNode)), skMeta);
-                                }else {
+                                } else {
                                     pushDownCondition.pointQueryKey.add(rexNode);
                                 }
                             }
                         }
-                        if (pushDownCondition != null){
-                            indexConditions.put(QueryType.PK_POINT_QUERY,Collections.singletonList(pushDownCondition));
+                        if (pushDownCondition != null) {
+                            indexConditions.put(QueryType.PK_POINT_QUERY, Collections.singletonList(pushDownCondition));
                         }
                         return indexConditions;
                     }

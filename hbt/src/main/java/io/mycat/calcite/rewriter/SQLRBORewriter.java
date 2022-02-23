@@ -668,7 +668,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         if (inputViews.isEmpty()) {
             return Optional.empty();
         }
-        if (inputViews.size() > 1 && inputViews.stream().map(i -> i.getDistribution().getShardingTables().size()).count() == 1) {
+        if (inputViews.size() > 1 && inputViews.stream().mapToInt(i -> i.getDistribution().getShardingTables().size()).sum() < 2) {
             MycatView left = inputViews.get(0);
             List<MycatView> matchViews = new ArrayList<>();
             matchViews.add(left);

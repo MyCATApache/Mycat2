@@ -39,6 +39,7 @@ public class PredicateAnalyzer {
     }
 
     public Map<QueryType, List<IndexCondition>> translateMatch(RexNode condition) {
+        condition = ValuePredicateAnalyzer.conditionClippingByKeyMeta(condition, fieldNames, keyMetas);
         // does not support disjunctions
         List<RexNode> disjunctions = RelOptUtil.disjunctions(condition);
         if (disjunctions.size() == 1) {
@@ -116,7 +117,7 @@ public class PredicateAnalyzer {
         List<RexNode> pushDownRexNodeList = new ArrayList<>();
         List<RexNode> remainderRexNodeList = new ArrayList<>(rexNodeList);
         IndexCondition condition =
-                IndexCondition.create(keyMeta.getIndexName(), indexColumnnames,pushDownRexNodeList,remainderRexNodeList);
+                IndexCondition.create(keyMeta.getIndexName(), indexColumnnames, pushDownRexNodeList, remainderRexNodeList);
 
         // handle point query if possible
         condition = handlePointQuery(condition, leftMostKeyNodes,
