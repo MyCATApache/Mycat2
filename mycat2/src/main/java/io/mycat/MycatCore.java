@@ -101,9 +101,10 @@ public class MycatCore {
         MySQLVersion.setServerVersion(serverConfig.getServer().getServerVersion());
         String datasourceProvider = Optional.ofNullable(serverConfig.getDatasourceProvider()).orElse(io.mycat.datasource.jdbc.DruidDatasourceProvider.class.getCanonicalName());
         ThreadPoolExecutorConfig workerPool = serverConfig.getServer().getWorkerPool();
-        MycatMySQLManagerImpl.FORCE_NATIVE_DATASOURCE = "native".equalsIgnoreCase(System.getProperty("server", ""));
+
         AsyncMycatDataContextImpl.FULL_TABLE_SCAN_LIMIT = serverConfiguration.serverConfig().getServer().getFullTableScanLimit();
         HackRouter.PUSH_DOWN_SELECT_DUAL ="hackRouter".equalsIgnoreCase(serverConfiguration.serverConfig().getServer().getPushDownSelectDual());
+
         NewMycatConnectionConfig.FORCE_NATIVE_DATASOURCE = "native".equalsIgnoreCase(System.getProperty("server"));
         NewMycatConnectionConfig.CLIENT_DEPRECATE_EOF = serverConfig.getServer().computeClientDeprecateEof();
 
