@@ -283,7 +283,8 @@ public class DrdsSqlWithParams extends DrdsSql {
     @Override
     public String toString() {
         return "DrdsSqlWithParams{" +
-                "params=" + params +
+                "parameterizedSQL=" + getParameterizedSQL() +
+                ", params=" + params +
                 ", aliasList=" + aliasList +
                 ", timeout=" + timeout +
                 ", partitions=" + getHintDataNodeFilter().orElse(Collections.emptyList()) +

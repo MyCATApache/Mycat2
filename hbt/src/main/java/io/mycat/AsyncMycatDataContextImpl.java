@@ -190,8 +190,8 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             MycatView view = mycatRelDatasourceSourceInfo.getRelNode();
             List<PartitionGroup> sqlMap = getPartition(node).get();
             if ((sqlMap.size() > FULL_TABLE_SCAN_LIMIT) && FULL_TABLE_SCAN_LOGGER.isInfoEnabled()) {
-                FULL_TABLE_SCAN_LOGGER.info(" warning sql:{},partition count:{},it may be a full table scan.",
-                        drdsSqlWithParams.toString(),sqlMap.size());
+                FULL_TABLE_SCAN_LOGGER.info(" warning sql:{},partition count:{},limit:{},it may be a full table scan.",
+                        drdsSqlWithParams.toString(),sqlMap.size(),FULL_TABLE_SCAN_LIMIT);
             }
             boolean share = mycatRelDatasourceSourceInfo.refCount > 0;
             List<Observable<Object[]>> observables = getObservables((view
