@@ -19,19 +19,16 @@
       }
     },
     "CHARACTER_SETS": {
-      "createTableSQL": "CREATE TABLE information_schema.CHARACTER_SETS (\n\tCHARACTER_SET_NAME varchar(32),\n\tDEFAULT_COLLATE_NAME varchar(32),\n\tDESCRIPTION varchar(60),\n\tMAXLEN bigint(3)\n)",
       "locality": {
         "targetName": "prototype"
       }
     },
     "COLLATIONS": {
-      "createTableSQL": "CREATE TABLE information_schema.COLLATIONS (\n\tCOLLATION_NAME varchar(32),\n\tCHARACTER_SET_NAME varchar(32),\n\tID bigint(11),\n\tIS_DEFAULT varchar(3),\n\tIS_COMPILED varchar(3),\n\tSORTLEN bigint(3),\n\tPAD_ATTRIBUTE varchar(16)\n)",
       "locality": {
         "targetName": "prototype"
       }
     },
     "COLLATION_CHARACTER_SET_APPLICABILITY": {
-      "createTableSQL": "CREATE TABLE information_schema.COLLATION_CHARACTER_SET_APPLICABILITY (\n\tCOLLATION_NAME varchar(32),\n\tCHARACTER_SET_NAME varchar(32)\n)",
       "locality": {
         "targetName": "prototype"
       }

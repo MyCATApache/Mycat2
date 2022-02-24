@@ -66,7 +66,7 @@ public class UnionAllTest extends DrdsTest {
         Explain explain = parse("select 1 from db1.sharding where id = 1 union all select 1 from db1.sharding where id = 1 ");
         Assert.assertEquals("[{columnType=INTEGER, nullable=false, columnName=1}]",
                 explain.getColumnInfo());
-        Assert.assertEquals("MycatView(distribution=[[db1.sharding]], conditions=[=($0, CAST(?1):BIGINT NOT NULL)])", explain.dumpPlan());
+        Assert.assertEquals("MycatUnion(all=[true])   MycatView(distribution=[[db1.sharding]], conditions=[=($0, CAST(?1):BIGINT NOT NULL)])   MycatView(distribution=[[db1.sharding]], conditions=[=($0, CAST(?3):BIGINT NOT NULL)])", explain.dumpPlan());
     }
     @Test
     public void testSelectShardingSharding3() throws Exception {
