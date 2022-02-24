@@ -70,6 +70,7 @@ public class ServerConfig {
     private boolean partitionKeyJoin = true;
     private long bkaJoinLeftRowCountLimit = 1000;
     private boolean pstmtStringVal = false;
+    private String pushDownSelectDual = "hackRouter";
     public static void main(String[] args) {
         System.out.println(JsonUtil.toJson(new ServerConfig()));
     }
