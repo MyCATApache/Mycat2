@@ -102,6 +102,7 @@ public class MycatCore {
         String datasourceProvider = Optional.ofNullable(serverConfig.getDatasourceProvider()).orElse(io.mycat.datasource.jdbc.DruidDatasourceProvider.class.getCanonicalName());
         ThreadPoolExecutorConfig workerPool = serverConfig.getServer().getWorkerPool();
         MycatMySQLManagerImpl.FORCE_NATIVE_DATASOURCE = "native".equalsIgnoreCase(System.getProperty("server", ""));
+        AsyncMycatDataContextImpl.FULL_TABLE_SCAN_LIMIT = serverConfiguration.serverConfig().getServer().getFullTableScanLimit();
 
         VertxOptions vertxOptions = new VertxOptions();
         vertxOptions.setWorkerPoolSize(workerPool.getMaxPoolSize());
