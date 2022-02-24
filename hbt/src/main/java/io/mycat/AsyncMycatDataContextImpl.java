@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
     protected final static Logger LOGGER = LoggerFactory.getLogger(AsyncMycatDataContextImpl.class);
     protected final static Logger FULL_TABLE_SCAN_LOGGER = LoggerFactory.getLogger("FULL_TABLE_SCAN_LOGGER");
-    public static int FULL_TABLE_SCAN_LIMIT = 8;
+    public static int FULL_TABLE_SCAN_LIMIT = 1024;
     final Map<String, Future<NewMycatConnection>> transactionConnnectionMap = new HashMap<>();// int transaction
     final List<Future<NewMycatConnection>> connnectionFutureCollection = new LinkedList<>();//not int transaction
     final Map<String, List<Observable<Object[]>>> shareObservable = new HashMap<>();
