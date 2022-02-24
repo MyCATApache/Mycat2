@@ -24,7 +24,7 @@ public class SpmHintTest implements MycatTest {
         ) {
             List<Map<String, Object>> maps = executeQuery(mycatConnection, BaselineParameterizeHint.create("select 1"));
             Assert.assertEquals(1, maps.size());
-            Assert.assertEquals("{PARAMETERIZED_SQL=select ?, INFO=DrdsSqlWithParams{params=[1], aliasList=[1], timeout=null, partitions=[]}}",maps.get(0).toString());
+            Assert.assertEquals("{PARAMETERIZED_SQL=select ?, INFO=DrdsSqlWithParams{parameterizedSQL=select ?, params=[1], aliasList=[1], timeout=null, partitions=[]}}",maps.get(0).toString());
         }
     }
     @Test
