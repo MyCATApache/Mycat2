@@ -17,6 +17,12 @@
             <artifactId>datasource</artifactId>
 
             <version>1.12-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>druid</artifactId>
+                    <groupId>com.alibaba</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

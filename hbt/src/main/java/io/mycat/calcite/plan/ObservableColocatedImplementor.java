@@ -1,34 +1,19 @@
 package io.mycat.calcite.plan;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
-import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import com.google.common.collect.ImmutableMultimap;
-import io.mycat.*;
-import io.mycat.calcite.CodeExecuterContext;
-import io.mycat.calcite.MycatRel;
-import io.mycat.calcite.MycatRelDatasourceSourceInfo;
-import io.mycat.calcite.executor.MycatPreparedStatementUtil;
-import io.mycat.calcite.logical.MycatView;
-import io.mycat.calcite.rewriter.Distribution;
+import io.mycat.DrdsSqlWithParams;
+import io.mycat.ExplainDetail;
+import io.mycat.MycatDataContext;
+import io.mycat.Response;
 import io.mycat.calcite.spm.Plan;
-import io.mycat.calcite.table.ShardingIndexTable;
-import io.mycat.calcite.table.ShardingTable;
-import io.mycat.util.MycatSQLExprTableSourceUtil;
-import io.mycat.util.NameMap;
 import io.vertx.core.Future;
-import org.apache.calcite.sql.util.SqlString;
-import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Optional;
 
 public class ObservableColocatedImplementor extends ObservablePlanImplementorImpl {
+    protected final static Logger LOGGER = LoggerFactory.getLogger(ObservableColocatedImplementor.class);
     public ObservableColocatedImplementor(XaSqlConnection xaSqlConnection, MycatDataContext context, DrdsSqlWithParams drdsSqlWithParams, Response response) {
         super(xaSqlConnection, context, drdsSqlWithParams, response);
     }

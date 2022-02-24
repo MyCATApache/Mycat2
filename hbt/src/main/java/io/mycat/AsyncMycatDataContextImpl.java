@@ -37,6 +37,8 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.util.SqlString;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,9 +48,13 @@ import java.util.stream.Collectors;
 
 @Getter
 public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
+    protected final static Logger LOGGER = LoggerFactory.getLogger(AsyncMycatDataContextImpl.class);
+    protected final static Logger FULL_TABLE_SCAN_LOGGER = LoggerFactory.getLogger("FULL_TABLE_SCAN_LOGGER");
+    public static int FULL_TABLE_SCAN_LIMIT = 1024;
     final Map<String, Future<NewMycatConnection>> transactionConnnectionMap = new HashMap<>();// int transaction
     final List<Future<NewMycatConnection>> connnectionFutureCollection = new LinkedList<>();//not int transaction
     final Map<String, List<Observable<Object[]>>> shareObservable = new HashMap<>();
+
 
     public AsyncMycatDataContextImpl(MycatDataContext dataContext,
                                      CodeExecuterContext context,
@@ -79,13 +85,13 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         connnectionFutureCollection.add(Objects.requireNonNull(connectionFuture));
     }
 
-   public static interface Queryer<T>{
+    public static interface Queryer<T> {
 
-        Observable<T>  runQuery(Future<NewMycatConnection> sessionConnection, String sql, List<Object> extractParams, MycatRowMetaData calciteRowMetaData);
+        Observable<T> runQuery(Future<NewMycatConnection> sessionConnection, String sql, List<Object> extractParams, MycatRowMetaData calciteRowMetaData);
     }
 
     @NotNull
-    public synchronized <T> List<Observable<T>> getObservables(ImmutableMultimap<String, SqlString> expand, MycatRowMetaData calciteRowMetaData,Queryer<T> queryer) {
+    public synchronized <T> List<Observable<T>> getObservables(ImmutableMultimap<String, SqlString> expand, MycatRowMetaData calciteRowMetaData, Queryer<T> queryer) {
         LinkedList<Observable<T>> observables = new LinkedList<>();
         for (Map.Entry<String, SqlString> entry : expand.entries()) {
             String key = context.resolveDatasourceTargetName(entry.getKey());
@@ -152,7 +158,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             MycatTransientSQLTableScan relNode = (MycatTransientSQLTableScan) mycatRelDatasourceSourceInfo.getRelNode();
             ImmutableMultimap<String, SqlString> multimap = ImmutableMultimap.of(relNode.getTargetName(), new SqlString(MycatSqlDialect.DEFAULT, relNode.getSql()));
             return getObservables(multimap, mycatRelDatasourceSourceInfo.getColumnInfo(),
-                    (sessionConnection, sql, extractParams, calciteRowMetaData) -> VertxExecuter.runQuery(sessionConnection,sql,extractParams,calciteRowMetaData)
+                    (sessionConnection, sql, extractParams, calciteRowMetaData) -> VertxExecuter.runQuery(sessionConnection, sql, extractParams, calciteRowMetaData)
             );
         }
 
@@ -183,10 +189,14 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             MycatRelDatasourceSourceInfo mycatRelDatasourceSourceInfo = this.codeExecuterContext.getRelContext().get(node);
             MycatView view = mycatRelDatasourceSourceInfo.getRelNode();
             List<PartitionGroup> sqlMap = getPartition(node).get();
+            if ((sqlMap.size() > FULL_TABLE_SCAN_LIMIT) && FULL_TABLE_SCAN_LOGGER.isInfoEnabled()) {
+                FULL_TABLE_SCAN_LOGGER.info(" warning sql:{},partition count:{},limit:{},it may be a full table scan.",
+                        drdsSqlWithParams.toString(),sqlMap.size(),FULL_TABLE_SCAN_LIMIT);
+            }
             boolean share = mycatRelDatasourceSourceInfo.refCount > 0;
             List<Observable<Object[]>> observables = getObservables((view
-                    .apply(dataContext.getMergeUnionSize(), mycatRelDatasourceSourceInfo.getSqlTemplate(), sqlMap, drdsSqlWithParams.getParams())), mycatRelDatasourceSourceInfo.getColumnInfo(),
-                    (sessionConnection, sql, extractParams, calciteRowMetaData) -> VertxExecuter.runQuery(sessionConnection,sql,extractParams,calciteRowMetaData)
+                            .apply(dataContext.getMergeUnionSize(), mycatRelDatasourceSourceInfo.getSqlTemplate(), sqlMap, drdsSqlWithParams.getParams())), mycatRelDatasourceSourceInfo.getColumnInfo(),
+                    (sessionConnection, sql, extractParams, calciteRowMetaData) -> VertxExecuter.runQuery(sessionConnection, sql, extractParams, calciteRowMetaData)
             );
             if (share) {
                 observables = observables.stream().map(i -> i.share()).collect(Collectors.toList());

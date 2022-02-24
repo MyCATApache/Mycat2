@@ -44,6 +44,9 @@ public class ConvertFunction extends MycatStringFunction {
         if (expr == null) {
             return expr;
         }
+        if (charset.contains("utf8")){
+            return expr;
+        }
         return new String(expr.getBytes(charset));
     }
 

@@ -1134,7 +1134,11 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 operator = SqlStdOperatorTable.UNION;
                 break;
             case COLLATE: {
-                SQLMethodInvokeExpr convert = new SQLMethodInvokeExpr("convert", (SQLExpr) x.getParent(),
+                SQLObject parent = x.getParent();
+                if (parent instanceof com.alibaba.druid.sql.ast.statement.SQLSelectItem){
+                    parent = ((SQLSelectItem) parent).getExpr();
+                }
+                SQLMethodInvokeExpr convert = new SQLMethodInvokeExpr("convert", (SQLExpr)parent ,
                         x.getLeft());
                 convert.setUsing(x.getRight());
                 convert.accept(this);

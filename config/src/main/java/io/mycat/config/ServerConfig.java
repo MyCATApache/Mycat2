@@ -63,6 +63,7 @@ public class ServerConfig {
     private boolean joinClustering = true;
     private String serverVersion = "5.7.33-mycat-2.0";
     private boolean ignoreCast = false;
+    private int fullTableScanLimit = 1024;
     //BROADCAST
     private boolean forcedPushDownBroadcast = false;
     private boolean bkaJoin = true;
@@ -70,6 +71,7 @@ public class ServerConfig {
     private boolean partitionKeyJoin = true;
     private long bkaJoinLeftRowCountLimit = 1000;
     private boolean pstmtStringVal = false;
+    private String pushDownSelectDual = "hackRouter";
 
 
     public static void main(String[] args) {

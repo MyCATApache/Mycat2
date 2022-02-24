@@ -32,6 +32,9 @@ public class DruidDatasourceProvider implements DatasourceProvider {
 
     @Override
     public JdbcDataSource createDataSource(DatasourceConfig config) {
+        if (System.getProperty("druid.mysql.usePingMethod") == null) {
+            System.setProperty("druid.mysql.usePingMethod", "false");
+        }
         String username = config.getUser();
         String password = config.getPassword();
         String url = Objects.requireNonNull(config.getUrl());
