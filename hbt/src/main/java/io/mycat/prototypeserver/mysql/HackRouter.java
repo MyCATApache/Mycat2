@@ -16,17 +16,21 @@ package io.mycat.prototypeserver.mysql;
 
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
+import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.ImmutableMap;
 import io.mycat.*;
 import io.mycat.calcite.rewriter.Distribution;
+import io.mycat.calcite.rewriter.SQLRBORewriter;
 import io.mycat.util.MycatSQLExprTableSourceUtil;
 import io.mycat.util.NameMap;
 import io.mycat.util.Pair;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class HackRouter {
@@ -48,6 +52,8 @@ public class HackRouter {
 
     public boolean analyse() {
         Set<Pair<String, String>> tableNames = new HashSet<>();
+        Set<String> methods = new HashSet<>();
+        AtomicBoolean hasVar = new AtomicBoolean(false);
         selectStatement.accept(new MySqlASTVisitorAdapter() {
             @Override
             public boolean visit(SQLExprTableSource x) {
@@ -61,8 +67,28 @@ public class HackRouter {
                 }
                 return super.visit(x);
             }
+
+            @Override
+            public boolean visit(SQLMethodInvokeExpr x) {
+                methods.add(x.getMethodName());
+                return super.visit(x);
+            }
+
+            @Override
+            public boolean visit(SQLVariantRefExpr x) {
+                hasVar.set(true);
+                return super.visit(x);
+            }
         });
         this.metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        if (tableNames.isEmpty() && !hasVar.get()) {
+            if (methods.stream().noneMatch(i -> SQLRBORewriter.Information_Functions.containsKey(i, false))) {
+                targetMap = NameMap.immutableCopyOf(Collections.emptyMap());
+                targetName = MetadataManager.getPrototype();
+                return true;
+            }
+        }
+
         res = metadataManager.checkVaildNormalRoute(tableNames);
         if (res.isPresent()) {
             Distribution distribution = res.get();
