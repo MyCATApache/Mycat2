@@ -40,6 +40,7 @@ public class HackRouter {
     private MetadataManager metadataManager;
     private String targetName;
     private NameMap<Partition> targetMap;
+    public static boolean PUSH_DOWN_SELECT_DUAL;
 
     public HackRouter(SQLStatement selectStatement, MycatDataContext context) {
         this(selectStatement, context.getDefaultSchema());
@@ -81,8 +82,8 @@ public class HackRouter {
             }
         });
         this.metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        if (tableNames.isEmpty() && !hasVar.get()) {
-            if (methods.stream().noneMatch(i -> SQLRBORewriter.Information_Functions.containsKey(i, false))) {
+        if (PUSH_DOWN_SELECT_DUAL&&tableNames.isEmpty() && !hasVar.get()) {
+            if (methods.stream().noneMatch(name -> SQLRBORewriter.Information_Functions.containsKey(SQLUtils.normalize(name), false))) {
                 targetMap = NameMap.immutableCopyOf(Collections.emptyMap());
                 targetName = MetadataManager.getPrototype();
                 return true;

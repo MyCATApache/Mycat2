@@ -24,12 +24,12 @@ import io.mycat.exporter.SqlRecorderRuntime;
 import io.mycat.monitor.MycatSQLLogMonitor;
 import io.mycat.monitor.MycatSQLLogMonitorImpl;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
+import io.mycat.prototypeserver.mysql.HackRouter;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.config.FileStorageManagerImpl;
 import io.mycat.sqlhandler.config.StdStorageManagerImpl;
 import io.mycat.sqlhandler.config.StorageManager;
 import io.mycat.vertx.VertxMycatServer;
-import io.mycat.vertxmycat.MycatVertxMetricsFactory;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -103,6 +103,7 @@ public class MycatCore {
         ThreadPoolExecutorConfig workerPool = serverConfig.getServer().getWorkerPool();
         MycatMySQLManagerImpl.FORCE_NATIVE_DATASOURCE = "native".equalsIgnoreCase(System.getProperty("server", ""));
         AsyncMycatDataContextImpl.FULL_TABLE_SCAN_LIMIT = serverConfiguration.serverConfig().getServer().getFullTableScanLimit();
+        HackRouter.PUSH_DOWN_SELECT_DUAL ="hackRouter".equalsIgnoreCase(serverConfiguration.serverConfig().getServer().getPushDownSelectDual());
 
         VertxOptions vertxOptions = new VertxOptions();
         vertxOptions.setWorkerPoolSize(workerPool.getMaxPoolSize());
