@@ -521,7 +521,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     }
                     if ("MIGRATE_STOP".equalsIgnoreCase(cmd)) {
                         MigrateStopHint hint = JsonUtil.from(body, MigrateStopHint.class);
-                        if(MigrateUtil.stop(hint.getId())){
+                        if (MigrateUtil.stop(hint.getId())) {
                             dataContext.setAffectedRows(1);
                         }
                         return response.sendOk();
@@ -532,10 +532,11 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         MigrateHint.Input input = migrateHint.getInput();
                         MigrateHint.Output output = migrateHint.getOutput();
 
+                        MigrateUtil.MigrateJdbcOutput migrateJdbcOutput = new MigrateUtil.MigrateJdbcOutput();
+                        List<MigrateUtil.MigrateJdbcInput> migrateJdbcInputs = new ArrayList<>();
+                        List<Observable<Object[]>> observables = new ArrayList<>();
                         MetadataManager manager = MetaClusterCurrent.wrapper(MetadataManager.class);
-                        TableHandler inputTable = manager.getTable(input.getSchemaName(), input.getTableName());
                         TableHandler outputTable = manager.getTable(output.getSchemaName(), output.getTableName());
-
                         String username = Optional.ofNullable(output.getUsername()).orElseGet(new Supplier<String>() {
                             @Override
                             public String get() {
@@ -564,6 +565,62 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                     ":" +
                                     port + "/mysql?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true";
                         });
+
+                        if (input.getUrl() != null) {
+                            String sql = input.getSql();
+                            long count = input.getCount();
+                            Map<String, String> properties = input.getProperties();
+
+                            MigrateUtil.MigrateJdbcInput migrateJdbcInput = new MigrateUtil.MigrateJdbcInput();
+                            migrateJdbcInput.setCount(count);
+                            observables.add(MigrateUtil.read(migrateJdbcInput,  input.getUrl(), input.getUsername(), input.getPassword(), sql));
+                        } else if (input.getType() == null || "mycat".equalsIgnoreCase(input.getType())) {
+
+                            TableHandler inputTable = manager.getTable(input.getSchemaName(), input.getTableName());
+
+
+
+
+                            switch (inputTable.getType()) {
+                                case SHARDING: {
+                                    ShardingTable shardingTable = (ShardingTable) inputTable;
+                                    for (Partition backend : shardingTable.getBackends()) {
+                                        MigrateUtil.MigrateJdbcInput migrateJdbcInput = new MigrateUtil.MigrateJdbcInput();
+                                        migrateJdbcInputs.add(migrateJdbcInput);
+                                        observables.add(MigrateUtil.read(migrateJdbcInput, backend));
+                                    }
+                                    break;
+                                }
+                                case GLOBAL: {
+                                    GlobalTable globalTable = (GlobalTable) inputTable;
+                                    Partition partition = globalTable.getGlobalDataNode().get(0);
+                                    MigrateUtil.MigrateJdbcInput migrateJdbcInput = new MigrateUtil.MigrateJdbcInput();
+                                    migrateJdbcInputs.add(migrateJdbcInput);
+                                    observables.add(MigrateUtil.read(migrateJdbcInput, partition));
+                                    break;
+                                }
+                                case NORMAL: {
+                                    NormalTable normalTable = (NormalTable) inputTable;
+                                    Partition partition = normalTable.getDataNode();
+                                    MigrateUtil.MigrateJdbcInput migrateJdbcInput = new MigrateUtil.MigrateJdbcInput();
+                                    migrateJdbcInputs.add(migrateJdbcInput);
+                                    observables.add(MigrateUtil.read(migrateJdbcInput, partition));
+                                    break;
+                                }
+                                case VISUAL:
+                                case VIEW:
+                                case CUSTOM:
+                                    MigrateUtil.MigrateJdbcInput migrateJdbcInput = new MigrateUtil.MigrateJdbcInput();
+                                    migrateJdbcInputs.add(migrateJdbcInput);
+                                    observables.add(MigrateUtil.read(migrateJdbcInput, input.getTableName(), input.getSchemaName(), url, username, password));
+                                default:
+                                    throw new IllegalStateException("Unexpected value: " + inputTable.getType());
+                            }
+
+                        } else {
+                            throw new UnsupportedOperationException();
+                        }
+
                         String outputSchemaName = outputTable.getSchemaName();
                         String outputTableName = outputTable.getTableName();
 
@@ -574,50 +631,14 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         SQLInsertStatement.ValuesClause valuesClause = new SQLInsertStatement.ValuesClause();
 
 
-                        for (SimpleColumnInfo column : inputTable.getColumns()) {
+                        for (SimpleColumnInfo column : outputTable.getColumns()) {
                             mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`" + column.getColumnName() + "`"));
                             valuesClause.addValue(new SQLVariantRefExpr("?"));
                         }
                         mySqlInsertStatement.setValues(valuesClause);
                         String insertTemplate = mySqlInsertStatement.toString();
-                        List<MigrateUtil.MigrateJdbcInput> migrateJdbcInputs = new ArrayList<>();
-                        List<Observable<Object[]>> observables = new ArrayList<>();
-                        switch (inputTable.getType()) {
-                            case SHARDING: {
-                                ShardingTable shardingTable = (ShardingTable) inputTable;
-                                for (Partition backend : shardingTable.getBackends()) {
-                                    MigrateUtil.MigrateJdbcInput migrateJdbcInput = new MigrateUtil.MigrateJdbcInput();
-                                    migrateJdbcInputs.add(migrateJdbcInput);
-                                    observables.add(MigrateUtil.read(migrateJdbcInput, backend));
-                                }
-                                break;
-                            }
-                            case GLOBAL: {
-                                GlobalTable globalTable = (GlobalTable) inputTable;
-                                Partition partition = globalTable.getGlobalDataNode().get(0);
-                                MigrateUtil.MigrateJdbcInput migrateJdbcInput = new MigrateUtil.MigrateJdbcInput();
-                                migrateJdbcInputs.add(migrateJdbcInput);
-                                observables.add(MigrateUtil.read(migrateJdbcInput, partition));
-                                break;
-                            }
-                            case NORMAL: {
-                                NormalTable normalTable = (NormalTable) inputTable;
-                                Partition partition = normalTable.getDataNode();
-                                MigrateUtil.MigrateJdbcInput migrateJdbcInput = new MigrateUtil.MigrateJdbcInput();
-                                migrateJdbcInputs.add(migrateJdbcInput);
-                                observables.add(MigrateUtil.read(migrateJdbcInput, partition));
-                                break;
-                            }
-                            case VISUAL:
-                            case VIEW:
-                            case CUSTOM:
-                                MigrateUtil.MigrateJdbcInput migrateJdbcInput = new MigrateUtil.MigrateJdbcInput();
-                                migrateJdbcInputs.add(migrateJdbcInput);
-                                observables.add(MigrateUtil.read(migrateJdbcInput, input.getTableName(), input.getSchemaName(), url, username, password));
-                            default:
-                                throw new IllegalStateException("Unexpected value: " + inputTable.getType());
-                        }
-                        MigrateUtil.MigrateJdbcOutput migrateJdbcOutput = new MigrateUtil.MigrateJdbcOutput();
+
+
                         migrateJdbcOutput.setUsername(username);
                         migrateJdbcOutput.setPassword(password);
                         migrateJdbcOutput.setUrl(url);

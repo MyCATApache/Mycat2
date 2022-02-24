@@ -226,6 +226,10 @@ public class MigrateUtil {
             migrateJdbcInput.setCount(countO.longValue());
         }
         String querySql = "select * from `" + schemaName + "`.`" + tableName + "`";
+        return read(migrateJdbcInput, url, user, password, querySql);
+    }
+
+    public static Observable<Object[]> read(MigrateJdbcInput migrateJdbcInput, String url, String user, String password, String querySql) {
         Observable<Object[]> objectObservable = Observable.create(emitter -> {
             try (Connection connection = DriverManager.getConnection(url, user, password);) {
                 emitter.setCancellable(new Cancellable() {

@@ -32,6 +32,14 @@ public class MigrateHint extends HintBuilder {
         String schemaName;
         String tableName;
         String type;
+
+
+        String url;
+        String username;
+        String password;
+        String sql;
+        long count;
+
         Map<String, String> properties = new HashMap<>();
     }
 

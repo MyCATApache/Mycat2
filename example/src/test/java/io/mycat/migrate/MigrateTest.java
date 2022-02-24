@@ -432,4 +432,76 @@ public class MigrateTest implements MycatTest {
         }
     }
 
+
+    @Test
+    public void testJdbcToNormal() throws Exception {
+
+        try (Connection connection = getMySQLConnection(DB_MYCAT);) {
+            execute(connection, RESET_CONFIG);
+            execute(connection, "CREATE DATABASE db1");
+
+
+            execute(connection, "CREATE TABLE db1.`input` (\n" +
+                    "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                    "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                    "  `traveldate` date DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int DEFAULT NULL,\n" +
+                    "  `blob` longblob,\n" +
+                    "  PRIMARY KEY (`id`),\n" +
+                    "  KEY `id` (`id`)\n" +
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
+
+            deleteData(connection, "db1", "input");
+
+            for (int i = 1; i < 64; i++) {
+                execute(connection, "insert db1.input (id) values(" + i + ")");
+            }
+
+
+            execute(connection, "CREATE TABLE db1.`output` (\n" +
+                    "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                    "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                    "  `traveldate` date DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int DEFAULT NULL,\n" +
+                    "  `blob` longblob,\n" +
+                    "  PRIMARY KEY (`id`),\n" +
+                    "  KEY `id` (`id`)\n" +
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
+
+            deleteData(connection, "db1", "output");
+
+            MigrateHint.Input input = new MigrateHint.Input();
+            input.setUrl("jdbc:mysql://localhost:8066/mysql?username=root&password=123456&useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true");
+            input.setUsername("root");
+            input.setPassword("123456");
+            input.setSql("select * from db1.input");
+            input.setCount(64);
+
+            MigrateHint.Output output = new MigrateHint.Output();
+            output.setSchemaName("db1");
+            output.setTableName("output");
+            long right_count = count(connection, "db1", "input");
+            List<Map<String, Object>> maps = executeQuery(connection, MigrateListHint.create().build());
+            execute(connection, MigrateHint.create("testNormalToNormal", input, output).build());
+            TimeUnit.SECONDS.sleep(2);
+            long start = System.currentTimeMillis();
+            for (; ; ) {
+                Thread.sleep(1);
+                long count = count(connection, "db1", "output");
+                List<Map<String, Object>> maps2 = executeQuery(connection, MigrateListHint.create().build());
+
+                String res = maps2.toString();
+                Assert.assertTrue(res.contains("NAME=testNormalToNormal"));
+                boolean COMPLETE = res.contains("COMPLETE=1");
+                if (COMPLETE && count == right_count) {
+                    return;
+                }
+                if ((TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - start) > 5) {
+                    Assert.fail();
+                }
+            }
+        }
+    }
 }
