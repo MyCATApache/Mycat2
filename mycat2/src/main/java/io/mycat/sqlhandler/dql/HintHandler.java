@@ -35,6 +35,7 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.exporter.SqlRecorderRuntime;
 import io.mycat.hint.MigrateHint;
+import io.mycat.hint.MigrateStopHint;
 import io.mycat.monitor.MycatSQLLogMonitor;
 import io.mycat.monitor.SqlEntry;
 import io.mycat.replica.PhysicsInstance;
@@ -518,6 +519,13 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     if ("MIGRATE_LIST".equalsIgnoreCase(cmd)) {
                         return response.sendResultSet(MigrateUtil.list());
                     }
+                    if ("MIGRATE_STOP".equalsIgnoreCase(cmd)) {
+                        MigrateStopHint hint = JsonUtil.from(body, MigrateStopHint.class);
+                        if(MigrateUtil.stop(hint.getId())){
+                            dataContext.setAffectedRows(1);
+                        }
+                        return response.sendOk();
+                    }
                     if ("MIGRATE".equalsIgnoreCase(cmd)) {
                         MigrateHint migrateHint = JsonUtil.from(body, MigrateHint.class);
                         String name = migrateHint.getName();
@@ -528,7 +536,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         TableHandler inputTable = manager.getTable(input.getSchemaName(), input.getTableName());
                         TableHandler outputTable = manager.getTable(output.getSchemaName(), output.getTableName());
 
-                        String username = Optional.ofNullable( output.getUsername()).orElseGet(new Supplier<String>() {
+                        String username = Optional.ofNullable(output.getUsername()).orElseGet(new Supplier<String>() {
                             @Override
                             public String get() {
                                 UserConfig userConfig = routerConfig.getUsers().get(0);
@@ -537,7 +545,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 return username;
                             }
                         });
-                        String password = Optional.ofNullable( output.getUsername()).orElseGet(new Supplier<String>() {
+                        String password = Optional.ofNullable(output.getUsername()).orElseGet(new Supplier<String>() {
                             @Override
                             public String get() {
 
@@ -615,9 +623,9 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         migrateJdbcOutput.setUrl(url);
                         migrateJdbcOutput.setInsertTemplate(insertTemplate);
 
-                        Future<Void> future = MigrateUtil.write(migrateJdbcOutput, Observable.concat(observables));
-                        MigrateUtil.register(name, migrateJdbcInputs, migrateJdbcOutput, future);
-                        return response.sendResultSet(MigrateUtil.list());
+                        MigrateUtil.MigrateController migrateController = MigrateUtil.write(migrateJdbcOutput, Observable.concat(observables));
+                        MigrateUtil.MigrateScheduler scheduler = MigrateUtil.register(name, migrateJdbcInputs, migrateJdbcOutput, migrateController);
+                        return response.sendResultSet(MigrateUtil.show(scheduler));
                     }
                     mycatDmlHandler(cmd, body);
                     return response.sendOk();

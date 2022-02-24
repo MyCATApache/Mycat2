@@ -2,10 +2,7 @@ package io.mycat.migrate;
 
 import io.mycat.assemble.ManagerHintTest;
 import io.mycat.assemble.MycatTest;
-import io.mycat.hint.CreateClusterHint;
-import io.mycat.hint.CreateDataSourceHint;
-import io.mycat.hint.MigrateHint;
-import io.mycat.hint.MigrateListHint;
+import io.mycat.hint.*;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -135,7 +132,7 @@ public class MigrateTest implements MycatTest {
                 String res = maps2.toString();
                 Assert.assertTrue(res.contains("NAME=testNormalToNormal"));
                 boolean COMPLETE = res.contains("COMPLETE=1");
-                if (COMPLETE&&count==right_count){
+                if (COMPLETE && count == right_count) {
                     return;
                 }
                 if ((TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - start) > 5) {
@@ -204,7 +201,7 @@ public class MigrateTest implements MycatTest {
                 String res = maps2.toString();
                 Assert.assertTrue(res.contains("NAME=testNormalToSharding"));
                 boolean COMPLETE = res.contains("COMPLETE=1");
-                if (COMPLETE&&count==right_count){
+                if (COMPLETE && count == right_count) {
                     return;
                 }
                 if ((TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - start) > 5) {
@@ -284,7 +281,7 @@ public class MigrateTest implements MycatTest {
                 String res = maps2.toString();
                 Assert.assertTrue(res.contains("NAME=testNormalToGlobal"));
                 boolean COMPLETE = res.contains("COMPLETE=1");
-                if (COMPLETE&&mycat_count==right_count&&mycat_count==c0_count&&mycat_count==c1_count){
+                if (COMPLETE && mycat_count == right_count && mycat_count == c0_count && mycat_count == c1_count) {
                     return;
                 }
                 if ((TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - start) > 5) {
@@ -354,7 +351,7 @@ public class MigrateTest implements MycatTest {
                 String res = maps2.toString();
                 Assert.assertTrue(res.contains("NAME=testShardingToSharding"));
                 boolean COMPLETE = res.contains("COMPLETE=1");
-                if (COMPLETE&&count==right_count){
+                if (COMPLETE && count == right_count) {
                     return;
                 }
                 if ((TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - start) > 5) {
@@ -363,4 +360,76 @@ public class MigrateTest implements MycatTest {
             }
         }
     }
+
+
+    @Test
+    public void testNormalToGlobalStop() throws Exception {
+
+        try (Connection connection = getMySQLConnection(DB_MYCAT);
+             Connection c0 = getMySQLConnection(DB1);
+             Connection c1 = getMySQLConnection(DB2);) {
+            execute(connection, RESET_CONFIG);
+            execute(connection, CreateDataSourceHint
+                    .create("ds2",
+                            DB2));
+
+            execute(connection, CreateClusterHint.create("c0", Arrays.asList("prototypeDs"), Collections.emptyList()));
+            execute(connection, CreateClusterHint.create("c1", Arrays.asList("ds2"), Collections.emptyList()));
+
+            execute(connection, "CREATE DATABASE db1");
+
+
+            execute(connection, "CREATE TABLE db1.`input` (\n" +
+                    "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                    "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                    "  `traveldate` date DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int DEFAULT NULL,\n" +
+                    "  `blob` longblob,\n" +
+                    "  PRIMARY KEY (`id`),\n" +
+                    "  KEY `id` (`id`)\n" +
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
+
+            deleteData(connection, "db1", "input");
+
+            for (int i = 1; i < 64; i++) {
+                execute(connection, "insert db1.input (id) values(" + i + ")");
+            }
+
+
+            execute(connection, "CREATE TABLE db1.`output` (\n" +
+                    "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                    "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                    "  `traveldate` date DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int DEFAULT NULL,\n" +
+                    "  `blob` longblob,\n" +
+                    "  PRIMARY KEY (`id`),\n" +
+                    "  KEY `id` (`id`)\n" +
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8" + " broadcast;");
+
+            deleteData(connection, "db1", "output");
+
+            MigrateHint.Input input = new MigrateHint.Input();
+            input.setSchemaName("db1");
+            input.setTableName("input");
+
+            MigrateHint.Output output = new MigrateHint.Output();
+            output.setSchemaName("db1");
+            output.setTableName("output");
+            long right_count = count(connection, "db1", "input");
+            executeQuery(connection, MigrateListHint.create().build());
+            List<Map<String, Object>> maps = executeQuery(connection, MigrateHint.create("testNormalToGlobalStop", input, output).build());
+            String id = (String) maps.get(0).get("ID");
+            execute(connection, MigrateStopHint.create(id).build());
+            List<Map<String, Object>> maps1 = executeQuery(connection, MigrateListHint.create().build());
+            Map<String, Object> stringObjectMap = maps1.get(0);
+            Object process = stringObjectMap.get("PROCESS").toString();
+            Object complete = stringObjectMap.get("COMPLETE").toString();
+            Assert.assertNotEquals("100%",process);
+            Assert.assertEquals("1",complete);
+            System.out.println();
+        }
+    }
+
 }

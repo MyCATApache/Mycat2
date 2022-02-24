@@ -15,10 +15,9 @@ import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.functions.Cancellable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import lombok.Data;
 import lombok.Getter;
@@ -28,15 +27,12 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static io.mycat.vertxmycat.JdbcMySqlConnection.setStreamFlag;
@@ -47,6 +43,15 @@ public class MigrateUtil {
     public final static AtomicInteger IDS = new AtomicInteger();
 
     public static RowBaseIterator list() {
+        List<MigrateScheduler> schedulers = MigrateUtil.schedulers;
+        return show(schedulers);
+    }
+
+    public static RowBaseIterator show(MigrateScheduler scheduler) {
+        return show(Collections.singletonList(scheduler));
+    }
+
+    public static RowBaseIterator show(List<MigrateScheduler> schedulers) {
         ResultSetBuilder builder = ResultSetBuilder.create();
         builder.addColumnInfo("ID", JDBCType.VARCHAR);
         builder.addColumnInfo("NAME", JDBCType.VARCHAR);
@@ -56,6 +61,8 @@ public class MigrateUtil {
         builder.addColumnInfo("ERROR", JDBCType.VARCHAR);
         builder.addColumnInfo("START_TIME", JDBCType.TIMESTAMP);
         builder.addColumnInfo("END_TIME", JDBCType.TIMESTAMP);
+        builder.addColumnInfo("INPUT_ROW", JDBCType.BIGINT);
+        builder.addColumnInfo("OUTPUT_ROW", JDBCType.BIGINT);
         for (MigrateScheduler scheduler : schedulers) {
             String id = scheduler.getId();
             String name = scheduler.getName();
@@ -63,19 +70,37 @@ public class MigrateUtil {
             String process = scheduler.computeProcess() * 100 + "%";
             String info = scheduler.toString();
             builder.addObjectRowPayload(
-                    new Object[]{id,name, process, complete, info, scheduler.getFuture().cause(),scheduler.getStartTime(),scheduler.getEndTime()}
+                    new Object[]{
+                            id, name, process, complete, info, scheduler.getFuture().cause(),
+                            scheduler.getStartTime(), scheduler.getEndTime(),
+                            scheduler.computeInputRow(),
+                            scheduler.getOutput().getRow().get()
+                    }
             );
         }
         return builder.build();
     }
 
+    public static boolean stop(String id) {
+        Optional<MigrateScheduler> optional = schedulers.stream().filter(i -> id.equals(id)).findFirst();
+        optional.ifPresent(
+                new Consumer<MigrateScheduler>() {
+                    @Override
+                    public void accept(MigrateScheduler migrateScheduler) {
+                        migrateScheduler.stop();
+                    }
+                }
+        );
+        return optional.isPresent();
+    }
+
     public static MigrateScheduler register(String name,
                                             List<MigrateJdbcInput> inputs,
                                             MigrateJdbcOutput output,
-                                            Future<Void> future) {
-        MigrateScheduler scheduler = MigrateScheduler.of(name, inputs, output, future);
+                                            MigrateUtil.MigrateController controller) {
+        MigrateScheduler scheduler = MigrateScheduler.of(name, inputs, output, controller);
         schedulers.add(scheduler);
-        future.onSuccess(event -> {
+        controller.getFuture().onSuccess(event -> {
             RowBaseIterator list = list();
             LOGGER.info("----------------------------Migration-INFO-----------------------------------------------");
             List<Map<String, Object>> resultSetMap = list.getResultSetMap();
@@ -119,22 +144,24 @@ public class MigrateUtil {
         Future<Void> future;
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime;
+        private MigrateController controller;
 
         public MigrateScheduler(String name,
                                 List<MigrateJdbcInput> inputs,
                                 MigrateJdbcOutput output,
-                                Future<Void> future) {
+                                MigrateController controller) {
+            this.controller = controller;
             this.id = UUID.randomUUID().toString();
             this.name = name;
             this.inputs = inputs;
             this.output = output;
-            this.future = future;
+            this.future = this.controller.getFuture();
 
             future.onComplete(event -> MigrateScheduler.this.endTime = LocalDateTime.now());
         }
 
         public double computeProcess() {
-            long total = inputs.stream().mapToLong(i -> i.getCount()).sum();
+            long total = computeInputRow();
             long nowOutputRow = output.getRow().get();
             if (total == nowOutputRow) {
                 return 1;
@@ -142,11 +169,15 @@ public class MigrateUtil {
             return nowOutputRow * 1.0 / total;
         }
 
+        public long computeInputRow() {
+            return inputs.stream().mapToLong(i -> i.getCount()).sum();
+        }
+
         public static MigrateScheduler of(String name,
                                           List<MigrateJdbcInput> inputs,
                                           MigrateJdbcOutput output,
-                                          Future<Void> future) {
-            return new MigrateScheduler(name, inputs, output, future);
+                                          MigrateController controller) {
+            return new MigrateScheduler(name, inputs, output, controller);
         }
 
         @Override
@@ -159,6 +190,10 @@ public class MigrateUtil {
                     ", startTime=" + startTime +
                     ", endTime=" + endTime +
                     '}';
+        }
+
+        public void stop() {
+            controller.stop();
         }
     }
 
@@ -183,14 +218,24 @@ public class MigrateUtil {
         return read(migrateJdbcInput, tableName, schemaName, datasourceConfig.getUrl(), datasourceConfig.getUser(), datasourceConfig.getPassword());
     }
 
+    @SneakyThrows
     public static Observable<Object[]> read(MigrateJdbcInput migrateJdbcInput, String tableName, String schemaName, String url, String user, String password) {
         String queryCountSql = "select count(1) from `" + schemaName + "`.`" + tableName + "`";
+        try (Connection connection = DriverManager.getConnection(url, user, password);) {
+            Number countO = (Number) JdbcUtils.executeQuery(connection, queryCountSql, Collections.emptyList()).get(0).values().iterator().next();
+            migrateJdbcInput.setCount(countO.longValue());
+        }
         String querySql = "select * from `" + schemaName + "`.`" + tableName + "`";
         Observable<Object[]> objectObservable = Observable.create(emitter -> {
             try (Connection connection = DriverManager.getConnection(url, user, password);) {
-                Number countO = (Number) JdbcUtils.executeQuery(connection, queryCountSql, Collections.emptyList()).get(0).values().iterator().next();
-                migrateJdbcInput.setCount(countO.longValue());
-                Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+                emitter.setCancellable(new Cancellable() {
+                    @Override
+                    public void cancel() throws Throwable {
+                        connection.close();
+                        LOGGER.info("close " + migrateJdbcInput);
+                    }
+                });
+               Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
                 setStreamFlag(statement);
                 ResultSet resultSet = statement.executeQuery(querySql);
                 ResultSetMetaData metaData = resultSet.getMetaData();
@@ -211,72 +256,87 @@ public class MigrateUtil {
         return objectObservable;
     }
 
+    public static class MigrateController implements Observer<List<Object[]>> {
 
-    public static Future<Void> write(MigrateJdbcOutput output, Observable<Object[]> concat) {
-        String username = output.getUsername();
-        String password = output.getPassword();
-        String url = output.getUrl();
-        String insertTemplate = output.getInsertTemplate();
+        Connection mycatConnection = null;
+        Disposable disposable;
+        Promise<Void> promise = Promise.promise();
+
+        MigrateJdbcOutput output;
+
+        public MigrateController(MigrateJdbcOutput output) {
+            this.output = output;
+        }
+
+        public Future<Void> getFuture() {
+            return promise.future();
+        }
+
+        public void stop() {
+            if (!disposable.isDisposed()) {
+                disposable.dispose();
+            }
+            if (mycatConnection != null) {
+                JdbcUtils.close(mycatConnection);
+            }
+            promise.tryComplete();
+        }
+
+
+        @Override
+        public void onSubscribe(@NonNull Disposable d) {
+            this.disposable = d;
+        }
+
+        @Override
+        public void onNext(@NonNull List<Object[]> objects) {
+            try {
+                if (this.mycatConnection == null) {
+                    this.mycatConnection = DriverManager.getConnection(this.output.getUrl(), this.output.getUsername(), this.output.getPassword());
+                }
+                PreparedStatement preparedStatement = this.mycatConnection.prepareStatement(this.output.getInsertTemplate());
+                for (Object[] object : objects) {
+                    int i = 1;
+                    for (Object o : object) {
+                        preparedStatement.setObject(i, o);
+                        i++;
+                    }
+                    preparedStatement.addBatch();
+                }
+                preparedStatement.executeBatch();
+                output.row.addAndGet(objects.size());
+                preparedStatement.clearParameters();
+            } catch (Exception e) {
+                onError(e);
+            }
+        }
+
+        @Override
+        public void onError(@NonNull Throwable e) {
+            this.disposable.dispose();
+            if (this.mycatConnection != null) {
+                JdbcUtils.close(this.mycatConnection);
+            }
+            promise.tryFail(e);
+        }
+
+        @Override
+        public void onComplete() {
+            this.disposable.dispose();
+            if (this.mycatConnection != null) {
+                JdbcUtils.close(this.mycatConnection);
+            }
+            promise.tryComplete();
+        }
+    }
+
+
+    public static MigrateController write(MigrateJdbcOutput output, Observable<Object[]> concat) {
         Observable<@NonNull List<Object[]>> buffer = concat.subscribeOn(Schedulers.computation())
                 .buffer(10000).subscribeOn(Schedulers.io());
-
-
-        Future<Void> future = Future.future(new Handler<Promise<Void>>() {
-            @Override
-            public void handle(Promise<Void> promise) {
-                buffer.subscribe(new Observer<List<Object[]>>() {
-                    Connection mycatConnection = null;
-                    Disposable disposable;
-
-                    @Override
-                    public void onSubscribe(@NonNull Disposable d) {
-                        this.disposable = d;
-                    }
-
-                    @Override
-                    public void onNext(@NonNull List<Object[]> objects) {
-                        try {
-                            if (this.mycatConnection == null) {
-                                this.mycatConnection = DriverManager.getConnection(url, username, password);
-                            }
-                            PreparedStatement preparedStatement = this.mycatConnection.prepareStatement(insertTemplate);
-                            for (Object[] object : objects) {
-                                int i = 1;
-                                for (Object o : object) {
-                                    preparedStatement.setObject(i, o);
-                                    i++;
-                                }
-                                preparedStatement.addBatch();
-                            }
-                            preparedStatement.executeBatch();
-                            output.row.addAndGet(objects.size());
-                            preparedStatement.clearParameters();
-                        } catch (Exception e) {
-                            onError(e);
-                        }
-                    }
-
-                    @Override
-                    public void onError(@NonNull Throwable e) {
-                        this.disposable.dispose();
-                        if (this.mycatConnection != null) {
-                            JdbcUtils.close(this.mycatConnection);
-                        }
-                        promise.tryFail(e);
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        this.disposable.dispose();
-                        if (this.mycatConnection != null) {
-                            JdbcUtils.close(this.mycatConnection);
-                        }
-                        promise.tryComplete();
-                    }
-                });
-            }
-        });
-        return future;
+        MigrateController migrateController = new MigrateController(output);
+        buffer.subscribe(migrateController);
+        return migrateController;
     }
 
 }
