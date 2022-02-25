@@ -77,7 +77,9 @@ public class HackRouter {
 
             @Override
             public boolean visit(SQLVariantRefExpr x) {
-                hasVar.set(true);
+                if(!"?".equals(x.getName())){
+                    hasVar.set(true);
+                }
                 return super.visit(x);
             }
         });
