@@ -242,7 +242,7 @@ public class MigrateUtil {
         return Flowable.create(new FlowableOnSubscribe<Object[]>() {
             @Override
             public void subscribe(@NonNull FlowableEmitter<Object[]> emitter) throws Throwable {
-                LOGGER.info("read result for:{}, thread:{}", migrateJdbcInput, Thread.currentThread());
+                LOGGER.info("read resultset for:{}, thread:{}", migrateJdbcInput, Thread.currentThread());
                 try (Connection connection = DriverManager.getConnection(url, user, password);) {
                     emitter.setCancellable(new Cancellable() {
                         @Override
@@ -322,9 +322,9 @@ public class MigrateUtil {
 
         @Override
         public void onNext(@NonNull List<Object[]> objects) {
-            LOGGER.info("create output connection for {} thread:{}", MigrateControllerImpl.this.output, Thread.currentThread());
             try {
                 if (connection == null) {
+                    LOGGER.info("create output connection for {} thread:{}", MigrateControllerImpl.this.output, Thread.currentThread());
                     connection = DriverManager.getConnection(MigrateControllerImpl.this.output.getUrl(),
                             MigrateControllerImpl.this.output.getUsername(),
                             MigrateControllerImpl.this.output.getPassword());
