@@ -77,15 +77,15 @@ public class HackRouter {
 
             @Override
             public boolean visit(SQLVariantRefExpr x) {
-                if(!"?".equals(x.getName())){
+                if (!"?".equals(x.getName())) {
                     hasVar.set(true);
                 }
                 return super.visit(x);
             }
         });
         this.metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        if (PUSH_DOWN_SELECT_DUAL&&tableNames.isEmpty() && !hasVar.get()) {
-            if (methods.stream().noneMatch(name -> SQLRBORewriter.Information_Functions.containsKey(SQLUtils.normalize(name), false))) {
+        if (PUSH_DOWN_SELECT_DUAL && tableNames.isEmpty() && !hasVar.get()) {
+            if (!methods.isEmpty() && methods.stream().noneMatch(name -> SQLRBORewriter.Information_Functions.containsKey(SQLUtils.normalize(name), false))) {
                 targetMap = NameMap.immutableCopyOf(Collections.emptyMap());
                 targetName = MetadataManager.getPrototype();
                 return true;

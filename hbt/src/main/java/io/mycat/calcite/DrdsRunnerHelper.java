@@ -87,7 +87,7 @@ public class DrdsRunnerHelper {
                     } else {
                         StringBuilder sbText = new StringBuilder();
                         selectItem.output(sbText);
-                        columnNodes.add(sbText.toString().replaceAll(" ", ""));
+                        columnNodes.add(SQLUtils.normalize(sbText.toString().replaceAll(" ", "")));
                     }
                 } else {
                     columnNodes.add(SQLUtils.normalize(selectItem.getAlias()));
