@@ -52,10 +52,7 @@ import io.mycat.util.JsonUtil;
 import io.mycat.util.NameMap;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
-import io.reactivex.rxjava3.annotations.NonNull;
-import io.reactivex.rxjava3.core.*;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 import org.apache.calcite.runtime.ArrayBindable;
@@ -73,14 +70,10 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import static io.mycat.vertxmycat.JdbcMySqlConnection.setStreamFlag;
 
 
 public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
@@ -613,6 +606,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                     MigrateUtil.MigrateJdbcInput migrateJdbcInput = new MigrateUtil.MigrateJdbcInput();
                                     migrateJdbcInputs.add(migrateJdbcInput);
                                     observables.add(MigrateUtil.read(migrateJdbcInput, input.getTableName(), input.getSchemaName(), url, username, password));
+                                    break;
                                 default:
                                     throw new IllegalStateException("Unexpected value: " + inputTable.getType());
                             }
@@ -644,7 +638,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         migrateJdbcOutput.setUrl(url);
                         migrateJdbcOutput.setInsertTemplate(insertTemplate);
 
-                        MigrateUtil.MigrateController migrateController = MigrateUtil.write(migrateJdbcOutput, Observable.concat(observables));
+                        MigrateUtil.MigrateControllerImpl migrateController = MigrateUtil.write(migrateJdbcOutput, Observable.concat(observables));
                         MigrateUtil.MigrateScheduler scheduler = MigrateUtil.register(name, migrateJdbcInputs, migrateJdbcOutput, migrateController);
                         return response.sendResultSet(MigrateUtil.show(scheduler));
                     }

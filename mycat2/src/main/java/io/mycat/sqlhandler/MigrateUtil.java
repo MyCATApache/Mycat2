@@ -97,7 +97,7 @@ public class MigrateUtil {
     public static MigrateScheduler register(String name,
                                             List<MigrateJdbcInput> inputs,
                                             MigrateJdbcOutput output,
-                                            MigrateUtil.MigrateController controller) {
+                                            MigrateControllerImpl controller) {
         MigrateScheduler scheduler = MigrateScheduler.of(name, inputs, output, controller);
         schedulers.add(scheduler);
         controller.getFuture().onSuccess(event -> {
@@ -144,12 +144,12 @@ public class MigrateUtil {
         Future<Void> future;
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime;
-        private MigrateController controller;
+        private MigrateControllerImpl controller;
 
         public MigrateScheduler(String name,
                                 List<MigrateJdbcInput> inputs,
                                 MigrateJdbcOutput output,
-                                MigrateController controller) {
+                                MigrateControllerImpl controller) {
             this.controller = controller;
             this.id = UUID.randomUUID().toString();
             this.name = name;
@@ -176,7 +176,7 @@ public class MigrateUtil {
         public static MigrateScheduler of(String name,
                                           List<MigrateJdbcInput> inputs,
                                           MigrateJdbcOutput output,
-                                          MigrateController controller) {
+                                          MigrateControllerImpl controller) {
             return new MigrateScheduler(name, inputs, output, controller);
         }
 
@@ -239,7 +239,7 @@ public class MigrateUtil {
                         LOGGER.info("close " + migrateJdbcInput);
                     }
                 });
-               Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+                Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
                 setStreamFlag(statement);
                 ResultSet resultSet = statement.executeQuery(querySql);
                 ResultSetMetaData metaData = resultSet.getMetaData();
@@ -260,7 +260,15 @@ public class MigrateUtil {
         return objectObservable;
     }
 
-    public static class MigrateController implements Observer<List<Object[]>> {
+    public interface MigrateController {
+
+        public Future<Void> getFuture();
+
+        public void stop();
+
+    }
+
+    public static class MigrateControllerImpl implements MigrateController, Observer<List<Object[]>> {
 
         Connection mycatConnection = null;
         Disposable disposable;
@@ -268,7 +276,7 @@ public class MigrateUtil {
 
         MigrateJdbcOutput output;
 
-        public MigrateController(MigrateJdbcOutput output) {
+        public MigrateControllerImpl(MigrateJdbcOutput output) {
             this.output = output;
         }
 
@@ -334,11 +342,23 @@ public class MigrateUtil {
         }
     }
 
+    public static class MigrateControllerGroup implements MigrateController {
 
-    public static MigrateController write(MigrateJdbcOutput output, Observable<Object[]> concat) {
+        @Override
+        public Future<Void> getFuture() {
+            return null;
+        }
+
+        @Override
+        public void stop() {
+
+        }
+    }
+
+    public static MigrateControllerImpl write(MigrateJdbcOutput output, Observable<Object[]> concat) {
         Observable<@NonNull List<Object[]>> buffer = concat.subscribeOn(Schedulers.computation())
                 .buffer(10000).subscribeOn(Schedulers.io());
-        MigrateController migrateController = new MigrateController(output);
+        MigrateControllerImpl migrateController = new MigrateControllerImpl(output);
         buffer.subscribe(migrateController);
         return migrateController;
     }
