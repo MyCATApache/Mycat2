@@ -1273,8 +1273,8 @@ public class UserCaseTest implements MycatTest {
             Assert.assertEquals("[{1=1}]", res3.toString());
             Assert.assertEquals("[{1=1}]", res4.toString());
             Assert.assertEquals("[{1=1}]", res5.toString());
-            Assert.assertEquals("[{'{{'={{}]", res6.toString());
-            Assert.assertEquals("[{'1'=1}]", res7.toString());
+            Assert.assertEquals("[{{{={{}]", res6.toString());
+            Assert.assertEquals("[{1=1}]", res7.toString());
             Assert.assertEquals("[{1=1}]", res8.toString());
             System.out.println();
         }
