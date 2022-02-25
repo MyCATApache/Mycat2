@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 public class MySQLLogConsumer implements Consumer<SqlEntry> {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLLogConsumer.class);
     boolean init = false;
-    boolean initFail = false;
+
     @SneakyThrows
     public MySQLLogConsumer() {
 
@@ -33,7 +33,7 @@ public class MySQLLogConsumer implements Consumer<SqlEntry> {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         try (DefaultConnection connection = jdbcConnectionManager.getConnection(metadataManager.getPrototype())) {
             JdbcUtils.execute(connection.getRawConnection(),
-                    "CREATE TABLE `sql_log` (\n" +
+                    "CREATE TABLE  IF NOT EXISTS mycat.`sql_log` (\n" +
                             "  `instanceId` bigint(20) DEFAULT NULL,\n" +
                             "  `user` varchar(64) DEFAULT NULL,\n" +
                             "  `connectionId` bigint(20) DEFAULT NULL,\n" +
@@ -57,22 +57,18 @@ public class MySQLLogConsumer implements Consumer<SqlEntry> {
     @Override
     @SneakyThrows
     public void accept(SqlEntry sqlEntry) {
-        if (!init){
+        if (!init) {
             init = true;
             try {
                 init();
-            }catch (Exception e){
-                LOGGER.error("",e);
-                initFail = true;
+            } catch (Exception e) {
+                LOGGER.error("", e);
             }
         }
-        if (initFail){
-            return;
-        }
         boolean isInRuntime = MetaClusterCurrent.exist(IOExecutor.class)
-                &&MetaClusterCurrent.exist(JdbcConnectionManager.class)
-                &&MetaClusterCurrent.exist(IOExecutor.class);
-        if (isInRuntime){
+                && MetaClusterCurrent.exist(JdbcConnectionManager.class)
+                && MetaClusterCurrent.exist(IOExecutor.class);
+        if (isInRuntime) {
             IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
             MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
@@ -116,8 +112,9 @@ public class MySQLLogConsumer implements Consumer<SqlEntry> {
                                 ));
                     }
                 } catch (Exception e) {
-                    LOGGER.warn("", e);
-                }finally {
+                    LOGGER.info(" warning sql:{} , info:{}", sqlEntry.getSql(), sqlEntry);
+                    LOGGER.error("", e);
+                } finally {
                     event.tryComplete();
                 }
             });
