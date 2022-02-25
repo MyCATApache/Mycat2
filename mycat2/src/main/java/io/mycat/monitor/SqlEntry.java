@@ -2,12 +2,14 @@ package io.mycat.monitor;
 
 import com.alibaba.druid.sql.parser.SQLType;
 import lombok.Data;
+import lombok.ToString;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 
 @Data
+@ToString
 public class SqlEntry implements LogEntry ,Comparable<SqlEntry>{
     int instanceId;
     String user;
