@@ -13,6 +13,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.util.JdbcUtils;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.UnmodifiableIterator;
+import hu.akarnokd.rxjava3.operators.ObservableTransformers;
 import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.api.collector.RowBaseIterator;
@@ -52,13 +53,20 @@ import io.mycat.util.JsonUtil;
 import io.mycat.util.NameMap;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
+import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.functions.Function;
+import io.reactivex.rxjava3.internal.functions.Functions;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.csv.QuoteMode;
+import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -524,10 +532,14 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         String name = migrateHint.getName();
                         MigrateHint.Input input = migrateHint.getInput();
                         MigrateHint.Output output = migrateHint.getOutput();
+                        int parallelism = output.getParallelism();
 
                         MigrateUtil.MigrateJdbcOutput migrateJdbcOutput = new MigrateUtil.MigrateJdbcOutput();
+                        migrateJdbcOutput.setParallelism(parallelism);
+                        migrateJdbcOutput.setBatch(output.getBatch());
+
                         List<MigrateUtil.MigrateJdbcInput> migrateJdbcInputs = new ArrayList<>();
-                        List<Observable<Object[]>> observables = new ArrayList<>();
+                        List<Flowable<Object[]>> observables = new ArrayList<>();
                         MetadataManager manager = MetaClusterCurrent.wrapper(MetadataManager.class);
                         TableHandler outputTable = manager.getTable(output.getSchemaName(), output.getTableName());
                         String username = Optional.ofNullable(output.getUsername()).orElseGet(new Supplier<String>() {
@@ -566,12 +578,10 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
 
                             MigrateUtil.MigrateJdbcInput migrateJdbcInput = new MigrateUtil.MigrateJdbcInput();
                             migrateJdbcInput.setCount(count);
-                            observables.add(MigrateUtil.read(migrateJdbcInput,  input.getUrl(), input.getUsername(), input.getPassword(), sql));
+                            observables.add(MigrateUtil.read(migrateJdbcInput, input.getUrl(), input.getUsername(), input.getPassword(), sql));
                         } else if (input.getType() == null || "mycat".equalsIgnoreCase(input.getType())) {
 
                             TableHandler inputTable = manager.getTable(input.getSchemaName(), input.getTableName());
-
-
 
 
                             switch (inputTable.getType()) {
@@ -624,6 +634,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         mySqlInsertStatement.getTableSource().setSchema("`" + outputSchemaName + "`");
                         SQLInsertStatement.ValuesClause valuesClause = new SQLInsertStatement.ValuesClause();
 
+                        int columnCount = outputTable.getColumns().size();
 
                         for (SimpleColumnInfo column : outputTable.getColumns()) {
                             mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`" + column.getColumnName() + "`"));
@@ -638,7 +649,8 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         migrateJdbcOutput.setUrl(url);
                         migrateJdbcOutput.setInsertTemplate(insertTemplate);
 
-                        MigrateUtil.MigrateControllerImpl migrateController = MigrateUtil.write(migrateJdbcOutput, Observable.concat(observables));
+                        MigrateUtil.MigrateController migrateController = MigrateUtil
+                                .write(migrateJdbcOutput, Flowable.merge(observables.stream().map(i -> i.buffer(output.getBatch()).subscribeOn(Schedulers.io())).collect(Collectors.toList())));
                         MigrateUtil.MigrateScheduler scheduler = MigrateUtil.register(name, migrateJdbcInputs, migrateJdbcOutput, migrateController);
                         return response.sendResultSet(MigrateUtil.show(scheduler));
                     }

@@ -52,6 +52,8 @@ public class MigrateHint extends HintBuilder {
         String username;
         String password;
         Map<String, String> properties = new HashMap<>();
+        int parallelism = 1;
+        int batch = 1000;
     }
 
     public static MigrateHint create(String name,Input input, Output output) {
