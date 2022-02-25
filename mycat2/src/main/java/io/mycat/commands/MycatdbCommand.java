@@ -171,7 +171,7 @@ public enum MycatdbCommand {
             if (logger.isDebugEnabled()) {
                 logger.debug(text);
             }
-            if (text.charAt(0) == 'B') {
+            if (text.startsWith("BASELINE ")) {
                 //baseline
                 Response response = responseFactory.apply(1);
                 return handleBaseline(text, dataContext, response);
