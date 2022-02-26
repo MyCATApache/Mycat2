@@ -256,7 +256,17 @@ public class MigrateUtil {
                     ResultSet resultSet = statement.executeQuery(querySql);
                     ResultSetMetaData metaData = resultSet.getMetaData();
                     int columnCount = metaData.getColumnCount();
-                    while (resultSet.next()) {
+
+                    while (resultSet.next() && !emitter.isCancelled()) {
+
+                        while (emitter.requested() < 1) {
+                            LOGGER.info("wait request {}",migrateJdbcInput);
+                            TimeUnit.SECONDS.sleep(1);
+                            if (emitter.isCancelled()) {
+                                LOGGER.info("cancel in wait request {}",migrateJdbcInput);
+                                return;
+                            }
+                        }
                         migrateJdbcInput.getRow().getAndIncrement();
                         Object[] objects = new Object[columnCount];
                         for (int i = 0; i < columnCount; i++) {
@@ -341,6 +351,9 @@ public class MigrateUtil {
                 preparedStatement.executeBatch();
                 preparedStatement.clearParameters();
                 output.row.addAndGet(objects.size());
+                if (this.subscription != null) {
+                    this.subscription.request(1);
+                }
             } catch (Exception e) {
                 onError(e);
             }
@@ -361,7 +374,7 @@ public class MigrateUtil {
         @Override
         public void onSubscribe(@NonNull Subscription subscription) {
             this.subscription = subscription;
-            this.subscription.request(Long.MAX_VALUE);
+            this.subscription.request(1);
         }
     }
 
