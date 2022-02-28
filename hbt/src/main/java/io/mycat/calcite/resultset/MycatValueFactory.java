@@ -34,7 +34,7 @@ public class MycatValueFactory {
     public static  final LongValueFactory LONG_VALUE_FACTORY = new LongValueFactory(DEFAULT_PROPERTY_SET);
     public static  final ShortValueFactory SHORT_VALUE_FACTORY = new ShortValueFactory(DEFAULT_PROPERTY_SET);
     public static  final SqlDateValueFactory SQL_DATE_VALUE_FACTORY = new SqlDateValueFactory(DEFAULT_PROPERTY_SET,null, TimeZone.getDefault());
-    public static  final SqlTimestampValueFactory SQL_TIMESTAMP_VALUE_FACTORY = new SqlTimestampValueFactory(DEFAULT_PROPERTY_SET,null,TimeZone.getDefault());
+    //public static  final SqlTimestampValueFactory SQL_TIMESTAMP_VALUE_FACTORY = new SqlTimestampValueFactory(DEFAULT_PROPERTY_SET,null,TimeZone.getDefault());
     public static  final SqlTimeValueFactory SQL_TIME_VALUE_FACTORY = new SqlTimeValueFactory(DEFAULT_PROPERTY_SET,null,TimeZone.getDefault());
     public static  final StringValueFactory STRING_VALUE_FACTORY = new StringValueFactory(DEFAULT_PROPERTY_SET);
 
