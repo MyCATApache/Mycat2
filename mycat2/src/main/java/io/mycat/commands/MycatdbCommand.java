@@ -176,6 +176,14 @@ public enum MycatdbCommand {
                 Response response = responseFactory.apply(1);
                 return handleBaseline(text, dataContext, response);
             }
+            if (text.startsWith("IN ")) {
+                //IN
+                Response response = responseFactory.apply(1);
+                String schema = text.split(" ")[1];
+                String normalize = SQLUtils.normalize(schema);
+                dataContext.useShcema(normalize);
+                return response.sendOk();
+            }
             LinkedList<SQLStatement> statements = parse(text);
             if (statements.isEmpty()) {
                 throw new MycatException("Illegal syntax:" + text);
