@@ -202,7 +202,7 @@ public interface MySQLServerSession<T> {
                             MySQLServerCapabilityFlags.isClientProtocol41(getCapabilities()),
                             MySQLServerCapabilityFlags.isKnowsAboutTransactions(getCapabilities()),
                             MySQLServerCapabilityFlags.isSessionVariableTracking(getCapabilities()),
-                            getLastMessage());
+                           "");
         } else {
             bytes = MySQLPacketUtil.generateEof(getWarningCount(), serverStatus);
         }
