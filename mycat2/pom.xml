@@ -12,6 +12,13 @@
     <artifactId>mycat2</artifactId>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/io.netty/netty-codec-haproxy -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec-haproxy</artifactId>
+            <version>4.1.74.Final</version>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/io.r2dbc/r2dbc-pool -->
 <!--        <dependency>-->
 <!--            <groupId>io.r2dbc</groupId>-->
