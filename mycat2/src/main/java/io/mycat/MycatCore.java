@@ -103,6 +103,7 @@ public class MycatCore {
         ThreadPoolExecutorConfig workerPool = serverConfig.getServer().getWorkerPool();
         MycatMySQLManagerImpl.FORCE_NATIVE_DATASOURCE = "native".equalsIgnoreCase(System.getProperty("server", ""));
         AsyncMycatDataContextImpl.FULL_TABLE_SCAN_LIMIT = serverConfiguration.serverConfig().getServer().getFullTableScanLimit();
+        AsyncMycatDataContextImpl.FULL_TABLE_SCAN_EXCEPTION = serverConfiguration.serverConfig().getServer().isFullTableScanException();
         HackRouter.PUSH_DOWN_SELECT_DUAL ="hackRouter".equalsIgnoreCase(serverConfiguration.serverConfig().getServer().getPushDownSelectDual());
 
         VertxOptions vertxOptions = new VertxOptions();

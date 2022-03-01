@@ -63,6 +63,7 @@ public class ServerConfig {
     private String serverVersion = "5.7.33-mycat-2.0";
     private boolean ignoreCast = false;
     private int fullTableScanLimit = 1024;
+    private boolean fullTableScanException = false;
     //BROADCAST
     private boolean forcedPushDownBroadcast = false;
     private boolean bkaJoin = true;
