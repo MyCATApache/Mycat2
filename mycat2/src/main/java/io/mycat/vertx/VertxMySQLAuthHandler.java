@@ -64,6 +64,7 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
             if(LOGGER.isDebugEnabled()){
                 LOGGER.debug("{} is closed",socket.remoteAddress(),exception);
             }
+            socket.close();
         }
     }
 
