@@ -158,7 +158,7 @@ public class VertxMycatServer implements MycatServer {
 
         @Override
         public RowBaseIterator showConnections() {
-            List<MycatDataContext> sessions = MycatSessionManager.this.sessions.stream().map(i->i.getDataContext()).collect(Collectors.toList());
+            List<MycatDataContext> sessions = MycatSessionManager.this.sessions.stream().map(i -> i.getDataContext()).collect(Collectors.toList());
 
             ResultSetBuilder builder = ResultSetBuilder.create();
 
@@ -202,7 +202,7 @@ public class VertxMycatServer implements MycatServer {
                 int LAST_ERROR_CODE = session.getLastErrorCode();
                 long LAST_INSERT_ID = session.getLastInsertId();
                 String LAST_MESSAGE = session.getLastMessage();
-                String PROCESS_STATE = session.isRunning()?"RUNNING":"IDLE";
+                String PROCESS_STATE = session.isRunning() ? "RUNNING" : "IDLE";
 
                 int WARNING_COUNT = session.getWarningCount();
                 Long MYSQL_SESSION_ID = ID;
@@ -215,7 +215,7 @@ public class VertxMycatServer implements MycatServer {
                 String TRANSCATION_SMAPSHOT = transactionSession.snapshot().toString("|");
                 boolean CANCEL_FLAG = dataContext.getCancelFlag().get();
 
-                LogEntryHolder holder = (LogEntryHolder)dataContext.getHolder();
+                LogEntryHolder holder = (LogEntryHolder) dataContext.getHolder();
                 builder.addObjectRowPayload(Arrays.asList(
                         ID,
                         USER_NAME,
@@ -238,7 +238,7 @@ public class VertxMycatServer implements MycatServer {
                         TRANSACTION_TYPE,
                         TRANSCATION_SMAPSHOT,
                         CANCEL_FLAG,
-                        holder.getSqlEntry().getSql()
+                        Optional.ofNullable(holder).map(i -> i.getSqlEntry()).map(i -> i.getSql()).orElse(null)
                 ));
             }
             return builder.build();
