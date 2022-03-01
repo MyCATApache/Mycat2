@@ -260,6 +260,16 @@ public class JdbcMycatDataContext implements MycatDataContext {
     }
 
     @Override
+    public void setHolder(Object holder) {
+
+    }
+
+    @Override
+    public Object getHolder() {
+        return null;
+    }
+
+    @Override
     public <T> T unwrap(Class<T> iface) {
         return null;
     }

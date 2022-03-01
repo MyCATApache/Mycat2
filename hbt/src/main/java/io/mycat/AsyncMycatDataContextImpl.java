@@ -51,6 +51,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
     protected final static Logger LOGGER = LoggerFactory.getLogger(AsyncMycatDataContextImpl.class);
     protected final static Logger FULL_TABLE_SCAN_LOGGER = LoggerFactory.getLogger("FULL_TABLE_SCAN_LOGGER");
     public static int FULL_TABLE_SCAN_LIMIT = 1024;
+    public static boolean FULL_TABLE_SCAN_EXCEPTION ;
     final Map<String, Future<NewMycatConnection>> transactionConnnectionMap = new HashMap<>();// int transaction
     final List<Future<NewMycatConnection>> connnectionFutureCollection = new LinkedList<>();//not int transaction
     final Map<String, List<Observable<Object[]>>> shareObservable = new HashMap<>();
@@ -192,6 +193,9 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             if ((sqlMap.size() > FULL_TABLE_SCAN_LIMIT) && FULL_TABLE_SCAN_LOGGER.isInfoEnabled()) {
                 FULL_TABLE_SCAN_LOGGER.info(" warning sql:{},partition count:{},limit:{},it may be a full table scan.",
                         drdsSqlWithParams.toString(),sqlMap.size(),FULL_TABLE_SCAN_LIMIT);
+                if(FULL_TABLE_SCAN_EXCEPTION){
+                    throw new MycatException("FULL_TABLE_SCAN_EXCEPTION:{}",drdsSqlWithParams.toString());
+                }
             }
             boolean share = mycatRelDatasourceSourceInfo.refCount > 0;
             List<Observable<Object[]>> observables = getObservables((view

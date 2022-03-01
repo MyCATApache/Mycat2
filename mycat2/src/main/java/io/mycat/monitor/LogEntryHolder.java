@@ -5,11 +5,15 @@ import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.config.ServerConfig;
 import io.mycat.exporter.SqlRecorderRuntime;
+import lombok.Getter;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
 
+@ToString
+@Getter
 public class LogEntryHolder {
 
     SqlEntry sqlEntry;

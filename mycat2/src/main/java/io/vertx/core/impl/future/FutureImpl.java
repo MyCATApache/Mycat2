@@ -29,7 +29,7 @@ import java.util.Objects;
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 class FutureImpl<T> extends FutureBase<T> {
-  private static final Logger LOGGER = LoggerFactory.getLogger(VertxMySQLDatasourcePoolImpl.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FutureImpl.class);
 
   private static final Object NULL_VALUE = new Object();
 

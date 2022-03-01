@@ -19,6 +19,7 @@ import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.AuthPacket;
 import io.mycat.beans.mysql.packet.AuthSwitchRequestPacket;
+import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.config.UserConfig;
 import io.mycat.mycatmysql.MycatVertxMySQLHandler;
 import io.mycat.mycatmysql.MycatVertxMysqlSession;
@@ -56,8 +57,15 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
         this.mycatDataContext = new MycatDataContextImpl();
         this.seedParts = MysqlNativePasswordPluginUtil.nextSeedBuild();
         byte[] handshakePacket = MySQLClientAuthHandler.createHandshakePayload(mycatDataContext.getSessionId(), defaultServerCapabilities, seedParts);
-        socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(0, handshakePacket)));
-        socket.handler(this);
+        try {
+            socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(0, handshakePacket)));
+            socket.handler(this);
+        }catch (Exception exception){
+            if(LOGGER.isDebugEnabled()){
+                LOGGER.debug("{} is closed",socket.remoteAddress(),exception);
+            }
+            socket.close();
+        }
     }
 
     @Override

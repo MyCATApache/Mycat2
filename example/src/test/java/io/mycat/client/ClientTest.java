@@ -6,24 +6,23 @@ import com.zaxxer.hikari.HikariDataSource;
 import io.mycat.DrdsSqlWithParams;
 import io.mycat.assemble.MycatTest;
 import io.mycat.calcite.DrdsRunnerHelper;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
+import io.vertx.core.net.NetClientOptions;
+import io.vertx.core.net.NetSocket;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.PoolOptions;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class ClientTest implements MycatTest {
     @Test
@@ -54,7 +53,7 @@ public class ClientTest implements MycatTest {
          *
          */
         DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse("SELECT @@global.character_set_server, @@global.collation_server", null);
-        Assert.assertEquals("SELECT @@global.character_set_server, @@global.collation_server",drdsSqlWithParams.getParameterizedSQL());
+        Assert.assertEquals("SELECT @@global.character_set_server, @@global.collation_server", drdsSqlWithParams.getParameterizedSQL());
         try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT)) {
 //            Statement statement = mySQLConnection.createStatement();
 //            ResultSet resultSet = statement.executeQuery("SELECT * FROM `information_schema`.`CHARACTER_SETS` LIMIT 0, 1000; ");
@@ -127,5 +126,26 @@ public class ClientTest implements MycatTest {
             System.out.println();
         }
 
+    }
+
+    @Test
+    @Ignore
+    public void tesSLB() throws Exception {
+        Vertx vertx = Vertx.vertx();
+        NetClientOptions netClientOptions = new NetClientOptions();
+        List<Future> list = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            TimeUnit.SECONDS.sleep(1);
+            vertx.createNetClient(netClientOptions).connect(8066, "127.0.0.1", event -> {
+                if (event.succeeded()) {
+                    NetSocket netSocket = event.result();
+                    netSocket.close();
+                    list.add(Future.succeededFuture());
+                }else {
+                    list.add(Future.failedFuture(event.cause()));
+                }
+            });
+        }
+        CompositeFuture.join(list).toCompletionStage().toCompletableFuture().get(11,TimeUnit.SECONDS);
     }
 }

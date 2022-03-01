@@ -12,6 +12,13 @@
     <artifactId>mycat2</artifactId>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/io.netty/netty-codec-haproxy -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec-haproxy</artifactId>
+            <version>4.1.74.Final</version>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/io.r2dbc/r2dbc-pool -->
 <!--        <dependency>-->
 <!--            <groupId>io.r2dbc</groupId>-->
@@ -198,7 +205,7 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
-            <version>4.2.3</version>
+            <version>4.2.5</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -231,25 +238,39 @@
 
         <plugins>
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.1.0</version>
                 <configuration>
-                    <finalName>mycat2-${project.version}</finalName>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                    <archive>
-                        <manifest>
-                            <mainClass>io.mycat.MycatCore</mainClass><!--这里改成自己的主类位置-->
-                        </manifest>
-                    </archive>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>make-assembly</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>single</goal>
+                            <goal>shade</goal>
                         </goals>
+                        <configuration>
+                            <transformers>
+
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>reference.conf</resource>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>io.mycat.MycatCore</mainClass>
+                                </transformer>
+
+                            </transformers>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
