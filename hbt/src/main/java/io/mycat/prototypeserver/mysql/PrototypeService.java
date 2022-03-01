@@ -2140,10 +2140,11 @@ public class PrototypeService {
                             return Optional.of(createTableSql);
                         }
                     }
-                    return Optional.empty();
+                    continue;
                 } catch (Exception e) {
                     LOGGER.error("", e);
                 }
+                continue;
             } catch (Throwable e) {
                 LOGGER.error("can not get create table sql from:" + backend.getTargetName() + backend.getTargetSchemaTable(), e);
                 continue;
