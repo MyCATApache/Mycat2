@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.Optional;
 
 import static io.mycat.beans.mysql.MySQLErrorCode.ER_ACCESS_DENIED_ERROR;
 import static io.mycat.vertx.VertxMySQLPacketResolver.readInt;
@@ -127,6 +128,7 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
                         "'@'" +
                         host +
                         "' (using password: YES)";
+                LOGGER.error(message);
                 socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(packetId+1,
                         MySQLPacketUtil.generateError(ER_ACCESS_DENIED_ERROR, message, 0))));
                 socket.end();
@@ -137,10 +139,12 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
         UserConfig userInfo = null;
         if (authenticator != null) {
             userInfo = authenticator.getUserInfo(username);
+        }else {
+            userInfo = new UserConfig();
         }
         InetSocketAddress remoteAddress = new InetSocketAddress(socket.remoteAddress().host(), socket.remoteAddress().port());
         mycatDataContext.setUser(new MycatUser(username, null, null, host, remoteAddress,userInfo));
-        mycatDataContext.useShcema(authPacket.getDatabase());
+        mycatDataContext.useShcema(Optional.ofNullable(authPacket.getDatabase()).orElse(userInfo.getSchema()));
         mycatDataContext.setServerCapabilities(
                 authPacket.getCapabilities()
         );

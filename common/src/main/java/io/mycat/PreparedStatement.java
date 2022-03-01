@@ -28,28 +28,19 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLReplaceable;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.*;
-import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
-import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import com.alibaba.druid.sql.parser.ParserException;
 import io.mycat.util.HexFormatUtil;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.util.control.Exception;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -116,7 +107,11 @@ public class PreparedStatement {
             String s = HexFormatUtil.bytesToHexString(new byte[]{(Byte)o});
             return new SQLHexExpr(s);
         }
-
+        if (o instanceof CharBuffer) {
+            CharBuffer charBuffer = (CharBuffer) o;
+            String s = charBuffer.toString();
+            return new SQLCharExpr(s);
+        }
         LOGGER.warn("not support class : {}", o.getClass());
 
 

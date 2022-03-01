@@ -298,6 +298,11 @@ public class SQLRBORewriter extends RelShuttleImpl {
         Information_Functions.put("LAG", null);
         Information_Functions.put("LEAD", null);
         Information_Functions.put("NTH_VALUE", null);
+
+        //LOCK
+        Information_Functions.put("GET_LOCK", null);
+        Information_Functions.put("RELEASE_LOCK", null);
+        Information_Functions.put("IS_FREE_LOCK", null);
     }
 
     @Override
@@ -610,27 +615,31 @@ public class SQLRBORewriter extends RelShuttleImpl {
     }
 
     private static Optional<RelNode> splitAggregate(MycatView viewNode, Aggregate aggregate) {
+        try {
+            AggregatePushContext aggregateContext = AggregatePushContext.split(aggregate);
 
-        AggregatePushContext aggregateContext = AggregatePushContext.split(aggregate);
+            MycatView newView = viewNode.changeTo(
+                    LogicalAggregate.create(viewNode.getRelNode(),
+                            aggregate.getHints(),
+                            aggregate.getGroupSet(),
+                            aggregate.getGroupSets(),
+                            aggregateContext.getPartialAggregateCallList()));
 
-        MycatView newView = viewNode.changeTo(
-                LogicalAggregate.create(viewNode.getRelNode(),
-                        aggregate.getHints(),
-                        aggregate.getGroupSet(),
-                        aggregate.getGroupSets(),
-                        aggregateContext.getPartialAggregateCallList()));
+            LogicalAggregate globalAggregateRelNode = LogicalAggregate.create(newView, aggregate.getHints(),
+                    aggregate.getGroupSet(),
+                    aggregate.getGroupSets(),
+                    aggregateContext.getGlobalAggregateCallList());
 
-        LogicalAggregate globalAggregateRelNode = LogicalAggregate.create(newView, aggregate.getHints(),
-                aggregate.getGroupSet(),
-                aggregate.getGroupSets(),
-                aggregateContext.getGlobalAggregateCallList());
+            MycatProject projectRelNode = MycatProject.create(globalAggregateRelNode,
+                    aggregateContext.getProjectExprList(),
+                    aggregate.getRowType());
 
-        MycatProject projectRelNode = MycatProject.create(globalAggregateRelNode,
-                aggregateContext.getProjectExprList(),
-                aggregate.getRowType());
-
-        return RexUtil.isIdentity(projectRelNode.getProjects(), projectRelNode.getInput().getRowType()) ?
-                Optional.of(globalAggregateRelNode) : Optional.of(projectRelNode);
+            return RexUtil.isIdentity(projectRelNode.getProjects(), projectRelNode.getInput().getRowType()) ?
+                    Optional.of(globalAggregateRelNode) : Optional.of(projectRelNode);
+        }catch (Throwable throwable){
+            LOGGER.debug("",throwable);
+        }
+        return Optional.empty();
     }
 
 

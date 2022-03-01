@@ -103,6 +103,7 @@ public class VertxMycatServer implements MycatServer {
             NetServerOptions netServerOptions = new NetServerOptions();
             netServerOptions.setReusePort(true);
             netServerOptions.setReuseAddress(true);
+            netServerOptions.setUseProxyProtocol(serverConfig.getServer().isUseProxyProtocol());
             DeploymentOptions deploymentOptions = new DeploymentOptions();
             deploymentOptions.setWorker(false);
             for (int i = 0; i < serverConfig.getServer().getReactorNumber(); i++) {

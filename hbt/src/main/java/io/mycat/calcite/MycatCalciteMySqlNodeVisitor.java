@@ -306,7 +306,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 } else {
                     StringBuilder sb = new StringBuilder();
                     selectItem.output(sb);
-                    selectItem.setAlias(sb.toString().replaceAll(" ", ""));
+                    selectItem.setAlias(SQLUtils.normalize(sb.toString().replaceAll(" ", "")));
                 }
             }
             SqlNode column = convertToSqlNode(selectItem);

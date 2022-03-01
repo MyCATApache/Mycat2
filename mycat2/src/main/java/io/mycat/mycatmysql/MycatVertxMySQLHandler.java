@@ -306,24 +306,26 @@ public class MycatVertxMySQLHandler {
                     assert false;
                 }
             }
-            return promise.recover(cause -> {
-                int errorCode = 0;
-                String message;
-                String sqlState;
-                if (cause instanceof SQLException) {
-                    errorCode = ((SQLException) cause).getErrorCode();
-                    message = ((SQLException) cause).getMessage();
-                    sqlState = ((SQLException) cause).getSQLState();
-                } else if (cause instanceof MycatException) {
-                    errorCode = ((MycatException) cause).getErrorCode();
-                    message = ((MycatException) cause).getMessage();
-                    sqlState = "";
-                } else {
-                    message = cause.toString();
-                }
-                mycatDataContext.setLastMessage(message);
-                return this.session.writeErrorEndPacketBySyncInProcessError(errorCode);
-            });
+            return promise
+                    .onSuccess(event12 -> mycatDataContext.setLastMessage((String) null))
+                    .recover(cause -> {
+                        int errorCode = 0;
+                        String message;
+                        String sqlState;
+                        if (cause instanceof SQLException) {
+                            errorCode = ((SQLException) cause).getErrorCode();
+                            message = ((SQLException) cause).getMessage();
+                            sqlState = ((SQLException) cause).getSQLState();
+                        } else if (cause instanceof MycatException) {
+                            errorCode = ((MycatException) cause).getErrorCode();
+                            message = ((MycatException) cause).getMessage();
+                            sqlState = "";
+                        } else {
+                            message = cause.toString();
+                        }
+                        mycatDataContext.setLastMessage(message);
+                        return this.session.writeErrorEndPacketBySyncInProcessError(errorCode);
+                    });
         } catch (Throwable throwable) {
             mycatDataContext.setLastMessage(throwable);
             return this.session.writeErrorEndPacketBySyncInProcessError(0);
