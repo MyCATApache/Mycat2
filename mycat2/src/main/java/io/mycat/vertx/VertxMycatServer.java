@@ -18,12 +18,9 @@ import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.config.MycatServerConfig;
-import io.mycat.config.ServerConfig;
-import io.mycat.config.ThreadPoolExecutorConfig;
-import io.mycat.proxy.session.MycatSession;
+import io.mycat.monitor.LogEntryHolder;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetServer;
 import io.vertx.core.net.NetServerOptions;
@@ -36,7 +33,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class VertxMycatServer implements MycatServer {
@@ -186,6 +182,7 @@ public class VertxMycatServer implements MycatServer {
             builder.addColumnInfo("TRANSACTION_TYPE", JDBCType.VARCHAR);
             builder.addColumnInfo("TRANSCATION_SNAPSHOT", JDBCType.VARCHAR);
             builder.addColumnInfo("CANCEL_FLAG", JDBCType.VARCHAR);
+            builder.addColumnInfo("SQL", JDBCType.VARCHAR);
 
             for (MycatDataContext session : sessions) {
                 long ID = session.getSessionId();
@@ -216,6 +213,8 @@ public class VertxMycatServer implements MycatServer {
                 TransactionSession transactionSession = dataContext.getTransactionSession();
                 String TRANSCATION_SMAPSHOT = transactionSession.snapshot().toString("|");
                 boolean CANCEL_FLAG = dataContext.getCancelFlag().get();
+
+                LogEntryHolder holder = (LogEntryHolder)dataContext.getHolder();
                 builder.addObjectRowPayload(Arrays.asList(
                         ID,
                         USER_NAME,
@@ -237,7 +236,8 @@ public class VertxMycatServer implements MycatServer {
                         MYSQL_SESSION_ID,
                         TRANSACTION_TYPE,
                         TRANSCATION_SMAPSHOT,
-                        CANCEL_FLAG
+                        CANCEL_FLAG,
+                        holder.getSqlEntry().getSql()
                 ));
             }
             return builder.build();

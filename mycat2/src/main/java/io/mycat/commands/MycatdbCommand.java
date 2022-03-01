@@ -304,13 +304,13 @@ public enum MycatdbCommand {
             }
             if (text.startsWith("PARAMETERIZE")) {
                 text = text.substring("PARAMETERIZE".length()).trim();
-                DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(text,dataContext.getDefaultSchema());
+                DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(text, dataContext.getDefaultSchema());
                 String parameterizedSQL = drdsSqlWithParams.getParameterizedSQL();
                 String info = drdsSqlWithParams.toString();
                 ResultSetBuilder builder = ResultSetBuilder.create();
                 builder.addColumnInfo("PARAMETERIZED_SQL", JDBCType.VARCHAR)
                         .addColumnInfo("INFO", JDBCType.VARCHAR);
-                builder.addObjectRowPayload(Arrays.asList(parameterizedSQL,info));
+                builder.addObjectRowPayload(Arrays.asList(parameterizedSQL, info));
                 return response.sendResultSet(builder.build());
             }
         }
@@ -331,6 +331,7 @@ public enum MycatdbCommand {
 
     @NotNull
     private static Map<String, Object> getHintRoute(SQLStatement sqlStatement) {
+        HashMap<String, Object> map = new HashMap<>();
         List<SQLHint> hints = new LinkedList<>();
         MySqlASTVisitorAdapter mySqlASTVisitorAdapter = new MySqlASTVisitorAdapter() {
             @Override
@@ -350,7 +351,6 @@ public enum MycatdbCommand {
                 mycatHint = new MycatHint(text);
             }
             if (mycatHint != null) {
-                HashMap<String, Object> map = new HashMap<>();
                 map.put("REP_BALANCE_TYPE", ReplicaBalanceType.NONE);
                 for (MycatHint.Function function : mycatHint.getFunctions()) {
                     String name = function.getName();
@@ -368,7 +368,7 @@ public enum MycatdbCommand {
                             continue;
                         }
                         case "VECTOR": {
-                            map.put("VECTOR",null);
+                            map.put("VECTOR", null);
                             continue;
                         }
                         case "MASTER": {
@@ -415,7 +415,7 @@ public enum MycatdbCommand {
                 return map;
             }
         }
-        return Collections.emptyMap();
+        return map;
     }
 
     public static Future<Void> execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) {
@@ -432,6 +432,7 @@ public enum MycatdbCommand {
         TransactionSession transactionSession = dataContext.getTransactionSession();
         Future future = transactionSession.openStatementState();
         LogEntryHolder logRecord = logMonitor.startRecord(dataContext, null, sqlType, sql);
+        dataContext.setHolder(logRecord);
         future = future.flatMap(unused -> {
             try {
                 //////////////////////////////////////////////////////////////////////////////////////
@@ -454,9 +455,9 @@ public enum MycatdbCommand {
                             targetArray = Collections.singletonList(targetArray.toString());
                         }
                         if (select) {
-                            return receiver.proxySelect((List) targetArray, sqlText,Collections.emptyList());
+                            return receiver.proxySelect((List) targetArray, sqlText, Collections.emptyList());
                         }
-                        return receiver.proxyUpdate((List) targetArray, sqlText,Collections.emptyList());
+                        return receiver.proxyUpdate((List) targetArray, sqlText, Collections.emptyList());
                     }
                 }
                 SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
@@ -468,19 +469,20 @@ public enum MycatdbCommand {
                 } else {
                     if (sqlStatement instanceof MySqlShowStatement) {
                         logger.warn("ignore SQL prototype statement:{}", sqlStatement);
-                        return receiver.proxySelectToPrototype(sqlStatement.toString(),Collections.emptyList());
+                        return receiver.proxySelectToPrototype(sqlStatement.toString(), Collections.emptyList());
                     } else {
                         logger.warn("ignore SQL statement:{}", sqlStatement);
                         return receiver.sendOk();
                     }
                 }
             } catch (Throwable throwable) {
-                logger.error("",throwable);
+                logger.error("", throwable);
                 return Future.failedFuture(throwable);
             }
         });
 
         future = future.onComplete((Handler<AsyncResult>) event -> {
+            dataContext.setHolder(null);
             if (event.succeeded()) {
                 logRecord.recordSQLEnd(true, Collections.emptyMap(), "");
             } else {

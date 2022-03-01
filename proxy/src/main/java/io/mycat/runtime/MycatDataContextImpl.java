@@ -83,6 +83,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     private Map<String, Object> processStateMap = new HashMap<>();
     private boolean debug = false;
     private Set<String> usedlocks = new HashSet<>();
+    private Object holder;
 
     public MycatDataContextImpl() {
         this.id = IDS.getAndIncrement();
@@ -502,6 +503,16 @@ public class MycatDataContextImpl implements MycatDataContext {
             return 0;
         }
         return res;
+    }
+
+    @Override
+    public void setHolder(Object holder) {
+        this.holder = holder;
+    }
+
+    @Override
+    public Object getHolder() {
+        return holder;
     }
 
     @Override

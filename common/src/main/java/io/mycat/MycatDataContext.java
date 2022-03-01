@@ -152,4 +152,8 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
     public Integer releaseLock(String name);
 
     public Integer isFreeLock(String name);
+
+    void setHolder(Object holder);
+
+    Object getHolder();
 }
