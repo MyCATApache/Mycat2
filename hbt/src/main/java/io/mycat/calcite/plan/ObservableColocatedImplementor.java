@@ -50,7 +50,9 @@ public class ObservableColocatedImplementor extends ObservablePlanImplementorImp
             List<PartitionGroup> partitions = sqlMycatDataContext.getPartition(mycatRel.getDigest()).orElse(Collections.emptyList());
             if (partitions.size()==1){
                 NameMap<Partition> partition = NameMap.immutableCopyOf((partitions.get(0).getMap()));
-                String targetName = partition.values().iterator().next().getTargetName();
+                // add by lingkang 分片时，schema应该取key不是取第一个
+                String targetName = partitions.get(0).getTargetName();
+                //String targetName = partition.values().iterator().next().getTargetName();
                 SQLStatement parameterizedStatement = drdsSqlWithParams.getParameterizedStatement().clone();
 
                 parameterizedStatement.accept(new MySqlASTVisitorAdapter(){
