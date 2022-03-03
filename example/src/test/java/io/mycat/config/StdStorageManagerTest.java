@@ -1,6 +1,7 @@
 package io.mycat.config;
 
 import com.alibaba.druid.util.JdbcUtils;
+import com.google.common.io.Files;
 import io.mycat.assemble.MycatTest;
 import io.mycat.hint.CreateDataSourceHint;
 import io.mycat.sqlhandler.config.DbStorageManagerImpl;
@@ -11,7 +12,6 @@ import io.vertx.core.json.Json;
 import lombok.SneakyThrows;
 import org.junit.Assert;
 import org.junit.Test;
-import org.sparkproject.guava.io.Files;
 
 import java.io.File;
 import java.nio.file.Path;
