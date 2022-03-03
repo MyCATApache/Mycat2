@@ -1,6 +1,7 @@
 package io.mycat.config;
 
 import com.alibaba.druid.util.JdbcUtils;
+import com.google.common.io.Files;
 import io.mycat.assemble.MycatTest;
 import io.mycat.hint.CreateDataSourceHint;
 import io.mycat.sqlhandler.config.DbStorageManagerImpl;
@@ -10,7 +11,6 @@ import io.mycat.sqlhandler.config.StdStorageManagerImpl;
 import lombok.SneakyThrows;
 import org.junit.Assert;
 import org.junit.Test;
-import org.sparkproject.guava.io.Files;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.io.File;

@@ -383,13 +383,6 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>19.0</version>
-
-        </dependency>
-        <dependency>
-            <groupId>com.google.uzaygezen</groupId>
-            <artifactId>uzaygezen-core</artifactId>
-            <version>0.2</version>
-
         </dependency>
         <dependency>
             <groupId>com.jayway.jsonpath</groupId>

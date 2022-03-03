@@ -354,12 +354,6 @@
 
         </dependency>
         <dependency>
-            <groupId>com.google.uzaygezen</groupId>
-            <artifactId>uzaygezen-core</artifactId>
-            <version>0.2</version>
-
-        </dependency>
-        <dependency>
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path</artifactId>
             <version>2.4.0</version>

@@ -1,12 +1,8 @@
 package io.mycat.beans.mycat;
 
-import com.google.flatbuffers.DoubleVector;
-import com.google.protobuf.Int32Value;
 import io.mycat.beans.mysql.MySQLFieldsType;
-import io.vertx.mysqlclient.impl.MySQLRowImpl;
 import io.vertx.mysqlclient.impl.protocol.ColumnDefinition;
 import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.data.Numeric;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
 import lombok.SneakyThrows;
@@ -14,8 +10,6 @@ import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.*;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
-import org.apache.avro.Schema;
-import org.apache.avro.SchemaBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,7 +23,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.BitSet;
 import java.util.List;
-import java.util.function.Function;
 
 import static java.sql.ResultSetMetaData.columnNoNulls;
 

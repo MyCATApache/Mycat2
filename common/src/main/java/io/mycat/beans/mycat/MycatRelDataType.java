@@ -13,7 +13,6 @@ import lombok.ToString;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
-import org.apache.spark.sql.execution.columnar.DOUBLE;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -22,7 +21,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 @EqualsAndHashCode
 @ToString

@@ -18,7 +18,6 @@
 package io.ordinate.engine.function.math;
 
 
-import com.google.uzaygezen.core.MathUtils;
 import io.ordinate.engine.builder.EngineConfiguration;
 import io.ordinate.engine.function.DoubleFunction;
 import io.ordinate.engine.function.Function;
