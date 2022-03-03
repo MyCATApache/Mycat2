@@ -19,7 +19,6 @@ package io.ordinate.engine.function;
 
 import org.apache.calcite.avatica.util.ByteString;
 import org.jetbrains.annotations.NotNull;
-import scala.util.control.Exception;
 
 public class BinarySequenceImpl implements BinarySequence {
     final byte[] body;

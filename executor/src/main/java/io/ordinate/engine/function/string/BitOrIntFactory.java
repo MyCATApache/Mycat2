@@ -5,9 +5,7 @@ import io.ordinate.engine.builder.EngineConfiguration;
 import io.ordinate.engine.function.Function;
 import io.ordinate.engine.function.FunctionFactory;
 import io.ordinate.engine.function.IntFunction;
-import io.ordinate.engine.function.StringFunction;
 import io.ordinate.engine.record.Record;
-import org.apache.spark.sql.sources.In;
 
 import java.util.List;
 

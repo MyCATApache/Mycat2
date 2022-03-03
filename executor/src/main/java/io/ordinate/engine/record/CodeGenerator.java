@@ -18,7 +18,6 @@
 package io.ordinate.engine.record;
 
 import lombok.SneakyThrows;
-import org.apache.spark.util.ParentClassLoader;
 import org.codehaus.janino.SimpleCompiler;
 
 import java.io.StringReader;

@@ -17,14 +17,10 @@
 
 package io.ordinate.engine.physicalplan;
 
-import io.ordinate.engine.schema.InnerType;
 import io.ordinate.engine.record.RootContext;
 import io.ordinate.engine.schema.IntInnerType;
 import io.reactivex.rxjava3.core.Observable;
 import org.apache.arrow.vector.VectorSchemaRoot;
-import org.apache.arrow.vector.types.pojo.Field;
-import org.apache.arrow.vector.types.pojo.Schema;
-import org.apache.spark.sql.sources.In;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
