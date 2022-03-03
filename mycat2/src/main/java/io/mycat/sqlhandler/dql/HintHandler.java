@@ -7,13 +7,14 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlHintStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.util.JdbcUtils;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.UnmodifiableIterator;
-import hu.akarnokd.rxjava3.operators.ObservableTransformers;
 import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.api.collector.RowBaseIterator;
@@ -35,6 +36,8 @@ import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.exporter.SqlRecorderRuntime;
+import io.mycat.hint.BinlogHint;
+import io.mycat.hint.BinlogStopHint;
 import io.mycat.hint.MigrateHint;
 import io.mycat.hint.MigrateStopHint;
 import io.mycat.monitor.MycatSQLLogMonitor;
@@ -50,30 +53,28 @@ import io.mycat.sqlhandler.*;
 import io.mycat.sqlhandler.config.StorageManager;
 import io.mycat.sqlhandler.dml.UpdateSQLHandler;
 import io.mycat.util.JsonUtil;
+import io.mycat.util.MycatSQLExprTableSourceUtil;
 import io.mycat.util.NameMap;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
+import io.mycat.vertx.VertxUpdateExecuter;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.functions.Function;
-import io.reactivex.rxjava3.internal.functions.Functions;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.csv.QuoteMode;
-import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.sql.*;
+import java.sql.JDBCType;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -629,19 +630,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         String outputTableName = outputTable.getTableName();
 
 
-                        MySqlInsertStatement mySqlInsertStatement = new MySqlInsertStatement();
-                        mySqlInsertStatement.setTableName(new SQLIdentifierExpr("`" + outputTableName + "`"));
-                        mySqlInsertStatement.getTableSource().setSchema("`" + outputSchemaName + "`");
-                        SQLInsertStatement.ValuesClause valuesClause = new SQLInsertStatement.ValuesClause();
-
-                        int columnCount = outputTable.getColumns().size();
-
-                        for (SimpleColumnInfo column : outputTable.getColumns()) {
-                            mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`" + column.getColumnName() + "`"));
-                            valuesClause.addValue(new SQLVariantRefExpr("?"));
-                        }
-                        mySqlInsertStatement.setValues(valuesClause);
-                        String insertTemplate = mySqlInsertStatement.toString();
+                        String insertTemplate = getMySQLInsertTemplate(outputTable);
 
 
                         migrateJdbcOutput.setUsername(username);
@@ -654,6 +643,130 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         MigrateUtil.MigrateScheduler scheduler = MigrateUtil.register(name, migrateJdbcInputs, migrateJdbcOutput, migrateController);
                         return response.sendResultSet(MigrateUtil.show(scheduler));
                     }
+                    if ("BINLOG_LIST".equalsIgnoreCase(cmd)) {
+                        return response.sendResultSet(BinlogUtil.list());
+                    }
+                    if ("BINLOG_STOP".equalsIgnoreCase(cmd)) {
+                        BinlogStopHint hint = JsonUtil.from(body, BinlogStopHint.class);
+                        if (BinlogUtil.stop(hint.getId())) {
+                            dataContext.setAffectedRows(1);
+                        }
+                        return response.sendOk();
+                    }
+                    if ("BINLOG".equalsIgnoreCase(cmd)) {
+                        BinlogHint binlogHint = JsonUtil.from(body, BinlogHint.class);
+                        Objects.requireNonNull(binlogHint.getInputTableNames());
+
+                        List<String> outputTableNames = binlogHint.getOutputTableNames();
+
+                        if (outputTableNames == null) {
+                            binlogHint.setInputTableNames(binlogHint.getInputTableNames());
+                        }
+
+                        IdentityHashMap<TableHandler, TableHandler> map = new IdentityHashMap<>();
+
+
+                        List<TableHandler> inputs = new ArrayList<>();
+                        List<TableHandler> outputs = new ArrayList<>();
+
+                        for (String inputTableName : binlogHint.getInputTableNames()) {
+                            String[] split = inputTableName.split(".");
+                            String schemaName = SQLUtils.normalize(split[0]);
+                            String tableName = SQLUtils.normalize(split[1]);
+                            TableHandler inputTable = metadataManager.getTable(schemaName, tableName);
+                            inputs.add(inputTable);
+                        }
+
+                        for (String outputTableName : binlogHint.getOutputTableNames()) {
+                            String[] split = outputTableName.split(".");
+                            String schemaName = SQLUtils.normalize(split[0]);
+                            String tableName = SQLUtils.normalize(split[1]);
+                            TableHandler outputTable = metadataManager.getTable(schemaName, tableName);
+                            outputs.add(outputTable);
+                        }
+
+                        for (int i = 0; i < inputs.size(); i++) {
+                            map.put(inputs.get(i), outputs.get(i));
+                        }
+
+                        Map<String,  Map<String, List<Partition>>> infoCollector = new HashMap<>();
+                        List<MigrateUtil.MigrateController> migrateControllers = new ArrayList<>();
+
+
+                        Set<Map.Entry<TableHandler, TableHandler>> entries = map.entrySet();
+                        for (Map.Entry<TableHandler, TableHandler> entry : entries) {
+                            ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
+
+                            TableHandler inputTable = entry.getKey();
+                            TableHandler outputTable = entry.getValue();
+
+                            UserConfig userConfig = routerConfig.getUsers().get(0);
+
+                            String username = userConfig.getUsername();
+                            String password = userConfig.getPassword();
+
+
+                            String ip = serverConfig.getIp();
+                            int port = serverConfig.getPort();
+
+                            String url =
+                                    "jdbc:mysql://" +
+                                            ip +
+                                            ":" +
+                                            port + "/mysql?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true";
+
+                            //String insertTemplate = getMySQLInsertTemplate(outputTable);
+                            MigrateUtil.MigrateJdbcAnyOutput output = new MigrateUtil.MigrateJdbcAnyOutput();
+                            output.setUrl(url);
+                            output.setUsername(username);
+                            output.setPassword(password);
+
+                            List<Partition> partitions = new ArrayList<>();
+                            switch (inputTable.getType()) {
+                                case SHARDING: {
+                                    ShardingTable shardingTable = (ShardingTable) inputTable;
+                                    partitions = shardingTable.getShardingFuntion().calculate(Collections.emptyMap());
+                                    break;
+                                }
+                                case GLOBAL: {
+                                    GlobalTable globalTable = (GlobalTable) inputTable;
+                                    partitions = ImmutableList.of(globalTable.getGlobalDataNode().get(0));
+                                    break;
+                                }
+                                case NORMAL: {
+                                    NormalTable normalTable = (NormalTable) inputTable;
+                                    partitions = ImmutableList.of(normalTable.getDataNode());
+                                    break;
+                                }
+                                case CUSTOM:
+                                case VISUAL:
+                                case VIEW:
+                                    throw new UnsupportedOperationException();
+                            }
+                            ReplicaSelectorManager replicaSelectorManager = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
+
+                            Map<String, List<Partition>> listMap = partitions.stream().collect(Collectors.groupingBy(partition -> replicaSelectorManager.getDatasourceNameByReplicaName(partition.getTargetName(), true, null)));
+                            infoCollector.put(inputTable.getUniqueName(),listMap);
+
+                            List<Flowable<BinlogUtil.ParamSQL>> flowables = new ArrayList<>();
+                            for (Map.Entry<String, List<Partition>> e : listMap.entrySet()) {
+                                flowables.add(BinlogUtil.observe(e.getKey(), e.getValue()).subscribeOn(Schedulers.io()));
+                            }
+                            Flowable<BinlogUtil.ParamSQL> merge = flowables.size() == 1 ? flowables.get(0) : Flowable.merge(flowables, flowables.size());
+                            merge = merge.map(paramSQL -> {
+                                SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(paramSQL.getSql());
+                                SQLExprTableSource sqlExprTableSource = VertxUpdateExecuter.getTableSource(sqlStatement);
+                                MycatSQLExprTableSourceUtil.setSqlExprTableSource(outputTable.getSchemaName(), outputTable.getTableName(), sqlExprTableSource);
+                                paramSQL.setSql(sqlStatement.toString());
+                                return paramSQL;
+                            });
+                            MigrateUtil.MigrateController migrateController = MigrateUtil.writeSql(output, merge);
+                            migrateControllers.add(migrateController);
+                        }
+                        BinlogUtil.BinlogScheduler scheduler = BinlogUtil.BinlogScheduler.of(UUID.randomUUID().toString(), binlogHint.getName(), infoCollector, migrateControllers);
+                        BinlogUtil.register(scheduler);
+                        return response.sendResultSet(BinlogUtil.list(Collections.singletonList(scheduler)));
+                    }
                     mycatDmlHandler(cmd, body);
                     return response.sendOk();
                 }
@@ -662,6 +775,24 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         } catch (Throwable throwable) {
             return response.sendError(throwable);
         }
+    }
+
+    private static String getMySQLInsertTemplate(TableHandler outputTable) {
+        String outputSchemaName = outputTable.getSchemaName();
+        String outputTableName = outputTable.getTableName();
+        MySqlInsertStatement mySqlInsertStatement = new MySqlInsertStatement();
+        mySqlInsertStatement.setTableName(new SQLIdentifierExpr("`" + outputTableName + "`"));
+        mySqlInsertStatement.getTableSource().setSchema("`" + outputSchemaName + "`");
+        SQLInsertStatement.ValuesClause valuesClause = new SQLInsertStatement.ValuesClause();
+
+        int columnCount = outputTable.getColumns().size();
+
+        for (SimpleColumnInfo column : outputTable.getColumns()) {
+            mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`" + column.getColumnName() + "`"));
+            valuesClause.addValue(new SQLVariantRefExpr("?"));
+        }
+        mySqlInsertStatement.setValues(valuesClause);
+        return mySqlInsertStatement.toString();
     }
 
     public static RowBaseIterator showHeatbeatStat() {

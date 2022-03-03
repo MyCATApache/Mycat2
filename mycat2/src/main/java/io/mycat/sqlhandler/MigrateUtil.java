@@ -12,8 +12,8 @@ import io.mycat.config.DatasourceConfig;
 import io.mycat.config.MycatRouterConfig;
 import io.mycat.replica.ReplicaSelectorManager;
 import io.reactivex.rxjava3.annotations.NonNull;
-import io.reactivex.rxjava3.core.*;
 import io.reactivex.rxjava3.core.Observer;
+import io.reactivex.rxjava3.core.*;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Cancellable;
 import io.reactivex.rxjava3.parallel.ParallelFlowable;
@@ -124,6 +124,73 @@ public class MigrateUtil {
         return scheduler;
     }
 
+    public static MigrateController writeSql(MigrateJdbcAnyOutput output, Flowable<BinlogUtil.ParamSQL> merge) {
+        String username = output.getUsername();
+        String password = output.getPassword();
+        String url = output.getUrl();
+
+        @ToString
+        @Getter
+        class MigrateSQLController implements MigrateController, FlowableSubscriber<BinlogUtil.ParamSQL> {
+            Subscription subscription;
+            Connection connection;
+            final Promise<Void> promise = Promise.promise();
+            final MigrateJdbcAnyOutput info = output;
+
+            @Override
+            public void onSubscribe(@NonNull Subscription subscription) {
+                try {
+                    this.subscription = subscription;
+                    this.connection = DriverManager.getConnection(url, username, password);
+                    this.subscription.request(1);
+                } catch (Throwable exception) {
+                    onError(exception);
+                }
+            }
+
+            @Override
+            public void onNext(BinlogUtil.ParamSQL paramSQL) {
+                try {
+                    JdbcUtils.execute(this.connection, paramSQL.getSql(), Arrays.asList(paramSQL.getParams()));
+                    this.subscription.request(1);
+                } catch (Throwable exception) {
+                    onError(exception);
+                }
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                LOGGER.error("MigrateSQLController error", t);
+                stop();
+            }
+
+            @Override
+            public void onComplete() {
+                stop();
+            }
+
+            @Override
+            public Future<Void> getFuture() {
+                return promise.future();
+            }
+
+            @Override
+            public void stop() {
+                LOGGER.error("MigrateSQLController stop");
+                if (this.subscription != null) {
+                    this.subscription.cancel();
+                }
+                if (this.connection != null) {
+                    JdbcUtils.close(this.connection);
+                }
+                promise.tryComplete();
+            }
+        };
+        MigrateSQLController migrateSQLController = new MigrateSQLController();
+        merge.subscribe(migrateSQLController);
+        return migrateSQLController;
+    }
+
     @Data
     @ToString
     public static class MigrateJdbcInput {
@@ -141,6 +208,14 @@ public class MigrateUtil {
         int parallelism = 1;
         int batch = 1000;
         final AtomicLong row = new AtomicLong();
+    }
+
+    @Data
+    @ToString
+    public static class MigrateJdbcAnyOutput {
+        String username;
+        String password;
+        String url;
     }
 
     @Getter
@@ -260,10 +335,10 @@ public class MigrateUtil {
                     while (resultSet.next() && !emitter.isCancelled()) {
 
                         while (emitter.requested() < 1) {
-                            LOGGER.info("wait request {}",migrateJdbcInput);
+                            LOGGER.info("wait request {}", migrateJdbcInput);
                             TimeUnit.SECONDS.sleep(1);
                             if (emitter.isCancelled()) {
-                                LOGGER.info("cancel in wait request {}",migrateJdbcInput);
+                                LOGGER.info("cancel in wait request {}", migrateJdbcInput);
                                 return;
                             }
                         }
@@ -290,6 +365,7 @@ public class MigrateUtil {
 
     }
 
+    @ToString
     public static class MigrateControllerImpl implements MigrateController, Observer<List<Object[]>>, FlowableSubscriber<List<Object[]>> {
 
         Connection connection;
@@ -378,6 +454,7 @@ public class MigrateUtil {
         }
     }
 
+    @ToString
     public static class MigrateControllerGroup implements MigrateController {
         final List<MigrateController> list;
 
