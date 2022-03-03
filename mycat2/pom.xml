@@ -242,6 +242,7 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.1.0</version>
                 <configuration>
+                    <finalName>mycat2-${project.version}-jar-with-dependencies</finalName>
                     <filters>
                         <filter>
                             <artifact>*:*</artifact>
