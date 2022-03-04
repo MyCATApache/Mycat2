@@ -20,6 +20,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLShowDatabasesStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.Response;
+import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
@@ -34,7 +35,7 @@ public class ShowDatabasesHanlder extends AbstractSQLHandler<com.alibaba.druid.s
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLShowDatabasesStatement> request, MycatDataContext dataContext, Response response) {
         String sql = toNormalSQL(request.getAst());
-        return response.sendResultSet(runAsRowIterator(dataContext, sql));
+        return DrdsRunnerHelper.runOnDrds(dataContext, DrdsRunnerHelper.preParse(sql, dataContext.getDefaultSchema()), response);
     }
 
 

@@ -22,6 +22,7 @@ import com.alibaba.druid.sql.ast.statement.SQLShowTablesStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
 import io.mycat.Response;
+import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
@@ -48,7 +49,7 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
             return response.sendError(new MycatException("NO DATABASES SELECTED"));
         }
         String sql = toNormalSQL(request.getAst());
-        return response.sendResultSet(runAsRowIterator(dataContext, sql));
+        return DrdsRunnerHelper.runOnDrds(dataContext, DrdsRunnerHelper.preParse(sql, dataContext.getDefaultSchema()), response);
     }
 
     private String toNormalSQL(SQLShowTablesStatement ast) {

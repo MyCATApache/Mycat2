@@ -21,6 +21,7 @@ import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.statement.SQLShowColumnsStatement;
 import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.*;
+import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
@@ -73,7 +74,7 @@ public class ShowColumnsSQLHandler extends AbstractSQLHandler<SQLShowColumnsStat
             }
         }
         String sql = toNormalSQL(request.getAst());
-        return response.sendResultSet(runAsRowIterator(dataContext, sql));
+        return DrdsRunnerHelper.runOnDrds(dataContext, DrdsRunnerHelper.preParse(sql, dataContext.getDefaultSchema()), response);
 
     }
 
