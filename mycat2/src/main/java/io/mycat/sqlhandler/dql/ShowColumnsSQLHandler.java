@@ -17,21 +17,22 @@ package io.mycat.sqlhandler.dql;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
-import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.druid.sql.ast.statement.SQLSelectQueryBlock;
 import com.alibaba.druid.sql.ast.statement.SQLShowColumnsStatement;
-import io.mycat.MycatDataContext;
-import io.mycat.Response;
+import com.alibaba.druid.util.JdbcUtils;
+import io.mycat.*;
+import io.mycat.calcite.table.GlobalTable;
+import io.mycat.calcite.table.NormalTable;
+import io.mycat.calcite.table.ShardingTable;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 
 /**
@@ -47,8 +48,33 @@ public class ShowColumnsSQLHandler extends AbstractSQLHandler<SQLShowColumnsStat
         if (ast.getDatabase() == null && dataContext.getDefaultSchema() != null) {
             ast.setDatabase(new SQLIdentifierExpr(dataContext.getDefaultSchema()));
         }
+        try {
+            JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+            String database = SQLUtils.normalize(ast.getDatabase().getSimpleName());
+            String table = SQLUtils.normalize(ast.getTable().getSimpleName());
+            MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+            TableHandler tableHandler = metadataManager.getTable(database, table);
+            Partition dataNode = null;
+            if (tableHandler.getType() == LogicTableType.NORMAL) {
+                dataNode = ((NormalTable) tableHandler).getDataNode();
+            } else if (tableHandler.getType() == LogicTableType.GLOBAL) {
+                dataNode = ((GlobalTable) tableHandler).getDataNode();
+            } else if (tableHandler.getType() == LogicTableType.SHARDING) {
+                dataNode = ((ShardingTable) tableHandler).getBackends().get(0);
+            }
+            Objects.requireNonNull(dataNode);
+            try (DefaultConnection connection = jdbcConnectionManager.getConnection(dataNode.getTargetName())) {
+                JdbcUtils.executeQuery(connection.getRawConnection(), ast.toString(), Collections.emptyList());
+                return response.proxySelect(Collections.singletonList(MetadataManager.getPrototype()), ast.toString(), Collections.emptyList());
+            }
+        } catch (Exception e) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("try query {} from prototype fail", ast);
+            }
+        }
         String sql = toNormalSQL(request.getAst());
         return response.sendResultSet(runAsRowIterator(dataContext, sql));
+
     }
 
     private String toNormalSQL(SQLShowColumnsStatement ast) {
