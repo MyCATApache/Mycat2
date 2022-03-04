@@ -24,6 +24,7 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLNumericLiteralExpr;
 import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.ast.statement.SQLShowStatement;
 import com.alibaba.druid.sql.ast.statement.SQLStartTransactionStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
@@ -41,6 +42,7 @@ import io.mycat.calcite.MycatHint;
 import io.mycat.calcite.spm.*;
 import io.mycat.monitor.LogEntryHolder;
 import io.mycat.monitor.MycatSQLLogMonitor;
+import io.mycat.prototypeserver.mysql.HackRouter;
 import io.mycat.sqlhandler.SQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.sqlhandler.ShardingSQLHandler;
@@ -467,6 +469,9 @@ public enum MycatdbCommand {
                         }
                         return receiver.proxyUpdate((List) targetArray, sqlText, Collections.emptyList());
                     }
+                }
+                if (HackRouter.PUSH_SHOW && sqlStatement instanceof SQLShowStatement) {
+                    return receiver.proxySelectToPrototype(sqlStatement.toString(), Collections.emptyList());
                 }
                 SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
 

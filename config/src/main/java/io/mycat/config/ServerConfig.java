@@ -72,6 +72,7 @@ public class ServerConfig {
     private long bkaJoinLeftRowCountLimit = 1000;
     private boolean pstmtStringVal = false;
     private String pushDownSelectDual = "hackRouter";
+    private boolean pushShowOnPrototype = false;
     private boolean useProxyProtocol = false;
     public static void main(String[] args) {
         System.out.println(JsonUtil.toJson(new ServerConfig()));

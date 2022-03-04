@@ -105,6 +105,7 @@ public class MycatCore {
         AsyncMycatDataContextImpl.FULL_TABLE_SCAN_LIMIT = serverConfiguration.serverConfig().getServer().getFullTableScanLimit();
         AsyncMycatDataContextImpl.FULL_TABLE_SCAN_EXCEPTION = serverConfiguration.serverConfig().getServer().isFullTableScanException();
         HackRouter.PUSH_DOWN_SELECT_DUAL ="hackRouter".equalsIgnoreCase(serverConfiguration.serverConfig().getServer().getPushDownSelectDual());
+        HackRouter.PUSH_SHOW = serverConfiguration.serverConfig().getServer().isPushShowOnPrototype();
 
         VertxOptions vertxOptions = new VertxOptions();
         vertxOptions.setWorkerPoolSize(workerPool.getMaxPoolSize());
