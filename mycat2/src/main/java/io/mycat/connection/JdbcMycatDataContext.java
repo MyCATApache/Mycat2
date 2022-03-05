@@ -270,6 +270,16 @@ public class JdbcMycatDataContext implements MycatDataContext {
     }
 
     @Override
+    public void setReadyToCloseSQL(String sql) {
+
+    }
+
+    @Override
+    public String getReadyToCloseSQL() {
+        return null;
+    }
+
+    @Override
     public <T> T unwrap(Class<T> iface) {
         return null;
     }

@@ -85,6 +85,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     private boolean vector = false;
     private Set<String> usedlocks = new HashSet<>();
     private Object holder;
+    private String sql;
 
     public MycatDataContextImpl() {
         this.id = IDS.getAndIncrement();
@@ -524,6 +525,20 @@ public class MycatDataContextImpl implements MycatDataContext {
     @Override
     public Object getHolder() {
         return holder;
+    }
+
+    @Override
+    public void setReadyToCloseSQL(String sql) {
+        if (sql == null) {
+            this.sql = null;
+        } else {
+            this.sql = SQLUtils.parseSingleMysqlStatement(sql).toString();
+        }
+    }
+
+    @Override
+    public String getReadyToCloseSQL() {
+        return this.sql;
     }
 
     @Override

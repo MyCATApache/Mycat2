@@ -160,4 +160,8 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
     void setHolder(Object holder);
 
     Object getHolder();
+
+    public void setReadyToCloseSQL(String sql);
+
+    public String getReadyToCloseSQL();
 }

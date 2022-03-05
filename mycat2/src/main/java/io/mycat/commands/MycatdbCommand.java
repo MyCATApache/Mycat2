@@ -445,6 +445,12 @@ public enum MycatdbCommand {
         dataContext.setHolder(logRecord);
         future = future.flatMap(unused -> {
             try {
+                String readyToCloseSQL = dataContext.getReadyToCloseSQL();
+                if (readyToCloseSQL!=null){
+                    if(readyToCloseSQL.equalsIgnoreCase(sql)){
+                        dataContext.close();
+                    }
+                }
                 //////////////////////////////////////////////////////////////////////////////////////
                 if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
                     SqlResultSetService sqlResultSetService
