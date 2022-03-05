@@ -17,6 +17,7 @@ package io.mycat.sqlhandler.dql;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
+import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.statement.SQLShowColumnsStatement;
 import com.alibaba.druid.util.JdbcUtils;
@@ -27,8 +28,10 @@ import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.prototypeserver.mysql.HackRouter;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
+import io.mycat.util.MycatSQLExprTableSourceUtil;
 import io.vertx.core.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +58,19 @@ public class ShowColumnsSQLHandler extends AbstractSQLHandler<SQLShowColumnsStat
             String table = SQLUtils.normalize(ast.getTable().getSimpleName());
             MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
             TableHandler tableHandler = metadataManager.getTable(database, table);
+
+            boolean okOnPrototype = false;
+            try (DefaultConnection connection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype())) {
+                JdbcUtils.executeQuery(connection.getRawConnection(), ast.toString(), Collections.emptyList());
+                okOnPrototype = true;
+            } catch (Throwable throwable) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("try query {} from prototype fail", ast);
+                }
+            }
+            if (okOnPrototype) {
+                return response.proxySelect(Collections.singletonList(MetadataManager.getPrototype()), ast.toString(), Collections.emptyList());
+            }
             Partition dataNode = null;
             if (tableHandler.getType() == LogicTableType.NORMAL) {
                 dataNode = ((NormalTable) tableHandler).getDataNode();
@@ -63,14 +79,23 @@ public class ShowColumnsSQLHandler extends AbstractSQLHandler<SQLShowColumnsStat
             } else if (tableHandler.getType() == LogicTableType.SHARDING) {
                 dataNode = ((ShardingTable) tableHandler).getBackends().get(0);
             }
-            Objects.requireNonNull(dataNode);
-            try (DefaultConnection connection = jdbcConnectionManager.getConnection(dataNode.getTargetName())) {
-                JdbcUtils.executeQuery(connection.getRawConnection(), ast.toString(), Collections.emptyList());
-                return response.proxySelect(Collections.singletonList(MetadataManager.getPrototype()), ast.toString(), Collections.emptyList());
+            if (dataNode != null) {
+                SQLShowColumnsStatement tryAst = (SQLShowColumnsStatement) ast.clone();
+                tryAst.setTable(new SQLIdentifierExpr("`" + dataNode.getTable() + "`"));
+                tryAst.setDatabase(new SQLIdentifierExpr("`" + dataNode.getSchema() + "`"));
+
+                try (DefaultConnection connection = jdbcConnectionManager.getConnection(dataNode.getTargetName())) {
+                    JdbcUtils.executeQuery(connection.getRawConnection(), ast.toString(), Collections.emptyList());
+                } catch (Throwable throwable) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("try query {} from partition fail", ast);
+                    }
+                }
+                return response.proxySelect(Collections.singletonList(dataNode.getTargetName()), ast.toString(), Collections.emptyList());
             }
         } catch (Exception e) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("try query {} from prototype fail", ast);
+                LOGGER.debug("try query {} from ds fail", ast);
             }
         }
         String sql = toNormalSQL(request.getAst());
