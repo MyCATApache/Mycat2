@@ -1,12 +1,14 @@
 package io.mycat.mycatmysql;
 
 import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlKillStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.Process;
 import io.mycat.*;
@@ -34,10 +36,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.JDBCType;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 import static io.mycat.beans.mysql.packet.AuthPacket.calcLenencLength;
 
@@ -580,6 +579,9 @@ public class MycatVertxMySQLHandler {
     }
 
     public Future<Void> handleProcessKill(long connectionId, MycatVertxMysqlSession session) {
+        MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
+        List<Long> ids = Collections.singletonList(connectionId);
+        mycatServer.kill(ids);
         return session.writeOkEndPacket();
     }
 
