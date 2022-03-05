@@ -416,6 +416,17 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         DrdsSqlCompiler.RBO_MERGE_JOIN = body.contains("1");
                         return response.sendOk();
                     }
+                    if ("setAcceptConnect".equalsIgnoreCase(cmd)) {
+                        boolean contains = body.contains("1");
+                        MycatServer server = MetaClusterCurrent.wrapper(MycatServer.class);
+                        if (!contains){
+                            server.stopAcceptConnect();
+                        }else {
+                            server.resumeAcceptConnect();
+                        }
+                        dataContext.setAffectedRows(1);
+                        return response.sendOk();
+                    }
                     if ("setDebug".equalsIgnoreCase(cmd)) {
                         boolean contains = body.contains("1");
                         dataContext.setDebug(contains);

@@ -21,4 +21,8 @@ public interface MycatServer {
     void start() throws Exception;
 
     int kill(List<Long> id);
+
+    void stopAcceptConnect();
+
+    void resumeAcceptConnect();
 }
