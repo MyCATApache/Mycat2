@@ -101,6 +101,11 @@ public class VertxMycatServer implements MycatServer {
         this.server.resumeAcceptConnect();
     }
 
+    @Override
+    public void setReadyToCloseSQL(String sql) {
+        this.server.setReadyToCloseSQL(sql);
+    }
+
     public static class MycatSessionManager implements MycatServer {
         private final ConcurrentLinkedDeque<VertxSession> sessions = new ConcurrentLinkedDeque<>();
         private MycatServerConfig serverConfig;
@@ -177,6 +182,13 @@ public class VertxMycatServer implements MycatServer {
             acceptConnect = true;
         }
 
+        @Override
+        public void setReadyToCloseSQL(String sql) {
+            for (VertxSession session : sessions) {
+                session.getDataContext().setReadyToCloseSQL(sql);
+            }
+        }
+
         public void addSession(VertxSession vertxSession) {
             NetSocket socket = vertxSession.getSocket();
             socket.closeHandler(event -> {
@@ -190,6 +202,7 @@ public class VertxMycatServer implements MycatServer {
         public RowBaseIterator showNativeDataSources() {
             return demo();
         }
+
 
         @Override
         public RowBaseIterator showConnections() {

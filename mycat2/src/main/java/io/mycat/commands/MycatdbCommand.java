@@ -446,9 +446,11 @@ public enum MycatdbCommand {
         future = future.flatMap(unused -> {
             try {
                 String readyToCloseSQL = dataContext.getReadyToCloseSQL();
-                if (readyToCloseSQL!=null){
-                    if(readyToCloseSQL.equalsIgnoreCase(sql)){
-                        dataContext.close();
+                if (readyToCloseSQL != null) {
+                    if (readyToCloseSQL.equalsIgnoreCase(sql)) {
+                        MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
+                        mycatServer.kill(Collections.singletonList(dataContext.getSessionId()));
+                        return Future.succeededFuture();
                     }
                 }
                 //////////////////////////////////////////////////////////////////////////////////////

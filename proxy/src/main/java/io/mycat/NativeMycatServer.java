@@ -85,6 +85,21 @@ public class NativeMycatServer implements MycatServer {
         return count;
     }
 
+    @Override
+    public void stopAcceptConnect() {
+
+    }
+
+    @Override
+    public void resumeAcceptConnect() {
+
+    }
+
+    @Override
+    public void setReadyToCloseSQL(String sql) {
+
+    }
+
 
     private void startProxy(io.mycat.config.ServerConfig serverConfig) throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, java.lang.reflect.InvocationTargetException, IOException, InterruptedException {
         String handlerConstructorText = "io.mycat.commands.DefaultCommandHandler";

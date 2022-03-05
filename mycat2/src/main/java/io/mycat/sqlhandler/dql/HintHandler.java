@@ -36,10 +36,7 @@ import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.exporter.SqlRecorderRuntime;
-import io.mycat.hint.BinlogHint;
-import io.mycat.hint.BinlogStopHint;
-import io.mycat.hint.MigrateHint;
-import io.mycat.hint.MigrateStopHint;
+import io.mycat.hint.*;
 import io.mycat.monitor.MycatSQLLogMonitor;
 import io.mycat.monitor.SqlEntry;
 import io.mycat.replica.PhysicsInstance;
@@ -424,6 +421,14 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         }else {
                             server.resumeAcceptConnect();
                         }
+                        dataContext.setAffectedRows(1);
+                        return response.sendOk();
+                    }
+                    if ("setReadyToCloseSQL".equalsIgnoreCase(cmd)) {
+                        ReadyToCloseSQLHint readyToCloseSQLHint = JsonUtil.from(body, ReadyToCloseSQLHint.class);
+                        String sql = readyToCloseSQLHint.getSql().trim();
+                        MycatServer server = MetaClusterCurrent.wrapper(MycatServer.class);
+                        server.setReadyToCloseSQL(sql);
                         dataContext.setAffectedRows(1);
                         return response.sendOk();
                     }

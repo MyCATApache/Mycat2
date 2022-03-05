@@ -25,4 +25,6 @@ public interface MycatServer {
     void stopAcceptConnect();
 
     void resumeAcceptConnect();
+
+    void setReadyToCloseSQL(String sql);
 }
