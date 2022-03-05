@@ -72,6 +72,7 @@ public class ShowColumnsSQLHandler extends AbstractSQLHandler<SQLShowColumnsStat
                 return response.proxySelect(Collections.singletonList(MetadataManager.getPrototype()), ast.toString(), Collections.emptyList());
             }
             Partition dataNode = null;
+            boolean okOnDataNode = false;
             if (tableHandler.getType() == LogicTableType.NORMAL) {
                 dataNode = ((NormalTable) tableHandler).getDataNode();
             } else if (tableHandler.getType() == LogicTableType.GLOBAL) {
@@ -86,12 +87,15 @@ public class ShowColumnsSQLHandler extends AbstractSQLHandler<SQLShowColumnsStat
 
                 try (DefaultConnection connection = jdbcConnectionManager.getConnection(dataNode.getTargetName())) {
                     JdbcUtils.executeQuery(connection.getRawConnection(), ast.toString(), Collections.emptyList());
+                    okOnDataNode = true;
                 } catch (Throwable throwable) {
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("try query {} from partition fail", ast);
                     }
                 }
-                return response.proxySelect(Collections.singletonList(dataNode.getTargetName()), ast.toString(), Collections.emptyList());
+                if (okOnDataNode) {
+                    return response.proxySelect(Collections.singletonList(dataNode.getTargetName()), ast.toString(), Collections.emptyList());
+                }
             }
         } catch (Exception e) {
             if (LOGGER.isDebugEnabled()) {
