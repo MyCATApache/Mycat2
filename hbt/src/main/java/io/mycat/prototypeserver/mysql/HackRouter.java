@@ -41,7 +41,8 @@ public class HackRouter {
     private String targetName;
     private NameMap<Partition> targetMap;
     public static boolean PUSH_DOWN_SELECT_DUAL;
-
+    public static boolean PUSH_SHOW;
+    
     public HackRouter(SQLStatement selectStatement, MycatDataContext context) {
         this(selectStatement, context.getDefaultSchema());
     }

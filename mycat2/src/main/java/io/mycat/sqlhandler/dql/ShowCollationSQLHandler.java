@@ -17,6 +17,7 @@ package io.mycat.sqlhandler.dql;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCollationStatement;
 import io.mycat.*;
+import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
@@ -34,7 +35,7 @@ public class ShowCollationSQLHandler extends AbstractSQLHandler<MySqlShowCollati
         MySqlShowCollationStatement mySqlShowCollationStatement = request.getAst();
 
         String sql = toNormalSQL(request.getAst());
-        return response.sendResultSet(runAsRowIterator(dataContext, sql));
+        return DrdsRunnerHelper.runOnDrds(dataContext, DrdsRunnerHelper.preParse(sql, dataContext.getDefaultSchema()), response);
     }
 
     private String toNormalSQL(MySqlShowCollationStatement ast) {

@@ -7,6 +7,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowTriggersStatem
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
 import io.mycat.Response;
+import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
@@ -29,7 +30,7 @@ public class ShowTriggersSQLHandler extends AbstractSQLHandler<MySqlShowTriggers
             return response.sendError(new MycatException("NO DATABASES SELECTED"));
         }
         String sql = toNormalSQL(request.getAst());
-        return response.sendResultSet(runAsRowIterator(dataContext, sql));
+        return DrdsRunnerHelper.runOnDrds(dataContext, DrdsRunnerHelper.preParse(sql, dataContext.getDefaultSchema()), response);
     }
 
     private String toNormalSQL(MySqlShowTriggersStatement ast) {

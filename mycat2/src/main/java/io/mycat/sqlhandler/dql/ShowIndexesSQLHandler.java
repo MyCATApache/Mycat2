@@ -15,17 +15,15 @@
 package io.mycat.sqlhandler.dql;
 
 import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.ast.SQLCommentHint;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLShowIndexesStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.MycatDataContext;
-import io.mycat.beans.mysql.packet.ColumnDefPacket;
-import io.mycat.prototypeserver.mysql.PrototypeService;
+import io.mycat.Response;
+import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.Response;
 import io.vertx.core.Future;
 
 import java.util.ArrayList;
@@ -44,8 +42,7 @@ public class ShowIndexesSQLHandler extends AbstractSQLHandler<SQLShowIndexesStat
             ast.setDatabase(dataContext.getDefaultSchema());
         }
         String sql = toNormalSQL(ast);
-        List<ColumnDefPacket> showCreateFunctionColumns = PrototypeService.getShowIndexesColumns();
-        return response.sendResultSet(runAsRowIterator(dataContext,sql));
+        return DrdsRunnerHelper.runOnDrds(dataContext, DrdsRunnerHelper.preParse(sql, dataContext.getDefaultSchema()), response);
     }
 
     private static String createStatisticsTableSQL() {

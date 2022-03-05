@@ -359,6 +359,26 @@ public abstract class AutoFunction extends CustomRuleFunction {
         return tableKeys.contains(name);
     }
 
+    /**
+     *    if (equals) {
+     *                 List<Partition> leftPartitions = this.calculate(Collections.emptyMap());
+     *                 List<Partition> rightPartitions = customRuleFunction.calculate(Collections.emptyMap());
+     *                 int leftSize = leftPartitions.size();
+     *                 int rightSize = rightPartitions.size();
+     *                 if (leftSize == rightSize) {
+     *                     for (int i = 0; i < leftSize; i++) {
+     *                         boolean match = leftPartitions.get(i).getTargetName().equals(rightPartitions.get(i).getTargetName());
+     *                         if (!match) {
+     *                             break;
+     *                         }
+     *                     }
+     *                 }
+     *                 return true;
+     *             }
+     *
+     * @param customRuleFunction
+     * @return
+     */
     @Override
     public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
         if (customRuleFunction == null) return false;

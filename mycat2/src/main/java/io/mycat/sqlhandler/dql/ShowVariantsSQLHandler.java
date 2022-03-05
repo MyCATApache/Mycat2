@@ -15,27 +15,18 @@
 package io.mycat.sqlhandler.dql;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowStatusStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowVariantsStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.Response;
-import io.mycat.beans.mysql.packet.ColumnDefPacket;
-import io.mycat.prototypeserver.mysql.MySQLResultSet;
-import io.mycat.prototypeserver.mysql.PrototypeService;
+import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
-
-import static io.mycat.prototypeserver.mysql.PrototypeService.getShowVariantsColumns;
-import static io.mycat.prototypeserver.mysql.PrototypeService.getShowWarningsColumns;
 
 /**
  * chenjunwen
@@ -59,7 +50,7 @@ public class ShowVariantsSQLHandler extends AbstractSQLHandler<MySqlShowVariants
             requestAst.setGlobal(false);
         }
         String sql = toNormalSQL(requestAst);
-        return response.sendResultSet(runAsRowIterator(dataContext, sql));
+        return DrdsRunnerHelper.runOnDrds(dataContext, DrdsRunnerHelper.preParse(sql, dataContext.getDefaultSchema()), response);
     }
 
     private String toNormalSQL(MySqlShowVariantsStatement ast) {

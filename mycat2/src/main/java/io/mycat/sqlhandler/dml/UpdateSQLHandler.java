@@ -139,15 +139,15 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
 
             return executeUpdate(drdsSqlWithParams, dataContext, receiver, schemaName);
         }
-        HackRouter hackRouter = new HackRouter(sqlStatement, dataContext);
+        DrdsSqlWithParams drdsSqlWithParams = insert ?
+                MycatPreparedStatementUtil.outputToParameterizedProxySql((MySqlInsertStatement) sqlStatement)
+                : DrdsRunnerHelper.preParse(sqlStatement, dataContext.getDefaultSchema());
+        HackRouter hackRouter = new HackRouter(drdsSqlWithParams.getParameterizedStatement(), dataContext);
         if (hackRouter.analyse()) {
             Pair<String, String> plan = hackRouter.getPlan();
             if (insert) {
-                DrdsSqlWithParams drdsSqlWithParams = MycatPreparedStatementUtil.outputToParameterizedProxySql((MySqlInsertStatement) sqlStatement);
                 return receiver.proxyInsert(Collections.singletonList(plan.getKey()), plan.getValue(), drdsSqlWithParams.getParams());
             } else {
-                DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlStatement, dataContext.getDefaultSchema());
-
                 return receiver.proxyUpdate(Collections.singletonList(plan.getKey()), plan.getValue(), drdsSqlWithParams.getParams());
             }
         }
