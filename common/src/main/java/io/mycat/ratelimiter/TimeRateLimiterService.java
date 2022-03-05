@@ -5,8 +5,8 @@ import io.vertx.core.Future;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public class RateLimiterService<T> {
-    public  final static RateLimiterService<String> STRING_INSTANCE = new RateLimiterService<>();
+public class TimeRateLimiterService<T> {
+    public  final static TimeRateLimiterService<String> STRING_INSTANCE = new TimeRateLimiterService<>();
     ConcurrentHashMap<T, Context> map = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {

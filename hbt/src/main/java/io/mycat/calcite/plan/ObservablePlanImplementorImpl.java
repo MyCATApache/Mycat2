@@ -23,11 +23,11 @@ import io.mycat.calcite.PrepareExecutor;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.spm.Plan;
+import io.mycat.ratelimiter.TimeRateLimiterService;
 import io.mycat.vertx.VertxExecuter;
 import io.mycat.vertx.VertxUpdateExecuter;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
-import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,6 +91,8 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
             Observable<MysqlPayloadObject> observable1 = PrepareExecutor
                     .getMysqlPayloadObjectObservable(arrayBindable, sqlMycatDataContext, plan.getMetaData());
             Observable observable = mapToTimeoutObservable(observable1, drdsSqlWithParams);
+            String parameterizedSQL = drdsSqlWithParams.getParameterizedSQL();
+            Future<Void> take = TimeRateLimiterService.STRING_INSTANCE.take(parameterizedSQL);
             Observable<MysqlPayloadObject> executor = observable;
             return response.sendResultSet(executor);
         }
