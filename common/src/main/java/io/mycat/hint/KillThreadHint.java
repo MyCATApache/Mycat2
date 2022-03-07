@@ -21,10 +21,10 @@ import java.text.MessageFormat;
 
 @Data
 public class KillThreadHint extends HintBuilder {
-    long pid;
+    long id;
     public static String create(long pid) {
         KillThreadHint killThreadHint = new KillThreadHint();
-        killThreadHint.setPid(pid);
+        killThreadHint.setId(pid);
         return killThreadHint.build();
     }
 

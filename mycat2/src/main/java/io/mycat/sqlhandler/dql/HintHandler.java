@@ -151,14 +151,14 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     }
                     if ("killThread".equalsIgnoreCase(cmd)) {
                         KillThreadHint killThreadHint = JsonUtil.from(body, KillThreadHint.class);
-                        long pid = killThreadHint.getPid();
+                        long pid = killThreadHint.getId();
                         dataContext.setAffectedRows(IOExecutor.kill(pid) ? 1 : 0);
                         return response.sendOk();
                     }
                     if ("interruptThread".equalsIgnoreCase(cmd)) {
                         Thread.currentThread().interrupt();
                         InterruptThreadHint interruptThreadHint = JsonUtil.from(body, InterruptThreadHint.class);
-                        long pid = interruptThreadHint.getPid();
+                        long pid = interruptThreadHint.getId();
                         dataContext.setAffectedRows(IOExecutor.interrupt(pid) ? 1 : 0);
                         return response.sendOk();
                     }

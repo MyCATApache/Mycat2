@@ -21,10 +21,10 @@ import java.text.MessageFormat;
 
 @Data
 public class InterruptThreadHint extends HintBuilder {
-    long pid;
+    long id;
     public static String create(long pid) {
         InterruptThreadHint interruptThreadHint = new InterruptThreadHint();
-        interruptThreadHint.setPid(pid);
+        interruptThreadHint.setId(pid);
         return interruptThreadHint.build();
     }
 
