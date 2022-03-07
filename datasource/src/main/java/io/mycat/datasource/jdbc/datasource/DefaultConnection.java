@@ -30,6 +30,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Junwen Chen
@@ -40,12 +41,12 @@ public class DefaultConnection implements MycatConnection {
     final Connection connection;
     private final JdbcDataSource jdbcDataSource;
     protected final ConnectionManager connectionManager;
-    private boolean closed = false;
+    private final AtomicBoolean closeFlag = new AtomicBoolean(false);
 
     @SneakyThrows
     public DefaultConnection(Connection connection, JdbcDataSource dataSource,
                              Boolean autocommit,
-                             int transactionIsolation,ConnectionManager connectionManager) {
+                             int transactionIsolation, ConnectionManager connectionManager) {
         this.connection = connection;
         this.jdbcDataSource = dataSource;
         this.connectionManager = connectionManager;
@@ -70,7 +71,7 @@ public class DefaultConnection implements MycatConnection {
             }
             return new long[]{statement.getUpdateCount(), 0};
         } catch (Exception e) {
-            LOGGER.error("",e);
+            LOGGER.error("", e);
             throw new MycatException(e);
         }
     }
@@ -99,13 +100,12 @@ public class DefaultConnection implements MycatConnection {
     }
 
 
-    public synchronized void close() {
+    public void close() {
         try {
-            if (!isClosed()) {
+            if (closeFlag.compareAndSet(false, true)) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("close {}", connection);
                 }
-                closed = true;
                 connectionManager.closeConnection(this);
             }
         } catch (Exception e) {
@@ -134,7 +134,7 @@ public class DefaultConnection implements MycatConnection {
     }
 
     public boolean isClosed() {
-        return closed;
+        return closeFlag.get();
     }
 
     public Connection getRawConnection() {
@@ -181,6 +181,6 @@ public class DefaultConnection implements MycatConnection {
     }
 
     public void createDatabase(String schema) {
-        executeUpdate("CREATE DATABASE IF NOT EXISTS " + schema+ " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci ", false);
+        executeUpdate("CREATE DATABASE IF NOT EXISTS " + schema + " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci ", false);
     }
 }

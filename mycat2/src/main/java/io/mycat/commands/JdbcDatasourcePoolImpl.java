@@ -30,6 +30,7 @@ import io.mycat.newquery.NewMycatConnectionImpl;
 import io.vertx.core.Future;
 
 import java.sql.Connection;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
     public JdbcDatasourcePoolImpl(String targetName) {
@@ -46,7 +47,7 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
             stat.plusQps();
             NewMycatConnectionImpl newMycatConnection = new NewMycatConnectionImpl(targetName,defaultConnection.getRawConnection()) {
                 long start;
-
+                final AtomicBoolean closeFlag = new AtomicBoolean(false);
                 @Override
                 public void onSend() {
                     start = System.currentTimeMillis();
@@ -60,21 +61,25 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
 
 
                 @Override
-                public synchronized Future<Void> close() {
-                    stat.decCon();
-                    defaultConnection.close();
+                public Future<Void> close() {
+                    if(closeFlag.compareAndSet(false,true)){
+                        stat.decCon();
+                        defaultConnection.close();
+                    }
                     return Future.succeededFuture();
                 }
 
                 @Override
-                public synchronized void abandonConnection() {
-                    stat.decCon();
-                    Connection rawConnection = defaultConnection.getRawConnection();
-                    if (rawConnection instanceof DruidPooledConnection) {
-                        DruidPooledConnection connection = (DruidPooledConnection)rawConnection;
-                        connection.abandond();
+                public void abandonConnection() {
+                    if(closeFlag.compareAndSet(false,true)){
+                        stat.decCon();
+                        Connection rawConnection = defaultConnection.getRawConnection();
+                        if (rawConnection instanceof DruidPooledConnection) {
+                            DruidPooledConnection connection = (DruidPooledConnection)rawConnection;
+                            connection.abandond();
+                        }
+                        defaultConnection.close();
                     }
-                    defaultConnection.close();
                 }
             };
             return Future.succeededFuture(new ThreadMycatConnectionImplWrapper(stat,newMycatConnection));
