@@ -70,12 +70,12 @@ public class HeapNLJJoinNPlan implements PhysicalPlan {
     public Observable<VectorSchemaRoot> execute(RootContext rootContext) {
         OutputLinq4jPhysicalPlan leftObjectPlan = OutputLinq4jPhysicalPlan.create(left);
         Observable<Object[]> leftObservable = leftObjectPlan.executeToObject(rootContext);
-        @NonNull Iterable<Record> leftObjects = leftObservable.map(i-> RecordImpl.create(i)).blockingIterable();
+        @NonNull Iterable<Record> leftObjects = leftObservable.map(i-> RecordImpl.create(i)).blockingNext();
 
 
         OutputLinq4jPhysicalPlan rightObjectPlan = OutputLinq4jPhysicalPlan.create(left);
         Observable<Object[]> rightObservable = leftObjectPlan.executeToObject(rootContext);
-        @NonNull Iterable<Record> rightObjects = leftObservable.map(i-> RecordImpl.create(i)).blockingIterable();
+        @NonNull Iterable<Record> rightObjects = leftObservable.map(i-> RecordImpl.create(i)).blockingNext();
         int leftColumnCount = left.schema().getFields().size();
         Enumerable<Record> records = EnumerableDefaults.nestedLoopJoin(
                 Linq4j.asEnumerable(leftObjects),

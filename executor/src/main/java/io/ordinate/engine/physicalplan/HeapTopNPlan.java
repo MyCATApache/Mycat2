@@ -70,7 +70,7 @@ public class HeapTopNPlan implements PhysicalPlan {
         }
         OutputLinq4jPhysicalPlan midPlan = OutputLinq4jPhysicalPlan.create(input);
         Observable<Object[]> observable = midPlan.executeToObject(rootContext);
-        @NonNull Iterable<Record> objects = observable.map(i-> RecordImpl.create(i)).blockingIterable();
+        @NonNull Iterable<Record> objects = observable.map(i-> RecordImpl.create(i)).blockingNext();
         Enumerable<Record> records = EnumerableDefaults.orderBy(Linq4j.asEnumerable(objects), i -> i, recordComparator, offset.getInt(null), fetch.getInt(null));
 
         return InputRecordPhysicalPlan.create(schema(), Observable.fromIterable( records)).execute(rootContext);

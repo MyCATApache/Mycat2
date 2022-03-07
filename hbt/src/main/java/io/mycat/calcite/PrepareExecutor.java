@@ -18,7 +18,9 @@ import org.apache.calcite.runtime.ArrayBindable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 @Getter
 public class PrepareExecutor {
@@ -113,19 +115,18 @@ public class PrepareExecutor {
         });
         return observable;
     }
-    public Observable<Object[]> asObservableObjectArray( AsyncMycatDataContextImpl newMycatDataContext){
+    public Iterable<Object[]> asObservableObjectArray( AsyncMycatDataContextImpl newMycatDataContext){
         Object bindObservable = arrayBindable.bindObservable(newMycatDataContext);
         if (bindObservable instanceof Observable) {
-            return (Observable) bindObservable;
+            return ((Observable) bindObservable).blockingNext();
         } else {
             Enumerable<Object[]> enumerable = (Enumerable) bindObservable;
-            return toObservable(newMycatDataContext, enumerable);
+            return enumerable;
         }
     }
     public RowBaseIterator asRowBaseIterator(AsyncMycatDataContextImpl newMycatDataContext, MycatRowMetaData mycatRowMetaData){
-        Observable<Object[]> bind = asObservableObjectArray(newMycatDataContext);
-        Iterable<Object[]> objects = bind.blockingIterable();
-        Iterator<Object[]> iterator = objects.iterator();
+        Iterable<Object[]> bind = asObservableObjectArray(newMycatDataContext);
+        Iterator<Object[]> iterator = bind.iterator();
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
         while (iterator.hasNext()){
             Object[] row = iterator.next();

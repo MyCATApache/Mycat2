@@ -65,7 +65,7 @@ public class RxBuiltInMethodImpl {
                         @NotNull
                         @Override
                         public Iterator<Object[]> iterator() {
-                            Iterator<Object[]> iterator = observable.blockingIterable().iterator();
+                            Iterator<Object[]> iterator = observable.blockingNext().iterator();
                             class Iter implements AutoCloseable, Iterator<Object[]> {
                                 Observable<Object[]> observable;
 

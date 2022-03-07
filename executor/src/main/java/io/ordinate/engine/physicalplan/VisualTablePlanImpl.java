@@ -46,7 +46,7 @@ public class VisualTablePlanImpl implements PhysicalPlan {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         MycatRelDataType mycatRelDataTypeByCalcite = relNode.getMycatRelDataTypeByCalcite();
         Schema schema = toArrowSchema(mycatRelDataTypeByCalcite);
-        return ValuesPlan.create(schema,visualTableHandler.scanAll().blockingIterable()).execute(rootContext);
+        return ValuesPlan.create(schema,visualTableHandler.scanAll().blockingNext()).execute(rootContext);
     }
 
     @Override

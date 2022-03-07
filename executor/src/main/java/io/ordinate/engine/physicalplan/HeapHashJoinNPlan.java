@@ -81,8 +81,8 @@ public class HeapHashJoinNPlan implements PhysicalPlan {
     public Observable<VectorSchemaRoot> execute(RootContext rootContext) {
         OutputLinq4jPhysicalPlan leftObjectPlan = OutputLinq4jPhysicalPlan.create(left);
         Observable<Object[]> leftObservable = leftObjectPlan.executeToObject(rootContext);
-        @NonNull Iterable<Record> leftObjects = leftObservable.map(i -> RecordImpl.create(i)).blockingIterable();
-        @NonNull Iterable<Record> rightObjects = leftObservable.map(i -> RecordImpl.create(i)).blockingIterable();
+        @NonNull Iterable<Record> leftObjects = leftObservable.map(i -> RecordImpl.create(i)).blockingNext();
+        @NonNull Iterable<Record> rightObjects = leftObservable.map(i -> RecordImpl.create(i)).blockingNext();
         int leftColumnCount = left.schema().getFields().size();
 
         RecordSink leftKeyRecordSink = RecordSinkFactory.INSTANCE.buildRecordSink(InnerType.fromSchemaToIntInnerTypes(this.leftKeys, left.schema()));

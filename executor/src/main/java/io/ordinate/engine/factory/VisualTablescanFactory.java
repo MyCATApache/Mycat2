@@ -27,7 +27,7 @@ public class VisualTablescanFactory implements Factory {
         Observable<Object[]> tableObservable = context.getTableObservable(tableHandler.getSchemaName(), tableHandler.getTableName());
         MycatRelDataType mycatRelDataTypeByCalcite = tableScan.getMycatRelDataTypeByCalcite();
         Schema schema = toArrowSchema(mycatRelDataTypeByCalcite);
-        return ValuesPlan.create(schema,tableObservable.blockingIterable());
+        return ValuesPlan.create(schema,tableObservable.blockingNext());
     }
 
 

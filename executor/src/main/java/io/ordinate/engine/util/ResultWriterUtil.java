@@ -424,7 +424,7 @@ public class ResultWriterUtil {
                 List<FieldVector> fieldVectors = vectorSchemaRoot.getFieldVectors();
                 vectorSchemaRoot.allocateNew();
                 int rowId = 0;
-                Iterator<Object[]> rowBaseIterator = observable.blockingIterable().iterator();
+                Iterator<Object[]> rowBaseIterator = observable.blockingNext().iterator();
                 while (rowBaseIterator.hasNext()) {
                     Object[] objects = rowBaseIterator.next();
                     for (int i = 0; i < columnCount; i++) {

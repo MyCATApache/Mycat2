@@ -62,7 +62,7 @@ public class InputRecordPhysicalPlan implements PhysicalPlan {
             VectorSchemaRoot vectorSchemaRoot = null;
             final int batchSize = rootContext.getBatchSize();
             int batchId = 0;
-            for (Record record : observable.blockingIterable()) {
+            for (Record record : observable.blockingNext()) {
 
                 if (batchId >= batchSize) {
                     emitter.onNext(vectorSchemaRoot);
