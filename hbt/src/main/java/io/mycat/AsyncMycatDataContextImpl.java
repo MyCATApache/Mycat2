@@ -241,7 +241,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
 
     @Override
     public Observable<Object[]> getObservable(String node) {
-        return Observable.concatEager(getObservableList(node).stream().map(i -> i.subscribeOn(Schedulers.computation())).collect(Collectors.toList()));
+        return Observable.merge((getObservableList(node)));
 
     }
 

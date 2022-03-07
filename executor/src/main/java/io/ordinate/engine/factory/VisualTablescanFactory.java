@@ -1,5 +1,6 @@
 package io.ordinate.engine.factory;
 
+import io.mycat.MycatRxJavaUtl;
 import io.mycat.TableHandler;
 import io.mycat.beans.mycat.MycatRelDataType;
 import io.mycat.calcite.table.MycatLogicTable;
@@ -27,7 +28,7 @@ public class VisualTablescanFactory implements Factory {
         Observable<Object[]> tableObservable = context.getTableObservable(tableHandler.getSchemaName(), tableHandler.getTableName());
         MycatRelDataType mycatRelDataTypeByCalcite = tableScan.getMycatRelDataTypeByCalcite();
         Schema schema = toArrowSchema(mycatRelDataTypeByCalcite);
-        return ValuesPlan.create(schema,tableObservable.blockingIterable());
+        return ValuesPlan.create(schema, MycatRxJavaUtl.blockingIterable(tableObservable));
     }
 
 

@@ -2,6 +2,7 @@ package io.ordinate.engine.util;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.Datetimes;
+import io.mycat.MycatRxJavaUtl;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.*;
 import io.mycat.beans.resultset.ResultSetWriter;
@@ -426,7 +427,7 @@ public class ResultWriterUtil {
                 List<FieldVector> fieldVectors = vectorSchemaRoot.getFieldVectors();
                 vectorSchemaRoot.allocateNew();
                 int rowId = 0;
-                Iterator<Object[]> rowBaseIterator = observable.blockingIterable().iterator();
+                Iterator<Object[]> rowBaseIterator = MycatRxJavaUtl.blockingIterable(observable).iterator();
                 while (rowBaseIterator.hasNext()) {
                     Object[] objects = rowBaseIterator.next();
                     for (int i = 0; i < columnCount; i++) {

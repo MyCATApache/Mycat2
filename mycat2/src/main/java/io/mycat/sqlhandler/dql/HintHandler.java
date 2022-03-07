@@ -37,6 +37,8 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.exporter.SqlRecorderRuntime;
 import io.mycat.hint.*;
+import io.mycat.hint.InterruptThreadHint;
+import io.mycat.hint.KillThreadHint;
 import io.mycat.monitor.MycatSQLLogMonitor;
 import io.mycat.monitor.SqlEntry;
 import io.mycat.replica.PhysicsInstance;
@@ -70,6 +72,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringWriter;
 import java.sql.JDBCType;
 import java.sql.Timestamp;
 import java.time.Duration;
@@ -151,6 +154,44 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         ArrayBindable arrayBindable = MetaClusterCurrent.wrapper(ExecutorProvider.class).prepare(plan).getArrayBindable();
                         Observable<MysqlPayloadObject> mysqlPayloadObjectObservable = PrepareExecutor.getMysqlPayloadObjectObservable(arrayBindable, sqlMycatDataContext, plan.getMetaData());
                         return response.sendResultSet(mysqlPayloadObjectObservable);
+                    }
+                    if ("killThread".equalsIgnoreCase(cmd)) {
+                        KillThreadHint killThreadHint = JsonUtil.from(body, KillThreadHint.class);
+                        long pid = killThreadHint.getId();
+                        dataContext.setAffectedRows(IOExecutor.kill(pid) ? 1 : 0);
+                        return response.sendOk();
+                    }
+                    if ("interruptThread".equalsIgnoreCase(cmd)) {
+                        Thread.currentThread().interrupt();
+                        InterruptThreadHint interruptThreadHint = JsonUtil.from(body, InterruptThreadHint.class);
+                        long pid = interruptThreadHint.getId();
+                        dataContext.setAffectedRows(IOExecutor.interrupt(pid) ? 1 : 0);
+                        return response.sendOk();
+                    }
+                    if ("showThreadInfo".equalsIgnoreCase(cmd)) {
+                        ResultSetBuilder builder = ResultSetBuilder.create();
+                        builder.addColumnInfo("ID", JDBCType.VARCHAR);
+                        builder.addColumnInfo("NAME", JDBCType.VARCHAR);
+                        builder.addColumnInfo("STATE", JDBCType.VARCHAR);
+                        builder.addColumnInfo("STACKTRACE", JDBCType.VARCHAR);
+
+                        List<Thread> threads = IOExecutor.findAllThreads();
+                        for (Thread thread : threads) {
+                            String name = thread.getName();
+                            long id = thread.getId();
+                            String state = thread.getState().name();
+                            StackTraceElement[] stackTrace = thread.getStackTrace();
+
+                            StringWriter stringWriter = new StringWriter();
+                            for (StackTraceElement traceElement : stackTrace) {
+                                stringWriter.write("\tat " + traceElement);
+                            }
+                            String stackTraceText = stringWriter.toString();
+
+                            builder.addObjectRowPayload(Arrays.asList(id, name, state, stackTraceText));
+                        }
+
+                        return response.sendResultSet(builder.build());
                     }
                     if ("createSqlCache".equalsIgnoreCase(cmd)) {
                         MycatRouterConfigOps ops = ConfigUpdater.getOps();

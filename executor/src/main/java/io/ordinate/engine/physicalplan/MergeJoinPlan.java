@@ -17,6 +17,7 @@
 
 package io.ordinate.engine.physicalplan;
 
+import io.mycat.MycatRxJavaUtl;
 import io.ordinate.engine.builder.PhysicalSortProperty;
 import io.ordinate.engine.function.Function;
 import io.ordinate.engine.record.*;
@@ -81,8 +82,8 @@ public class MergeJoinPlan implements PhysicalPlan {
     public Observable<VectorSchemaRoot> execute(RootContext rootContext) {
         OutputLinq4jPhysicalPlan leftObjectPlan = OutputLinq4jPhysicalPlan.create(left);
         Observable<Object[]> leftObservable = leftObjectPlan.executeToObject(rootContext);
-        @NonNull Iterable<Record> leftObjects = leftObservable.map(i -> RecordImpl.create(i)).blockingIterable();
-        @NonNull Iterable<Record> rightObjects = leftObservable.map(i -> RecordImpl.create(i)).blockingIterable();
+        @NonNull Iterable<Record> leftObjects = MycatRxJavaUtl.blockingIterable(leftObservable.map(i -> RecordImpl.create(i)));
+        @NonNull Iterable<Record> rightObjects = MycatRxJavaUtl.blockingIterable(leftObservable.map(i -> RecordImpl.create(i)));
         int leftColumnCount = left.schema().getFields().size();
 
         final Enumerable<Record> outer=Linq4j.asEnumerable( leftObjects);
