@@ -476,7 +476,7 @@ public class MetadataManager {
         ShardingFunction function = tableConfigEntry.getFunction();
         //////////////////////////////////////////////
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL()).orElseGet(() -> prototypeService.getCreateTableSQLByJDBC(schemaName, orignalTableName, backends).orElse(null));
-        List<SimpleColumnInfo> columns = prototypeService.getColumnInfo(createTableSQL);
+        List<SimpleColumnInfo> columns = prototypeService.getColumnInfo(createTableSQL,schemaName,orignalTableName);
         Map<String, IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName, columns);
         //////////////////////////////////////////////
         ShardingTable shardingTable = LogicTable.createShardingTable(schemaName, orignalTableName,
