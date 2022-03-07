@@ -3,6 +3,7 @@ package org.apache.calcite.util;
 
 import com.google.common.collect.Iterables;
 import hu.akarnokd.rxjava3.operators.Flowables;
+import io.mycat.MycatRxJavaUtl;
 import io.mycat.serializable.MaterializedRecordSetFactory;
 import io.mycat.serializable.OffHeapObjectList;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
@@ -65,7 +66,7 @@ public class RxBuiltInMethodImpl {
                         @NotNull
                         @Override
                         public Iterator<Object[]> iterator() {
-                            Iterator<Object[]> iterator = observable.blockingNext().iterator();
+                            Iterator<Object[]> iterator = MycatRxJavaUtl.blockingIterable(observable).iterator();
                             class Iter implements AutoCloseable, Iterator<Object[]> {
                                 Observable<Object[]> observable;
 

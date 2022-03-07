@@ -17,6 +17,7 @@
 
 package io.ordinate.engine.physicalplan;
 
+import io.mycat.MycatRxJavaUtl;
 import io.ordinate.engine.function.Function;
 import io.ordinate.engine.record.JoinRecord;
 import io.ordinate.engine.record.Record;
@@ -70,12 +71,12 @@ public class HeapNLJJoinNPlan implements PhysicalPlan {
     public Observable<VectorSchemaRoot> execute(RootContext rootContext) {
         OutputLinq4jPhysicalPlan leftObjectPlan = OutputLinq4jPhysicalPlan.create(left);
         Observable<Object[]> leftObservable = leftObjectPlan.executeToObject(rootContext);
-        @NonNull Iterable<Record> leftObjects = leftObservable.map(i-> RecordImpl.create(i)).blockingNext();
+        @NonNull Iterable<Record> leftObjects = MycatRxJavaUtl.blockingIterable(leftObservable.map(i-> RecordImpl.create(i)));
 
 
         OutputLinq4jPhysicalPlan rightObjectPlan = OutputLinq4jPhysicalPlan.create(left);
         Observable<Object[]> rightObservable = leftObjectPlan.executeToObject(rootContext);
-        @NonNull Iterable<Record> rightObjects = leftObservable.map(i-> RecordImpl.create(i)).blockingNext();
+        @NonNull Iterable<Record> rightObjects = MycatRxJavaUtl.blockingIterable(leftObservable.map(i-> RecordImpl.create(i)));
         int leftColumnCount = left.schema().getFields().size();
         Enumerable<Record> records = EnumerableDefaults.nestedLoopJoin(
                 Linq4j.asEnumerable(leftObjects),

@@ -17,6 +17,7 @@
 
 package io.ordinate.engine.physicalplan;
 
+import io.mycat.MycatRxJavaUtl;
 import io.ordinate.engine.record.Record;
 import io.ordinate.engine.record.RecordSink;
 import io.ordinate.engine.record.RecordSinkFactory;
@@ -62,7 +63,7 @@ public class InputRecordPhysicalPlan implements PhysicalPlan {
             VectorSchemaRoot vectorSchemaRoot = null;
             final int batchSize = rootContext.getBatchSize();
             int batchId = 0;
-            for (Record record : observable.blockingNext()) {
+            for (Record record : MycatRxJavaUtl.blockingIterable(observable)) {
 
                 if (batchId >= batchSize) {
                     emitter.onNext(vectorSchemaRoot);

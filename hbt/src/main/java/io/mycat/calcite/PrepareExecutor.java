@@ -1,6 +1,7 @@
 package io.mycat.calcite;
 
 import io.mycat.AsyncMycatDataContextImpl;
+import io.mycat.MycatRxJavaUtl;
 import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlObjectArrayRow;
 import io.mycat.api.collector.MysqlPayloadObject;
@@ -118,7 +119,7 @@ public class PrepareExecutor {
     public Iterable<Object[]> asObservableObjectArray( AsyncMycatDataContextImpl newMycatDataContext){
         Object bindObservable = arrayBindable.bindObservable(newMycatDataContext);
         if (bindObservable instanceof Observable) {
-            return ((Observable) bindObservable).blockingNext();
+            return MycatRxJavaUtl.blockingIterable( ((Observable) bindObservable));
         } else {
             Enumerable<Object[]> enumerable = (Enumerable) bindObservable;
             return enumerable;

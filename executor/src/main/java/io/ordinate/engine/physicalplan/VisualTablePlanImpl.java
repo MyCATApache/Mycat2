@@ -2,6 +2,7 @@ package io.ordinate.engine.physicalplan;
 
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataManager;
+import io.mycat.MycatRxJavaUtl;
 import io.mycat.TableHandler;
 import io.mycat.beans.mycat.MycatRelDataType;
 import io.mycat.calcite.table.MycatLogicTable;
@@ -46,7 +47,7 @@ public class VisualTablePlanImpl implements PhysicalPlan {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         MycatRelDataType mycatRelDataTypeByCalcite = relNode.getMycatRelDataTypeByCalcite();
         Schema schema = toArrowSchema(mycatRelDataTypeByCalcite);
-        return ValuesPlan.create(schema,visualTableHandler.scanAll().blockingNext()).execute(rootContext);
+        return ValuesPlan.create(schema, MycatRxJavaUtl.blockingIterable(visualTableHandler.scanAll())).execute(rootContext);
     }
 
     @Override

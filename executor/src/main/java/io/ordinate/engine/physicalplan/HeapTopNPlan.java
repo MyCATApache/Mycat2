@@ -17,6 +17,7 @@
 
 package io.ordinate.engine.physicalplan;
 
+import io.mycat.MycatRxJavaUtl;
 import io.ordinate.engine.builder.PhysicalSortProperty;
 import io.ordinate.engine.function.IntFunction;
 import io.ordinate.engine.record.Record;
@@ -70,7 +71,7 @@ public class HeapTopNPlan implements PhysicalPlan {
         }
         OutputLinq4jPhysicalPlan midPlan = OutputLinq4jPhysicalPlan.create(input);
         Observable<Object[]> observable = midPlan.executeToObject(rootContext);
-        @NonNull Iterable<Record> objects = observable.map(i-> RecordImpl.create(i)).blockingNext();
+        @NonNull Iterable<Record> objects = MycatRxJavaUtl.blockingIterable( observable.map(i-> RecordImpl.create(i)));
         Enumerable<Record> records = EnumerableDefaults.orderBy(Linq4j.asEnumerable(objects), i -> i, recordComparator, offset.getInt(null), fetch.getInt(null));
 
         return InputRecordPhysicalPlan.create(schema(), Observable.fromIterable( records)).execute(rootContext);
