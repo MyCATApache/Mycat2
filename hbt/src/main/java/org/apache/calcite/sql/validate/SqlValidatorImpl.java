@@ -16,6 +16,8 @@
  */
 package org.apache.calcite.sql.validate;
 
+import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.calcite.sqlfunction.cmpfunction.StrictEqualFunction;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
@@ -5764,6 +5766,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     public RelDataType visit(SqlCall call) {
       final SqlOperator operator = call.getOperator();
+      if (operator == StrictEqualFunction.INSTANCE){
+          return MycatCalciteSupport.TypeFactory.createSqlType(SqlTypeName.BOOLEAN);
+      }
       return operator.deriveType(SqlValidatorImpl.this, scope, call);
     }
 

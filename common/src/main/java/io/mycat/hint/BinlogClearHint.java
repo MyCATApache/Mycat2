@@ -18,26 +18,19 @@ import io.mycat.util.JsonUtil;
 import lombok.Data;
 
 import java.text.MessageFormat;
+import java.util.List;
 
 @Data
-public class BinlogStopHint extends HintBuilder {
-    String id;
+public class BinlogClearHint extends HintBuilder {
 
-    public static String create(long id) {
-        BinlogStopHint binlogStopHint = new BinlogStopHint();
-        binlogStopHint.setId(String.valueOf(id));
-        return binlogStopHint.build();
-    }
-
-    public static String create(String id) {
-        BinlogStopHint binlogStopHint = new BinlogStopHint();
-        binlogStopHint.setId(id);
-        return binlogStopHint.build();
+    public static String create() {
+        BinlogClearHint binlogClearHint = new BinlogClearHint();
+        return binlogClearHint.build();
     }
 
     @Override
     public String getCmd() {
-        return "BINLOG_STOP";
+        return "BINLOG_CLEAR";
     }
 
     @Override

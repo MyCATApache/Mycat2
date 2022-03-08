@@ -21,6 +21,7 @@ import com.alibaba.druid.util.JdbcUtils;
 import com.github.shyiko.mysql.binlog.BinaryLogClient;
 import com.github.shyiko.mysql.binlog.event.*;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.mysql.cj.conf.ConnectionUrlParser;
 import com.mysql.cj.conf.HostInfo;
 import groovy.transform.ToString;
@@ -37,6 +38,8 @@ import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.FlowableEmitter;
 import io.reactivex.rxjava3.core.FlowableOnSubscribe;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.functions.Cancellable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import lombok.AllArgsConstructor;
@@ -76,13 +79,20 @@ public class BinlogUtil {
             Map<String, Map<String, List<Partition>>> listMap = scheduler.getListMap();
             LocalDateTime startTime = scheduler.getStartTime();
 
-            builder.addObjectRowPayload(Arrays.asList(id,name,listMap.toString(),startTime));
+            builder.addObjectRowPayload(Arrays.asList(id, name, listMap.toString(), startTime));
         }
         return builder.build();
     }
 
     public static RowBaseIterator list() {
         return list(schedulers);
+    }
+
+    public static synchronized void clear() {
+        for (BinlogScheduler scheduler : schedulers) {
+            stop(scheduler.getId());
+        }
+        schedulers.clear();
     }
 
     public static boolean stop(String id) {
@@ -92,8 +102,6 @@ public class BinlogUtil {
                 for (MigrateUtil.MigrateController controller : binlogScheduler.getControllers()) {
                     controller.stop();
                 }
-
-
             }
             return b;
         });
@@ -103,11 +111,11 @@ public class BinlogUtil {
     @AllArgsConstructor
     public static class ParamSQL {
         String sql;
-        Object[] params;
+        List<Object> params;
 
         public static ParamSQL of(
                 String sql,
-                Object[] params
+                List<Object> params
         ) {
             return new ParamSQL(sql, params);
         }
@@ -153,11 +161,12 @@ public class BinlogUtil {
         String password = datasourceConfig.getPassword();
 
         BinaryLogClient client = new BinaryLogClient(
-                datasourceConfig.getUrl(),
+                host,
                 port,
                 username,
                 password
         );
+        client.setBlocking(true);
 
         NameMap<NameMap<Boolean>> filterMap = new NameMap<>();
 
@@ -172,291 +181,319 @@ public class BinlogUtil {
         return Flowable.create(new FlowableOnSubscribe<ParamSQL>() {
             @Override
             public void subscribe(@NonNull FlowableEmitter<ParamSQL> emitter) throws Throwable {
-                client.registerEventListener(new BinaryLogClient.EventListener() {
-                    private final Map<Long, TableMapEventData> tablesById = new HashMap<Long, TableMapEventData>();
-                    private final Map<String, Map<Integer, Map<String, Object>>> tablesColumnMap = new HashMap<>();
-                    private String binlogFilename;
-                    private Charset charset = StandardCharsets.UTF_8;
-
-                    private Map<Integer, Map<String, Object>> loadColumn(String database, String table) {
-                        Map<Integer, Map<String, Object>> res = new HashMap<>();
-                        try (DefaultConnection defaultConnection = jdbcConnectionManager.getConnection(targetName)) {
-                            List<Map<String, Object>> list = JdbcUtils.executeQuery(defaultConnection.getRawConnection(),
-                                    "select  COLUMN_NAME, ORDINAL_POSITION, DATA_TYPE, CHARACTER_SET_NAME from INFORMATION_SCHEMA.COLUMNS where table_name='" + table + "' and TABLE_SCHEMA='" + database + "'",
-                                    Collections.emptyList());
-                            for (Map<String, Object> stringObjectMap : list) {
-                                Number pos = (Number) stringObjectMap.get("ORDINAL_POSITION");
-                                res.put(pos.intValue(), stringObjectMap);
-                            }
-                        } catch (SQLException e) {
-                            e.printStackTrace();
-                        }
-                        return res;
+                emitter.setDisposable(Disposable.fromAction(() -> {
+                    if (client.isConnected()) {
+                        client.disconnect();
                     }
+                }));
+                try {
+                    client.registerEventListener(new BinaryLogClient.EventListener() {
+                        private final Map<Long, TableMapEventData> tablesById = new HashMap<Long, TableMapEventData>();
+                        private final Map<String, Map<Integer, Map<String, Object>>> tablesColumnMap = new HashMap<>();
+                        private String binlogFilename;
+                        private Charset charset = StandardCharsets.UTF_8;
 
-                    @Override
-                    public void onEvent(Event event) {
-                        try {
-                            EventHeader header = event.getHeader();
-                            switch (header.getEventType()) {
-                                case UNKNOWN:
-                                    break;
-                                case START_V3:
-                                    break;
-                                case QUERY:
-                                    QueryEventData queryEventData = event.getData();
-                                    String query = queryEventData.getSql();
-                                    if (!query.startsWith("S")) {
-                                        handleDDL(queryEventData);
+                        private Map<Integer, Map<String, Object>> loadColumn(String database, String table) {
+                            Map<Integer, Map<String, Object>> res = new HashMap<>();
+                            try (DefaultConnection defaultConnection = jdbcConnectionManager.getConnection(targetName)) {
+                                List<Map<String, Object>> list = JdbcUtils.executeQuery(defaultConnection.getRawConnection(),
+                                        "select  COLUMN_NAME, ORDINAL_POSITION, DATA_TYPE, CHARACTER_SET_NAME from INFORMATION_SCHEMA.COLUMNS where table_name='" + table + "' and TABLE_SCHEMA='" + database + "'",
+                                        Collections.emptyList());
+                                for (Map<String, Object> stringObjectMap : list) {
+                                    Number pos = (Number) stringObjectMap.get("ORDINAL_POSITION");
+                                    res.put(pos.intValue(), stringObjectMap);
+                                }
+                            } catch (SQLException e) {
+                                e.printStackTrace();
+                            }
+                            return res;
+                        }
+
+                        @Override
+                        public void onEvent(Event event) {
+                            try {
+                                EventHeader header = event.getHeader();
+                                switch (header.getEventType()) {
+                                    case UNKNOWN:
+                                        break;
+                                    case START_V3:
+                                        break;
+                                    case QUERY:
+                                        QueryEventData queryEventData = event.getData();
+                                        String query = queryEventData.getSql();
+                                        if (!query.startsWith("S")) {
+                                            handleDDL(queryEventData);
+                                        }
+                                        break;
+                                    case STOP:
+                                        emitter.onComplete();
+                                        break;
+                                    case ROTATE: {
+                                        RotateEventData data = event.getData();
+                                        this.binlogFilename = data.getBinlogFilename();
+                                        break;
                                     }
-                                    break;
-                                case STOP:
-                                    emitter.onComplete();
-                                    break;
-                                case ROTATE: {
-                                    RotateEventData data = event.getData();
-                                    this.binlogFilename = data.getBinlogFilename();
-                                    break;
+                                    case INTVAR:
+                                        break;
+                                    case LOAD:
+                                        break;
+                                    case SLAVE:
+                                        break;
+                                    case CREATE_FILE:
+                                        break;
+                                    case APPEND_BLOCK:
+                                        break;
+                                    case EXEC_LOAD:
+                                        break;
+                                    case DELETE_FILE:
+                                        break;
+                                    case NEW_LOAD:
+                                        break;
+                                    case RAND:
+                                        break;
+                                    case USER_VAR:
+                                        break;
+                                    case FORMAT_DESCRIPTION:
+                                        break;
+                                    case XID:
+                                        break;
+                                    case BEGIN_LOAD_QUERY:
+                                        break;
+                                    case EXECUTE_LOAD_QUERY:
+                                        break;
+                                    case TABLE_MAP: {
+                                        handleTableMap(event);
+                                        break;
+                                    }
+                                    case PRE_GA_WRITE_ROWS:
+                                    case WRITE_ROWS:
+                                    case EXT_WRITE_ROWS:
+                                        handleWriteRowsEvent(event);
+                                        break;
+                                    case EXT_UPDATE_ROWS:
+                                    case PRE_GA_UPDATE_ROWS:
+                                    case UPDATE_ROWS:
+                                        handleUpdateRowsEvent(event);
+                                        break;
+                                    case PRE_GA_DELETE_ROWS:
+                                    case EXT_DELETE_ROWS:
+                                    case DELETE_ROWS:
+                                        handleDeleteRowsEvent(event);
+                                        break;
+                                    case INCIDENT:
+                                        break;
+                                    case HEARTBEAT:
+                                        break;
+                                    case IGNORABLE:
+                                        break;
+                                    case ROWS_QUERY:
+                                        break;
+                                    case GTID:
+                                        break;
+                                    case ANONYMOUS_GTID:
+                                        break;
+                                    case PREVIOUS_GTIDS:
+                                        break;
+                                    case TRANSACTION_CONTEXT:
+                                        break;
+                                    case VIEW_CHANGE:
+                                        break;
+                                    case XA_PREPARE:
+                                        break;
                                 }
-                                case INTVAR:
-                                    break;
-                                case LOAD:
-                                    break;
-                                case SLAVE:
-                                    break;
-                                case CREATE_FILE:
-                                    break;
-                                case APPEND_BLOCK:
-                                    break;
-                                case EXEC_LOAD:
-                                    break;
-                                case DELETE_FILE:
-                                    break;
-                                case NEW_LOAD:
-                                    break;
-                                case RAND:
-                                    break;
-                                case USER_VAR:
-                                    break;
-                                case FORMAT_DESCRIPTION:
-                                    break;
-                                case XID:
-                                    break;
-                                case BEGIN_LOAD_QUERY:
-                                    break;
-                                case EXECUTE_LOAD_QUERY:
-                                    break;
-                                case TABLE_MAP: {
-                                    handleTableMap(event);
-                                    break;
-                                }
-                                case PRE_GA_WRITE_ROWS:
-                                case WRITE_ROWS:
-                                case EXT_WRITE_ROWS:
-                                    handleWriteRowsEvent(event);
-                                    break;
-                                case EXT_UPDATE_ROWS:
-                                case PRE_GA_UPDATE_ROWS:
-                                case UPDATE_ROWS:
-                                    handleUpdateRowsEvent(event);
-                                    break;
-                                case PRE_GA_DELETE_ROWS:
-                                case EXT_DELETE_ROWS:
-                                case DELETE_ROWS:
-                                    handleDeleteRowsEvent(event);
-                                    break;
-                                case INCIDENT:
-                                    break;
-                                case HEARTBEAT:
-                                    break;
-                                case IGNORABLE:
-                                    break;
-                                case ROWS_QUERY:
-                                    break;
-                                case GTID:
-                                    break;
-                                case ANONYMOUS_GTID:
-                                    break;
-                                case PREVIOUS_GTIDS:
-                                    break;
-                                case TRANSACTION_CONTEXT:
-                                    break;
-                                case VIEW_CHANGE:
-                                    break;
-                                case XA_PREPARE:
-                                    break;
+                            } catch (Exception e) {
+                                emitter.tryOnError(e);
                             }
-                        } catch (Exception e) {
-                            emitter.tryOnError(e);
-                        }
-                    }
-
-                    private void handleDDL(QueryEventData event) {
-                        String sql = event.getSql();
-                        String database = event.getDatabase();
-                        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-                        if (sqlStatement instanceof SQLDDLStatement) {
-                            SQLDDLStatement sqlDdlStatement = (SQLDDLStatement) sqlStatement;
-                            MySqlSchemaStatVisitor mySqlSchemaStatVisitor = new MySqlSchemaStatVisitor();
-                            sqlDdlStatement.accept(mySqlSchemaStatVisitor);
-                            Map<TableStat.Name, TableStat> tables = mySqlSchemaStatVisitor.getTables();
-                            boolean meet = tables.keySet().stream().allMatch(i -> filter(database, i.getName()));
-                        }
-                    }
-
-                    private void handleUpdateRowsEvent(Event event) {
-                        UpdateRowsEventData eventData = event.getData();
-                        BitSet includedColumnsBeforeUpdate = eventData.getIncludedColumnsBeforeUpdate();
-                        BitSet includedColumns = eventData.getIncludedColumns();
-                        List<Map.Entry<Serializable[], Serializable[]>> rows = eventData.getRows();
-                        TableMapEventData tableMapEvent = tablesById.get(eventData.getTableId());
-                        if (!filter(tableMapEvent.getDatabase(), tableMapEvent.getTable()))
-                            return;
-
-                        MySqlUpdateStatement mySqlUpdateStatement = new MySqlUpdateStatement();
-                        SQLExprTableSource sqlTableSource = new SQLExprTableSource();
-                        sqlTableSource.setExpr("`" + tableMapEvent.getTable() + "`");
-                        sqlTableSource.setSchema("`" + tableMapEvent.getDatabase() + "`");
-                        mySqlUpdateStatement.setTableSource(sqlTableSource);
-                        Map<Integer, Map<String, Object>> xxx = tablesColumnMap.get(tableMapEvent.getDatabase() + "." + tableMapEvent.getTable());
-                        SQLBinaryOpExprGroup sqlBinaryOpExprGroup = getCondition(includedColumnsBeforeUpdate, xxx);
-
-                        for (int i = 0; i < includedColumns.length(); i++) {
-                            int column = includedColumns.nextSetBit(i);
-                            Map<String, Object> coumnMap = xxx.get(column + 1);
-                            Object column_name = coumnMap.get("COLUMN_NAME");
-                            SQLUpdateSetItem sqlUpdateSetItem = new SQLUpdateSetItem();
-                            sqlUpdateSetItem.setColumn(new SQLIdentifierExpr("`" + column_name + "`"));
-                            sqlUpdateSetItem.setValue(new SQLVariantRefExpr("?"));
-                            mySqlUpdateStatement.getItems().add(sqlUpdateSetItem);
                         }
 
-                        mySqlUpdateStatement.setWhere(sqlBinaryOpExprGroup);
-                        mySqlUpdateStatement.setLimit(new SQLLimit(1));
-                        sqlUpdate(mySqlUpdateStatement.toString(), rows);
-                    }
-
-                    private SQLBinaryOpExprGroup getCondition(BitSet includedColumnsBeforeUpdate, Map<Integer, Map<String, Object>> xxx) {
-                        SQLBinaryOpExprGroup sqlBinaryOpExprGroup = new SQLBinaryOpExprGroup(SQLBinaryOperator.BooleanAnd);
-
-                        for (int i = 0; i < includedColumnsBeforeUpdate.length(); i++) {
-                            int column = includedColumnsBeforeUpdate.nextSetBit(i);
-                            Map<String, Object> coumnMap = xxx.get(column + 1);
-                            Object column_name = coumnMap.get("COLUMN_NAME");
-                            SQLExpr sqlExpr = SQLUtils.toSQLExpr("`" + column_name + "` <=> ?");
-                            sqlBinaryOpExprGroup.add(sqlExpr);
+                        private void handleDDL(QueryEventData event) {
+                            String sql = event.getSql();
+                            String database = event.getDatabase();
+                            if ("BEGIN".equalsIgnoreCase(sql)) {
+                                return;
+                            }
+                            try {
+                                SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+                                if (sqlStatement instanceof SQLDDLStatement) {
+                                    SQLDDLStatement sqlDdlStatement = (SQLDDLStatement) sqlStatement;
+                                    MySqlSchemaStatVisitor mySqlSchemaStatVisitor = new MySqlSchemaStatVisitor();
+                                    sqlDdlStatement.accept(mySqlSchemaStatVisitor);
+                                    Map<TableStat.Name, TableStat> tables = mySqlSchemaStatVisitor.getTables();
+                                    boolean meet = tables.keySet().stream().allMatch(i -> filter(database, i.getName()));
+                                }
+                            } catch (Throwable throwable) {
+                                LOGGER.error("sql:{}", sql, throwable);
+                            }
                         }
-                        return sqlBinaryOpExprGroup;
-                    }
 
-                    private void sqlUpdate(String toString, List<Map.Entry<Serializable[], Serializable[]>> rows) {
-                        for (Map.Entry<Serializable[], Serializable[]> row : rows) {
+                        private void handleUpdateRowsEvent(Event event) {
+                            try {
+                                UpdateRowsEventData eventData = event.getData();
+                                BitSet includedColumnsBeforeUpdate = eventData.getIncludedColumnsBeforeUpdate();
+                                BitSet includedColumns = eventData.getIncludedColumns();
+                                List<Map.Entry<Serializable[], Serializable[]>> rows = eventData.getRows();
+                                TableMapEventData tableMapEvent = tablesById.get(eventData.getTableId());
+                                if (!filter(tableMapEvent.getDatabase(), tableMapEvent.getTable()))
+                                    return;
 
-                            Serializable[] key = row.getKey();
-                            Serializable[] value = row.getValue();
+                                MySqlUpdateStatement mySqlUpdateStatement = new MySqlUpdateStatement();
+                                SQLExprTableSource sqlTableSource = new SQLExprTableSource();
+                                sqlTableSource.setExpr("`" + tableMapEvent.getTable() + "`");
+                                sqlTableSource.setSchema("`" + tableMapEvent.getDatabase() + "`");
+                                mySqlUpdateStatement.setTableSource(sqlTableSource);
+                                Map<Integer, Map<String, Object>> xxx = tablesColumnMap.get(tableMapEvent.getDatabase() + "." + tableMapEvent.getTable());
+                                SQLBinaryOpExprGroup sqlBinaryOpExprGroup = getCondition(includedColumnsBeforeUpdate, xxx);
 
-                            Object[] objects = new Object[key.length + value.length];
+                                for (int i = 0; i < includedColumns.length(); i++) {
+                                    int column = includedColumns.nextSetBit(i);
+                                    Map<String, Object> coumnMap = xxx.get(column + 1);
+                                    Object column_name = coumnMap.get("COLUMN_NAME");
+                                    SQLUpdateSetItem sqlUpdateSetItem = new SQLUpdateSetItem();
+                                    sqlUpdateSetItem.setColumn(new SQLIdentifierExpr("`" + column_name + "`"));
+                                    sqlUpdateSetItem.setValue(new SQLVariantRefExpr("?"));
+                                    mySqlUpdateStatement.getItems().add(sqlUpdateSetItem);
+                                }
 
-                            System.arraycopy(key, 0, objects, 0, key.length);
-                            System.arraycopy(value, 0, objects, key.length, key.length + value.length);
-                            emitter.onNext(ParamSQL.of(toString, objects));
+                                mySqlUpdateStatement.setWhere(sqlBinaryOpExprGroup);
+//                                mySqlUpdateStatement.setLimit(new SQLLimit(1));
+                                sqlUpdate(mySqlUpdateStatement.toString(), rows);
+                            } catch (Throwable throwable) {
+                                LOGGER.error("{}", event, throwable);
+                            }
                         }
-                    }
 
-                    private boolean filter(String database, String table) {
-                        if (Strings.isNullOrEmpty(database)) {
+                        private SQLBinaryOpExprGroup getCondition(BitSet includedColumnsBeforeUpdate, Map<Integer, Map<String, Object>> xxx) {
+                            SQLBinaryOpExprGroup sqlBinaryOpExprGroup = new SQLBinaryOpExprGroup(SQLBinaryOperator.BooleanAnd);
+
+                            for (int i = 0; i < includedColumnsBeforeUpdate.length(); i++) {
+                                int column = includedColumnsBeforeUpdate.nextSetBit(i);
+                                Map<String, Object> coumnMap = xxx.get(column + 1);
+                                Object column_name = coumnMap.get("COLUMN_NAME");
+                                SQLExpr sqlExpr = SQLUtils.toSQLExpr("`" + column_name + "` <=> ?");
+                                sqlBinaryOpExprGroup.add(sqlExpr);
+                            }
+                            return sqlBinaryOpExprGroup;
+                        }
+
+                        private void sqlUpdate(String toString, List<Map.Entry<Serializable[], Serializable[]>> rows) {
+                            try {
+                                for (Map.Entry<Serializable[], Serializable[]> row : rows) {
+
+                                    Serializable[] key = row.getKey();
+                                    Serializable[] value = row.getValue();
+
+                                    ArrayList<Object> objects = new ArrayList<>(key.length + value.length);
+                                    Collections.addAll(objects, value);
+                                    Collections.addAll(objects, key);
+
+                                    emitter.onNext(ParamSQL.of(toString, objects));
+                                }
+                            } catch (Exception e) {
+                                LOGGER.error("", e);
+                                emitter.tryOnError(e);
+                            }
+                        }
+
+                        private boolean filter(String database, String table) {
+                            if (Strings.isNullOrEmpty(database)) {
+                                return false;
+                            }
+                            if (Strings.isNullOrEmpty(table)) {
+                                return false;
+                            }
+                            NameMap<Boolean> tableMap = filterMap.get(SQLUtils.normalize(database), false);
+                            if (tableMap != null && !tableMap.map().isEmpty()) {
+                                return Boolean.TRUE.equals(tableMap.get(SQLUtils.normalize(table)));
+                            }
                             return false;
                         }
-                        if (Strings.isNullOrEmpty(table)) {
-                            return false;
+
+                        private void handleTableMap(Event event) {
+                            TableMapEventData tableMapEventData = event.getData();
+                            tablesById.put(tableMapEventData.getTableId(), tableMapEventData);
+                            String tableName = tableMapEventData.getDatabase() + "." + tableMapEventData.getTable();
+                            if (!tablesColumnMap.containsKey(tableName)) {
+                                tablesColumnMap.put(tableName, loadColumn(tableMapEventData.getDatabase(), tableMapEventData.getTable()));
+                            }
                         }
-                        NameMap<Boolean> tableMap = filterMap.get(SQLUtils.normalize(database), false);
-                        if (tableMap != null && !tableMap.map().isEmpty()) {
-                            return Boolean.TRUE.equals(tableMap.get(SQLUtils.normalize(table)));
+
+                        private void handleWriteRowsEvent(Event event) {
+                            try {
+                                WriteRowsEventData eventData = event.getData();
+                                TableMapEventData tableMapEvent = tablesById.get(eventData.getTableId());
+                                if (!filter(tableMapEvent.getDatabase(), tableMapEvent.getTable()))
+                                    return;
+                                Map<Integer, Map<String, Object>> xxx = tablesColumnMap.get(tableMapEvent.getDatabase() + "." + tableMapEvent.getTable());
+                                BitSet inculudeColumn = eventData.getIncludedColumns();
+
+
+                                MySqlInsertStatement mySqlInsertStatement = new MySqlInsertStatement();
+                                mySqlInsertStatement.setTableName(new SQLIdentifierExpr("`" + tableMapEvent.getTable() + "`"));
+                                mySqlInsertStatement.getTableSource().setSchema("`" + tableMapEvent.getDatabase() + "`");
+                                SQLInsertStatement.ValuesClause values = new SQLInsertStatement.ValuesClause();
+                                mySqlInsertStatement.setValues(values);
+                                int size = inculudeColumn.length();
+                                List<Serializable[]> rows = eventData.getRows();
+                                for (int i = 0; i < size; i++) {
+                                    int column = inculudeColumn.nextSetBit(i);
+                                    Map<String, Object> coumnMap = xxx.get(column + 1);
+                                    Object column_name = coumnMap.get("COLUMN_NAME");
+                                    mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`" + column_name + "`"));
+                                    values.addValue(new SQLVariantRefExpr("?"));
+                                }
+                                sqlInsert(mySqlInsertStatement.toString(), rows);
+                            } catch (Throwable throwable) {
+                                LOGGER.error("{}", event, throwable);
+                            }
                         }
-                        return false;
-                    }
 
-                    private void handleTableMap(Event event) {
-                        TableMapEventData tableMapEventData = event.getData();
-                        tablesById.put(tableMapEventData.getTableId(), tableMapEventData);
-                        String tableName = tableMapEventData.getDatabase() + "." + tableMapEventData.getTable();
-                        if (!tablesColumnMap.containsKey(tableName)) {
-                            tablesColumnMap.put(tableName, loadColumn(tableMapEventData.getDatabase(), tableMapEventData.getTable()));
+                        private void sqlInsert(String sql, List<Serializable[]> rows) {
+                            for (Serializable[] row : rows) {
+                                emitter.onNext(ParamSQL.of(sql, Arrays.asList(row)));
+                            }
                         }
-                    }
 
-                    private void handleWriteRowsEvent(Event event) {
+                        private void handleDeleteRowsEvent(Event event) {
+                            try {
+                                DeleteRowsEventData eventData = event.getData();
+                                EventHeader header = event.getHeader();
 
-                        WriteRowsEventData eventData = event.getData();
-                        TableMapEventData tableMapEvent = tablesById.get(eventData.getTableId());
-                        if (!filter(tableMapEvent.getDatabase(), tableMapEvent.getTable()))
-                            return;
-                        Map<Integer, Map<String, Object>> xxx = tablesColumnMap.get(tableMapEvent.getDatabase() + "." + tableMapEvent.getTable());
-                        BitSet inculudeColumn = eventData.getIncludedColumns();
+                                TableMapEventData tableMapEvent = tablesById.get(eventData.getTableId());
+                                if (!filter(tableMapEvent.getDatabase(), tableMapEvent.getTable()))
+                                    return;
+                                Map<Integer, Map<String, Object>> xxx = tablesColumnMap.get(tableMapEvent.getDatabase() + "." + tableMapEvent.getTable());
+                                BitSet inculudeColumn = eventData.getIncludedColumns();
+                                SQLBinaryOpExprGroup condition = getCondition(inculudeColumn, xxx);
+                                int size = inculudeColumn.length();
+                                List<Serializable[]> rows = eventData.getRows();
 
+                                MySqlDeleteStatement mySqlDeleteStatement = new MySqlDeleteStatement();
+                                //mySqlDeleteStatement.setLimit(new SQLLimit(1));
+                                SQLExprTableSource sqlExprTableSource = new SQLExprTableSource();
 
-                        MySqlInsertStatement mySqlInsertStatement = new MySqlInsertStatement();
-                        mySqlInsertStatement.setTableName(new SQLIdentifierExpr("`" + tableMapEvent.getTable() + "`"));
-                        mySqlInsertStatement.getTableSource().setSchema("`" + tableMapEvent.getDatabase() + "`");
-                        SQLInsertStatement.ValuesClause values = new SQLInsertStatement.ValuesClause();
-                        mySqlInsertStatement.setValues(values);
-                        int size = inculudeColumn.length();
-                        List<Serializable[]> rows = eventData.getRows();
-                        for (int i = 0; i < size; i++) {
-                            int column = inculudeColumn.nextSetBit(i);
-                            Map<String, Object> coumnMap = xxx.get(column + 1);
-                            Object column_name = coumnMap.get("COLUMN_NAME");
-                            mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`" + column_name + "`"));
-                            values.addValue(new SQLVariantRefExpr("?"));
+                                sqlExprTableSource.setExpr("`" + tableMapEvent.getTable() + "`");
+                                sqlExprTableSource.setSchema("`" + tableMapEvent.getDatabase() + "`");
+
+                                mySqlDeleteStatement.setTableSource(sqlExprTableSource);
+
+                                mySqlDeleteStatement.addWhere(condition);
+                                sqlDelete(mySqlDeleteStatement.toString(), rows);
+                            } catch (Throwable throwable) {
+                                LOGGER.error("{}", event, throwable);
+                            }
                         }
-                        sqlInsert(mySqlInsertStatement.toString(), rows);
-                    }
 
-                    private void sqlInsert(String sql, List<Serializable[]> rows) {
-                        for (Serializable[] row : rows) {
-                            Object[] objects = new Object[row.length];
-                            System.arraycopy(row, 0, objects, 0, row.length);
-                            emitter.onNext(ParamSQL.of(sql, objects));
+                        private void sqlDelete(String mySqlDeleteStatement, List<Serializable[]> rows) {
+                            for (Serializable[] row : rows) {
+                                emitter.onNext(ParamSQL.of(mySqlDeleteStatement, Arrays.asList(row)));
+                            }
                         }
-                    }
 
-                    private void handleDeleteRowsEvent(Event event) {
-                        DeleteRowsEventData eventData = event.getData();
-                        EventHeader header = event.getHeader();
-
-                        TableMapEventData tableMapEvent = tablesById.get(eventData.getTableId());
-                        if (!filter(tableMapEvent.getDatabase(), tableMapEvent.getTable()))
-                            return;
-                        Map<Integer, Map<String, Object>> xxx = tablesColumnMap.get(tableMapEvent.getDatabase() + "." + tableMapEvent.getTable());
-                        BitSet inculudeColumn = eventData.getIncludedColumns();
-                        SQLBinaryOpExprGroup condition = getCondition(inculudeColumn, xxx);
-                        int size = inculudeColumn.length();
-                        List<Serializable[]> rows = eventData.getRows();
-
-                        MySqlDeleteStatement mySqlDeleteStatement = new MySqlDeleteStatement();
-                        mySqlDeleteStatement.setLimit(new SQLLimit(1));
-                        SQLExprTableSource sqlExprTableSource = new SQLExprTableSource();
-
-                        sqlExprTableSource.setExpr("`" + tableMapEvent.getTable() + "`");
-                        sqlExprTableSource.setSchema("`" + tableMapEvent.getDatabase() + "`");
-
-                        mySqlDeleteStatement.setTableSource(sqlExprTableSource);
-
-                        mySqlDeleteStatement.addWhere(condition);
-                        sqlDelete(mySqlDeleteStatement.toString(), rows);
-                    }
-
-                    private void sqlDelete(String mySqlDeleteStatement, List<Serializable[]> rows) {
-                        for (Serializable[] row : rows) {
-                            Object[] objects = new Object[row.length];
-                            System.arraycopy(row, 0, objects, 0, row.length);
-                            emitter.onNext(ParamSQL.of(mySqlDeleteStatement, objects));
-                        }
-                    }
-
-                });
-                client.connect();
+                    });
+                    client.connect(5000);
+                } catch (Throwable throwable) {
+                    emitter.tryOnError(throwable);
+                }
             }
         }, BackpressureStrategy.BUFFER);
     }

@@ -710,14 +710,19 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         }
                         return response.sendOk();
                     }
-                    if ("BINLOG".equalsIgnoreCase(cmd)) {
-                        BinlogHint binlogHint = JsonUtil.from(body, BinlogHint.class);
+                    if ("BINLOG_CLEAR".equalsIgnoreCase(cmd)){
+                        BinlogUtil.clear();
+                        dataContext.setAffectedRows(1);
+                        return response.sendOk();
+                    }
+                    if ("BINLOG_SYNC".equalsIgnoreCase(cmd)) {
+                        BinlogSyncHint binlogHint = JsonUtil.from(body, BinlogSyncHint.class);
                         Objects.requireNonNull(binlogHint.getInputTableNames());
 
                         List<String> outputTableNames = binlogHint.getOutputTableNames();
 
                         if (outputTableNames == null) {
-                            binlogHint.setInputTableNames(binlogHint.getInputTableNames());
+                            binlogHint.setOutputTableNames(binlogHint.getInputTableNames());
                         }
 
                         IdentityHashMap<TableHandler, TableHandler> map = new IdentityHashMap<>();
@@ -727,7 +732,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         List<TableHandler> outputs = new ArrayList<>();
 
                         for (String inputTableName : binlogHint.getInputTableNames()) {
-                            String[] split = inputTableName.split(".");
+                            String[] split = inputTableName.split("\\.");
                             String schemaName = SQLUtils.normalize(split[0]);
                             String tableName = SQLUtils.normalize(split[1]);
                             TableHandler inputTable = metadataManager.getTable(schemaName, tableName);
@@ -735,7 +740,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         }
 
                         for (String outputTableName : binlogHint.getOutputTableNames()) {
-                            String[] split = outputTableName.split(".");
+                            String[] split = outputTableName.split("\\.");
                             String schemaName = SQLUtils.normalize(split[0]);
                             String tableName = SQLUtils.normalize(split[1]);
                             TableHandler outputTable = metadataManager.getTable(schemaName, tableName);
@@ -772,7 +777,6 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                             ":" +
                                             port + "/mysql?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true";
 
-                            //String insertTemplate = getMySQLInsertTemplate(outputTable);
                             MigrateUtil.MigrateJdbcAnyOutput output = new MigrateUtil.MigrateJdbcAnyOutput();
                             output.setUrl(url);
                             output.setUsername(username);

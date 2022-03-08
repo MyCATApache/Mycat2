@@ -657,12 +657,12 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
         if (MetaClusterCurrent.exist(MySQLManager.class)) {
             MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
             boolean success = false;
-            try {
+            try{
                 MycatMySQLManagerImpl newMycatMySQLManager = new MycatMySQLManagerImpl(datasourceConfigUpdateSet.getTargetAsList());
                 success = true;
                 return Resource.of(newMycatMySQLManager, false);
-            } finally {
-                if (success) {
+            }finally {
+                if (success){
                     mySQLManager.close();
                 }
             }
@@ -808,9 +808,9 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
                         JdbcConnectionManager newJdbcConnectionManager = new JdbcConnectionManager(
                                 DruidDatasourceProvider.class.getCanonicalName(),
                                 datasourceConfigUpdateSet.getTargetAsMap());
-                        success = true;
-                        return Resource.of(newJdbcConnectionManager, false);
-                    } finally {
+                        success= true;
+                        return Resource.of(newJdbcConnectionManager , false);
+                    }finally {
                         if (success) {
                             jdbcConnectionManager.close();
                         }
@@ -1083,7 +1083,7 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
         }
     }
 
-    public void addView(String schemaName, String viewName, String sql) {
+    public void addView(String schemaName, String viewName,String sql) {
         List<LogicSchemaConfig> schemas = newConfig.getSchemas();
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> schemaName.equalsIgnoreCase(i.getSchemaName())).findFirst();
         if (first.isPresent()) {

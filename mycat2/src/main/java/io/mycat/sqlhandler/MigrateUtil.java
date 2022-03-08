@@ -151,7 +151,7 @@ public class MigrateUtil {
             @Override
             public void onNext(BinlogUtil.ParamSQL paramSQL) {
                 try {
-                    JdbcUtils.execute(this.connection, paramSQL.getSql(), Arrays.asList(paramSQL.getParams()));
+                    JdbcUtils.execute(this.connection, paramSQL.getSql(), (paramSQL.getParams()));
                     this.subscription.request(1);
                 } catch (Throwable exception) {
                     onError(exception);
