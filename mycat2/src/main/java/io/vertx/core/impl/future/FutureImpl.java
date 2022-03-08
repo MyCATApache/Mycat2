@@ -186,7 +186,9 @@ class FutureImpl<T> extends FutureBase<T> {
   }
 
   public boolean tryFail(Throwable cause) {
-    LOGGER.error("tryFail",cause);
+    if (LOGGER.isDebugEnabled()){
+      LOGGER.debug("",cause);
+    }
     if (cause == null) {
       cause = new NoStackTraceThrowable(null);
     }
