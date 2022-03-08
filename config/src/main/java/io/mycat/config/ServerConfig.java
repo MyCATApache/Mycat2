@@ -74,6 +74,7 @@ public class ServerConfig {
     private String pushDownSelectDual = "hackRouter";
     private boolean pushShowOnPrototype = false;
     private boolean useProxyProtocol = false;
+    private boolean asyncDDL = false;
     public static void main(String[] args) {
         System.out.println(JsonUtil.toJson(new ServerConfig()));
     }

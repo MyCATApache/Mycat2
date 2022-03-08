@@ -19,13 +19,14 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStateme
 import io.mycat.*;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.MycatRouterConfigOps;
+import io.mycat.config.ServerConfig;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.JsonUtil;
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
-import io.vertx.core.shareddata.Lock;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,40 +49,64 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
     @Override
     protected Future<Void> onExecute(SQLRequest<MySqlCreateTableStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-       return lockService.lock(DDL_LOCK,()->{
-           try {
-               Map hint = Optional.ofNullable(request.getAst().getHeadHintsDirect())
-                       .map(i -> i.get(0))
-                       .map(i -> i.getText())
-                       .filter(i -> {
-                           i = i.replaceAll(" ", "");
-                           return i.contains("+mycat:createTable{");
-                       }).map(i -> i.substring(i.indexOf("{"))).map(i -> JsonUtil.from(i, Map.class)).orElse(null);
+        return lockService.lock(DDL_LOCK, () -> {
+            try {
+                Map hint = Optional.ofNullable(request.getAst().getHeadHintsDirect())
+                        .map(i -> i.get(0))
+                        .map(i -> i.getText())
+                        .filter(i -> {
+                            i = i.replaceAll(" ", "");
+                            return i.contains("+mycat:createTable{");
+                        }).map(i -> i.substring(i.indexOf("{"))).map(i -> JsonUtil.from(i, Map.class)).orElse(null);
 
-               MySqlCreateTableStatement ast = request.getAst();
-               String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
-               String tableName = ast.getTableName() == null ? null : SQLUtils.normalize(ast.getTableName());
-               if (ast.getSchema() == null) {
-                   ast.setSchema(schemaName);
-               }
-               if (tableName == null) {
-                   return response.sendError(new MycatException("CreateTableSQL need tableName"));
-               }
-               if (schemaName == null) {
-                   return response.sendError("No database selected", 1046);
-               }
-               createTable(hint, schemaName, tableName, ast);
-               return response.sendOk();
-           } catch (Throwable throwable) {
-               return Future.failedFuture(throwable);
-           }
-       });
+                MySqlCreateTableStatement ast = request.getAst();
+                String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
+                String tableName = ast.getTableName() == null ? null : SQLUtils.normalize(ast.getTableName());
+                if (ast.getSchema() == null) {
+                    ast.setSchema(schemaName);
+                }
+                if (tableName == null) {
+                    return response.sendError(new MycatException("CreateTableSQL need tableName"));
+                }
+                if (schemaName == null) {
+                    return response.sendError("No database selected", 1046);
+                }
+                createTable(hint, schemaName, tableName, ast);
+                return response.sendOk();
+            } catch (Throwable throwable) {
+                return Future.failedFuture(throwable);
+            }
+        });
     }
 
-    public synchronized void createTable(Map hint,
+    public void createTable(Map hint,
                             String schemaName,
                             String tableName,
                             MySqlCreateTableStatement createTableSql) throws Exception {
+        ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
+        boolean asyncDDL = serverConfig.isAsyncDDL();
+        if (asyncDDL) {
+            IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
+            Future<Void> future = ioExecutor.executeBlocking(new Handler<Promise<Void>>() {
+                @Override
+                public void handle(Promise<Void> promise) {
+                    try {
+                        createTable0(hint, schemaName, tableName, createTableSql);
+                    } catch (Throwable throwable) {
+                        LOGGER.error("DLL:{} fail", createTableSql, throwable);
+                    }
+                    promise.tryComplete();
+                }
+            });
+            return;
+        }
+        createTable0(hint, schemaName, tableName, createTableSql);
+    }
+
+    public synchronized void createTable0(Map hint,
+                                          String schemaName,
+                                          String tableName,
+                                          MySqlCreateTableStatement createTableSql) throws Exception {
         if (createTableSql == null && hint != null) {
             Object sql = hint.get("createTableSql");
             if (sql instanceof MySqlCreateTableStatement) {
