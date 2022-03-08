@@ -14,26 +14,51 @@
  */
 package io.mycat.sqlhandler.dql;
 
+import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCollationStatement;
+import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.*;
 import io.mycat.calcite.DrdsRunnerHelper;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 
 public class ShowCollationSQLHandler extends AbstractSQLHandler<MySqlShowCollationStatement> {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(ShowCollationSQLHandler.class);
 
     @Override
     protected Future<Void> onExecute(SQLRequest<MySqlShowCollationStatement> request, MycatDataContext dataContext, Response response) {
         MySqlShowCollationStatement mySqlShowCollationStatement = request.getAst();
-
+        try {
+            JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+            boolean okOnPrototype = false;
+            try (DefaultConnection connection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype())) {
+                JdbcUtils.executeQuery(connection.getRawConnection(), mySqlShowCollationStatement.toString(), Collections.emptyList());
+                okOnPrototype = true;
+            } catch (Throwable throwable) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("try query {} from prototype fail", mySqlShowCollationStatement);
+                }
+            }
+            if (okOnPrototype) {
+                return response.proxySelect(Collections.singletonList(MetadataManager.getPrototype()), mySqlShowCollationStatement.toString(), Collections.emptyList());
+            }
+        }catch (Throwable throwable){
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("try query {} from prototype fail", mySqlShowCollationStatement);
+            }
+        }
         String sql = toNormalSQL(request.getAst());
         return DrdsRunnerHelper.runOnDrds(dataContext, DrdsRunnerHelper.preParse(sql, dataContext.getDefaultSchema()), response);
     }
@@ -47,18 +72,18 @@ public class ShowCollationSQLHandler extends AbstractSQLHandler<MySqlShowCollati
         SQLExpr pattern = ast.getPattern();
 
         List<String[]> project = pad_attribute != null ? Arrays.asList(
-                new String[]{"COLLATION_NAME", "Collation"},//utf8_general_ci
+                new String[]{"COLLATION_NAME", "`Collation`"},//utf8_general_ci
                 new String[]{"CHARACTER_SET_NAME", "Charset"},//utf8
                 new String[]{"ID", "Id"},//209
-                new String[]{"IS_DEFAULT", "Default"},//YES
+                new String[]{"IS_DEFAULT", "`Default`"},//YES
                 new String[]{"IS_COMPILED", "Complied"},//YES
                 new String[]{"SORTLEN", "Sortlen"},//8
                 new String[]{"PAD_ATTRIBUTE", "Pad_attribute"}//PAD SPACE
         ) : Arrays.asList(
-                new String[]{"COLLATION_NAME", "Collation"},//utf8_general_ci
+                new String[]{"COLLATION_NAME", "`Collation`"},//utf8_general_ci
                 new String[]{"CHARACTER_SET_NAME", "Charset"},//utf8
                 new String[]{"ID", "Id"},//209
-                new String[]{"IS_DEFAULT", "Default"},//YES
+                new String[]{"IS_DEFAULT", "`Default`"},//YES
                 new String[]{"IS_COMPILED", "Complied"},//YES
                 new String[]{"SORTLEN", "Sortlen"}//8
         );
