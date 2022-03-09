@@ -27,7 +27,17 @@ public class BinlogTest implements MycatTest {
             Assert.assertTrue(maps.toString().contains("ON"));
         }
     }
-
+    @Test
+    @Ignore
+    public void testBinlogSnapshot() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
+            execute(mycatConnection, BinlogClearHint.create());
+            String name = "testBinlogSnapshot";
+            List<Map<String, Object>> info = executeQuery(mycatConnection, BinlogSnapshotHint.create(name));
+            Assert.assertFalse(info.isEmpty());
+            System.out.println();
+        }
+    }
     @Test
     @Ignore
     public void testBinlog() throws Exception {
@@ -313,6 +323,70 @@ public class BinlogTest implements MycatTest {
             execute(mycatConnection, "insert  into db1.`travelrecord_input`(`id`,`traveldate`,`fee`,`days`,`blob`) values ('7',NULL,NULL,NULL,NULL),('8',NULL,NULL,NULL,NULL),(NULL,NULL,NULL,NULL,NULL),('9',NULL,NULL,NULL,NULL);\n");
             execute(mycatConnection, "UPDATE `db1`.`travelrecord_input` SET `fee` = '2' WHERE `id` = '5'; ");
             mycatConnection.setAutoCommit(true);
+
+            check(mycatConnection);
+
+            System.out.println();
+        }
+    }
+
+    @Test
+    @Ignore
+    public void testBinlogShardingToShardingWithSnapshot() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
+            execute(mycatConnection, BinlogClearHint.create());
+            execute(mycatConnection, RESET_CONFIG);
+            String name = "testBinlogGlobalToNormal";
+            execute(mycatConnection, "CREATE DATABASE db1");
+
+
+            execute(mycatConnection, "CREATE TABLE db1.`travelrecord_input` (\n" +
+                    "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                    "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                    "  `traveldate` date DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int DEFAULT NULL,\n" +
+                    "  `blob` longblob,\n" +
+                    "  PRIMARY KEY (`id`),\n" +
+                    "  KEY `id` (`id`)\n" +
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
+                    + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
+
+            execute(mycatConnection, "CREATE TABLE db1.`travelrecord_output` (\n" +
+                    "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                    "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                    "  `traveldate` date DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int DEFAULT NULL,\n" +
+                    "  `blob` longblob,\n" +
+                    "  PRIMARY KEY (`id`),\n" +
+                    "  KEY `id` (`id`)\n" +
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
+                    + " dbpartition by mod_hash(id) tbpartition by mod_hash(id) tbpartitions 2 dbpartitions 2;");
+
+            List<String> inputTableNames = Arrays.asList("db1.travelrecord_input");
+            List<String> outputTableNames = Arrays.asList("db1.travelrecord_output");
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, BinlogSnapshotHint.create(name));
+            String id = maps.get(0).get("Id").toString();
+
+
+
+            deleteData(mycatConnection, "db1", "travelrecord_input");
+            deleteData(mycatConnection, "db1", "travelrecord_output");
+
+            execute(mycatConnection, "insert  into db1.`travelrecord_input`(`id`,`traveldate`,`fee`,`days`,`blob`) values ('1',NULL,NULL,NULL,NULL),('2',NULL,NULL,NULL,NULL),(NULL,NULL,NULL,NULL,NULL),('3',NULL,NULL,NULL,NULL);\n");
+            execute(mycatConnection, "UPDATE `db1`.`travelrecord_input` SET `fee` = '2' WHERE `id` = '3'; ");
+            execute(mycatConnection, "delete from db1.travelrecord_input");
+
+            execute(mycatConnection, "insert  into db1.`travelrecord_input`(`id`,`traveldate`,`fee`,`days`,`blob`) values ('4',NULL,NULL,NULL,NULL),('5',NULL,NULL,NULL,NULL),(NULL,NULL,NULL,NULL,NULL),('6',NULL,NULL,NULL,NULL);\n");
+            execute(mycatConnection, "UPDATE `db1`.`travelrecord_input` SET `fee` = '2' WHERE `id` = '4'; ");
+
+            mycatConnection.setAutoCommit(false);
+            execute(mycatConnection, "insert  into db1.`travelrecord_input`(`id`,`traveldate`,`fee`,`days`,`blob`) values ('7',NULL,NULL,NULL,NULL),('8',NULL,NULL,NULL,NULL),(NULL,NULL,NULL,NULL,NULL),('9',NULL,NULL,NULL,NULL);\n");
+            execute(mycatConnection, "UPDATE `db1`.`travelrecord_input` SET `fee` = '2' WHERE `id` = '5'; ");
+            mycatConnection.setAutoCommit(true);
+
+            List<Map<String, Object>> info = executeQuery(mycatConnection, BinlogSyncHint.create(name, id,inputTableNames, outputTableNames));
 
             check(mycatConnection);
 

@@ -18,33 +18,20 @@ import io.mycat.util.JsonUtil;
 import lombok.Data;
 
 import java.text.MessageFormat;
-import java.util.List;
 
 @Data
-public class BinlogSyncHint extends HintBuilder {
+public class BinlogSnapshotHint extends HintBuilder {
     String name;
-    String snapshotId;
-    List<String> inputTableNames;
-    List<String> outputTableNames;
 
-    private long connectTimeout;
-
-    public static String create(String name, List<String> inputTableNames, List<String> outputTableNames) {
-        return create(name, null, inputTableNames, outputTableNames);
-    }
-
-    public static String create(String name, String snapshot, List<String> inputTableNames, List<String> outputTableNames) {
-        BinlogSyncHint migrateHint = new BinlogSyncHint();
-        migrateHint.setName(name);
-        migrateHint.setInputTableNames(inputTableNames);
-        migrateHint.setOutputTableNames(outputTableNames);
-        migrateHint.setSnapshotId(snapshot);
-        return migrateHint.build();
+    public static String create(String name) {
+        BinlogSnapshotHint binlogStopHint = new BinlogSnapshotHint();
+        binlogStopHint.setName(name);
+        return binlogStopHint.build();
     }
 
     @Override
     public String getCmd() {
-        return "BINLOG_SYNC";
+        return "BINLOG_SNAPSHOT";
     }
 
     @Override

@@ -33,6 +33,7 @@ import io.mycat.calcite.table.ShardingTable;
 import io.mycat.commands.MycatdbCommand;
 import io.mycat.commands.SqlResultSetService;
 import io.mycat.config.*;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.exporter.SqlRecorderRuntime;
@@ -457,9 +458,9 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     if ("setAcceptConnect".equalsIgnoreCase(cmd)) {
                         boolean contains = body.contains("1");
                         MycatServer server = MetaClusterCurrent.wrapper(MycatServer.class);
-                        if (!contains){
+                        if (!contains) {
                             server.stopAcceptConnect();
-                        }else {
+                        } else {
                             server.resumeAcceptConnect();
                         }
                         dataContext.setAffectedRows(1);
@@ -710,13 +711,44 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         }
                         return response.sendOk();
                     }
-                    if ("BINLOG_CLEAR".equalsIgnoreCase(cmd)){
+                    if ("BINLOG_CLEAR".equalsIgnoreCase(cmd)) {
                         BinlogUtil.clear();
                         dataContext.setAffectedRows(1);
                         return response.sendOk();
                     }
+                    if ("BINLOG_SNAPSHOT".equalsIgnoreCase(cmd)) {
+                        BinlogSnapshotHint hint = JsonUtil.from(body, BinlogSnapshotHint.class);
+                        RowBaseIterator rowBaseIterator = BinlogUtil.binlogSnapshot(hint.getName());
+                        return response.sendResultSet(rowBaseIterator);
+                    }
                     if ("BINLOG_SYNC".equalsIgnoreCase(cmd)) {
                         BinlogSyncHint binlogHint = JsonUtil.from(body, BinlogSyncHint.class);
+                        String name = binlogHint.getName();
+                        String snapshot = binlogHint.getSnapshotId();
+                        Map<String,BinlogUtil.BinlogArgs> binlogArgsMap = new HashMap<>();
+                        if (snapshot != null) {
+                            try (DefaultConnection defaultConnection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype());) {
+                                List<Map<String, Object>> maps = JdbcUtils.executeQuery(defaultConnection.getRawConnection(), "select * from mycat.ds_binlog where Id = ?", Arrays.asList(snapshot));
+                                for (Map<String, Object> map : maps) {
+                                    String eId = (String) map.get("Id");
+                                    String eName = (String) map.get("Name");
+                                    String datasource = (String) map.get("Datasource");
+                                    String file = (String) map.get("File");
+                                    Long position = (Long) map.get("Position");
+                                    String binlog_ignore_db = (String) map.get("Binlog_Ignore_DB");
+                                    String binlog_do_db = (String) map.get("Binlog_Do_DB");
+
+                                    BinlogUtil.BinlogArgs binlogArgs = new BinlogUtil.BinlogArgs();
+                                    binlogArgs.setBinlogFilename(file);
+                                    binlogArgs.setBinlogPosition(position);
+
+                                    if (binlogHint.getConnectTimeout() > 0) {
+                                        binlogArgs.setConnectTimeout(binlogHint.getConnectTimeout());
+                                    }
+                                    binlogArgsMap.put(datasource,binlogArgs);
+                                }
+                            }
+                        }
                         Objects.requireNonNull(binlogHint.getInputTableNames());
 
                         List<String> outputTableNames = binlogHint.getOutputTableNames();
@@ -751,7 +783,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                             map.put(inputs.get(i), outputs.get(i));
                         }
 
-                        Map<String,  Map<String, List<Partition>>> infoCollector = new HashMap<>();
+                        Map<String, Map<String, List<Partition>>> infoCollector = new HashMap<>();
                         List<MigrateUtil.MigrateController> migrateControllers = new ArrayList<>();
 
 
@@ -807,11 +839,12 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                             ReplicaSelectorManager replicaSelectorManager = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
 
                             Map<String, List<Partition>> listMap = partitions.stream().collect(Collectors.groupingBy(partition -> replicaSelectorManager.getDatasourceNameByReplicaName(partition.getTargetName(), true, null)));
-                            infoCollector.put(inputTable.getUniqueName(),listMap);
+                            infoCollector.put(inputTable.getUniqueName(), listMap);
 
                             List<Flowable<BinlogUtil.ParamSQL>> flowables = new ArrayList<>();
                             for (Map.Entry<String, List<Partition>> e : listMap.entrySet()) {
-                                flowables.add(BinlogUtil.observe(e.getKey(), e.getValue()).subscribeOn(Schedulers.io()));
+                                BinlogUtil.BinlogArgs binlogArgs = binlogArgsMap.get(e.getKey());
+                                flowables.add(BinlogUtil.observe(binlogArgs, e.getKey(), e.getValue()).subscribeOn(Schedulers.io()));
                             }
                             Flowable<BinlogUtil.ParamSQL> merge = flowables.size() == 1 ? flowables.get(0) : Flowable.merge(flowables, flowables.size());
                             merge = merge.map(paramSQL -> {

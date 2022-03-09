@@ -2,12 +2,8 @@ package io.mycat.sqlhandler;
 
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.SQLLimit;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExprGroup;
-import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
-import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.SQLDDLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
@@ -21,11 +17,11 @@ import com.alibaba.druid.util.JdbcUtils;
 import com.github.shyiko.mysql.binlog.BinaryLogClient;
 import com.github.shyiko.mysql.binlog.event.*;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.mysql.cj.conf.ConnectionUrlParser;
 import com.mysql.cj.conf.HostInfo;
 import groovy.transform.ToString;
 import io.mycat.MetaClusterCurrent;
+import io.mycat.MetadataManager;
 import io.mycat.Partition;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
@@ -39,7 +35,6 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.FlowableEmitter;
 import io.reactivex.rxjava3.core.FlowableOnSubscribe;
 import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.functions.Cancellable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import lombok.AllArgsConstructor;
@@ -51,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
 import java.sql.JDBCType;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -59,12 +55,94 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 public class BinlogUtil {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MigrateUtil.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BinlogUtil.class);
     public static CopyOnWriteArrayList<BinlogScheduler> schedulers = new CopyOnWriteArrayList();
 
     public static void register(BinlogScheduler scheduler) {
         schedulers.add(scheduler);
     }
+
+    public static RowBaseIterator binlogSnapshot(String snapshotName) {
+        String id = UUID.randomUUID().toString();
+        ResultSetBuilder builder = ResultSetBuilder.create();
+        builder.addColumnInfo("Id", JDBCType.VARCHAR);
+        builder.addColumnInfo("Name", JDBCType.VARCHAR);
+        builder.addColumnInfo("Datasource", JDBCType.VARCHAR);
+        builder.addColumnInfo("File", JDBCType.VARCHAR);
+        builder.addColumnInfo("Position", JDBCType.BIGINT);
+        builder.addColumnInfo("Binlog_Do_DB", JDBCType.VARCHAR);
+        builder.addColumnInfo("Binlog_Ignore_DB", JDBCType.VARCHAR);
+        builder.addColumnInfo("Executed_Gtid_Set", JDBCType.VARCHAR);
+        builder.addColumnInfo("CreateDatetime", JDBCType.VARCHAR);
+
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        List<String> names = new ArrayList<>(jdbcConnectionManager.getConfigAsMap().keySet());
+
+        List<DefaultConnection> connectionList = new ArrayList<>();
+        try {
+            for (String name : names) {
+                DefaultConnection defaultConnection = jdbcConnectionManager.getConnection(name);
+                connectionList.add(defaultConnection);
+            }
+
+            for (DefaultConnection defaultConnection : connectionList) {
+                Connection connection = defaultConnection.getRawConnection();
+                List<Map<String, Object>> show_master_status = JdbcUtils.executeQuery(connection, "show master status", Collections.emptyList());
+                Map<String, Object> map = new HashMap<>(show_master_status.get(0));
+                builder.addObjectRowPayload(Arrays.asList(
+                        id,
+                        snapshotName,
+                        defaultConnection.getDataSource().getName(),
+                        map.get("File"),
+                        map.get("Position"),
+                        map.get("Binlog_Do_DB"),
+                        map.get("Binlog_Ignore_DB"),
+                        map.get("Executed_Gtid_Set"),
+                        new Date()
+                ));
+            }
+            RowBaseIterator rowBaseIterator = builder.build();
+
+
+            MySqlInsertStatement mySqlInsertStatement = new MySqlInsertStatement();
+
+            mySqlInsertStatement.setTableName(new SQLIdentifierExpr("`ds_binlog`"));
+            mySqlInsertStatement.getTableSource().setSchema(("`mycat`"));
+
+            mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`Id`"));
+            mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`Name`"));
+            mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`Datasource`"));
+            mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`File`"));
+            mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`Position`"));
+            mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`Binlog_Ignore_DB`"));
+            mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`Binlog_Do_DB`"));
+            mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`Executed_Gtid_Set`"));
+            mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`CreateDatetime`"));
+
+            while (rowBaseIterator.next()) {
+                Object[] objects = rowBaseIterator.getObjects();
+                SQLInsertStatement.ValuesClause valuesClause = new SQLInsertStatement.ValuesClause();
+                for (Object object : objects) {
+                    valuesClause.addValue(SQLExprUtils.fromJavaObject(object));
+                }
+                mySqlInsertStatement.getValuesList().add(valuesClause);
+            }
+
+            try (DefaultConnection prototypeConnection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype());) {
+                JdbcUtils.execute(prototypeConnection.getRawConnection(), mySqlInsertStatement.toString());
+            } catch (Throwable e) {
+                LOGGER.error("binlogSnapshot:{} record fail.", snapshotName, e);
+            }
+        } catch (Exception e) {
+            LOGGER.error("", e);
+        } finally {
+            for (DefaultConnection defaultConnection : connectionList) {
+                defaultConnection.close();
+            }
+        }
+        return builder.build();
+    }
+
 
     public static RowBaseIterator list(List<BinlogScheduler> schedulers) {
         ResultSetBuilder builder = ResultSetBuilder.create();
@@ -146,8 +224,15 @@ public class BinlogUtil {
 
     }
 
+    @Data
+    public static class BinlogArgs{
+        private long connectTimeout;
+        private volatile String binlogFilename;
+        private volatile long binlogPosition;
+    }
 
-    public static Flowable<ParamSQL> observe(String targetName, List<Partition> partitions) {
+
+    public static Flowable<ParamSQL> observe(BinlogArgs binlogArgs,String targetName, List<Partition> partitions) {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
 
         DatasourceConfig datasourceConfig = jdbcConnectionManager.getConfigAsMap().get(targetName);
@@ -167,6 +252,12 @@ public class BinlogUtil {
                 password
         );
         client.setBlocking(true);
+
+        if (binlogArgs!=null){
+            client.setBinlogFilename(binlogArgs.getBinlogFilename());
+            client.setBinlogPosition(binlogArgs.getBinlogPosition());
+            client.setConnectTimeout(binlogArgs.getConnectTimeout());
+        }
 
         NameMap<NameMap<Boolean>> filterMap = new NameMap<>();
 
