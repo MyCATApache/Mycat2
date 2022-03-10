@@ -76,7 +76,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             return transactionConnnectionMap
                     .computeIfAbsent(key, s -> transactionSession.getConnection(key));
         }
-        int limit = 8;
+        int limit = AsyncMycatDataContextImpl.FULL_TABLE_SCAN_LIMIT;
         MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
         LimitQueue limitQueue = connnectionFutureCollection.computeIfAbsent(key, s -> {
             return new LimitQueue();
