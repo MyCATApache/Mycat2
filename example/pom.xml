@@ -96,7 +96,7 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.22</version>
+            <version>8.0.26</version>
             <scope>test</scope>
         </dependency>
         <dependency>
