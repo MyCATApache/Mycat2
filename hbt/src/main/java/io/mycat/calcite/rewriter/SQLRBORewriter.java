@@ -303,6 +303,8 @@ public class SQLRBORewriter extends RelShuttleImpl {
         Information_Functions.put("GET_LOCK", null);
         Information_Functions.put("RELEASE_LOCK", null);
         Information_Functions.put("IS_FREE_LOCK", null);
+
+        Information_Functions.put("SLEEP", null);
     }
 
     @Override

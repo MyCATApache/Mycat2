@@ -132,12 +132,12 @@ public class VertxMySQLDatasourcePoolImpl extends AbstractMycatDatasourcePool {
     }
 
     @Override
-    public Integer getAvailableNumber() {
+    public int getAvailableNumber() {
         return mySQLPool.size();
     }
 
     @Override
-    public Integer getUsedNumber() {
+    public int getUsedNumber() {
         return mySQLPool.size();
     }
 

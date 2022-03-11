@@ -14,13 +14,13 @@
  */
 package io.mycat.datasource.jdbc.datasource;
 
-import io.mycat.ConnectionManager;
-import io.mycat.MycatConnection;
-import io.mycat.MycatException;
+import io.mycat.*;
 import io.mycat.api.collector.*;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.reactivex.rxjava3.core.Observable;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,7 +106,16 @@ public class DefaultConnection implements MycatConnection {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("close {}", connection);
                 }
-                connectionManager.closeConnection(this);
+                IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
+                ioExecutor.executeBlocking((Handler<Promise<Void>>) promise -> {
+                    try {
+                        connectionManager.closeConnection(DefaultConnection.this);
+                    }catch (Throwable throwable){
+                        LOGGER.error("", throwable);
+                    }finally {
+                        promise.tryComplete();
+                    }
+                });
             }
         } catch (Exception e) {
             LOGGER.error("", e);

@@ -44,6 +44,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Getter
@@ -51,9 +52,10 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
     protected final static Logger LOGGER = LoggerFactory.getLogger(AsyncMycatDataContextImpl.class);
     protected final static Logger FULL_TABLE_SCAN_LOGGER = LoggerFactory.getLogger("FULL_TABLE_SCAN_LOGGER");
     public static int FULL_TABLE_SCAN_LIMIT = 1024;
-    public static boolean FULL_TABLE_SCAN_EXCEPTION ;
+    public static boolean FULL_TABLE_SCAN_EXCEPTION;
     final Map<String, Future<NewMycatConnection>> transactionConnnectionMap = new HashMap<>();// int transaction
-    final List<Future<NewMycatConnection>> connnectionFutureCollection = new LinkedList<>();//not int transaction
+    final Map<String, LimitQueue> connectionlimitMap = new HashMap<>();//not int transaction
+    final List<NewMycatConnection> connectionlList = Collections.synchronizedList(new ArrayList<>());//not int transaction
     final Map<String, List<Observable<Object[]>>> shareObservable = new HashMap<>();
 
 
@@ -63,6 +65,18 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
         super(dataContext, context, drdsSqlWithParams);
     }
 
+    static class LimitQueue {
+        ArrayList<LimitQueueItem> queue = new ArrayList<>();
+        int index = 0;
+
+        int tmpIndex;
+    }
+
+    static class LimitQueueItem {
+        Future<NewMycatConnection> future;
+        AtomicInteger countDown = new AtomicInteger();
+    }
+
     public synchronized Future<NewMycatConnection> getConnection(String key) {
         XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
         if (context.isInTransaction()) {
@@ -70,9 +84,31 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                     .computeIfAbsent(key, s -> transactionSession.getConnection(key));
         }
         MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
-        Future<NewMycatConnection> connection = mySQLManager.getConnection(key);
-        connnectionFutureCollection.add(connection);
-        return connection;
+        int limit = Math.min(AsyncMycatDataContextImpl.FULL_TABLE_SCAN_LIMIT, mySQLManager.getAvailableNumber(key));
+        if (limit < 1) {
+            limit = 1;
+        }
+        LimitQueue limitQueue = connectionlimitMap.computeIfAbsent(key, s -> {
+            return new LimitQueue();
+        });
+
+        int index = limitQueue.queue.size();
+        Future<NewMycatConnection> connectionFuture;
+        if (index < limit) {
+            connectionFuture = mySQLManager.getConnection(key).flatMap(newMycatConnection -> {
+                connectionlList.add(newMycatConnection);
+                return Future.succeededFuture( newMycatConnection);
+            });
+            LimitQueueItem limitQueueItem = new LimitQueueItem();
+            limitQueueItem.future = connectionFuture;
+            limitQueueItem.countDown.incrementAndGet();
+            limitQueue.queue.add(index, limitQueueItem);
+        } else {
+            limitQueue.tmpIndex = (limitQueue.index++) % limitQueue.queue.size();
+            LimitQueueItem limitQueueItem = limitQueue.queue.get(limitQueue.tmpIndex);
+            return limitQueueItem.future;
+        }
+        return connectionFuture;
     }
 
     public synchronized void recycleConnection(String key, Future<NewMycatConnection> connectionFuture) {
@@ -81,9 +117,16 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             transactionConnnectionMap.put(key, connectionFuture);
             return;
         }
-        connectionFuture = connectionFuture.flatMap(c -> c.close().mapEmpty());
-        transactionSession.addCloseFuture(connectionFuture.mapEmpty());
-        connnectionFutureCollection.add(Objects.requireNonNull(connectionFuture));
+        LimitQueue limitQueue = connectionlimitMap.get(key);
+        LimitQueueItem limitQueueItem = limitQueue.queue.get(limitQueue.tmpIndex);
+        limitQueueItem.future = connectionFuture.onComplete(newMycatConnectionAsyncResult -> {
+            if (newMycatConnectionAsyncResult.succeeded()) {
+                NewMycatConnection mycatConnection = newMycatConnectionAsyncResult.result();
+                if (limitQueueItem.countDown.decrementAndGet() < 1) {
+                    mycatConnection.close();
+                }
+            }
+        });
     }
 
     public static interface Queryer<T> {
@@ -142,7 +185,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
     public synchronized CompositeFuture endFuture() {
         return CompositeFuture.join((List) ImmutableList.builder()
                 .addAll(transactionConnnectionMap.values())
-                .addAll(connnectionFutureCollection).build());
+                .addAll(connectionlList.stream().map(i->i.close()).collect(Collectors.toList())).build());
     }
 
     public abstract List<Observable<Object[]>> getObservableList(String node);
@@ -192,9 +235,9 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             List<PartitionGroup> sqlMap = getPartition(node).get();
             if ((sqlMap.size() > FULL_TABLE_SCAN_LIMIT) && FULL_TABLE_SCAN_LOGGER.isInfoEnabled()) {
                 FULL_TABLE_SCAN_LOGGER.info(" warning sql:{},partition count:{},limit:{},it may be a full table scan.",
-                        drdsSqlWithParams.toString(),sqlMap.size(),FULL_TABLE_SCAN_LIMIT);
-                if(FULL_TABLE_SCAN_EXCEPTION){
-                    throw new MycatException("FULL_TABLE_SCAN_EXCEPTION:{}",drdsSqlWithParams.toString());
+                        drdsSqlWithParams.toString(), sqlMap.size(), FULL_TABLE_SCAN_LIMIT);
+                if (FULL_TABLE_SCAN_EXCEPTION) {
+                    throw new MycatException("FULL_TABLE_SCAN_EXCEPTION:{}", drdsSqlWithParams.toString());
                 }
             }
             boolean share = mycatRelDatasourceSourceInfo.refCount > 0;

@@ -35,14 +35,14 @@ public class NativeDatasourcePoolImpl extends AbstractMycatDatasourcePool {
     }
 
     @Override
-    public Integer getAvailableNumber() {
+    public int getAvailableNumber() {
         NativeMycatServer nativeMycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
         MySQLDatasourcePool sqlDatasourcePool = nativeMycatServer.getDatasource(targetName);
         return sqlDatasourcePool.getSessionLimitCount() - sqlDatasourcePool.currentSessionCount();
     }
 
     @Override
-    public Integer getUsedNumber() {
+    public int getUsedNumber() {
         NativeMycatServer nativeMycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
         MySQLDatasourcePool sqlDatasourcePool = nativeMycatServer.getDatasource(targetName);
         return sqlDatasourcePool.currentSessionCount();

@@ -135,6 +135,11 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
     }
 
     @Override
+    public int getAvailableNumber(String targetName) {
+        return map.get(targetName).getAvailableNumber();
+    }
+
+    @Override
     public int getSessionCount(String targetName) {
         return map.get(targetName).getUsedNumber();
     }

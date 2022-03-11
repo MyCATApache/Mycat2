@@ -1392,7 +1392,7 @@ public class UserCaseTest implements MycatTest {
             ResultSet resultSet = statement.executeQuery("select * from datetime_test");
             resultSet.next();
             Object object = resultSet.getObject(1);
-            Assert.assertTrue(object instanceof Timestamp);
+            Assert.assertTrue(object instanceof Timestamp||object instanceof LocalDateTime);
             System.out.println();
         }
     }
@@ -1413,7 +1413,7 @@ public class UserCaseTest implements MycatTest {
             ResultSet resultSet = statement.executeQuery("select * from datetime_test");
             resultSet.next();
             Object object = resultSet.getObject(1);
-            Assert.assertTrue(object instanceof Timestamp);
+            Assert.assertTrue(object instanceof Timestamp|| object instanceof LocalDateTime);
             System.out.println();
         }
     }

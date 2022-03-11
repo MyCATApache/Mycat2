@@ -192,9 +192,12 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
          * it is implemented in some databases.
          */
         try {
-            if (!connection.connection.getAutoCommit()) {
-                connection.connection.rollback();
-                connection.connection.setAutoCommit(true);
+            if (!connection.getDataSource().isMySQLType()) {
+                if (!connection.connection.getAutoCommit()) {
+                    LOGGER.error("need rollback in JdbcConnectionManager targetName:{}", connection.getDataSource().getName());
+                    connection.connection.rollback();
+                    connection.connection.setAutoCommit(true);
+                }
             }
         } catch (SQLException e) {
             LOGGER.error("", e);
