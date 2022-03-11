@@ -22,9 +22,12 @@ import io.mycat.buffer.DefaultReactorBufferPool;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.config.*;
 import io.mycat.proxy.MySQLDatasourcePool;
-import io.mycat.proxy.reactor.*;
+import io.mycat.proxy.reactor.MycatReactorThread;
+import io.mycat.proxy.reactor.NIOAcceptor;
+import io.mycat.proxy.reactor.ReactorThreadManager;
 import io.mycat.proxy.session.*;
 import io.mycat.replica.ReplicaSelectorManager;
+import io.vertx.core.Future;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
@@ -98,6 +101,21 @@ public class NativeMycatServer implements MycatServer {
     @Override
     public void setReadyToCloseSQL(String sql) {
 
+    }
+
+    @Override
+    public Future<Void> pause(long currentId)  {
+        return Future.succeededFuture();
+    }
+
+    @Override
+    public void resume() {
+
+    }
+
+    @Override
+    public boolean isPause() {
+        return false;
     }
 
 

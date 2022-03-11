@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2021>  <chen junwen>
+ * Copyright (C) <2022>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -12,21 +12,29 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.vertx;
+package io.mycat.hint;
 
-import io.mycat.MycatDataContext;
-import io.mycat.proxy.session.MySQLServerSession;
-import io.vertx.core.Future;
-import io.vertx.core.impl.future.PromiseInternal;
-import io.vertx.core.net.NetSocket;
+import io.mycat.util.JsonUtil;
+import lombok.Data;
 
-public interface VertxSession extends MySQLServerSession {
+import java.text.MessageFormat;
 
-    MycatDataContext getDataContext();
+@Data
+public class PauseServerHint extends HintBuilder {
 
-    Future<Void> close();
+    public static PauseServerHint create() {
+        return new PauseServerHint();
+    }
 
-    NetSocket getSocket();
+    @Override
+    public String getCmd() {
+        return "pauseServer";
+    }
 
-    boolean isPause();
+    @Override
+    public String build() {
+        return MessageFormat.format("/*+ mycat:{0}{1} */;",
+                getCmd(),
+                JsonUtil.toJson(this));
+    }
 }

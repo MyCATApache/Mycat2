@@ -19,28 +19,26 @@ import io.mycat.MycatDataContext;
 import io.mycat.TransactionSession;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.session.ProcessState;
-import io.mycat.swapbuffer.PacketRequest;
-import io.mycat.swapbuffer.PacketResponse;
 import io.mycat.util.VertxUtil;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 
 import java.nio.charset.Charset;
-import java.util.function.Function;
 
 public class VertxSessionImpl implements VertxSession {
     private MycatDataContext mycatDataContext;
     private NetSocket socket;
+    private VertxMycatServer.MycatSessionManager mycatSessionManager;
     int packetId = 0;
     private ProcessState processState;
-    public boolean close;
+    public boolean close = false;
+    public boolean pause = false;
 
-    public VertxSessionImpl(MycatDataContext mycatDataContext, NetSocket socket) {
+    public VertxSessionImpl(MycatDataContext mycatDataContext, NetSocket socket, VertxMycatServer.MycatSessionManager mycatSessionManager) {
         this.mycatDataContext = mycatDataContext;
-
         this.socket = socket;
+        this.mycatSessionManager = mycatSessionManager;
     }
 
     @Override
@@ -133,7 +131,13 @@ public class VertxSessionImpl implements VertxSession {
                         //加速回收资源
                         return transactionSession.closeStatementState()
                                 .transform(voidAsyncResult ->
-                                        socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload))));
+                                        socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload))))
+                                .onComplete(voidAsyncResult -> {
+                                    if (!transactionSession.isInTransaction() && mycatSessionManager.isPause()) {
+                                        socket.pause();
+                                        VertxSessionImpl.this.pause =true;
+                                    }
+                                });
                     }
                 }
             }
@@ -208,5 +212,10 @@ public class VertxSessionImpl implements VertxSession {
     @Override
     public NetSocket getSocket() {
         return socket;
+    }
+
+    @Override
+    public boolean isPause() {
+        return this.pause;
     }
 }

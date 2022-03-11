@@ -19,11 +19,10 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.config.MycatServerConfig;
-import io.mycat.newquery.NewMycatConnectionConfig;
 import io.mycat.monitor.LogEntryHolder;
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Vertx;
+import io.mycat.newquery.NewMycatConnectionConfig;
+import io.reactivex.rxjava3.core.Observable;
+import io.vertx.core.*;
 import io.vertx.core.net.NetServer;
 import io.vertx.core.net.NetServerOptions;
 import io.vertx.core.net.NetSocket;
@@ -35,6 +34,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class VertxMycatServer implements MycatServer {
@@ -106,10 +106,26 @@ public class VertxMycatServer implements MycatServer {
         this.server.setReadyToCloseSQL(sql);
     }
 
+    @Override
+    public Future<Void> pause(long currentId) {
+        return this.server.pause(currentId);
+    }
+
+    @Override
+    public void resume() {
+        this.server.resume();
+    }
+
+    @Override
+    public boolean isPause() {
+        return this.server.isPause();
+    }
+
     public static class MycatSessionManager implements MycatServer {
         private final ConcurrentLinkedDeque<VertxSession> sessions = new ConcurrentLinkedDeque<>();
         private MycatServerConfig serverConfig;
         public boolean acceptConnect = true;
+        public boolean pause = false;
 
         public MycatSessionManager(MycatServerConfig serverConfig) {
             this.serverConfig = serverConfig;
@@ -187,6 +203,30 @@ public class VertxMycatServer implements MycatServer {
             for (VertxSession session : sessions) {
                 session.getDataContext().setReadyToCloseSQL(sql);
             }
+        }
+
+        @Override
+        public Future<Void> pause(long currentId) {
+            this.pause = true;
+            return Future.future(promise -> Observable.interval(1, 1, TimeUnit.SECONDS).takeUntil(i -> {
+                        return sessions.stream().filter(s -> s.getDataContext().getSessionId() != currentId).allMatch(s -> s.isPause());
+                    }).timeout(10, TimeUnit.SECONDS)
+                    .subscribe(aLong -> promise.tryComplete(), throwable -> {
+                        promise.tryFail(throwable);
+                    }));
+        }
+
+        @Override
+        public void resume() {
+            this.pause = false;
+            for (VertxSession session : this.sessions) {
+                session.getSocket().resume();
+            }
+        }
+
+        @Override
+        public boolean isPause() {
+            return this.pause;
         }
 
         public void addSession(VertxSession vertxSession) {

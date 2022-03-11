@@ -19,7 +19,6 @@ import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.AuthPacket;
 import io.mycat.beans.mysql.packet.AuthSwitchRequestPacket;
-import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.config.UserConfig;
 import io.mycat.mycatmysql.MycatVertxMySQLHandler;
 import io.mycat.mycatmysql.MycatVertxMysqlSession;
@@ -44,16 +43,16 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
     private static final Logger LOGGER = LoggerFactory.getLogger(VertxMySQLAuthHandler.class);
 
     final NetSocket socket;
-    final VertxMycatServer.MycatSessionManager mysqlProxyServerVerticle;
+    final VertxMycatServer.MycatSessionManager mycatSessionManager;
     private final MycatDataContext mycatDataContext;
     private byte[][] seedParts;
     Buffer buffer = Buffer.buffer();
     boolean authSwitchResponse = false;
     private AuthPacket authPacket;
 
-    public VertxMySQLAuthHandler(NetSocket socket, int defaultServerCapabilities, VertxMycatServer.MycatSessionManager mysqlProxyServerVerticle) {
+    public VertxMySQLAuthHandler(NetSocket socket, int defaultServerCapabilities, VertxMycatServer.MycatSessionManager mycatSessionManager) {
         this.socket = socket;
-        this.mysqlProxyServerVerticle = mysqlProxyServerVerticle;
+        this.mycatSessionManager = mycatSessionManager;
         this.mycatDataContext = new MycatDataContextImpl();
         this.seedParts = MysqlNativePasswordPluginUtil.nextSeedBuild();
         byte[] handshakePacket = MySQLClientAuthHandler.createHandshakePayload(mycatDataContext.getSessionId(), defaultServerCapabilities, seedParts);
@@ -150,11 +149,11 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
         mycatDataContext.setAutoCommit(true);
         mycatDataContext.setIsolation(MySQLIsolation.REPEATED_READ);
         mycatDataContext.setCharsetIndex(authPacket.getCharacterSet());
-        MycatVertxMysqlSession vertxSession = new MycatVertxMysqlSession(mycatDataContext, socket);
+        MycatVertxMysqlSession vertxSession = new MycatVertxMysqlSession(mycatDataContext, socket,this.mycatSessionManager);
         socket.handler(new VertxMySQLPacketResolver(socket, new MycatVertxMySQLHandler(vertxSession)));
         vertxSession.setPacketId(packetId);
 
-        mysqlProxyServerVerticle.addSession(vertxSession);
+        mycatSessionManager.addSession(vertxSession);
 
         vertxSession.writeOkEndPacket();
     }
