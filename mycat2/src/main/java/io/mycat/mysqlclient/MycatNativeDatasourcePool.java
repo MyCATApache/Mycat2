@@ -86,12 +86,12 @@ public class MycatNativeDatasourcePool extends AbstractMycatDatasourcePool {
     }
 
     @Override
-    public Integer getAvailableNumber() {
+    public int getAvailableNumber() {
         return vertxPoolConnection.getAvailableNumber();
     }
 
     @Override
-    public Integer getUsedNumber() {
+    public int getUsedNumber() {
         return vertxPoolConnection.getUsedNumber();
     }
 
