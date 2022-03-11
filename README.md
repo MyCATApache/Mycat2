@@ -2,6 +2,8 @@
 
 Distributed database based on MySQL or JDBC.
 
+http://mycatone.top
+
 gitee:https://gitee.com/MycatOne/Mycat2
 
 
