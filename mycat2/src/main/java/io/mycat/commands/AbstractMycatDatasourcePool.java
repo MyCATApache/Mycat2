@@ -32,8 +32,8 @@ public  abstract class AbstractMycatDatasourcePool implements MycatDatasourcePoo
 
     public abstract Future<NewMycatConnection> getConnection();
 
-    public abstract Integer getAvailableNumber();
-    public abstract Integer getUsedNumber();
+    public abstract int getAvailableNumber();
+    public abstract int getUsedNumber();
     public String getTargetName() {
         return targetName;
     }

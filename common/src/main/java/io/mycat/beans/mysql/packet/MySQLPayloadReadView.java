@@ -122,7 +122,7 @@ public interface MySQLPayloadReadView {
         if (length == 0) {
             return java.sql.Date.valueOf(LocalDate.of(0, 0, 0));
         } else if (length == 4) {
-            return java.sql.Date.valueOf(LocalDate.of((int) readFixInt(2), 0, 0));
+            return java.sql.Date.valueOf(LocalDate.of((int) readFixInt(2), (int)readFixInt(1), (int)readFixInt(1)));
         }
         int year = (int) readFixInt(2);
         int month = readByte() & 0xff;

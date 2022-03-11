@@ -28,11 +28,15 @@ import io.mycat.monitor.ThreadMycatConnectionImplWrapper;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.newquery.NewMycatConnectionImpl;
 import io.vertx.core.Future;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JdbcDatasourcePoolImpl.class);
+
     public JdbcDatasourcePoolImpl(String targetName) {
         super(targetName);
     }
@@ -45,9 +49,10 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
             DatabaseInstanceEntry stat = DatabaseInstanceEntry.stat(targetName);
             stat.plusCon();
             stat.plusQps();
-            NewMycatConnectionImpl newMycatConnection = new NewMycatConnectionImpl(targetName,defaultConnection.getRawConnection()) {
+            NewMycatConnectionImpl newMycatConnection = new NewMycatConnectionImpl(targetName, defaultConnection.getRawConnection()) {
                 long start;
                 final AtomicBoolean closeFlag = new AtomicBoolean(false);
+
                 @Override
                 public void onSend() {
                     start = System.currentTimeMillis();
@@ -62,7 +67,7 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
 
                 @Override
                 public Future<Void> close() {
-                    if(closeFlag.compareAndSet(false,true)){
+                    if (closeFlag.compareAndSet(false, true)) {
                         stat.decCon();
                         defaultConnection.close();
                     }
@@ -71,32 +76,37 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
 
                 @Override
                 public void abandonConnection() {
-                    if(closeFlag.compareAndSet(false,true)){
+                    if (closeFlag.compareAndSet(false, true)) {
                         stat.decCon();
                         Connection rawConnection = defaultConnection.getRawConnection();
+                        try {
+                            rawConnection.rollback();
+                        } catch (Throwable throwable) {
+                            LOGGER.error("rollback fail", throwable);
+                        }
                         if (rawConnection instanceof DruidPooledConnection) {
-                            DruidPooledConnection connection = (DruidPooledConnection)rawConnection;
+                            DruidPooledConnection connection = (DruidPooledConnection) rawConnection;
                             connection.abandond();
                         }
                         defaultConnection.close();
                     }
                 }
             };
-            return Future.succeededFuture(new ThreadMycatConnectionImplWrapper(stat,newMycatConnection));
+            return Future.succeededFuture(new ThreadMycatConnectionImplWrapper(stat, newMycatConnection));
         } catch (Throwable throwable) {
             return Future.failedFuture(throwable);
         }
     }
 
     @Override
-    public Integer getAvailableNumber() {
+    public int getAvailableNumber() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         JdbcDataSource jdbcDataSource = jdbcConnectionManager.getDatasourceInfo().get(targetName);
         return jdbcDataSource.getMaxCon() - jdbcDataSource.getUsedCount();
     }
 
     @Override
-    public Integer getUsedNumber() {
+    public int getUsedNumber() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         JdbcDataSource jdbcDataSource = jdbcConnectionManager.getDatasourceInfo().get(targetName);
         return jdbcDataSource.getUsedCount();

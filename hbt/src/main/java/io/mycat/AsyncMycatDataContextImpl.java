@@ -44,6 +44,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Getter
@@ -53,7 +54,8 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
     public static int FULL_TABLE_SCAN_LIMIT = 1024;
     public static boolean FULL_TABLE_SCAN_EXCEPTION;
     final Map<String, Future<NewMycatConnection>> transactionConnnectionMap = new HashMap<>();// int transaction
-    final Map<String, LimitQueue> connnectionFutureCollection = new HashMap<>();//not int transaction
+    final Map<String, LimitQueue> connectionlimitMap = new HashMap<>();//not int transaction
+    final List<NewMycatConnection> connectionlList = Collections.synchronizedList(new ArrayList<>());//not int transaction
     final Map<String, List<Observable<Object[]>>> shareObservable = new HashMap<>();
 
 
@@ -64,10 +66,15 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
     }
 
     static class LimitQueue {
-        ArrayList<Future<NewMycatConnection>> queue = new ArrayList<>();
+        ArrayList<LimitQueueItem> queue = new ArrayList<>();
         int index = 0;
 
         int tmpIndex;
+    }
+
+    static class LimitQueueItem {
+        Future<NewMycatConnection> future;
+        AtomicInteger countDown = new AtomicInteger();
     }
 
     public synchronized Future<NewMycatConnection> getConnection(String key) {
@@ -76,20 +83,30 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             return transactionConnnectionMap
                     .computeIfAbsent(key, s -> transactionSession.getConnection(key));
         }
-        int limit = AsyncMycatDataContextImpl.FULL_TABLE_SCAN_LIMIT;
         MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
-        LimitQueue limitQueue = connnectionFutureCollection.computeIfAbsent(key, s -> {
+        int limit = Math.min(AsyncMycatDataContextImpl.FULL_TABLE_SCAN_LIMIT, mySQLManager.getAvailableNumber(key));
+        if (limit < 1) {
+            limit = 1;
+        }
+        LimitQueue limitQueue = connectionlimitMap.computeIfAbsent(key, s -> {
             return new LimitQueue();
         });
 
         int index = limitQueue.queue.size();
         Future<NewMycatConnection> connectionFuture;
         if (index < limit) {
-            connectionFuture = mySQLManager.getConnection(key);
-            limitQueue.queue.add(index, connectionFuture);
+            connectionFuture = mySQLManager.getConnection(key).flatMap(newMycatConnection -> {
+                connectionlList.add(newMycatConnection);
+                return Future.succeededFuture( newMycatConnection);
+            });
+            LimitQueueItem limitQueueItem = new LimitQueueItem();
+            limitQueueItem.future = connectionFuture;
+            limitQueueItem.countDown.incrementAndGet();
+            limitQueue.queue.add(index, limitQueueItem);
         } else {
             limitQueue.tmpIndex = (limitQueue.index++) % limitQueue.queue.size();
-            connectionFuture = limitQueue.queue.get(limitQueue.tmpIndex);
+            LimitQueueItem limitQueueItem = limitQueue.queue.get(limitQueue.tmpIndex);
+            return limitQueueItem.future;
         }
         return connectionFuture;
     }
@@ -100,8 +117,16 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
             transactionConnnectionMap.put(key, connectionFuture);
             return;
         }
-        LimitQueue limitQueue = connnectionFutureCollection.get(key);
-        limitQueue.queue.set(limitQueue.tmpIndex, connectionFuture);
+        LimitQueue limitQueue = connectionlimitMap.get(key);
+        LimitQueueItem limitQueueItem = limitQueue.queue.get(limitQueue.tmpIndex);
+        limitQueueItem.future = connectionFuture.onComplete(newMycatConnectionAsyncResult -> {
+            if (newMycatConnectionAsyncResult.succeeded()) {
+                NewMycatConnection mycatConnection = newMycatConnectionAsyncResult.result();
+                if (limitQueueItem.countDown.decrementAndGet() < 1) {
+                    mycatConnection.close();
+                }
+            }
+        });
     }
 
     public static interface Queryer<T> {
@@ -160,7 +185,7 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
     public synchronized CompositeFuture endFuture() {
         return CompositeFuture.join((List) ImmutableList.builder()
                 .addAll(transactionConnnectionMap.values())
-                .addAll(connnectionFutureCollection.values().stream().flatMap(i -> i.queue.stream()).collect(Collectors.toList())).build());
+                .addAll(connectionlList.stream().map(i->i.close()).collect(Collectors.toList())).build());
     }
 
     public abstract List<Observable<Object[]>> getObservableList(String node);

@@ -75,6 +75,11 @@ public class TestMySQLManagerImpl extends AbstractMySQLManagerImpl {
     }
 
     @Override
+    public int getAvailableNumber(String targetName) {
+        return 0;
+    }
+
+    @Override
     public int getSessionCount(String targetName) {
         return 0;
     }

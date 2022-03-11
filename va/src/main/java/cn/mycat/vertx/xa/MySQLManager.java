@@ -24,7 +24,7 @@ import java.util.Map;
 public interface MySQLManager {
 
     Future<NewMycatConnection> getConnection(String targetName);
-
+    int getAvailableNumber(String targetName);
     int getSessionCount(String targetName);
 
     Map<String, java.sql.Connection> getWriteableConnectionMap();
