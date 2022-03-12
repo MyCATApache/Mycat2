@@ -129,7 +129,14 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
             logParticipants();
             Function<NewMycatConnection, Future<Void>> function = c -> {
                 Future<Void> future = Future.succeededFuture();
-                switch (connectionState.get(c)) {
+                if (connectionState.isEmpty()) {
+                    return Future.succeededFuture();
+                }
+                State state = connectionState.get(c);
+                if (state == null) {
+                    return Future.succeededFuture();
+                }
+                switch (state) {
                     case XA_INITED:
                         return future;
                     case XA_STARTED:
@@ -171,7 +178,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                             //@todo 注册调度中心,定时恢复
                             return Future.failedFuture(message);
                         } catch (Exception e) {
-                            LOGGER.error("",e);
+                            LOGGER.error("", e);
                             return Future.failedFuture(e);
                         }
                     }).onComplete(promise);
@@ -191,7 +198,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                 log.readXARecoveryLog(map);
                 return true;
             } catch (Exception e) {
-                LOGGER.error("",e);
+                LOGGER.error("", e);
             } finally {
                 map.values().forEach(c -> {
                     if (c != null) {
