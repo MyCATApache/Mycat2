@@ -18,9 +18,12 @@ import io.mycat.util.JsonUtil;
 import lombok.Data;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 public class PauseServerHint extends HintBuilder {
+    List<Long> connectionIds = new ArrayList<>();
 
     public static PauseServerHint create() {
         return new PauseServerHint();

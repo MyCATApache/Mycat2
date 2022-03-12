@@ -107,8 +107,8 @@ public class VertxMycatServer implements MycatServer {
     }
 
     @Override
-    public Future<Void> pause(long currentId) {
-        return this.server.pause(currentId);
+    public Future<Void> pause(List<Long> currentIds) {
+        return this.server.pause(currentIds);
     }
 
     @Override
@@ -206,10 +206,10 @@ public class VertxMycatServer implements MycatServer {
         }
 
         @Override
-        public Future<Void> pause(long currentId) {
+        public Future<Void> pause(List<Long> currentIds) {
             this.pause = true;
             return Future.future(promise -> Observable.interval(1, 1, TimeUnit.SECONDS).takeUntil(i -> {
-                        return sessions.stream().filter(s -> s.getDataContext().getSessionId() != currentId).allMatch(s -> s.isPause());
+                        return sessions.stream().filter(s -> !currentIds.contains(s.getDataContext().getSessionId())).allMatch(s -> s.isPause());
                     }).timeout(10, TimeUnit.SECONDS)
                     .subscribe(aLong -> promise.tryComplete(), throwable -> {
                         promise.tryFail(throwable);

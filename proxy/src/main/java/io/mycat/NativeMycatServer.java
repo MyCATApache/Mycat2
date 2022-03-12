@@ -104,7 +104,7 @@ public class NativeMycatServer implements MycatServer {
     }
 
     @Override
-    public Future<Void> pause(long currentId)  {
+    public Future<Void> pause(List<Long> currentIds)  {
         return Future.succeededFuture();
     }
 

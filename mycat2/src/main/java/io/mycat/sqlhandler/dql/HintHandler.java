@@ -473,8 +473,9 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         return response.sendOk();
                     }
                     if ("pauseServer".equalsIgnoreCase(cmd)) {
+                        PauseServerHint pauseServerHint = JsonUtil.from(body, PauseServerHint.class);
                         MycatServer server = MetaClusterCurrent.wrapper(MycatServer.class);
-                        return server.pause(dataContext.getSessionId()).transform(result -> {
+                        return server.pause(pauseServerHint.getConnectionIds()).transform(result -> {
                             if (result.succeeded()){
                                 dataContext.setAffectedRows(1);
                                 return response.sendOk();

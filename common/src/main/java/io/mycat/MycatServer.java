@@ -29,7 +29,7 @@ public interface MycatServer {
 
     void setReadyToCloseSQL(String sql);
 
-    public Future<Void> pause(long currentId);
+    public Future<Void> pause(List<Long> currentIds);
 
     void resume();
 
