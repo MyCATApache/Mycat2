@@ -578,12 +578,13 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     @Override
     public Future<Void> close() {
-        ResultSet resultSet = this.resultSet;
-        if (resultSet != null) {
-            JdbcUtils.close(resultSet);
-        }
-        JdbcUtils.close(connection);
-        return Future.succeededFuture();
+        return future.transform(result -> {
+            if (resultSet != null) {
+                JdbcUtils.close(resultSet);
+            }
+            JdbcUtils.close(connection);
+            return Future.succeededFuture();
+        });
     }
 
     @Override
@@ -592,6 +593,10 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
             DruidPooledConnection connection = (DruidPooledConnection) this.connection;
             JdbcUtils.close(connection.getConnection());
             JdbcUtils.close(connection);
+            DruidPooledConnection druidPooledConnection = (DruidPooledConnection) this.connection;
+            JdbcUtils.close(druidPooledConnection.getConnection());
+            druidPooledConnection.abandond();
+            JdbcUtils.close(druidPooledConnection);
         } else {
             JdbcUtils.close(this.connection);
         }

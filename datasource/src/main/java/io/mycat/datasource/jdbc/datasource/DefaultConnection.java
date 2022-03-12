@@ -106,16 +106,7 @@ public class DefaultConnection implements MycatConnection {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("close {}", connection);
                 }
-                IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
-                ioExecutor.executeBlocking((Handler<Promise<Void>>) promise -> {
-                    try {
-                        connectionManager.closeConnection(DefaultConnection.this);
-                    }catch (Throwable throwable){
-                        LOGGER.error("", throwable);
-                    }finally {
-                        promise.tryComplete();
-                    }
-                });
+                connectionManager.closeConnection(DefaultConnection.this);
             }
         } catch (Exception e) {
             LOGGER.error("", e);
