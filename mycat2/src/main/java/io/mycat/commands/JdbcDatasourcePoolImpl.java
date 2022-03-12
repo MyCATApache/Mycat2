@@ -16,7 +16,6 @@
  */
 package io.mycat.commands;
 
-import com.alibaba.druid.pool.DruidPooledConnection;
 import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
@@ -30,9 +29,6 @@ import io.mycat.newquery.NewMycatConnectionImpl;
 import io.vertx.core.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.sql.Connection;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcDatasourcePoolImpl.class);
@@ -51,7 +47,6 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
             stat.plusQps();
             NewMycatConnectionImpl newMycatConnection = new NewMycatConnectionImpl(targetName, defaultConnection.getRawConnection()) {
                 long start;
-                final AtomicBoolean closeFlag = new AtomicBoolean(false);
 
                 @Override
                 public void onSend() {
@@ -67,28 +62,21 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
 
                 @Override
                 public Future<Void> close() {
-                    if (closeFlag.compareAndSet(false, true)) {
+                    return super.getFuture().transform(result -> {
                         stat.decCon();
+                        JdbcUtils.close(getResultSet());
                         defaultConnection.close();
-                    }
-                    return Future.succeededFuture();
+                        return Future.succeededFuture();
+                    });
                 }
 
                 @Override
                 public void abandonConnection() {
-                    if (closeFlag.compareAndSet(false, true)) {
-                        stat.decCon();
-                        Connection rawConnection = defaultConnection.getRawConnection();
-                        try {
-                            rawConnection.rollback();
-                        } catch (Throwable throwable) {
-                            LOGGER.error("rollback fail", throwable);
-                        }
-                        if (rawConnection instanceof DruidPooledConnection) {
-                            DruidPooledConnection connection = (DruidPooledConnection) rawConnection;
-                            connection.abandond();
-                        }
+                    try{
+                        super.abandonConnection();
                         defaultConnection.close();
+                    }finally {
+                        stat.decCon();
                     }
                 }
             };

@@ -57,7 +57,7 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
 
     @Override
     public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator) {
-        return newMycatConnection.prepareQuery(sql, params,allocator);
+        return newMycatConnection.prepareQuery(sql, params, allocator);
     }
 
     @Override
@@ -127,16 +127,47 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
 
     @Override
     public Future<Void> close() {
-        return newMycatConnection.close();
+        IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
+        return ioExecutor.executeBlocking(promise -> {
+            try {
+                this.stat.plusThread();
+                newMycatConnection.close().onComplete(promise);
+            } catch (Exception e) {
+                promise.tryFail(e);
+            } finally {
+                this.stat.decThread();
+            }
+        });
     }
 
     @Override
     public void abandonConnection() {
-        newMycatConnection.abandonConnection();
+        IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
+        ioExecutor.executeBlocking(promise -> {
+            try {
+                this.stat.plusThread();
+                newMycatConnection.abandonConnection();
+                promise.tryComplete();
+            } catch (Exception e) {
+                promise.tryFail(e);
+            } finally {
+                this.stat.decThread();
+            }
+        });
     }
 
     @Override
     public Future<Void> abandonQuery() {
-        return newMycatConnection.abandonQuery();
+        IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
+        return ioExecutor.executeBlocking(promise -> {
+            try {
+                this.stat.plusThread();
+                newMycatConnection.abandonQuery().onComplete(promise);
+            } catch (Exception e) {
+                promise.tryFail(e);
+            } finally {
+                this.stat.decThread();
+            }
+        });
     }
 }

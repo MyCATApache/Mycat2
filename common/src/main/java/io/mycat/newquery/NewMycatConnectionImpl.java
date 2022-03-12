@@ -401,16 +401,22 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     @Override
     public Future<Void> close() {
-        JdbcUtils.close(connection);
-        return Future.succeededFuture();
+        return future.transform(result -> {
+            if (resultSet != null) {
+                JdbcUtils.close(resultSet);
+            }
+            JdbcUtils.close(connection);
+            return Future.succeededFuture();
+        });
     }
 
     @Override
     public void abandonConnection() {
         if (this.connection instanceof DruidPooledConnection) {
-            DruidPooledConnection connection = (DruidPooledConnection) this.connection;
-            connection.abandond();
-            JdbcUtils.close(connection);
+            DruidPooledConnection druidPooledConnection = (DruidPooledConnection) this.connection;
+            JdbcUtils.close(druidPooledConnection.getConnection());
+            druidPooledConnection.abandond();
+            JdbcUtils.close(druidPooledConnection);
         } else {
             JdbcUtils.close(this.connection);
         }
