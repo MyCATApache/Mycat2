@@ -475,11 +475,16 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     if ("pauseServer".equalsIgnoreCase(cmd)) {
                         PauseServerHint pauseServerHint = JsonUtil.from(body, PauseServerHint.class);
                         MycatServer server = MetaClusterCurrent.wrapper(MycatServer.class);
-                        return server.pause(pauseServerHint.getConnectionIds()).transform(result -> {
-                            if (result.succeeded()){
+
+                        long sessionId = dataContext.getSessionId();
+                        HashSet<Long> set = new HashSet<>();
+                        set.add(sessionId);
+                        set.addAll(Optional.ofNullable(pauseServerHint.getConnectionIds()).orElse(Collections.emptyList()));
+                        return server.pause(new ArrayList<>(set)).transform(result -> {
+                            if (result.succeeded()) {
                                 dataContext.setAffectedRows(1);
                                 return response.sendOk();
-                            }else {
+                            } else {
                                 server.resume();
                                 return response.sendError(result.cause());
                             }
@@ -742,7 +747,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         BinlogSyncHint binlogHint = JsonUtil.from(body, BinlogSyncHint.class);
                         String name = binlogHint.getName();
                         String snapshot = binlogHint.getSnapshotId();
-                        Map<String,BinlogUtil.BinlogArgs> binlogArgsMap = new HashMap<>();
+                        Map<String, BinlogUtil.BinlogArgs> binlogArgsMap = new HashMap<>();
                         if (snapshot != null) {
                             try (DefaultConnection defaultConnection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype());) {
                                 List<Map<String, Object>> maps = JdbcUtils.executeQuery(defaultConnection.getRawConnection(), "select * from mycat.ds_binlog where Id = ?", Arrays.asList(snapshot));
@@ -762,7 +767,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                     if (binlogHint.getConnectTimeout() > 0) {
                                         binlogArgs.setConnectTimeout(binlogHint.getConnectTimeout());
                                     }
-                                    binlogArgsMap.put(datasource,binlogArgs);
+                                    binlogArgsMap.put(datasource, binlogArgs);
                                 }
                             }
                         }
