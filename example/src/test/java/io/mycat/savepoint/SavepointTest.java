@@ -8,6 +8,7 @@ import io.mycat.prototypeserver.mysql.PrototypeService;
 import lombok.SneakyThrows;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ import java.util.function.Consumer;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
+@Ignore
 public class SavepointTest implements MycatTest {
     boolean init = false;
     private static final Logger LOGGER = LoggerFactory.getLogger(SavepointTest.class);
