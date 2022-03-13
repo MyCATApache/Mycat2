@@ -52,7 +52,7 @@ public interface MycatTest {
 
                 dataSource.setLoginTimeout(100000);
                 dataSource.setCheckExecuteTime(true);
-                dataSource.setQueryTimeout(100);
+                dataSource.setQueryTimeout(1000);
                 dataSource.setMaxWait(TimeUnit.SECONDS.toMillis(100));
                 dataSource.setMaxActive(8);
                 return dataSource;
