@@ -1,5 +1,6 @@
 package io.mycat.newquery;
 
+import com.alibaba.druid.pool.DruidConnectionHolder;
 import com.alibaba.druid.pool.DruidPooledConnection;
 import com.alibaba.druid.util.JdbcUtils;
 import com.mysql.cj.result.Field;
@@ -414,9 +415,8 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     public void abandonConnection() {
         if (this.connection instanceof DruidPooledConnection) {
             DruidPooledConnection druidPooledConnection = (DruidPooledConnection) this.connection;
-            JdbcUtils.close(druidPooledConnection.getConnection());
-            druidPooledConnection.abandond();
-            JdbcUtils.close(druidPooledConnection);
+            DruidConnectionHolder connectionHolder = druidPooledConnection.getConnectionHolder();
+            connectionHolder.getDataSource().discardConnection(connectionHolder);
         } else {
             JdbcUtils.close(this.connection);
         }
