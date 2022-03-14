@@ -103,7 +103,7 @@ public class ColocatedPlanner {
             PartitionGroup partitionGroup = colocatedPushDownOptional.get();
             NameMap<Partition> partition = NameMap.immutableCopyOf(partitionGroup.getMap());
             String targetName = partitionGroup.getTargetName();
-            SQLStatement parameterizedStatement = drdsSqlWithParams.getParameterizedStatement().clone();
+            SQLStatement parameterizedStatement = drdsSqlWithParams.getParameterizedStatement();
             Replacer replacer = new Replacer(partition);
             parameterizedStatement.accept(replacer);
             if (replacer.success) {
