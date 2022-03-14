@@ -25,10 +25,10 @@ public class ReadyToCloseSQLHint extends HintBuilder {
     String sql;
 
 
-    public static ReadyToCloseSQLHint create(String sql) {
+    public static String create(String sql) {
         ReadyToCloseSQLHint migrateHint = new ReadyToCloseSQLHint();
         migrateHint.setSql(sql);
-        return migrateHint;
+        return migrateHint.build();
     }
 
     @Override
@@ -41,5 +41,10 @@ public class ReadyToCloseSQLHint extends HintBuilder {
         return MessageFormat.format("/*+ mycat:{0}{1} */;",
                 getCmd(),
                 JsonUtil.toJson(this));
+    }
+
+    public static void main(String[] args) {
+        String s = create("select 'x'");
+        System.out.println(s);
     }
 }

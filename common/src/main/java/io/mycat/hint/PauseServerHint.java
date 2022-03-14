@@ -25,8 +25,8 @@ import java.util.List;
 public class PauseServerHint extends HintBuilder {
     List<Long> connectionIds = new ArrayList<>();
 
-    public static PauseServerHint create() {
-        return new PauseServerHint();
+    public static String create() {
+        return new PauseServerHint().build();
     }
 
     @Override
@@ -39,5 +39,9 @@ public class PauseServerHint extends HintBuilder {
         return MessageFormat.format("/*+ mycat:{0}{1} */;",
                 getCmd(),
                 JsonUtil.toJson(this));
+    }
+
+    public static void main(String[] args) {
+        System.out.println(PauseServerHint.create());
     }
 }
