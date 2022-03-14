@@ -5,10 +5,7 @@ import io.mycat.assemble.MycatTest;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
 import io.mycat.hint.ShowTopologyHint;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
@@ -19,6 +16,7 @@ import java.util.Map;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
+@Ignore
 public class CreateGsiTest implements MycatTest {
     boolean init = false;
 
