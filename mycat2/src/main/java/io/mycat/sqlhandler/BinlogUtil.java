@@ -150,14 +150,14 @@ public class BinlogUtil {
         builder.addColumnInfo("NAME", JDBCType.VARCHAR);
         builder.addColumnInfo("INFO", JDBCType.VARCHAR);
         builder.addColumnInfo("START_TIME", JDBCType.TIMESTAMP);
-
+        builder.addColumnInfo("CONNECTION_IDS", JDBCType.VARCHAR);
         for (BinlogScheduler scheduler : schedulers) {
             String id = scheduler.getId();
             String name = scheduler.getName();
             Map<String, Map<String, List<Partition>>> listMap = scheduler.getListMap();
             LocalDateTime startTime = scheduler.getStartTime();
-
-            builder.addObjectRowPayload(Arrays.asList(id, name, listMap.toString(), startTime));
+            String connection_ids = scheduler.getBinlogResArrayList().stream().map(i -> i.getConnectionId() + "").collect(Collectors.joining(","));
+            builder.addObjectRowPayload(Arrays.asList(id, name, listMap.toString(), startTime,connection_ids));
         }
         return builder.build();
     }
@@ -208,18 +208,19 @@ public class BinlogUtil {
         Map<String, Map<String, List<Partition>>> listMap;
         Future<Void> future;
         LocalDateTime startTime;
-        private List<MigrateUtil.MigrateController> controllers;
-
+        List<MigrateUtil.MigrateController> controllers;
+        List<BinlogRes> binlogResArrayList;
         public static BinlogScheduler of(
                 String id,
                 String name,
                 Map<String, Map<String, List<Partition>>> listMap,
-                List<MigrateUtil.MigrateController> controllers
-        ) {
+                List<MigrateUtil.MigrateController> controllers,
+                List<BinlogRes> binlogResArrayList) {
             return new BinlogScheduler(id, name, listMap,
                     CompositeFuture.join(controllers.stream().map(i -> i.getFuture()).collect(Collectors.toList())).mapEmpty(),
                     LocalDateTime.now(),
-                    controllers);
+                    controllers,
+                    binlogResArrayList);
         }
 
     }
@@ -230,9 +231,14 @@ public class BinlogUtil {
         private volatile String binlogFilename;
         private volatile long binlogPosition;
     }
+    @Data
+    @ToString
+    public static class BinlogRes{
+        private long connectionId;
+    }
 
 
-    public static Flowable<ParamSQL> observe(BinlogArgs binlogArgs,String targetName, List<Partition> partitions) {
+    public static Flowable<ParamSQL> observe(BinlogArgs binlogArgs,BinlogRes binlogRes,String targetName, List<Partition> partitions) {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
 
         DatasourceConfig datasourceConfig = jdbcConnectionManager.getConfigAsMap().get(targetName);
@@ -582,6 +588,7 @@ public class BinlogUtil {
 
                     });
                     client.connect(5000);
+                    binlogRes.setConnectionId(client.getConnectionId());
                 } catch (Throwable throwable) {
                     emitter.tryOnError(throwable);
                 }

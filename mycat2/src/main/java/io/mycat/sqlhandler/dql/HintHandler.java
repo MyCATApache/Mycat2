@@ -748,6 +748,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         String name = binlogHint.getName();
                         String snapshot = binlogHint.getSnapshotId();
                         Map<String, BinlogUtil.BinlogArgs> binlogArgsMap = new HashMap<>();
+                        List<BinlogUtil.BinlogRes> binlogResArrayList = new ArrayList<>();
                         if (snapshot != null) {
                             try (DefaultConnection defaultConnection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype());) {
                                 List<Map<String, Object>> maps = JdbcUtils.executeQuery(defaultConnection.getRawConnection(), "select * from mycat.ds_binlog where Id = ?", Arrays.asList(snapshot));
@@ -864,9 +865,12 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                             infoCollector.put(inputTable.getUniqueName(), listMap);
 
                             List<Flowable<BinlogUtil.ParamSQL>> flowables = new ArrayList<>();
+
                             for (Map.Entry<String, List<Partition>> e : listMap.entrySet()) {
                                 BinlogUtil.BinlogArgs binlogArgs = binlogArgsMap.get(e.getKey());
-                                flowables.add(BinlogUtil.observe(binlogArgs, e.getKey(), e.getValue()).subscribeOn(Schedulers.io()));
+                                BinlogUtil.BinlogRes binlogRes = new BinlogUtil.BinlogRes();
+                                binlogResArrayList.add(binlogRes);
+                                flowables.add(BinlogUtil.observe(binlogArgs, binlogRes, e.getKey(), e.getValue()).subscribeOn(Schedulers.io()));
                             }
                             Flowable<BinlogUtil.ParamSQL> merge = flowables.size() == 1 ? flowables.get(0) : Flowable.merge(flowables, flowables.size());
                             merge = merge.map(paramSQL -> {
@@ -879,7 +883,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                             MigrateUtil.MigrateController migrateController = MigrateUtil.writeSql(output, merge);
                             migrateControllers.add(migrateController);
                         }
-                        BinlogUtil.BinlogScheduler scheduler = BinlogUtil.BinlogScheduler.of(UUID.randomUUID().toString(), binlogHint.getName(), infoCollector, migrateControllers);
+                        BinlogUtil.BinlogScheduler scheduler = BinlogUtil.BinlogScheduler.of(UUID.randomUUID().toString(), binlogHint.getName(), infoCollector, migrateControllers,binlogResArrayList);
                         BinlogUtil.register(scheduler);
                         return response.sendResultSet(BinlogUtil.list(Collections.singletonList(scheduler)));
                     }
