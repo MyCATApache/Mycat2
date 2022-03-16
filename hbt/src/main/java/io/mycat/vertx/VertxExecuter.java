@@ -28,8 +28,6 @@ import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.visitor.MycatSQLEvalVisitorUtils;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import io.mycat.Process;
 import io.mycat.*;
 import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlObjectArrayRow;
@@ -55,10 +53,8 @@ import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.Tuple;
 import lombok.*;
-import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.runtime.ArrayBindable;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -319,6 +315,9 @@ public class VertxExecuter {
         final Function<Map.Entry<key, SQLInsertStatement>, EachSQL> finalFunction = i -> {
             key key = i.getKey();
             SQLInsertStatement value = i.getValue();
+            if(value.getValuesList().isEmpty()){
+                return null;
+            }
             return new EachSQL(key.getTarget(), value.toString(), Collections.emptyList());
         };
         LinkedList<EachSQL> res = new LinkedList<>();
@@ -357,6 +356,9 @@ public class VertxExecuter {
                     valuesClause.accept(mySqlASTVisitorAdapter);
 
                     if (nowInsertStatement.getValuesList().size() >= batchSize) {
+                        if(nowInsertStatement.getValuesList().isEmpty()){
+                            continue;
+                        }
                         EachSQL e = finalFunction.apply(new AbstractMap.SimpleEntry(key, nowInsertStatement.clone()));
                         list.add(e);
                         nowInsertStatement.getValuesList().clear();
@@ -369,7 +371,7 @@ public class VertxExecuter {
                 res.add(eachSQL);
             }
         }
-        res.addAll(map.entrySet().stream().map(finalFunction).collect(Collectors.toList()));
+        res.addAll(map.entrySet().stream().map(finalFunction).filter(i->i!=null).collect(Collectors.toList()));
         return res;
     }
 

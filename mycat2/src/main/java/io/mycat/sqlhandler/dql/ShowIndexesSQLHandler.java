@@ -93,18 +93,18 @@ public class ShowIndexesSQLHandler extends AbstractSQLHandler<SQLShowIndexesStat
         }
 
         return generateSimpleSQL(Arrays.asList(
-                new String[]{"TABLE_NAME", "Table"},
+                new String[]{"TABLE_NAME", "`Table`"},
                 new String[]{"NON_UNIQUE", "Non_unique"},
                 new String[]{"INDEX_NAME", "Key_name"},
                 new String[]{"SEQ_IN_INDEX", "Seq_in_index"},
                 new String[]{"COLUMN_NAME", "Column_name"},
-                new String[]{"COLLATION", "Collation"},
+                new String[]{"COLLATION", "`Collation`"},
                 new String[]{"CARDINALITY", "Cardinality"},
                 new String[]{"SUB_PART", "Sub_part"},
                 new String[]{"PACKED", "Packed"},
-                new String[]{"NULLABLE", "Null"},
+                new String[]{"NULLABLE", "`Null`"},
                 new String[]{"INDEX_TYPE", "Index_type"},
-                new String[]{"COMMENT", "Comment"},
+                new String[]{"COMMENT", "`Comment`"},
                 new String[]{"INDEX_COMMENT", "Index_comment"}
         ), "information_schema", "statistics", where0, Optional.ofNullable(where).map(i -> i.toString()).orElse(null), null).toString();
     }
