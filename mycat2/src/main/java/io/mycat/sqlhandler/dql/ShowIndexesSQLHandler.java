@@ -102,7 +102,7 @@ public class ShowIndexesSQLHandler extends AbstractSQLHandler<SQLShowIndexesStat
                 new String[]{"CARDINALITY", "Cardinality"},
                 new String[]{"SUB_PART", "Sub_part"},
                 new String[]{"PACKED", "Packed"},
-                new String[]{"NULLABLE", "Null"},
+                new String[]{"NULLABLE", "`Null`"},
                 new String[]{"INDEX_TYPE", "Index_type"},
                 new String[]{"COMMENT", "Comment"},
                 new String[]{"INDEX_COMMENT", "Index_comment"}
