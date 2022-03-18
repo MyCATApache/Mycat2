@@ -160,6 +160,7 @@ public class PartitionByDateEx extends Mycat1xSingleValueRuleFunction {
         setsEndDate((String) properties.get("endDate"));
         setsPartionDay(Objects.toString(properties.get("partionDay")));
         setsNaturalDay(Objects.toString(properties.get("naturalDay")));
+        init();
     }
 
     @Override

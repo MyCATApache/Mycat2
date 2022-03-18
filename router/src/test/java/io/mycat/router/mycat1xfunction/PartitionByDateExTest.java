@@ -142,7 +142,7 @@ public class PartitionByDateExTest {
 
 
         //4、顺便开启开始时间,结束时间超过29天 PartionDay=1
-        partition.setsNaturalDay("1");
+        partition.setsNaturalDay("0");
         partition.setsBeginDate("2021-01-01");
         partition.setsPartionDay("10");
         partition.init();

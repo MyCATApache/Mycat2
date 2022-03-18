@@ -1620,4 +1620,38 @@ public class UserCaseTest implements MycatTest {
             System.out.println();
         }
     }
+
+    @Test
+    public void case2022318() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
+
+            execute(mycatConnection, RESET_CONFIG);
+            execute(mycatConnection, "  CREATE DATABASE db1;");
+            execute(mycatConnection, " /*+ mycat:createTable{\n" +
+                    "  \"schemaName\":\"db1\",\n" +
+                    "  \"shardingTable\":{\n" +
+                    "    \"createTableSQL\":\"CREATE TABLE db1.`sharding` (\\n  `id` bigint NOT NULL AUTO_INCREMENT,\\n  `user_id` varchar(100) DEFAULT NULL,\\n  `create_time` date DEFAULT NULL,\\n  `fee` decimal(10,0) DEFAULT NULL,\\n  `days` int DEFAULT NULL,\\n  `blob` longblob,\\n  PRIMARY KEY (`id`),\\n  KEY `id` (`id`)\\n) ENGINE=InnoDB  DEFAULT CHARSET=utf8\",\n" +
+                    "    \"function\":{\n" +
+                    "      \"clazz\":\"io.mycat.router.mycat1xfunction.PartitionByDateEx\",\n" +
+                    "      \"properties\":{\n" +
+                    "        \"beginDate\":\"2021-01-01\",\n" +
+                    "        \"dateFormat\":\"yyyy-MM-dd\",\n" +
+                    "        \"partionDay\":10,\n" +
+                    "        \"columnName\":\"create_time\",\n" +
+                    "        \"naturalDay\":\"0\"\n" +
+                    "      }\n" +
+                    "    },\n" +
+                    "    \"partition\":{\n" +
+                    "      \"schemaNames\":\"db1\",\n" +
+                    "      \"tableNames\":\"sharding_$0-72\",\n" +
+                    "      \"targetNames\":\"prototype\"\n" +
+                    "    }\n" +
+                    "  },\n" +
+                    "  \"tableName\":\"sharding\"\n" +
+                    "} */;");
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, "explain           INSERT INTO db1.sharding VALUES (null, 'test1', '2021-01-01', 2, 3, NULL);");
+            List<Map<String, Object>> maps1 = executeQuery(mycatConnection, "explain           INSERT INTO db1.sharding VALUES (null, 'test1', '2022-01-01', 2, 3, NULL);");
+            System.out.println();
+        }
+    }
 }
