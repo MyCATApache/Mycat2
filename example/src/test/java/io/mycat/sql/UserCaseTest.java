@@ -1649,8 +1649,10 @@ public class UserCaseTest implements MycatTest {
                     "  },\n" +
                     "  \"tableName\":\"sharding\"\n" +
                     "} */;");
-            List<Map<String, Object>> maps = executeQuery(mycatConnection, "explain           INSERT INTO db1.sharding VALUES (null, 'test1', '2021-01-01', 2, 3, NULL);");
-            List<Map<String, Object>> maps1 = executeQuery(mycatConnection, "explain           INSERT INTO db1.sharding VALUES (null, 'test1', '2022-01-01', 2, 3, NULL);");
+            List<Map<String, Object>> first = executeQuery(mycatConnection, "explain           INSERT INTO db1.sharding VALUES (null, 'test1', '2021-01-01', 2, 3, NULL);");
+            Assert.assertTrue(first.toString().contains("db1.sharding_0"));
+            List<Map<String, Object>> second = executeQuery(mycatConnection, "explain           INSERT INTO db1.sharding VALUES (null, 'test1', '2022-01-01', 2, 3, NULL);");
+            Assert.assertTrue(second.toString().contains("db1.sharding_36"));
             System.out.println();
         }
     }
