@@ -42,6 +42,7 @@ import io.mycat.calcite.spm.QueryPlanner;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
+import io.mycat.config.ServerConfig;
 import io.mycat.newquery.MysqlCollector;
 import io.mycat.newquery.NewMycatConnection;
 import io.reactivex.rxjava3.core.Observable;
@@ -69,7 +70,7 @@ import java.util.stream.Collectors;
 
 public class VertxExecuter {
     private static final Logger LOGGER = LoggerFactory.getLogger(VertxExecuter.class);
-
+    private static int rewriteinsertbatchedstatementbatch = !MetaClusterCurrent.exist(ServerConfig.class) ? 1000 : MetaClusterCurrent.wrapper(ServerConfig.class).getRewriteInsertBatchedStatementBatch();
 
     public static Future<long[]> runUpdate(Future<NewMycatConnection> sqlConnectionFuture, String sql, List<Object> params) {
         return sqlConnectionFuture.flatMap(c -> c.update(sql, params))
@@ -298,8 +299,21 @@ public class VertxExecuter {
         }
     }
 
-    public static List<EachSQL> rewriteInsertBatchedStatements(Iterable<EachSQL> eachSQLs) {
-        return rewriteInsertBatchedStatements(eachSQLs, 1000);
+    public static List<EachSQL> rewriteInsertBatchedStatements(List<EachSQL> eachSQLs) {
+        if (rewriteinsertbatchedstatementbatch < 2) {
+            return eachSQLs;
+        }
+        return rewriteInsertBatchedStatements(eachSQLs, rewriteinsertbatchedstatementbatch);
+    }
+
+
+    public static void main(String[] args) {
+        List<EachSQL> eachSQLS = Arrays.asList(
+                new EachSQL("c0", "INSERT INTO a (id) VALUES (?), (?), (?)", Arrays.asList(1, 2, 3)),
+                new EachSQL("c0", "INSERT INTO a (id) VALUES (?), (?), (?)", Arrays.asList(4, 5, 6)
+                ));
+        List<EachSQL> eachSQLS1 = rewriteInsertBatchedStatements(eachSQLS, 3);
+        System.out.println();
     }
 
     public static List<EachSQL> rewriteInsertBatchedStatements(Iterable<EachSQL> eachSQLs, int batchSize) {
@@ -315,7 +329,7 @@ public class VertxExecuter {
         final Function<Map.Entry<key, SQLInsertStatement>, EachSQL> finalFunction = i -> {
             key key = i.getKey();
             SQLInsertStatement value = i.getValue();
-            if(value.getValuesList().isEmpty()){
+            if (value.getValuesList().isEmpty()) {
                 return null;
             }
             return new EachSQL(key.getTarget(), value.toString(), Collections.emptyList());
@@ -335,7 +349,7 @@ public class VertxExecuter {
                 key key = new key(target, sql);
 
                 final SQLInsertStatement nowInsertStatement = map.computeIfAbsent(key, key1 -> {
-                    SQLInsertStatement clone = insertStatement.clone();
+                    SQLInsertStatement clone = (SQLInsertStatement) SQLUtils.parseSingleMysqlStatement(sql);
                     clone.getValuesList().clear();
                     return clone;
                 });
@@ -356,10 +370,10 @@ public class VertxExecuter {
                     valuesClause.accept(mySqlASTVisitorAdapter);
 
                     if (nowInsertStatement.getValuesList().size() >= batchSize) {
-                        if(nowInsertStatement.getValuesList().isEmpty()){
+                        if (nowInsertStatement.getValuesList().isEmpty()) {
                             continue;
                         }
-                        EachSQL e = finalFunction.apply(new AbstractMap.SimpleEntry(key, nowInsertStatement.clone()));
+                        EachSQL e = new EachSQL(key.getTarget(), nowInsertStatement.toString(), Collections.emptyList());
                         list.add(e);
                         nowInsertStatement.getValuesList().clear();
                     } else {
@@ -371,7 +385,7 @@ public class VertxExecuter {
                 res.add(eachSQL);
             }
         }
-        res.addAll(map.entrySet().stream().map(finalFunction).filter(i->i!=null).collect(Collectors.toList()));
+        res.addAll(map.entrySet().stream().map(finalFunction).filter(i -> i != null).collect(Collectors.toList()));
         return res;
     }
 
