@@ -16,7 +16,7 @@ public class PartitionByDateTest {
         PartitionByDate partition = new PartitionByDate();
 
         Map<String, Object> prot = new HashMap<>();
-        prot.put("columnValue", "id");
+        prot.put("columnName", "id");
         prot.put("beginDate", "2014-01-01");
         prot.put("endDate", null);
         prot.put("partionDay", "10");
@@ -123,5 +123,26 @@ public class PartitionByDateTest {
         partition.calculateIndex("2021-02-23 15:25:29.0");
         partition.calculateIndex("2021-02-23 15:28:19.632");
         partition.calculateIndex("2021-02-23 15:25:29.0");
+
+        //////////////////////////////////////////
+        prot.clear();
+        //////////////////////////////////////////
+        /**
+         * "beginDate":"2021-01-01 00:00:00",
+         * 				"partionDay":"1",
+         * 				"endDate":"2023-12-31 23:59:59",
+         * 				"dateFormat":"yyyy-MM-dd HH:mm:ss,yyyy-MM-dd,yyyy-M-d HH:mm:ss,yyyy-M-d,yyyy/MM/dd HH:mm:ss,yyyy/MM/dd",
+         * 				"columnName":"time"
+         */
+
+        prot.put("beginDate", " 2021-01-01 00:00:00 ");
+        prot.put("endDate", "2023-01-01 00:00:00 ");
+        prot.put("partionDay", "10");
+        prot.put("dateFormat", "yyyy-MM-dd HH:mm:ss,yyyy-MM-dd,yyyy-M-d HH:mm:ss,yyyy-M-d,yyyy/MM/dd HH:mm:ss,yyyy/MM/dd,yyyy/MM/dd HH:mm:ss.ss.SSSSSS");
+        prot.put("columnName", "time");
+        partition.init(shardingTableHandler, prot, Collections.emptyMap());
+        int i1 = partition.calculateIndex(" 2021-01-01 00:00:00");
+        int i = partition.calculateIndex("2022-01-01 00:00:00");
+        System.out.println();
     }
 }

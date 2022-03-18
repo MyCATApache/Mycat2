@@ -35,6 +35,7 @@
       "taskTimeout":5,
       "timeUnit":"MINUTES"
     },
+    "rewriteInsertBatchedStatementBatch": 1000,
     "ignoreCast": true
   }
 }
