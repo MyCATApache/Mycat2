@@ -140,5 +140,14 @@ public class PartitionByDateExTest {
         Assert.assertEquals(true, 30 == partition.calculateIndex("2018-01-31"));
         System.out.println("------------success!----");
 
+
+        //4、顺便开启开始时间,结束时间超过29天 PartionDay=1
+        partition.setsNaturalDay("1");
+        partition.setsBeginDate("2021-01-01");
+        partition.setsPartionDay("10");
+        partition.init();
+        Assert.assertEquals(0,partition.calculateIndex("2021-01-01"));
+        Assert.assertEquals(36, partition.calculateIndex("2022-01-01"));
+        System.out.println("------------success!----");
     }
 }
