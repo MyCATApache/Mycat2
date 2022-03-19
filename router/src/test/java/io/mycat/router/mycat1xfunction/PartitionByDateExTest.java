@@ -147,7 +147,7 @@ public class PartitionByDateExTest {
         partition.setsPartionDay("10");
         partition.init();
         Assert.assertEquals(0,partition.calculateIndex("2021-01-01"));
-        Assert.assertEquals(36, partition.calculateIndex("2022-01-01"));
+        Assert.assertEquals(365, partition.calculateIndex("2022-01-01"));
         System.out.println("------------success!----");
     }
 }
