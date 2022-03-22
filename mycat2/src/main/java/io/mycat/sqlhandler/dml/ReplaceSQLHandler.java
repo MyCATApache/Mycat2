@@ -32,7 +32,6 @@ public class ReplaceSQLHandler extends AbstractSQLHandler<SQLReplaceStatement> {
 
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLReplaceStatement> request, MycatDataContext dataContext, Response response) {
-        SQLExprTableSource tableSource = request.getAst().getTableSource();
-        return updateHandler(request.getAst(),dataContext,tableSource,response);
+        return updateHandler(request.getAst(),dataContext,request.getAst().getTableSource(),response);
     }
 }
