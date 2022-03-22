@@ -1622,6 +1622,18 @@ public class UserCaseTest implements MycatTest {
     }
 
     @Test
+    public void case2022321() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
+
+            execute(mycatConnection, RESET_CONFIG);
+            execute(mycatConnection, "  CREATE DATABASE db1;");
+            execute(mycatConnection, "create table db1.v_int(`c`  tinyint(1) NULL )");
+             execute(mycatConnection, "INSERT INTO db1.v_int VALUES (1);");
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, "select * from  db1.v_int");
+            System.out.println();
+        }
+    }
+    @Test
     public void case2022318() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT);) {
 
