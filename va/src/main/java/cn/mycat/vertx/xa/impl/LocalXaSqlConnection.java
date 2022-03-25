@@ -17,6 +17,7 @@ package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.XaLog;
+import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.newquery.NewMycatConnection;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -33,9 +34,9 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
     volatile NewMycatConnection localSqlConnection = null;
     volatile String targetName;
 
-    public LocalXaSqlConnection(Supplier<MySQLManager> mySQLManagerSupplier,
+    public LocalXaSqlConnection(MySQLIsolation isolation, Supplier<MySQLManager> mySQLManagerSupplier,
                                 XaLog xaLog) {
-        super(mySQLManagerSupplier, xaLog);
+        super(isolation,mySQLManagerSupplier, xaLog);
     }
 
     @Override

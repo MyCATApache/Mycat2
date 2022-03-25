@@ -114,15 +114,18 @@ public class MycatDataContextImpl implements MycatDataContext {
 
     @Override
     public void switchTransaction(TransactionType transactionSessionType) {
+        int transcationIsolationLevel = Optional.ofNullable(user).map(i->i.getUserConfig()).map(i -> i.getIsolation()).orElse(3);
+        MySQLIsolation mySQLIsolation = MySQLIsolation.values()[transcationIsolationLevel - 1];
         Objects.requireNonNull(transactionSessionType);
         TransactionSession transactionSession = null;
         XaSqlConnection connection;
+
         switch (transactionSessionType) {
             case PROXY_TRANSACTION_TYPE:
-                connection = new LocalSqlConnection(() -> MetaClusterCurrent.wrapper(MySQLManager.class), MetaClusterCurrent.wrapper(XaLog.class));
+                connection = new LocalSqlConnection(mySQLIsolation,() -> MetaClusterCurrent.wrapper(MySQLManager.class), MetaClusterCurrent.wrapper(XaLog.class));
                 break;
             case JDBC_TRANSACTION_TYPE:
-                connection = new LocalXaSqlConnection(() -> MetaClusterCurrent.wrapper(MySQLManager.class), MetaClusterCurrent.wrapper(XaLog.class));
+                connection = new LocalXaSqlConnection(mySQLIsolation,() -> MetaClusterCurrent.wrapper(MySQLManager.class), MetaClusterCurrent.wrapper(XaLog.class));
                 break;
             default:
                 throw new IllegalStateException("Unexpected transaction type: " + transactionSessionType);

@@ -21,6 +21,7 @@ import cn.mycat.vertx.xa.SavepointSqlConnection;
 import cn.mycat.vertx.xa.XaLog;
 import cn.mycat.vertx.xa.XaSqlConnection;
 import cn.mycat.vertx.xa.impl.LocalSqlConnection;
+import io.mycat.beans.mysql.MySQLIsolation;
 
 import java.util.Arrays;
 import java.util.function.BiFunction;
@@ -32,7 +33,7 @@ public class LocalSavepointTest extends BaseSavepointSuite {
                 , demoConfig("ds2", 3307))), new BiFunction<MySQLManager, XaLog, XaSqlConnection>() {
             @Override
             public XaSqlConnection apply(MySQLManager mySQLManager, XaLog xaLog) {
-                return  new SavepointSqlConnection(new LocalSqlConnection(()->mySQLManager, xaLog));
+                return  new SavepointSqlConnection(new LocalSqlConnection(MySQLIsolation.DEFAULT,()->mySQLManager, xaLog));
             }
         });
     }
