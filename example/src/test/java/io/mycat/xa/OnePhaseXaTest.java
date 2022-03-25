@@ -20,6 +20,7 @@ import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.XaLog;
 import cn.mycat.vertx.xa.XaSqlConnection;
 import cn.mycat.vertx.xa.impl.OnePhaseXaSqlConnection;
+import io.mycat.beans.mysql.MySQLIsolation;
 
 import java.util.Arrays;
 import java.util.function.BiFunction;
@@ -31,7 +32,7 @@ public class OnePhaseXaTest extends XaTestSuite {
                 , demoConfig("ds2", 3307))), new BiFunction<MySQLManager, XaLog, XaSqlConnection>() {
             @Override
             public XaSqlConnection apply(MySQLManager mySQLManager, XaLog xaLog) {
-                return new OnePhaseXaSqlConnection(()->mySQLManager, xaLog);
+                return new OnePhaseXaSqlConnection(MySQLIsolation.DEFAULT,()->mySQLManager, xaLog);
             }
         });
     }

@@ -17,6 +17,7 @@ package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.*;
 import com.alibaba.druid.util.JdbcUtils;
+import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.newquery.SqlResult;
 import io.vertx.core.CompositeFuture;
@@ -46,8 +47,8 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     protected volatile String xid;
 
 
-    public BaseXaSqlConnection(Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog) {
-        super(xaLog);
+    public BaseXaSqlConnection(MySQLIsolation isolation, Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog) {
+        super(isolation,xaLog);
         this.mySQLManagerSupplier = mySQLManagerSupplier;
     }
 

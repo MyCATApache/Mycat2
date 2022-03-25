@@ -15,7 +15,7 @@ public class UserConfig implements KVObject {
     private String transactionType = "proxy";
     private String dialect = "mysql";
     private String schema;
-
+    private int isolation = 3;
     public static void main(String[] args) {
         String s = JsonUtil.toJson(new UserConfig());
         System.out.println(s);

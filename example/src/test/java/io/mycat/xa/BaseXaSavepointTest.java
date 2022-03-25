@@ -22,6 +22,7 @@ import cn.mycat.vertx.xa.XaLog;
 import cn.mycat.vertx.xa.XaSqlConnection;
 import cn.mycat.vertx.xa.impl.BaseXaSqlConnection;
 import com.google.gson.annotations.SerializedName;
+import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.newquery.RowSet;
 import io.vertx.core.AsyncResult;
@@ -44,7 +45,7 @@ public class BaseXaSavepointTest extends BaseSavepointSuite {
                 , demoConfig("ds2", 3307))), new BiFunction<MySQLManager, XaLog, XaSqlConnection>() {
             @Override
             public XaSqlConnection apply(MySQLManager mySQLManager, XaLog xaLog) {
-                return new SavepointSqlConnection(new BaseXaSqlConnection(() -> mySQLManager, xaLog));
+                return new SavepointSqlConnection(new BaseXaSqlConnection(MySQLIsolation.DEFAULT,() -> mySQLManager, xaLog));
             }
         });
     }

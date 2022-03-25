@@ -18,6 +18,7 @@ package cn.mycat.vertx.xa.impl;
 import cn.mycat.vertx.xa.ImmutableCoordinatorLog;
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.XaLog;
+import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.newquery.NewMycatConnection;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -43,8 +44,8 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
     protected final List<Future<Void>> closeList = new CopyOnWriteArrayList<>();
     protected final Supplier<MySQLManager> mySQLManagerSupplier;
 
-    public LocalSqlConnection(Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog) {
-        super(xaLog);
+    public LocalSqlConnection(MySQLIsolation isolation, Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog) {
+        super(isolation,xaLog);
         this.mySQLManagerSupplier = mySQLManagerSupplier;
     }
 

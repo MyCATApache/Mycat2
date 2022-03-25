@@ -31,7 +31,8 @@ public abstract class AbstractXaSqlConnection implements XaSqlConnection {
     protected final XaLog log;
     protected MySQLIsolation isolation = MySQLIsolation.DEFAULT;
 
-    public AbstractXaSqlConnection(XaLog xaLog) {
+    public AbstractXaSqlConnection(MySQLIsolation isolation,XaLog xaLog) {
+        this.isolation = isolation;
         this.log = xaLog;
     }
 
