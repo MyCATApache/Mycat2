@@ -50,11 +50,11 @@ public class DefaultConnection implements MycatConnection {
         this.connection = connection;
         this.jdbcDataSource = dataSource;
         this.connectionManager = connectionManager;
-        if (autocommit != null) {
-            connection.setAutoCommit(autocommit);
-        }
+//        if (autocommit != null) {
+//            connection.setAutoCommit(autocommit);
+//        }
 //        connection.setReadOnly(readOnly);
-        connection.setTransactionIsolation(transactionIsolation);
+       // connection.setTransactionIsolation(transactionIsolation);
     }
 
 
