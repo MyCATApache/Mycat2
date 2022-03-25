@@ -303,6 +303,7 @@ public class MysqlMetadataManager extends MetadataManager {
             resList.add(new Object[]{"big_tables", "0"});
             resList.add(new Object[]{"big_tables", "*"});
             resList.add(new Object[]{"lower_case_table_names", "1"});
+            resList.add(new Object[]{"max_allowed_packet", "16777216"});
             return Observable.fromIterable(resList);
         }
     });
