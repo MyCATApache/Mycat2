@@ -81,11 +81,11 @@ public class LogicTable {
             SQLStatement createTableAst = SQLUtils.parseSingleMysqlStatement(createTableSQL);
             if (createTableAst instanceof SQLCreateTableStatement) {
                 ((SQLCreateTableStatement) createTableAst).setIfNotExiists(true);
-                ((SQLCreateTableStatement) createTableAst).setSchema(schemaName);
+                ((SQLCreateTableStatement) createTableAst).setSchema("`"+schemaName+"`");
             }
             if (createTableAst instanceof MySqlCreateTableStatement) {
                 ((MySqlCreateTableStatement) createTableAst).setIfNotExiists(true);
-                ((MySqlCreateTableStatement) createTableAst).setSchema(schemaName);
+                ((MySqlCreateTableStatement) createTableAst).setSchema("`"+schemaName+"`");
             }
             if (createTableAst instanceof SQLCreateViewStatement) {
                 ((SQLCreateViewStatement) createTableAst).setIfNotExists(true);
@@ -162,12 +162,12 @@ public class LogicTable {
         if (createTableAst instanceof SQLCreateTableStatement) {
             SQLCreateTableStatement tableStatement = (SQLCreateTableStatement) createTableAst;
             tableStatement.setTableName(tableName);
-            tableStatement.setSchema(schemaName);
+            tableStatement.setSchema("`"+schemaName+"`");
         }
         if (createTableAst instanceof MySqlCreateTableStatement) {
             MySqlCreateTableStatement tableStatement = (MySqlCreateTableStatement) createTableAst;
             tableStatement.setTableName(tableName);
-            tableStatement.setSchema(schemaName);
+            tableStatement.setSchema("`"+schemaName+"`");
         }
         if (createTableAst instanceof SQLCreateViewStatement) {
             SQLExprTableSource tableSource = ((SQLCreateViewStatement) createTableAst).getTableSource();

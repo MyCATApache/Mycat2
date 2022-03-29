@@ -61,8 +61,8 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
         boolean full = ast.isFull();
         SQLExpr where = ast.getWhere();
 
-        List<String[]> strings = full ? Arrays.asList(new String[]{"TABLE_NAME", "Tables_in_" + SQLUtils.normalize(database.getSimpleName())},
-                new String[]{"TABLE_TYPE", "Table_type"}) : Collections.singletonList(new String[]{"TABLE_NAME", "Tables_in_" + SQLUtils.normalize(database.getSimpleName())});
+        List<String[]> strings = full ? Arrays.asList(new String[]{"TABLE_NAME", "`Tables_in_" + SQLUtils.normalize(database.getSimpleName())+"`"},
+                new String[]{"TABLE_TYPE", "Table_type"}) : Collections.singletonList(new String[]{"TABLE_NAME", "`Tables_in_" + SQLUtils.normalize(database.getSimpleName())+"`"});
         return generateSimpleSQL(strings, "INFORMATION_SCHEMA", "TABLES", "TABLE_SCHEMA = '" + SQLUtils.normalize(database.getSimpleName()).toLowerCase()+ "'",
                 Optional.ofNullable(where).map(i -> i.toString()).orElse(null)
                 ,
