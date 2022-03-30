@@ -81,20 +81,20 @@ public class LogicTable {
             SQLStatement createTableAst = SQLUtils.parseSingleMysqlStatement(createTableSQL);
             if (createTableAst instanceof SQLCreateTableStatement) {
                 ((SQLCreateTableStatement) createTableAst).setIfNotExiists(true);
-                ((SQLCreateTableStatement) createTableAst).setSchema("`"+schemaName+"`");
+                ((SQLCreateTableStatement) createTableAst).setSchema("`" + schemaName + "`");
             }
             if (createTableAst instanceof MySqlCreateTableStatement) {
                 ((MySqlCreateTableStatement) createTableAst).setIfNotExiists(true);
-                ((MySqlCreateTableStatement) createTableAst).setSchema("`"+schemaName+"`");
+                ((MySqlCreateTableStatement) createTableAst).setSchema("`" + schemaName + "`");
             }
             if (createTableAst instanceof SQLCreateViewStatement) {
                 ((SQLCreateViewStatement) createTableAst).setIfNotExists(true);
                 SQLExprTableSource tableSource = ((SQLCreateViewStatement) createTableAst).getTableSource();
                 MycatSQLExprTableSourceUtil.setSqlExprTableSource(schemaName, tableSource.getTableName(), tableSource);
             }
-           return Objects.requireNonNull(SQLUtils.toMySqlString(createTableAst));
-        }catch (Throwable throwable){
-          LOGGER.error("",throwable);
+            return Objects.requireNonNull(SQLUtils.toMySqlString(createTableAst));
+        } catch (Throwable throwable) {
+            LOGGER.error("", throwable);
         }
         return createTableSQL;
     }
@@ -107,7 +107,7 @@ public class LogicTable {
                                                  String createTableSQL,
                                                  GlobalTableConfig tableConfigEntry) {
         LogicTable logicTable = new LogicTable(LogicTableType.GLOBAL, schemaName, tableName, columns, indexInfos, createTableSQL);
-        return new GlobalTable(logicTable, backendTableInfos,tableConfigEntry);
+        return new GlobalTable(logicTable, backendTableInfos, tableConfigEntry);
     }
 
     public static TableHandler createNormalTable(String schemaName,
@@ -118,7 +118,7 @@ public class LogicTable {
                                                  String createTableSQL,
                                                  NormalTableConfig tableConfigEntry) {
         LogicTable logicTable = new LogicTable(LogicTableType.NORMAL, schemaName, tableName, columns, indexInfos, createTableSQL);
-        return new NormalTable(logicTable, partition,tableConfigEntry);
+        return new NormalTable(logicTable, partition, tableConfigEntry);
     }
 
     public static ShardingTable createShardingTable(String schemaName,
@@ -131,7 +131,7 @@ public class LogicTable {
                                                     List<ShardingIndexTable> shardingIndexTables,
                                                     ShardingTableConfig tableConfigEntry) {
         LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, tableName, columns, indexInfos, createTableSQL);
-        return new ShardingTable(logicTable, backendTableInfos, function,shardingIndexTables,tableConfigEntry);
+        return new ShardingTable(logicTable, backendTableInfos, function, shardingIndexTables, tableConfigEntry);
     }
 
     public SimpleColumnInfo getColumnByName(String name) {
@@ -161,17 +161,17 @@ public class LogicTable {
         SQLStatement createTableAst = SQLUtils.parseSingleMysqlStatement(sql);
         if (createTableAst instanceof SQLCreateTableStatement) {
             SQLCreateTableStatement tableStatement = (SQLCreateTableStatement) createTableAst;
-            tableStatement.setTableName(tableName);
-            tableStatement.setSchema("`"+schemaName+"`");
+            tableStatement.setTableName("`" + tableName + "`");
+            tableStatement.setSchema("`" + schemaName + "`");
         }
         if (createTableAst instanceof MySqlCreateTableStatement) {
             MySqlCreateTableStatement tableStatement = (MySqlCreateTableStatement) createTableAst;
-            tableStatement.setTableName(tableName);
-            tableStatement.setSchema("`"+schemaName+"`");
+            tableStatement.setTableName("`" + tableName + "`");
+            tableStatement.setSchema("`" + schemaName + "`");
         }
         if (createTableAst instanceof SQLCreateViewStatement) {
             SQLExprTableSource tableSource = ((SQLCreateViewStatement) createTableAst).getTableSource();
-            MycatSQLExprTableSourceUtil.setSqlExprTableSource(schemaName,tableSource.getTableName(),tableSource);
+            MycatSQLExprTableSourceUtil.setSqlExprTableSource(schemaName, tableSource.getTableName(), tableSource);
         }
         return createTableAst.toString();
     }
@@ -179,7 +179,8 @@ public class LogicTable {
     public List<String> getFieldNames() {
         return this.rawColumns.stream().map(i -> i.getColumnName()).collect(Collectors.toList());
     }
+
     public List<String> getShardingKeys() {
-        return this.rawColumns.stream().filter(i->i.isShardingKey()).map(i -> i.getColumnName()).collect(Collectors.toList());
+        return this.rawColumns.stream().filter(i -> i.isShardingKey()).map(i -> i.getColumnName()).collect(Collectors.toList());
     }
 }
