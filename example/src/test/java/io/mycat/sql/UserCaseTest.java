@@ -13,6 +13,7 @@ import io.mycat.util.StringUtil;
 import io.vertx.core.json.Json;
 import org.apache.groovy.util.Maps;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.boot.autoconfigure.quartz.QuartzProperties;
 
@@ -289,6 +290,7 @@ public class UserCaseTest implements MycatTest {
     }
 
     @Test
+    @Ignore
     public void test548() throws Exception {
         try (Connection mycat = getMySQLConnection(DB_MYCAT);) {
             execute(mycat, RESET_CONFIG);
