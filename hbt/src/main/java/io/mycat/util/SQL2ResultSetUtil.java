@@ -45,7 +45,7 @@ public class SQL2ResultSetUtil {
             Connection rawConnection = connection.getRawConnection();
             try(Statement statement = rawConnection.createStatement()){
                 statement.setMaxRows(0);
-                ResultSet resultSet = statement.executeQuery("select * from "+schema+"."+table+" where 0");
+                ResultSet resultSet = statement.executeQuery("select * from `"+schema+"`.`"+table+"` where 0");
                 resultSet.next();
                 return new CopyMycatRowMetaData(new JdbcRowMetaData(resultSet.getMetaData()));
             }

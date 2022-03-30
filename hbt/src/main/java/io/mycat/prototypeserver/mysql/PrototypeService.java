@@ -2117,7 +2117,7 @@ public class PrototypeService {
                 String targetName = backendTableInfo.getTargetName();
                 String targetSchemaTable = backendTableInfo.getTargetSchemaTable();
                 try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
-                    String sql = "SHOW CREATE TABLE " + targetSchemaTable;
+                    String sql = "SHOW CREATE TABLE `" + backendTableInfo.getSchema()+"`.`"+backendTableInfo.getTable()+"`";
                     SQLStatement sqlStatement = null;
                     try (RowBaseIterator rowBaseIterator = connection.executeQuery(sql)) {
                         rowBaseIterator.next();
@@ -2134,7 +2134,7 @@ public class PrototypeService {
                         LOGGER.error("", e);
                     }
                     if (sqlStatement == null || !(sqlStatement instanceof SQLCreateTableStatement)) {
-                        try (RowBaseIterator rowBaseIterator = connection.executeQuery("select * from " + targetSchemaTable + " where 0 limit 0")) {
+                        try (RowBaseIterator rowBaseIterator = connection.executeQuery("select * from `"  + backendTableInfo.getSchema()+"`.`"+backendTableInfo.getTable() + "` where 0 limit 0")) {
                             MycatRowMetaData metaData = rowBaseIterator.getMetaData();
                             String createTableSql = generateSql(schemaName, tableName, metaData.metaData());
                             return Optional.of(createTableSql);
