@@ -30,6 +30,7 @@ import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.sqlfunction.cmpfunction.StrictEqualFunction;
 import io.mycat.calcite.sqlfunction.datefunction.*;
 import io.mycat.calcite.sqlfunction.infofunction.*;
+import io.mycat.calcite.sqlfunction.jsonfunction.SubGtFunction;
 import io.mycat.calcite.sqlfunction.lockfunction.MycatGetLockFunction;
 import io.mycat.calcite.sqlfunction.lockfunction.MycatIsFreeLockFunction;
 import io.mycat.calcite.sqlfunction.lockfunction.MycatReleaseLockFunction;
@@ -276,6 +277,7 @@ public enum MycatCalciteSupport implements Context {
                     build.put("regexp_instr", RegexpInstrFunction.INSTANCE);
                     build.put("regexp_replace", RegexpReplaceFunction.INSTANCE);
                     build.put("not regexp", NotRegexpFunction.INSTANCE);
+                    build.put("->", SubGtFunction.INSTANCE);
 
                     Arrays.asList(
                             UUIDFunction.INSTANCE,
