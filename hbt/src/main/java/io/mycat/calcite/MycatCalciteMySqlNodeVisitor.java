@@ -1266,12 +1266,11 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                         new SQLMethodInvokeExpr("SOUNDEX", null, x.getRight()));
                 eq.accept(this);
                 return false;
-            case Mod:
-
             case SubGt:
             case SubGtGt:
                 sqlNode = SubGtFunction.INSTANCE.createCall(SqlParserPos.ZERO, new SqlNode[]{left, right});
                 return false;
+            case Mod:
             case PoundGt:
 
             case PoundGtGt:
