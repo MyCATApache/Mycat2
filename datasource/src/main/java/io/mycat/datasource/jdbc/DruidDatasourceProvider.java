@@ -77,7 +77,7 @@ public class DruidDatasourceProvider implements DatasourceProvider {
         DataSource finalDataSource;
         if (config.computeType().isJdbc() && !"mysql".equalsIgnoreCase(config.getDbType())) {
             dbType = Optional.ofNullable(dbType).orElse("mysql");
-            DbType dbTypeEnum = DbType.valueOf(dbType);
+            DbType dbTypeEnum = DbType.of(dbType);
             SQLDialect dialect;
             switch (dbTypeEnum) {
                 case jtds:
