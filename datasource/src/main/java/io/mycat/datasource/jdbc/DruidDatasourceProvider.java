@@ -20,7 +20,11 @@ import io.mycat.TransactionSession;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.ServerConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
 
+import javax.sql.DataSource;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -68,8 +72,14 @@ public class DruidDatasourceProvider implements DatasourceProvider {
         if (initSQLs != null) {
             datasource.setConnectionInitSqls(initSQLs);
         }
-
-        return new JdbcDataSource(config, datasource);
+        DataSource finalDataSource;
+        if (config.computeType().isJdbc() && !"mysql".equalsIgnoreCase(config.getDbType())) {
+            DSLContext using = DSL.using(datasource, SQLDialect.MYSQL);
+            finalDataSource = using.parsingDataSource();
+        } else {
+            finalDataSource = datasource;
+        }
+        return new JdbcDataSource(config, finalDataSource);
     }
 
     @Override
