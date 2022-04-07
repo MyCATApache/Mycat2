@@ -1670,4 +1670,52 @@ public class UserCaseTest implements MycatTest {
             System.out.println();
         }
     }
+
+    @Test
+    public void case20220407() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT_PSTMT)) {
+
+
+            execute(mycatConnection, RESET_CONFIG);
+
+            execute(mycatConnection, "DROP DATABASE db1");
+
+
+            execute(mycatConnection, "CREATE DATABASE db1");
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds0",
+                            DB1));
+
+            execute(mycatConnection,
+                    CreateClusterHint.create("c0",
+                            Arrays.asList("ds0"), Collections.emptyList()));
+
+            JdbcUtils.execute(mycatConnection, "CREATE TABLE db1.`company` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY,\n" +
+                    "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int(11) DEFAULT NULL,\n" +
+                    "  `blob` longblob DEFAULT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
+
+            JdbcUtils.execute(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY,\n" +
+                    "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int(11) DEFAULT NULL,\n" +
+                    "  `blob` longblob DEFAULT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n" +
+                    "dbpartition by mod_hash(user_id) dbpartitions 16;");
+
+
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, "SELECT * FROM\tdb1.company WHERE id IN  (SELECT DISTINCT id FROM \tdb1.travelrecord )");
+
+            List<Map<String, Object>> maps1 = executeQuery(mycatConnection, "SELECT * FROM\tdb1.company WHERE id IN  (SELECT DISTINCT fee FROM \tdb1.travelrecord )");
+
+            System.out.println();
+        }
+    }
 }
