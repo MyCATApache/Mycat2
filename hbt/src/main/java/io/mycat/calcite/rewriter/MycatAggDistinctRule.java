@@ -3,6 +3,7 @@ package io.mycat.calcite.rewriter;
 import io.mycat.HintTools;
 import io.mycat.calcite.localrel.LocalAggregate;
 import io.mycat.calcite.logical.MycatView;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
@@ -14,6 +15,8 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.RelBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -22,6 +25,7 @@ import java.util.stream.Collectors;
 import static io.mycat.calcite.localrel.LocalRules.normalize;
 
 public class MycatAggDistinctRule extends RelRule<MycatAggDistinctRule.Config> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatAggDistinctRule.class);
     /**
      * Creates a RelRule.
      *
@@ -33,42 +37,39 @@ public class MycatAggDistinctRule extends RelRule<MycatAggDistinctRule.Config> {
 
     @Override
     public void onMatch(RelOptRuleCall call) {
-        Aggregate topAggregate = call.rel(0);
-        MycatView mycatView = call.rel(2);
-        RelHint lastAggHint = HintTools.getLastPushAggHint(topAggregate.getHints());
-        if (lastAggHint != null) {
-            if ("push_down_agg_distinct".equalsIgnoreCase(lastAggHint.hintName)) {
+        try {
+            Aggregate topAggregate = call.rel(0);
+            MycatView mycatView = call.rel(2);
+            RelHint lastAggHint = HintTools.getLastPushAggHint(topAggregate.getHints());
+            if (lastAggHint != null) {
+                if ("push_down_agg_distinct".equalsIgnoreCase(lastAggHint.hintName)) {
 
-                if (topAggregate.getAggCallList().size() == 1 && topAggregate.getGroupSet().isEmpty()) {
-                    List<AggregateCall> aggCallList = topAggregate.getAggCallList();
-                    if (aggCallList.size() == 1) {
-                        AggregateCall aggregateCall = aggCallList.get(0);
-                        if (aggregateCall.getAggregation().kind == SqlKind.COUNT) {
-                            Aggregate distinctAgg = call.rel(1);
-                            if (distinctAgg.getAggCallList().isEmpty() && !distinctAgg.getGroupSet().isEmpty()) {
-                                opt(call, topAggregate, mycatView);
-                                return;
+                    if (topAggregate.getAggCallList().size() == 1 && topAggregate.getGroupSet().isEmpty()) {
+                        List<AggregateCall> aggCallList = topAggregate.getAggCallList();
+                        if (aggCallList.size() == 1) {
+                            AggregateCall aggregateCall = aggCallList.get(0);
+                            if (aggregateCall.getAggregation().kind == SqlKind.COUNT) {
+                                Aggregate distinctAgg = call.rel(1);
+                                if (distinctAgg.getAggCallList().isEmpty() && !distinctAgg.getGroupSet().isEmpty()) {
+                                    opt(call, topAggregate, mycatView);
+                                    return;
+                                }
                             }
                         }
                     }
+                    Aggregate aggregate = topAggregate;
+                    MycatView input = mycatView;
+                    SQLRBORewriter.aggregate(input, LocalAggregate.create(aggregate, input)).ifPresent(new Consumer<RelNode>() {
+                        @Override
+                        public void accept(RelNode res) {
+                            call.transformTo(normalize(res));
+                        }
+                    });
+                    return;
                 }
-                Aggregate aggregate = topAggregate;
-                MycatView input = mycatView;
-                SQLRBORewriter.aggregate(input, LocalAggregate.create(aggregate, input)).ifPresent(new Consumer<RelNode>() {
-                    @Override
-                    public void accept(RelNode res) {
-                        call.transformTo(normalize(res));
-                    }
-                });
-                return;
             }
-        }
-        if (topAggregate.getAggCallList().isEmpty() && topAggregate.getGroupSets().size() == 1) {
-            RelMetadataQuery metadataQuery = call.getMetadataQuery();
-            if (metadataQuery.areColumnsUnique(mycatView, topAggregate.getGroupSet())) {
-                opt(call, topAggregate, mycatView);
-                return;
-            }
+        }catch (Throwable throwable){
+            LOGGER.debug("MycatAggDistinctRule occurs exception",throwable);
         }
     }
 
