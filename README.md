@@ -17,7 +17,7 @@ github:https://github.com/MyCATApache/Mycat2
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Dev/badge.svg)
 
 
-[v1.21-release](https://github.com/MyCATApache/Mycat2/releases/tag/v1.21-2022-2-18)
+[v1.21-release](https://github.com/MyCATApache/Mycat2/releases/tag/v1.21-2022-4-7)
 
 
 
