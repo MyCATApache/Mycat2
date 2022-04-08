@@ -62,7 +62,9 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
             if (schemaName == null) {
                 return receiver.sendError("unknown schema", MySQLErrorCode.ER_UNKNOWN_ERROR);
             }
-            tableSource.setSchema(schemaName);
+            if (tableSource.getSchema() == null){
+                tableSource.setSchema("`"+schemaName+"`");
+            }
             SchemaHandler schemaHandler;
             MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
             Optional<NameMap<SchemaHandler>> handlerMapOptional = Optional.ofNullable(metadataManager.getSchemaMap());
