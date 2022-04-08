@@ -2219,7 +2219,7 @@ public class PrototypeService {
         }
         JdbcConnectionManager jdbcConnectionManager = jdbcConnectionManagerOptional.get();
         try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
-            RowBaseIterator tableIterator = connection.executeQuery("show tables from " + schemaName);
+            RowBaseIterator tableIterator = connection.executeQuery("show tables from `" + schemaName+"`");
             while (tableIterator.next()) {
                 tables.add(tableIterator.getString(0));
             }
