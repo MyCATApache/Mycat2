@@ -312,8 +312,8 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
                 indexCreateTableStatement.setIfNotExiists(true);
 
                 String indexTableName = tableName + "_" + SQLUtils.normalize(indexDefinition.getName().getSimpleName());
-                indexCreateTableStatement.setTableName(indexTableName);
-                indexCreateTableStatement.setSchema(schemaName);
+                indexCreateTableStatement.setTableName("`" + indexTableName + "`");
+                indexCreateTableStatement.setSchema("`" + schemaName + "`");
                 for (SQLSelectOrderByItem indexColumn : indexDefinition.getColumns()) {
                     indexCreateTableStatement.addColumn(columnMap.get(SQLUtils.normalize(indexColumn.getExpr().toString())));
                 }

@@ -68,7 +68,7 @@ public class DatasourcePoolTest {
 
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////
         MycatDatasourcePool nativeDs =
-               new VertxMySQLDatasourcePoolImpl(datasourceConfig,"prototypeDs");
+                new VertxMySQLDatasourcePoolImpl(datasourceConfig, "prototypeDs");
 
 
         MycatRelDataType sqlMycatRelType = getSqlMycatRelDataType();
@@ -78,8 +78,8 @@ public class DatasourcePoolTest {
         //List<String> collect = newMycatConnection.prepareQuery(querySql, Collections.emptyList()).toList().blockingGet().stream().map(i -> i.toString()).collect(Collectors.toList());
         MycatRowMetaData mycatRowMetaData1 = testResult.queryResult.getMycatRowMetaData();
         MycatRowMetaData mycatRowMetaData2 = testResult2.queryResult.getMycatRowMetaData();
-        MycatRelDataType mycatRelDataType1 =mycatRowMetaData1.getMycatRelDataType();
-        MycatRelDataType mycatRelDataType2 = mycatRowMetaData2 .getMycatRelDataType();
+        MycatRelDataType mycatRelDataType1 = mycatRowMetaData1.getMycatRelDataType();
+        MycatRelDataType mycatRelDataType2 = mycatRowMetaData2.getMycatRelDataType();
 
         System.out.println(mycatRelDataType1);
         System.out.println(mycatRelDataType2);
@@ -92,8 +92,8 @@ public class DatasourcePoolTest {
         System.out.println(sqlMycatRelType);
         System.out.println(mycatRelDataType1);
 
-     observable = newMycatConnection.prepareQuery("select * from testSchema.testColumnTable", Collections.emptyList(), new RootAllocator());
-   vectorSchemaRoots = observable.toList().blockingGet();
+        observable = newMycatConnection.prepareQuery("select * from testSchema.testColumnTable", Collections.emptyList(), new RootAllocator());
+        vectorSchemaRoots = observable.toList().blockingGet();
 
         System.out.println();
     }
@@ -101,7 +101,7 @@ public class DatasourcePoolTest {
     @NotNull
     private static MycatRelDataType getSqlMycatRelDataType() {
         String sql = getSql("s", "t");
-        MySqlCreateTableStatement sqlStatement = (MySqlCreateTableStatement)SQLUtils.parseSingleMysqlStatement(sql);
+        MySqlCreateTableStatement sqlStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(sql);
         MycatRelDataType mycatRelType = MycatRelDataType.getMycatRelType(sqlStatement);
         return mycatRelType;
     }
@@ -124,25 +124,25 @@ public class DatasourcePoolTest {
         mySqlInsertStatement.setTableSource(sqlExprTableSource);
 
         ImmutableList<Object[]> columns = getColumns();
-        for (Object[] objects :  columns) {
+        for (Object[] objects : columns) {
             String column = (String) objects[0];
             String type = (String) objects[1];
             mySqlInsertStatement.addColumn(new SQLIdentifierExpr("`" + column + "`"));
         }
         SQLInsertStatement.ValuesClause valuesClause = new SQLInsertStatement.ValuesClause();
-        for (Object[] objects :  columns) {
+        for (Object[] objects : columns) {
             String column = (String) objects[0];
             String type = (String) objects[1];
             Object value = objects[2];
             valuesClause.addValue(fromJavaObject(value));
         }
         mySqlInsertStatement.setValues(valuesClause);
-        newMycatConnection.update("delete from "+ schema + "." + table).toCompletionStage().toCompletableFuture().get();
+        newMycatConnection.update("delete from " + schema + "." + table).toCompletionStage().toCompletableFuture().get();
 
         newMycatConnection.update(mySqlInsertStatement.toString()).toCompletionStage().toCompletableFuture().get();
         String querySql = "select * from " + schema + "." + table;
         RowSet queryResult = newMycatConnection.query(querySql).toCompletionStage().toCompletableFuture().get();
-        StringMysqlCollector collector = new StringMysqlCollector() ;
+        StringMysqlCollector collector = new StringMysqlCollector();
         newMycatConnection.prepareQuery(querySql, Collections.emptyList(), collector);
         collector.await();
         TestResult testResult = TestResult.of(queryResult, collector);
@@ -151,11 +151,11 @@ public class DatasourcePoolTest {
 
     private static String getSql(String schema, String table) {
         MySqlCreateTableStatement createTableStatement = new MySqlCreateTableStatement();
-        createTableStatement.setTableName(table);
-        createTableStatement.setSchema(schema);
+        createTableStatement.setTableName("`" + table + "`");
+        createTableStatement.setSchema("`" + schema + "`");
         createTableStatement.setIfNotExiists(true);
 
-        for (Object[] objects :  getColumns()) {
+        for (Object[] objects : getColumns()) {
             String column = (String) objects[0];
             String type = (String) objects[1];
             createTableStatement.addColumn("`" + column + "`", type);
@@ -216,7 +216,7 @@ public class DatasourcePoolTest {
     }
 
     @ToString
-    static class TestResult{
+    static class TestResult {
         RowSet queryResult;
         StringMysqlCollector collector;
 
@@ -224,8 +224,9 @@ public class DatasourcePoolTest {
             this.queryResult = queryResult;
             this.collector = collector;
         }
-        public static TestResult of(RowSet queryResult, StringMysqlCollector collector){
-            return new TestResult(queryResult,collector);
+
+        public static TestResult of(RowSet queryResult, StringMysqlCollector collector) {
+            return new TestResult(queryResult, collector);
         }
 
         @Override
@@ -235,7 +236,7 @@ public class DatasourcePoolTest {
             TestResult that = (TestResult) o;
             boolean equals1 = Objects.equals(queryResult, that.queryResult);
             boolean equals2 = Objects.equals(collector, that.collector);
-            return equals1 &&equals2 ;
+            return equals1 && equals2;
         }
 
         @Override
@@ -284,7 +285,7 @@ public class DatasourcePoolTest {
                 List<String> rowString = new ArrayList<>();
                 for (Object o : i) {
                     if (o instanceof byte[]) {
-                        o = new String((byte[])o);
+                        o = new String((byte[]) o);
                     }
                     rowString.add(Objects.toString(o));
                 }
