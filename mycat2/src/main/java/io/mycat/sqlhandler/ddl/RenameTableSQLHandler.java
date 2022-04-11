@@ -103,8 +103,8 @@ public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableSt
                         String createTableSQL = tableHandler.getCreateTableSQL();
                         MySqlCreateTableStatement sqlStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(createTableSQL);
 
-                        sqlStatement.setTableName(newTableName);
-                        sqlStatement.setSchema(newSchemaName);
+                        sqlStatement.setTableName("`"+newTableName+"`");
+                        sqlStatement.setSchema("`"+newSchemaName+"`");
 
                         Set<Partition> partitions = new HashSet<>();
                         // partitions.add( new BackendTableInfo(metadataManager.getPrototype(), "", ""));

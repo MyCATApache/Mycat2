@@ -2126,8 +2126,8 @@ public class PrototypeService {
 
                         if (sqlStatement instanceof MySqlCreateTableStatement) {
                             MySqlCreateTableStatement sqlStatement1 = (MySqlCreateTableStatement) sqlStatement;
-                            sqlStatement1.setTableName(SQLUtils.normalize(tableName));
-                            sqlStatement1.setSchema(SQLUtils.normalize(schemaName));//顺序不能颠倒
+                            sqlStatement1.setTableName("`"+SQLUtils.normalize(tableName)+"`");
+                            sqlStatement1.setSchema("`"+SQLUtils.normalize(schemaName)+"`");//顺序不能颠倒
                             return Optional.of(sqlStatement1.toString());
                         }
                     } catch (Exception e) {
@@ -2156,8 +2156,8 @@ public class PrototypeService {
     @SneakyThrows
     public static String generateSql(String schemaName, String tableName, ResultSetMetaData metaData) {
         MySqlCreateTableStatement mySqlCreateTableStatement = new MySqlCreateTableStatement();
-        mySqlCreateTableStatement.setTableName(tableName);
-        mySqlCreateTableStatement.setSchema(schemaName);
+        mySqlCreateTableStatement.setTableName("`"+tableName+"`");
+        mySqlCreateTableStatement.setSchema("`"+schemaName+"`");
         int columnCount = metaData.getColumnCount();
         for (int i = 0; i < columnCount; i++) {
             mySqlCreateTableStatement.addColumn(metaData.getColumnLabel(i + 1), metaData.getColumnTypeName(i + 1));
