@@ -16,6 +16,7 @@ package io.mycat;
 
 import io.mycat.beans.mycat.MycatDataType;
 import io.mycat.beans.mycat.MycatField;
+import io.mycat.config.ServerConfig;
 import io.mycat.router.CustomRuleFunction;
 import lombok.*;
 
@@ -67,15 +68,34 @@ public class SimpleColumnInfo {
 
 
     public SimpleColumnInfo(@NonNull String columnName, int precision, int scale, @NonNull JDBCType jdbcType, boolean nullable, boolean autoIncrement, boolean primaryKey, boolean uniqueKey, int id) {
+         boolean promoteUnsignedType = MetaClusterCurrent.exist(ServerConfig.class) ? MetaClusterCurrent.wrapper(ServerConfig.class).isPromoteUnsignedType() : new ServerConfig().isPromoteUnsignedType();
+
         this.columnName = columnName;
         this.precision = precision;
         this.scale = scale;
 
         switch (jdbcType) {
             case BIT:
+                if (!promoteUnsignedType) {
+                    jdbcType = JDBCType.BIT;
+                    break;
+                }
             case TINYINT:
+                if (!promoteUnsignedType) {
+                    jdbcType = JDBCType.TINYINT;
+                    break;
+                }
             case SMALLINT:
+                if (!promoteUnsignedType) {
+                    jdbcType = JDBCType.SMALLINT;
+                    break;
+                }
             case INTEGER:
+                if (!promoteUnsignedType) {
+                    jdbcType = JDBCType.INTEGER;
+                    break;
+                }
+                break;
             case BIGINT:
                 jdbcType = JDBCType.BIGINT;
                 break;

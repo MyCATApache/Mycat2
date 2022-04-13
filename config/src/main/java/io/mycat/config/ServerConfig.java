@@ -76,6 +76,8 @@ public class ServerConfig {
     private boolean useProxyProtocol = false;
     private boolean asyncDDL = false;
     private int rewriteInsertBatchedStatementBatch = 1000;
+    private boolean promoteUnsignedType = true;
+
     public static void main(String[] args) {
         System.out.println(JsonUtil.toJson(new ServerConfig()));
     }
