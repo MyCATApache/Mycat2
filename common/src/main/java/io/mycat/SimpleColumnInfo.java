@@ -83,7 +83,6 @@ public class SimpleColumnInfo {
                     jdbcType = JDBCType.INTEGER;
                     break;
                 }
-                break;
             case BIGINT:
                 jdbcType = JDBCType.BIGINT;
                 break;
