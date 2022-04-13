@@ -534,6 +534,8 @@ public class VertxExecuter {
                 o = params.get(index);
             } else if (sqlExpr instanceof SQLNullExpr) {
                 o = null;
+            } if (sqlExpr instanceof SQLValuableExpr) {
+                o = ((SQLValuableExpr) sqlExpr).getValue();
             } else {
                 try {
                     o = MycatSQLEvalVisitorUtils.eval(DbType.mysql, sqlExpr, params);
@@ -553,7 +555,7 @@ public class VertxExecuter {
                         }
                     }
                     if (!success) {
-                        throw throwable;
+                        LOGGER.debug("",throwable);
                     }
                 }
             }

@@ -76,20 +76,8 @@ public class SimpleColumnInfo {
 
         switch (jdbcType) {
             case BIT:
-                if (!promoteUnsignedType) {
-                    jdbcType = JDBCType.BIT;
-                    break;
-                }
             case TINYINT:
-                if (!promoteUnsignedType) {
-                    jdbcType = JDBCType.TINYINT;
-                    break;
-                }
             case SMALLINT:
-                if (!promoteUnsignedType) {
-                    jdbcType = JDBCType.SMALLINT;
-                    break;
-                }
             case INTEGER:
                 if (!promoteUnsignedType) {
                     jdbcType = JDBCType.INTEGER;
