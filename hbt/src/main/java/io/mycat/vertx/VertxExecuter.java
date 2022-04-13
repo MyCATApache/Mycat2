@@ -534,7 +534,7 @@ public class VertxExecuter {
                 o = params.get(index);
             } else if (sqlExpr instanceof SQLNullExpr) {
                 o = null;
-            } if (sqlExpr instanceof SQLValuableExpr) {
+            } else if (sqlExpr instanceof SQLValuableExpr) {
                 o = ((SQLValuableExpr) sqlExpr).getValue();
             } else {
                 try {
@@ -555,7 +555,7 @@ public class VertxExecuter {
                         }
                     }
                     if (!success) {
-                        LOGGER.debug("",throwable);
+                        LOGGER.debug("", throwable);
                     }
                 }
             }
