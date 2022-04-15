@@ -43,7 +43,7 @@ public class ShowDatabasesHanlder extends AbstractSQLHandler<com.alibaba.druid.s
     public static String toNormalSQL(SQLShowDatabasesStatement requestAst) {
         SQLExpr like = requestAst.getLike();
         SQLExpr where = requestAst.getWhere();
-        return generateSimpleSQL(Collections.singletonList(new String[]{"SCHEMA_NAME","Database"}),"information_schema","SCHEMATA",
+        return generateSimpleSQL(Collections.singletonList(new String[]{"SCHEMA_NAME","`Database`"}),"information_schema","SCHEMATA",
                 null,
                 Optional.ofNullable(where).map(i->i.toString()).orElse(null),
                 Optional.ofNullable(like).map(i->"SCHEMA_NAME like "+ i).orElse(null)
