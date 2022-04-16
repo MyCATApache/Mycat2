@@ -92,7 +92,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                     .getMysqlPayloadObjectObservable(arrayBindable, sqlMycatDataContext, plan.getMetaData());
             Observable observable = mapToTimeoutObservable(observable1, drdsSqlWithParams);
             String parameterizedSQL = drdsSqlWithParams.getParameterizedSQL();
-            Future<Void> take = TimeRateLimiterService.STRING_INSTANCE.take(parameterizedSQL);
+            //Future<Void> take = TimeRateLimiterService.STRING_INSTANCE.take(parameterizedSQL);
             Observable<MysqlPayloadObject> executor = observable;
             return response.sendResultSet(executor);
         }
