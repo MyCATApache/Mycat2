@@ -37,7 +37,7 @@ public class SetSQLHandler extends AbstractSQLHandler<SQLSetStatement> {
     static enum VarType {
         USER,
         SESSION,
-        GLOABL
+        GLOBAL
     }
 
     @Override
@@ -56,7 +56,7 @@ public class SetSQLHandler extends AbstractSQLHandler<SQLSetStatement> {
                     SQLExpr owner = sqlPropertyExpr.getOwner();
                     name = SQLUtils.normalize(sqlPropertyExpr.getSimpleName());
                     if (owner instanceof SQLVariantRefExpr) {
-                        varType = ((SQLVariantRefExpr) owner).isGlobal() ? VarType.GLOABL : VarType.SESSION;
+                        varType = ((SQLVariantRefExpr) owner).isGlobal() ? VarType.GLOBAL : VarType.SESSION;
                     }
                 } else {
                     name = SQLUtils.normalize(item.getTarget().toString());
@@ -69,7 +69,7 @@ public class SetSQLHandler extends AbstractSQLHandler<SQLSetStatement> {
                         varType = VarType.USER;
                     }
                 }
-                if (varType == VarType.GLOABL) {
+                if (varType == VarType.GLOBAL) {
                     throw new IllegalArgumentException("unsupported set global variables:" + item);
                 }
                 SQLExpr valueExpr = item.getValue();
@@ -112,7 +112,7 @@ public class SetSQLHandler extends AbstractSQLHandler<SQLSetStatement> {
                         return response.sendOk();
                     }
                     case USER:
-                    case GLOABL:
+                    case GLOBAL:
                     default:
                         return response.sendError(new IllegalStateException("Unexpected value: " + varType));
                 }
