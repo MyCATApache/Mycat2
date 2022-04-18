@@ -53,6 +53,16 @@ public class SavepointSqlConnection implements XaSqlConnection {
         return connection.getAllConnections();
     }
 
+    @Override
+    public void setReadOnly(boolean value) {
+        this.connection.setReadOnly(value);
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return connection.isReadOnly();
+    }
+
     private Future<Void> check(Future<Void> execute) {
 //        return execute.recover(throwable -> {
 //            LOGGER.error("", throwable);

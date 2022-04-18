@@ -52,6 +52,16 @@ public class MycatXaTranscation implements XaSqlConnection, TransactionSession {
     }
 
     @Override
+    public void setReadOnly(boolean value) {
+        connection.setReadOnly(value);
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return connection.isReadOnly();
+    }
+
+    @Override
     public MySQLIsolation getTransactionIsolation() {
         return connection.getTransactionIsolation();
     }

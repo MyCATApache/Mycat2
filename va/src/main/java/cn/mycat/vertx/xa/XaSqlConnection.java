@@ -81,4 +81,8 @@ public interface XaSqlConnection {
     }
 
     public List<NewMycatConnection> getAllConnections();
+
+    public void setReadOnly(boolean value);
+
+    public boolean isReadOnly();
 }
