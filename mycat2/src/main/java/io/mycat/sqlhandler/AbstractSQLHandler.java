@@ -172,9 +172,4 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
         return sql;
     }
 
-    public static RowBaseIterator runAsRowIterator(MycatDataContext dataContext, String sql) {
-        ExecutorProvider executorProvider = MetaClusterCurrent.wrapper(ExecutorProvider.class);
-        return executorProvider.runAsObjectArray(dataContext, sql);
-    }
-
 }

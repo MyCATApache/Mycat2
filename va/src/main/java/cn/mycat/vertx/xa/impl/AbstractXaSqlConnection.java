@@ -30,6 +30,7 @@ public abstract class AbstractXaSqlConnection implements XaSqlConnection {
     protected boolean inTranscation = false;
     protected final XaLog log;
     protected MySQLIsolation isolation = MySQLIsolation.DEFAULT;
+    protected boolean readOnly = false;
 
     public AbstractXaSqlConnection(MySQLIsolation isolation,XaLog xaLog) {
         this.isolation = isolation;
@@ -68,5 +69,15 @@ public abstract class AbstractXaSqlConnection implements XaSqlConnection {
     @Override
     public MySQLIsolation getTransactionIsolation() {
         return this.isolation;
+    }
+
+    @Override
+    public void setReadOnly(boolean value) {
+        this.readOnly = value;
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return readOnly;
     }
 }

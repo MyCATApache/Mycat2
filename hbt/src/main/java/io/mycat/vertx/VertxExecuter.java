@@ -213,7 +213,7 @@ public class VertxExecuter {
                 }
 
                 ExecutorProvider executorProvider = MetaClusterCurrent.wrapper(ExecutorProvider.class);
-                RowBaseIterator bindable = executorProvider.runAsObjectArray(context, sqlSelectStatement.toString());
+                RowBaseIterator bindable = executorProvider.runAsObjectArray(context, queryDrdsSqlWithParams);
                 try {
                     List<Object[]> list = new ArrayList<>();
                     while (bindable.next()) {

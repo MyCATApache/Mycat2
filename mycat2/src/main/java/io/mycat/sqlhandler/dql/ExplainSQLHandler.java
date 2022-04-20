@@ -14,6 +14,7 @@
  */
 package io.mycat.sqlhandler.dql;
 
+import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLCommentHint;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -22,13 +23,14 @@ import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import io.mycat.DrdsSqlWithParams;
-import io.mycat.MycatDataContext;
-import io.mycat.Response;
+import com.alibaba.druid.util.JdbcUtils;
+import io.mycat.*;
 import io.mycat.api.collector.RowIterable;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.spm.Plan;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.prototypeserver.mysql.HackRouter;
 import io.mycat.sqlhandler.SQLRequest;
@@ -66,7 +68,30 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
             if (tableName instanceof SQLIdentifierExpr && dataContext.getDefaultSchema() != null) {
                 explainAst.setTableName(new SQLPropertyExpr(new SQLIdentifierExpr(dataContext.getDefaultSchema()), ((SQLIdentifierExpr) tableName).getName()));
             }
-            return response.proxySelectToPrototype(explainAst.toUnformattedString(), Collections.emptyList());
+            JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+
+            boolean okOnPrototype = false;
+            try (DefaultConnection connection = jdbcConnectionManager.getConnection(MetadataManager.getPrototype())) {
+                JdbcUtils.executeQuery(connection.getRawConnection(), explainAst.toString(), Collections.emptyList());
+                okOnPrototype = true;
+            } catch (Throwable throwable) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("try query {} from prototype fail", explainAst);
+                }
+            }
+            if (okOnPrototype){
+                return response.proxySelectToPrototype(explainAst.toUnformattedString(), Collections.emptyList());
+            }else {
+                SQLPropertyExpr explainAstTableName = (SQLPropertyExpr)explainAst.getTableName();
+
+                String database = SQLUtils.normalize(explainAstTableName.getOwnerName());
+                String table = SQLUtils.normalize(explainAstTableName.getName());
+                MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+                TableHandler tableHandler = metadataManager.getTable(database, table);
+                Partition partition = getDataNodes(tableHandler).stream().findFirst().get();
+                explainAst.setTableName(new SQLPropertyExpr(new SQLIdentifierExpr(partition.getSchema()),partition.getTable()));
+                return response.proxySelect(Arrays.asList(partition.getTargetName()),explainAst.toUnformattedString(), Collections.emptyList());
+            }
         }
         SQLStatement statement = request.getAst().getStatement();
         boolean forUpdate = false;

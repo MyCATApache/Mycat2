@@ -48,6 +48,8 @@ public interface TransactionSession extends Dumpable {
 
     void setTransactionIsolation(MySQLIsolation transactionIsolation);
 
+    void setReadOnly(boolean value);
+
     Future<Void> closeStatementState();
 
     Future<Void> close();
