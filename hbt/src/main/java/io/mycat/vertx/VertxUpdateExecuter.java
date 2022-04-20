@@ -248,18 +248,20 @@ public class VertxUpdateExecuter {
                         }
 
                         for (ShardingTable indexTable : shardingTable.getIndexTables()) {
-                            MySqlUpdateStatement eachStatement = (MySqlUpdateStatement)SQLUtils.parseSingleMysqlStatement(
+                            SQLStatement eachStatement = SQLUtils.parseSingleMysqlStatement(
                                     ParameterizedOutputVisitorUtils.restore(drdsSqlWithParams.getParameterizedSQL(), DbType.mysql, drdsSqlWithParams.getParams())
                             );
-                            List<SQLUpdateSetItem> sqlUpdateSetItems = eachStatement.getItems().stream().filter(sqlUpdateSetItem -> indexTable.getColumns().stream().anyMatch(name->sqlUpdateSetItem.columnMatch(name.getColumnName()))).collect(Collectors.toList());
-                            if (sqlUpdateSetItems.isEmpty()){
-                                continue;
+                            if (eachStatement instanceof SQLUpdateStatement) {
+                                MySqlUpdateStatement updateStatement = (MySqlUpdateStatement) eachStatement;
+                                List<SQLUpdateSetItem> sqlUpdateSetItems = updateStatement.getItems().stream().filter(sqlUpdateSetItem -> indexTable.getColumns().stream().anyMatch(name -> sqlUpdateSetItem.columnMatch(name.getColumnName()))).collect(Collectors.toList());
+                                if (sqlUpdateSetItems.isEmpty()) {
+                                    continue;
+                                }
+                                updateStatement.getItems().clear();
+                                for (SQLUpdateSetItem sqlUpdateSetItem : sqlUpdateSetItems) {
+                                    updateStatement.addItem(sqlUpdateSetItem);
+                                }
                             }
-                            eachStatement.getItems().clear();
-                            for (SQLUpdateSetItem sqlUpdateSetItem : sqlUpdateSetItems) {
-                                eachStatement.addItem(sqlUpdateSetItem);
-                            }
-
                             SQLExprTableSource sqlTableSource = new SQLExprTableSource();
                             sqlTableSource.setExpr(indexTable.getTableName());
                             sqlTableSource.setSchema(indexTable.getSchemaName());
