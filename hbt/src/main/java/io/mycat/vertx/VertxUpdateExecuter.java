@@ -16,6 +16,7 @@
  */
 package io.mycat.vertx;
 
+import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -24,7 +25,9 @@ import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
 import com.google.common.collect.ImmutableList;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
@@ -46,6 +49,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static io.mycat.calcite.DrdsRunnerHelper.getTypes;
@@ -158,6 +162,7 @@ public class VertxUpdateExecuter {
     @SneakyThrows
     public static Collection<VertxExecuter.EachSQL> explainUpdate(DrdsSqlWithParams drdsSqlWithParams, MycatDataContext context) {
         SQLStatement statement = drdsSqlWithParams.getParameterizedStatement();
+
         List<Object> maybeList = drdsSqlWithParams.getParams();
         boolean multi = !maybeList.isEmpty() && maybeList.get(0) instanceof List;
         List<List<Object>> paramList = multi ? (List) maybeList : Collections.singletonList(maybeList);
@@ -231,7 +236,7 @@ public class VertxUpdateExecuter {
                     ////////////////////////////////////////index-scan////////////////////////////////////////////////////////////
                     Objects.requireNonNull(shardingTable.getPrimaryKey(), " need primary key");
 
-                    RowBaseIterator bindable = MetaClusterCurrent.wrapper(ExecutorProvider.class).runAsObjectArray(context, sqlSelectStatement.toString());
+                    RowBaseIterator bindable = MetaClusterCurrent.wrapper(ExecutorProvider.class).runAsObjectArray(context, queryDrdsSqlWithParams);
 
                     try {
                         List<Object[]> list = new ArrayList<>();
@@ -243,7 +248,18 @@ public class VertxUpdateExecuter {
                         }
 
                         for (ShardingTable indexTable : shardingTable.getIndexTables()) {
-                            SQLStatement eachStatement = SQLUtils.parseSingleMysqlStatement(drdsSqlWithParams.getParameterizedSQL());
+                            MySqlUpdateStatement eachStatement = (MySqlUpdateStatement)SQLUtils.parseSingleMysqlStatement(
+                                    ParameterizedOutputVisitorUtils.restore(drdsSqlWithParams.getParameterizedSQL(), DbType.mysql, drdsSqlWithParams.getParams())
+                            );
+                            List<SQLUpdateSetItem> sqlUpdateSetItems = eachStatement.getItems().stream().filter(sqlUpdateSetItem -> indexTable.getColumns().stream().anyMatch(name->sqlUpdateSetItem.columnMatch(name.getColumnName()))).collect(Collectors.toList());
+                            if (sqlUpdateSetItems.isEmpty()){
+                                continue;
+                            }
+                            eachStatement.getItems().clear();
+                            for (SQLUpdateSetItem sqlUpdateSetItem : sqlUpdateSetItems) {
+                                eachStatement.addItem(sqlUpdateSetItem);
+                            }
+
                             SQLExprTableSource sqlTableSource = new SQLExprTableSource();
                             sqlTableSource.setExpr(indexTable.getTableName());
                             sqlTableSource.setSchema(indexTable.getSchemaName());

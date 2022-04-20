@@ -85,8 +85,8 @@ public class ExecutorProviderImpl implements ExecutorProvider {
     }
 
     @Override
-    public RowBaseIterator runAsObjectArray(MycatDataContext context, String sqlStatement) {
-        DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(sqlStatement, context.getDefaultSchema());
+    public RowBaseIterator runAsObjectArray(MycatDataContext context, DrdsSqlWithParams sqlStatement) {
+        DrdsSqlWithParams drdsSql = sqlStatement;
         Plan plan = DrdsRunnerHelper.getPlan(drdsSql);
         AsyncMycatDataContextImpl.SqlMycatDataContextImpl sqlMycatDataContext = new AsyncMycatDataContextImpl.SqlMycatDataContextImpl(context, plan.getCodeExecuterContext(), drdsSql);
         PrepareExecutor prepareExecutor = prepare(plan);
