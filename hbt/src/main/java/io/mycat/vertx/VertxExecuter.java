@@ -459,6 +459,24 @@ public class VertxExecuter {
                 exprTableSource.setSimpleName(mPartition.getTable());
                 exprTableSource.setSchema(mPartition.getSchema());
 
+                if (!primaryStatement.getDuplicateKeyUpdate().isEmpty()) {
+                    ArrayList<SQLExpr> exprs = new ArrayList<>(primaryStatement.getDuplicateKeyUpdate().size());
+                    for (SQLExpr sqlExpr : primaryStatement.getDuplicateKeyUpdate()) {
+                        SQLBinaryOpExpr op = (SQLBinaryOpExpr) sqlExpr;
+                        SQLExpr right = op.getRight();
+                        if (right instanceof SQLVariantRefExpr) {
+                            op.setRight(io.mycat.PreparedStatement.fromJavaObject(paramArg.get(((SQLVariantRefExpr) right).getIndex())));
+                        } else if (right instanceof SQLValuableExpr) {
+
+                        } else {
+                            throw new UnsupportedOperationException("unsupported " + op);
+                        }
+                        exprs.add(op);
+                    }
+                    primaryStatement.getDuplicateKeyUpdate().clear();
+                    primaryStatement.getDuplicateKeyUpdate().addAll(exprs);
+                }
+
                 sqls.add(new EachSQL(mPartition.getTargetName(), primaryStatement.toString(), getNewParams(params, primaryStatement)));
 
 
@@ -479,14 +497,14 @@ public class VertxExecuter {
                             SQLBinaryOpExpr op = (SQLBinaryOpExpr) sqlExpr;
                             String left = SQLUtils.normalize(op.getLeft().toString());
                             if (indexTable.getColumns().stream().anyMatch(i -> left.equalsIgnoreCase(i.getColumnName()))) {
-//                                SQLExpr right = op.getRight();
-//                                if (right instanceof SQLVariantRefExpr) {
-//                                    op.setRight(io.mycat.PreparedStatement.fromJavaObject(paramArg.get(((SQLVariantRefExpr) right).getIndex())));
-//                                } else if (right instanceof SQLValuableExpr) {
-//
-//                                } else {
-//                                    throw new UnsupportedOperationException("unsupported " + op);
-//                                }
+                                SQLExpr right = op.getRight();
+                                if (right instanceof SQLVariantRefExpr) {
+                                    op.setRight(io.mycat.PreparedStatement.fromJavaObject(paramArg.get(((SQLVariantRefExpr) right).getIndex())));
+                                } else if (right instanceof SQLValuableExpr) {
+
+                                } else {
+                                    throw new UnsupportedOperationException("unsupported " + op);
+                                }
                                 exprs.add(op);
                             }
                         }
