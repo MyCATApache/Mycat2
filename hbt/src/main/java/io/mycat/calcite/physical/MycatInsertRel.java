@@ -56,4 +56,7 @@ public class MycatInsertRel extends AbstractRelNode implements MycatRel {
         return writer.ret();
     }
 
+    public SQLStatement getSqlStatement() {
+        return sqlStatement;
+    }
 }
