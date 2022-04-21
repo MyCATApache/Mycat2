@@ -25,8 +25,11 @@ import com.alibaba.druid.sql.ast.SQLReplaceable;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.visitor.MycatSQLEvalVisitorUtils;
+import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
+import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.google.common.collect.ImmutableList;
 import io.mycat.*;
 import io.mycat.api.collector.MySQLColumnDef;
@@ -390,12 +393,14 @@ public class VertxExecuter {
     }
 
     @SneakyThrows
-    public static List<EachSQL> explainInsert(SQLInsertStatement statementArg, List<Object> paramArg) {
-        final SQLInsertStatement statement = statementArg.clone();
+    public static List<EachSQL> explainInsert(String statementArg, List<Object> paramArg) {
+        final MySqlInsertStatement statement = (MySqlInsertStatement) SQLUtils.parseSingleMysqlStatement(statementArg);
 
-        SQLInsertStatement template = statement.clone();
-        template.getColumns().clear();
-        template.getValuesList().clear();
+        MySqlInsertStatement templateTemp = (MySqlInsertStatement) SQLUtils.parseSingleMysqlStatement(statementArg);
+        templateTemp.getColumns().clear();
+        templateTemp.getValuesList().clear();
+        String template = templateTemp.toString();
+
 
         SQLExprTableSource tableSource = statement.getTableSource();
 
@@ -437,7 +442,7 @@ public class VertxExecuter {
             for (SQLInsertStatement.ValuesClause valuesClause : statement.getValuesList()) {
 
                 valuesClause = valuesClause.clone();
-                SQLInsertStatement primaryStatement = template.clone();
+                MySqlInsertStatement primaryStatement = (MySqlInsertStatement) SQLUtils.parseSingleMysqlStatement(template);
                 primaryStatement.getColumns().addAll(columns);
                 primaryStatement.getValuesList().add(valuesClause);
                 List<SQLExpr> values = primaryStatement.getValues().getValues();
@@ -454,7 +459,6 @@ public class VertxExecuter {
                 exprTableSource.setSimpleName(mPartition.getTable());
                 exprTableSource.setSchema(mPartition.getSchema());
 
-
                 sqls.add(new EachSQL(mPartition.getTargetName(), primaryStatement.toString(), getNewParams(params, primaryStatement)));
 
 
@@ -465,8 +469,31 @@ public class VertxExecuter {
 
                     Partition sPartition = indexTable.getShardingFuntion().calculateOne((Map) variables);
 
-                    SQLInsertStatement eachStatement = template.clone();
+                    MySqlInsertStatement eachStatement = (MySqlInsertStatement) SQLUtils.parseSingleMysqlStatement(template.toString());
                     eachStatement.getColumns().clear();
+                    eachStatement.getValuesList().clear();;
+
+                    if (!eachStatement.getDuplicateKeyUpdate().isEmpty()) {
+                        ArrayList<SQLExpr> exprs = new ArrayList<>(eachStatement.getDuplicateKeyUpdate().size());
+                        for (SQLExpr sqlExpr : eachStatement.getDuplicateKeyUpdate()) {
+                            SQLBinaryOpExpr op = (SQLBinaryOpExpr) sqlExpr;
+                            String left = SQLUtils.normalize(op.getLeft().toString());
+                            if (indexTable.getColumns().stream().anyMatch(i -> left.equalsIgnoreCase(i.getColumnName()))) {
+//                                SQLExpr right = op.getRight();
+//                                if (right instanceof SQLVariantRefExpr) {
+//                                    op.setRight(io.mycat.PreparedStatement.fromJavaObject(paramArg.get(((SQLVariantRefExpr) right).getIndex())));
+//                                } else if (right instanceof SQLValuableExpr) {
+//
+//                                } else {
+//                                    throw new UnsupportedOperationException("unsupported " + op);
+//                                }
+                                exprs.add(op);
+                            }
+                        }
+
+                        eachStatement.getDuplicateKeyUpdate().clear();
+                        eachStatement.getDuplicateKeyUpdate().addAll(exprs);
+                    }
 
                     fillIndexTableShardingKeys(columnMap, values, indexTable.getColumns(), eachStatement);
 

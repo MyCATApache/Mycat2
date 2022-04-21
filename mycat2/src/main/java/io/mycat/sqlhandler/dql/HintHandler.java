@@ -1334,7 +1334,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
 
         UnmodifiableIterator<List<VertxExecuter.EachSQL>> iterator = Iterators.partition(insertStatementStream.flatMap(statement -> {
             DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(statement, dataContext.getDefaultSchema());
-            Iterable<VertxExecuter.EachSQL> eachSQLS1 = VertxExecuter.explainInsert((SQLInsertStatement) drdsSql.getParameterizedStatement(), drdsSql.getParams());
+            Iterable<VertxExecuter.EachSQL> eachSQLS1 = VertxExecuter.explainInsert(drdsSql.getParameterizedSQL(), drdsSql.getParams());
             return StreamSupport.stream(eachSQLS1.spliterator(), false);
         }).iterator(), batch);
 
