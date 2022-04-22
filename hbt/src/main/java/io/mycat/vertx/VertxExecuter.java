@@ -469,7 +469,7 @@ public class VertxExecuter {
                         } else if (right instanceof SQLValuableExpr) {
 
                         } else {
-                            throw new UnsupportedOperationException("unsupported " + op);
+                            //throw new UnsupportedOperationException("unsupported " + op);
                         }
                         exprs.add(op);
                     }
@@ -503,7 +503,7 @@ public class VertxExecuter {
                                 } else if (right instanceof SQLValuableExpr) {
 
                                 } else {
-                                    throw new UnsupportedOperationException("unsupported " + op);
+                                   // throw new UnsupportedOperationException("unsupported " + op);
                                 }
                                 exprs.add(op);
                             }
