@@ -365,12 +365,9 @@ public class AutoFunctionFactory {
                 };
             } else if (SQLUtils.nameEquals("RIGHT_SHIFT", needMethodName)) {
                 int shift = Integer.parseInt(getShardingKey(dbMethod, 1));
-                ToIntFunction<Object> core = specilizeSingleRightShift(dbNum, shift, tableColumn);
-                dbFunction = core;
-                tableFunction = value -> {
-                    int coreIndex = core.applyAsInt(value);
-                    return coreIndex * tableNum + coreIndex % tableNum;
-                };
+                ToIntFunction<Object> core = specilizeSingleRightShift(total, shift, tableColumn);
+                tableFunction = core;
+                dbFunction = value -> core.applyAsInt(value) / tableNum;
             } else if (SQLUtils.nameEquals("YYYYMM", needMethodName)) {
                 ToIntFunction<Object> core = specilizeyyyymm(total, tableColumn);
                 tableFunction = core;
