@@ -36,7 +36,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
 
     public LocalXaSqlConnection(MySQLIsolation isolation, Supplier<MySQLManager> mySQLManagerSupplier,
                                 XaLog xaLog) {
-        super(isolation,mySQLManagerSupplier, xaLog);
+        super(isolation, mySQLManagerSupplier, xaLog);
     }
 
     @Override
@@ -135,8 +135,18 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
             this.xid = null;
             return curLocalSqlConnection.update("delete from mycat.xa_log where xid = '" + curXid + "'");
         })).transform(u -> {
-            LOGGER.error("", u.cause());
-            curLocalSqlConnection.abandonConnection();
+            if (u.failed()) {
+                LOGGER.error("", u.cause());
+                if (curLocalSqlConnection != null) {
+                    curLocalSqlConnection.abandonConnection();
+                }
+            } else {
+                if (curLocalSqlConnection != null) {
+                    curLocalSqlConnection.close();
+                }
+            }
+            this.localSqlConnection = null;
+            inTranscation = false;
             return Future.succeededFuture();
         }).mapEmpty();
     }
