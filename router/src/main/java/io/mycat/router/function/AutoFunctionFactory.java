@@ -65,16 +65,22 @@ public class AutoFunctionFactory {
         int dbNum = Integer.parseInt(properties.getOrDefault("dbNum", 1).toString());
         int tableNum = Integer.parseInt(properties.getOrDefault("tableNum", 1).toString());
 
-
         int storeNum = Optional.ofNullable(properties.get("storeNum"))
                 .map(i -> Integer.parseInt(i.toString())).orElse(0);
 
         boolean prototype = (storeNum == 0);
-        if (prototype){
+
+        if (storeNum < 2) {
             storeNum = 1;
         }
-        Integer storeDbNum = Optional.ofNullable(properties.get("storeDbNum"))
+
+        int storeDbNum = Optional.ofNullable(properties.get("storeDbNum"))
                 .map(i -> Integer.parseInt(i.toString())).orElse(dbNum * tableNum / storeNum);
+
+        if (storeDbNum < 2) {
+            storeDbNum = 1;
+        }
+
         SQLMethodInvokeExpr tableMethod = converyToMethodExpr((String) properties.get("tableMethod"));
         SQLMethodInvokeExpr dbMethod = converyToMethodExpr((String) properties.get("dbMethod"));
         String sep = "/";
@@ -91,7 +97,7 @@ public class AutoFunctionFactory {
 
         String mappingFormat = (String) properties.computeIfAbsent("mappingFormat", (unused) ->
                 String.join(sep, prototype ? "prototype" : "c${targetIndex}",
-                        tableHandler.getSchemaName() + "_${dbIndex}",
+                        dbNum < 2 ? tableHandler.getSchemaName() : tableHandler.getSchemaName() + "_${dbIndex}",
                         tableHandler.getTableName() + ((!supportFlattenMapping(tableMethod, dbMethod)) ? "_${tableIndex}" : "_${index}")));
         final boolean flattenMapping = mappingFormat.contains("${index}");
 

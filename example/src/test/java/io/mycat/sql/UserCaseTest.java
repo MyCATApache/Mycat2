@@ -722,7 +722,7 @@ public class UserCaseTest implements MycatTest {
             String explain = explain(mycatConnection, "select count(*) from db1.travelrecord");
             Assert.assertTrue(explain.contains("MycatHashAggregate(group=[{}], count(*)=[$SUM0($0)])\n" +
                     "  MycatView(distribution=[[db1.travelrecord]])\n" +
-                    "Each(targetName=c0, sql=SELECT COUNT(*) AS `count(*)` FROM db1_0.travelrecord_0 AS `travelrecord`)"));
+                    "Each(targetName=c0, sql=SELECT COUNT(*) AS `count(*)` FROM db1.travelrecord_0 AS `travelrecord`)"));
             System.out.println();
         }
     }
