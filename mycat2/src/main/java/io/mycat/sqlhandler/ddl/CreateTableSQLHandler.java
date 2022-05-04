@@ -129,16 +129,6 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
                 } else if (createTableSql.getDbPartitionBy() == null && createTableSql.getTablePartitionBy() == null) {
                     ops.putNormalTable(schemaName, tableName, createTableSql);
                 } else {
-                    MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-                    int defaultStoreNodeNum = metadataManager.getDefaultStoreNodeNum();
-                    if (defaultStoreNodeNum == 0) {
-                        ops.getOriginal().getClusters().stream().filter(i -> "prototype".equals(i.getName()))
-                                .findFirst()
-                                .ifPresent(clusterConfig -> {
-                                    ClusterConfig config = JsonUtil.from(JsonUtil.toJson(clusterConfig), ClusterConfig.class);
-                                    ops.putReplica(config);
-                                });
-                    }
                     ops.putHashTable(schemaName, tableName, createTableSql, getAutoHashProperties(createTableSql));
                 }
             } else {
