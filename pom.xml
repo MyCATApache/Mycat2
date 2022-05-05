@@ -23,6 +23,7 @@
     <module>assistant</module>
       <module>internalexample</module>
       <module>executor</module>
+    <module>console</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>
