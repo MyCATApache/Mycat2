@@ -73,7 +73,6 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
                 @Override
                 public void abandonConnection() {
                     try{
-                        super.abandonConnection();
                         defaultConnection.close();
                     }finally {
                         stat.decCon();
