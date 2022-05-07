@@ -77,7 +77,7 @@ public class ServerConfig {
     private boolean asyncDDL = false;
     private int rewriteInsertBatchedStatementBatch = 1000;
     private boolean promoteUnsignedType = true;
-
+    private boolean stickySession = true;
     public static void main(String[] args) {
         System.out.println(JsonUtil.toJson(new ServerConfig()));
     }
