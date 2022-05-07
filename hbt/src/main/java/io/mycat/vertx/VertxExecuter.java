@@ -71,6 +71,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static io.mycat.vertx.VertxExecuter.FillAutoIncrementType.AUTOINC_HAS_COLUMN;
+
 public class VertxExecuter {
     private static final Logger LOGGER = LoggerFactory.getLogger(VertxExecuter.class);
     private static int rewriteinsertbatchedstatementbatch = !MetaClusterCurrent.exist(ServerConfig.class) ? 1000 : MetaClusterCurrent.wrapper(ServerConfig.class).getRewriteInsertBatchedStatementBatch();
@@ -421,8 +423,8 @@ public class VertxExecuter {
                 }
             }
         }
-        boolean fillAutoIncrement = needFillAutoIncrement(table, columns);
-        if (fillAutoIncrement) {
+        FillAutoIncrementContext fillAutoIncrementContext = needFillAutoIncrement(table, columns);
+        if (fillAutoIncrementContext.type == FillAutoIncrementType.AUTOINC_NO_COLUMN) {
             columns.add(new SQLIdentifierExpr(autoIncrementColumn.getColumnName()));
         }
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -447,11 +449,30 @@ public class VertxExecuter {
                 primaryStatement.getValuesList().add(valuesClause);
                 List<SQLExpr> values = primaryStatement.getValues().getValues();
 
-                if (fillAutoIncrement) {
-                    Supplier<Number> stringSupplier = table.nextSequence();
-                    values.add(PreparedStatement.fromJavaObject(stringSupplier.get()));
+                switch (fillAutoIncrementContext.type) {
+                    case AUTOINC_HAS_COLUMN: {
+                        SQLExpr sqlExpr = values.get(fillAutoIncrementContext.existColumnIndex);
+                        if (sqlExpr instanceof SQLVariantRefExpr) {
+                            int paramIndex = ((SQLVariantRefExpr) sqlExpr).getIndex();
+                            Object o = params.get(paramIndex);
+                            if (o == null || (o instanceof Number && ((Number) o).intValue() == 0)) {
+                                Supplier<Number> stringSupplier = table.nextSequence();
+                                params.set(paramIndex, stringSupplier.get());
+                            }
+                        } else if (sqlExpr instanceof SQLNullExpr) {
+                            Supplier<Number> stringSupplier = table.nextSequence();
+                            primaryStatement.getValues().replace(sqlExpr, PreparedStatement.fromJavaObject(stringSupplier.get()));
+                        }
+                        break;
+                    }
+                    case AUTOINC_NO_COLUMN: {
+                        Supplier<Number> stringSupplier = table.nextSequence();
+                        values.add(PreparedStatement.fromJavaObject(stringSupplier.get()));
+                        break;
+                    }
+                    case NO_AUTOINC:
+                        break;
                 }
-
                 Map<String, List<RangeVariable>> variables = compute(columns, values, params);
                 Partition mPartition = table.getShardingFuntion().calculateOne((Map) variables);
 
@@ -489,7 +510,8 @@ public class VertxExecuter {
 
                     MySqlInsertStatement eachStatement = (MySqlInsertStatement) SQLUtils.parseSingleMysqlStatement(template.toString());
                     eachStatement.getColumns().clear();
-                    eachStatement.getValuesList().clear();;
+                    eachStatement.getValuesList().clear();
+                    ;
 
                     if (!eachStatement.getDuplicateKeyUpdate().isEmpty()) {
                         ArrayList<SQLExpr> exprs = new ArrayList<>(eachStatement.getDuplicateKeyUpdate().size());
@@ -503,7 +525,7 @@ public class VertxExecuter {
                                 } else if (right instanceof SQLValuableExpr) {
 
                                 } else {
-                                   // throw new UnsupportedOperationException("unsupported " + op);
+                                    // throw new UnsupportedOperationException("unsupported " + op);
                                 }
                                 exprs.add(op);
                             }
@@ -552,18 +574,40 @@ public class VertxExecuter {
         return newParams;
     }
 
-    private static boolean needFillAutoIncrement(ShardingTable table, List<SQLName> columns) {
+    static enum FillAutoIncrementType {
+        AUTOINC_HAS_COLUMN,
+        AUTOINC_NO_COLUMN,
+        NO_AUTOINC
+    }
+
+    static class FillAutoIncrementContext {
+        FillAutoIncrementType type;
+        int existColumnIndex;
+
+        public static FillAutoIncrementContext of(
+                FillAutoIncrementType type,
+                int existColumnIndex
+        ) {
+            FillAutoIncrementContext fillAutoIncrementContext = new FillAutoIncrementContext();
+            fillAutoIncrementContext.existColumnIndex = existColumnIndex;
+            fillAutoIncrementContext.type = type;
+            return fillAutoIncrementContext;
+        }
+    }
+
+    private static FillAutoIncrementContext needFillAutoIncrement(ShardingTable table, List<SQLName> columns) {
         SimpleColumnInfo autoIncrementColumn = table.getAutoIncrementColumn();
+        int index = 0;
         if (autoIncrementColumn != null) {
             for (SQLName column : columns) {
-                String columnName = SQLUtils.normalize(column.getSimpleName());
-                if (SQLUtils.nameEquals(columnName, autoIncrementColumn.getColumnName())) {
-                    return false;
+                if (SQLUtils.nameEquals(column.getSimpleName(), autoIncrementColumn.getColumnName())) {
+                    return FillAutoIncrementContext.of(FillAutoIncrementType.AUTOINC_HAS_COLUMN, index);
                 }
+                index++;
             }
-            return true;
+            return FillAutoIncrementContext.of(FillAutoIncrementType.AUTOINC_NO_COLUMN, -1);
         } else {
-            return false;
+            return FillAutoIncrementContext.of(FillAutoIncrementType.NO_AUTOINC, -1);
         }
     }
 
