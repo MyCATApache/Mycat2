@@ -2,11 +2,10 @@ package io.mycat.runtime;
 
 import cn.mycat.vertx.xa.ImmutableCoordinatorLog;
 import cn.mycat.vertx.xa.XaSqlConnection;
-import io.mycat.DataSourceNearness;
-import io.mycat.ReplicaBalanceType;
-import io.mycat.TransactionSession;
+import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.config.ServerConfig;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.replica.DataSourceNearnessImpl;
 import io.mycat.util.Dumper;
@@ -18,11 +17,15 @@ import java.util.function.Function;
 public class MycatXaTranscation implements XaSqlConnection, TransactionSession {
     protected final XaSqlConnection connection;
     protected final TransactionType transactionType;
-    protected final DataSourceNearness dataSourceNearness = new DataSourceNearnessImpl(this);
+    protected final DataSourceNearness dataSourceNearness;
 
     public MycatXaTranscation(XaSqlConnection connection, TransactionType transactionType) {
         this.connection = connection;
         this.transactionType = transactionType;
+        DataSourceNearnessImpl dataSourceNearness = new DataSourceNearnessImpl(this);
+        this.dataSourceNearness =
+                MetaClusterCurrent.exist(ServerConfig.class) && MetaClusterCurrent.wrapper(ServerConfig.class).isStickySession() ?
+                        new StickyDataSourceNearnessImpl(dataSourceNearness) : dataSourceNearness;
     }
 
     @Override

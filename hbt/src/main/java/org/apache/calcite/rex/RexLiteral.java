@@ -17,6 +17,7 @@
 package org.apache.calcite.rex;
 
 import io.mycat.calcite.MycatRexExecutor;
+import io.mycat.calcite.spm.ParamHolder;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
@@ -1345,6 +1346,12 @@ public class RexLiteral extends RexNode {
   }
 
   private static Comparable findValue(RexNode node) {
+    if (node instanceof RexDynamicParam) {
+      int index = ((RexDynamicParam) node).getIndex();
+      ParamHolder paramHolder = ParamHolder.CURRENT_THREAD_LOCAL.get();
+      Object o = paramHolder.getParams().get(index);
+      return (Comparable)o;
+    }
     if (node instanceof RexLiteral) {
       return ((RexLiteral) node).value;
     }

@@ -60,7 +60,9 @@ public class DataSourceNearnessImpl implements DataSourceNearness {
 
 
     public void clear() {
-        map.clear();
+        if(!transactionSession.isInTransaction()){
+            map.clear();
+        }
         loadBalanceStrategy = null;
     }
 }
