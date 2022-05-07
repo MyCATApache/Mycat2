@@ -2,7 +2,7 @@ package io.mycat;
 
 public class StickyDataSourceNearnessImpl implements DataSourceNearness {
     final DataSourceNearness dataSourceNearness;
-    boolean lastMaster = true;
+    boolean lastMaster = false;
 
 
     public StickyDataSourceNearnessImpl(DataSourceNearness dataSourceNearness) {
