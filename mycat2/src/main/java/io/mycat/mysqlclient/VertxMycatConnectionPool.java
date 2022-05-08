@@ -247,6 +247,7 @@ public class VertxMycatConnectionPool implements NewMycatConnection {
 
     @Override
     public void abandonConnection() {
+        close = true;
         vertxConnectionPool.kill(connection);
     }
 
