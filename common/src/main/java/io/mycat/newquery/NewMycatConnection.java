@@ -38,6 +38,8 @@ public interface NewMycatConnection {
 
     public Future<Void> close();
 
+    public boolean isClosed();
+
     default void onSend() {
 
     }

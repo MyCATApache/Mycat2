@@ -146,6 +146,11 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
     }
 
     @Override
+    public boolean isClosed() {
+        return newMycatConnection.isClosed();
+    }
+
+    @Override
     public void abandonConnection() {
         IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
         ioExecutor.executeBlocking(promise -> {

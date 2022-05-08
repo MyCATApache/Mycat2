@@ -288,6 +288,11 @@ public class NativeMySQLConnection implements NewMycatConnection {
     }
 
     @Override
+    public boolean isClosed() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void abandonConnection() {
 
     }

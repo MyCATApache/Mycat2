@@ -575,6 +575,11 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
     }
 
     @Override
+    public boolean isClosed() {
+        return mySQLConnection == null;
+    }
+
+    @Override
     public void abandonConnection() {
         LOGGER.debug("abandonConnection");
         Future<Void> abandonQuery = abandonQuery();
