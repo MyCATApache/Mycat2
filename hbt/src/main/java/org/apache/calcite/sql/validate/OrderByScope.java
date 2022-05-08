@@ -86,7 +86,7 @@ public class OrderByScope extends DelegatingScope {
         // More than one column has this alias.
 //        throw validator.newValidationError(identifier,
 //            RESOURCE.columnAmbiguous(name));
-      logger.error("",validator.newValidationError(identifier, RESOURCE.columnAmbiguous(name)));
+      logger.debug("",validator.newValidationError(identifier, RESOURCE.columnAmbiguous(name)));
       return super.fullyQualify(identifier);
       }
       if (field != null && !field.isDynamicStar() && aliasCount == 1) {

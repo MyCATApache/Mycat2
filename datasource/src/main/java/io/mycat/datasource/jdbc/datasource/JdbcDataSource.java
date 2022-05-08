@@ -111,26 +111,33 @@ public class JdbcDataSource implements MycatDataSource {
         this.valid = valid;
     }
 
-    public  void close() {
-        Optional.ofNullable(this.getDataSource()).ifPresent(i -> {
-            try {
-                Class<? extends DataSource> aClass = i.getClass();
-                Method[] methods = aClass.getMethods();
-                ArrayList<Method> methodList = new ArrayList<>();
-                for (Method method : methods) {
-                    if ("close".equals(method.getName())) {
-                        if (Void.TYPE.equals(method.getReturnType())) {
-                            methodList.add(method);
+    public void close() {
+        int count = this.counter.get();
+        if (count > 0) {
+            LOGGER.error("JdbcDataSource:{} close but has {}:connections are using",getName(), count);
+        }
+        new Thread(() -> {
+            Optional.ofNullable(this.getDataSource()).ifPresent(i -> {
+                try {
+                    Class<? extends DataSource> aClass = i.getClass();
+                    Method[] methods = aClass.getMethods();
+                    ArrayList<Method> methodList = new ArrayList<>();
+                    for (Method method : methods) {
+                        if ("close".equals(method.getName())) {
+                            if (Void.TYPE.equals(method.getReturnType())) {
+                                methodList.add(method);
+                            }
                         }
                     }
+                    methodList.sort(Comparator.comparingInt(Method::getParameterCount));
+                    if (!methodList.isEmpty()) {
+                        methodList.get(0).invoke(i);
+                        LOGGER.info("JdbcDataSource:{} closed",getName());
+                    }
+                } catch (Throwable e) {
+                    LOGGER.error("试图关闭数据源失败:{} ,{}", getName(), e);
                 }
-                methodList.sort(Comparator.comparingInt(Method::getParameterCount));
-                if (!methodList.isEmpty()) {
-                    methodList.get(0).invoke(i);
-                }
-            } catch (Throwable e) {
-                LOGGER.error("试图关闭数据源失败:{} ,{}", getName(), e);
-            }
-        });
+            });
+        }).start();
     }
 }
