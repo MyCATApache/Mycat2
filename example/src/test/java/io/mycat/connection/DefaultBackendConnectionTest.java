@@ -18,7 +18,6 @@ import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
 
 @Disabled
-@Ignore
 public abstract class DefaultBackendConnectionTest implements MycatTest {
     @Test
     public void testPrototypeNoTranscationSelect() throws Exception {
