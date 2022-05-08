@@ -26,13 +26,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class LocalXaSqlConnection extends BaseXaSqlConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(LocalXaSqlConnection.class);
     volatile NewMycatConnection localSqlConnection = null;
-    volatile String targetName;
 
     public LocalXaSqlConnection(MySQLIsolation isolation, Supplier<MySQLManager> mySQLManagerSupplier,
                                 XaLog xaLog) {
@@ -42,7 +43,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
     @Override
     public Future<Void> begin() {
         if (inTranscation) {
-            LOGGER.warn("local xa transaction occur nested transaction,xid:" + getXid());
+            LOGGER.debug("local xa transaction occur nested transaction,xid:" + getXid());
             return Future.succeededFuture();
         }
         inTranscation = true;
@@ -51,29 +52,51 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
 
     @Override
     public Future<Void> commit() {
+        /////////////////////////check///////////////////////
+        if (!isInTransaction()) {
+            if (localSqlConnection == null && map.isEmpty()) {
+                //ok
+            } else {
+                LOGGER.error("meet commit in transaction bug");
+            }
+        }
+        /////////////////////////check///////////////////////
         String curXid = xid;
         if (localSqlConnection == null && map.isEmpty()) {
+
             inTranscation = false;
+            xid = null;
+            localSqlConnection = null;
             return (Future.succeededFuture());
         }
         if (localSqlConnection != null && map.isEmpty()) {
             return localSqlConnection.update("commit;")
-                    .onSuccess(event -> inTranscation = false).mapEmpty();
+                    .transform(event -> {
+                        Future<Void> closeFuture = localSqlConnection.close();
+
+                        inTranscation = false;
+                        xid = null;
+                        localSqlConnection = null;
+
+                        return closeFuture;
+                    }).mapEmpty();
         }
         if (inTranscation && localSqlConnection != null) {
-            return super.commitXa((coordinatorLog) -> localSqlConnection.update(
+            NewMycatConnection curLocalSqlConnection = localSqlConnection;
+            return super.commitXa((coordinatorLog) -> curLocalSqlConnection.update(
                             "REPLACE INTO mycat.xa_log (xid) VALUES('" + curXid + "');").mapEmpty())
                     .compose((Function<Void, Future<Void>>) o -> {
-                        return localSqlConnection.update("commit;").compose(unused -> {
-                            return localSqlConnection.update("delete from mycat.xa_log where xid = '" + curXid + "'").mapEmpty();
+                        return curLocalSqlConnection.update("commit;").compose(unused -> {
+                            return curLocalSqlConnection.update("delete from mycat.xa_log where xid = '" + curXid + "'").mapEmpty();
                         });
                     }).mapEmpty()
                     .compose(o -> {
-                        xid = null;
+                        Future<Void> closeFuture = curLocalSqlConnection.close();
+
                         inTranscation = false;
-                        NewMycatConnection localSqlConnection = this.localSqlConnection;
-                        this.localSqlConnection = null;
-                        return localSqlConnection.close();
+                        xid = null;
+                        localSqlConnection = null;
+                        return closeFuture;
                     }).mapEmpty();
         } else {
             throw new AssertionError();
@@ -84,8 +107,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
     public Future<NewMycatConnection> getConnection(String targetName) {
         MySQLManager mySQLManager = mySQLManager();
         if (inTranscation) {
-            if (this.targetName == null && localSqlConnection == null) {
-                LocalXaSqlConnection.this.targetName = targetName;
+            if (localSqlConnection == null) {
                 Future<NewMycatConnection> sqlConnectionFuture = mySQLManager.getConnection(targetName);
                 return sqlConnectionFuture.map(sqlConnection -> {
                     LocalXaSqlConnection.this.localSqlConnection = sqlConnection;
@@ -94,7 +116,10 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
                         .update(getTransactionIsolation().getCmd())
                         .flatMap(unused -> sqlConnection.update("begin;").map(sqlConnection)));
             }
-            if (this.targetName != null && this.targetName.equals(targetName)) {
+            if (this.localSqlConnection != null && this.localSqlConnection.getTargetName().equals(targetName)) {
+                if (this.localSqlConnection.isClosed()) {
+                    LOGGER.error("localSqlConnection is closed ,in transaction");
+                }
                 return Future.succeededFuture(localSqlConnection);
             }
             if (xid == null) {
@@ -104,35 +129,34 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
             return super.getConnection(targetName);
         }
         return mySQLManager.getConnection(targetName).map(connection -> {
-            if (!map.containsKey(targetName)) {
-                map.put(targetName, connection);
-            } else {
-                extraConnections.add(connection);
-            }
+            extraConnections.add(connection);
             return connection;
         });
     }
 
     @Override
     public Future<Void> rollback() {
-        if (targetName == null && localSqlConnection == null && map.isEmpty()) {
+        if (localSqlConnection == null && map.isEmpty()) {
+
             inTranscation = false;
+            xid = null;
+            localSqlConnection = null;
             return Future.succeededFuture();
         }
         if (localSqlConnection != null && map.isEmpty()) {
-            inTranscation = false;
             return localSqlConnection.update("rollback;").transform(unused -> {
                 LOGGER.error("", unused.cause());
                 localSqlConnection.abandonConnection();
+
+                inTranscation = false;
+                xid = null;
+                localSqlConnection = null;
                 return Future.succeededFuture();
             }).mapEmpty();
         }
         String curXid = this.xid;
         NewMycatConnection curLocalSqlConnection = this.localSqlConnection;
         return super.rollback().compose(unused -> curLocalSqlConnection.update("rollback;").flatMap(unused1 -> {
-            this.localSqlConnection = null;
-            this.targetName = null;
-            this.xid = null;
             return curLocalSqlConnection.update("delete from mycat.xa_log where xid = '" + curXid + "'");
         })).transform(u -> {
             if (u.failed()) {
@@ -145,32 +169,58 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
                     curLocalSqlConnection.close();
                 }
             }
-            this.localSqlConnection = null;
             inTranscation = false;
+            xid = null;
+            localSqlConnection = null;
             return Future.succeededFuture();
         }).mapEmpty();
     }
 
     @Override
     public Future<Void> closeStatementState() {
+        ///////////////////////////////check////////////////////////////////
+        if (this.localSqlConnection != null) {
+            if (inTranscation && this.localSqlConnection.isClosed()) {
+                LOGGER.error("localSqlConnection is closed,in transaction");
+            }
+            if (inTranscation && !this.localSqlConnection.isClosed()) {
+                //ok
+            }
+            if (!inTranscation && this.localSqlConnection.isClosed()) {
+                LOGGER.error("localSqlConnection is closed,not in transaction");
+                //fix
+                this.localSqlConnection = null;
+            }
+            if (!inTranscation && !this.localSqlConnection.isClosed()) {
+                LOGGER.error("localSqlConnection is not closed,not in transaction");
+                //fix
+                this.localSqlConnection.close();
+                this.localSqlConnection = null;
+            }
+        }
+        if (!map.isEmpty()) {
+            if (inTranscation) {
+                //ok
+            }
+            if (!inTranscation) {
+                LOGGER.error("xa connection map is not empty ,in transaction");
+            }
+        }
+        ///////////////////////////////check////////////////////////////////
         Future<Void> future = Future.succeededFuture();
         if (localSqlConnection != null) {
             future = localSqlConnection.abandonQuery();
         }
         return CompositeFuture.join(future, super.closeStatementState()
                 .flatMap(event -> {
+                    Future<Void> closeFuture = Future.succeededFuture();
                     if (!isInTransaction()) {
-                        NewMycatConnection localSqlConnection = this.localSqlConnection;
+                        closeFuture = Optional.ofNullable(this.localSqlConnection)
+                                .map(newMycatConnection -> localSqlConnection.close())
+                                .orElse(Future.succeededFuture());
                         this.localSqlConnection = null;
-                        this.targetName = null;
-                        if (localSqlConnection != null) {
-                            return localSqlConnection.close();
-                        } else {
-                            return Future.succeededFuture();
-                        }
-                    } else {
-                        return Future.succeededFuture();
                     }
+                    return closeFuture;
                 })).mapEmpty();
     }
 
@@ -182,7 +232,11 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
     @Override
     public List<NewMycatConnection> getExistedTranscationConnections() {
         if (localSqlConnection == null) {
-            return super.getExistedTranscationConnections();
+            List<NewMycatConnection> existedTranscationConnections = super.getExistedTranscationConnections();
+            if (!existedTranscationConnections.isEmpty()) {
+                LOGGER.error("localSqlConnection is null but existed transcation connections is not empty");
+            }
+            return existedTranscationConnections;
         }
         ArrayList<NewMycatConnection> newMycatConnections = new ArrayList<>();
         newMycatConnections.add(localSqlConnection);
@@ -193,7 +247,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
     @Override
     public Future<Void> kill() {
         Future<Void> future = rollback();
-        return future.flatMap(unused -> {
+        return future.transform(unused -> {
             if (localSqlConnection != null) {
                 localSqlConnection.abandonConnection();
                 localSqlConnection = null;

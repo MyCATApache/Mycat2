@@ -589,6 +589,16 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     }
 
     @Override
+    public boolean isClosed() {
+        try {
+            return this.connection.isClosed();
+        }catch (Throwable throwable){
+            LOGGER.error("",throwable);
+            return true;
+        }
+    }
+
+    @Override
     public void abandonConnection() {
         JdbcUtils.close(this.connection);
     }

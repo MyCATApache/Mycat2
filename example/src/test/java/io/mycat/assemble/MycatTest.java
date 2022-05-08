@@ -116,4 +116,9 @@ public interface MycatTest {
             return new CopyMycatRowMetaData(new JdbcRowMetaData(metaData));
         }
     }
+    default long getUseCon(Connection connection,String dsName) throws Exception {
+        List<Map<String, Object>> maps = executeQuery(connection, "/*+ mycat:showDataSources{} */");
+        return maps.stream().filter(r -> dsName.equalsIgnoreCase((String) r.get("NAME"))).map(r -> (Number) r.get("USE_CON")).findFirst().get().longValue();
+    }
+
 }

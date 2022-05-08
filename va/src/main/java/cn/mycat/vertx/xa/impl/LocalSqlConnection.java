@@ -45,7 +45,7 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
     protected final Supplier<MySQLManager> mySQLManagerSupplier;
 
     public LocalSqlConnection(MySQLIsolation isolation, Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog) {
-        super(isolation,xaLog);
+        super(isolation, xaLog);
         this.mySQLManagerSupplier = mySQLManagerSupplier;
     }
 
@@ -80,11 +80,7 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
         }
         return mySQLManager().getConnection(targetName)
                 .map(connection -> {
-                    if (!map.containsKey(targetName)) {
-                        map.put(targetName, connection);
-                    } else {
-                        extraConnections.add(connection);
-                    }
+                    extraConnections.add(connection);
                     return connection;
                 });
     }
@@ -101,7 +97,7 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
             inTranscation = false;
             //每一个记录日志
             return Future.succeededFuture();
-        }).onFailure(event -> LOGGER.error("",event)).mapEmpty().flatMap(o -> closeStatementState());
+        }).onFailure(event -> LOGGER.error("", event)).mapEmpty().flatMap(o -> closeStatementState());
     }
 
     @Override
@@ -110,7 +106,7 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
         return CompositeFuture.join(rollback).onComplete(event -> {
             inTranscation = false;
             //每一个记录日志
-        }).onFailure(event -> LOGGER.error("",event)).mapEmpty().flatMap(o -> closeStatementState());
+        }).onFailure(event -> LOGGER.error("", event)).mapEmpty().flatMap(o -> closeStatementState());
     }
 
     @Override

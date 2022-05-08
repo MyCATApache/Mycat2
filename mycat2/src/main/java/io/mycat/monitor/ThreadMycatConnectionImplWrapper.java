@@ -25,6 +25,11 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
     }
 
     @Override
+    public String getTargetName() {
+        return this.newMycatConnection.getTargetName();
+    }
+
+    @Override
     public Future<RowSet> query(String sql, List<Object> params) {
         IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
         return ioExecutor.executeBlocking(promise -> {
@@ -148,6 +153,11 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
                 this.stat.decThread();
             }
         });
+    }
+
+    @Override
+    public boolean isClosed() {
+        return newMycatConnection.isClosed();
     }
 
     @Override

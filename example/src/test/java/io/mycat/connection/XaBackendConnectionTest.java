@@ -11,7 +11,6 @@ import java.sql.Connection;
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
 @Disabled
-@Ignore
 public class XaBackendConnectionTest extends DefaultBackendConnectionTest {
     boolean init = false;
 

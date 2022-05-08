@@ -100,7 +100,7 @@ public class VertxMySQLDatasourcePoolImpl extends AbstractMycatDatasourcePool {
             DatabaseInstanceEntry stat = DatabaseInstanceEntry.stat(targetName);
             stat.plusCon();
             stat.plusQps();
-            return new NewVertxConnectionImpl((MySQLConnectionImpl) sqlConnection) {
+            return new NewVertxConnectionImpl(targetName,(MySQLConnectionImpl) sqlConnection) {
                 long start;
 
                 @Override

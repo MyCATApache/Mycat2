@@ -13,10 +13,7 @@ import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.Json;
 import lombok.SneakyThrows;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.testng.Assert;
 
 import javax.annotation.concurrent.NotThreadSafe;
@@ -39,6 +36,7 @@ public class MycatMonitorTest implements MycatTest {
     }
 
     @AfterClass
+    @SneakyThrows
     public static void afterClass() {
         if (vertx != null) {
             vertx.close();
@@ -52,6 +50,13 @@ public class MycatMonitorTest implements MycatTest {
 
     }
 
+    @After
+    @SneakyThrows
+    public synchronized void after() {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
+            JdbcUtils.execute(mycatConnection, "/*+mycat:setSqlTimeFilter{value:30} */", Collections.emptyList());
+        }
+    }
     @Test
     @SneakyThrows
     public void test() {

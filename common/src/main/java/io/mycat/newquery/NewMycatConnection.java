@@ -12,6 +12,9 @@ import java.util.List;
 
 public interface NewMycatConnection {
 
+    String getTargetName();
+
+
     default void query(String sql, MysqlCollector collector) {
         prepareQuery(sql, Collections.emptyList(), collector);
     }
@@ -41,6 +44,8 @@ public interface NewMycatConnection {
     Future<SqlResult> update(String sql, List<Object> params);
 
     public Future<Void> close();
+
+    public boolean isClosed();
 
     default void onSend() {
 
