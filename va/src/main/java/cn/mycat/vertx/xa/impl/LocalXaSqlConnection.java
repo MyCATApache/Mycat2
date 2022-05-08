@@ -56,7 +56,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
         if (!isInTransaction()) {
             if (localSqlConnection == null && map.isEmpty()) {
                 //ok
-            }else {
+            } else {
                 LOGGER.error("meet commit in transaction bug");
             }
         }
@@ -71,12 +71,14 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
         }
         if (localSqlConnection != null && map.isEmpty()) {
             return localSqlConnection.update("commit;")
-                    .onSuccess(event -> {
-                        localSqlConnection.close();
+                    .transform(event -> {
+                        Future<Void> closeFuture = localSqlConnection.close();
 
                         inTranscation = false;
                         xid = null;
                         localSqlConnection = null;
+
+                        return closeFuture;
                     }).mapEmpty();
         }
         if (inTranscation && localSqlConnection != null) {
@@ -89,12 +91,12 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
                         });
                     }).mapEmpty()
                     .compose(o -> {
-                        curLocalSqlConnection.close();
+                        Future<Void> closeFuture = curLocalSqlConnection.close();
 
                         inTranscation = false;
                         xid = null;
                         localSqlConnection = null;
-                        return Future.succeededFuture();
+                        return closeFuture;
                     }).mapEmpty();
         } else {
             throw new AssertionError();
@@ -127,7 +129,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
             return super.getConnection(targetName);
         }
         return mySQLManager.getConnection(targetName).map(connection -> {
-                extraConnections.add(connection);
+            extraConnections.add(connection);
             return connection;
         });
     }
@@ -211,12 +213,14 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
         }
         return CompositeFuture.join(future, super.closeStatementState()
                 .flatMap(event -> {
+                    Future<Void> closeFuture = Future.succeededFuture();
                     if (!isInTransaction()) {
-                        Optional.ofNullable(this.localSqlConnection)
-                                .ifPresent(newMycatConnection -> localSqlConnection.close());
+                        closeFuture = Optional.ofNullable(this.localSqlConnection)
+                                .map(newMycatConnection -> localSqlConnection.close())
+                                .orElse(Future.succeededFuture());
                         this.localSqlConnection = null;
                     }
-                    return Future.succeededFuture();
+                    return closeFuture;
                 })).mapEmpty();
     }
 

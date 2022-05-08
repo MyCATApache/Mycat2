@@ -4,6 +4,7 @@ import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
 import lombok.SneakyThrows;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
