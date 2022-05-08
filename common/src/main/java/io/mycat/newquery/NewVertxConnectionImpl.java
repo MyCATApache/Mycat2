@@ -58,9 +58,16 @@ public class NewVertxConnectionImpl implements NewMycatConnection {
 
     MySQLConnectionImpl mySQLConnection;
     CursorHandler cursorHandler = null;
+    String targetName;
 
-    public NewVertxConnectionImpl(MySQLConnectionImpl mySQLConnection) {
+    public NewVertxConnectionImpl(String targetName,MySQLConnectionImpl mySQLConnection) {
         this.mySQLConnection = mySQLConnection;
+        this.targetName = targetName;
+    }
+
+    @Override
+    public String getTargetName() {
+        return this.targetName;
     }
 
     @Override

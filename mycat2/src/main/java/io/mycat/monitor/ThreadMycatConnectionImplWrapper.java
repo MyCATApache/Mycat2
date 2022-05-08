@@ -25,6 +25,11 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
     }
 
     @Override
+    public String getTargetName() {
+        return this.newMycatConnection.getTargetName();
+    }
+
+    @Override
     public Future<RowSet> query(String sql, List<Object> params) {
         IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
         return ioExecutor.executeBlocking(promise -> {

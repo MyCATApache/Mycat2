@@ -9,6 +9,9 @@ import java.util.Collections;
 import java.util.List;
 
 public interface NewMycatConnection {
+
+    String getTargetName();
+
     default void query(String sql, MysqlCollector collector) {
         prepareQuery(sql, Collections.emptyList(), collector);
     }

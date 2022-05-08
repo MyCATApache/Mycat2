@@ -50,6 +50,11 @@ public class NativeMySQLConnection implements NewMycatConnection {
     }
 
     @Override
+    public String getTargetName() {
+        return this.mySQLClientSession.getDatasourceName();
+    }
+
+    @Override
     public Future<RowSet> query(String sql, List<Object> params) {
         throw new UnsupportedOperationException();
     }
