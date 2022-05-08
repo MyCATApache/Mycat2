@@ -488,6 +488,9 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
             return future.onComplete(u -> executeTranscationConnection(c -> {
                 return c.close();
             }).onComplete(c -> {
+                for (NewMycatConnection connection : map.values()) {
+                    connection.close();
+                }
                 map.clear();
                 connectionState.clear();
             }));
