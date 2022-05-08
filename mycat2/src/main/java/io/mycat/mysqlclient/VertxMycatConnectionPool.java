@@ -51,10 +51,16 @@ public class VertxMycatConnectionPool implements NewMycatConnection {
     private VertxPoolConnectionImpl vertxConnectionPool;
     Future<Void> queryCloseFuture = Future.succeededFuture();
 
+    private boolean close = false;
     public VertxMycatConnectionPool(String targetName, VertxConnection connection, VertxPoolConnectionImpl vertxConnectionPool) {
         this.targetName = targetName;
         this.connection = connection;
         this.vertxConnectionPool = vertxConnectionPool;
+    }
+
+    @Override
+    public String getTargetName() {
+        return targetName;
     }
 
     @Override
@@ -228,9 +234,15 @@ public class VertxMycatConnectionPool implements NewMycatConnection {
 
     @Override
     public Future<Void> close() {
+        close = true;
         return queryCloseFuture
                 .onSuccess(event -> vertxConnectionPool.recycle(connection))
                 .onFailure(event -> vertxConnectionPool.kill(connection));
+    }
+
+    @Override
+    public boolean isClosed() {
+        return close;
     }
 
     @Override
