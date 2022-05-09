@@ -100,7 +100,9 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
                     }
                 }
             };
-            list.add(newMycatConnection);
+            if (LOGGER.isDebugEnabled()) {
+                list.add(newMycatConnection);
+            }
             return Future.succeededFuture(new ThreadMycatConnectionImplWrapper(stat, newMycatConnection));
         } catch (Throwable throwable) {
             return Future.failedFuture(throwable);
