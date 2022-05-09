@@ -74,7 +74,7 @@ public class MycatMonitorTest implements MycatTest {
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
 
             String sql = " select * FROM db1.`monitor`; ";
-            for (int i = 0; i < 1000; i++) {
+            for (int i = 0; i < 100; i++) {
                 JdbcUtils.executeQuery(mySQLConnection, sql, Collections.emptyList());
             }
         }
@@ -97,7 +97,7 @@ public class MycatMonitorTest implements MycatTest {
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
 
             String sql = " select * FROM db1.`monitor`; ";
-            for (int i = 0; i < 1000; i++) {
+            for (int i = 0; i < 100; i++) {
                 executeQuery(mySQLConnection, sql);
             }
         }
@@ -120,7 +120,7 @@ public class MycatMonitorTest implements MycatTest {
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
 
             String sql = " select * FROM db1.`monitor`";
-            for (int i = 0; i < 1000; i++) {
+            for (int i = 0; i < 100; i++) {
                 executeQuery(mySQLConnection, sql);
             }
         }
