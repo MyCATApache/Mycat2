@@ -117,6 +117,7 @@ public class JdbcDataSource implements MycatDataSource {
     public void close() {
         int count = this.counter.get();
         if (count > 0) {
+            LOGGER.info("JdbcDataSource:{} close ,but pool count is {}", getName(), count);
             if (this.datasourceConfig.isRemoveAbandoned() && this.getDataSource() instanceof DruidDataSource) {
                 DruidDataSource druidDataSource = (DruidDataSource) this.getDataSource();
                 Object activeConnections = druidDataSource.getActiveConnectionStackTrace();
@@ -124,7 +125,6 @@ public class JdbcDataSource implements MycatDataSource {
                 if (activeCount != count) {
                     LOGGER.error("JdbcDataSource:{} close activeCount{},activeCount != count",getName(),activeCount);
                 }
-                LOGGER.debug("JdbcDataSource:{} close ,but activeCount has {}", getName(), activeCount);
                 LOGGER.debug("JdbcDataSource:{} close count but has activeConnections {}", getName(), activeConnections);
             }
             MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
