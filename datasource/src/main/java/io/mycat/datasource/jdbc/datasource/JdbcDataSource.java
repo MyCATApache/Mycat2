@@ -131,7 +131,6 @@ public class JdbcDataSource implements MycatDataSource {
             RowBaseIterator rowBaseIterator = mycatServer.showConnections();
             List<Map<String, Object>> resultSetMap = rowBaseIterator.getResultSetMap();
             LOGGER.error(resultSetMap.toString());
-            LOGGER.error(resultSetMap.toString());
         }
         Optional.ofNullable(this.getDataSource()).ifPresent(i -> {
             try {
