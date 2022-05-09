@@ -21,6 +21,7 @@ import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.config.MycatServerConfig;
 import io.mycat.monitor.LogEntryHolder;
 import io.mycat.newquery.NewMycatConnectionConfig;
+import io.mycat.runtime.MycatXaTranscation;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.*;
 import io.vertx.core.net.NetServer;
@@ -299,8 +300,9 @@ public class VertxMycatServer implements MycatServer {
                 MycatDataContext dataContext = session;
                 String TRANSACTION_TYPE = Optional.ofNullable(dataContext.transactionType()).map(i -> i.getName()).orElse("");
 
-                TransactionSession transactionSession = dataContext.getTransactionSession();
-                String TRANSCATION_SMAPSHOT = transactionSession.snapshot().toString("|");
+                MycatXaTranscation transactionSession = (MycatXaTranscation)dataContext.getTransactionSession();
+
+                String TRANSCATION_SMAPSHOT = transactionSession.getAllConnections().toString();
                 boolean CANCEL_FLAG = dataContext.getCancelFlag().get();
 
                 LogEntryHolder holder = (LogEntryHolder) dataContext.getHolder();

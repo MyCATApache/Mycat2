@@ -65,6 +65,12 @@ public class DruidDatasourceProvider implements DatasourceProvider {
         datasource.setTestWhileIdle(true);
         datasource.setQueryTimeout(config.getQueryTimeout());
 
+        if(config.isRemoveAbandoned()){
+            datasource.setRemoveAbandoned(true);
+            datasource.setRemoveAbandonedTimeout(config.getRemoveAbandonedTimeoutSecond());
+            datasource.setLogAbandoned(config.isLogAbandoned());
+        }
+
         if (maxRetryCount > 0) {
             datasource.setConnectionErrorRetryAttempts(maxRetryCount);
         }

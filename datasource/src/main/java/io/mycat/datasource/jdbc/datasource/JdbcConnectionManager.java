@@ -139,7 +139,6 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                     DatasourceConfig config = key.getConfig();
                     connection = key.getDataSource().getConnection();
                     defaultConnection = new DefaultConnection(connection, key, autocommit, transactionIsolation, this);
-                    LOGGER.debug("get connection:{} {}", name, defaultConnection);
                     if (config.isInitSqlsGetConnection()) {
                         if (config.getInitSqls() != null && !config.getInitSqls().isEmpty()) {
                             try (Statement statement = connection.createStatement()) {
@@ -150,6 +149,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                         }
                     }
                     key.counter.getAndIncrement();
+                    LOGGER.debug("get connection:{} pool {} ,used count:{} ", name, defaultConnection,key.counter);
                     return defaultConnection;
                 } catch (SQLException e) {
                     if (connection != null) {
@@ -181,6 +181,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
 
     @Override
     public void closeConnection(DefaultConnection connection) {
+        JdbcDataSource dataSource = connection.getDataSource();
         connection.getDataSource().counter.decrementAndGet();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("close :{} {}", connection, connection.connection);
@@ -203,6 +204,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
             LOGGER.error("", e);
         }
         JdbcUtils.close(connection.connection);
+        LOGGER.debug("rec connection:{} pool {} ,used count:{} ", dataSource.getName(), connection,dataSource.counter);
     }
 
     @Override

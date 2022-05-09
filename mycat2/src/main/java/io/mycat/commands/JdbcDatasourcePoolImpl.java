@@ -30,15 +30,23 @@ import io.vertx.core.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcDatasourcePoolImpl.class);
-
+    List<Object> list = Collections.synchronizedList(new ArrayList<>());
     public JdbcDatasourcePoolImpl(String targetName) {
         super(targetName);
     }
 
     @Override
     public Future<NewMycatConnection> getConnection() {
+        if (LOGGER.isDebugEnabled()){
+            LOGGER.debug("JdbcDatasourcePoolImpl {}  : size: {}",getTargetName(),list.size());
+            LOGGER.debug("JdbcDatasourcePoolImpl {}  : {}",getTargetName(),list);
+        }
         try {
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
             DefaultConnection defaultConnection = jdbcConnectionManager.getConnection(targetName);
@@ -66,6 +74,13 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
                         stat.decCon();
                         JdbcUtils.close(getResultSet());
                         defaultConnection.close();
+
+                        if (LOGGER.isDebugEnabled()) {
+                            list.remove(this);
+                            LOGGER.debug("JdbcDatasourcePoolImpl {}  : size: {}",getTargetName(),list.size());
+                            LOGGER.debug("JdbcDatasourcePoolImpl {}  : {}",getTargetName(),list);
+                        }
+
                         return Future.succeededFuture();
                     });
                 }
@@ -74,11 +89,18 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
                 public void abandonConnection() {
                     try{
                         defaultConnection.close();
+
+                        if (LOGGER.isDebugEnabled()) {
+                            list.remove(this);
+                            LOGGER.debug("JdbcDatasourcePoolImpl {}  : size: {}",getTargetName(),list.size());
+                            LOGGER.debug("JdbcDatasourcePoolImpl {}  : {}",getTargetName(),list);
+                        }
                     }finally {
                         stat.decCon();
                     }
                 }
             };
+            list.add(newMycatConnection);
             return Future.succeededFuture(new ThreadMycatConnectionImplWrapper(stat, newMycatConnection));
         } catch (Throwable throwable) {
             return Future.failedFuture(throwable);

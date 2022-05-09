@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
@@ -54,7 +55,9 @@ public class MycatMonitorTest implements MycatTest {
     @SneakyThrows
     public synchronized void after() {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
-            JdbcUtils.execute(mycatConnection, "/*+mycat:setSqlTimeFilter{value:30} */", Collections.emptyList());
+            JdbcUtils.execute(mycatConnection, "/*+mycat:setSqlTimeFilter{value:" +
+                    TimeUnit.SECONDS.toMillis(30) +
+                    "} */", Collections.emptyList());
         }
     }
     @Test

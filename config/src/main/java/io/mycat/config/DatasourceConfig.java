@@ -38,6 +38,9 @@ public class DatasourceConfig implements KVObject{
     @javax.validation.constraints.NotNull
     private String type = DatasourceType.JDBC.name();
     private int queryTimeout = 0;
+    private boolean removeAbandoned = false;
+    private int removeAbandonedTimeoutSecond=180;//秒
+    private boolean logAbandoned = true;
 
     public DatasourceConfig() {
     }
