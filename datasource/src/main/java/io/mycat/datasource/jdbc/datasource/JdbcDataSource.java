@@ -130,8 +130,7 @@ public class JdbcDataSource implements MycatDataSource {
             MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
             RowBaseIterator rowBaseIterator = mycatServer.showConnections();
             List<Map<String, Object>> resultSetMap = rowBaseIterator.getResultSetMap();
-            LOGGER.error(resultSetMap.toString());
-            LOGGER.error(resultSetMap.toString());
+            LOGGER.info(resultSetMap.toString());
         }
         Optional.ofNullable(this.getDataSource()).ifPresent(i -> {
             try {
