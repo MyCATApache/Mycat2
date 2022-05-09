@@ -20,10 +20,19 @@ import com.alibaba.druid.sql.ast.statement.SQLAlterTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.*;
+import io.mycat.calcite.table.GlobalTable;
+import io.mycat.calcite.table.NormalTable;
+import io.mycat.calcite.table.ShardingTable;
+import io.mycat.config.GlobalTableConfig;
+import io.mycat.config.MycatRouterConfigOps;
+import io.mycat.config.NormalTableConfig;
+import io.mycat.config.ShardingTableConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.prototypeserver.mysql.PrototypeService;
 import io.mycat.sqlhandler.AbstractSQLHandler;
+import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
+import io.mycat.util.JsonUtil;
 import io.vertx.core.Future;
 import io.vertx.core.shareddata.Lock;
 import org.slf4j.Logger;
@@ -57,26 +66,47 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
 
                     PrototypeService manager = MetaClusterCurrent.wrapper(PrototypeService.class);
                     Optional<String> createTableSQLByJDBCOptional = manager.getCreateTableSQLByJDBC(schema, tableName, new ArrayList<>(partitions));
+
                     if (createTableSQLByJDBCOptional.isPresent()) {
-                        String createTableSQLByJDBC = createTableSQLByJDBCOptional.get();
-                        MySqlCreateTableStatement oldCreateTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(tableHandler.getCreateTableSQL());
-                        MySqlCreateTableStatement newMySqlCreateTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(createTableSQLByJDBC);
-                        boolean broadCast = oldCreateTableStatement.isBroadCast();
-                        SQLExpr dbPartitionBy = oldCreateTableStatement.getDbPartitionBy();
-                        SQLExpr dbPartitions = oldCreateTableStatement.getDbPartitions();
-                        SQLExpr tablePartitionBy = oldCreateTableStatement.getTablePartitionBy();
-                        SQLExpr tbpartitions = oldCreateTableStatement.getTbpartitions();
-
-                        newMySqlCreateTableStatement.setBroadCast(broadCast);
-                        newMySqlCreateTableStatement.setDbPartitionBy(dbPartitionBy);
-                        newMySqlCreateTableStatement.setDbPartitions(dbPartitions);
-                        newMySqlCreateTableStatement.setTablePartitionBy(tablePartitionBy);
-                        newMySqlCreateTableStatement.setTablePartitions(tbpartitions);
-
-
-                        CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(), schema, tableName, newMySqlCreateTableStatement);
-                    } else {
-                        return Future.failedFuture(new MycatException("can not generate new create table sql:" + sqlAlterTableStatement));
+                        String createTableSQL = createTableSQLByJDBCOptional.get();
+                        switch (tableHandler.getType()) {
+                            case SHARDING: {
+                                ShardingTable shardingTable = (ShardingTable) tableHandler;
+                                ShardingTableConfig tableConfig = JsonUtil.clone(shardingTable.getTableConfig(),ShardingTableConfig.class);
+                                try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+                                    tableConfig.setCreateTableSQL(createTableSQL);
+                                    ops.putShardingTable(schema, tableName, tableConfig);
+                                    ops.commit();
+                                }
+                                break;
+                            }
+                            case GLOBAL: {
+                                GlobalTable globalTable = (GlobalTable) tableHandler;
+                                GlobalTableConfig tableConfig = JsonUtil.clone(globalTable.getTableConfig(), GlobalTableConfig.class);
+                                tableConfig.setCreateTableSQL(createTableSQL);
+                                try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+                                    ops.putGlobalTableConfig(schema, tableName, tableConfig);
+                                    ops.commit();
+                                }
+                                break;
+                            }
+                            case NORMAL: {
+                                NormalTable normalTable = (NormalTable) tableHandler;
+                                NormalTableConfig tableConfig = JsonUtil.clone(normalTable.getTableConfig(), NormalTableConfig.class);
+                                tableConfig.setCreateTableSQL(createTableSQL);
+                                try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+                                    ops.putNormalTable(schema, tableName, tableConfig);
+                                    ops.commit();
+                                }
+                                break;
+                            }
+                            case CUSTOM:
+                                break;
+                            case VISUAL:
+                                break;
+                            case VIEW:
+                                break;
+                        }
                     }
                     return response.sendOk();
                 } catch (Throwable throwable) {
