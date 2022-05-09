@@ -125,7 +125,7 @@ public class JdbcDataSource implements MycatDataSource {
                 if (activeCount != count) {
                     LOGGER.error("JdbcDataSource:{} close activeCount{},activeCount != count",getName(),activeCount);
                 }
-                LOGGER.debug("JdbcDataSource:{} close count but has activeConnections {}", getName(), activeConnections);
+                LOGGER.info("JdbcDataSource:{} close count but has activeConnections {}", getName(), activeConnections);
             }
             MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
             RowBaseIterator rowBaseIterator = mycatServer.showConnections();
