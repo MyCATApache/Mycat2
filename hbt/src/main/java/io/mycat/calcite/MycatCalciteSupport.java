@@ -44,6 +44,7 @@ import io.mycat.hbt.ast.base.Schema;
 import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.util.Explains;
 import io.mycat.util.NameMap;
+import io.mycat.util.StringUtil;
 import lombok.SneakyThrows;
 import org.apache.calcite.adapter.enumerable.RexImpTable;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -702,7 +703,7 @@ public enum MycatCalciteSupport implements Context {
                                                   SqlNode secondNode = call.getOperandList().get(1);
                                                   if (firstNode instanceof TableParamSqlNode && secondNode instanceof SqlIdentifier) {
                                                       TableParamSqlNode tableParamSqlNode = (TableParamSqlNode) firstNode;
-                                                      if (tableParamSqlNode.getHint() != null) {
+                                                      if (!StringUtil.isEmpty(tableParamSqlNode.getHint())) {
                                                           String hint = tableParamSqlNode.getHint();
                                                           SqlIdentifier tableNameNode = (SqlIdentifier) visit(tableParamSqlNode);
                                                           SqlBasicCall sqlBasicCall = new SqlBasicCall(call.getOperator(), new SqlNode[]{tableNameNode, secondNode}, SqlParserPos.ZERO);
