@@ -665,17 +665,16 @@ public enum MycatCalciteSupport implements Context {
         return writer.toSqlString();
     }
 
-    public SqlNode sqlTemplateApply(SqlNode sqlTemplate,List<Object> params, PartitionGroup map) {
+    public SqlNode sqlTemplateApply(SqlNode sqlTemplate, List<Object> params, PartitionGroup map) {
         return sqlTemplate.accept(new SqlShuttle() {
                                       @Override
                                       public SqlNode visit(SqlIdentifier id) {
                                           if (id instanceof TableParamSqlNode) {
                                               Partition partition = map.get(((TableParamSqlNode) id).getUniqueName());
-                                              return new SqlIdentifier(ImmutableList.of(partition.getSchema(), partition.getTable()), SqlParserPos.ZERO){
+                                              return new SqlIdentifier(ImmutableList.of(partition.getSchema(), partition.getTable()), SqlParserPos.ZERO) {
                                                   @Override
                                                   public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
                                                       super.unparse(writer, leftPrec, rightPrec);
-                                                      writer.print(((TableParamSqlNode) id).getHint());
                                                   }
                                               };
                                           }
@@ -689,14 +688,29 @@ public enum MycatCalciteSupport implements Context {
 
                                       @Override
                                       public SqlNode visit(SqlCall call) {
-                                          if (call.getKind() == SqlKind.PLUS){
-                                             if (call.getOperandList().size()==2&&call.getOperandList().stream().allMatch(i->i instanceof SortSqlNode)){
-                                                 SortSqlNode offsetNode = (SortSqlNode)call.getOperandList().get(0);
-                                                 SortSqlNode fetchNode = (SortSqlNode)call.getOperandList().get(1);
-                                                 Number offset = (Number) params.get(offsetNode.getIndex());
-                                                 Number fetch = (Number) params.get(fetchNode.getIndex());
-                                                 return SqlLiteral.createExactNumeric(String.valueOf(offset.longValue()+fetch.longValue()),SqlParserPos.ZERO);
-                                             }
+                                          if (call.getKind() == SqlKind.PLUS) {
+                                              if (call.getOperandList().size() == 2 && call.getOperandList().stream().allMatch(i -> i instanceof SortSqlNode)) {
+                                                  SortSqlNode offsetNode = (SortSqlNode) call.getOperandList().get(0);
+                                                  SortSqlNode fetchNode = (SortSqlNode) call.getOperandList().get(1);
+                                                  Number offset = (Number) params.get(offsetNode.getIndex());
+                                                  Number fetch = (Number) params.get(fetchNode.getIndex());
+                                                  return SqlLiteral.createExactNumeric(String.valueOf(offset.longValue() + fetch.longValue()), SqlParserPos.ZERO);
+                                              }
+                                          } else if (call.getKind() == SqlKind.AS) {
+                                              if (call.getOperandList().size() == 2) {
+                                                  SqlNode firstNode = call.getOperandList().get(0);
+                                                  SqlNode secondNode = call.getOperandList().get(1);
+                                                  if (firstNode instanceof TableParamSqlNode && secondNode instanceof SqlIdentifier) {
+                                                      TableParamSqlNode tableParamSqlNode = (TableParamSqlNode) firstNode;
+                                                      if (tableParamSqlNode.getHint() != null) {
+                                                          String hint = tableParamSqlNode.getHint();
+                                                          SqlIdentifier tableNameNode = (SqlIdentifier) visit(tableParamSqlNode);
+                                                          SqlBasicCall sqlBasicCall = new SqlBasicCall(call.getOperator(), new SqlNode[]{tableNameNode, secondNode}, SqlParserPos.ZERO);
+                                                          return new SqlIdentifier(ImmutableList.of(sqlBasicCall + " " + hint), SqlParserPos.ZERO);
+                                                      }
+
+                                                  }
+                                              }
                                           }
                                           return super.visit(call);
                                       }
@@ -707,7 +721,7 @@ public enum MycatCalciteSupport implements Context {
 
     public String convertToMycatRelNodeText(RelNode node) {
         final StringWriter sw = new StringWriter();
-        final RelWriter planWriter = new RelWriterImpl(new PrintWriter(sw), SqlExplainLevel.EXPPLAN_ATTRIBUTES, false){
+        final RelWriter planWriter = new RelWriterImpl(new PrintWriter(sw), SqlExplainLevel.EXPPLAN_ATTRIBUTES, false) {
             @Override
             protected void explain_(RelNode rel, List<Pair<String, Object>> values) {
                 List<RelNode> inputs = rel.getInputs();
@@ -768,7 +782,7 @@ public enum MycatCalciteSupport implements Context {
                 for (RelNode input : inputs) {
                     input.explain(this);
                 }
-                if (rel instanceof MycatSQLTableLookup){
+                if (rel instanceof MycatSQLTableLookup) {
                     ((MycatSQLTableLookup) rel).getRight().explain(this);
                 }
                 spacer.subtract(2);
@@ -799,7 +813,7 @@ public enum MycatCalciteSupport implements Context {
     }
 
     public SqlDialect getSqlDialectByTargetName(String name) {
-        if (!MetaClusterCurrent.exist(ReplicaSelectorManager.class)){
+        if (!MetaClusterCurrent.exist(ReplicaSelectorManager.class)) {
             return MycatSqlDialect.DEFAULT;
         }
         ReplicaSelectorManager selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
