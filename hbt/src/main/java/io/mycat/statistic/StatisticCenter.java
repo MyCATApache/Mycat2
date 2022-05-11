@@ -58,10 +58,11 @@ public class StatisticCenter {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         try (DefaultConnection prototype = jdbcConnectionManager.getConnection(MetadataManager.getPrototype())) {
             Connection rawConnection = prototype.getRawConnection();
-            JdbcUtils.execute(rawConnection, "CREATE TABLE IF NOT EXISTS mycat.`analyze_table` (\n" +
+            JdbcUtils.execute(rawConnection, "CREATE TABLE `analyze_table` (\n" +
                     "  `table_rows` bigint(20) NOT NULL,\n" +
-                    "  `name` varchar(64) NOT NULL\n" +
-                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                    "  `name` varchar(64) NOT NULL,\n" +
+                    "  PRIMARY KEY (`name`)\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
             List<Map<String, Object>> maps = JdbcUtils.executeQuery(rawConnection, "select table_rows as `table_rows`,name from mycat.`analyze_table`", Collections.emptyList());
             for (Map<String, Object> map : maps) {
                 Number table_rows = (Number) map.get("table_rows");

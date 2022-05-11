@@ -68,60 +68,67 @@ public class DbStorageManagerImpl extends AbstractStorageManagerImpl {
                             "USE `mycat`;\n" +
                             "DROP TABLE IF EXISTS `analyze_table`;\n" +
                             "CREATE TABLE `analyze_table` (\n" +
-                            "\t`table_rows` bigint(20) NOT NULL,\n" +
-                            "\t`name` varchar(64) NOT NULL\n" +
-                            ") ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;\n" +
+                            "  `table_rows` bigint(20) NOT NULL,\n" +
+                            "  `name` varchar(64) NOT NULL,\n" +
+                            "  PRIMARY KEY (`name`)\n" +
+                            ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n" +
                             "DROP TABLE IF EXISTS `config`;\n" +
                             "CREATE TABLE `config` (\n" +
-                            "\t`key` varchar(22) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,\n" +
-                            "\t`value` longtext,\n" +
-                            "\t`version` bigint(20) DEFAULT NULL,\n" +
-                            "\t`secondKey` longtext,\n" +
-                            "\t`deleted` tinyint(1) DEFAULT '0'\n" +
-                            ") ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;\n" +
+                            "  `key` varchar(22) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,\n" +
+                            "  `value` longtext,\n" +
+                            "  `version` bigint(20) DEFAULT NULL,\n" +
+                            "  `secondKey` longtext,\n" +
+                            "  `deleted` tinyint(1) DEFAULT '0',\n" +
+                            "  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n" +
+                            "  PRIMARY KEY (`id`),\n" +
+                            "  KEY `id` (`id`)\n" +
+                            ") ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n" +
                             "DROP TABLE IF EXISTS `replica_log`;\n" +
                             "CREATE TABLE `replica_log` (\n" +
-                            "\t`name` varchar(22) DEFAULT NULL,\n" +
-                            "\t`dsNames` text,\n" +
-                            "\t`time` datetime DEFAULT NULL\n" +
-                            ") ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;\n" +
+                            "  `name` varchar(22) DEFAULT NULL,\n" +
+                            "  `dsNames` text,\n" +
+                            "  `time` datetime DEFAULT NULL,\n" +
+                            "  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n" +
+                            "  PRIMARY KEY (`id`)\n" +
+                            ") ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n" +
                             "DROP TABLE IF EXISTS `spm_baseline`;\n" +
                             "CREATE TABLE `spm_baseline` (\n" +
-                            "\t`id` bigint(22) NOT NULL AUTO_INCREMENT,\n" +
-                            "\t`fix_plan_id` bigint(22) DEFAULT NULL,\n" +
-                            "\t`constraint` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,\n" +
-                            "\t`extra_constraint` longtext,\n" +
-                            "\tPRIMARY KEY (`id`),\n" +
-                            "\tUNIQUE KEY `constraint_index` (`constraint`(22)),\n" +
-                            "\tKEY `id` (`id`)\n" +
-                            ") ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;\n" +
+                            "  `id` bigint(22) NOT NULL AUTO_INCREMENT,\n" +
+                            "  `fix_plan_id` bigint(22) DEFAULT NULL,\n" +
+                            "  `constraint` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,\n" +
+                            "  `extra_constraint` longtext,\n" +
+                            "  PRIMARY KEY (`id`),\n" +
+                            "  UNIQUE KEY `constraint_index` (`constraint`(22)),\n" +
+                            "  KEY `id` (`id`)\n" +
+                            ") ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n" +
                             "DROP TABLE IF EXISTS `spm_plan`;\n" +
                             "CREATE TABLE `spm_plan` (\n" +
-                            "\t`id` bigint(22) NOT NULL AUTO_INCREMENT,\n" +
-                            "\t`sql` longtext,\n" +
-                            "\t`rel` longtext,\n" +
-                            "\t`baseline_id` bigint(22) DEFAULT NULL,\n" +
-                            "\tKEY `id` (`id`)\n" +
-                            ") ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;\n" +
+                            "  `id` bigint(22) NOT NULL AUTO_INCREMENT,\n" +
+                            "  `sql` longtext,\n" +
+                            "  `rel` longtext,\n" +
+                            "  `baseline_id` bigint(22) DEFAULT NULL,\n" +
+                            "  PRIMARY KEY (`id`),\n" +
+                            "  KEY `id` (`id`)\n" +
+                            ") ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n" +
                             "DROP TABLE IF EXISTS `sql_log`;\n" +
                             "CREATE TABLE `sql_log` (\n" +
-                            "\t`instanceId` bigint(20) DEFAULT NULL,\n" +
-                            "\t`user` varchar(64) DEFAULT NULL,\n" +
-                            "\t`connectionId` bigint(20) DEFAULT NULL,\n" +
-                            "\t`ip` varchar(22) DEFAULT NULL,\n" +
-                            "\t`port` bigint(20) DEFAULT NULL,\n" +
-                            "\t`traceId` varchar(22) NOT NULL,\n" +
-                            "\t`hash` varchar(22) DEFAULT NULL,\n" +
-                            "\t`sqlType` varchar(22) DEFAULT NULL,\n" +
-                            "\t`sql` longtext,\n" +
-                            "\t`transactionId` varchar(22) DEFAULT NULL,\n" +
-                            "\t`sqlTime` bigint(20) DEFAULT NULL,\n" +
-                            "\t`responseTime` datetime DEFAULT NULL,\n" +
-                            "\t`affectRow` int(11) DEFAULT NULL,\n" +
-                            "\t`result` tinyint(1) DEFAULT NULL,\n" +
-                            "\t`externalMessage` tinytext,\n" +
-                            "\tPRIMARY KEY (`traceId`)\n" +
-                            ") ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;\n" +
+                            "  `instanceId` bigint(20) DEFAULT NULL,\n" +
+                            "  `user` varchar(64) DEFAULT NULL,\n" +
+                            "  `connectionId` bigint(20) DEFAULT NULL,\n" +
+                            "  `ip` varchar(22) DEFAULT NULL,\n" +
+                            "  `port` bigint(20) DEFAULT NULL,\n" +
+                            "  `traceId` varchar(22) NOT NULL,\n" +
+                            "  `hash` varchar(22) DEFAULT NULL,\n" +
+                            "  `sqlType` varchar(22) DEFAULT NULL,\n" +
+                            "  `sql` longtext,\n" +
+                            "  `transactionId` varchar(22) DEFAULT NULL,\n" +
+                            "  `sqlTime` bigint(20) DEFAULT NULL,\n" +
+                            "  `responseTime` datetime DEFAULT NULL,\n" +
+                            "  `affectRow` int(11) DEFAULT NULL,\n" +
+                            "  `result` tinyint(1) DEFAULT NULL,\n" +
+                            "  `externalMessage` tinytext,\n" +
+                            "  PRIMARY KEY (`traceId`)\n" +
+                            ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n" +
                             "DROP TABLE IF EXISTS `variable`;\n" +
                             "CREATE TABLE `variable` (\n" +
                             "\t`name` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,\n" +

@@ -45,19 +45,20 @@ public class DbPlanManagerPersistorImpl implements PlanManagerPersistor {
                 JdbcUtils.execute(connection.getRawConnection(), "CREATE TABLE IF  NOT EXISTS mycat.`spm_baseline` (\n" +
                         "  `id` bigint(22) NOT NULL AUTO_INCREMENT,\n" +
                         "  `fix_plan_id` bigint(22) DEFAULT NULL,\n" +
-                        "  `constraint` longtext CHARACTER SET utf8mb4 NOT NULL,\n" +
+                        "  `constraint` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,\n" +
                         "  `extra_constraint` longtext,\n" +
                         "  PRIMARY KEY (`id`),\n" +
                         "  UNIQUE KEY `constraint_index` (`constraint`(22)),\n" +
                         "  KEY `id` (`id`)\n" +
-                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ");
+                        ") ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 ");
                 JdbcUtils.execute(connection.getRawConnection(), "CREATE TABLE IF  NOT EXISTS mycat.`spm_plan` (\n" +
                         "  `id` bigint(22) NOT NULL AUTO_INCREMENT,\n" +
                         "  `sql` longtext,\n" +
                         "  `rel` longtext,\n" +
                         "  `baseline_id` bigint(22) DEFAULT NULL,\n" +
+                        "  PRIMARY KEY (`id`),\n" +
                         "  KEY `id` (`id`)\n" +
-                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                        ") ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4");
             } catch (Exception e) {
                 log.error("", e);
             }
