@@ -43,6 +43,7 @@ public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStat
         return lockService.lock(DDL_LOCK, () -> {
             try {
                 SQLCreateIndexStatement sqlCreateIndexStatement = request.getAst();
+                sqlCreateIndexStatement.setIfNotExists(true);
                 SQLExprTableSource table = (SQLExprTableSource) sqlCreateIndexStatement.getTable();
                 resolveSQLExprTableSource(table, dataContext);
 
