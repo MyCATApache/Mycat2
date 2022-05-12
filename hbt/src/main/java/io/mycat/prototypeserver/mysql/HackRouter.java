@@ -137,6 +137,7 @@ public class HackRouter {
                     if (partition != null) {
                         MycatSQLExprTableSourceUtil.setSqlExprTableSource(partition.getSchema(), partition.getTable(), x);
                     }
+                    //with clause tmp table
                     return super.visit(x);
                 }
             });
