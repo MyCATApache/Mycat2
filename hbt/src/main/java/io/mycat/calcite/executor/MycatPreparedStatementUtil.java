@@ -31,6 +31,7 @@ import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -74,9 +75,11 @@ public class MycatPreparedStatementUtil {
 //           public boolean visit(SQLCommentHint x) {
 //          return true;
 //           }
+            HashSet<String> withEntities = new HashSet<>();
+
             @Override
             public boolean visit(SQLExprTableSource x) {
-                if (x.getTableName() != null) {
+                if (x.getTableName() != null && !withEntities.contains(x.getTableName())) {
                     if (x.getSchema() == null) {
                         if (defaultSchema != null) {
                             x.setSchema("`" + SQLUtils.normalize(defaultSchema) + "`");
@@ -175,6 +178,9 @@ public class MycatPreparedStatementUtil {
             @Override
             public boolean visit(SQLWithSubqueryClause x) {
                 try {
+                    for (SQLWithSubqueryClause.Entry entry : x.getEntries()) {
+                        withEntities.add(SQLUtils.normalize(entry.getAlias()));
+                    }
                     this.parameterized = false;
                     return super.visit(x);
                 } finally {
@@ -225,15 +231,15 @@ public class MycatPreparedStatementUtil {
         };
         parameterVisitor.setShardingSupport(false);
         parameterVisitor.setFeatures(VisitorFeature.OutputParameterizedQuesUnMergeInList.mask |
-                        VisitorFeature.OutputParameterizedQuesUnMergeAnd.mask |
-                        VisitorFeature.OutputParameterizedUnMergeShardingTable.mask |
-                        VisitorFeature.OutputParameterizedQuesUnMergeOr.mask
+                VisitorFeature.OutputParameterizedQuesUnMergeAnd.mask |
+                VisitorFeature.OutputParameterizedUnMergeShardingTable.mask |
+                VisitorFeature.OutputParameterizedQuesUnMergeOr.mask
                 | VisitorFeature.OutputParameterizedQuesUnMergeValuesList.mask
-                        | VisitorFeature.OutputParameterized.mask
+                | VisitorFeature.OutputParameterized.mask
         );
         parameterVisitor.setInputParameters(Collections.emptyList());
         sqlStatement.accept(parameterVisitor);
-        return new DrdsSqlWithParams(sb.toString(),outputParameters,false,Collections.emptyList(),Collections.emptyList(),Collections.emptyList());
+        return new DrdsSqlWithParams(sb.toString(), outputParameters, false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
     }
 
     public static ExecuteBatchInsert batchInsert(String sql, Group value, Connection connection, String targetName) {
