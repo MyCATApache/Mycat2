@@ -53,6 +53,7 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
             public Future<Void> get() {
                 try {
                     SQLAlterTableStatement sqlAlterTableStatement = request.getAst();
+                    sqlAlterTableStatement.setIfExists(true);
                     SQLExprTableSource tableSource = sqlAlterTableStatement.getTableSource();
                     resolveSQLExprTableSource(tableSource, dataContext);
                     String schema = SQLUtils.normalize(sqlAlterTableStatement.getSchema());

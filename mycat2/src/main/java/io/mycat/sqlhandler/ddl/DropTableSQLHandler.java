@@ -45,6 +45,7 @@ public class DropTableSQLHandler extends AbstractSQLHandler<SQLDropTableStatemen
             public Future<Void> get() {
                 try {
                     SQLDropTableStatement ast = request.getAst();
+                    ast.setIfExists(true);
                     List<SQLExprTableSource> tableSources = ast.getTableSources();
                     if (tableSources.size() != 1) {
                         throw new UnsupportedOperationException("unsupported drop multi table :" + tableSources.get(0));
