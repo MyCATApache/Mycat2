@@ -16,15 +16,18 @@ package io.mycat.vertx;
 
 import io.mycat.MySQLPacketUtil;
 import io.mycat.MycatDataContext;
+import io.mycat.ScheduleUtil;
 import io.mycat.TransactionSession;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.session.ProcessState;
 import io.mycat.util.VertxUtil;
 import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 
 import java.nio.charset.Charset;
+import java.util.concurrent.TimeUnit;
 
 public class VertxSessionImpl implements VertxSession {
     private MycatDataContext mycatDataContext;
@@ -135,7 +138,7 @@ public class VertxSessionImpl implements VertxSession {
                                 .onComplete(voidAsyncResult -> {
                                     if (!transactionSession.isInTransaction() && mycatSessionManager.isPause()) {
                                         socket.pause();
-                                        VertxSessionImpl.this.pause =true;
+                                        VertxSessionImpl.this.pause = true;
                                     }
                                 });
                     }
@@ -178,7 +181,10 @@ public class VertxSessionImpl implements VertxSession {
         } else {
             mycatDataContext.kill();
         }
-        return socket.close();
+        ScheduleUtil.getTimer().schedule(() -> {
+            socket.close();
+        }, 1, TimeUnit.SECONDS);
+        return Future.succeededFuture();
     }
 
     @Override
