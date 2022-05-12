@@ -77,9 +77,14 @@ public class MycatPreparedStatementUtil {
 //           }
             HashSet<String> withEntities = new HashSet<>();
 
+            boolean isWithTable(String tableName) {
+                if (tableName == null) return false;
+                return !withEntities.isEmpty() && withEntities.contains(SQLUtils.normalize(tableName));
+            }
+
             @Override
             public boolean visit(SQLExprTableSource x) {
-                if (x.getTableName() != null && !withEntities.contains(x.getTableName())) {
+                if (x.getTableName() != null && !isWithTable(x.getTableName())) {
                     if (x.getSchema() == null) {
                         if (defaultSchema != null) {
                             x.setSchema("`" + SQLUtils.normalize(defaultSchema) + "`");
