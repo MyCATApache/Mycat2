@@ -33,7 +33,7 @@ public class TruncateSQLHandler extends AbstractSQLHandler<SQLTruncateStatement>
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLTruncateStatement> request, MycatDataContext dataContext, Response response)  {
         SQLTruncateStatement truncateStatement = request.getAst();
-        truncateStatement.setIfExists(true);
+        //truncateStatement.setIfExists(true);
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
 
