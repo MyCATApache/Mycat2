@@ -17,10 +17,13 @@
 package io.mycat.calcite.table;
 
 import io.mycat.Partition;
+import io.mycat.SimpleColumnInfo;
 import io.mycat.TableHandler;
 
 import java.util.List;
 
 public interface GlobalTableHandler extends TableHandler {
     public List<Partition> getGlobalDataNode();
+
+    public SimpleColumnInfo getAutoIncrementColumn();
 }
