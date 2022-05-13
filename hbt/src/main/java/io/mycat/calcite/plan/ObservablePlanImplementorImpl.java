@@ -64,7 +64,12 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
     @Override
     public Future<Void> executeInsert(Plan logical) {
         MycatInsertRel mycatRel = (MycatInsertRel) logical.getMycatRel();
-        List<VertxExecuter.EachSQL> insertSqls = VertxExecuter.explainInsert(drdsSqlWithParams.getParameterizedSQL(), drdsSqlWithParams.getParams());
+        List<VertxExecuter.EachSQL> insertSqls;
+        if (mycatRel.isGlobal()) {
+            insertSqls = VertxExecuter.explainGlobalInsert(drdsSqlWithParams.getParameterizedSQL(), drdsSqlWithParams.getParams());
+        } else {
+            insertSqls = VertxExecuter.explainInsert(drdsSqlWithParams.getParameterizedSQL(), drdsSqlWithParams.getParams());
+        }
         assert !insertSqls.isEmpty();
         Future<long[]> future;
         if (insertSqls.size() > 1) {

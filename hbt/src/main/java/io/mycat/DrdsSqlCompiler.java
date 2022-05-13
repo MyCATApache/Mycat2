@@ -99,6 +99,7 @@ public class DrdsSqlCompiler {
     public static boolean RBO_BKA_JOIN = true;
     public static long BKA_JOIN_LEFT_ROW_COUNT_LIMIT = 1000;
     public static boolean DEBUG = log.isDebugEnabled();
+
     public DrdsSqlCompiler(DrdsConst config) {
         this.config = config;
 
@@ -231,7 +232,7 @@ public class DrdsSqlCompiler {
                     optimizationContext.saveAlways();
                     return mycatInsertRel;
                 case GLOBAL:
-                    return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTable) logicTable);
+                    return complieGlobalInsert(optimizationContext, drdsSql, sqlStatement, (GlobalTable) logicTable);
                 case NORMAL:
                     return complieNormalUpdate(optimizationContext, drdsSql, sqlStatement, (NormalTable) logicTable);
                 case CUSTOM:
@@ -291,6 +292,14 @@ public class DrdsSqlCompiler {
         }
 
         return null;
+    }
+
+    private MycatRel complieGlobalInsert(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, GlobalTable logicTable) {
+        List<Partition> globalDataNodeList = logicTable.getGlobalDataNode();
+        if (globalDataNodeList.isEmpty() || globalDataNodeList.size() == 1) {
+            return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, logicTable);
+        }
+        return MycatInsertRel.create(sqlStatement,true);
     }
 
     @NotNull

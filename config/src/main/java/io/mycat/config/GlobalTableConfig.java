@@ -13,6 +13,7 @@ import java.util.List;
 public class GlobalTableConfig {
     String createTableSQL;
     String balance;
+    int sequenceType = 0;
     @javax.validation.constraints.NotNull
     List<GlobalBackEndTableInfoConfig> broadcast = new ArrayList<>();
 }

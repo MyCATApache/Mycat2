@@ -21,6 +21,7 @@ import io.mycat.*;
 import io.mycat.config.GlobalTableConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.plug.sequence.SequenceGenerator;
 
 import java.util.List;
 import java.util.Map;
@@ -128,10 +129,10 @@ public class GlobalTable implements GlobalTableHandler {
     public String getUniqueName() {
         return logicTable.getUniqueName();
     }
-
     @Override
     public Supplier<Number> nextSequence() {
-        throw new UnsupportedOperationException();
+        SequenceGenerator sequenceGenerator = MetaClusterCurrent.wrapper(SequenceGenerator.class);
+        return sequenceGenerator.getSequence(getUniqueName());
     }
 
     @Override

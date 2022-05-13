@@ -28,8 +28,6 @@ import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.visitor.MycatSQLEvalVisitorUtils;
-import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
-import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.google.common.collect.ImmutableList;
 import io.mycat.*;
 import io.mycat.api.collector.MySQLColumnDef;
@@ -70,8 +68,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import static io.mycat.vertx.VertxExecuter.FillAutoIncrementType.AUTOINC_HAS_COLUMN;
 
 public class VertxExecuter {
     private static final Logger LOGGER = LoggerFactory.getLogger(VertxExecuter.class);
@@ -134,6 +130,98 @@ public class VertxExecuter {
         } else {
             return Future.succeededFuture().flatMap(o -> function.apply(null));
         }
+    }
+
+    public static List<EachSQL> explainGlobalInsert(String parameterizedSQL, List<Object> params) {
+        final MySqlInsertStatement statement = (MySqlInsertStatement) SQLUtils.parseSingleMysqlStatement(parameterizedSQL);
+
+        SQLExprTableSource tableSource = statement.getTableSource();
+        String schemaName = SQLUtils.normalize(tableSource.getSchema());
+        String tableName = SQLUtils.normalize(tableSource.getTableName());
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        GlobalTable table = (GlobalTable) metadataManager.getTable(schemaName, tableName);
+
+        List<Partition> partitionList = table.getGlobalDataNode();
+        if (partitionList.isEmpty()) {
+            return Collections.emptyList();
+        }
+        if (partitionList.size() == 1) {
+            Partition partition = partitionList.get(0);
+            tableSource.setExpr(partition.getTable());
+            tableSource.setSchema(partition.getSchema());
+            return Collections.singletonList(new EachSQL(partition.getTargetName(), parameterizedSQL, params));
+        }
+        int sequenceType = table.getTableConfig().getSequenceType();
+        ArrayList<EachSQL> resList = new ArrayList<>(partitionList.size());
+        if (sequenceType == 0) {
+            for (Partition partition : partitionList) {
+                tableSource.setExpr(partition.getTable());
+                tableSource.setSchema(partition.getSchema());
+                resList.add(new EachSQL(partition.getTargetName(), parameterizedSQL, params));
+            }
+            return resList;
+        }
+        FillAutoIncrementContext fillAutoIncrementContext = needFillAutoIncrement(table, (List) table.getColumns());
+        switch (fillAutoIncrementContext.type) {
+            case AUTOINC_HAS_COLUMN: {
+                break;
+            }
+            case AUTOINC_NO_COLUMN: {
+                SimpleColumnInfo autoIncrementColumn = table.getAutoIncrementColumn();
+                statement.addColumn(new SQLIdentifierExpr("`" + autoIncrementColumn.getColumnName() + "`"));
+                break;
+            }
+            case NO_AUTOINC: {
+                for (Partition partition : partitionList) {
+                    tableSource.setExpr(partition.getTable());
+                    tableSource.setSchema(partition.getSchema());
+                    EachSQL eachSQL = new EachSQL(partition.getTargetName(), parameterizedSQL, params);
+                    resList.add(eachSQL);
+                }
+                return resList;
+            }
+        }
+
+        List<SQLInsertStatement.ValuesClause> valuesList = statement.getValuesList();
+        for (SQLInsertStatement.ValuesClause valuesClause : valuesList) {
+            List<SQLExpr> values = valuesClause.getValues();
+            if (sequenceType == 1) {
+                switch (fillAutoIncrementContext.type) {
+                    case AUTOINC_HAS_COLUMN: {
+                        SQLExpr sqlExpr = values.get(fillAutoIncrementContext.existColumnIndex);
+                        if (sqlExpr instanceof SQLVariantRefExpr) {
+                            int paramIndex = ((SQLVariantRefExpr) sqlExpr).getIndex();
+                            Object o = params.get(paramIndex);
+                            if (o == null || (o instanceof Number && ((Number) o).intValue() == 0)) {
+                                Supplier<Number> stringSupplier = table.nextSequence();
+                                params.set(paramIndex, stringSupplier.get());
+                            }
+                        } else if (sqlExpr instanceof SQLNullExpr) {
+                            Supplier<Number> stringSupplier = table.nextSequence();
+                            statement.getValues().replace(sqlExpr, PreparedStatement.fromJavaObject(stringSupplier.get()));
+                        }
+                        break;
+                    }
+                    case AUTOINC_NO_COLUMN: {
+                        Supplier<Number> stringSupplier = table.nextSequence();
+                        values.add(PreparedStatement.fromJavaObject(stringSupplier.get()));
+                        break;
+                    }
+                    case NO_AUTOINC:
+                        break;
+                }
+            }
+            throw new UnsupportedOperationException();
+        }
+
+        for (Partition partition : partitionList) {
+            tableSource.setExpr(partition.getTable());
+            tableSource.setSchema(partition.getSchema());
+            EachSQL eachSQL = new EachSQL(partition.getTargetName(), statement.toString(), params);
+            resList.add(eachSQL);
+        }
+
+        return resList;
     }
 
     @Getter
@@ -595,7 +683,7 @@ public class VertxExecuter {
         }
     }
 
-    private static FillAutoIncrementContext needFillAutoIncrement(ShardingTable table, List<SQLName> columns) {
+    public static FillAutoIncrementContext needFillAutoIncrement(TableHandler table, List<SQLName> columns) {
         SimpleColumnInfo autoIncrementColumn = table.getAutoIncrementColumn();
         int index = 0;
         if (autoIncrementColumn != null) {
