@@ -62,6 +62,7 @@ public class MycatMonitorTest implements MycatTest {
     }
     @Test
     @SneakyThrows
+    @Ignore
     public void test() {
         Class<DatabaseInstanceEntry.DatabaseInstanceMap> tClass = DatabaseInstanceEntry.DatabaseInstanceMap.class;
         String url = MycatSQLLogMonitorImpl.SHOW_DB_MONITOR_URL;

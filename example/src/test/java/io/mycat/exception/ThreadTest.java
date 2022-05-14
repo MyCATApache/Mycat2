@@ -5,6 +5,7 @@ import io.mycat.hint.InterruptThreadHint;
 import io.mycat.hint.KillThreadHint;
 import io.mycat.hint.ShowThreadInfoHint;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.sql.Connection;
@@ -38,7 +39,7 @@ public class ThreadTest implements MycatTest {
         }
     }
 
-//    @Test
+    @Ignore
     public void testInterrupt() throws Exception {
         List<Map<String, Object>> maps;
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
