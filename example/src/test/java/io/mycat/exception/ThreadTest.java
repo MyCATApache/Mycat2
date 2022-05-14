@@ -38,7 +38,7 @@ public class ThreadTest implements MycatTest {
         }
     }
 
-    @Test
+//    @Test
     public void testInterrupt() throws Exception {
         List<Map<String, Object>> maps;
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
