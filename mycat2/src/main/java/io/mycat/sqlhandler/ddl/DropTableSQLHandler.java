@@ -59,14 +59,20 @@ public class DropTableSQLHandler extends AbstractSQLHandler<SQLDropTableStatemen
                             tableSource.getTableName()
                     );
                     MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+
                     TableHandler tableHandler = metadataManager.getTable(schema, tableName);
                     if (tableHandler != null) {
+                        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                         Set<Partition> dataNodes = new HashSet<>(getDataNodes(tableHandler));
+                        try {
+                            executeOnDataNodes(ast, jdbcConnectionManager, dataNodes, tableSource);
+                        } catch (Throwable throwable) {
+                            LOGGER.error("", throwable);
+                        }
                         try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                             ops.removeTable(schema, tableName);
                             ops.commit();
                         }
-                        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                         executeOnDataNodes(ast, jdbcConnectionManager, dataNodes, tableSource);
                     }
                     return response.sendOk();
