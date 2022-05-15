@@ -60,6 +60,7 @@ public class MycatMonitorTest implements MycatTest {
                     "} */", Collections.emptyList());
         }
     }
+
     @Test
     @SneakyThrows
     @Ignore
@@ -68,7 +69,7 @@ public class MycatMonitorTest implements MycatTest {
         String url = MycatSQLLogMonitorImpl.SHOW_DB_MONITOR_URL;
         DatabaseInstanceEntry.DatabaseInstanceMap b = fetch(url, tClass);
         try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT);) {
-            execute(mySQLConnection,RESET_CONFIG);
+            execute(mySQLConnection, RESET_CONFIG);
             execute(mySQLConnection, "CREATE DATABASE if not exists db1");
             execute(mySQLConnection, "CREATE TABLE if not exists db1.`monitor` (\n" +
                     "  `id` bigint(20) NOT NULL KEY " +
@@ -91,7 +92,7 @@ public class MycatMonitorTest implements MycatTest {
         String url = MycatSQLLogMonitorImpl.SHOW_INSTANCE_MONITOR_URL;
         InstanceEntry b = fetch(url, tClass);
         try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT);) {
-            execute(mySQLConnection,RESET_CONFIG);
+            execute(mySQLConnection, RESET_CONFIG);
             execute(mySQLConnection, "CREATE DATABASE if not exists db1");
             execute(mySQLConnection, "CREATE TABLE if not exists db1.`monitor` (\n" +
                     "  `id` bigint(20) NOT NULL KEY " +
@@ -114,7 +115,7 @@ public class MycatMonitorTest implements MycatTest {
         String url = MycatSQLLogMonitorImpl.SHOW_RW_MONITOR_URL;
         RWEntry.RWEntryMap b = fetch(url, tClass);
         try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT);) {
-            execute(mySQLConnection,RESET_CONFIG);
+            execute(mySQLConnection, RESET_CONFIG);
             execute(mySQLConnection, "CREATE DATABASE if not exists db1");
             execute(mySQLConnection, "CREATE TABLE if not exists db1.`monitor` (\n" +
                     "  `id` bigint(20) NOT NULL KEY " +
@@ -167,7 +168,7 @@ public class MycatMonitorTest implements MycatTest {
             JdbcUtils.executeQuery(mySQLConnection, sql, Collections.emptyList());
             Thread.sleep(1000);
             long count = count(prototype, "mycat", "sql_log");
-            Assert.assertEquals(1, count);
+            Assert.assertTrue(count > 0);
             System.out.println();
         }
 
