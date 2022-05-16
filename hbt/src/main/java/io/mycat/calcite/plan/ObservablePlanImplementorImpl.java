@@ -15,7 +15,20 @@
 package io.mycat.calcite.plan;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
+import com.alibaba.druid.DbType;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLReplaceable;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
+import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
 import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.calcite.ExecutorProvider;
@@ -23,7 +36,8 @@ import io.mycat.calcite.PrepareExecutor;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.spm.Plan;
-import io.mycat.ratelimiter.TimeRateLimiterService;
+import io.mycat.calcite.table.GlobalTable;
+import io.mycat.util.MycatSQLExprTableSourceUtil;
 import io.mycat.vertx.VertxExecuter;
 import io.mycat.vertx.VertxUpdateExecuter;
 import io.reactivex.rxjava3.core.Observable;
@@ -32,10 +46,11 @@ import org.apache.calcite.runtime.ArrayBindable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+
+import static io.mycat.vertx.VertxExecuter.FillAutoIncrementType.AUTOINC_HAS_COLUMN;
+import static io.mycat.vertx.VertxExecuter.FillAutoIncrementType.AUTOINC_NO_COLUMN;
 
 
 public class ObservablePlanImplementorImpl implements PlanImplementor {
@@ -63,24 +78,145 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
 
     @Override
     public Future<Void> executeInsert(Plan logical) {
+        Future<long[]> future;
         MycatInsertRel mycatRel = (MycatInsertRel) logical.getMycatRel();
         List<VertxExecuter.EachSQL> insertSqls;
         if (mycatRel.isGlobal()) {
-            insertSqls = VertxExecuter.explainGlobalInsert(drdsSqlWithParams.getParameterizedSQL(), drdsSqlWithParams.getParams());
+            switch (mycatRel.sequenceType) {
+                case NO_SEQUENCE:
+                case GLOBAL_SEQUENCE:
+                    insertSqls = VertxExecuter.explainInsert(drdsSqlWithParams.getParameterizedSQL(), drdsSqlWithParams.getParams());
+                    future = VertxExecuter.simpleUpdate(context, true, true, true, insertSqls);
+                    break;
+                case FIRST_SEQUENCE:
+                    future = executeGlobalInsertFirstSequence(drdsSqlWithParams.getParameterizedSQL(), drdsSqlWithParams.getParams());
+                    break;
+                default:
+                    throw new UnsupportedOperationException("" + mycatRel.sequenceType);
+            }
         } else {
             insertSqls = VertxExecuter.explainInsert(drdsSqlWithParams.getParameterizedSQL(), drdsSqlWithParams.getParams());
-        }
-        assert !insertSqls.isEmpty();
-        Future<long[]> future;
-        if (insertSqls.size() > 1) {
-            future = VertxExecuter.simpleUpdate(context, true, true, mycatRel.isGlobal(), VertxExecuter.rewriteInsertBatchedStatements(insertSqls));
-        } else {
-            future = VertxExecuter.simpleUpdate(context, true, false, mycatRel.isGlobal(), insertSqls);
+            assert !insertSqls.isEmpty();
+            if (insertSqls.size() > 1) {
+                future = VertxExecuter.simpleUpdate(context, true, true, mycatRel.isGlobal(), VertxExecuter.rewriteInsertBatchedStatements(insertSqls));
+            } else {
+                future = VertxExecuter.simpleUpdate(context, true, false, mycatRel.isGlobal(), insertSqls);
+            }
         }
         return future.eventually(u -> context.getTransactionSession().closeStatementState())
                 .flatMap(result -> response.sendOk(result[0], result[1]));
     }
 
+    private Future<long[]> executeGlobalInsertFirstSequence(String parameterizedSQL, List<Object> params) {
+        final MySqlInsertStatement statement = (MySqlInsertStatement) SQLUtils.parseSingleMysqlStatement(parameterizedSQL);
+        SQLExprTableSource tableSource = statement.getTableSource();
+        String tableName = SQLUtils.normalize(tableSource.getTableName());
+        String schemaName = SQLUtils.normalize(tableSource.getSchema());
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        GlobalTable table = (GlobalTable) metadataManager.getTable(schemaName, tableName);
+        List<Partition> globalDataNode = table.getGlobalDataNode();
+        if (globalDataNode.isEmpty()) {
+            return Future.succeededFuture(new long[]{0, 0});
+        }
+        if (globalDataNode.size() == 1) {
+            Partition partition = globalDataNode.get(0);
+            MycatSQLExprTableSourceUtil.setSqlExprTableSource(partition.getSchema(), partition.getTable(), tableSource);
+            return VertxExecuter.simpleUpdate(context, true, false, false,
+                    Collections.singletonList(new VertxExecuter.EachSQL(partition.getTargetName(), statement.toString(), params)));
+        } else {
+            return VertxExecuter.wrapAsXaTransaction(context, unused -> {
+                VertxExecuter.FillAutoIncrementContext fillAutoIncrementContext = VertxExecuter.needFillAutoIncrement(table, (List) statement.getColumns());
+                switch (fillAutoIncrementContext.getType()) {
+                    case AUTOINC_HAS_COLUMN:
+                    case AUTOINC_NO_COLUMN: {
+                        Set<SQLInsertStatement> needMySQLBackwardColumnSet = Collections.newSetFromMap(new IdentityHashMap<>());
+                        String restore = ParameterizedOutputVisitorUtils.restore(parameterizedSQL, DbType.mysql, params);
+                        List<SQLInsertStatement> sqlInsertStatements = SQLUtils.splitInsertValues(DbType.mysql, restore, 1);
+
+                        for (SQLInsertStatement sqlInsertStatement : sqlInsertStatements) {
+                            if (fillAutoIncrementContext.getType() == AUTOINC_NO_COLUMN) {
+                                needMySQLBackwardColumnSet.add(sqlInsertStatement);
+                                sqlInsertStatement.addColumn(new SQLIdentifierExpr("`" + table.getAutoIncrementColumn().getColumnName() + "`"));
+                                sqlInsertStatement.getValues().addValue(new SQLNullExpr());
+                                continue;
+                            }
+                            if (fillAutoIncrementContext.getType() == AUTOINC_HAS_COLUMN) {
+                                List<SQLExpr> values = sqlInsertStatement.getValues().getValues();
+                                SQLExpr sqlExpr = values.get(fillAutoIncrementContext.existColumnIndex);
+                                if (sqlExpr instanceof SQLNullExpr || (sqlExpr instanceof Number && ((Number) sqlExpr).intValue() == 0)) {
+                                    needMySQLBackwardColumnSet.add(sqlInsertStatement);
+                                }
+                                continue;
+                            }
+                        }
+                        Partition masterPartition = globalDataNode.get(0);
+                        Future<Void> sequenceFuture = Future.succeededFuture();
+                        Map<SQLInsertStatement, long[]> insertMap = Collections.synchronizedMap(new IdentityHashMap<>());
+                        for (SQLInsertStatement sqlInsertStatement : sqlInsertStatements) {
+                            sequenceFuture = sequenceFuture
+                                    .flatMap(aLong -> VertxExecuter.simpleUpdate(context, true, false, false,
+                                                    Collections.singletonList(new VertxExecuter.EachSQL(masterPartition.getTargetName(), sqlInsertStatement.toString(), Collections.emptyList())))
+                                            .map(longs -> {
+                                                insertMap.put(sqlInsertStatement, longs);
+                                                return null;
+                                            }));
+                        }
+                      return sequenceFuture.flatMap(b -> {
+                            ArrayList<Map.Entry<SQLInsertStatement, long[]>> entries = new ArrayList<>(insertMap.entrySet());
+                            for (Map.Entry<SQLInsertStatement, long[]> entry : entries) {
+                                if (!needMySQLBackwardColumnSet.contains(entry.getKey())) {
+                                    continue;
+                                }
+                                SQLInsertStatement.ValuesClause values = entry.getKey().getValues();
+                                SQLExpr sqlExpr;
+                                if (fillAutoIncrementContext.getType() == AUTOINC_NO_COLUMN) {
+                                    int size = values.getValues().size();
+                                    sqlExpr = values.getValues().get(size - 1);
+                                } else if (fillAutoIncrementContext.getType() == AUTOINC_HAS_COLUMN) {
+
+                                    sqlExpr = values.getValues().get(fillAutoIncrementContext.existColumnIndex);
+                                } else {
+                                    return Future.failedFuture("global insert ValuesClause is no match");
+                                }
+                                values.replace(sqlExpr, SQLExprUtils.fromJavaObject(entry.getValue()[1]));
+                            }
+                            MySqlInsertStatement template = (MySqlInsertStatement) SQLUtils.parseSingleMysqlStatement(parameterizedSQL);
+                            if (fillAutoIncrementContext.getType() == AUTOINC_NO_COLUMN) {
+                                template.addColumn(new SQLIdentifierExpr("`" + table.getAutoIncrementColumn().getColumnName() + "`"));
+                            }
+                            template.getValuesList().clear();
+                            long affectRow = 0;
+                            long lastId = 0;
+                            for (Map.Entry<SQLInsertStatement, long[]> entry : entries) {
+                                template.addValueCause(entry.getKey().getValues());
+                                long[] longs = entry.getValue();
+                                affectRow = longs[0] + affectRow;
+                                lastId = Math.max(lastId, longs[1]);
+                            }
+                            String sql = template.toString();
+                            ArrayList<VertxExecuter.EachSQL> resList = new ArrayList<>();
+                            for (Partition partition : globalDataNode.subList(1, globalDataNode.size())) {
+                                resList.add(new VertxExecuter.EachSQL(partition.getTargetName(), sql, Collections.emptyList()));
+                            }
+                            long[] res = {affectRow, lastId};
+                            return VertxExecuter.simpleUpdate(context, true, false, false,
+                                    resList).map(longs -> res);
+                        });
+                    }
+                    case NO_AUTOINC: {
+                        ArrayList<VertxExecuter.EachSQL> eachSQLS = new ArrayList<>();
+                        for (Partition partition : globalDataNode) {
+                            MycatSQLExprTableSourceUtil.setSqlExprTableSource(partition.getSchema(), partition.getTable(), tableSource);
+                            eachSQLS.add(new VertxExecuter.EachSQL(partition.getTargetName(), statement.toString(), params));
+                        }
+                        return VertxExecuter.simpleUpdate(context, true, true, true, eachSQLS);
+                    }
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + fillAutoIncrementContext.getType());
+                }
+            });
+        }
+    }
 
     @Override
     public Future<Void> executeQuery(Plan plan) {

@@ -13,7 +13,13 @@ import java.util.List;
 public class GlobalTableConfig {
     String createTableSQL;
     String balance;
-    int sequenceType = 0;
+    GlobalTableSequenceType sequenceType = GlobalTableSequenceType.NO_SEQUENCE;
     @javax.validation.constraints.NotNull
     List<GlobalBackEndTableInfoConfig> broadcast = new ArrayList<>();
+
+    public static enum GlobalTableSequenceType{
+        NO_SEQUENCE,
+        GLOBAL_SEQUENCE,
+        FIRST_SEQUENCE
+    }
 }

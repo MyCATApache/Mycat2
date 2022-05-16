@@ -43,9 +43,11 @@ import io.mycat.calcite.spm.QueryPlanner;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
+import io.mycat.config.GlobalTableConfig;
 import io.mycat.config.ServerConfig;
 import io.mycat.newquery.MysqlCollector;
 import io.mycat.newquery.NewMycatConnection;
+import io.mycat.util.MycatSQLExprTableSourceUtil;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -132,15 +134,8 @@ public class VertxExecuter {
         }
     }
 
-    public static List<EachSQL> explainGlobalInsert(String parameterizedSQL, List<Object> params) {
-        final MySqlInsertStatement statement = (MySqlInsertStatement) SQLUtils.parseSingleMysqlStatement(parameterizedSQL);
-
-        SQLExprTableSource tableSource = statement.getTableSource();
-        String schemaName = SQLUtils.normalize(tableSource.getSchema());
-        String tableName = SQLUtils.normalize(tableSource.getTableName());
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        GlobalTable table = (GlobalTable) metadataManager.getTable(schemaName, tableName);
-
+    @NotNull
+    private static List<EachSQL> explainGlobalInsertSequence01(String parameterizedSQL, List<Object> params, MySqlInsertStatement statement, SQLExprTableSource tableSource, GlobalTable table) {
         List<Partition> partitionList = table.getGlobalDataNode();
         if (partitionList.isEmpty()) {
             return Collections.emptyList();
@@ -151,9 +146,9 @@ public class VertxExecuter {
             tableSource.setSchema(partition.getSchema());
             return Collections.singletonList(new EachSQL(partition.getTargetName(), parameterizedSQL, params));
         }
-        int sequenceType = table.getTableConfig().getSequenceType();
+        GlobalTableConfig.GlobalTableSequenceType sequenceType = table.getTableConfig().getSequenceType();
         ArrayList<EachSQL> resList = new ArrayList<>(partitionList.size());
-        if (sequenceType == 0) {
+        if (sequenceType == GlobalTableConfig.GlobalTableSequenceType.NO_SEQUENCE) {
             for (Partition partition : partitionList) {
                 tableSource.setExpr(partition.getTable());
                 tableSource.setSchema(partition.getSchema());
@@ -185,7 +180,7 @@ public class VertxExecuter {
         List<SQLInsertStatement.ValuesClause> valuesList = statement.getValuesList();
         for (SQLInsertStatement.ValuesClause valuesClause : valuesList) {
             List<SQLExpr> values = valuesClause.getValues();
-            if (sequenceType == 1) {
+            if (sequenceType == GlobalTableConfig.GlobalTableSequenceType.GLOBAL_SEQUENCE) {
                 switch (fillAutoIncrementContext.type) {
                     case AUTOINC_HAS_COLUMN: {
                         SQLExpr sqlExpr = values.get(fillAutoIncrementContext.existColumnIndex);
@@ -211,7 +206,7 @@ public class VertxExecuter {
                         break;
                 }
             }
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("sequenceType:" + sequenceType);
         }
 
         for (Partition partition : partitionList) {
@@ -485,33 +480,64 @@ public class VertxExecuter {
     @SneakyThrows
     public static List<EachSQL> explainInsert(String statementArg, List<Object> paramArg) {
         final MySqlInsertStatement statement = (MySqlInsertStatement) SQLUtils.parseSingleMysqlStatement(statementArg);
+        SQLExprTableSource tableSource = statement.getTableSource();
+        String tableName = SQLUtils.normalize(tableSource.getTableName());
+        String schemaName = SQLUtils.normalize(tableSource.getSchema());
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        TableHandler table = metadataManager.getTable(schemaName, tableName);
 
+        switch (table.getType()) {
+            case SHARDING: {
+                ShardingTable shardingTable = (ShardingTable) table;
+                return explainShardingInsert(statementArg, paramArg, statement, shardingTable);
+            }
+            case GLOBAL: {
+                GlobalTable globalTable = (GlobalTable) table;
+                switch (globalTable.getTableConfig().getSequenceType()) {
+                    case NO_SEQUENCE:
+                    case GLOBAL_SEQUENCE:
+                        return
+                                explainGlobalInsertSequence01
+                                        (statementArg, paramArg, statement, tableSource, globalTable);
+                    case FIRST_SEQUENCE:
+                    default:
+                        throw new UnsupportedOperationException(statement.toString());
+                }
+            }
+            case NORMAL: {
+                NormalTable normalTable = (NormalTable) table;
+                Partition partition = normalTable.getDataNode();
+                MycatSQLExprTableSourceUtil
+                        .setSqlExprTableSource(partition.getSchema(), partition.getTable(), tableSource);
+                return Collections.singletonList(new EachSQL(
+                        partition.getTargetName(), statement.toString(), paramArg));
+            }
+            case CUSTOM:
+            case VISUAL:
+            case VIEW:
+
+        }
+        throw new UnsupportedOperationException(statement.toString());
+    }
+
+    @NotNull
+    private static List<EachSQL> explainShardingInsert(String statementArg, List<Object> paramArg, MySqlInsertStatement statement, ShardingTable shardingTable) {
+        SimpleColumnInfo autoIncrementColumn = shardingTable.getAutoIncrementColumn();
         MySqlInsertStatement templateTemp = (MySqlInsertStatement) SQLUtils.parseSingleMysqlStatement(statementArg);
         templateTemp.getColumns().clear();
         templateTemp.getValuesList().clear();
         String template = templateTemp.toString();
 
-
-        SQLExprTableSource tableSource = statement.getTableSource();
-
-        String tableName = SQLUtils.normalize(tableSource.getTableName());
-        String schemaName = SQLUtils.normalize(tableSource.getSchema());
-
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        ShardingTable table = (ShardingTable) metadataManager.getTable(schemaName, tableName);
-        SimpleColumnInfo autoIncrementColumn = table.getAutoIncrementColumn();
-
-
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         List<SQLName> columns = (List) statement.getColumns();
         if (columns.isEmpty()) {
-            if (statement.getValues().getValues().size() == table.getColumns().size()) {
-                for (SimpleColumnInfo column : table.getColumns()) {
+            if (statement.getValues().getValues().size() == shardingTable.getColumns().size()) {
+                for (SimpleColumnInfo column : shardingTable.getColumns()) {
                     statement.addColumn(new SQLIdentifierExpr("`" + column.getColumnName() + "`"));
                 }
             }
         }
-        FillAutoIncrementContext fillAutoIncrementContext = needFillAutoIncrement(table, columns);
+        FillAutoIncrementContext fillAutoIncrementContext = needFillAutoIncrement(shardingTable, columns);
         if (fillAutoIncrementContext.type == FillAutoIncrementType.AUTOINC_NO_COLUMN) {
             columns.add(new SQLIdentifierExpr(autoIncrementColumn.getColumnName()));
         }
@@ -544,17 +570,17 @@ public class VertxExecuter {
                             int paramIndex = ((SQLVariantRefExpr) sqlExpr).getIndex();
                             Object o = params.get(paramIndex);
                             if (o == null || (o instanceof Number && ((Number) o).intValue() == 0)) {
-                                Supplier<Number> stringSupplier = table.nextSequence();
+                                Supplier<Number> stringSupplier = shardingTable.nextSequence();
                                 params.set(paramIndex, stringSupplier.get());
                             }
                         } else if (sqlExpr instanceof SQLNullExpr) {
-                            Supplier<Number> stringSupplier = table.nextSequence();
+                            Supplier<Number> stringSupplier = shardingTable.nextSequence();
                             primaryStatement.getValues().replace(sqlExpr, PreparedStatement.fromJavaObject(stringSupplier.get()));
                         }
                         break;
                     }
                     case AUTOINC_NO_COLUMN: {
-                        Supplier<Number> stringSupplier = table.nextSequence();
+                        Supplier<Number> stringSupplier = shardingTable.nextSequence();
                         values.add(PreparedStatement.fromJavaObject(stringSupplier.get()));
                         break;
                     }
@@ -562,7 +588,7 @@ public class VertxExecuter {
                         break;
                 }
                 Map<String, List<RangeVariable>> variables = compute(columns, values, params);
-                Partition mPartition = table.getShardingFuntion().calculateOne((Map) variables);
+                Partition mPartition = shardingTable.getShardingFuntion().calculateOne((Map) variables);
 
                 SQLExprTableSource exprTableSource = primaryStatement.getTableSource();
                 exprTableSource.setSimpleName(mPartition.getTable());
@@ -574,7 +600,7 @@ public class VertxExecuter {
                         SQLBinaryOpExpr op = (SQLBinaryOpExpr) sqlExpr;
                         SQLExpr right = op.getRight();
                         if (right instanceof SQLVariantRefExpr) {
-                            op.setRight(io.mycat.PreparedStatement.fromJavaObject(paramArg.get(((SQLVariantRefExpr) right).getIndex())));
+                            op.setRight(PreparedStatement.fromJavaObject(paramArg.get(((SQLVariantRefExpr) right).getIndex())));
                         } else if (right instanceof SQLValuableExpr) {
 
                         } else {
@@ -589,7 +615,7 @@ public class VertxExecuter {
                 sqls.add(new EachSQL(mPartition.getTargetName(), primaryStatement.toString(), getNewParams(params, primaryStatement)));
 
 
-                for (ShardingTable indexTable : table.getIndexTables()) {
+                for (ShardingTable indexTable : shardingTable.getIndexTables()) {
 
 
                     //  fillIndexTableShardingKeys(variables, indexTable);
@@ -609,7 +635,7 @@ public class VertxExecuter {
                             if (indexTable.getColumns().stream().anyMatch(i -> left.equalsIgnoreCase(i.getColumnName()))) {
                                 SQLExpr right = op.getRight();
                                 if (right instanceof SQLVariantRefExpr) {
-                                    op.setRight(io.mycat.PreparedStatement.fromJavaObject(paramArg.get(((SQLVariantRefExpr) right).getIndex())));
+                                    op.setRight(PreparedStatement.fromJavaObject(paramArg.get(((SQLVariantRefExpr) right).getIndex())));
                                 } else if (right instanceof SQLValuableExpr) {
 
                                 } else {
@@ -662,15 +688,17 @@ public class VertxExecuter {
         return newParams;
     }
 
-    static enum FillAutoIncrementType {
+
+    public static enum FillAutoIncrementType {
         AUTOINC_HAS_COLUMN,
         AUTOINC_NO_COLUMN,
         NO_AUTOINC
     }
 
-    static class FillAutoIncrementContext {
-        FillAutoIncrementType type;
-        int existColumnIndex;
+    @Data
+    public static class FillAutoIncrementContext {
+        public FillAutoIncrementType type;
+        public int existColumnIndex;
 
         public static FillAutoIncrementContext of(
                 FillAutoIncrementType type,

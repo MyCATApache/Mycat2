@@ -228,7 +228,7 @@ public class DrdsSqlCompiler {
             TableHandler logicTable = Objects.requireNonNull(metadataManager.getTable(schemaName, tableName));
             switch (logicTable.getType()) {
                 case SHARDING:
-                    MycatInsertRel mycatInsertRel = new MycatInsertRel(sqlStatement, false);
+                    MycatInsertRel mycatInsertRel =MycatInsertRel.create(sqlStatement);
                     optimizationContext.saveAlways();
                     return mycatInsertRel;
                 case GLOBAL:
@@ -299,7 +299,7 @@ public class DrdsSqlCompiler {
         if (globalDataNodeList.isEmpty() || globalDataNodeList.size() == 1) {
             return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, logicTable);
         }
-        return MycatInsertRel.create(sqlStatement,true);
+        return MycatInsertRel.create(sqlStatement,logicTable.getTableConfig().getSequenceType());
     }
 
     @NotNull
