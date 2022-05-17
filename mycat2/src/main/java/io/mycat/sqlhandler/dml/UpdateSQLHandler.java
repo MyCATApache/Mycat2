@@ -116,9 +116,9 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
                             drdsSqlWithParams.getParameterizedSQL(), drdsSqlWithParams.getParams());
                 }
             }
+            DrdsSqlWithParams drdsSqlWithParams;
             switch (tableHandler.getType()) {
                 case NORMAL:
-                    DrdsSqlWithParams drdsSqlWithParams;
                     if (insert) {
                         drdsSqlWithParams = MycatPreparedStatementUtil.outputToParameterizedProxySql((MySqlInsertStatement) sqlStatement);
                     } else {
@@ -134,11 +134,17 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
                         }
                     }
                     break;
+                case CUSTOM:
+                case VISUAL:
+                case VIEW:
+                case SHARDING:
                 default:
+                    drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlStatement, dataContext.getDefaultSchema());
+                    break;
+                case GLOBAL:
+                    drdsSqlWithParams = MycatPreparedStatementUtil.outputToParameterizedProxySql((MySqlInsertStatement) sqlStatement);
                     break;
             }
-            DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlStatement, dataContext.getDefaultSchema());
-
             return executeUpdate(drdsSqlWithParams, dataContext, receiver, schemaName);
         }
         DrdsSqlWithParams drdsSqlWithParams = insert ?

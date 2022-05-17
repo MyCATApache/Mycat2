@@ -147,16 +147,39 @@ public class VertxExecuter {
             return Collections.singletonList(new EachSQL(partition.getTargetName(), parameterizedSQL, params));
         }
         GlobalTableConfig.GlobalTableSequenceType sequenceType = table.getTableConfig().getSequenceType();
+        switch (sequenceType) {
+            case NO_SEQUENCE:
+            case GLOBAL_SEQUENCE:
+                break;
+            case FIRST_SEQUENCE:
+            default:
+                throw new UnsupportedOperationException("sequenceType:" + sequenceType);
+        }
         ArrayList<EachSQL> resList = new ArrayList<>(partitionList.size());
         if (sequenceType == GlobalTableConfig.GlobalTableSequenceType.NO_SEQUENCE) {
             for (Partition partition : partitionList) {
                 tableSource.setExpr(partition.getTable());
                 tableSource.setSchema(partition.getSchema());
-                resList.add(new EachSQL(partition.getTargetName(), parameterizedSQL, params));
+
+                if (!params.isEmpty() && params.get(0) instanceof List) {
+                    List<List<Object>> paramsList = (List) params;
+
+                    List<EachSQL> eachSQLs = new ArrayList<>(paramsList.size());
+                    for (List<Object> objects : paramsList) {
+                        eachSQLs.add(new EachSQL(partition.getTargetName(), statement.toString(), objects));
+                    }
+                    resList.addAll(VertxExecuter.rewriteInsertBatchedStatements(eachSQLs));
+                } else {
+                    resList.add(new EachSQL(partition.getTargetName(), statement.toString(), params));
+                }
             }
             return resList;
         }
-        FillAutoIncrementContext fillAutoIncrementContext = needFillAutoIncrement(table, (List) table.getColumns());
+        List<SQLName> columns = (List) statement.getColumns();
+        if (columns.isEmpty()) {
+            columns = table.getColumns().stream().map(i -> new SQLIdentifierExpr("`" + i + "`")).collect(Collectors.toList());
+        }
+        FillAutoIncrementContext fillAutoIncrementContext = needFillAutoIncrement(table, columns);
         switch (fillAutoIncrementContext.type) {
             case AUTOINC_HAS_COLUMN: {
                 break;
@@ -206,14 +229,24 @@ public class VertxExecuter {
                         break;
                 }
             }
-            throw new UnsupportedOperationException("sequenceType:" + sequenceType);
+
         }
 
         for (Partition partition : partitionList) {
             tableSource.setExpr(partition.getTable());
             tableSource.setSchema(partition.getSchema());
-            EachSQL eachSQL = new EachSQL(partition.getTargetName(), statement.toString(), params);
-            resList.add(eachSQL);
+
+            if (!params.isEmpty() && params.get(0) instanceof List) {
+                List<List<Object>> paramsList = (List) params;
+
+                List<EachSQL> eachSQLs = new ArrayList<>(paramsList.size());
+                for (List<Object> objects : paramsList) {
+                    eachSQLs.add(new EachSQL(partition.getTargetName(), statement.toString(), objects));
+                }
+                resList.addAll(VertxExecuter.rewriteInsertBatchedStatements(eachSQLs));
+            } else {
+                resList.add(new EachSQL(partition.getTargetName(), statement.toString(), params));
+            }
         }
 
         return resList;

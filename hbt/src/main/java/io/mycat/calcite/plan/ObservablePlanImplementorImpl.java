@@ -18,16 +18,12 @@ import cn.mycat.vertx.xa.XaSqlConnection;
 import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.SQLReplaceable;
-import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
-import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
 import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
@@ -38,6 +34,7 @@ import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.util.MycatSQLExprTableSourceUtil;
+import io.mycat.util.Pair;
 import io.mycat.vertx.VertxExecuter;
 import io.mycat.vertx.VertxUpdateExecuter;
 import io.reactivex.rxjava3.core.Observable;
@@ -48,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static io.mycat.vertx.VertxExecuter.FillAutoIncrementType.AUTOINC_HAS_COLUMN;
 import static io.mycat.vertx.VertxExecuter.FillAutoIncrementType.AUTOINC_NO_COLUMN;
@@ -125,6 +123,14 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                     Collections.singletonList(new VertxExecuter.EachSQL(partition.getTargetName(), statement.toString(), params)));
         } else {
             return VertxExecuter.wrapAsXaTransaction(context, unused -> {
+                List<SQLExpr> columns = statement.getColumns();
+                if (columns.isEmpty()) {
+                    columns = table.getColumns().stream()
+                            .map(i -> new SQLIdentifierExpr("`" + i.getColumnName() + "`")).collect(Collectors.toList());
+                    for (SQLExpr column : columns) {
+                        statement.addColumn(column);
+                    }
+                }
                 VertxExecuter.FillAutoIncrementContext fillAutoIncrementContext = VertxExecuter.needFillAutoIncrement(table, (List) statement.getColumns());
                 switch (fillAutoIncrementContext.getType()) {
                     case AUTOINC_HAS_COLUMN:
@@ -151,19 +157,19 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                         }
                         Partition masterPartition = globalDataNode.get(0);
                         Future<Void> sequenceFuture = Future.succeededFuture();
-                        Map<SQLInsertStatement, long[]> insertMap = Collections.synchronizedMap(new IdentityHashMap<>());
+                        List<Pair<SQLInsertStatement, long[]>> insertMap = (List) Collections.synchronizedList(new ArrayList<>());
                         for (SQLInsertStatement sqlInsertStatement : sqlInsertStatements) {
                             sequenceFuture = sequenceFuture
                                     .flatMap(aLong -> VertxExecuter.simpleUpdate(context, true, false, false,
                                                     Collections.singletonList(new VertxExecuter.EachSQL(masterPartition.getTargetName(), sqlInsertStatement.toString(), Collections.emptyList())))
                                             .map(longs -> {
-                                                insertMap.put(sqlInsertStatement, longs);
+                                                insertMap.add(Pair.of(sqlInsertStatement, longs));
                                                 return null;
                                             }));
                         }
-                      return sequenceFuture.flatMap(b -> {
-                            ArrayList<Map.Entry<SQLInsertStatement, long[]>> entries = new ArrayList<>(insertMap.entrySet());
-                            for (Map.Entry<SQLInsertStatement, long[]> entry : entries) {
+                        return sequenceFuture.flatMap(b -> {
+                            ArrayList<Pair<SQLInsertStatement, long[]>> entries = new ArrayList<>(insertMap);
+                            for (Pair<SQLInsertStatement, long[]> entry : entries) {
                                 if (!needMySQLBackwardColumnSet.contains(entry.getKey())) {
                                     continue;
                                 }
@@ -187,7 +193,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                             template.getValuesList().clear();
                             long affectRow = 0;
                             long lastId = 0;
-                            for (Map.Entry<SQLInsertStatement, long[]> entry : entries) {
+                            for (Pair<SQLInsertStatement, long[]> entry : entries) {
                                 template.addValueCause(entry.getKey().getValues());
                                 long[] longs = entry.getValue();
                                 affectRow = longs[0] + affectRow;
