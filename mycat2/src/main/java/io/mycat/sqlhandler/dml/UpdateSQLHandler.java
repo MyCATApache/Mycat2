@@ -142,7 +142,11 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
                     drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlStatement, dataContext.getDefaultSchema());
                     break;
                 case GLOBAL:
-                    drdsSqlWithParams = MycatPreparedStatementUtil.outputToParameterizedProxySql((MySqlInsertStatement) sqlStatement);
+                    if (sqlStatement instanceof MySqlInsertStatement){
+                        drdsSqlWithParams = MycatPreparedStatementUtil.outputToParameterizedProxySql((MySqlInsertStatement)sqlStatement);
+                    }else {
+                        drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlStatement, dataContext.getDefaultSchema());
+                    }
                     break;
             }
             return executeUpdate(drdsSqlWithParams, dataContext, receiver, schemaName);
