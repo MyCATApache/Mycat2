@@ -53,7 +53,7 @@ public class StickyDataSourceNearnessImpl implements DataSourceNearness {
     }
 
     private boolean isOpenStickySessionTime() {
-        return stickySessionTime > 0;
+        return stickySessionTime >= 0;
     }
 
     @Override
