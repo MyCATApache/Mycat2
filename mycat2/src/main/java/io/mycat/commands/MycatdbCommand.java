@@ -149,7 +149,7 @@ public enum MycatdbCommand {
             sqlHandlers.add(new SQLCreateProcedureHandler());
             sqlHandlers.add(new SQLCallStatementHandler());
             sqlHandlers.add(new SQLDropProcedureHandler());
-
+            sqlHandlers.add(new CreateUserHandler());
             for (SQLHandler sqlHandler : sqlHandlers) {
                 Class statementClass = sqlHandler.getStatementClass();
                 Objects.requireNonNull(statementClass);
