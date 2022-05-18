@@ -81,6 +81,7 @@ public class ServerConfig {
     private int rewriteInsertBatchedStatementBatch = 1000;
     private boolean promoteUnsignedType = true;
     private boolean stickySession = true;
+    private long stickySessionTime = 3;
     public static void main(String[] args) {
         System.out.println(JsonUtil.toJson(new ServerConfig()));
     }

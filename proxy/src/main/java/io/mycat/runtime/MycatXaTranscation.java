@@ -23,9 +23,11 @@ public class MycatXaTranscation implements XaSqlConnection, TransactionSession {
         this.connection = connection;
         this.transactionType = transactionType;
         DataSourceNearnessImpl dataSourceNearness = new DataSourceNearnessImpl(this);
+
+        ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
         this.dataSourceNearness =
-                MetaClusterCurrent.exist(ServerConfig.class) && MetaClusterCurrent.wrapper(ServerConfig.class).isStickySession() ?
-                        new StickyDataSourceNearnessImpl(dataSourceNearness) : dataSourceNearness;
+                MetaClusterCurrent.exist(ServerConfig.class) && serverConfig.isStickySession() ?
+                        new StickyDataSourceNearnessImpl(dataSourceNearness,serverConfig.getStickySessionTime()) : dataSourceNearness;
     }
 
     @Override
