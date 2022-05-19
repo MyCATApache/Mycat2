@@ -46,7 +46,7 @@ public class ValuePredicateAnalyzer {
     }
 
     public Map<QueryType, List<ValueIndexCondition>> translateMatch(RexNode condition) {
-        condition = conditionClippingByKeyMeta(condition,fieldNames,keyMetas);
+        condition = conditionClippingByKeyMeta(condition, fieldNames, keyMetas);
         Map<QueryType, List<ValueIndexCondition>> tryAndInRes = tryAndIn(condition);
         if (tryAndInRes != null && !tryAndInRes.isEmpty()) return tryAndInRes;
         // does not support disjunctions
@@ -67,7 +67,7 @@ public class ValuePredicateAnalyzer {
     public static RexNode conditionClippingByKeyMeta(RexNode condition, List<String> fieldNames, List<KeyMeta> keyMetas) {
         List<RexNode> rexNodeList = RelOptUtil.conjunctions(condition);
         if (rexNodeList.isEmpty() || rexNodeList.size() == 1) {
-          return condition;
+            return condition;
         } else {
             class ShardingKeyFinder extends RexShuttle {
                 boolean find = false;
@@ -100,7 +100,7 @@ public class ValuePredicateAnalyzer {
             }
             rexNodeList = newRexNodeList;
             if (rexNodeList.isEmpty()) {
-               return condition;
+                return condition;
             } else if (rexNodeList.size() == 1) {
                 condition = rexNodeList.get(0);
             } else {
@@ -121,15 +121,15 @@ public class ValuePredicateAnalyzer {
                 if (operands.subList(1, operands.size()).stream().anyMatch(i -> RexUtil.findOperatorCall(SqlStdOperatorTable.OR, i) != null)) {
                     return Collections.emptyMap();
                 }
-                boolean allMatch = true;
-                RexNode primaryInputRef = null;
-                List<RexNode> valueList = new ArrayList<>();
                 if (primaryHead.isA(SqlKind.OR)) {
+                    List<RexNode> valueList = new ArrayList<>();
+                    RexNode primaryInputRef = null;
+                    boolean allMatch = true;
                     RexCall primaryNode = (RexCall) primaryHead;
                     for (RexNode maybeEquals : primaryNode.getOperands()) {
                         if (maybeEquals.isA(SqlKind.EQUALS)) {
                             RexCall equals = (RexCall) maybeEquals;
-                            RexNode maybeId = equals.getOperands().get(0);
+                            RexNode maybeId = RexUtil.removeCast(equals.getOperands().get(0));
                             valueList.add(RexUtil.removeCast(equals.getOperands().get(1)));
                             if (maybeId.isA(SqlKind.INPUT_REF)) {
                                 if (primaryInputRef == null) {
@@ -146,13 +146,20 @@ public class ValuePredicateAnalyzer {
                     if (allMatch && !valueList.isEmpty()) {
                         Map<QueryType, List<ValueIndexCondition>> indexConditions = new HashMap<>();
                         ValueIndexCondition pushDownCondition = null;
+                        RexInputRef inputRef = (RexInputRef) primaryInputRef;
+                        String columnName = fieldNames.get(inputRef.getIndex());
                         for (KeyMeta skMeta : keyMetas) {
+                            if (!skMeta.getColumnNames().contains(columnName)){
+                                continue;
+                            }
                             for (RexNode rexNode : valueList) {
                                 if (pushDownCondition == null) {
                                     pushDownCondition = findPushDownCondition(
                                             ImmutableList.of(MycatCalciteSupport.RexBuilder.makeCall(SqlStdOperatorTable.EQUALS, primaryInputRef, rexNode)), skMeta);
                                 } else {
-                                    pushDownCondition.pointQueryKey.add(rexNode);
+                                    if (pushDownCondition.pointQueryKey != null) {
+                                        pushDownCondition.pointQueryKey.add(rexNode);
+                                    }
                                 }
                             }
                         }
@@ -161,6 +168,54 @@ public class ValuePredicateAnalyzer {
                         }
                         return indexConditions;
                     }
+                }
+            }
+            if (condition.isA(SqlKind.OR)) {
+                RexCall primaryNode = (RexCall) condition;
+                List<RexNode> valueList = new ArrayList<>();
+                RexNode primaryInputRef = null;
+                boolean allMatch = true;
+                for (RexNode maybeEquals : primaryNode.getOperands()) {
+                    if (maybeEquals.isA(SqlKind.EQUALS)) {
+                        RexCall equals = (RexCall) maybeEquals;
+                        RexNode maybeId = RexUtil.removeCast(equals.getOperands().get(0));
+                        valueList.add(RexUtil.removeCast(equals.getOperands().get(1)));
+                        if (maybeId.isA(SqlKind.INPUT_REF)) {
+                            if (primaryInputRef == null) {
+                                primaryInputRef = maybeId;
+                                continue;
+                            } else if (primaryInputRef.equals(maybeId)) {
+                                continue;
+                            }
+                        }
+                    }
+                    allMatch = false;
+                    break;
+                }
+                if (allMatch && !valueList.isEmpty()) {
+                    Map<QueryType, List<ValueIndexCondition>> indexConditions = new HashMap<>();
+                    RexInputRef inputRef = (RexInputRef) primaryInputRef;
+                    String columnName = fieldNames.get(inputRef.getIndex());
+                    ValueIndexCondition pushDownCondition = null;
+                    for (KeyMeta skMeta : keyMetas) {
+                        if (!skMeta.getColumnNames().contains(columnName)){
+                            continue;
+                        }
+                        for (RexNode rexNode : valueList) {
+                            if (pushDownCondition == null) {
+                                pushDownCondition = findPushDownCondition(
+                                        ImmutableList.of(MycatCalciteSupport.RexBuilder.makeCall(SqlStdOperatorTable.EQUALS, primaryInputRef, rexNode)), skMeta);
+                            } else {
+                                if (pushDownCondition.pointQueryKey != null) {
+                                    pushDownCondition.pointQueryKey.add(rexNode);
+                                }
+                            }
+                        }
+                    }
+                    if (pushDownCondition != null) {
+                        indexConditions.put(QueryType.PK_POINT_QUERY, Collections.singletonList(pushDownCondition));
+                    }
+                    return indexConditions;
                 }
             }
             return Collections.emptyMap();

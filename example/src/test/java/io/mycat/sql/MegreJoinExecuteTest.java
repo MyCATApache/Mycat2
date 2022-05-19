@@ -34,14 +34,18 @@ public class MegreJoinExecuteTest implements MycatTest {
             Assert.assertEquals("[{id=1, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=1, companyname=Intel, addressid=1}, {id=2, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=2, companyname=IBM, addressid=2}, {id=3, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=3, companyname=Dell, addressid=3}]",
                     s);
 
-            //second
-            sql = "select * from db1.sharding s inner join db1.normal e on s.id = e.id inner join db1.global g on s.id = g.id order by s.id";
-            explain= explain(mycatConnection,sql );
-            s = executeQueryAsText(mycatConnection, sql);
-            Assert.assertEquals(true,explain.contains("MycatSortMergeJoin"));
-            Assert.assertEquals("[{id=1, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=1, companyname=Intel, addressid=1, id1=1, companyname0=Intel, addressid0=1}, {id=2, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=2, companyname=IBM, addressid=2, id1=2, companyname0=IBM, addressid0=2}, {id=3, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=3, companyname=Dell, addressid=3, id1=3, companyname0=Dell, addressid0=3}]",
-                    s);
-
+           // for (int i = 0; i < 1000000; i++)
+            {
+                //second
+                sql = "select * from db1.sharding s inner join db1.normal e on s.id = e.id inner join db1.global g on s.id = g.id order by s.id";
+                explain = explain(mycatConnection, sql);
+                System.out.println("sql:"+explain);
+                System.out.println("explain"+explain);
+                s = executeQueryAsText(mycatConnection, sql);
+                Assert.assertEquals(true, explain.contains("MycatSortMergeJoin"));
+                Assert.assertEquals("[{id=1, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=1, companyname=Intel, addressid=1, id1=1, companyname0=Intel, addressid0=1}, {id=2, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=2, companyname=IBM, addressid=2, id1=2, companyname0=IBM, addressid0=2}, {id=3, user_id=null, traveldate=null, fee=null, days=null, blob=null, id0=3, companyname=Dell, addressid=3, id1=3, companyname0=Dell, addressid0=3}]",
+                        s);
+            }
             sql = "select * from db1.normal s inner join db1.sharding e on s.id = e.id inner join db1.global g on s.id = g.id order by s.id";
             explain= explain(mycatConnection,sql );
             s = executeQueryAsText(mycatConnection, sql);
