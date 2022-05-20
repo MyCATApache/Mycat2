@@ -18,9 +18,7 @@ import cn.mycat.vertx.xa.XaSqlConnection;
 import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
-import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
+import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
@@ -149,8 +147,14 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                             if (fillAutoIncrementContext.getType() == AUTOINC_HAS_COLUMN) {
                                 List<SQLExpr> values = sqlInsertStatement.getValues().getValues();
                                 SQLExpr sqlExpr = values.get(fillAutoIncrementContext.existColumnIndex);
-                                if (sqlExpr instanceof SQLNullExpr || (sqlExpr instanceof Number && ((Number) sqlExpr).intValue() == 0)) {
+                                if (sqlExpr instanceof SQLNullExpr) {
                                     needMySQLBackwardColumnSet.add(sqlInsertStatement);
+                                } else if (sqlExpr instanceof SQLNumericLiteralExpr) {
+                                    SQLNumericLiteralExpr sqlNumericLiteralExpr = (SQLNumericLiteralExpr) sqlExpr;
+                                    Number number = sqlNumericLiteralExpr.getNumber();
+                                    if (number == null || number.equals(0)) {//may be Double
+                                        needMySQLBackwardColumnSet.add(sqlInsertStatement);
+                                    }
                                 }
                                 continue;
                             }

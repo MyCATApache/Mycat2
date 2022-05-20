@@ -602,7 +602,7 @@ public class VertxExecuter {
                         if (sqlExpr instanceof SQLVariantRefExpr) {
                             int paramIndex = ((SQLVariantRefExpr) sqlExpr).getIndex();
                             Object o = params.get(paramIndex);
-                            if (o == null || (o instanceof Number && ((Number) o).intValue() == 0)) {
+                            if (o == null || (o instanceof Number && o.equals(0))) {//may be Double
                                 Supplier<Number> stringSupplier = shardingTable.nextSequence();
                                 params.set(paramIndex, stringSupplier.get());
                             }
