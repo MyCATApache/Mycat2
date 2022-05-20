@@ -416,10 +416,10 @@ public class AutoFunctionFactory {
                 int currentDbIndex = ints[0];
                 int currentTableIndex = ints[1];
                 int currentTableCount = ints[2];
-                context.put("targetIndex", String.valueOf(seqIndex));
-                context.put("dbIndex", String.valueOf(currentDbIndex));
-                context.put("tableIndex", String.valueOf(currentTableIndex));
-                context.put("index", String.valueOf(currentTableCount));
+                context.put("targetIndex", (seqIndex));
+                context.put("dbIndex", (currentDbIndex));
+                context.put("tableIndex", (currentTableIndex));
+                context.put("index",(currentTableCount));
                 StringWriter stringWriter = new StringWriter();
                 template.make(context).writeTo(stringWriter);
                 String[] strings = SplitUtil.split(stringWriter.getBuffer().toString(), sep);
@@ -1043,7 +1043,7 @@ public class AutoFunctionFactory {
         if (o instanceof LocalDate) {
             LocalDate localDate = (LocalDate) o;
             YYYY = localDate.getYear();
-            MM = localDate.getMonthValue();
+            MM = localDate.getMonth().getValue();
         }
         if (o instanceof LocalDateTime) {
             LocalDateTime localDateTime = (LocalDateTime) o;
