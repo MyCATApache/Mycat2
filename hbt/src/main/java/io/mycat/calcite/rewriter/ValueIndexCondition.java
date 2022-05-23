@@ -193,12 +193,13 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                             bigOne = rangeQueryUpperKey.get(rangeQueryUpperKey.size() - 1);
                         }
                         Map<String, RangeVariable> map = new HashMap<>();
-                        if (smallOne != null && bigOne != null &&
-                                rangeQueryUpperOp == ComparisonOperator.LTE && rangeQueryLowerOp == ComparisonOperator.GTE) {
-                            for (String indexColumnName : condition.getIndexColumnNames()) {
-                                RangeVariable rangeVariable = new RangeVariable(indexColumnName, RangeVariableType.RANGE, smallOne, bigOne);
-                                map.put(indexColumnName, rangeVariable);
-                            }
+                        if (smallOne != null && bigOne != null) {
+                            if (rangeQueryUpperOp == ComparisonOperator.LTE && rangeQueryLowerOp == ComparisonOperator.GTE ||
+                                    rangeQueryUpperOp == ComparisonOperator.LT && rangeQueryLowerOp == ComparisonOperator.GT)
+                                for (String indexColumnName : condition.getIndexColumnNames()) {
+                                    RangeVariable rangeVariable = new RangeVariable(indexColumnName, RangeVariableType.RANGE, smallOne, bigOne);
+                                    map.put(indexColumnName, rangeVariable);
+                                }
                         } else if (smallOne != null) {
                             RangeVariableType type = null;
                             if (rangeQueryUpperOp == ComparisonOperator.LT) {
