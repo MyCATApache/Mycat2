@@ -140,7 +140,7 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                 switch (condition.getQueryType()) {
                     case PK_POINT_QUERY: {
                         //queryByPrimaryKey
-                        Map<String, RangeVariable> map = new HashMap<>();
+                        Map<String, RangeVariable> map = new LinkedHashMap<>();// need column order
 
                         if (pointQueryKey.size() > 1) {
                             List<Partition> curPartitions = new LinkedList<>();
