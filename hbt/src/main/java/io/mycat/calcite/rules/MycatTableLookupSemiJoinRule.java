@@ -3,35 +3,35 @@ package io.mycat.calcite.rules;
 import com.google.common.collect.ImmutableList;
 import io.mycat.HintTools;
 import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.calcite.localrel.LocalFilter;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatSQLTableLookup;
 import io.mycat.calcite.rewriter.Distribution;
+import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.ShardingTable;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.CorrelationId;
-import org.apache.calcite.rel.core.Join;
-import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.RelShuttleImpl;
+import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelDataTypeFieldImpl;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.util.mapping.IntPair;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static io.mycat.DrdsSqlCompiler.BKA_JOIN_LEFT_ROW_COUNT_LIMIT;
 import static io.mycat.calcite.MycatImplementor.MYCAT_SQL_LOOKUP_IN;
@@ -64,7 +64,7 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
         boolean hint = false;
         if (lastJoinHint != null && "use_bka_join".equalsIgnoreCase(lastJoinHint.hintName)) {
             hint = true;
-        }else {
+        } else {
             double leftRowCount = Optional.ofNullable(metadataQuery.getRowCount(left)).orElse(0.0);
             if (leftRowCount > BKA_JOIN_LEFT_ROW_COUNT_LIMIT) {
                 return;
@@ -106,61 +106,81 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
 //                MycatCalciteSupport.RexBuilder));
         RexBuilder rexBuilder = MycatCalciteSupport.RexBuilder;
         RelDataTypeFactory typeFactory = cluster.getTypeFactory();
-        relBuilder.push(right);
         List<RexNode> rightExprs = new ArrayList<>();
-        {
-            for (Integer rightKey : join.analyzeCondition().rightSet()) {
-                rightExprs.add(relBuilder.field(rightKey));
-            }
-        }
         List<RexNode> leftExprs = new ArrayList<>();
         List<CorrelationId> correlationIds = new ArrayList<>();
-        {
-            for (Integer leftKey : join.analyzeCondition().leftSet()) {
-                CorrelationId correl = cluster.createCorrel();
-                correlationIds.add(correl);
-                RelDataType type = left.getRowType().getFieldList().get(leftKey).getType();
-                RexNode rexNode = rexBuilder.makeCorrel(typeFactory.createUnknownType(), correl);
-                leftExprs.add(rexBuilder.makeCast(type, rexNode));
+
+        List<IntPair> pairs = join.analyzeCondition().pairs();
+        Set<String> orginalTableSet = new HashSet<>();
+        for (IntPair pair : pairs) {
+            RelColumnOrigin columnOrigin = mycatView.getCluster().getMetadataQuery().getColumnOrigin(mycatView.getRelNode(), pair.target);
+            if (columnOrigin != null && !columnOrigin.isDerived()) {
+                int originColumnOrdinal = columnOrigin.getOriginColumnOrdinal();
+                MycatLogicTable mycatLogicTable = (MycatLogicTable) columnOrigin.getOriginTable().unwrap(MycatLogicTable.class);
+                orginalTableSet.add(mycatLogicTable.logicTable().getUniqueName());
+                if (orginalTableSet.size() > 1) {
+                    return;//右表不能是多个
+                }
+                RexInputRef rexInputRef = new RexInputRef(originColumnOrdinal, mycatLogicTable.getRowType().getFieldList().get(originColumnOrdinal).getType());
+                rightExprs.add(rexInputRef);
+            } else {
+                continue;//不是原始字段，跳过
             }
+            CorrelationId correl = cluster.createCorrel();
+            correlationIds.add(correl);
+            RelDataType type = left.getRowType().getFieldList().get(pair.source).getType();
+            RexNode rexNode = rexBuilder.makeCorrel(typeFactory.createUnknownType(), correl);
+            leftExprs.add(rexBuilder.makeCast(type, rexNode));
         }
+        if (rightExprs.isEmpty()) {
+            return;
+        }
+
         RexNode condition = relBuilder.call(MYCAT_SQL_LOOKUP_IN,
                 rexBuilder.makeCall(SqlStdOperatorTable.ROW, rightExprs),
                 rexBuilder.makeCall(SqlStdOperatorTable.ROW, leftExprs));
+
+        RelNode newInnerNode = mycatView.getRelNode();
+        if (newInnerNode instanceof TableScan) {
+            TableScan tableScan = (TableScan) newInnerNode;
+            newInnerNode = LocalFilter.create(condition, tableScan);
+        } else {
+            newInnerNode = newInnerNode.accept(new RelShuttleImpl() {
+                @Override
+                public RelNode visit(RelNode other) {
+                    if (other instanceof Filter) {
+                        Filter filter = (Filter) other;
+                        RelNode input = filter.getInput();
+                        if (input instanceof TableScan) {
+                            TableScan tableScan = (TableScan) input;
+                            RexNode condition1 = filter.getCondition();
+                            RexNode rexNode = RexUtil.composeConjunction(rexBuilder, ImmutableList.of(condition, condition1));
+                            return LocalFilter.create(rexNode, tableScan);
+                        }
+                    } else if (other.getInputs().size() == 1 && other.getInputs().get(0) instanceof TableScan) {
+                        TableScan tableScan = (TableScan) other.getInputs().get(0);
+                        return other.copy(other.getTraitSet(), ImmutableList.of(LocalFilter.create(condition, tableScan)));
+                    }
+                    return super.visit(other);
+                }
+            });
+        }
+
+        relBuilder.push(newInnerNode);
+        relBuilder.rename(mycatView.getRowType().getFieldNames());
+        newInnerNode = relBuilder.build();
         Distribution.Type type = mycatView.getDistribution().type();
         switch (type) {
             case PHY:
             case BROADCAST: {
-                RelNode relNode = mycatView.getRelNode();
-                relBuilder.push(relNode);
-                relBuilder.filter(condition);
-                relBuilder.rename(mycatView.getRowType().getFieldNames());
-                MycatView view = mycatView.changeTo(relBuilder.build());
+                MycatView view = mycatView.changeTo(newInnerNode);
                 call.transformTo(new MycatSQLTableLookup(cluster, join.getTraitSet(), left, view, joinType, join.getCondition(), correlationIds, MycatSQLTableLookup.Type.BACK));
                 return;
             }
             case SHARDING: {
-                RelNode innerRelNode = mycatView.getRelNode();
-                boolean bottomFilter = innerRelNode instanceof TableScan;
-
-                relBuilder.push(mycatView.getRelNode());
-                relBuilder.filter(condition);
-
-                RelNode innerDataNode = relBuilder
-                        .rename(mycatView.getRowType().getFieldNames())
-                        .build();
-
-                Optional<RexNode> viewConditionOptional = mycatView.getCondition();
-                RexNode finalCondition = null;
-                if (!viewConditionOptional.isPresent() && bottomFilter) {
-                    finalCondition = condition;
-                } else if (bottomFilter) {
-                    finalCondition =
-                            viewConditionOptional
-                                    .map(i -> RexUtil.composeConjunction(MycatCalciteSupport.RexBuilder, ImmutableList.of(i, condition))).orElse(condition);
-
-                }
-                MycatView resView = MycatView.ofCondition(innerDataNode, mycatView.getDistribution(), finalCondition);
+                MycatView resView = MycatView.ofCondition(
+                        newInnerNode,
+                        mycatView.getDistribution(), condition);
                 call.transformTo(new MycatSQLTableLookup(cluster, join.getTraitSet(), left, resView, joinType, join.getCondition(), correlationIds, MycatSQLTableLookup.Type.BACK));
                 break;
             }

@@ -99,6 +99,9 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 //        if (input instanceof MycatRel) {
 //            input = input.accept(new ToLocalConverter());
 //        }
+        if (input instanceof MycatRel){
+            LOGGER.debug("may be a bug,MycatView input is MycatRel");
+        }
         ToLocalConverter toLocalConverter = new ToLocalConverter();
         input = input.accept(toLocalConverter);
         if (input instanceof Project) {
@@ -329,7 +332,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         MycatProject mycatProject = (MycatProject) project;
         if (mycatProject.getInput() instanceof MycatView) {
             MycatView mycatProjectInput = (MycatView) mycatProject.getInput();
-            return mycatProjectInput.changeTo(mycatProject.copy(mycatProject.getTraitSet(), ImmutableList.of(mycatProjectInput.getRelNode())));
+            return mycatProjectInput.changeTo(LocalProject.create(mycatProject,mycatProjectInput.getRelNode()));
         }
 
         return (MycatRel) project;

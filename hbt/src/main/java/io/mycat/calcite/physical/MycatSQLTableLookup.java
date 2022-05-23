@@ -25,12 +25,10 @@ import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexShuttle;
-import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.rex.*;
 import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.util.SqlString;
@@ -40,9 +38,7 @@ import org.apache.calcite.util.Util;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.mycat.calcite.MycatImplementor.MYCAT_SQL_LOOKUP_IN;
@@ -92,8 +88,8 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
                                              JoinRelType joinType,
                                              RexNode condition,
                                              List<CorrelationId> correlationIds,
-                                             Type type){
-        return new MycatSQLTableLookup(cluster,traits,input,right,joinType,condition,correlationIds,type);
+                                             Type type) {
+        return new MycatSQLTableLookup(cluster, traits, input, right, joinType, condition, correlationIds, type);
     }
 
     public MycatSQLTableLookup(RelOptCluster cluster,
@@ -244,11 +240,11 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
         Observable<@NonNull List<Object[]>> buffer;
         if (tableLookup.getType() == Type.BACK) {//semi 可以分解
             buffer = leftInput.buffer(300, 50);
-        }else {//NONE 该运算不能分解
-            buffer  = leftInput.toList().toObservable();
+        } else {//NONE 该运算不能分解
+            buffer = leftInput.toList().toObservable();
         }
         Observable<Object[]> rightObservable = buffer.flatMap(argsList -> {
-            if (argsList.isEmpty()){
+            if (argsList.isEmpty()) {
                 return Observable.empty();
             }
             RexShuttle rexShuttle = argSolver(argsList);
@@ -269,9 +265,9 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
                     rightView.getCondition().map(c -> c.accept(rexShuttle)).orElse(null));
             DrdsSqlWithParams drdsSql = context.getDrdsSql();
             SqlNode sqlTemplate = newRightView.getSQLTemplate(DrdsSqlWithParams.isForUpdate(drdsSql.getParameterizedSQL()));
-            ImmutableMultimap<String, SqlString> apply1 = newRightView.apply(context.getContext().getMergeUnionSize(),sqlTemplate, sqlMycatDataContext.getSqlMap(Collections.emptyMap(), newRightView, drdsSql, drdsSql.getHintDataNodeFilter()), drdsSql.getParams());
+            ImmutableMultimap<String, SqlString> apply1 = newRightView.apply(context.getContext().getMergeUnionSize(), sqlTemplate, sqlMycatDataContext.getSqlMap(Collections.emptyMap(), newRightView, drdsSql, drdsSql.getHintDataNodeFilter()), drdsSql.getParams());
             return Observable.merge(sqlMycatDataContext.getObservables(apply1, rightRowMetaData,
-                    (sessionConnection, sql, extractParams, calciteRowMetaData) -> VertxExecuter.runQuery(sessionConnection,sql,extractParams,calciteRowMetaData)
+                    (sessionConnection, sql, extractParams, calciteRowMetaData) -> VertxExecuter.runQuery(sessionConnection, sql, extractParams, calciteRowMetaData)
             ));
         });
         return rightObservable;
@@ -281,16 +277,49 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
     private static RexShuttle argSolver(List<Object[]> argsList) {
         return new RexShuttle() {
             @Override
+            public void visitEach(Iterable<? extends RexNode> exprs) {
+                super.visitEach(exprs);
+            }
+
+            @Override
+            public List<RexNode> visitList(Iterable<? extends RexNode> exprs) {
+                return super.visitList(exprs);
+            }
+
+            @Override
+            public RexNode visitCorrelVariable(RexCorrelVariable variable) {
+                return super.visitCorrelVariable(variable);
+            }
+
+            @Override
+            public RexNode visitDynamicParam(RexDynamicParam dynamicParam) {
+                return super.visitDynamicParam(dynamicParam);
+            }
+
+            @Override
             public RexNode visitCall(RexCall call) {
                 if (call.getOperator() == MYCAT_SQL_LOOKUP_IN) {
                     List<RexNode> operands = call.getOperands();
-                    RexNode rexNode = operands.get(1);
-                    RexCall rexCall = (RexCall) rexNode;
-                    LinkedList<RexNode> accept = MycatTableLookupValues.apply(true, argsList, rexCall.getOperands());
-                    RexNode rexNode1 = MycatCalciteSupport.RexBuilder.makeIn(operands.get(0), accept);
-                    return RexUtil.expandSearch(MycatCalciteSupport.RexBuilder,null,rexNode1);
+                    RexCall exprRow = (RexCall) operands.get(0);
+                    RexCall valueRow = (RexCall) operands.get(1);
+                    if (argsList.size() == 1) {
+                        ArrayList<RexNode> ands = new ArrayList<>();
+                        for (int i = 0; i < exprRow.getOperands().size(); i++) {
+                            RexNode right = MycatCalciteSupport.RexBuilder.makeLiteral(Objects.toString(argsList.get(0)[i]));
+                            RexNode left = exprRow.getOperands().get(i);
+                            ands.add(MycatCalciteSupport.RexBuilder
+                                    .makeCall(SqlStdOperatorTable.EQUALS,left,MycatCalciteSupport.RexBuilder.makeCast(left.getType(), right)));
+                        }
+                        if (ands.size()==1){
+                            return ands.get(0);
+                        }
+                        return MycatCalciteSupport.RexBuilder.makeCall(SqlStdOperatorTable.AND, ands);
+                    }
+                    LinkedList<RexNode> accept = MycatTableLookupValues.apply(true, argsList, valueRow.getOperands());
+                    RexNode rexNode1 = MycatCalciteSupport.RexBuilder.makeIn(exprRow, accept);
+                    return RexUtil.expandSearch(MycatCalciteSupport.RexBuilder, null, rexNode1);
                 }
-                return call;
+                return super.visitCall(call);
             }
         };
     }
@@ -362,26 +391,26 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
         return implementor.result(
                 physType,
                 builder.append(
-                        Expressions.call(
-                                leftExpression,
-                                BuiltInMethod.HASH_JOIN.method,
-                                Expressions.list(
-                                        rightExpression,
-                                        leftPhysType.generateAccessor(joinInfo.leftKeys),
-                                        rightPhysType.generateAccessor(joinInfo.rightKeys),
-                                        EnumUtils.joinSelector(joinType,
-                                                physType,
-                                                ImmutableList.of(
-                                                        leftPhysType, rightPhysType)))
-                                        .append(
-                                                Util.first(keyPhysType.comparer(),
-                                                        Expressions.constant(null)))
-                                        .append(
-                                                Expressions.constant(joinType.generatesNullsOnLeft()))
-                                        .append(
-                                                Expressions.constant(
-                                                        joinType.generatesNullsOnRight()))
-                                        .append(predicate)))
+                                Expressions.call(
+                                        leftExpression,
+                                        BuiltInMethod.HASH_JOIN.method,
+                                        Expressions.list(
+                                                        rightExpression,
+                                                        leftPhysType.generateAccessor(joinInfo.leftKeys),
+                                                        rightPhysType.generateAccessor(joinInfo.rightKeys),
+                                                        EnumUtils.joinSelector(joinType,
+                                                                physType,
+                                                                ImmutableList.of(
+                                                                        leftPhysType, rightPhysType)))
+                                                .append(
+                                                        Util.first(keyPhysType.comparer(),
+                                                                Expressions.constant(null)))
+                                                .append(
+                                                        Expressions.constant(joinType.generatesNullsOnLeft()))
+                                                .append(
+                                                        Expressions.constant(
+                                                                joinType.generatesNullsOnRight()))
+                                                .append(predicate)))
                         .toBlock());
     }
 
