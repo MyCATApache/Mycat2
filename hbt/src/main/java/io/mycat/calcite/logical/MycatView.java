@@ -191,7 +191,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                 if (wholeCondition != null) {
                     PredicateAnalyzer predicateAnalyzer = new PredicateAnalyzer(indexTable.keyMetas(), shardingTable.getColumns().stream().map(i -> i.getColumnName()).collect(Collectors.toList()));
                     Map<QueryType, List<IndexCondition>> queryTypeListMap = predicateAnalyzer.translateMatch(wholeCondition);
-                    if (queryTypeListMap.isEmpty()) return Collections.emptyList();
+                    if (queryTypeListMap.isEmpty()) continue;
                     List<IndexCondition> next = queryTypeListMap.values().stream().filter(i -> i != null).iterator().next().stream()
                             .filter(i -> i != null).collect(Collectors.toList());
                     indexCondition = next.get(0);
@@ -269,12 +269,13 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                     if (RelOptUtil.areRowTypesEqual(orginalRowType, mycatProject.getRowType(), false)) {
                         tableArrayList.add(mycatProject);
                     }
+//                    tableArrayList.add(mycatProject);
                     continue;
                 }
             }
             return (List) tableArrayList;
         }catch (Throwable throwable){
-            LOGGER.debug("",throwable);
+            LOGGER.error("",throwable);
             return Collections.emptyList();
         }
     }
@@ -329,12 +330,13 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 //            }
             project = MycatProject.create(project.getInput(0), projects, project.getRowType());
         }
-        MycatProject mycatProject = (MycatProject) project;
-        if (mycatProject.getInput() instanceof MycatView) {
-            MycatView mycatProjectInput = (MycatView) mycatProject.getInput();
-            return mycatProjectInput.changeTo(LocalProject.create(mycatProject,mycatProjectInput.getRelNode()));
+        if (project instanceof MycatProject){
+            MycatProject mycatProject = (MycatProject) project;
+            if (mycatProject.getInput() instanceof MycatView) {
+                MycatView mycatProjectInput = (MycatView) mycatProject.getInput();
+                return mycatProjectInput.changeTo(LocalProject.create(mycatProject,mycatProjectInput.getRelNode()));
+            }
         }
-
         return (MycatRel) project;
     }
 
