@@ -5,15 +5,12 @@ import com.google.common.collect.ImmutableMultimap;
 import io.mycat.AsyncMycatDataContextImpl;
 import io.mycat.DrdsSqlWithParams;
 import io.mycat.beans.mycat.CopyMycatRowMetaData;
-import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.*;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.newquery.NewMycatConnection;
 import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
-import io.vertx.core.Future;
 import lombok.Getter;
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.linq4j.tree.*;
@@ -52,7 +49,7 @@ import static io.mycat.calcite.MycatImplementor.MYCAT_SQL_LOOKUP_IN;
 
 @Getter
 public class MycatSQLTableLookup extends SingleRel implements MycatRel {
-    protected final RexNode condition;
+    protected final RexNode joinCondition;
     protected final JoinRelType joinType;
     protected final Type type;
     protected final List<CorrelationId> correlationIds;
@@ -65,9 +62,9 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
 
     @Override
     public RelWriter explainTerms(RelWriter pw) {
-        JoinInfo joinInfo = JoinInfo.of(getInput(), right, condition);
+        JoinInfo joinInfo = JoinInfo.of(getInput(), right, joinCondition);
         RelWriter relWriter = super.explainTerms(pw)
-                .item("condition", condition)
+                .item("condition", joinCondition)
                 .item("joinType", joinType.lowerName)
                 .item("type", type.toString())
                 .item("correlationIds", correlationIds)
@@ -81,11 +78,11 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
     }
 
     public MycatSQLTableLookup changeTo(RelNode input, MycatView right) {
-        return new MycatSQLTableLookup(getCluster(), input.getTraitSet(), input, right, joinType, condition, correlationIds, type);
+        return new MycatSQLTableLookup(getCluster(), input.getTraitSet(), input, right, joinType, joinCondition, correlationIds, type);
     }
 
     public MycatSQLTableLookup changeTo(RelNode input) {
-        return new MycatSQLTableLookup(getCluster(), input.getTraitSet(), input, right, joinType, condition, correlationIds, type);
+        return new MycatSQLTableLookup(getCluster(), input.getTraitSet(), input, right, joinType, joinCondition, correlationIds, type);
     }
 
     public static MycatSQLTableLookup create(RelOptCluster cluster,
@@ -108,7 +105,7 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
                                List<CorrelationId> correlationIds,
                                Type type) {
         super(cluster, traits.replace(MycatConvention.INSTANCE), input);
-        this.condition = condition;
+        this.joinCondition = condition;
         this.joinType = joinType;
         this.correlationIds = correlationIds;
         this.type = type;
@@ -236,7 +233,7 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
 
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new MycatSQLTableLookup(getCluster(), traitSet, inputs.get(0), right, joinType, condition, correlationIds, type);
+        return new MycatSQLTableLookup(getCluster(), traitSet, inputs.get(0), right, joinType, joinCondition, correlationIds, type);
     }
 
     public static Observable<Object[]> dispatchRightObservable(NewMycatDataContext context, MycatSQLTableLookup tableLookup, Observable<Object[]> leftInput) {
@@ -342,7 +339,7 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
                                      Expression leftExpression,
                                      Expression rightExpression) {
         RelNode left = input;
-        JoinInfo joinInfo = JoinInfo.of(left, right, condition);
+        JoinInfo joinInfo = JoinInfo.of(left, right, joinCondition);
         leftExpression =
                 toEnumerate(leftExpression);
         rightExpression =

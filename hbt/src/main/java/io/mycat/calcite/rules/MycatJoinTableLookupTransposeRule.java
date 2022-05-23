@@ -46,7 +46,7 @@ public class MycatJoinTableLookupTransposeRule extends RelRule<MycatJoinTableLoo
                             newInputJoin,
                             indexRightView,
                             mycatSQLTableLookup.getJoinType(),
-                            mycatSQLTableLookup.getCondition(),
+                            mycatSQLTableLookup.getJoinCondition(),
                             mycatSQLTableLookup.getCorrelationIds(),
                             mycatSQLTableLookup.getType());
                     fixProject(originalRowType, newMycatSQLTableLookup, call.builder()).ifPresent(res -> {
@@ -69,7 +69,7 @@ public class MycatJoinTableLookupTransposeRule extends RelRule<MycatJoinTableLoo
                             newInputJoin,
                             indexRightView,
                             mycatSQLTableLookup.getJoinType(),
-                            mycatSQLTableLookup.getCondition(),
+                            mycatSQLTableLookup.getJoinCondition(),
                             mycatSQLTableLookup.getCorrelationIds(),
                             mycatSQLTableLookup.getType());
                     fixProject(originalRowType, newMycatSQLTableLookup, call.builder()).ifPresent(res -> {
