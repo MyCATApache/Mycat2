@@ -2,6 +2,7 @@ package io.mycat.calcite.table;
 
 import io.mycat.Partition;
 import io.mycat.SimpleColumnInfo;
+import io.mycat.config.ShardingTableConfig;
 import io.mycat.router.CustomRuleFunction;
 import lombok.Getter;
 
@@ -16,14 +17,15 @@ public class ShardingIndexTable extends ShardingTable {
     public ShardingIndexTable(String indexName,LogicTable logicTable,
                               List<Partition> backends,
                               CustomRuleFunction shardingFuntion,
-                              ShardingTable primaryTable) {
-        super(logicTable, backends, shardingFuntion, Collections.emptyList(), null);
+                              ShardingTable primaryTable,
+                              ShardingTableConfig indexTableConfigEntry) {
+        super(logicTable, backends, shardingFuntion, Collections.emptyList(), indexTableConfigEntry);
         this.indexName = indexName;
         this.primaryTable = primaryTable;
     }
 
     public ShardingIndexTable withPrimary(ShardingTable shardingTable){
-        return new ShardingIndexTable(getIndexName(),getLogicTable(),getBackends(),getShardingFuntion(),shardingTable);
+        return new ShardingIndexTable(getIndexName(),getLogicTable(),getBackends(),getShardingFuntion(),shardingTable,this.getTableConfig());
     }
 
     public boolean hasFactColumn(int i) {

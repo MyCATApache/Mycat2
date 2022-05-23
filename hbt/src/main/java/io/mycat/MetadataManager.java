@@ -464,7 +464,7 @@ public class MetadataManager {
                                                        ShardingTableConfig secondTableConfig,
                                                        List<Partition> backends) {
         ShardingTable shardingTable = createShardingTable(schemaName, indexTableName, secondTableConfig, backends, Collections.emptyList());
-        return new ShardingIndexTable(indexName, shardingTable.getLogicTable(), shardingTable.getBackends(), shardingTable.getShardingFuntion(), null);
+        return new ShardingIndexTable(indexName, shardingTable.getLogicTable(), shardingTable.getBackends(), shardingTable.getShardingFuntion(), null,secondTableConfig);
     }
 
     @NotNull
