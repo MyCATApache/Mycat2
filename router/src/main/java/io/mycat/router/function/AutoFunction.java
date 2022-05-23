@@ -167,6 +167,10 @@ public abstract class AutoFunction extends CustomRuleFunction {
                     }
                 }
             }
+
+            if (getDbIndex && getTIndex) {
+                break;
+            }
         }
         if (getDbIndex && getTIndex) {
             return (List) scanOnlyDbTableIndex(dIndex, tIndex);
