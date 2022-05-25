@@ -18,7 +18,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import io.mycat.*;
+import io.mycat.DrdsSqlCompiler;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.Partition;
+import io.mycat.PartitionGroup;
 import io.mycat.beans.mycat.MycatRelDataType;
 import io.mycat.calcite.*;
 import io.mycat.calcite.localrel.*;
@@ -268,6 +271,11 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
                     if (RelOptUtil.areRowTypesEqual(orginalRowType, mycatProject.getRowType(), false)) {
                         tableArrayList.add(mycatProject);
+                    }else {
+                        RelNode newRel = RelOptUtil.createCastRel(mycatProject, orginalRowType, true, (input, hints, childExprs, fieldNames) -> MycatProject.create(input, childExprs, orginalRowType));
+                        if (RelOptUtil.areRowTypesEqual(orginalRowType, newRel.getRowType(), false)) {
+                            tableArrayList.add(newRel);
+                        }
                     }
 //                    tableArrayList.add(mycatProject);
                     continue;
