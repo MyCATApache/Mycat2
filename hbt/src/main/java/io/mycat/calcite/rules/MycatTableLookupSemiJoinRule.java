@@ -121,16 +121,19 @@ public class MycatTableLookupSemiJoinRule extends RelRule<MycatTableLookupSemiJo
                 if (orginalTableSet.size() > 1) {
                     return;//右表不能是多个
                 }
+                String columnName = mycatLogicTable.getRowType().getFieldNames().get(originColumnOrdinal);
                 RexInputRef rexInputRef = new RexInputRef(originColumnOrdinal, mycatLogicTable.getRowType().getFieldList().get(originColumnOrdinal).getType());
                 rightExprs.add(rexInputRef);
+
+                CorrelationId correl = cluster.createCorrel();
+                correlationIds.add(correl);
+                RelDataType type = left.getRowType().getFieldList().get(pair.source).getType();
+                RexNode rexNode = rexBuilder.makeCorrel(typeFactory.createUnknownType(), correl);
+                leftExprs.add(rexBuilder.makeCast(type, rexNode));
+
             } else {
                 continue;//不是原始字段，跳过
             }
-            CorrelationId correl = cluster.createCorrel();
-            correlationIds.add(correl);
-            RelDataType type = left.getRowType().getFieldList().get(pair.source).getType();
-            RexNode rexNode = rexBuilder.makeCorrel(typeFactory.createUnknownType(), correl);
-            leftExprs.add(rexBuilder.makeCast(type, rexNode));
         }
         if (rightExprs.isEmpty()) {
             return;

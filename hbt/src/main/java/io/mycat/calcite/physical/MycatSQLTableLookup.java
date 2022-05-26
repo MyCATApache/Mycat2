@@ -14,10 +14,7 @@ import io.reactivex.rxjava3.core.Observable;
 import lombok.Getter;
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.linq4j.tree.*;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Filter;
@@ -25,6 +22,8 @@ import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.sql.*;
@@ -38,7 +37,9 @@ import org.apache.calcite.util.Util;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.mycat.calcite.MycatImplementor.MYCAT_SQL_LOOKUP_IN;
@@ -247,7 +248,8 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
             if (argsList.isEmpty()) {
                 return Observable.empty();
             }
-            RexShuttle rexShuttle = argSolver(argsList);
+            List<String> rightFieldNames = RelOptUtil.findAllTables(rightView.getRelNode()).get(0).getRowType().getFieldNames();
+            RexShuttle rexShuttle = argSolver(tableLookup.getInput(), argsList, rightFieldNames);
             RelNode mycatInnerRelNode = rightView.getRelNode().accept(new RelShuttleImpl() {
                 @Override
                 public RelNode visit(RelNode other) {
@@ -274,7 +276,7 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
     }
 
     @NotNull
-    private static RexShuttle argSolver(List<Object[]> argsList) {
+    private static RexShuttle argSolver(RelNode left, List<Object[]> argsList, List<String> rightFieldNames) {
         return new RexShuttle() {
             @Override
             public void visitEach(Iterable<? extends RexNode> exprs) {
@@ -298,26 +300,68 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
 
             @Override
             public RexNode visitCall(RexCall call) {
+                RexBuilder rexBuilder = MycatCalciteSupport.RexBuilder;
                 if (call.getOperator() == MYCAT_SQL_LOOKUP_IN) {
                     List<RexNode> operands = call.getOperands();
                     RexCall exprRow = (RexCall) operands.get(0);
-                    RexCall valueRow = (RexCall) operands.get(1);
-                    if (argsList.size() == 1) {
+                    List<String> columnNames = exprRow.getOperands().stream().map(i -> ((RexInputRef) i).getIndex()).map(i -> rightFieldNames.get(i)).collect(Collectors.toList());
+                    List<String> valueNames = left.getRowType().getFieldNames();
+                    columnNames = columnNames.stream().filter(i -> valueNames.contains(i)).collect(Collectors.toList());
+                    List<RexNode> collect = exprRow.getOperands().stream().filter(rexNode -> {
+                        int index = ((RexInputRef) rexNode).getIndex();
+                        return valueNames.contains( rightFieldNames.get(index));
+                    }).collect(Collectors.toList());
+                    exprRow = (RexCall) rexBuilder.makeCall(SqlStdOperatorTable.ROW, collect);
+                    List<List<RexLiteral>> rowList = new ArrayList<>();
+                    for (Object[] args : argsList) {
+                        List<RexLiteral> row = new ArrayList<>();
+                        for (int i = 0; i < columnNames.size(); i++) {
+                            String needColumnName = columnNames.get(i);
+
+
+                            for (int j = 0; j < valueNames.size(); j++) {
+                                String fieldName = valueNames.get(j);
+                                if (needColumnName.equals(fieldName)) {
+                                    RelDataTypeField relDataTypeField = left.getRowType().getFieldList().get(j);
+                                    RelDataType fieldType = relDataTypeField.getType();
+                                    RexLiteral right = (RexLiteral) MycatCalciteSupport.RexBuilder.makeLiteral(Optional.ofNullable(args[j]).map(new Function<Object, String>() {
+                                        @Override
+                                        public String apply(Object o) {
+                                            if (o instanceof LocalDateTime) {
+                                                return java.sql.Timestamp.valueOf((LocalDateTime) o).toString();
+                                            }
+                                            return o.toString();
+                                        }
+                                    }).orElse(null));
+                                    row.add(right);
+                                }
+                            }
+                        }
+                        rowList.add(row);
+                    }
+                    if (rowList.get(0).size() != columnNames.size()) {
+                       throw new UnsupportedOperationException("may be a bug");
+                    }
+
+                    if (rowList.size() == 1) {
                         ArrayList<RexNode> ands = new ArrayList<>();
                         for (int i = 0; i < exprRow.getOperands().size(); i++) {
-                            RexNode right = MycatCalciteSupport.RexBuilder.makeLiteral(Objects.toString(argsList.get(0)[i]));
+                            RexNode right = rowList.get(0).get(i);
                             RexNode left = exprRow.getOperands().get(i);
                             ands.add(MycatCalciteSupport.RexBuilder
-                                    .makeCall(SqlStdOperatorTable.EQUALS,left,MycatCalciteSupport.RexBuilder.makeCast(left.getType(), right)));
+                                    .makeCall(SqlStdOperatorTable.EQUALS, left, MycatCalciteSupport.RexBuilder.makeCast(left.getType(), right)));
                         }
-                        if (ands.size()==1){
+                        if (ands.size() == 1) {
                             return ands.get(0);
                         }
-                        return MycatCalciteSupport.RexBuilder.makeCall(SqlStdOperatorTable.AND, ands);
+                        return rexBuilder.makeCall(SqlStdOperatorTable.AND, ands);
                     }
-                    LinkedList<RexNode> accept = MycatTableLookupValues.apply(true, argsList, valueRow.getOperands());
-                    RexNode rexNode1 = MycatCalciteSupport.RexBuilder.makeIn(exprRow, accept);
-                    return RexUtil.expandSearch(MycatCalciteSupport.RexBuilder, null, rexNode1);
+                    List<RexNode> rowRexNodeList = new ArrayList<>();
+                    for (List<RexLiteral> rexLiterals : rowList) {
+                        RexNode rexNode = rexBuilder.makeCall(SqlStdOperatorTable.ROW, rexLiterals);
+                        rowRexNodeList.add(rexNode);
+                    }
+                    return rexBuilder.makeIn(exprRow, rowRexNodeList);
                 }
                 return super.visitCall(call);
             }

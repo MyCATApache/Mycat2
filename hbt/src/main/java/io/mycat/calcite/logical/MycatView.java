@@ -102,7 +102,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 //        if (input instanceof MycatRel) {
 //            input = input.accept(new ToLocalConverter());
 //        }
-        if (input instanceof MycatRel){
+        if (input instanceof MycatRel) {
             LOGGER.debug("may be a bug,MycatView input is MycatRel");
         }
         ToLocalConverter toLocalConverter = new ToLocalConverter();
@@ -131,6 +131,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     }
 
     public static ProjectIndexMapping project(ShardingIndexTable shardingIndexTable, List<Integer> projects) {
+        ShardingTable primaryTable = shardingIndexTable.getPrimaryTable();
         ArrayList<String> restColumnListBuilder = new ArrayList<>();
         ArrayList<String> indexColumnListBuilder = new ArrayList<>();
         ShardingTable factTable = shardingIndexTable.getFactTable();
@@ -139,10 +140,17 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             Objects.requireNonNull(index);
             String columnName = factTable.getColumns().get(index).getColumnName();
             boolean covering = shardingIndexTable.getColumnByName(columnName) != null;
-            if (covering) {
+            boolean mustColumn = primaryTable.getColumns().stream()
+                    .anyMatch(c -> c.getColumnName().equals(columnName) && (c.isShardingKey() || c.isPrimaryKey()));
+            if (mustColumn) {
                 indexColumnListBuilder.add(columnName);
-            } else {
                 restColumnListBuilder.add(columnName);
+            } else {
+                if (covering) {
+                    indexColumnListBuilder.add(columnName);
+                } else {
+                    restColumnListBuilder.add(columnName);
+                }
             }
         }
         List<String> indexEqualKeys = (List) ImmutableList.builder().addAll(shardingIndexTable.getLogicTable().getShardingKeys())
@@ -252,10 +260,10 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                     RelNode rightProject = createMycatProject(primaryTableScan, indexMapping.getFactColumns());
 
                     String[] primaryOrShardingKeys = shardingTable.getLogicTable().getRawColumns().stream()
-                            .filter(i -> i.isPrimaryKey() || i.isShardingKey()).filter(i->
-                                    leftProject.getRowType().getFieldNames().contains(i.getColumnName())&&
+                            .filter(i -> i.isPrimaryKey() || i.isShardingKey()).filter(i ->
+                                    leftProject.getRowType().getFieldNames().contains(i.getColumnName()) &&
                                             rightProject.getRowType().getFieldNames().contains(i.getColumnName())
-                                    ).map(i->i.getColumnName()).toArray(n -> new String[n]);
+                            ).map(i -> i.getColumnName()).toArray(n -> new String[n]);
 
                     Join relNode = (Join) relBuilder
 
@@ -271,7 +279,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
                     if (RelOptUtil.areRowTypesEqual(orginalRowType, mycatProject.getRowType(), false)) {
                         tableArrayList.add(mycatProject);
-                    }else {
+                    } else {
                         RelNode newRel = RelOptUtil.createCastRel(mycatProject, orginalRowType, true, (input, hints, childExprs, fieldNames) -> MycatProject.create(input, childExprs, orginalRowType));
                         if (RelOptUtil.areRowTypesEqual(orginalRowType, newRel.getRowType(), false)) {
                             tableArrayList.add(newRel);
@@ -282,8 +290,8 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                 }
             }
             return (List) tableArrayList;
-        }catch (Throwable throwable){
-            LOGGER.error("",throwable);
+        } catch (Throwable throwable) {
+            LOGGER.error("", throwable);
             return Collections.emptyList();
         }
     }
@@ -338,11 +346,11 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 //            }
             project = MycatProject.create(project.getInput(0), projects, project.getRowType());
         }
-        if (project instanceof MycatProject){
+        if (project instanceof MycatProject) {
             MycatProject mycatProject = (MycatProject) project;
             if (mycatProject.getInput() instanceof MycatView) {
                 MycatView mycatProjectInput = (MycatView) mycatProject.getInput();
-                return mycatProjectInput.changeTo(LocalProject.create(mycatProject,mycatProjectInput.getRelNode()));
+                return mycatProjectInput.changeTo(LocalProject.create(mycatProject, mycatProjectInput.getRelNode()));
             }
         }
         return (MycatRel) project;
