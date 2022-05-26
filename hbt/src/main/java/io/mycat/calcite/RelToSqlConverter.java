@@ -316,9 +316,6 @@ public class RelToSqlConverter extends SqlImplementor
       int index = 0;
       for (RexNode ref : e.getProjects()) {
         SqlNode sqlExpr = builder.context.toSql(null, ref);
-        if(sqlExpr.toString().contains("sysuuid")){
-          System.out.println();
-        }
         if (sqlExpr instanceof SqlIdentifier){
           SqlIdentifier sqlIdentifier = (SqlIdentifier) sqlExpr;
           ImmutableList<String> names = sqlIdentifier.names;
