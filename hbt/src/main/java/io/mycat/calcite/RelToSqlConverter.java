@@ -59,6 +59,7 @@ import org.apache.calcite.sql.fun.SqlRowOperator;
 import org.apache.calcite.sql.fun.SqlSingleValueAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.util.SqlVisitor;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
@@ -75,17 +76,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.SortedSet;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -319,13 +310,38 @@ public class RelToSqlConverter extends SqlImplementor
     final Builder builder = x.builder(e);
     if (!isStar(e.getProjects(), e.getInput().getRowType(), e.getRowType())) {
       final List<SqlNode> selectList = new ArrayList<>();
+      Set<String> columnSet = new HashSet<>();
+      ArrayList<Integer> dupColumnPos = new ArrayList<>();
+
+      int index = 0;
       for (RexNode ref : e.getProjects()) {
         SqlNode sqlExpr = builder.context.toSql(null, ref);
+        if(sqlExpr.toString().contains("sysuuid")){
+          System.out.println();
+        }
+        if (sqlExpr instanceof SqlIdentifier){
+          SqlIdentifier sqlIdentifier = (SqlIdentifier) sqlExpr;
+          ImmutableList<String> names = sqlIdentifier.names;
+          String columnName ;
+          if (names.size() == 1){
+            columnName = names.get(0);
+          }else{//2
+            columnName = names.get(1);
+          }
+          if (!columnSet.add(columnName.toLowerCase())){
+            dupColumnPos.add(index);
+          }
+        }
         if (SqlUtil.isNullLiteral(sqlExpr, false)) {
           sqlExpr = castNullType(sqlExpr,
               e.getRowType().getFieldList().get(selectList.size()));
         }
         addSelect(selectList, sqlExpr, e.getRowType());
+        index++;
+      }
+      for (Integer dupColumnPo : dupColumnPos) {
+        String alias = e.getRowType().getFieldList().get(dupColumnPo).getName() + "_" + dupColumnPo;
+        selectList.set(dupColumnPo,as(SqlLiteral.createNull(SqlParserPos.ZERO),alias));
       }
 
       builder.setSelect(new SqlNodeList(selectList, POS));
