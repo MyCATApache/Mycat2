@@ -36,12 +36,13 @@ public class HttpCustomRuleFunction extends CustomRuleFunction {
 
     @Override
     protected void init(ShardingTableHandler tableHandler, Map<String, Object> properties, Map<String, Object> ranges) {
+        this.properties = properties;
         this.name = (String) properties.get("name");
-        this.shardingDbKeys = new HashSet<>(Arrays.asList(Objects.toString(properties.get("shardingDbKeys")).split(",")));
-        this.shardingTableKeys = new HashSet<>(Arrays.asList(Objects.toString(properties.get("shardingTableKeys")).split(",")));
-        this.shardingTargetKeys = new HashSet<>(Arrays.asList(Objects.toString(properties.get("shardingTargetKeys")).split(",")));
+        this.shardingDbKeys = new HashSet<>(Arrays.asList(Objects.toString(properties.getOrDefault("shardingDbKeys","")).split(",")));
+        this.shardingTableKeys = new HashSet<>(Arrays.asList(Objects.toString(properties.getOrDefault("shardingTableKeys","")).split(",")));
+        this.shardingTargetKeys = new HashSet<>(Arrays.asList(Objects.toString(properties.getOrDefault("shardingTargetKeys","")).split(",")));
         this.erUniqueID = properties.toString();
-        this.allScanPartitions = fetchPartitions(Collections.emptyMap());
+
         this.shardingTableType = ShardingTableType.computeByName(this.allScanPartitions);
         this.requireShardingKeys = (Set) ImmutableSet.builder()
                 .addAll(this.shardingDbKeys)
@@ -49,7 +50,7 @@ public class HttpCustomRuleFunction extends CustomRuleFunction {
                 .addAll(this.shardingTargetKeys)
                 .build();
         this.requireShardingKeyCount = this.requireShardingKeys.size();
-        this.properties = properties;
+
 
 
         Number allScanPartitionTimeout = (Number) properties.getOrDefault("allScanPartitionTimeout", 5);
@@ -92,8 +93,8 @@ public class HttpCustomRuleFunction extends CustomRuleFunction {
     private synchronized List<Partition> fetchPartitions(Map<String, RangeVariable> values) {
         try {
             ShardingTableHandler tableHandler = getTable();
-            String lock_server_url = (String) properties.getOrDefault("router_service_address", "http://localhost:9066/routerserivce");
-            long timeout = (Long) properties.getOrDefault("properties", 30L);
+            String router_service_address = (String) properties.getOrDefault("routerServiceAddress", "http://localhost:9066/routerserivce");
+            long timeout = Long.parseLong(properties.getOrDefault("fetchTimeout", 30L).toString());
             OkHttpClient.Builder builder = new OkHttpClient.Builder();
             if (timeout > 0) {
                 builder.connectTimeout(timeout, TimeUnit.MILLISECONDS);
@@ -109,7 +110,7 @@ public class HttpCustomRuleFunction extends CustomRuleFunction {
                     .build();
 
             final Request request = new Request.Builder()
-                    .url(lock_server_url)
+                    .url(router_service_address)
                     .post(body)
                     .build();
             Call call = okHttpClient.newCall(request);

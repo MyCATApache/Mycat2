@@ -1,12 +1,10 @@
 package io.mycat.monitor;
 
-import io.mycat.ExecutorUtil;
-import io.mycat.IOExecutor;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.NameableExecutor;
+import io.mycat.*;
 import io.mycat.config.MonitorConfig;
 import io.mycat.config.SqlLogConfig;
 import io.mycat.config.TimerConfig;
+import io.mycat.router.function.IndexDataNode;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Promise;
@@ -19,6 +17,7 @@ import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -40,7 +39,7 @@ public class MycatSQLLogMonitorImpl extends MycatSQLLogMonitor {
     public static final String SHOW_RW_MONITOR_URL = "/ShowRwMonitor";
     public static final String QUERY_SQL_LOG = "/QuerySqlLog";
     public static final String LOCKSERIVCE_URL = "/lockserivce";
-
+    public static final String ROUTER_SERVICE_URL = "/router_service_address";
     Map<String, LockContext> lockMap = new ConcurrentHashMap<>();
     NameableExecutor lockThread = ExecutorUtil.create("lock_server", 1);
 
@@ -70,6 +69,9 @@ public class MycatSQLLogMonitorImpl extends MycatSQLLogMonitor {
                 @Override
                 public void handle(HttpServerRequest request) {
                     if (request.uri().startsWith(LOCKSERIVCE_URL.toLowerCase())) {
+                        request.setExpectMultipart(true);
+                    }
+                    if (request.uri().startsWith(ROUTER_SERVICE_URL.toLowerCase())) {
                         request.setExpectMultipart(true);
                     }
                     request.endHandler(v -> {
@@ -125,6 +127,17 @@ public class MycatSQLLogMonitorImpl extends MycatSQLLogMonitor {
                                                     res = ("Unexpected value: " + method);
                                                     break;
                                             }
+                                        } catch (Throwable throwable) {
+                                            LOGGER.error("", throwable);
+                                            res = throwable.getLocalizedMessage();
+                                        }
+                                    } else if (uri.startsWith(ROUTER_SERVICE_URL.toLowerCase())) {
+                                        try {
+
+                                            String tableName = formAttributes.get("tableName");
+                                            String schemaName = formAttributes.get("schemaName");
+                                            IndexDataNode indexDataNode = new IndexDataNode(MetadataManager.getPrototype(), schemaName, tableName, 0, 1, 1);
+                                            res = Collections.singletonList(indexDataNode);
                                         } catch (Throwable throwable) {
                                             LOGGER.error("", throwable);
                                             res = throwable.getLocalizedMessage();
