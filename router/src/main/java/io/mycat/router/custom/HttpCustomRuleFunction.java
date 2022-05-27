@@ -41,7 +41,12 @@ public class HttpCustomRuleFunction extends CustomRuleFunction {
         this.shardingDbKeys = new HashSet<>(Arrays.asList(Objects.toString(properties.getOrDefault("shardingDbKeys","")).split(",")));
         this.shardingTableKeys = new HashSet<>(Arrays.asList(Objects.toString(properties.getOrDefault("shardingTableKeys","")).split(",")));
         this.shardingTargetKeys = new HashSet<>(Arrays.asList(Objects.toString(properties.getOrDefault("shardingTargetKeys","")).split(",")));
-        this.erUniqueID = properties.toString();
+
+        HashMap<String, Object> erInfo = new HashMap<>(properties);
+        erInfo.remove("shardingDbKeys");
+        erInfo.remove("shardingTableKeys");
+        erInfo.remove("shardingTargetKeys");
+        this.erUniqueID = erInfo.toString();
 
         this.shardingTableType = ShardingTableType.computeByName(this.allScanPartitions);
         this.requireShardingKeys = (Set) ImmutableSet.builder()
