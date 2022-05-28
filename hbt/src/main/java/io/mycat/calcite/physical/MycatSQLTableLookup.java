@@ -303,14 +303,17 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
 
             @Override
             public RexNode visitCall(RexCall call) {
-                RexBuilder rexBuilder = MycatCalciteSupport.RexBuilder;
                 if (call.getOperator() == MYCAT_SQL_LOOKUP_IN) {
+                    RexBuilder rexBuilder = MycatCalciteSupport.RexBuilder;
                     List<RexNode> operands = call.getOperands();
                     RexCall exprRow = (RexCall) operands.get(0);
-                    Set<Integer> needColumnSet = exprRow.getOperands().stream().map(i -> ((RexInputRef) i).getIndex()).collect(Collectors.toSet());
+                    List<Integer> needColumnList = exprRow.getOperands().stream().map(i -> ((RexInputRef) i).getIndex()).collect(Collectors.toList());
                     List<Integer> needValueList = joinInfo.pairs().stream()
-                            .filter(intPair -> needColumnSet.contains(intPair.target))
+                            .filter(intPair -> needColumnList.contains(intPair.target))
                             .map(intPair -> intPair.target).collect(Collectors.toList());
+                    if (needColumnList.size() != needValueList.size()){
+                        throw new UnsupportedOperationException("may be a bug");
+                    }
                     List<List<RexLiteral>> rowList = new ArrayList<>();
                     for (Object[] args : argsList) {
                         List<RexLiteral> row = needValueList.stream()
@@ -331,9 +334,10 @@ public class MycatSQLTableLookup extends SingleRel implements MycatRel {
                     }
                     if (rowList.size() == 1) {
                         ArrayList<RexNode> ands = new ArrayList<>();
-                        for (int i = 0; i < exprRow.getOperands().size(); i++) {
-                            RexNode right = rowList.get(0).get(i);
-                            RexNode left = exprRow.getOperands().get(i);
+                        List<RexNode> exprs = exprRow.getOperands();
+                        for (int i = 0; i < needColumnList.size(); i++) {
+                            RexNode left = exprs.get(i);
+                            RexNode right = rowList.get(0).get(needColumnList.get(i));
                             ands.add(MycatCalciteSupport.RexBuilder
                                     .makeCall(SqlStdOperatorTable.EQUALS, left, MycatCalciteSupport.RexBuilder.makeCast(left.getType(), right)));
                         }
