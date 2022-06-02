@@ -41,7 +41,7 @@ public class StringArrayDecoder implements Decoder<Object[]> {
     @Override
     public Object[] convert(Buffer payload) {
         final int NULL = 0xFB;
-        Object[] row = new Object[columnCount][];
+        Object[] row = new Object[columnCount];
         ReadView readView = new ReadView(payload);
         // TEXT row decoding
         for (int c = 0; c < columnCount; c++) {
