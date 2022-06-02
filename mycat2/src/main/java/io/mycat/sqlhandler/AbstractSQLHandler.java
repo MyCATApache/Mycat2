@@ -120,7 +120,7 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
         switch (tableHandler.getType()) {
             case SHARDING: {
                 ShardingTableHandler handler = (ShardingTableHandler) tableHandler;
-                partitions = handler.dataNodes();
+                partitions = handler.function().calculate(Collections.emptyMap());
                 break;
             }
             case GLOBAL: {
