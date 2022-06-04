@@ -100,9 +100,9 @@ public class HackRouter {
 
             ImmutableMap.Builder<String, Partition> builder = ImmutableMap.builder();
             builder.putAll(
-                    distribution.getGlobalTables().stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getDataNode())));
+                    distribution.getGlobalTables().stream().distinct().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getDataNode())));
 
-            Map<String, Partition> normalMap = distribution.getNormalTables().stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getDataNode()));
+            Map<String, Partition> normalMap = distribution.getNormalTables().stream().distinct().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getDataNode()));
             builder.putAll(normalMap);
 
 
