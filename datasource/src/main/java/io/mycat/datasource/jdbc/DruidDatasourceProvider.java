@@ -116,6 +116,8 @@ public class DruidDatasourceProvider implements DatasourceProvider {
                 case h2:
                     dialect = SQLDialect.H2;
                     break;
+                case clickhouse:
+                    return new JdbcDataSource(config, datasource);
             }
             DSLContext using = DSL.using(datasource, dialect);
             finalDataSource = using.parsingDataSource();

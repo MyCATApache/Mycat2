@@ -47,11 +47,13 @@ import io.mycat.config.GlobalTableConfig;
 import io.mycat.config.ServerConfig;
 import io.mycat.newquery.MysqlCollector;
 import io.mycat.newquery.NewMycatConnection;
+import io.mycat.newquery.SqlResult;
 import io.mycat.util.MycatSQLExprTableSourceUtil;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.mysqlclient.MySQLClient;
+import io.vertx.sqlclient.Query;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
@@ -914,6 +916,9 @@ public class VertxExecuter {
         return sqlConnectionFuture.flatMap(c -> c.insert(sql, params)
                 .map(r -> new long[]{r.getAffectRows(), r.getLastInsertId()}));
     }
+
+
+
 
     public static Future<long[]> runInsert(
             Map<String, List<List<Object>>> insertMap,
