@@ -53,6 +53,8 @@ public class VertxMycatConnectionPool implements NewMycatConnection {
 
     private boolean close = false;
 
+    private long activeTimeStamp;
+
     public VertxMycatConnectionPool(String targetName, VertxConnection connection, VertxPoolConnectionImpl vertxConnectionPool) {
         this.targetName = targetName;
         this.connection = connection;
@@ -288,5 +290,15 @@ public class VertxMycatConnectionPool implements NewMycatConnection {
     @Override
     public boolean isQuerying() {
         return !this.queryCloseFuture.isComplete();
+    }
+
+    @Override
+    public void onActiveTimestamp(long timestamp) {
+        this.activeTimeStamp = timestamp;
+    }
+
+    @Override
+    public long getActiveTimeStamp() {
+        return this.activeTimeStamp;
     }
 }
