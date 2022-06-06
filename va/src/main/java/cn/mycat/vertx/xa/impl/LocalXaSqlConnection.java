@@ -90,7 +90,10 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
                             return curLocalSqlConnection.update("delete from mycat.xa_log where xid = '" + curXid + "'").mapEmpty();
                         });
                     }).mapEmpty()
-                    .compose(o -> {
+                    .transform(o -> {
+                        if (o.failed()){
+                            LOGGER.error("xa commit occurs exception",o.cause());
+                        }
                         Future<Void> closeFuture = curLocalSqlConnection.close();
 
                         inTranscation = false;
