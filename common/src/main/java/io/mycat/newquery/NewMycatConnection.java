@@ -58,4 +58,6 @@ public interface NewMycatConnection {
     public void abandonConnection();
 
     public Future<Void> abandonQuery();
+
+    public boolean isQuerying();
 }

@@ -11,7 +11,6 @@
 
 package io.vertx.core.impl.future;
 
-import io.mycat.commands.VertxMySQLDatasourcePoolImpl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;

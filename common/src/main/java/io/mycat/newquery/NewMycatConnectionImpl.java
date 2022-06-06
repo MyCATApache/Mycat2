@@ -202,9 +202,9 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                             resultSet = statement.executeQuery();
                             onRev();
                             MycatField[] mycatFields;
-                            if (mycatRelDataType == null){
+                            if (mycatRelDataType == null) {
                                 mycatFields = MycatDataType.from(resultSet.getMetaData());
-                            }else {
+                            } else {
                                 mycatFields = mycatRelDataType.getFieldList().toArray(new MycatField[0]);
                             }
                             VectorSchemaRoot vectorSchemaRoot = null;
@@ -251,7 +251,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     @Override
     public Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator) {
-        return prepareQuery(sql,params,null,allocator);
+        return prepareQuery(sql, params, null, allocator);
     }
 
     public static String paramize(String sql, List<Object> params) {
@@ -592,8 +592,8 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     public boolean isClosed() {
         try {
             return this.connection.isClosed();
-        }catch (Throwable throwable){
-            LOGGER.error("",throwable);
+        } catch (Throwable throwable) {
+            LOGGER.error("", throwable);
             return true;
         }
     }
@@ -610,6 +610,11 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
             resultSet = null;
         }
         return Future.succeededFuture();
+    }
+
+    @Override
+    public boolean isQuerying() {
+        return !future.isComplete();
     }
 
     private long getLastInsertId(Statement statement) {

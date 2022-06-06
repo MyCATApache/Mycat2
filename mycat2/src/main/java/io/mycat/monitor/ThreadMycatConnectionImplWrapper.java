@@ -190,4 +190,9 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
             }
         });
     }
+
+    @Override
+    public boolean isQuerying() {
+        return this.newMycatConnection.isQuerying();
+    }
 }
