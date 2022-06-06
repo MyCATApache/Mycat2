@@ -52,13 +52,25 @@ public class StringArrayDecoder implements Decoder<Object[]> {
                 int columnFlags = columnDefPacket.getColumnFlags();
                 int columnType = columnDefPacket.getColumnType();
                 if (columnDefPacket.getColumnCharsetSet() == 63){
-                    row[c]= readView.readLenencBytes();
+                    byte[] r = readView.readLenencBytes();
+                    row[c] = byteToByte(r);
                 }else {
                     row[c]= readView.readLenencString();
                 }
             }
         }
         return row;
+    }
+
+    Byte[] byteToByte(byte[] bytes) {
+        if(bytes == null){
+            return null;
+        }
+        Byte [] list = new Byte[bytes.length];
+        for (int i = 0; i < bytes.length; i++) {
+            list[i] = Byte.valueOf(bytes[i]);
+        }
+        return list;
     }
 
     @Override

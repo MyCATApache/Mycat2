@@ -10,6 +10,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlKillStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.druid.util.StringUtils;
 import io.mycat.Process;
 import io.mycat.*;
 import io.mycat.beans.mycat.MycatErrorCode;
@@ -321,6 +322,9 @@ public class MycatVertxMySQLHandler {
                             message = ((MycatException) cause).getMessage();
                             sqlState = "";
                         } else {
+                            message = cause.toString();
+                        }
+                        if(StringUtils.isEmpty(message)) {
                             message = cause.toString();
                         }
                         mycatDataContext.setLastMessage(message);

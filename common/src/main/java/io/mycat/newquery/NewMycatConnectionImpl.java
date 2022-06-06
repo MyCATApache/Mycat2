@@ -50,16 +50,17 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     ResultSet resultSet;
     Future<Void> future = Future.succeededFuture();
     boolean isMySQLDriver = false;
-
+    private String dbType;
     public NewMycatConnectionImpl(boolean needLastInsertId, Connection connection) {
         this.needLastInsertId = needLastInsertId;
         this.connection = connection;
     }
 
-    public NewMycatConnectionImpl(String targetName, Connection connection) {
+    public NewMycatConnectionImpl(String targetName, Connection connection, String dbType) {
         this.targetName = targetName;
         this.connection = connection;
         this.needLastInsertId = true;
+        this.dbType = dbType;
     }
 
     @Override
@@ -481,6 +482,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     @Override
     public synchronized Future<SqlResult> insert(String sql, List<Object> params) {
+
         if (this.future.isComplete()) {
             this.future = Future.succeededFuture();
         }
@@ -499,15 +501,26 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                         lastInsertId = getLastInsertId(statement);
                     }
                 } else {
-                    try (PreparedStatement preparedStatement = connection.prepareStatement(sql, needLastInsertId ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS)) {
-                        int limit = params.size() + 1;
-                        for (int i = 1; i < limit; i++) {
-                            preparedStatement.setObject(i, params.get(i - 1));
+                    if(isClickHouse()){
+                        String paramize = paramize(sql, params);
+                        try (Statement statement = connection.createStatement();) {
+                            onSend();
+                            LOGGER.debug("sql:{}", paramize);
+                            affectRows = statement.executeUpdate(paramize);
+                            onRev();
+                            lastInsertId= 0;
                         }
-                        onSend();
-                        affectRows = preparedStatement.executeUpdate();
-                        onRev();
-                        lastInsertId = getLastInsertId(preparedStatement);
+                    } else {
+                        try (PreparedStatement preparedStatement = connection.prepareStatement(sql, needLastInsertId ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS)) {
+                            int limit = params.size() + 1;
+                            for (int i = 1; i < limit; i++) {
+                                preparedStatement.setObject(i, params.get(i - 1));
+                            }
+                            onSend();
+                            affectRows = preparedStatement.executeUpdate();
+                            onRev();
+                            lastInsertId = getLastInsertId(preparedStatement);
+                        }
                     }
                 }
                 SqlResult sqlResult = new SqlResult();
@@ -522,6 +535,12 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
         this.future = transform.mapEmpty();
         return transform;
     }
+
+
+    private boolean isClickHouse() {
+        return dbType.toString().contains("clickhouse");
+    }
+
 
     @Override
     public Future<SqlResult> insert(String sql) {
