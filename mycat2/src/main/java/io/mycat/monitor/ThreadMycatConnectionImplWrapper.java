@@ -41,6 +41,7 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
                     long duration = System.currentTimeMillis() - newMycatConnection.getActiveTimeStamp();
                     if (duration > period) {
                         ThreadMycatConnectionImplWrapper.this.abandonConnection();
+                        vertx.cancelTimer(id);
                     }
                 }
             });
