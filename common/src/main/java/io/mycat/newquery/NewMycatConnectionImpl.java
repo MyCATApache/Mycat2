@@ -51,6 +51,9 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     Future<Void> future = Future.succeededFuture();
     boolean isMySQLDriver = false;
     private String dbType;
+
+    private long activeTimestamp = System.currentTimeMillis();
+
     public NewMycatConnectionImpl(boolean needLastInsertId, Connection connection) {
         this.needLastInsertId = needLastInsertId;
         this.connection = connection;
@@ -634,6 +637,16 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     @Override
     public boolean isQuerying() {
         return !future.isComplete();
+    }
+
+    @Override
+    public void onActiveTimestamp(long timestamp) {
+        this.activeTimestamp = timestamp;
+    }
+
+    @Override
+    public long getActiveTimeStamp() {
+        return this.activeTimestamp;
     }
 
     private long getLastInsertId(Statement statement) {

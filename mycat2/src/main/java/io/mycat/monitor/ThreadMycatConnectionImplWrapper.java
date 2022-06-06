@@ -195,4 +195,14 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
     public boolean isQuerying() {
         return this.newMycatConnection.isQuerying();
     }
+
+    @Override
+    public void onActiveTimestamp(long timestamp) {
+        this.newMycatConnection.onActiveTimestamp(timestamp);
+    }
+
+    @Override
+    public long getActiveTimeStamp() {
+        return this.newMycatConnection.getActiveTimeStamp();
+    }
 }

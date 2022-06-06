@@ -31,7 +31,7 @@ public interface NewMycatConnection {
 
     Observable<VectorSchemaRoot> prepareQuery(String sql, List<Object> params, BufferAllocator allocator);
 
-    Observable<Buffer> prepareQuery(String sql, List<Object> params,int serverstatus);
+    Observable<Buffer> prepareQuery(String sql, List<Object> params, int serverstatus);
 
     Future<List<Object>> call(String sql);
 
@@ -60,4 +60,9 @@ public interface NewMycatConnection {
     public Future<Void> abandonQuery();
 
     public boolean isQuerying();
+
+    public void onActiveTimestamp(long timestamp);
+
+    public long getActiveTimeStamp();
+
 }

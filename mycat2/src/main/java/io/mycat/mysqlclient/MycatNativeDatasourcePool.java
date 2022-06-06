@@ -46,11 +46,13 @@ public class MycatNativeDatasourcePool extends AbstractMycatDatasourcePool {
                 @Override
                 public void onSend() {
                     start = System.currentTimeMillis();
+                    onActiveTimestamp(start);
                 }
 
                 @Override
                 public void onRev() {
                     long end = System.currentTimeMillis();
+                    onActiveTimestamp(end);
                     InstanceMonitor.plusPrt(end - start);
                 }
 
