@@ -15,21 +15,21 @@ import java.util.concurrent.TimeUnit;
 public class RemoveAbandonedTimeoutConnectionImpl implements NewMycatConnection {
     final NewMycatConnection connection;
     final Long timeId;
+
     public RemoveAbandonedTimeoutConnectionImpl(NewMycatConnection connection) {
         this.connection = connection;
 
         int removeAbandonedTimeoutSecond = getRemoveAbandonedTimeoutSecond();
         if (removeAbandonedTimeoutSecond > 0) {
             Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
-            long period = TimeUnit.SECONDS.toMillis(removeAbandonedTimeoutSecond);
-            timeId = vertx.setPeriodic(period, id -> {
+            long timeout = TimeUnit.SECONDS.toMillis(removeAbandonedTimeoutSecond);
+            timeId = vertx.setPeriodic(timeout, id -> {
                 if (connection.isClosed()) {
                     vertx.cancelTimer(id);
                 } else {
                     long duration = System.currentTimeMillis() - connection.getActiveTimeStamp();
-                    if (duration > period) {
-//                        vertx.cancelTimer(id);
-                        connection.abandonConnection();
+                    if (duration > timeout) {
+                        RemoveAbandonedTimeoutConnectionImpl.this.abandonConnection();
                     }
                 }
             });
