@@ -60,6 +60,8 @@ public class VertxPoolConnectionImpl implements VertxConnectionPool {
         int minCon = 1;
         long timer = TimeUnit.SECONDS.toMillis(30);
         int retry = 3;
+
+        int removeAbandonedTimeoutSecond=180;//秒
     }
 
     @SneakyThrows

@@ -29,19 +29,18 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
         this.stat = stat;
         this.newMycatConnection = newMycatConnection;
 
-        Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
-        ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
-        TimerConfig idleTimer = serverConfig.getIdleTimer();
-        if (idleTimer != null && idleTimer.getPeriod() > 0) {
-            long period = TimeUnit.valueOf(idleTimer.getTimeUnit()).toMillis(idleTimer.getPeriod());
+        int removeAbandonedTimeoutSecond = getRemoveAbandonedTimeoutSecond();
+        if (removeAbandonedTimeoutSecond > 0) {
+            Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+            long period = TimeUnit.SECONDS.toMillis(removeAbandonedTimeoutSecond);
             timeId = vertx.setPeriodic(period, id -> {
                 if (newMycatConnection.isClosed()) {
                     vertx.cancelTimer(id);
-                }else {
+                } else {
                     long duration = System.currentTimeMillis() - newMycatConnection.getActiveTimeStamp();
                     if (duration > period) {
+//                        vertx.cancelTimer(id);
                         ThreadMycatConnectionImplWrapper.this.abandonConnection();
-                        vertx.cancelTimer(id);
                     }
                 }
             });
@@ -238,5 +237,10 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
     @Override
     public long getActiveTimeStamp() {
         return this.newMycatConnection.getActiveTimeStamp();
+    }
+
+    @Override
+    public int getRemoveAbandonedTimeoutSecond() {
+        return this.newMycatConnection.getRemoveAbandonedTimeoutSecond();
     }
 }

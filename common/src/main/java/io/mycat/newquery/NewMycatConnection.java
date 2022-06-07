@@ -65,4 +65,5 @@ public interface NewMycatConnection {
 
     public long getActiveTimeStamp();
 
+    public int getRemoveAbandonedTimeoutSecond();
 }

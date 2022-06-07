@@ -117,6 +117,7 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
         config.setRetry(datasource.getMaxRetryCount());
         config.setTimer(datasource.getIdleTimeout());
         config.setClientDeprecateEof(NewMycatConnectionConfig.CLIENT_DEPRECATE_EOF);
+        config.setRemoveAbandonedTimeoutSecond(datasource.getRemoveAbandonedTimeoutSecond());
         Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
         VertxPoolConnectionImpl vertxConnectionPool = new VertxPoolConnectionImpl(config, vertx);
         return new MycatNativeDatasourcePool(vertxConnectionPool, targetName);

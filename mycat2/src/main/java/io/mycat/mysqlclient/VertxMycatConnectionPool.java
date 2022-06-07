@@ -301,4 +301,9 @@ public class VertxMycatConnectionPool implements NewMycatConnection {
     public long getActiveTimeStamp() {
         return this.activeTimeStamp;
     }
+
+    @Override
+    public int getRemoveAbandonedTimeoutSecond() {
+        return this.connection.getConfig().getRemoveAbandonedTimeoutSecond();
+    }
 }

@@ -1,7 +1,5 @@
 package io.mycat.newquery;
 
-import com.alibaba.druid.pool.DruidConnectionHolder;
-import com.alibaba.druid.pool.DruidPooledConnection;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLReplaceable;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -13,6 +11,7 @@ import io.mycat.MySQLPacketUtil;
 import io.mycat.beans.mycat.*;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
+import io.mycat.config.DatasourceConfig;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -54,16 +53,19 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     private long activeTimestamp = System.currentTimeMillis();
 
+    private DatasourceConfig config;
+
     public NewMycatConnectionImpl(boolean needLastInsertId, Connection connection) {
         this.needLastInsertId = needLastInsertId;
         this.connection = connection;
     }
 
-    public NewMycatConnectionImpl(String targetName, Connection connection, String dbType) {
-        this.targetName = targetName;
+    public NewMycatConnectionImpl(DatasourceConfig datasourceConfig, Connection connection) {
+        this.targetName = datasourceConfig.getName();
         this.connection = connection;
         this.needLastInsertId = true;
-        this.dbType = dbType;
+        this.dbType = datasourceConfig.getDbType();
+        this.config = datasourceConfig;
     }
 
     @Override
@@ -504,14 +506,14 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                         lastInsertId = getLastInsertId(statement);
                     }
                 } else {
-                    if(isClickHouse()){
+                    if (isClickHouse()) {
                         String paramize = paramize(sql, params);
                         try (Statement statement = connection.createStatement();) {
                             onSend();
                             LOGGER.debug("sql:{}", paramize);
                             affectRows = statement.executeUpdate(paramize);
                             onRev();
-                            lastInsertId= 0;
+                            lastInsertId = 0;
                         }
                     } else {
                         try (PreparedStatement preparedStatement = connection.prepareStatement(sql, needLastInsertId ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS)) {
@@ -647,6 +649,11 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     @Override
     public long getActiveTimeStamp() {
         return this.activeTimestamp;
+    }
+
+    @Override
+    public int getRemoveAbandonedTimeoutSecond() {
+        return this.config.getRemoveAbandonedTimeoutSecond();
     }
 
     private long getLastInsertId(Statement statement) {
