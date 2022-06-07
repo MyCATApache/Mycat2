@@ -3,50 +3,26 @@ package io.mycat.monitor;
 import io.mycat.IOExecutor;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.beans.mycat.MycatRelDataType;
-import io.mycat.config.ServerConfig;
-import io.mycat.config.TimerConfig;
 import io.mycat.newquery.MysqlCollector;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.newquery.RowSet;
 import io.mycat.newquery.SqlResult;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
     private DatabaseInstanceEntry stat;
     final NewMycatConnection newMycatConnection;
-    final Long timeId;
+
 
     public ThreadMycatConnectionImplWrapper(DatabaseInstanceEntry stat, NewMycatConnection newMycatConnection) {
         this.stat = stat;
         this.newMycatConnection = newMycatConnection;
-
-        int removeAbandonedTimeoutSecond = getRemoveAbandonedTimeoutSecond();
-        if (removeAbandonedTimeoutSecond > 0) {
-            Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
-            long period = TimeUnit.SECONDS.toMillis(removeAbandonedTimeoutSecond);
-            timeId = vertx.setPeriodic(period, id -> {
-                if (newMycatConnection.isClosed()) {
-                    vertx.cancelTimer(id);
-                } else {
-                    long duration = System.currentTimeMillis() - newMycatConnection.getActiveTimeStamp();
-                    if (duration > period) {
-//                        vertx.cancelTimer(id);
-                        ThreadMycatConnectionImplWrapper.this.abandonConnection();
-                    }
-                }
-            });
-        } else {
-            timeId = null;
-        }
     }
 
     @Override
@@ -168,10 +144,6 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
     @Override
     public Future<Void> close() {
         IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
-        if (timeId != null) {
-            Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
-            vertx.cancelTimer(timeId);
-        }
         return ioExecutor.executeBlocking(promise -> {
             try {
                 this.stat.plusThread();
@@ -191,10 +163,6 @@ public class ThreadMycatConnectionImplWrapper implements NewMycatConnection {
 
     @Override
     public void abandonConnection() {
-        if (timeId != null) {
-            Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
-            vertx.cancelTimer(timeId);
-        }
         IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
         ioExecutor.executeBlocking(promise -> {
             try {

@@ -19,6 +19,7 @@ import io.mycat.commands.JdbcDatasourcePoolImpl;
 import io.mycat.monitor.DatabaseInstanceEntry;
 import io.mycat.monitor.InstanceMonitor;
 import io.mycat.newquery.NewMycatConnection;
+import io.mycat.newquery.RemoveAbandonedTimeoutConnectionImpl;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
 import org.apache.arrow.memory.BufferAllocator;
@@ -40,7 +41,7 @@ public class MycatNativeDatasourcePool extends AbstractMycatDatasourcePool {
             DatabaseInstanceEntry stat = DatabaseInstanceEntry.stat(targetName);
             stat.plusCon();
             stat.plusQps();
-            return new VertxMycatConnectionPool(targetName,connection, vertxPoolConnection){
+            return new RemoveAbandonedTimeoutConnectionImpl(new VertxMycatConnectionPool(targetName,connection, vertxPoolConnection){
                 long start;
 
                 @Override
@@ -83,7 +84,7 @@ public class MycatNativeDatasourcePool extends AbstractMycatDatasourcePool {
                     Future<NewMycatConnection> connectionFuture = jdbcDatasourcePool.getConnection();
                     return connectionFuture.flatMap(connection -> connection.call(sql));
                 }
-            };
+            });
         });
     }
 

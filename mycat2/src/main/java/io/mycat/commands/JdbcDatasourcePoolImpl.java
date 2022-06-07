@@ -26,6 +26,7 @@ import io.mycat.monitor.InstanceMonitor;
 import io.mycat.monitor.ThreadMycatConnectionImplWrapper;
 import io.mycat.newquery.NewMycatConnection;
 import io.mycat.newquery.NewMycatConnectionImpl;
+import io.mycat.newquery.RemoveAbandonedTimeoutConnectionImpl;
 import io.vertx.core.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,15 +38,16 @@ import java.util.List;
 public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcDatasourcePoolImpl.class);
     List<Object> list = Collections.synchronizedList(new ArrayList<>());
+
     public JdbcDatasourcePoolImpl(String targetName) {
         super(targetName);
     }
 
     @Override
     public Future<NewMycatConnection> getConnection() {
-        if (LOGGER.isDebugEnabled()){
-            LOGGER.debug("JdbcDatasourcePoolImpl {}  : size: {}",getTargetName(),list.size());
-            LOGGER.debug("JdbcDatasourcePoolImpl {}  : {}",getTargetName(),list);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("JdbcDatasourcePoolImpl {}  : size: {}", getTargetName(), list.size());
+            LOGGER.debug("JdbcDatasourcePoolImpl {}  : {}", getTargetName(), list);
         }
         try {
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
@@ -79,8 +81,8 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
 
                         if (LOGGER.isDebugEnabled()) {
                             list.remove(this);
-                            LOGGER.debug("JdbcDatasourcePoolImpl {}  : size: {}",getTargetName(),list.size());
-                            LOGGER.debug("JdbcDatasourcePoolImpl {}  : {}",getTargetName(),list);
+                            LOGGER.debug("JdbcDatasourcePoolImpl {}  : size: {}", getTargetName(), list.size());
+                            LOGGER.debug("JdbcDatasourcePoolImpl {}  : {}", getTargetName(), list);
                         }
 
                         return Future.succeededFuture();
@@ -89,15 +91,15 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
 
                 @Override
                 public void abandonConnection() {
-                    try{
+                    try {
                         defaultConnection.close();
 
                         if (LOGGER.isDebugEnabled()) {
                             list.remove(this);
-                            LOGGER.debug("JdbcDatasourcePoolImpl {}  : size: {}",getTargetName(),list.size());
-                            LOGGER.debug("JdbcDatasourcePoolImpl {}  : {}",getTargetName(),list);
+                            LOGGER.debug("JdbcDatasourcePoolImpl {}  : size: {}", getTargetName(), list.size());
+                            LOGGER.debug("JdbcDatasourcePoolImpl {}  : {}", getTargetName(), list);
                         }
-                    }finally {
+                    } finally {
                         stat.decCon();
                     }
                 }
@@ -105,7 +107,7 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
             if (LOGGER.isDebugEnabled()) {
                 list.add(newMycatConnection);
             }
-            return Future.succeededFuture(new ThreadMycatConnectionImplWrapper(stat, newMycatConnection));
+            return Future.succeededFuture(new RemoveAbandonedTimeoutConnectionImpl(new ThreadMycatConnectionImplWrapper(stat, newMycatConnection)));
         } catch (Throwable throwable) {
             return Future.failedFuture(throwable);
         }
