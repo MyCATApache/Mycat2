@@ -1,10 +1,12 @@
 package io.mycat;
 
+import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.parser.SQLType;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.config.ServerConfig;
+import io.mycat.config.UserConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,7 +168,12 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     public String getReadyToCloseSQL();
 
-    public default boolean checkSQLType(SQLType sqlType) {
+    public default boolean checkSQLType(SQLType sqlType,String defaultSchema, SQLStatement sqlStatement) {
+        MycatUser user = getUser();
+        UserConfig.Role role = user.getUserConfig().getRole();
+        if (role == null){
+            return true;
+        }
         return true;
     }
 }

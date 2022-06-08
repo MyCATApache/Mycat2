@@ -32,7 +32,12 @@ public class UserConfig implements KVObject {
     private int loginLimit = -1;
     private String encryptType = "";
     private String encodeKey = "";
-    private Map<String, SchemaPrivilege> schemaPrivileges = new HashMap<String, SchemaPrivilege>();
+    private Role role;
+
+    @Data
+    public static class Role{
+        private Map<String, SchemaPrivilege> schemaPrivileges = new HashMap<String, SchemaPrivilege>();
+    }
 
     /**
      * copy from mycat1.6

@@ -434,7 +434,7 @@ public enum MycatdbCommand {
 
         String sql = sqlStatement.toString();
         SQLType sqlType = SQLParserUtils.getSQLType(sql, DbType.mysql);
-        if (!dataContext.checkSQLType(sqlType)) {
+        if (!dataContext.checkSQLType(sqlType,dataContext.getDefaultSchema(),sqlStatement)) {
             return receiver.sendError(String.format("%s is sqlType:%s,for the user %s, it is forbidden.", sqlStatement, sqlType, dataContext.getUser().getUserName()), MycatErrorCode.ERR_NOT_SUPPORT);
         }
         MycatSQLLogMonitor logMonitor = MetaClusterCurrent.wrapper(MycatSQLLogMonitor.class);
