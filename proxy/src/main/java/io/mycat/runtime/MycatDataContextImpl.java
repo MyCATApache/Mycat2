@@ -21,13 +21,22 @@ import cn.mycat.vertx.xa.XaSqlConnection;
 import cn.mycat.vertx.xa.impl.LocalSqlConnection;
 import cn.mycat.vertx.xa.impl.LocalXaSqlConnection;
 import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.druid.sql.parser.SQLType;
+import com.mysql.cj.util.LRUCache;
 import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.config.MycatServerConfig;
+import io.mycat.config.UserConfig;
+import io.mycat.util.NameMap;
+import io.mycat.util.Pair;
 import io.mycat.util.packet.AbstractWritePacket;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.ObservableEmitter;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import okhttp3.*;
@@ -41,6 +50,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 @Getter
 @Setter
@@ -116,7 +126,7 @@ public class MycatDataContextImpl implements MycatDataContext {
 
     @Override
     public void switchTransaction(TransactionType transactionSessionType) {
-        int transcationIsolationLevel = Optional.ofNullable(user).map(i->i.getUserConfig()).map(i -> i.getIsolation()).orElse(3);
+        int transcationIsolationLevel = Optional.ofNullable(user).map(i -> i.getUserConfig()).map(i -> i.getIsolation()).orElse(3);
         MySQLIsolation mySQLIsolation = MySQLIsolation.values()[transcationIsolationLevel - 1];
         Objects.requireNonNull(transactionSessionType);
         TransactionSession transactionSession = null;
@@ -124,10 +134,10 @@ public class MycatDataContextImpl implements MycatDataContext {
 
         switch (transactionSessionType) {
             case PROXY_TRANSACTION_TYPE:
-                connection = new LocalSqlConnection(mySQLIsolation,() -> MetaClusterCurrent.wrapper(MySQLManager.class), MetaClusterCurrent.wrapper(XaLog.class));
+                connection = new LocalSqlConnection(mySQLIsolation, () -> MetaClusterCurrent.wrapper(MySQLManager.class), MetaClusterCurrent.wrapper(XaLog.class));
                 break;
             case JDBC_TRANSACTION_TYPE:
-                connection = new LocalXaSqlConnection(mySQLIsolation,() -> MetaClusterCurrent.wrapper(MySQLManager.class), MetaClusterCurrent.wrapper(XaLog.class));
+                connection = new LocalXaSqlConnection(mySQLIsolation, () -> MetaClusterCurrent.wrapper(MySQLManager.class), MetaClusterCurrent.wrapper(XaLog.class));
                 break;
             default:
                 throw new IllegalStateException("Unexpected transaction type: " + transactionSessionType);
@@ -600,4 +610,126 @@ public class MycatDataContextImpl implements MycatDataContext {
         return 0;
     }
 
+    public boolean checkSQLType(SQLType sqlType, String defaultSchema, SQLStatement sqlStatement) {
+        MycatUser user = getUser();
+        UserConfig.Role role = user.getUserConfig().getRole();
+
+        if (role == null) {
+            return true;
+        }
+
+        Map<String, UserConfig.SchemaPrivilege> stringSchemaPrivilegeMap = Optional
+                .ofNullable(role.getSchemaPrivileges())
+                .orElse(Collections.emptyMap());
+
+        if (stringSchemaPrivilegeMap.isEmpty()) {
+            return true;
+        }
+
+        NameMap<UserConfig.SchemaPrivilege> schemaPrivilegeMap = NameMap.immutableCopyOf(stringSchemaPrivilegeMap);
+
+        if (schemaPrivilegeMap.isEmpty()) {
+            return true;
+        }
+
+        return checkSqlPrivilege(sqlType, defaultSchema, sqlStatement, schemaPrivilegeMap);
+    }
+
+    @EqualsAndHashCode
+    static class Key {
+        SQLType sqlType;
+        Set<Pair<String, String>> tableSources;
+
+        static Key of(SQLType sqlType,
+                      Set<Pair<String, String>> tableSources) {
+            Key key = new Key();
+            key.sqlType = sqlType;
+            key.tableSources = tableSources;
+            return key;
+        }
+    }
+
+    private boolean checkSqlPrivilege(SQLType sqlType, String defaultSchema, SQLStatement sqlStatement, NameMap<UserConfig.SchemaPrivilege> schemaPrivilegeMap) {
+        Set<Pair<String, String>> tableSources = new HashSet<>();
+        sqlStatement.accept(new MySqlASTVisitorAdapter() {
+            @Override
+            public void endVisit(SQLExprTableSource x) {
+                tableSources.add(Pair.of(
+                        Optional.ofNullable(x.getSchema()).orElse(defaultSchema),
+                        x.getTableName())
+                );
+            }
+        });
+        if (tableSources.isEmpty()) {
+            return true;
+        }
+        return checkSqlPrivilege(sqlType, tableSources,schemaPrivilegeMap);
+    }
+
+    LRUCache<Key,Boolean> privilegeCache =  new LRUCache<>(1024);
+
+    private boolean checkSqlPrivilege(SQLType sqlType, Set<Pair<String, String>> tableSources, NameMap<UserConfig.SchemaPrivilege> schemaPrivilegeMap) {
+        return privilegeCache.computeIfAbsent(Key.of(sqlType, tableSources), new Function<Key, Boolean>() {
+            @Override
+            public Boolean apply(Key key) {
+                for (Pair<String, String> tableSource : tableSources) {
+                    String schema = Optional.ofNullable(tableSource.getKey()).orElse(defaultSchema);
+                    UserConfig.SchemaPrivilege schemaPrivilege = schemaPrivilegeMap.get(schema);
+                    if (schemaPrivilege != null) {
+                        List<String> allowSqlTypes = schemaPrivilege.getAllowSqlTypes();
+                        List<String> disallowSqlTypes = schemaPrivilege.getDisallowSqlTypes();
+                        boolean allow = isAllow(sqlType, allowSqlTypes, disallowSqlTypes);
+                        if (!allow) {
+                            return false;
+                        }
+                        String tableName = tableSource.getValue();
+                        tableName = SQLUtils.normalize(tableName);
+                        if (tableName != null) {
+                            NameMap<UserConfig.TablePrivilege> tablePrivilegeMap =
+                                    NameMap.immutableCopyOf(Optional
+                                            .ofNullable(schemaPrivilege.getTablePrivileges())
+                                            .orElse(Collections.emptyMap()));
+                            UserConfig.TablePrivilege tablePrivilege = tablePrivilegeMap.get(tableName);
+                            if (tablePrivilege != null) {
+                                allow = isAllow(sqlType, tablePrivilege.getAllowSqlTypes(), tablePrivilege.getDisallowSqlTypes());
+                                if (!allow) {
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+                return true;
+            }
+        });
+
+    }
+
+    boolean isAllow(SQLType sqlType, List<String> allowSqlTypes, List<String> disallowSqlTypes) {
+        if (allowSqlTypes == null) {
+            allowSqlTypes = Collections.emptyList();
+        }
+        if (disallowSqlTypes == null) {
+            disallowSqlTypes = Collections.emptyList();
+        }
+        Boolean allow = null;
+        for (String allowSqlType : allowSqlTypes) {
+            if (sqlType.name().equalsIgnoreCase(allowSqlType)) {
+                allow = true;
+                break;
+            }
+        }
+        if (allow != null) {
+            for (String disallowSqlType : disallowSqlTypes) {
+                if (sqlType.name().equalsIgnoreCase(disallowSqlType)) {
+                    allow = false;
+                    break;
+                }
+            }
+        }
+        if (allow == null) {
+            allow = true;
+        }
+        return allow;
+    }
 }

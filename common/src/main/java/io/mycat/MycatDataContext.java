@@ -6,7 +6,6 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.config.ServerConfig;
-import io.mycat.config.UserConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -154,7 +153,7 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     public void setVector(boolean value);
 
-    public Integer getLock(String name,long time);
+    public Integer getLock(String name, long time);
 
     public Integer releaseLock(String name);
 
@@ -168,12 +167,9 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     public String getReadyToCloseSQL();
 
-    public default boolean checkSQLType(SQLType sqlType,String defaultSchema, SQLStatement sqlStatement) {
-        MycatUser user = getUser();
-        UserConfig.Role role = user.getUserConfig().getRole();
-        if (role == null){
-            return true;
-        }
+    public default boolean checkSQLType(SQLType sqlType, String defaultSchema, SQLStatement sqlStatement) {
         return true;
     }
+
+
 }

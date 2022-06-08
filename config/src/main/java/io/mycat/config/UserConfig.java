@@ -1,17 +1,14 @@
 package io.mycat.config;
 
 import com.alibaba.druid.util.StringUtils;
-import io.mycat.util.Base64Utils;
 import io.mycat.util.JsonUtil;
 import io.mycat.util.RSAUtils;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.BiFunction;
-
 import lombok.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.function.BiFunction;
 
 @Data
 @AllArgsConstructor
@@ -43,28 +40,13 @@ public class UserConfig implements KVObject {
      * copy from mycat1.6
      * 库级权限
      */
+    @Data
     public static class SchemaPrivilege {
 
         private String name;
-        private int[] dml = new int[]{0, 0, 0, 0};
-
+        private List<String> allowSqlTypes = new ArrayList<>();
+        private List<String> disallowSqlTypes = new ArrayList<>();
         private Map<String, TablePrivilege> tablePrivileges = new HashMap<String, TablePrivilege>();
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public int[] getDml() {
-            return dml;
-        }
-
-        public void setDml(int[] dml) {
-            this.dml = dml;
-        }
 
         public void addTablePrivilege(String tableName, TablePrivilege privilege) {
             this.tablePrivileges.put(tableName, privilege);
@@ -75,7 +57,7 @@ public class UserConfig implements KVObject {
             if (tablePrivilege == null) {
                 tablePrivilege = new TablePrivilege();
                 tablePrivilege.setName(tableName);
-                tablePrivilege.setDml(dml);
+                tablePrivilege.setAllowSqlTypes(Collections.emptyList());
             }
             return tablePrivilege;
         }
@@ -85,27 +67,11 @@ public class UserConfig implements KVObject {
      * copy from mycat1.6
      * 表级权限
      */
+    @Data
     public static class TablePrivilege {
-
         private String name;
-        private int[] dml = new int[]{0, 0, 0, 0};
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public int[] getDml() {
-            return dml;
-        }
-
-        public void setDml(int[] dml) {
-            this.dml = dml;
-        }
-
+        private List<String> allowSqlTypes = new ArrayList<>();
+        private List<String> disallowSqlTypes = new ArrayList<>();
     }
 
     public static void main(String[] args) {
