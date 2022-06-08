@@ -1,5 +1,6 @@
 package io.mycat;
 
+import com.alibaba.druid.sql.parser.SQLType;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
@@ -164,4 +165,8 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
     public void setReadyToCloseSQL(String sql);
 
     public String getReadyToCloseSQL();
+
+    public default boolean checkSQLType(SQLType sqlType) {
+        return true;
+    }
 }

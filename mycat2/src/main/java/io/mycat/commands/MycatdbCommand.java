@@ -35,6 +35,7 @@ import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
+import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
@@ -433,6 +434,9 @@ public enum MycatdbCommand {
 
         String sql = sqlStatement.toString();
         SQLType sqlType = SQLParserUtils.getSQLType(sql, DbType.mysql);
+        if (!dataContext.checkSQLType(sqlType)) {
+            return receiver.sendError(String.format("%s is sqlType:%s,for the user %s, it is forbidden.", sqlStatement, sqlType, dataContext.getUser().getUserName()), MycatErrorCode.ERR_NOT_SUPPORT);
+        }
         MycatSQLLogMonitor logMonitor = MetaClusterCurrent.wrapper(MycatSQLLogMonitor.class);
         //////////////////////////////////////////////////////////////////////////////////////
         dataContext.putProcessStateMap(Collections.emptyMap());
