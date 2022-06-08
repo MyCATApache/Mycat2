@@ -70,7 +70,7 @@ public class TestMySQLManagerImpl extends AbstractMySQLManagerImpl {
     @Override
     @SneakyThrows
     public Future<NewMycatConnection> getConnection(String targetName) {
-        NewMycatConnectionImpl newMycatConnection = new NewMycatConnectionImpl(true ,nameMap.get(targetName).getConnection());
+        NewMycatConnectionImpl newMycatConnection = new NewMycatConnectionImpl(targetName,true ,nameMap.get(targetName).getConnection());
         return Future.succeededFuture(newMycatConnection);
     }
 

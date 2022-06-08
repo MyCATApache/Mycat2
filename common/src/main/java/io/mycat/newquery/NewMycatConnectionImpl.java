@@ -55,7 +55,8 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     private DatasourceConfig config;
 
-    public NewMycatConnectionImpl(boolean needLastInsertId, Connection connection) {
+    public NewMycatConnectionImpl(String targetName,boolean needLastInsertId, Connection connection) {
+        this.targetName = targetName;
         this.needLastInsertId = needLastInsertId;
         this.connection = connection;
     }
