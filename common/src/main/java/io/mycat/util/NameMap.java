@@ -167,4 +167,8 @@ public class NameMap<V> {
         HashMap<String, V> tableMap = new HashMap(this.map);
         return tableMap.values();
     }
+
+    public boolean isEmpty(){
+        return map.isEmpty();
+    }
 }
