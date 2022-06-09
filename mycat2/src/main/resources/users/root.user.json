@@ -2,6 +2,6 @@
 	"dialect":"mysql",
 	"ip":null,
 	"password":"123456",
-	"transactionType":"xa",
+	"transactionType":"proxy",
 	"username":"root"
 }
