@@ -269,6 +269,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
 
                         } catch (Exception e) {
                             LOGGER.error("jdbc heartbeat ", e);
+                            heartBeatStrategy.onException(e);
                             return;
                         }
                     }

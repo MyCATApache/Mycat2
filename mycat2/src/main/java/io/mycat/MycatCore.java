@@ -161,6 +161,7 @@ public class MycatCore {
         ).forEach(c -> {
             storageManager.register(c);
         });
+        context.put(ConfigReporter.class, storageManager);
         context.put(StorageManager.class, storageManager);
         MetaClusterCurrent.register(context);
 
