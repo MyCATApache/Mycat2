@@ -29,11 +29,13 @@ public class UserConfig implements KVObject {
     private int loginLimit = -1;
     private String encryptType = "";
     private String encodeKey = "";
-    private Role role;
+    private RoleConfig role;
 
     @Data
-    public static class Role{
-        private Map<String, SchemaPrivilege> schemaPrivileges = new HashMap<String, SchemaPrivilege>();
+    public static class RoleConfig {
+//        private List<SchemaPrivilege> schemaPrivileges = new ArrayList<>();
+//        private List<String> allowSqlTypes = new ArrayList<>();
+        private Set<String> disallowSqlTypes = new HashSet<>();
     }
 
     /**
@@ -46,21 +48,7 @@ public class UserConfig implements KVObject {
         private String name;
         private List<String> allowSqlTypes = new ArrayList<>();
         private List<String> disallowSqlTypes = new ArrayList<>();
-        private Map<String, TablePrivilege> tablePrivileges = new HashMap<String, TablePrivilege>();
-
-        public void addTablePrivilege(String tableName, TablePrivilege privilege) {
-            this.tablePrivileges.put(tableName, privilege);
-        }
-
-        public TablePrivilege getTablePrivilege(String tableName) {
-            TablePrivilege tablePrivilege = tablePrivileges.get(tableName);
-            if (tablePrivilege == null) {
-                tablePrivilege = new TablePrivilege();
-                tablePrivilege.setName(tableName);
-                tablePrivilege.setAllowSqlTypes(Collections.emptyList());
-            }
-            return tablePrivilege;
-        }
+        private List<TablePrivilege> tablePrivileges = new ArrayList<>();
     }
 
     /**

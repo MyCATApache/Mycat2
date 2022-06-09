@@ -22,8 +22,6 @@ import cn.mycat.vertx.xa.impl.LocalSqlConnection;
 import cn.mycat.vertx.xa.impl.LocalXaSqlConnection;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.parser.SQLType;
 import com.mysql.cj.util.LRUCache;
 import io.mycat.*;
@@ -51,6 +49,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -612,27 +611,14 @@ public class MycatDataContextImpl implements MycatDataContext {
 
     public boolean checkSQLType(SQLType sqlType, String defaultSchema, SQLStatement sqlStatement) {
         MycatUser user = getUser();
-        UserConfig.Role role = user.getUserConfig().getRole();
+        UserConfig.RoleConfig role = user.getUserConfig().getRole();
 
         if (role == null) {
             return true;
         }
 
-        Map<String, UserConfig.SchemaPrivilege> stringSchemaPrivilegeMap = Optional
-                .ofNullable(role.getSchemaPrivileges())
-                .orElse(Collections.emptyMap());
 
-        if (stringSchemaPrivilegeMap.isEmpty()) {
-            return true;
-        }
-
-        NameMap<UserConfig.SchemaPrivilege> schemaPrivilegeMap = NameMap.immutableCopyOf(stringSchemaPrivilegeMap);
-
-        if (schemaPrivilegeMap.isEmpty()) {
-            return true;
-        }
-
-        return checkSqlPrivilege(sqlType, defaultSchema, sqlStatement, schemaPrivilegeMap);
+        return checkSqlPrivilege(sqlType, defaultSchema, sqlStatement, role);
     }
 
     @EqualsAndHashCode
@@ -649,27 +635,44 @@ public class MycatDataContextImpl implements MycatDataContext {
         }
     }
 
-    private boolean checkSqlPrivilege(SQLType sqlType, String defaultSchema, SQLStatement sqlStatement, NameMap<UserConfig.SchemaPrivilege> schemaPrivilegeMap) {
-        Set<Pair<String, String>> tableSources = new HashSet<>();
-        sqlStatement.accept(new MySqlASTVisitorAdapter() {
-            @Override
-            public void endVisit(SQLExprTableSource x) {
-                tableSources.add(Pair.of(
-                        Optional.ofNullable(x.getSchema()).orElse(defaultSchema),
-                        x.getTableName())
-                );
-            }
-        });
-        if (tableSources.isEmpty()) {
-            return true;
+    private boolean checkSqlPrivilege(SQLType sqlType, String defaultSchema, SQLStatement sqlStatement, UserConfig.RoleConfig roleConfig) {
+
+//        if (Optional.ofNullable(roleConfig.getAllowSqlTypes()).orElse(Collections.emptyList())
+//                .contains(sqlType.name())) {
+//
+//        }
+        if (Optional.ofNullable(roleConfig.getDisallowSqlTypes()).orElse(Collections.emptySet())
+                .contains(sqlType.name())) {
+            return false;
         }
-        return checkSqlPrivilege(sqlType, tableSources,schemaPrivilegeMap);
+        return true;
+//        Map<String, UserConfig.SchemaPrivilege> stringSchemaPrivilegeMap = Optional
+//                .ofNullable(roleConfig.getSchemaPrivileges())
+//                .orElse(Collections.emptyList()).stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
+//
+//        NameMap<UserConfig.SchemaPrivilege> schemaPrivilegeMap = NameMap.immutableCopyOf(stringSchemaPrivilegeMap);
+//
+//
+//        Set<Pair<String, String>> tableSources = new HashSet<>();
+//        sqlStatement.accept(new MySqlASTVisitorAdapter() {
+//            @Override
+//            public void endVisit(SQLExprTableSource x) {
+//                tableSources.add(Pair.of(
+//                        Optional.ofNullable(x.getSchema()).orElse(defaultSchema),
+//                        x.getTableName())
+//                );
+//            }
+//        });
+//        if (tableSources.isEmpty()) {
+//            return true;
+//        }
+//        return checkSqlPrivilege(sqlType, tableSources, schemaPrivilegeMap);
     }
 
-    LRUCache<Key,Boolean> privilegeCache =  new LRUCache<>(1024);
+    LRUCache<Key, Boolean> privilegeCache = new LRUCache<>(1024);
 
     private boolean checkSqlPrivilege(SQLType sqlType, Set<Pair<String, String>> tableSources, NameMap<UserConfig.SchemaPrivilege> schemaPrivilegeMap) {
-        return privilegeCache.computeIfAbsent(Key.of(sqlType, tableSources), new Function<Key, Boolean>() {
+        Function<Key, Boolean> function = new Function<Key, Boolean>() {
             @Override
             public Boolean apply(Key key) {
                 for (Pair<String, String> tableSource : tableSources) {
@@ -688,7 +691,8 @@ public class MycatDataContextImpl implements MycatDataContext {
                             NameMap<UserConfig.TablePrivilege> tablePrivilegeMap =
                                     NameMap.immutableCopyOf(Optional
                                             .ofNullable(schemaPrivilege.getTablePrivileges())
-                                            .orElse(Collections.emptyMap()));
+                                            .map(i -> i.stream()
+                                                    .collect(Collectors.toMap(k -> k.getName(), v -> v))).orElse(Collections.emptyMap()));
                             UserConfig.TablePrivilege tablePrivilege = tablePrivilegeMap.get(tableName);
                             if (tablePrivilege != null) {
                                 allow = isAllow(sqlType, tablePrivilege.getAllowSqlTypes(), tablePrivilege.getDisallowSqlTypes());
@@ -701,8 +705,8 @@ public class MycatDataContextImpl implements MycatDataContext {
                 }
                 return true;
             }
-        });
-
+        };
+        return function.apply(Key.of(sqlType, tableSources));
     }
 
     boolean isAllow(SQLType sqlType, List<String> allowSqlTypes, List<String> disallowSqlTypes) {

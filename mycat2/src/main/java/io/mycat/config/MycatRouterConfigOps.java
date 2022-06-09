@@ -362,6 +362,7 @@ public class MycatRouterConfigOps implements AutoCloseable, ConfigOps {
 
     @Override
     public void putUser(UserConfig userConfig) {
+        Objects.requireNonNull(userConfig.getUsername(),"username is null");
         List<UserConfig> users = newConfig.getUsers();
         users.stream().filter(u -> u.getUsername().equalsIgnoreCase(userConfig.getUsername()))
                 .findFirst().ifPresent(find -> users.remove(find));
