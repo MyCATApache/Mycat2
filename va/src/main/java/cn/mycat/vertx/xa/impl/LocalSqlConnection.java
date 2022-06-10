@@ -22,7 +22,6 @@ import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.newquery.NewMycatConnection;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,16 +96,16 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
             inTranscation = false;
             //每一个记录日志
             return Future.succeededFuture();
-        }).onFailure(event -> LOGGER.error("", event)).mapEmpty().flatMap(o -> closeStatementState());
+        }).onFailure(event -> LOGGER.error("", event)).mapEmpty().transform(o -> closeStatementState());
     }
 
     @Override
     public Future<Void> commit() {
-        List<Future> rollback = map.values().stream().map(c -> c.update("commit")).collect(Collectors.toList());
-        return CompositeFuture.join(rollback).onComplete(event -> {
+        List<Future> commit = map.values().stream().map(c -> c.update("commit")).collect(Collectors.toList());
+        return CompositeFuture.join(commit).onComplete(event -> {
             inTranscation = false;
             //每一个记录日志
-        }).onFailure(event -> LOGGER.error("", event)).mapEmpty().flatMap(o -> closeStatementState());
+        }).onFailure(event -> LOGGER.error("", event)).mapEmpty().transform(o -> closeStatementState());
     }
 
     @Override

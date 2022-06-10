@@ -416,8 +416,8 @@ public class ReceiverImpl implements Response {
                         RowBaseIterator rs = (RowBaseIterator) o;
                         future = future.flatMap(unused -> sendResultSet(rs));
                     }
-                    return future;
                 }
+                return future;
             }
             throw new UnsupportedOperationException();
         });
