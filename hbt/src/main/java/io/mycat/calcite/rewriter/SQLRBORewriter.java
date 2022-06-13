@@ -638,8 +638,8 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
             return RexUtil.isIdentity(projectRelNode.getProjects(), projectRelNode.getInput().getRowType()) ?
                     Optional.of(globalAggregateRelNode) : Optional.of(projectRelNode);
-        }catch (Throwable throwable){
-            LOGGER.debug("",throwable);
+        } catch (Throwable throwable) {
+            LOGGER.debug("", throwable);
         }
         return Optional.empty();
     }
@@ -1191,6 +1191,18 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
         } else {
             return Optional.empty();
+        }
+        if (ldistribution.type() == Distribution.Type.SHARDING && rdistribution.type() != Distribution.Type.SHARDING) {
+            return ldistribution.join(rdistribution).map(distribution -> MycatView.ofCondition(
+                    join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
+                    distribution,
+                    left.getCondition().orElse(null)));
+        }
+        if (ldistribution.type() != Distribution.Type.SHARDING && rdistribution.type() == Distribution.Type.SHARDING) {
+            return ldistribution.join(rdistribution).map(distribution -> MycatView.ofCondition(
+                    join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
+                    distribution,
+                    right.getCondition().orElse(null)));
         }
         return ldistribution.join(rdistribution).map(distribution -> MycatView.ofBottom(
                 join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
