@@ -82,6 +82,7 @@ public class BindValue {
             byte[] o;
             if (value instanceof ByteArrayOutputStream) {
                 o = ((ByteArrayOutputStream) value).toByteArray();
+                return o;
             }
             if (value instanceof byte[]) {
                 o = (byte[]) value;
