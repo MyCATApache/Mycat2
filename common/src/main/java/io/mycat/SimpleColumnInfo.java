@@ -110,6 +110,11 @@ public class SimpleColumnInfo {
             nullable = false;
         }
 
+        //自增键不能为null
+        if (autoIncrement){
+            nullable = false;
+        }
+
         this.jdbcType = jdbcType;
         this.nullable = nullable;
         this.autoIncrement = autoIncrement;
