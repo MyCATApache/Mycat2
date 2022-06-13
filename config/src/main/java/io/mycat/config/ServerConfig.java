@@ -82,6 +82,8 @@ public class ServerConfig {
     private boolean promoteUnsignedType = true;
     private boolean stickySession = true;
     private long stickySessionTime = -1;
+    private int sendBufferSize = -1;
+    private int receiveBufferSize = -1;
     public static void main(String[] args) {
         System.out.println(JsonUtil.toJson(new ServerConfig()));
     }

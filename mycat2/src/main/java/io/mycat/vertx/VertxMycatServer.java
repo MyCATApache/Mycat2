@@ -139,6 +139,8 @@ public class VertxMycatServer implements MycatServer {
             netServerOptions.setReusePort(true);
             netServerOptions.setReuseAddress(true);
             netServerOptions.setUseProxyProtocol(serverConfig.getServer().isUseProxyProtocol());
+            netServerOptions.setSendBufferSize(serverConfig.getServer().getSendBufferSize());
+            netServerOptions.setReceiveBufferSize(serverConfig.getServer().getReceiveBufferSize());
             DeploymentOptions deploymentOptions = new DeploymentOptions();
             deploymentOptions.setWorker(false);
             boolean supportClientDeprecateEof = NewMycatConnectionConfig.CLIENT_DEPRECATE_EOF;
