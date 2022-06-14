@@ -7,6 +7,7 @@ import io.mycat.hint.CreateDataSourceHint;
 import lombok.SneakyThrows;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
@@ -19,10 +20,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
@@ -40,7 +38,26 @@ public class BlobTest implements MycatTest {
     }
 
     @Test(expected = java.io.StreamCorruptedException.class)
+    @Ignore
     public void testBase3() throws Exception {
+        Connection mySQLConnection = getMySQLConnection(DB1);
+        String sql_mode_text = (String) executeQuery(mySQLConnection, "SELECT @@session.sql_mode as sql_mode;").get(0).get("sql_mode");
+        List<String> sqlmodes = new ArrayList<>(Arrays.asList(sql_mode_text.split(",")));
+        sqlmodes.remove("NO_BACKSLASH_ESCAPES");
+        JdbcUtils.execute(mySQLConnection, "SET GLOBAL sql_mode ='" + String.join(",", sqlmodes) + "'" + ";");
+        mySQLConnection.close();
+        case2(DB_MYCAT);
+    }
+
+    @Test()
+    @Ignore
+    public void testBase5() throws Exception {
+        Connection mySQLConnection = getMySQLConnection(DB1);
+        String sql_mode_text = (String) executeQuery(mySQLConnection, "SELECT @@session.sql_mode as sql_mode;").get(0).get("sql_mode");
+        List<String> sqlmodes = new ArrayList<>(Arrays.asList(sql_mode_text.split(",")));
+        sqlmodes.add("NO_BACKSLASH_ESCAPES");
+        JdbcUtils.execute(mySQLConnection, "SET GLOBAL sql_mode ='" + String.join(",", sqlmodes) + "'" + ";");
+        mySQLConnection.close();
         case2(DB_MYCAT);
     }
 
@@ -52,14 +69,14 @@ public class BlobTest implements MycatTest {
     private void case2(String url) throws Exception {
         try (Connection jdbcConnection = getMySQLConnection(url)) {
             execute(jdbcConnection, RESET_CONFIG);
-            execute(jdbcConnection,"create database db1");
+            execute(jdbcConnection, "create database db1");
             execute(jdbcConnection, "CREATE TABLE db1.`testBlob` (\n" +
                     "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
                     "  `blob` longblob,\n" +
                     "  PRIMARY KEY (`id`),\n" +
                     "  KEY `id` (`id`)\n" +
                     ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
-            deleteData(jdbcConnection,"db1","testBlob");
+            deleteData(jdbcConnection, "db1", "testBlob");
 
             ThreadLocalRandom threadLocalRandom = ThreadLocalRandom.current();
             int size = 6 * 1024 * 1024;
@@ -73,16 +90,16 @@ public class BlobTest implements MycatTest {
             objectOutputStream.close();
 
             Blob blob = jdbcConnection.createBlob();
-            blob.setBytes(1,originalBytes);
-            JdbcUtils.execute(jdbcConnection,"insert db1.testBlob (`blob`) values(?)",Arrays.asList(blob));
+            blob.setBytes(1, originalBytes);
+            JdbcUtils.execute(jdbcConnection, "insert db1.testBlob (`blob`) values(?)", Arrays.asList(blob));
             List<Map<String, Object>> maps = executeQuery(jdbcConnection, "select * from db1.testBlob");
-            byte[] receiveBlob =(byte[]) maps.get(0).get("blob");
+            byte[] receiveBlob = (byte[]) maps.get(0).get("blob");
 
             ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(receiveBlob));
-            int[] receiveInts= (int[])in.readObject();
+            int[] receiveInts = (int[]) in.readObject();
             in.close();
 
-            Assert.assertArrayEquals(originalIns,receiveInts);
+            Assert.assertArrayEquals(originalIns, receiveInts);
 
             System.out.println();
             System.out.println();
@@ -93,17 +110,17 @@ public class BlobTest implements MycatTest {
     private void case1(String url) throws Exception {
         try (Connection mycatConnection = getMySQLConnection(url)) {
             execute(mycatConnection, RESET_CONFIG);
-            execute(mycatConnection,"create database db1");
+            execute(mycatConnection, "create database db1");
             execute(mycatConnection, "CREATE TABLE db1.`testBlob` (\n" +
                     "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
                     "  `blob` longblob,\n" +
                     "  PRIMARY KEY (`id`),\n" +
                     "  KEY `id` (`id`)\n" +
                     ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
-            deleteData(mycatConnection,"db1","testBlob");
+            deleteData(mycatConnection, "db1", "testBlob");
 
             ThreadLocalRandom threadLocalRandom = ThreadLocalRandom.current();
-           int size = 6 * 1024 * 1024;
+            int size = 6 * 1024 * 1024;
             int[] originalIns = threadLocalRandom.ints().limit(size).toArray();
             ByteArrayOutputStream byteArrayOutputStream =
                     new ByteArrayOutputStream(size);
@@ -113,15 +130,15 @@ public class BlobTest implements MycatTest {
             byteArrayOutputStream.close();
             objectOutputStream.close();
             byte[] originalBytes = byteArrayOutputStream.toByteArray();
-            JdbcUtils.execute(mycatConnection,"insert db1.testBlob (`blob`) values(?)",Arrays.asList(originalBytes));
+            JdbcUtils.execute(mycatConnection, "insert db1.testBlob (`blob`) values(?)", Arrays.asList(originalBytes));
             List<Map<String, Object>> maps = executeQuery(mycatConnection, "select * from db1.testBlob");
-            byte[] receiveBlob =(byte[]) maps.get(0).get("blob");
+            byte[] receiveBlob = (byte[]) maps.get(0).get("blob");
 
             ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(receiveBlob));
-            int[] receiveInts= (int[])in.readObject();
+            int[] receiveInts = (int[]) in.readObject();
             in.close();
 
-            Assert.assertArrayEquals(originalIns,receiveInts);
+            Assert.assertArrayEquals(originalIns, receiveInts);
 
             System.out.println();
             System.out.println();
