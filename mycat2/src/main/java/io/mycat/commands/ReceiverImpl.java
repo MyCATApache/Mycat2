@@ -56,7 +56,7 @@ public class ReceiverImpl implements Response {
     protected final MySQLServerSession session;
     protected final MycatDataContext dataContext;
     protected final XaSqlConnection transactionSession;
-    protected final int stmtSize;
+    protected int stmtSize;
     protected final boolean binary;
     protected int count = 0;
 
@@ -74,8 +74,8 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public void resetResultSetCounter(int count) {
-        this.count = count;
+    public void resetResultSetSize(int size) {
+        this.stmtSize = size;
     }
 
     @Override
@@ -404,9 +404,7 @@ public class ReceiverImpl implements Response {
         return rowBaseIteratorFuture.flatMap(objectList -> {
             if (objectList instanceof List) {
                 List list = (List) objectList;
-                int thisStmtResultSetSize = list.size();
-                int resultSetCounter = getResultSetCounter();
-                resetResultSetCounter(resultSetCounter + thisStmtResultSetSize - 1);
+                resetResultSetSize(list.size());
                 Future<Void> future = Future.succeededFuture();
                 for (Object o : list) {
                     if (o instanceof long[]) {

@@ -16,12 +16,8 @@
  */
 package io.mycat;
 
-import com.alibaba.druid.sql.ast.SQLStatement;
 import io.mycat.api.collector.*;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.calcite.PrepareExecutor;
-import io.mycat.swapbuffer.*;
-import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.*;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
@@ -34,7 +30,7 @@ public interface Response {
 
     int getResultSetCounter();
 
-    void resetResultSetCounter(int count);
+    void resetResultSetSize(int count);
 
     Future<Void> sendError(Throwable e);
 
