@@ -622,7 +622,7 @@ public class VertxExecuter {
                     case NO_AUTOINC:
                         break;
                 }
-                Map<String, List<RangeVariable>> variables = compute(columns, values, params);
+                Map<String, RangeVariable> variables = compute(columns, values, params);
                 Partition mPartition = shardingTable.getShardingFuntion().calculateOne((Map) variables);
 
                 SQLExprTableSource exprTableSource = primaryStatement.getTableSource();
