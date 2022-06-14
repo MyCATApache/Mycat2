@@ -10,4 +10,4 @@ java -Dfile.encoding=UTF-8 -DMYCAT_HOME=mycat2\src\main\resources  -jar mycat2-0
 
 Mycat2\mycat2\src\main\resources 是mycat.yml所在的文件夹
 
-
+此分支用于解决orcale和sqlserver兼容性问题
