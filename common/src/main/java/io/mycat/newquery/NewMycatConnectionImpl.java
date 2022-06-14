@@ -449,7 +449,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                 boolean moreResults = true;
                 int updateCount = 0;
                 callableStatement.execute();
-                while (moreResults && updateCount != -1) {
+                while (moreResults) {
                     updateCount = callableStatement.getUpdateCount();
                     if (updateCount == -1) {
                         ResultSet resultSet = callableStatement.getResultSet();
