@@ -336,9 +336,20 @@ public class RelToSqlConverter extends SqlImplementor
         addSelect(selectList, sqlExpr, e.getRowType());
         index++;
       }
-      for (Integer dupColumnPo : dupColumnPos) {
-        String alias = e.getRowType().getFieldList().get(dupColumnPo).getName() + "_" + dupColumnPo;
-        selectList.set(dupColumnPo,as(SqlLiteral.createNull(SqlParserPos.ZERO),alias));
+      for (Integer dupColumnIndex : dupColumnPos) {
+        String alias = e.getRowType().getFieldList().get(dupColumnIndex).getName() + "_" + dupColumnIndex;
+
+        SqlNode sqlNode = selectList.get(dupColumnIndex);
+
+        if (sqlNode instanceof SqlCall){
+          SqlCall sqlCall=  ((SqlCall) sqlNode);
+          if(sqlCall.getOperator().kind == SqlKind.AS){
+            SqlNode argNode = sqlCall.getOperandList().get(0);
+            selectList.set(dupColumnIndex,as(argNode,alias));
+            continue;//退出
+          }
+        }
+        selectList.set(dupColumnIndex,as(sqlNode,alias));
       }
 
       builder.setSelect(new SqlNodeList(selectList, POS));
