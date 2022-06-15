@@ -64,17 +64,30 @@ public class VertxConnection {
     }
 
     public Future<SqlResult> update(String sql) {
-        synchronized (VertxConnection.this) {
-            Future<SqlResult> sqlResultFuture = future.transform(unused -> Future.future(promise -> {
-                checkException();
-                OkCommand queryCommand = new OkCommand(sql, netSocket, promise);
-                netSocket.handler(queryCommand);
-                queryCommand.write();
-                promise.future().onSuccess(event -> VertxConnection.this.serverstatus = queryCommand.serverstatus);
-            }));
-            future = sqlResultFuture.mapEmpty();
-            return sqlResultFuture;
-        }
+        return Future.future(promise -> {
+            synchronized (VertxConnection.this) {
+                if (future.isComplete()) {
+                    future = Future.succeededFuture();
+                }
+                Future<SqlResult> sqlResultFuture = future.transform(unused -> {
+                    try {
+                        checkException();
+                        Future<SqlResult> resultFuture = promise.future();
+                        OkCommand queryCommand = new OkCommand(sql, netSocket, promise);
+                        resultFuture.onComplete(event -> {
+                            VertxConnection.this.serverstatus = queryCommand.serverstatus;
+                        });
+                        netSocket.handler(queryCommand);
+                        queryCommand.write();
+                        return resultFuture;
+                    } catch (Throwable throwable) {
+                        promise.tryFail(throwable);
+                        return Future.failedFuture(throwable);
+                    }
+                });
+                future = sqlResultFuture.mapEmpty();
+            }
+        });
     }
 
 
@@ -145,8 +158,8 @@ public class VertxConnection {
         return netSocket.close();
     }
 
-    public boolean checkVaildForRecycle(){
-        boolean autocommit = MySQLServerStatusFlags.statusCheck(serverstatus,MySQLServerStatusFlags.AUTO_COMMIT );
+    public boolean checkVaildForRecycle() {
+        boolean autocommit = MySQLServerStatusFlags.statusCheck(serverstatus, MySQLServerStatusFlags.AUTO_COMMIT);
         return autocommit;
     }
 }

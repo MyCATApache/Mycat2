@@ -247,7 +247,9 @@ public class VertxMycatConnectionPool implements NewMycatConnection {
                     @Override
                     public Future<Void> apply(AsyncResult<Void> voidAsyncResult) {
                         onSend();
-                        return connection.update(sql).onComplete(event -> onRev()).mapEmpty();
+                        return connection.update(sql)
+                                .onComplete(event -> promise.handle(event))
+                                .onComplete(event -> onRev()).mapEmpty();
                     }
                 });
             }
