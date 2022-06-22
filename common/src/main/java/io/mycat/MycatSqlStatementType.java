@@ -65,7 +65,7 @@ public enum MycatSqlStatementType {
     //show
     SQLShowTablesStatement,//show tables
     MySqlShowTableStatusStatement,//ShowTableStatus,
-    MySqlShowVariantsStatement,//  ShowVariables,
+    SQLShowVariantsStatement,//  ShowVariables,
     MySqlShowWarningsStatement,//ShowWarnings,
     MySqlShowProcessListStatement,
     SQLShowIndexesStatement,

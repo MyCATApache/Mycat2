@@ -28,7 +28,7 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>druid</artifactId>
-            <version>1.2.6</version>
+            <version>1.2.8</version>
             <scope>compile</scope>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.sshtools/forker-client -->

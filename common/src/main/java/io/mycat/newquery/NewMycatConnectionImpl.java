@@ -544,7 +544,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
 
     private boolean isClickHouse() {
-        return dbType.toString().contains("clickhouse");
+        return dbType!=null && dbType.toString().contains("clickhouse");
     }
 
 
