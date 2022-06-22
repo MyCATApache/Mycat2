@@ -6,9 +6,10 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.expr.SQLBooleanExpr;
 import com.alibaba.druid.sql.ast.statement.SQLShowTablesStatement;
+import com.alibaba.druid.sql.ast.statement.SQLShowVariantsStatement;
 import com.alibaba.druid.sql.builder.impl.SQLSelectBuilderImpl;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowTableStatusStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowVariantsStatement;
+//import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowVariantsStatement;
 import io.mycat.MycatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,7 +84,7 @@ public class ShowStatementRewriter {
         return sql;
     }
 
-    public static String rewriteVariables(MySqlShowVariantsStatement ast, String tableName) {
+    public static String rewriteVariables(SQLShowVariantsStatement ast, String tableName) {
         if (tableName == null) {
             tableName = !ast.isGlobal() ? "SESSION_VARIABLES" : "GLOBAL_VARIABLES";
         }

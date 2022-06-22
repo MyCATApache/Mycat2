@@ -2973,7 +2973,29 @@ public class SQLASTOutputVisitor extends SQLASTVisitorAdapter implements Paramet
         int index = x.getIndex();
 
         if (index < 0 || inputParameters == null || index >= inputParameters.size()) {
-            print0(x.getName());
+            if (x.isGlobal()) {
+                print0("@@global.");
+            }else if(x.isSession()){
+                print0("@@session.");
+            }
+
+            String varName = x.getName();
+            for (int i = 0; i < varName.length(); ++i) {
+                char ch = varName.charAt(i);
+                if (ch == '\'') {
+                    if (varName.startsWith("@@") && i == 2) {
+                        print(ch);
+                    } else if (varName.startsWith("@") && i == 1) {
+                        print(ch);
+                    } else if (i != 0 && i != varName.length() - 1) {
+                        print0("\\'");
+                    } else {
+                        print(ch);
+                    }
+                } else {
+                    print(ch);
+                }
+            }
             return false;
         }
 
@@ -3017,7 +3039,7 @@ public class SQLASTOutputVisitor extends SQLASTVisitorAdapter implements Paramet
         }
 
         if (param instanceof Number //
-            || param instanceof Boolean || param instanceof java.time.temporal.Temporal ) {
+            || param instanceof Boolean  ) {
             print0(param.toString());
             return;
         }
@@ -3919,8 +3941,9 @@ public class SQLASTOutputVisitor extends SQLASTVisitorAdapter implements Paramet
             return false;
         }
 
-        print0("0x");
+        print0("X'");
         print0(x.getHex());
+        print0("'");
 
         String charset = (String) x.getAttribute("USING");
         if (charset != null) {
@@ -6267,6 +6290,12 @@ public class SQLASTOutputVisitor extends SQLASTVisitorAdapter implements Paramet
         if (tablePartitionBy != null) {
             print0(ucase ? " TBPARTITION BY " : " tbpartition by ");
             tablePartitionBy.accept(this);
+        }
+
+        SQLExpr dbPartitions = x.getDbPartitions();
+        if (dbPartitions != null) {
+            print0(ucase ? " DBPARTITIONS " : " dbpartitions ");
+            dbPartitions.accept(this);
         }
 
         SQLExpr tablePartitions = x.getTbPartitions();

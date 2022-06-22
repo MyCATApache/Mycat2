@@ -339,7 +339,7 @@ public class SQLExprParser extends SQLParser {
                 }
 
                 if (sqlExpr instanceof SQLBinaryOpExpr) {
-                    ((SQLBinaryOpExpr) sqlExpr).setBracket(true);
+                    ((SQLBinaryOpExpr) sqlExpr).setParenthesized(true);
                 }
 
                 if ((lexer.token == Token.UNION || lexer.token == Token.MINUS || lexer.token == Token.EXCEPT)
@@ -1340,7 +1340,7 @@ public class SQLExprParser extends SQLParser {
             expr = dotRest(expr);
             return primaryRest(expr);
         } else if (lexer.identifierEquals(FnvHash.Constants.SETS) //
-                && expr.getClass() == SQLIdentifierExpr.class // 
+                && expr.getClass() == SQLIdentifierExpr.class //
                 && "GROUPING".equalsIgnoreCase(((SQLIdentifierExpr) expr).getName())) {
             SQLGroupingSetExpr groupingSets = new SQLGroupingSetExpr();
             lexer.nextToken();
@@ -2889,7 +2889,7 @@ public class SQLExprParser extends SQLParser {
 
                     if (operator == SQLBinaryOperator.BooleanAnd
                             || operator == SQLBinaryOperator.BooleanOr) {
-                        if (binaryOpExpr.isBracket()) {
+                        if (binaryOpExpr.isParenthesized()) {
                             binaryOpExpr.setHint(new SQLCommentHint(text));
                         } else {
                             SQLExpr right = binaryOpExpr.getRight();

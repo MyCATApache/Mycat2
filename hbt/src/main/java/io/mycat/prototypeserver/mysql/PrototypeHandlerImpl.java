@@ -316,7 +316,7 @@ public class PrototypeHandlerImpl implements PrototypeHandler {
     }
 
     @Override
-    public List<Object[]> showVariants(MySqlShowVariantsStatement statement) {
+    public List<Object[]> showVariants(SQLShowVariantsStatement statement) {
         return onJdbc(statement.toString()).orElseGet(() -> {
             if (MetaClusterCurrent.exist(MysqlVariableService.class)) {
                 MysqlVariableService mysqlVariableService = MetaClusterCurrent.wrapper(MysqlVariableService.class);

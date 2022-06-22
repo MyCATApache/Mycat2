@@ -15,7 +15,7 @@
 package io.mycat.sqlhandler.dql;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowVariantsStatement;
+import com.alibaba.druid.sql.ast.statement.SQLShowVariantsStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.Response;
 import io.mycat.calcite.DrdsRunnerHelper;
@@ -33,13 +33,13 @@ import java.util.Optional;
  * 实现ShowVariants
  */
 
-public class ShowVariantsSQLHandler extends AbstractSQLHandler<MySqlShowVariantsStatement> {
+public class ShowVariantsSQLHandler extends AbstractSQLHandler<SQLShowVariantsStatement> {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowVariantsSQLHandler.class);
 
     @Override
-    protected Future<Void> onExecute(SQLRequest<MySqlShowVariantsStatement> request, MycatDataContext dataContext, Response response) {
+    protected Future<Void> onExecute(SQLRequest<SQLShowVariantsStatement> request, MycatDataContext dataContext, Response response) {
 
-        MySqlShowVariantsStatement requestAst = request.getAst();
+        SQLShowVariantsStatement requestAst = request.getAst();
 
         if (!requestAst.isGlobal() && !requestAst.isSession()) {
             requestAst.setSession(true);
@@ -53,7 +53,7 @@ public class ShowVariantsSQLHandler extends AbstractSQLHandler<MySqlShowVariants
         return DrdsRunnerHelper.runOnDrds(dataContext, DrdsRunnerHelper.preParse(sql, dataContext.getDefaultSchema()), response);
     }
 
-    private String toNormalSQL(MySqlShowVariantsStatement ast) {
+    private String toNormalSQL(SQLShowVariantsStatement ast) {
 
 
         SQLExpr like = ast.getLike();

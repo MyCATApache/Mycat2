@@ -4,6 +4,7 @@ import com.alibaba.druid.sql.ast.statement.SQLShowColumnsStatement;
 import com.alibaba.druid.sql.ast.statement.SQLShowCreateTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLShowIndexesStatement;
 import com.alibaba.druid.sql.ast.statement.SQLShowTablesStatement;
+import com.alibaba.druid.sql.ast.statement.SQLShowVariantsStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
 
 import java.util.List;
@@ -38,7 +39,7 @@ public interface PrototypeHandler {
 
     List<Object[]> showProcedureStatus(MySqlShowProcedureStatusStatement statement);
 
-    List<Object[]> showVariants(MySqlShowVariantsStatement statement);
+    List<Object[]> showVariants(SQLShowVariantsStatement statement);
 
     List<Object[]> showWarnings(MySqlShowWarningsStatement statement);
 }

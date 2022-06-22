@@ -175,9 +175,9 @@ public class PrototypeService {
             mySQLResultSet.setRows(prototypeHandler.showProcedureStatus(statement));
             return Optional.of(mySQLResultSet);
         }
-        if (sqlStatement instanceof MySqlShowVariantsStatement) {
-            MySqlShowVariantsStatement
-                    statement = (MySqlShowVariantsStatement) sqlStatement;
+        if (sqlStatement instanceof SQLShowVariantsStatement) {
+            SQLShowVariantsStatement
+                    statement = (SQLShowVariantsStatement) sqlStatement;
             List<ColumnDefPacket> columnDefPacketList = getShowVariantsColumns();
             MySQLResultSet mySQLResultSet = MySQLResultSet.create(columnDefPacketList);
             mySQLResultSet.setRows(prototypeHandler.showVariants(statement));

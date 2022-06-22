@@ -95,7 +95,7 @@ public class MycatOutputVisitor extends SQLASTOutputVisitor implements MySqlASTV
     }
 
     public boolean visit(MySqlSelectQueryBlock x) {
-        final boolean bracket = x.isBracket();
+        final boolean bracket = x.isParenthesized();
         if (bracket) {
             print('(');
         }
@@ -3426,7 +3426,7 @@ public class MycatOutputVisitor extends SQLASTOutputVisitor implements MySqlASTV
     }
 
     @Override
-    public boolean visit(MySqlShowVariantsStatement x) {
+    public boolean visit(SQLShowVariantsStatement x) {
         print0(ucase ? "SHOW " : "show ");
 
         if (x.isGlobal()) {
