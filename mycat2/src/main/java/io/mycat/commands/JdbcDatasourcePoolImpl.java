@@ -28,6 +28,7 @@ import io.mycat.newquery.NewMycatConnection;
 import io.mycat.newquery.NewMycatConnectionImpl;
 import io.mycat.newquery.RemoveAbandonedTimeoutConnectionImpl;
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +56,9 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
             DatabaseInstanceEntry stat = DatabaseInstanceEntry.stat(targetName);
             stat.plusCon();
             stat.plusQps();
+
+            Promise<Void> closePromise = Promise.promise();
+            closePromise.future().onComplete(event -> stat.decCon());
             NewMycatConnectionImpl newMycatConnection = new NewMycatConnectionImpl(defaultConnection.getDataSource().getConfig(), defaultConnection.getRawConnection()) {
                 long start;
 
@@ -75,17 +79,20 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
                 @Override
                 public Future<Void> close() {
                     return super.getFuture().transform(result -> {
-                        stat.decCon();
-                        JdbcUtils.close(getResultSet());
-                        defaultConnection.close();
+                        try{
+                            JdbcUtils.close(getResultSet());
+                            defaultConnection.close();
 
-                        if (LOGGER.isDebugEnabled()) {
-                            list.remove(this);
-                            LOGGER.debug("JdbcDatasourcePoolImpl {}  : size: {}", getTargetName(), list.size());
-                            LOGGER.debug("JdbcDatasourcePoolImpl {}  : {}", getTargetName(), list);
+                            if (LOGGER.isDebugEnabled()) {
+                                list.remove(this);
+                                LOGGER.debug("JdbcDatasourcePoolImpl {}  : size: {}", getTargetName(), list.size());
+                                LOGGER.debug("JdbcDatasourcePoolImpl {}  : {}", getTargetName(), list);
+                            }
+
+                            return Future.succeededFuture();
+                        }finally {
+                            closePromise.tryComplete();
                         }
-
-                        return Future.succeededFuture();
                     });
                 }
 
@@ -100,7 +107,7 @@ public class JdbcDatasourcePoolImpl extends AbstractMycatDatasourcePool {
                             LOGGER.debug("JdbcDatasourcePoolImpl {}  : {}", getTargetName(), list);
                         }
                     } finally {
-                        stat.decCon();
+                        closePromise.tryComplete();
                     }
                 }
             };
