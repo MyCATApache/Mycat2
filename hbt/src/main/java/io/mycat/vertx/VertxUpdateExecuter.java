@@ -31,6 +31,7 @@ import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
 import com.google.common.collect.ImmutableList;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.ExecutorProvider;
 import io.mycat.calcite.logical.MycatView;
@@ -43,6 +44,7 @@ import lombok.SneakyThrows;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -228,68 +230,95 @@ public class VertxUpdateExecuter {
                     MycatView mycatRel = (MycatView) codeExecuterContext.getMycatRel();
                     List<PartitionGroup> sqlMap = AsyncMycatDataContextImpl.getSqlMap(Collections.emptyMap(), mycatRel, queryDrdsSqlWithParams, drdsSqlWithParams.getHintDataNodeFilter());
 
-                    List<Partition> partitions = sqlMap.stream().map(partitionGroup -> partitionGroup.get(shardingTable.getUniqueName())).collect(Collectors.toList());
-                    handleTargets(statement, res, params, partitions);
+
                     if (shardingTable.getIndexTables().isEmpty()) {
+                        List<Partition> partitions = sqlMap.stream().map(partitionGroup -> partitionGroup.get(shardingTable.getUniqueName())).collect(Collectors.toList());
+                        handleTargets(statement, res, params, partitions);
                         continue;
-                    }
-                    ////////////////////////////////////////index-scan////////////////////////////////////////////////////////////
-                    Objects.requireNonNull(shardingTable.getPrimaryKey(), " need primary key");
-
-                    RowBaseIterator bindable = MetaClusterCurrent.wrapper(ExecutorProvider.class).runAsObjectArray(context, queryDrdsSqlWithParams);
-
-                    try {
-                        List<Object[]> list = new ArrayList<>();
-                        while (bindable.next()) {
-                            list.add(bindable.getObjects());
-                        }
-                        if (list.size() > 1000) {
-                            throw new IllegalArgumentException("The number of update rows exceeds the limit.");
-                        }
-
-                        for (ShardingTable indexTable : shardingTable.getIndexTables()) {
-                            SQLStatement eachStatement = SQLUtils.parseSingleMysqlStatement(
-                                    ParameterizedOutputVisitorUtils.restore(drdsSqlWithParams.getParameterizedSQL(), DbType.mysql, drdsSqlWithParams.getParams())
-                            );
-                            if (eachStatement instanceof SQLUpdateStatement) {
-                                MySqlUpdateStatement updateStatement = (MySqlUpdateStatement) eachStatement;
-                                List<SQLUpdateSetItem> sqlUpdateSetItems = updateStatement.getItems().stream().filter(sqlUpdateSetItem -> indexTable.getColumns().stream().anyMatch(name -> sqlUpdateSetItem.columnMatch(name.getColumnName()))).collect(Collectors.toList());
-                                if (sqlUpdateSetItems.isEmpty()) {
-                                    continue;
-                                }
-                                updateStatement.getItems().clear();
-                                for (SQLUpdateSetItem sqlUpdateSetItem : sqlUpdateSetItems) {
-                                    updateStatement.addItem(sqlUpdateSetItem);
-                                }
+                    }else {
+                        ShardingTable primaryOrIndexShardingTable = mycatRel.getDistribution().getShardingTables().get(0);
+                        Objects.requireNonNull(shardingTable.getPrimaryKey(), " need primary key");
+                        boolean isPrimaryTable =  shardingTable.getUniqueName().equals(primaryOrIndexShardingTable.getUniqueName());
+                        ////////////////////////////////////////index-scan////////////////////////////////////////////////////////////
+                        try {
+                            RowBaseIterator bindable = MetaClusterCurrent.wrapper(ExecutorProvider.class).runAsObjectArray(context, queryDrdsSqlWithParams);
+                            List<Object[]> list = new ArrayList<>();
+                            while (bindable.next()) {
+                                list.add(bindable.getObjects());
                             }
-                            SQLExprTableSource sqlTableSource = new SQLExprTableSource();
-                            sqlTableSource.setExpr(indexTable.getTableName());
-                            sqlTableSource.setSchema(indexTable.getSchemaName());
-
-                            setFrom(eachStatement, sqlTableSource);
-
-                            RelDataType rowType = codeExecuterContext.getMycatRel().getRowType();
-                            List<SQLExpr> backConditions = getBackCondition(selectKeys, indexTable, rowType);
-                            setWhere(eachStatement, backConditions.stream().reduce((sqlExpr, sqlExpr2) -> SQLBinaryOpExpr.and(sqlExpr, sqlExpr2))
-                                    .orElse(null));
-
-                            for (Object[] eachParams : list) {
-                                List<Object> newEachParams = getNewEachParams(backConditions, eachParams);
-                                Collection<VertxExecuter.EachSQL> eachSQLS = VertxUpdateExecuter
-                                        .explainUpdate(new DrdsSqlWithParams(eachStatement.toString(),
-                                                        newEachParams,
-                                                        false,
-                                                        getTypes(newEachParams),
-                                                        Collections.emptyList(),
-                                                        Collections.emptyList()),
-                                                context);
-
-                                res.addAll(eachSQLS);
+                            if (list.size() > 1000) {
+                                throw new IllegalArgumentException("The number of update rows exceeds the limit.");
                             }
+
+                            MycatRowMetaData metaData = bindable.getMetaData();
+                            int primaryKeyIndex = 0;
+                            List<Integer> checkIndexes = new ArrayList<>();
+                            for (; primaryKeyIndex < metaData.getColumnCount(); primaryKeyIndex++) {
+                                for (String selectKey : selectKeys) {
+                                    if(metaData.getColumnName(primaryKeyIndex).equals(selectKey)){
+                                        checkIndexes.add(primaryKeyIndex);
+                                        break;
+                                    }
+                                }
+                                primaryKeyIndex++;
+                            }
+
+                            List<Partition>  primaryPartitions = new LinkedList<>();
+                            for (Object[] objects : list) {
+                                Map<String, RangeVariable> values = new HashMap<>();
+                                for (Integer checkIndex : checkIndexes) {
+                                    String columnName = metaData.getColumnName(checkIndex);
+                                    RangeVariable rangeVariable = new RangeVariable(columnName, RangeVariableType.EQUAL, objects[checkIndex]);
+                                    values.put(columnName,rangeVariable);
+                                }
+                                primaryPartitions.add(shardingTable.function().calculateOne(values));
+                            }
+                            handleTargets(statement, res, params, primaryPartitions);
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                            for (ShardingTable indexTable : shardingTable.getIndexTables()) {
+                                SQLStatement eachStatement = SQLUtils.parseSingleMysqlStatement(
+                                        ParameterizedOutputVisitorUtils.restore(drdsSqlWithParams.getParameterizedSQL(), DbType.mysql, drdsSqlWithParams.getParams())
+                                );
+                                if (eachStatement instanceof SQLUpdateStatement) {
+                                    MySqlUpdateStatement updateStatement = (MySqlUpdateStatement) eachStatement;
+                                    List<SQLUpdateSetItem> sqlUpdateSetItems = updateStatement.getItems().stream().filter(sqlUpdateSetItem -> indexTable.getColumns().stream().anyMatch(name -> sqlUpdateSetItem.columnMatch(name.getColumnName()))).collect(Collectors.toList());
+                                    if (sqlUpdateSetItems.isEmpty()) {
+                                        continue;
+                                    }
+                                    updateStatement.getItems().clear();
+                                    for (SQLUpdateSetItem sqlUpdateSetItem : sqlUpdateSetItems) {
+                                        updateStatement.addItem(sqlUpdateSetItem);
+                                    }
+                                }
+                                SQLExprTableSource sqlTableSource = new SQLExprTableSource();
+                                sqlTableSource.setExpr(indexTable.getTableName());
+                                sqlTableSource.setSchema(indexTable.getSchemaName());
+
+                                setFrom(eachStatement, sqlTableSource);
+
+                                RelDataType rowType = codeExecuterContext.getMycatRel().getRowType();
+                                List<SQLExpr> backConditions = getBackCondition(selectKeys, indexTable, rowType);
+                                setWhere(eachStatement, backConditions.stream().reduce((sqlExpr, sqlExpr2) -> SQLBinaryOpExpr.and(sqlExpr, sqlExpr2))
+                                        .orElse(null));
+
+                                    for (Object[] eachParams : list) {
+                                        List<Object> newEachParams = getNewEachParams(backConditions, eachParams);
+                                        Collection<VertxExecuter.EachSQL> eachSQLS = VertxUpdateExecuter
+                                                .explainUpdate(new DrdsSqlWithParams(eachStatement.toString(),
+                                                                newEachParams,
+                                                                false,
+                                                                getTypes(newEachParams),
+                                                                Collections.emptyList(),
+                                                                Collections.emptyList()),
+                                                        context);
+
+                                        res.addAll(eachSQLS);
+                                    }
+                            }
+                            continue;
+                        } finally {
+                            context.getTransactionSession().closeStatementState().toCompletionStage().toCompletableFuture().get(1, TimeUnit.SECONDS);
                         }
-                        continue;
-                    } finally {
-                        context.getTransactionSession().closeStatementState().toCompletionStage().toCompletableFuture().get(1, TimeUnit.SECONDS);
                     }
                 }
                 case GLOBAL: {
