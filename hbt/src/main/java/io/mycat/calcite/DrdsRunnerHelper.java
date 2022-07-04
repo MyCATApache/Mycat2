@@ -25,6 +25,7 @@ import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.util.NameMap;
 import io.mycat.util.VertxUtil;
 import io.vertx.core.Future;
+import java.time.LocalDateTime;
 import lombok.SneakyThrows;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.prepare.CalciteCatalogReader;
@@ -167,6 +168,10 @@ public class DrdsRunnerHelper {
                     }
                     if (BigInteger.class == aClass) {
                         sqlTypeName = SqlTypeName.BIGINT;
+                        break;
+                    }
+                    if (LocalDateTime.class == aClass) {
+                        sqlTypeName = SqlTypeName.TIMESTAMP;
                         break;
                     }
                     if (value.getJavaClass() == aClass) {

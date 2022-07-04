@@ -21,6 +21,8 @@ import io.mycat.MycatException;
 import io.mycat.RangeVariable;
 import io.mycat.ShardingTableType;
 import io.mycat.util.CollectionUtil;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,6 +98,13 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
 
     }
 
+    private String toString(Object val) {
+        if(val instanceof LocalDateTime) {
+            return ((LocalDateTime)val).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        }
+        return Objects.toString(val);
+
+    }
     @Override
     public List<Partition> calculate(Map<String, RangeVariable> values) {
         ArrayList<Partition> res = new ArrayList<>();
@@ -103,8 +112,9 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
             //匹配字段名
             if (getColumnName().equalsIgnoreCase(rangeVariable.getColumnName())) {
                 ///////////////////////////////////////////////////////////////
-                String begin = Objects.toString(rangeVariable.getBegin());
-                String end = Objects.toString(rangeVariable.getEnd());
+
+                String begin = toString(rangeVariable.getBegin());
+                String end = toString(rangeVariable.getEnd());
                 switch (rangeVariable.getOperator()) {
                     case EQUAL: {
                         Partition partition = this.calculate(begin);

@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.rex;
 
+import java.time.LocalDateTime;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
@@ -1733,6 +1734,7 @@ public class RexBuilder {
         }
         return DateString.fromCalendarFields((Calendar) o);
       } else {
+
         return DateString.fromDaysSinceEpoch((Integer) o);
       }
     case TIMESTAMP:
@@ -1743,7 +1745,11 @@ public class RexBuilder {
           throw new AssertionError();
         }
         return TimestampString.fromCalendarFields((Calendar) o);
-      } else {
+      }if(o instanceof LocalDateTime) {
+      LocalDateTime time = (LocalDateTime) o;;
+      return new TimestampString(time.getYear(), time.getMonthValue(), time.getDayOfMonth(),
+          time.getHour(), time.getHour(), time.getSecond());
+    } else {
         return TimestampString.fromMillisSinceEpoch((Long) o);
       }
     case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
