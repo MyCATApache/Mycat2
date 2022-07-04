@@ -21,20 +21,20 @@ public class ProxyReceiverImpl extends ReceiverImpl {
     @Override
     public Future<Void> execute(ExplainDetail detail) {
         MycatDataContext dataContext = session.getDataContext();
-        if (count == 0 && !binary && !dataContext.isInTransaction() &&
-                (detail.getExecuteType() == ExecuteType.QUERY || detail.getExecuteType() == ExecuteType.QUERY_MASTER)
-                && detail.getTargets().size() == 1
-                && MySQLServerCapabilityFlags.isDeprecateEOF(dataContext.getServerCapabilities()) == NewMycatConnectionConfig.CLIENT_DEPRECATE_EOF) {
-            String targetName = dataContext.resolveDatasourceTargetName(detail.getTargets().get(0));
-            MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
-            Future<NewMycatConnection> connection = mySQLManager.getConnection(targetName);
-            return connection.flatMap(connection1 -> {
-                Observable<Buffer> bufferObservable = connection1.prepareQuery(detail.getSql(), detail.getParams(),session.getServerStatusValue());
-                bufferObservable= bufferObservable.doOnComplete(() -> connection1.close());
-                bufferObservable=  bufferObservable;
-                return swapBuffer(bufferObservable);
-            });
-        }
+//        if (count == 0 && !binary && !dataContext.isInTransaction() &&
+//                (detail.getExecuteType() == ExecuteType.QUERY || detail.getExecuteType() == ExecuteType.QUERY_MASTER)
+//                && detail.getTargets().size() == 1
+//                && MySQLServerCapabilityFlags.isDeprecateEOF(dataContext.getServerCapabilities()) == NewMycatConnectionConfig.CLIENT_DEPRECATE_EOF) {
+//            String targetName = dataContext.resolveDatasourceTargetName(detail.getTargets().get(0));
+//            MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
+//            Future<NewMycatConnection> connection = mySQLManager.getConnection(targetName);
+//            return connection.flatMap(connection1 -> {
+//                Observable<Buffer> bufferObservable = connection1.prepareQuery(detail.getSql(), detail.getParams(),session.getServerStatusValue());
+//                bufferObservable= bufferObservable.doOnComplete(() -> connection1.close());
+//                bufferObservable=  bufferObservable;
+//                return swapBuffer(bufferObservable);
+//            });
+//        }
         return super.execute(detail);
     }
 }
