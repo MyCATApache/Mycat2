@@ -91,7 +91,7 @@ public class MycatCore {
         //RxBuiltInMethod[] values = RxBuiltInMethod.values();
         // TimeZone.setDefault(ZoneInfo.getTimeZone("UTC"));
         String path = findMycatHome();
-        boolean enableGSI = false;
+        //boolean enableGSI = false;
         Path baseDirectory = Paths.get(path).toAbsolutePath();
         logger.info("path:" + baseDirectory);
         ServerConfiguration serverConfiguration = new ServerConfigurationImpl(MycatCore.class, path);
