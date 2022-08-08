@@ -94,7 +94,7 @@ public class MycatCore {
         String path = findMycatHome();
         boolean enableGSI = false;
         this.baseDirectory = Paths.get(path).toAbsolutePath();
-        System.out.println("path:" + this.baseDirectory);
+        logger.info("path:" + this.baseDirectory);
         ServerConfiguration serverConfiguration = new ServerConfigurationImpl(MycatCore.class, path);
         MycatServerConfig serverConfig = serverConfiguration.serverConfig();
         MetaClusterCurrent.register(Maps.of(MycatServerConfig.class, serverConfig, serverConfig.getServer().getClass(), serverConfig.getServer()));
