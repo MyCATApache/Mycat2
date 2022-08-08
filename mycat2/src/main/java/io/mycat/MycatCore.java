@@ -59,9 +59,7 @@ import java.util.stream.Collectors;
  **/
 public class MycatCore {
     final static Logger logger = LoggerFactory.getLogger(MycatCore.class);
-    public static final String PROPERTY_MODE_LOCAL = "local";
-    public static final String PROPERTY_MODE_CLUSTER = "cluster";
-    public static final String PROPERTY_METADATADIR = "metadata";
+
     private final MycatServer mycatServer;
 
     static {
