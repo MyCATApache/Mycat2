@@ -81,14 +81,14 @@ public class MycatCore {
             Class.forName("org.apache.calcite.mycat.MycatBuiltInMethod", initialize, classLoader);
             Class.forName("com.alibaba.druid.sql.SQLUtils", initialize, classLoader);
         } catch (ClassNotFoundException e) {
-            throw new Error("init error. " + e.toString());
+            throw new Error("init error. " + e);
         }
     }
 
 
     @SneakyThrows
     public MycatCore() {
-        RxBuiltInMethod[] values = RxBuiltInMethod.values();
+        //RxBuiltInMethod[] values = RxBuiltInMethod.values();
         // TimeZone.setDefault(ZoneInfo.getTimeZone("UTC"));
         String path = findMycatHome();
         boolean enableGSI = false;
