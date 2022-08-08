@@ -98,7 +98,7 @@ public class MycatCore {
         MycatServerConfig serverConfig = serverConfiguration.serverConfig();
         MetaClusterCurrent.register(Maps.of(MycatServerConfig.class, serverConfig, serverConfig.getServer().getClass(), serverConfig.getServer()));
         MySQLVersion.setServerVersion(serverConfig.getServer().getServerVersion());
-        String datasourceProvider = Optional.ofNullable(serverConfig.getDatasourceProvider()).orElse(io.mycat.datasource.jdbc.DruidDatasourceProvider.class.getCanonicalName());
+       // String datasourceProvider = Optional.ofNullable(serverConfig.getDatasourceProvider()).orElse(io.mycat.datasource.jdbc.DruidDatasourceProvider.class.getCanonicalName());
         ThreadPoolExecutorConfig workerPool = serverConfig.getServer().getWorkerPool();
 
         AsyncMycatDataContextImpl.FULL_TABLE_SCAN_LIMIT = serverConfiguration.serverConfig().getServer().getFullTableScanLimit();
@@ -135,8 +135,7 @@ public class MycatCore {
         ////////////////////////////////////////////tmp///////////////////////////////////
         MetaClusterCurrent.register(context);
 
-        String mode = Optional.ofNullable(System.getProperty("mode"))
-                .orElse(serverConfig.getMode());
+        //String mode = Optional.ofNullable(System.getProperty("mode")).orElse(serverConfig.getMode());
 
 
         boolean initConfig = false;
@@ -157,9 +156,7 @@ public class MycatCore {
                 UserConfig.class,
                 SequenceConfig.class,
                 SqlCacheConfig.class
-        ).forEach(c -> {
-            storageManager.register(c);
-        });
+        ).forEach(storageManager::register);
         context.put(ConfigReporter.class, storageManager);
         context.put(StorageManager.class, storageManager);
         MetaClusterCurrent.register(context);
@@ -169,26 +166,26 @@ public class MycatCore {
         }
     }
 
-    private void testZkAddressOrStartDefaultZk(String zkAddress) throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
-        ConnectStringParser connectStringParser = new ConnectStringParser(zkAddress);
-        CompositeFuture.any(connectStringParser.getServerAddresses().stream().parallel().map(is -> Future.future(promise -> {
-            try {
-                Socket socket = new Socket(is.getHostName(), is.getPort());
-                socket.close();
-                promise.tryComplete();
-            } catch (IOException e) {
-                promise.tryFail(e);
-            }
-        })).collect(Collectors.toList())).toCompletionStage().toCompletableFuture().get(1, TimeUnit.SECONDS).recover(throwable -> {
-            logger.error("", throwable);
-            try {
-                EmbeddedZKServer.startDefaultZK();
-                return Future.succeededFuture();
-            } catch (Throwable throwable1) {
-                return Future.failedFuture(throwable1);
-            }
-        }).toCompletionStage().toCompletableFuture().get(1, TimeUnit.SECONDS);
-    }
+//    private void testZkAddressOrStartDefaultZk(String zkAddress) throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
+//        ConnectStringParser connectStringParser = new ConnectStringParser(zkAddress);
+//        CompositeFuture.any(connectStringParser.getServerAddresses().stream().parallel().map(is -> Future.future(promise -> {
+//            try {
+//                Socket socket = new Socket(is.getHostName(), is.getPort());
+//                socket.close();
+//                promise.tryComplete();
+//            } catch (IOException e) {
+//                promise.tryFail(e);
+//            }
+//        })).collect(Collectors.toList())).toCompletionStage().toCompletableFuture().get(1, TimeUnit.SECONDS).recover(throwable -> {
+//            logger.error("", throwable);
+//            try {
+//                EmbeddedZKServer.startDefaultZK();
+//                return Future.succeededFuture();
+//            } catch (Throwable throwable1) {
+//                return Future.failedFuture(throwable1);
+//            }
+//        }).toCompletionStage().toCompletableFuture().get(1, TimeUnit.SECONDS);
+//    }
 
     @NotNull
     private String findMycatHome() throws URISyntaxException {
@@ -203,14 +200,14 @@ public class MycatCore {
             path = bottom.toString();
             System.setProperty(configResourceKeyName, path);
         }
-        if (path == null) {
-            throw new MycatException("can not find MYCAT_HOME");
-        }
+//        if (path == null) {
+//            throw new MycatException("can not find MYCAT_HOME");
+//        }
         return path;
     }
 
     @NotNull
-    private MycatServer newMycatServer(MycatServerConfig serverConfig) throws URISyntaxException {
+    private MycatServer newMycatServer(MycatServerConfig serverConfig)  {
         return new VertxMycatServer(serverConfig);
     }
 
