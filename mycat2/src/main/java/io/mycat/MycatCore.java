@@ -63,7 +63,6 @@ public class MycatCore {
     public static final String PROPERTY_MODE_CLUSTER = "cluster";
     public static final String PROPERTY_METADATADIR = "metadata";
     private final MycatServer mycatServer;
-    private final Path baseDirectory;
 
     static {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -93,8 +92,8 @@ public class MycatCore {
         // TimeZone.setDefault(ZoneInfo.getTimeZone("UTC"));
         String path = findMycatHome();
         boolean enableGSI = false;
-        this.baseDirectory = Paths.get(path).toAbsolutePath();
-        logger.info("path:" + this.baseDirectory);
+        Path baseDirectory = Paths.get(path).toAbsolutePath();
+        logger.info("path:" + baseDirectory);
         ServerConfiguration serverConfiguration = new ServerConfigurationImpl(MycatCore.class, path);
         MycatServerConfig serverConfig = serverConfiguration.serverConfig();
         MetaClusterCurrent.register(Maps.of(MycatServerConfig.class, serverConfig, serverConfig.getServer().getClass(), serverConfig.getServer()));
@@ -141,15 +140,15 @@ public class MycatCore {
 
 
         boolean initConfig = false;
-        if (!Files.exists(this.baseDirectory)) {
-            Files.createDirectory(this.baseDirectory);
+        if (!Files.exists(baseDirectory)) {
+            Files.createDirectory(baseDirectory);
             initConfig = true;
         }
-        if (!Files.exists((this.baseDirectory.resolve("server.json")))) {
+        if (!Files.exists((baseDirectory.resolve("server.json")))) {
             initConfig = true;
         }
 
-        FileStorageManagerImpl fileStorageManager = new FileStorageManagerImpl(this.baseDirectory);
+        FileStorageManagerImpl fileStorageManager = new FileStorageManagerImpl(baseDirectory);
         StdStorageManagerImpl storageManager = new StdStorageManagerImpl(fileStorageManager);
 
         Arrays.asList(LogicSchemaConfig.class,
