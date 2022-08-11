@@ -55,7 +55,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
     private DatasourceConfig config;
 
-    public NewMycatConnectionImpl(String targetName,boolean needLastInsertId, Connection connection) {
+    public NewMycatConnectionImpl(String targetName, boolean needLastInsertId, Connection connection) {
         this.targetName = targetName;
         this.needLastInsertId = needLastInsertId;
         this.connection = connection;
@@ -110,7 +110,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
         }
         this.future = this.future.transform(voidAsyncResult -> {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("targetName:{}\n sql:{}\n params:{}", targetName, sql, params);
+                LOGGER.debug("targetName1:{}\n sql:{}\n params:{}", targetName, sql, params);
             }
             try {
                 if (params.isEmpty()) {
@@ -125,7 +125,11 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                         while (!isResultSetClosed() && resultSet.next()) {
                             Object[] objects = new Object[columnCount];
                             for (int i = 1, j = 0; i < columnLimit; i++, j++) {
-                                objects[j] = resultSet.getObject(i);
+                                //objects[j] = resultSet.getObject(i);
+                                Object object = resultSet.getObject(i);
+                                if (object instanceof Integer) {
+                                    objects[j] = (int)object - 1;
+                                }
                             }
                             collector.onRow(objects);
                         }
@@ -197,7 +201,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                 NewMycatConnectionImpl.this.future = NewMycatConnectionImpl.this.future.transform(voidAsyncResult -> {
                     try {
                         if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("targetName:{}\n sql:{}\n params:{}", targetName, sql, params);
+                            LOGGER.debug("targetName2:{}\n sql:{}\n params:{}", targetName, sql, params);
                         }
                         try (PreparedStatement statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
                             setStreamFlag(statement);
@@ -299,7 +303,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
                     public Future<Void> apply(AsyncResult<Void> voidAsyncResult) {
                         try {
                             if (LOGGER.isDebugEnabled()) {
-                                LOGGER.debug("targetName:{}\n sql:{}\n params:{}", targetName, sql, params);
+                                LOGGER.debug("targetName3:{}\n sql:{}\n params:{}", targetName, sql, params);
                             }
                             String paramize = paramize(sql, params);
                             boolean clientDeprecateEof = NewMycatConnectionConfig.CLIENT_DEPRECATE_EOF;
@@ -489,6 +493,18 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
     @Override
     public synchronized Future<SqlResult> insert(String sql, List<Object> params) {
 
+
+        Integer inte;
+        for (int i = 0; i < params.size(); i++) {
+            //类型转换
+            Object o = params.get(i);
+            String s = o.toString();
+            inte = Integer.valueOf(s);
+            //模拟加密
+            inte++;
+            params.set(i, inte);
+        }
+
         if (this.future.isComplete()) {
             this.future = Future.succeededFuture();
         }
@@ -544,7 +560,7 @@ public class NewMycatConnectionImpl implements NewMycatConnection {
 
 
     private boolean isClickHouse() {
-        return dbType!=null && dbType.toString().contains("clickhouse");
+        return dbType != null && dbType.toString().contains("clickhouse");
     }
 
 
