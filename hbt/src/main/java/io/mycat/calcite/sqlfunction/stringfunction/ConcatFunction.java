@@ -59,4 +59,16 @@ public class ConcatFunction extends MycatSqlDefinedFunction {
 
         return sb.toString();
     }
+
+    public static String concat(Integer s1, String... n) {
+        StringBuilder sb = new StringBuilder();
+        for (String s : n) {
+            if (s == null) {
+                return null;
+            }
+            sb.append(s);
+        }
+
+        return s1 + sb.toString();
+    }
 }
