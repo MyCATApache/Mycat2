@@ -3,6 +3,8 @@ package io.mycat.calcite.rewriter;
 import io.mycat.Partition;
 import io.mycat.RangeVariable;
 import io.mycat.RangeVariableType;
+import io.mycat.SimpleColumnInfo.Type;
+import io.mycat.calcite.table.ShardingTable;
 import io.mycat.querycondition.ComparisonOperator;
 import io.mycat.querycondition.QueryType;
 import io.mycat.router.CustomRuleFunction;
@@ -125,7 +127,7 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
     }
 
     @NotNull
-    public static List<Partition> getPartitions(CustomRuleFunction customRuleFunction, Map<QueryType, List<ValueIndexCondition>> conditions, List<Object> params) {
+    public static List<Partition> getPartitions(ShardingTable shardingTable, CustomRuleFunction customRuleFunction, Map<QueryType, List<ValueIndexCondition>> conditions, List<Object> params) {
         if (conditions == null || conditions.isEmpty()) {
             return customRuleFunction.calculate(Collections.emptyMap());
         }
@@ -148,18 +150,20 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                             List<Partition> curPartitions = new LinkedList<>();
                             for (Object o1 : pointQueryKey) {
                                 String indexColumnName = condition.getIndexColumnNames().get(0);
-                                RangeVariable rangeVariable = new RangeVariable(indexColumnName, RangeVariableType.EQUAL, o1);
+                                Type columnType = shardingTable.getLogicTable().getColumnByName(indexColumnName).getType();
+                                RangeVariable rangeVariable = new RangeVariable(indexColumnName,columnType, RangeVariableType.EQUAL, o1);
                                 map.put(indexColumnName, rangeVariable);
                                 List<Partition> calculate = customRuleFunction.calculate(map);
                                 curPartitions.addAll(calculate);
                             }
-                            partitions = calculatePartitions(curPartitions, partitions);
+                            partitions = calculatePartitions(shardingTable, curPartitions, partitions);
                         } else {
                             Object o = pointQueryKey.get(0);
                             String indexColumnName = condition.getIndexColumnNames().get(0);
-                            RangeVariable rangeVariable = new RangeVariable(indexColumnName, RangeVariableType.EQUAL, o);
+                            Type columnType = shardingTable.getLogicTable().getColumnByName(indexColumnName).getType();
+                            RangeVariable rangeVariable = new RangeVariable(indexColumnName, columnType, RangeVariableType.EQUAL, o);
                             map.put(indexColumnName, rangeVariable);
-                            partitions = calculatePartitions(customRuleFunction, map, partitions);
+                            partitions = calculatePartitions(shardingTable, customRuleFunction, map, partitions);
                         }
                         break;
                     }
@@ -205,7 +209,9 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                             if (rangeQueryUpperOp == LTE && rangeQueryLowerOp == ComparisonOperator.GTE ||
                                     rangeQueryUpperOp == ComparisonOperator.LT && rangeQueryLowerOp == ComparisonOperator.GT)
                                 for (String indexColumnName : condition.getIndexColumnNames()) {
-                                    RangeVariable rangeVariable = new RangeVariable(indexColumnName, RangeVariableType.RANGE, smallOne, bigOne);
+                                    Type columnType = shardingTable.getLogicTable()
+                                        .getColumnByName(indexColumnName).getType();
+                                    RangeVariable rangeVariable = new RangeVariable(indexColumnName, columnType, RangeVariableType.RANGE, smallOne, bigOne);
                                     map.put(indexColumnName, rangeVariable);
                                 }
                         } else if (smallOne != null) {
@@ -217,7 +223,8 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                             }
                             if (type != null) {
                                 for (String indexColumnName : condition.getIndexColumnNames()) {
-                                    RangeVariable rangeVariable = new RangeVariable(indexColumnName, type, smallOne);
+                                    Type columnType = shardingTable.getLogicTable().getColumnByName(indexColumnName).getType();
+                                    RangeVariable rangeVariable = new RangeVariable(indexColumnName, columnType, type, smallOne);
                                     map.put(indexColumnName, rangeVariable);
                                 }
                             }
@@ -230,12 +237,13 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
                             }
                             if (type != null) {
                                 for (String indexColumnName : condition.getIndexColumnNames()) {
-                                    RangeVariable rangeVariable = new RangeVariable(indexColumnName, type, bigOne);
+                                    Type columnType = shardingTable.getLogicTable().getColumnByName(indexColumnName).getType();
+                                    RangeVariable rangeVariable = new RangeVariable(indexColumnName, columnType, type, bigOne);
                                     map.put(indexColumnName, rangeVariable);
                                 }
                             }
                         }
-                        partitions = calculatePartitions(customRuleFunction, map, partitions);
+                        partitions = calculatePartitions(shardingTable, customRuleFunction, map, partitions);
                         break;
                     }
                     case PK_FULL_SCAN:
@@ -248,12 +256,13 @@ public class ValueIndexCondition implements Comparable<ValueIndexCondition>, Ser
         return partitions;
     }
 
-    private static List<Partition> calculatePartitions(CustomRuleFunction customRuleFunction, Map<String, RangeVariable> map, List<Partition> partitions) {
+    private static List<Partition> calculatePartitions(ShardingTable shardingTable, CustomRuleFunction customRuleFunction, Map<String, RangeVariable> map, List<Partition> partitions) {
+
         List<Partition> curPartitions = customRuleFunction.calculate(map);
-        return calculatePartitions(partitions, curPartitions);
+        return calculatePartitions(shardingTable, partitions, curPartitions);
     }
 
-    private static List<Partition> calculatePartitions(List<Partition> partitions, List<Partition> curPartitions) {
+    private static List<Partition> calculatePartitions(ShardingTable shardingTable, List<Partition> partitions, List<Partition> curPartitions) {
         if (partitions == null) {
             partitions = curPartitions;
         } else {

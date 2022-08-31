@@ -4,6 +4,7 @@ import io.mycat.MetadataManager;
 import io.mycat.Partition;
 import io.mycat.RangeVariable;
 import io.mycat.RangeVariableType;
+import io.mycat.SimpleColumnInfo.Type;
 import io.mycat.calcite.table.ShardingTable;
 import io.mycat.config.ShardingFunction;
 import io.mycat.config.ShardingTableConfig;
@@ -47,7 +48,7 @@ public class EnumTest extends AutoFunctionFactoryTest {
         LocalDate start = LocalDate.of(2021, 11, 8);
 
         List<Partition> calculate = shardingFuntion.calculate(Collections.singletonMap("traveldate",
-                (new RangeVariable("traveldate", RangeVariableType.EQUAL, start))));
+                (new RangeVariable("traveldate", Type.DATE, RangeVariableType.EQUAL, start))));
         Assert.assertEquals(2, calculate.size());
         for (Partition partition : calculate) {
             Assert.assertEquals(start.getMonthValue() % 4, (int) partition.getTableIndex());
@@ -57,7 +58,7 @@ public class EnumTest extends AutoFunctionFactoryTest {
             LocalDate end = LocalDate.of(2021, 11, 9);
 
             List<Partition> calculate2 = shardingFuntion.calculate(Collections.singletonMap("traveldate",
-                    (new RangeVariable("traveldate", RangeVariableType.RANGE, start, end))));
+                    (new RangeVariable("traveldate", Type.DATE, RangeVariableType.RANGE, start, end))));
 
             Assert.assertEquals(calculate, calculate2);
 
@@ -67,7 +68,7 @@ public class EnumTest extends AutoFunctionFactoryTest {
             LocalDate end = LocalDate.of(2021, 12, 9);
 
             List<Partition> calculate2 = shardingFuntion.calculate(Collections.singletonMap("traveldate",
-                    (new RangeVariable("traveldate", RangeVariableType.RANGE, start, end))));
+                    (new RangeVariable("traveldate", Type.DATE, RangeVariableType.RANGE, start, end))));
 
 
             HashSet<Integer> set = new HashSet<>();
@@ -82,7 +83,7 @@ public class EnumTest extends AutoFunctionFactoryTest {
             LocalDate end = LocalDate.of(2022, 1, 9);
 
             List<Partition> calculate2 = shardingFuntion.calculate(Collections.singletonMap("traveldate",
-                    (new RangeVariable("traveldate", RangeVariableType.RANGE, start, end))));
+                    (new RangeVariable("traveldate", Type.DATE, RangeVariableType.RANGE, start, end))));
 
 
             HashSet<Integer> set = new HashSet<>();
@@ -156,7 +157,7 @@ public class EnumTest extends AutoFunctionFactoryTest {
 
         {
             List<Partition> calculate2 = shardingFuntion.calculate(Collections.singletonMap("traveldate",
-                    (new RangeVariable("traveldate", RangeVariableType.RANGE,
+                    (new RangeVariable("traveldate", Type.DATE, RangeVariableType.RANGE,
                             LocalDate.of(2021, 11, 1),
                             LocalDate.of(2022, 3, 1)))));
             Assert.assertEquals(18,calculate2.size());

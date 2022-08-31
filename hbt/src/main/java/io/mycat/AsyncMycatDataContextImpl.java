@@ -344,7 +344,8 @@ public abstract class AsyncMycatDataContextImpl extends NewMycatDataContextImpl 
                     condition = res.get(0);
                     ValuePredicateAnalyzer predicateAnalyzer = new ValuePredicateAnalyzer(shardingTable.keyMetas(true), shardingTable.getColumns().stream().map(i -> i.getColumnName()).collect(Collectors.toList()));
                     Map<QueryType, List<ValueIndexCondition>> indexConditionMap = predicateAnalyzer.translateMatch(condition);
-                    List<Partition> partitions = ValueIndexCondition.getPartitions(shardingTable.getShardingFuntion(), indexConditionMap, drdsSqlWithParams.getParams());
+
+                    List<Partition> partitions = ValueIndexCondition.getPartitions(shardingTable, shardingTable.getShardingFuntion(), indexConditionMap, drdsSqlWithParams.getParams());
                     return mapSharding(view, partitions);
                 } finally {
                     paramHolder.clear();

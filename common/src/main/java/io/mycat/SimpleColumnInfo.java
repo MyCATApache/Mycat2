@@ -227,10 +227,14 @@ public class SimpleColumnInfo {
     }
 
     public Object normalizeValue(Object o) {
+        return normalizeValueMethod(o,getType());
+    }
+
+    public static Object normalizeValueMethod(Object o, Type type ) {
         if (o == null) {
             return o;
         }
-        switch (getType()) {
+        switch (type) {
             case NUMBER:
                 if (o instanceof String) {
                     return new BigDecimal((String) o);

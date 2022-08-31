@@ -14,6 +14,7 @@
  */
 package io.mycat;
 
+import io.mycat.SimpleColumnInfo.Type;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -56,19 +57,21 @@ public class RangeVariable {
     private final Object value;
     private Object optionValue = null;
     private String columnName;
-
-    public RangeVariable(String columnName, RangeVariableType operator, Object value) {
+    private Type columnType;
+    public RangeVariable(String columnName,Type columnType, RangeVariableType operator, Object value) {
         this.columnName = columnName;
         this.operator = operator;
         this.value = value;
+        this.columnType = columnType;
     }
 
-    public RangeVariable(String columnName, RangeVariableType range, Object begin, Object end) {
+    public RangeVariable(String columnName, Type columnType, RangeVariableType range, Object begin, Object end) {
         this.columnName = columnName;
         this.operator = range;
         assert operator == RangeVariableType.RANGE;
         this.value = begin;
         this.optionValue = end;
+        this.columnType = columnType;
     }
 
     public Object getBegin() {

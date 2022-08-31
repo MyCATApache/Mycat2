@@ -30,6 +30,7 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.visitor.MycatSQLEvalVisitorUtils;
 import com.google.common.collect.ImmutableList;
 import io.mycat.*;
+import io.mycat.SimpleColumnInfo.Type;
 import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlObjectArrayRow;
 import io.mycat.api.collector.MysqlPayloadObject;
@@ -622,7 +623,7 @@ public class VertxExecuter {
                     case NO_AUTOINC:
                         break;
                 }
-                Map<String, RangeVariable> variables = compute(columns, values, params);
+                Map<String, RangeVariable> variables = compute(shardingTable, columns, values, params);
                 Partition mPartition = shardingTable.getShardingFuntion().calculateOne((Map) variables);
 
                 SQLExprTableSource exprTableSource = primaryStatement.getTableSource();
@@ -762,7 +763,7 @@ public class VertxExecuter {
         }
     }
 
-    public static Map<String, RangeVariable> compute(List<SQLName> columns,
+    public static Map<String, RangeVariable> compute(ShardingTable shardingTable ,List<SQLName> columns,
                                                      List<SQLExpr> values,
                                                      List<Object> params) {
         Map<String, RangeVariable> variables = new HashMap<>(1);
@@ -800,7 +801,8 @@ public class VertxExecuter {
                 }
             }
             String columnName = SQLUtils.normalize(columns.get(i).getSimpleName());
-            variables.put(columnName, new RangeVariable(columnName, RangeVariableType.EQUAL, o));
+            Type columnType = shardingTable.getLogicTable().getColumnByName(columnName).getType();
+            variables.put(columnName, new RangeVariable(columnName, columnType, RangeVariableType.EQUAL, o));
         }
         return variables;
     }

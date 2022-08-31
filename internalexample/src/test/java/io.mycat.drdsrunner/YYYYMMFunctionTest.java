@@ -4,6 +4,7 @@ import io.mycat.Partition;
 import io.mycat.MetadataManager;
 import io.mycat.RangeVariable;
 import io.mycat.RangeVariableType;
+import io.mycat.SimpleColumnInfo.Type;
 import io.mycat.calcite.table.ShardingTable;
 import io.mycat.config.ShardingFunction;
 import io.mycat.config.ShardingTableConfig;
@@ -49,7 +50,7 @@ public class YYYYMMFunctionTest extends AutoFunctionFactoryTest{
         CustomRuleFunction shardingFuntion = tableHandler.getShardingFuntion();
         List<Partition> calculate = shardingFuntion
                 .calculate(Collections.singletonMap("traveldate",
-                   (new RangeVariable("traveldate", RangeVariableType.EQUAL,
+                   (new RangeVariable("traveldate", Type.DATE, RangeVariableType.EQUAL,
                                 LocalDate.of(2020,6,5)))));
         String s = calculate.toString();
         Assert.assertTrue(s.contains("[{targetName='c0', schemaName='db1_2', tableName='sharding_6', index=6, dbIndex=2, tableIndex=0}]"));
@@ -85,7 +86,7 @@ public class YYYYMMFunctionTest extends AutoFunctionFactoryTest{
         CustomRuleFunction shardingFuntion = tableHandler.getShardingFuntion();
         List<Partition> calculate = shardingFuntion
                 .calculate(Collections.singletonMap("traveldate",
-                   (new RangeVariable("traveldate", RangeVariableType.EQUAL,
+                   (new RangeVariable("traveldate",Type.DATE, RangeVariableType.EQUAL,
                                 LocalDate.of(2020,6,5)))));
         String s = calculate.toString();
         Assert.assertTrue(s.contains("[{targetName='c0', schemaName='db1_6', tableName='sharding_0', index=18, dbIndex=6, tableIndex=0}, {targetName='c0', schemaName='db1_6', tableName='sharding_1', index=19, dbIndex=6, tableIndex=1}, {targetName='c0', schemaName='db1_6', tableName='sharding_2', index=20, dbIndex=6, tableIndex=2}]"));

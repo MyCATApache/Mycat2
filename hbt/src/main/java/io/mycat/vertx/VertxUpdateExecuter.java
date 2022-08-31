@@ -30,6 +30,7 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
 import com.google.common.collect.ImmutableList;
 import io.mycat.*;
+import io.mycat.SimpleColumnInfo.Type;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.CodeExecuterContext;
@@ -268,7 +269,9 @@ public class VertxUpdateExecuter {
                                 Map<String, RangeVariable> values = new HashMap<>();
                                 for (Integer checkIndex : checkIndexes) {
                                     String columnName = metaData.getColumnName(checkIndex);
-                                    RangeVariable rangeVariable = new RangeVariable(columnName, RangeVariableType.EQUAL, objects[checkIndex]);
+                                    Type columnType = shardingTable.getLogicTable()
+                                        .getColumnByName(columnName).getType();
+                                    RangeVariable rangeVariable = new RangeVariable(columnName,columnType, RangeVariableType.EQUAL, objects[checkIndex]);
                                     values.put(columnName,rangeVariable);
                                 }
                                 primaryPartitions.add(shardingTable.function().calculateOne(values));

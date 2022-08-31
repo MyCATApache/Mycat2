@@ -20,7 +20,7 @@ public class ProxyReceiverImpl extends ReceiverImpl {
 
     @Override
     public Future<Void> execute(ExplainDetail detail) {
-        MycatDataContext dataContext = session.getDataContext();
+//        MycatDataContext dataContext = session.getDataContext();
 //        if (count == 0 && !binary && !dataContext.isInTransaction() &&
 //                (detail.getExecuteType() == ExecuteType.QUERY || detail.getExecuteType() == ExecuteType.QUERY_MASTER)
 //                && detail.getTargets().size() == 1

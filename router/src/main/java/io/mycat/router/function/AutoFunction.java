@@ -19,6 +19,8 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 import io.mycat.Partition;
 import io.mycat.RangeVariable;
+import io.mycat.SimpleColumnInfo;
+import io.mycat.SimpleColumnInfo.Type;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import org.jetbrains.annotations.NotNull;
@@ -221,9 +223,12 @@ public abstract class AutoFunction extends CustomRuleFunction {
     }
 
     public Optional<Set<Object>> getRange(RangeVariable rangeVariable, int limit, String name, ToIntFunction<Object> intFunction) {
+
         Optional<Set<Object>> dbRange = Optional.empty();
-        Object begin = rangeVariable.getBegin();
-        Object end = rangeVariable.getEnd();
+        Type columnType = rangeVariable.getColumnType();
+        Object begin = SimpleColumnInfo.normalizeValueMethod(rangeVariable.getBegin(), columnType);
+        Object end = SimpleColumnInfo.normalizeValueMethod(rangeVariable.getEnd(), columnType);
+
         if (begin != null && end != null) {
             if ("MM".equalsIgnoreCase(name) || "YYYYMM".equalsIgnoreCase(name)) {
                 return enumMonthValue(limit, intFunction, begin, end);
