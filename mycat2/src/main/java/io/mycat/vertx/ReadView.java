@@ -145,11 +145,7 @@ public class ReadView implements MySQLPayloadReadView {
         }
         int len = aLong.intValue();
         byte[] bytes = null;
-        if ((len & 0xff) == 0xfb) {
-            return null;
-        } else {
-            bytes = readBytes(len);
-        }
+        bytes = readBytes(len);
         return bytes;
     }
 

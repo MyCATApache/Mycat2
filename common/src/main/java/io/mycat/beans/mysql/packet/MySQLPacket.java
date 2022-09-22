@@ -495,7 +495,7 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
     default int skipLenencBytes(int index) {
         int len = (int) getLenencInt(packetReadStartIndex(index));
         byte[] bytes = null;
-        if ((len & 0xff) == 0xfb) {
+        if ( len == 0xfb) {
             bytes = EMPTY_BYTE_ARRAY;
             packetReadStartIndexAdd(1);
             return packetReadStartIndex();
@@ -523,7 +523,7 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
     default byte[] readLenencBytes() {
         int len = (int) getLenencInt(packetReadStartIndex());
         byte[] bytes = null;
-        if ((len & 0xff) == 0xfb) {
+        if (len  == 0xfb) {
             bytes = EMPTY_BYTE_ARRAY;
             packetReadStartIndexAdd(1);
             return null;
