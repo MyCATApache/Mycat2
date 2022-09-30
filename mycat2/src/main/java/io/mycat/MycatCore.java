@@ -59,11 +59,10 @@ import java.util.stream.Collectors;
  **/
 public class MycatCore {
     final static Logger logger = LoggerFactory.getLogger(MycatCore.class);
-    public static final String PROPERTY_MODE_LOCAL = "local";
-    public static final String PROPERTY_MODE_CLUSTER = "cluster";
-    public static final String PROPERTY_METADATADIR = "metadata";
+//    public static final String PROPERTY_MODE_LOCAL = "local";
+//    public static final String PROPERTY_MODE_CLUSTER = "cluster";
+//    public static final String PROPERTY_METADATADIR = "metadata";
     private final MycatServer mycatServer;
-    private final Path baseDirectory;
 
     static {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -82,24 +81,24 @@ public class MycatCore {
             Class.forName("org.apache.calcite.mycat.MycatBuiltInMethod", initialize, classLoader);
             Class.forName("com.alibaba.druid.sql.SQLUtils", initialize, classLoader);
         } catch (ClassNotFoundException e) {
-            throw new Error("init error. " + e.toString());
+            throw new Error("init error. " + e);
         }
     }
 
 
     @SneakyThrows
     public MycatCore() {
-        RxBuiltInMethod[] values = RxBuiltInMethod.values();
+        //RxBuiltInMethod[] values = RxBuiltInMethod.values();
         // TimeZone.setDefault(ZoneInfo.getTimeZone("UTC"));
         String path = findMycatHome();
-        boolean enableGSI = false;
-        this.baseDirectory = Paths.get(path).toAbsolutePath();
-        System.out.println("path:" + this.baseDirectory);
+        //boolean enableGSI = false;
+        Path baseDirectory = Paths.get(path).toAbsolutePath();
+        logger.info("path:" + baseDirectory);
         ServerConfiguration serverConfiguration = new ServerConfigurationImpl(MycatCore.class, path);
         MycatServerConfig serverConfig = serverConfiguration.serverConfig();
         MetaClusterCurrent.register(Maps.of(MycatServerConfig.class, serverConfig, serverConfig.getServer().getClass(), serverConfig.getServer()));
         MySQLVersion.setServerVersion(serverConfig.getServer().getServerVersion());
-        String datasourceProvider = Optional.ofNullable(serverConfig.getDatasourceProvider()).orElse(io.mycat.datasource.jdbc.DruidDatasourceProvider.class.getCanonicalName());
+       // String datasourceProvider = Optional.ofNullable(serverConfig.getDatasourceProvider()).orElse(io.mycat.datasource.jdbc.DruidDatasourceProvider.class.getCanonicalName());
         ThreadPoolExecutorConfig workerPool = serverConfig.getServer().getWorkerPool();
 
         AsyncMycatDataContextImpl.FULL_TABLE_SCAN_LIMIT = serverConfiguration.serverConfig().getServer().getFullTableScanLimit();
@@ -136,20 +135,19 @@ public class MycatCore {
         ////////////////////////////////////////////tmp///////////////////////////////////
         MetaClusterCurrent.register(context);
 
-        String mode = Optional.ofNullable(System.getProperty("mode"))
-                .orElse(serverConfig.getMode());
+        //String mode = Optional.ofNullable(System.getProperty("mode")).orElse(serverConfig.getMode());
 
 
         boolean initConfig = false;
-        if (!Files.exists(this.baseDirectory)) {
-            Files.createDirectory(this.baseDirectory);
+        if (!Files.exists(baseDirectory)) {
+            Files.createDirectory(baseDirectory);
             initConfig = true;
         }
-        if (!Files.exists((this.baseDirectory.resolve("server.json")))) {
+        if (!Files.exists((baseDirectory.resolve("server.json")))) {
             initConfig = true;
         }
 
-        FileStorageManagerImpl fileStorageManager = new FileStorageManagerImpl(this.baseDirectory);
+        FileStorageManagerImpl fileStorageManager = new FileStorageManagerImpl(baseDirectory);
         StdStorageManagerImpl storageManager = new StdStorageManagerImpl(fileStorageManager);
 
         Arrays.asList(LogicSchemaConfig.class,
@@ -158,9 +156,7 @@ public class MycatCore {
                 UserConfig.class,
                 SequenceConfig.class,
                 SqlCacheConfig.class
-        ).forEach(c -> {
-            storageManager.register(c);
-        });
+        ).forEach(storageManager::register);
         context.put(ConfigReporter.class, storageManager);
         context.put(StorageManager.class, storageManager);
         MetaClusterCurrent.register(context);
@@ -170,26 +166,26 @@ public class MycatCore {
         }
     }
 
-    private void testZkAddressOrStartDefaultZk(String zkAddress) throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
-        ConnectStringParser connectStringParser = new ConnectStringParser(zkAddress);
-        CompositeFuture.any(connectStringParser.getServerAddresses().stream().parallel().map(is -> Future.future(promise -> {
-            try {
-                Socket socket = new Socket(is.getHostName(), is.getPort());
-                socket.close();
-                promise.tryComplete();
-            } catch (IOException e) {
-                promise.tryFail(e);
-            }
-        })).collect(Collectors.toList())).toCompletionStage().toCompletableFuture().get(1, TimeUnit.SECONDS).recover(throwable -> {
-            logger.error("", throwable);
-            try {
-                EmbeddedZKServer.startDefaultZK();
-                return Future.succeededFuture();
-            } catch (Throwable throwable1) {
-                return Future.failedFuture(throwable1);
-            }
-        }).toCompletionStage().toCompletableFuture().get(1, TimeUnit.SECONDS);
-    }
+//    private void testZkAddressOrStartDefaultZk(String zkAddress) throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
+//        ConnectStringParser connectStringParser = new ConnectStringParser(zkAddress);
+//        CompositeFuture.any(connectStringParser.getServerAddresses().stream().parallel().map(is -> Future.future(promise -> {
+//            try {
+//                Socket socket = new Socket(is.getHostName(), is.getPort());
+//                socket.close();
+//                promise.tryComplete();
+//            } catch (IOException e) {
+//                promise.tryFail(e);
+//            }
+//        })).collect(Collectors.toList())).toCompletionStage().toCompletableFuture().get(1, TimeUnit.SECONDS).recover(throwable -> {
+//            logger.error("", throwable);
+//            try {
+//                EmbeddedZKServer.startDefaultZK();
+//                return Future.succeededFuture();
+//            } catch (Throwable throwable1) {
+//                return Future.failedFuture(throwable1);
+//            }
+//        }).toCompletionStage().toCompletableFuture().get(1, TimeUnit.SECONDS);
+//    }
 
     @NotNull
     private String findMycatHome() throws URISyntaxException {
@@ -204,14 +200,14 @@ public class MycatCore {
             path = bottom.toString();
             System.setProperty(configResourceKeyName, path);
         }
-        if (path == null) {
-            throw new MycatException("can not find MYCAT_HOME");
-        }
+//        if (path == null) {
+//            throw new MycatException("can not find MYCAT_HOME");
+//        }
         return path;
     }
 
     @NotNull
-    private MycatServer newMycatServer(MycatServerConfig serverConfig) throws URISyntaxException {
+    private MycatServer newMycatServer(MycatServerConfig serverConfig)  {
         return new VertxMycatServer(serverConfig);
     }
 
