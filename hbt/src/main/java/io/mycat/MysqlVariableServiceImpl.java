@@ -21,9 +21,13 @@ public class MysqlVariableServiceImpl implements MysqlVariableService {
 
     public MysqlVariableServiceImpl(JdbcConnectionManager jdbcConnectionManager) {
 
-        this.globalVariables = new NameMap<Object>();
+        this.globalVariables = new NameMap<>();
         this.sessionVariables = new NameMap<>();
 
+        flash(jdbcConnectionManager);
+    }
+
+    public void flash(JdbcConnectionManager jdbcConnectionManager) {
         String prototype = MetadataManager.getPrototype();
 
         if(MetaClusterCurrent.exist(ReplicaSelectorManager.class)){

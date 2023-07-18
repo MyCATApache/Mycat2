@@ -24,7 +24,6 @@ import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.ExecutorProvider;
 import io.mycat.calcite.PrepareExecutor;
-import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.spm.*;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
@@ -49,7 +48,6 @@ import io.mycat.replica.heartbeat.HeartBeatStatus;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
 import io.mycat.sqlhandler.*;
 import io.mycat.sqlhandler.config.StorageManager;
-import io.mycat.sqlhandler.dml.UpdateSQLHandler;
 import io.mycat.util.JsonUtil;
 import io.mycat.util.MycatSQLExprTableSourceUtil;
 import io.mycat.util.NameMap;
@@ -129,6 +127,9 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     }
                     if ("showTopology".equalsIgnoreCase(cmd)) {
                         return showTopology(response, body, metadataManager);
+                    }
+                    if ("flashVariables".equalsIgnoreCase(cmd)) {
+                        return flashVariables(response, body, metadataManager);
                     }
                     if ("checkConfigConsistency".equalsIgnoreCase(cmd)) {
                         StorageManager assembleMetadataStorageManager = MetaClusterCurrent.wrapper(StorageManager.class);
@@ -895,6 +896,33 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         } catch (Throwable throwable) {
             return response.sendError(throwable);
         }
+    }
+
+    private Future<Void> flashVariables(Response response, String body, MetadataManager metadataManager) {
+        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+        resultSetBuilder.addColumnInfo("Variable_name", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("Value", JDBCType.VARCHAR);
+
+        if (MetaClusterCurrent.exist(MysqlVariableService.class)) {
+            MysqlVariableService mysqlVariableService = MetaClusterCurrent.wrapper(MysqlVariableService.class);
+            JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+            if (mysqlVariableService != null && jdbcConnectionManager != null) {
+                if (mysqlVariableService instanceof MysqlVariableServiceImpl) {
+                    MysqlVariableServiceImpl mysqlVariableServiceImpl = (MysqlVariableServiceImpl) mysqlVariableService;
+                    mysqlVariableServiceImpl.flash(jdbcConnectionManager);
+                    List<Object[]> sessionVariables = mysqlVariableServiceImpl.getSessionVariables();
+                    List<Object[]> globalVariables = mysqlVariableServiceImpl.getGlobalVariables();
+
+                    for (Object[] item : sessionVariables) {
+                        resultSetBuilder.addObjectRowPayload(item);
+                    }
+                    for (Object[] item : globalVariables) {
+                        resultSetBuilder.addObjectRowPayload(item);
+                    }
+                }
+            }
+        }
+        return response.sendResultSet(resultSetBuilder.build());
     }
 
     private static String getMySQLInsertTemplate(TableHandler outputTable) {
