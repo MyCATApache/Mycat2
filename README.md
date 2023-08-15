@@ -55,4 +55,5 @@ Currently, only mycat2 is supported on java8, and will be supported in other ver
 
 ## License
 
-GNU GENERAL PUBLIC LICENSE
+Apache LICENSE
+from 2023.8
